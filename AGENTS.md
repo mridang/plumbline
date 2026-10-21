@@ -32,6 +32,17 @@ Messages state the problem plainly. Report with `severity` `Severity.error` for 
 
 Comment generously: a doc comment on every hint saying what is checked, where the rule comes from and why, and inline comments for non-obvious logic.
 
+## What a finding carries
+
+Webhint's report shows more than the message, so fill in what applies. `defineHint` already adds the hint's reference as "Further reading" to every finding; do not add it again.
+
+- **Markup at fault:** pass `element` (the DOM element) in the report options. Webhint then works out the line and column and the code snippet itself. For something that is missing, pass the element it belongs in (for example `<head>`) and a `codeSnippet` with `codeLanguage: 'html'` showing the tag to add.
+- **Header at fault:** pass `codeLanguage: 'http'` and a `codeSnippet` of the offending header line (`Name: value`), or of the header to add when it is missing.
+- **File at fault:** pass the offending line as `codeSnippet` and its position as `location` (`{ line, column }`).
+- **Everything else** (DNS records, certificates, ciphers, requests): pass a `codeSnippet` of the evidence, such as the record or the list of offending items.
+- **Resource:** report against the URL that was inspected, not always the page.
+- Keep messages, severities and thresholds as they are; this is detail only. Tests assert the extra fields (`sourceCode`, `location`) on the returned problems.
+
 ## Tests
 
 - Unit-test pure logic in `src/lib` directly, with every failure path and edge case.
