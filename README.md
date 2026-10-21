@@ -51,6 +51,18 @@ Run it. The `html` formatter writes `hint-report/<site>.html`, which you can ope
 npx hint https://example.com/
 ```
 
+## Report formatter
+
+The stock `html` report only has webhint's eight categories, never shows a hint's description and links every hint to `webhint.io` pages that do not exist for these hints. The companion package `@mridang/webhint-formatter-extra` (in [`formatter/`](formatter)) writes a better report. Install it next to `hint` and list it in `.hintrc`:
+
+```json
+{
+  "formatters": ["@mridang/webhint-formatter-extra"]
+}
+```
+
+It writes one self-contained HTML file, `hint-report/<site>.html`, that works in light and dark mode and on a phone. Hints are sectioned by topic (agent readiness, email, DNS, TLS, privacy, security headers, social previews, SEO) from their `groups`, and stock hints by their webhint category. Each hint shows its description, a reference link, its other groups as badges and its findings with code snippets and further reading. Sections without findings show as passed, and the source buttons (`observatory`, `owasp` and so on) filter the report. When the `agent-score` hint ran, its score is shown as a summary card at the top.
+
 ## Use
 
 Hints are listed in `.hintrc` as `@mridang/webhint-hint-extra/<id>`. Use `default` as the severity so each hint keeps the level its rule defines:

@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "prepack": "tsc",
-    "build": "tsc",
+    "prepack": "tsc && tsc -p formatter",
+    "build": "tsc && tsc -p formatter",
     "test": "jest --verbose --config=jest.config.mjs",
     "test:watch": "npm run test -- --watch",
     "test:debug": "jest --verbose --config=jest.config.mjs --detectOpenHandles",
