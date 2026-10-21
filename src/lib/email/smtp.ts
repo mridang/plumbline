@@ -177,6 +177,53 @@ function chainOf(socket: tls.TLSSocket): Buffer[] {
   return chain;
 }
 
+/** How the SMTP dialog towards STARTTLS is run. */
+export interface NegotiateOptions {
+  /** How long to wait for each step, in milliseconds. */
+  timeoutMs: number;
+  /** The name sent in EHLO. */
+  ehloName?: string;
+}
+
+/**
+ * Runs the SMTP dialog of RFC 3207 on a socket that was just created: waits
+ * for the connection and the greeting, says EHLO, checks the extensions for
+ * STARTTLS and issues it. Resolves true when the server is ready for the TLS
+ * handshake, which the caller then runs on the same socket, and false when
+ * STARTTLS is not offered or refused. Rejects when the connection fails, the
+ * greeting is not 220 or a step times out.
+ */
+export async function negotiateStarttls(
+  socket: Socket,
+  options: NegotiateOptions,
+): Promise<boolean> {
+  const reader = new ReplyReader(socket);
+  await waitFor(socket, 'connect', options.timeoutMs);
+  const greeting = await reader.reply(options.timeoutMs);
+  if (greeting.code !== 220) {
+    throw new Error(`unexpected greeting ${greeting.code}`);
+  }
+
+  socket.write(`EHLO ${options.ehloName ?? 'localhost'}\r\n`);
+  const ehlo = await reader.reply(options.timeoutMs);
+  const offered =
+    ehlo.code === 250 &&
+    ehlo.lines.some((line) => /^250[- ]STARTTLS$/iu.test(line));
+  if (!offered) {
+    socket.write('QUIT\r\n');
+    return false;
+  }
+
+  socket.write('STARTTLS\r\n');
+  const go = await reader.reply(options.timeoutMs);
+  if (go.code !== 220) {
+    return false;
+  }
+  // Stop reading plain text; the TLS layer takes over the socket.
+  reader.detach();
+  return true;
+}
+
 /**
  * Talks SMTP to a mail server on port 25, as Internet.nl's STARTTLS scan
  * does: read the greeting, say EHLO, check the extensions for STARTTLS, issue
@@ -190,44 +237,25 @@ export async function probeStarttls(
 ): Promise<StarttlsProbe> {
   const timeout = options.timeoutMs ?? 10_000;
   const socket = options.connect(host, options.port ?? 25);
-  const reader = new ReplyReader(socket);
   const done = (): void => {
     socket.destroy();
   };
 
   try {
-    await waitFor(socket, 'connect', timeout);
-    const greeting = await reader.reply(timeout);
-    if (greeting.code !== 220) {
-      done();
-      return failed(`unexpected greeting ${greeting.code}`);
-    }
-
-    socket.write(`EHLO ${options.ehloName ?? 'localhost'}\r\n`);
-    const ehlo = await reader.reply(timeout);
-    const offered =
-      ehlo.code === 250 &&
-      ehlo.lines.some((line) => /^250[- ]STARTTLS$/iu.test(line));
+    const ready = await negotiateStarttls(socket, {
+      timeoutMs: timeout,
+      ehloName: options.ehloName,
+    });
     const base: StarttlsProbe = {
       ...failed(null),
       reachable: true,
       error: null,
     };
-    if (!offered) {
-      socket.write('QUIT\r\n');
+    if (!ready) {
       done();
       return base;
     }
 
-    socket.write('STARTTLS\r\n');
-    const go = await reader.reply(timeout);
-    if (go.code !== 220) {
-      done();
-      return base;
-    }
-
-    // Stop reading plain text; the TLS layer takes over the socket.
-    reader.detach();
     const secure = tls.connect({
       ...options.tlsOptions,
       socket,

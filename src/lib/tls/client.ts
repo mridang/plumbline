@@ -12,14 +12,21 @@ import tls, {
   type DetailedPeerCertificate,
   type PeerCertificate,
 } from 'node:tls';
-import { isIP } from 'node:net';
+import { connect as netConnect, isIP, type Socket } from 'node:net';
+import { negotiateStarttls } from '../email/smtp.js';
 import { TLS_VERSIONS, type TlsVersion } from './constants.js';
 import type { CipherInfo, EphemeralKey } from './evaluate.js';
 
-/** Where to connect: the scanned host on the HTTPS port. */
+/** Where to connect: the scanned host on the HTTPS port, or a mail server. */
 export interface TlsTarget {
   host: string;
   port: number;
+  /**
+   * Set for a mail server: the connection starts as plain SMTP and is
+   * upgraded with STARTTLS (RFC 3207) before the TLS handshake, as
+   * Internet.nl tests mail servers. Left out for HTTPS.
+   */
+  starttls?: 'smtp';
 }
 
 /** Settings of one handshake. */
@@ -81,16 +88,46 @@ function collectChain(socket: tls.TLSSocket): Buffer[] {
 }
 
 /**
- * Connects with `tls.connect`, does not reject untrusted certificates (the
- * hints judge them) and reports everything the handshake exposed.
+ * Opens the plain connection of a STARTTLS target and runs the SMTP dialog up
+ * to the point where the TLS handshake can start. Returns that socket, or
+ * undefined for a target that speaks TLS from the first byte. Rejects when the
+ * server cannot be reached or does not offer STARTTLS.
  */
-export const connectWithNode: TlsConnect = (target, options) =>
-  new Promise<ProbeResult>((resolve, reject) => {
+async function upgradedSocket(target: TlsTarget): Promise<Socket | undefined> {
+  if (target.starttls === undefined) {
+    return undefined;
+  }
+  const socket = netConnect({ host: target.host, port: target.port });
+  try {
+    const ready = await negotiateStarttls(socket, {
+      timeoutMs: PROBE_TIMEOUT_MS,
+    });
+    if (!ready) {
+      throw new Error('STARTTLS is not offered');
+    }
+    return socket;
+  } catch (error) {
+    socket.destroy();
+    throw error;
+  }
+}
+
+/**
+ * Connects with `tls.connect`, does not reject untrusted certificates (the
+ * hints judge them) and reports everything the handshake exposed. A target
+ * with `starttls` is upgraded from plain SMTP first.
+ */
+export const connectWithNode: TlsConnect = async (target, options) => {
+  const plain = await upgradedSocket(target);
+  return new Promise<ProbeResult>((resolve, reject) => {
     let ocspResponse: Buffer | null = null;
     // `requestOCSP` is a documented TLSSocket option missing from the typings.
     const connectOptions: ConnectionOptions & { requestOCSP?: boolean } = {
       host: target.host,
       port: target.port,
+      // The upgraded connection, when there is one; host and port are then
+      // only used for the server name.
+      socket: plain,
       // SNI must be a name, never an IP address.
       servername: isIP(target.host) ? undefined : target.host,
       rejectUnauthorized: false,
@@ -133,6 +170,7 @@ export const connectWithNode: TlsConnect = (target, options) =>
       resolve(result);
     });
   });
+};
 
 /**
  * The probing settings hints use. Tests assign `connect`, `port` and `ca`;
@@ -142,9 +180,11 @@ export const tlsProbe: {
   connect: TlsConnect;
   /** The HTTPS port of the scanned host. */
   port: number;
+  /** The SMTP port of the mail servers. */
+  mailPort: number;
   /** Trusted roots; `undefined` uses Node's bundled Mozilla roots. */
   ca: string | Buffer | undefined;
-} = { connect: connectWithNode, port: 443, ca: undefined };
+} = { connect: connectWithNode, port: 443, mailPort: 25, ca: undefined };
 
 /** The target for a scanned site: its host on the HTTPS port. */
 export function targetFor(url: URL): TlsTarget {
@@ -153,6 +193,11 @@ export function targetFor(url: URL): TlsTarget {
     host: url.hostname.replace(/^\[|\]$/g, ''),
     port: tlsProbe.port,
   };
+}
+
+/** The target for a mail server: its SMTP port, upgraded with STARTTLS. */
+export function mailTargetFor(host: string): TlsTarget {
+  return { host, port: tlsProbe.mailPort, starttls: 'smtp' };
 }
 
 /** Makes a handshake and returns null instead of rejecting. */

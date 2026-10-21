@@ -11,7 +11,7 @@ import {
   SIGNATURE_ALGORITHMS_BAD_HASH,
   SIGNATURE_ALGORITHMS_PHASE_OUT_HASH,
 } from '../../lib/tls/constants.js';
-import { onTlsSite } from './on-tls-site.js';
+import { onTlsSite, type TlsSite } from './on-tls-site.js';
 
 /**
  * Whether the server completes a handshake when the client offers only the
@@ -32,6 +32,38 @@ async function acceptsOnly(
     sigalgs,
   });
   return result !== null;
+}
+
+/** Runs the check of the `tls-kex-hash` hint against one TLS endpoint. */
+export async function checkTlsKexHash({
+  target,
+  report,
+  couldNotTest,
+  subject,
+}: TlsSite): Promise<void> {
+  const versions = await supportedVersions(target);
+  if (versions.length === 0) {
+    couldNotTest(`no TLS connection to ${target.host}:${target.port}`);
+    return;
+  }
+  const legacy = highestLegacyVersion(versions);
+  if (legacy === null) {
+    return;
+  }
+  if (await acceptsOnly(target, legacy, SIGNATURE_ALGORITHMS_BAD_HASH)) {
+    report(
+      `Your ${subject.server} supports one or more *insufficiently* secure hash functions for key exchange: SHA1.`,
+      `${legacy} accepts only: ${SIGNATURE_ALGORITHMS_BAD_HASH.replaceAll(':', ', ')}`,
+    );
+  } else if (
+    await acceptsOnly(target, legacy, SIGNATURE_ALGORITHMS_PHASE_OUT_HASH)
+  ) {
+    report(
+      `Your ${subject.server} supports a hash function for key exchange that should be *phased out* as it is weaker, although you might still use it if absolutely needed. In a future update, it will likely become insufficient: SHA224.`,
+      `${legacy} accepts only: ${SIGNATURE_ALGORITHMS_PHASE_OUT_HASH.replaceAll(':', ', ')}`,
+      Severity.warning,
+    );
+  }
 }
 
 /**
@@ -55,30 +87,6 @@ export default defineHint({
   reference:
     'https://github.com/internetstandards/Internet.nl/blob/main/documentation/tls.md',
   setup(context) {
-    onTlsSite(context, async ({ target, report, couldNotTest }) => {
-      const versions = await supportedVersions(target);
-      if (versions.length === 0) {
-        couldNotTest(`no TLS connection to ${target.host}:${target.port}`);
-        return;
-      }
-      const legacy = highestLegacyVersion(versions);
-      if (legacy === null) {
-        return;
-      }
-      if (await acceptsOnly(target, legacy, SIGNATURE_ALGORITHMS_BAD_HASH)) {
-        report(
-          'Your web server supports one or more *insufficiently* secure hash functions for key exchange: SHA1.',
-          `${legacy} accepts only: ${SIGNATURE_ALGORITHMS_BAD_HASH.replaceAll(':', ', ')}`,
-        );
-      } else if (
-        await acceptsOnly(target, legacy, SIGNATURE_ALGORITHMS_PHASE_OUT_HASH)
-      ) {
-        report(
-          'Your web server supports a hash function for key exchange that should be *phased out* as it is weaker, although you might still use it if absolutely needed. In a future update, it will likely become insufficient: SHA224.',
-          `${legacy} accepts only: ${SIGNATURE_ALGORITHMS_PHASE_OUT_HASH.replaceAll(':', ', ')}`,
-          Severity.warning,
-        );
-      }
-    });
+    onTlsSite(context, checkTlsKexHash);
   },
 });

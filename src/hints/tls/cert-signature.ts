@@ -6,7 +6,56 @@ import {
   rateCertificateKey,
   rateSignatureAlgorithm,
 } from '../../lib/tls/evaluate.js';
-import { onTlsSite } from './on-tls-site.js';
+import { onTlsSite, type TlsSite } from './on-tls-site.js';
+
+/** Runs the check of the `cert-signature` hint against one TLS endpoint. */
+export async function checkCertSignature({
+  target,
+  report,
+  couldNotTest,
+  subject,
+}: TlsSite): Promise<void> {
+  const result = await fetchCertificate(target);
+  if (result === null) {
+    couldNotTest(`no TLS connection to ${target.host}:${target.port}`);
+    return;
+  }
+  const bad: string[] = [];
+  const phaseOut: string[] = [];
+  const badEvidence: string[] = [];
+  const phaseOutEvidence: string[] = [];
+  for (const cert of describeChain(result.chain)) {
+    if (cert.isRoot) {
+      continue;
+    }
+    const { rating, name } = rateSignatureAlgorithm(cert.signatureOid);
+    const evidence = formatCertificate(
+      cert,
+      rateCertificateKey(cert.key).description,
+      name,
+    );
+    if (rating === 'bad') {
+      bad.push(`${cert.commonName}: ${name}`);
+      badEvidence.push(evidence);
+    } else if (rating === 'phase-out') {
+      phaseOut.push(`${cert.commonName}: ${name}`);
+      phaseOutEvidence.push(evidence);
+    }
+  }
+  if (bad.length > 0) {
+    report(
+      `Your ${subject.certificate} is signed using an *insufficiently* secure signing algorithm and hash function: ${bad.join('; ')}.`,
+      badEvidence.join('\n\n'),
+    );
+  }
+  if (phaseOut.length > 0) {
+    report(
+      `Your ${subject.certificate} is signed using a signing algorithm and hash function that should be *phased out* as they are weaker, although you might still use them if absolutely needed. In a future update, they will likely become insufficient: ${phaseOut.join('; ')}.`,
+      phaseOutEvidence.join('\n\n'),
+      Severity.warning,
+    );
+  }
+}
 
 /**
  * Internet.nl "Signature on certificate" (NCSC 3.3.2 and 3.3.5): every
@@ -25,47 +74,6 @@ export default defineHint({
   reference:
     'https://github.com/internetstandards/Internet.nl/blob/main/documentation/tls.md',
   setup(context) {
-    onTlsSite(context, async ({ target, report, couldNotTest }) => {
-      const result = await fetchCertificate(target);
-      if (result === null) {
-        couldNotTest(`no TLS connection to ${target.host}:${target.port}`);
-        return;
-      }
-      const bad: string[] = [];
-      const phaseOut: string[] = [];
-      const badEvidence: string[] = [];
-      const phaseOutEvidence: string[] = [];
-      for (const cert of describeChain(result.chain)) {
-        if (cert.isRoot) {
-          continue;
-        }
-        const { rating, name } = rateSignatureAlgorithm(cert.signatureOid);
-        const evidence = formatCertificate(
-          cert,
-          rateCertificateKey(cert.key).description,
-          name,
-        );
-        if (rating === 'bad') {
-          bad.push(`${cert.commonName}: ${name}`);
-          badEvidence.push(evidence);
-        } else if (rating === 'phase-out') {
-          phaseOut.push(`${cert.commonName}: ${name}`);
-          phaseOutEvidence.push(evidence);
-        }
-      }
-      if (bad.length > 0) {
-        report(
-          `Your website certificate is signed using an *insufficiently* secure signing algorithm and hash function: ${bad.join('; ')}.`,
-          badEvidence.join('\n\n'),
-        );
-      }
-      if (phaseOut.length > 0) {
-        report(
-          `Your website certificate is signed using a signing algorithm and hash function that should be *phased out* as they are weaker, although you might still use them if absolutely needed. In a future update, they will likely become insufficient: ${phaseOut.join('; ')}.`,
-          phaseOutEvidence.join('\n\n'),
-          Severity.warning,
-        );
-      }
-    });
+    onTlsSite(context, checkCertSignature);
   },
 });

@@ -6,7 +6,57 @@ import {
   rateCertificateKey,
   rateSignatureAlgorithm,
 } from '../../lib/tls/evaluate.js';
-import { onTlsSite } from './on-tls-site.js';
+import { onTlsSite, type TlsSite } from './on-tls-site.js';
+
+/** Runs the check of the `cert-pubkey` hint against one TLS endpoint. */
+export async function checkCertPubkey({
+  target,
+  report,
+  couldNotTest,
+  subject,
+}: TlsSite): Promise<void> {
+  const result = await fetchCertificate(target);
+  if (result === null) {
+    couldNotTest(`no TLS connection to ${target.host}:${target.port}`);
+    return;
+  }
+  const bad: string[] = [];
+  const phaseOut: string[] = [];
+  const badEvidence: string[] = [];
+  const phaseOutEvidence: string[] = [];
+  for (const cert of describeChain(result.chain)) {
+    if (cert.isRoot) {
+      continue;
+    }
+    const { rating, description } = rateCertificateKey(cert.key);
+    const message = `${cert.commonName}: ${description}`;
+    const evidence = formatCertificate(
+      cert,
+      description,
+      rateSignatureAlgorithm(cert.signatureOid).name,
+    );
+    if (rating === 'bad') {
+      bad.push(message);
+      badEvidence.push(evidence);
+    } else if (rating === 'phase-out') {
+      phaseOut.push(message);
+      phaseOutEvidence.push(evidence);
+    }
+  }
+  if (bad.length > 0) {
+    report(
+      `The public key of your ${subject.certificate} is *not* based on a secure signing algorithm with secure parameters: ${bad.join('; ')}.`,
+      badEvidence.join('\n\n'),
+    );
+  }
+  if (phaseOut.length > 0) {
+    report(
+      `The public key of your ${subject.certificate} is based on a signing algorithm with parameters that should be *phased out* as they are weaker, although you might still use them if absolutely needed. In a future update, they will likely become insufficient: ${phaseOut.join('; ')}.`,
+      phaseOutEvidence.join('\n\n'),
+      Severity.warning,
+    );
+  }
+}
 
 /**
  * Internet.nl "Public key of certificate" (NCSC 3.3.2.1): the public key of
@@ -25,48 +75,6 @@ export default defineHint({
   reference:
     'https://github.com/internetstandards/Internet.nl/blob/main/documentation/tls.md',
   setup(context) {
-    onTlsSite(context, async ({ target, report, couldNotTest }) => {
-      const result = await fetchCertificate(target);
-      if (result === null) {
-        couldNotTest(`no TLS connection to ${target.host}:${target.port}`);
-        return;
-      }
-      const bad: string[] = [];
-      const phaseOut: string[] = [];
-      const badEvidence: string[] = [];
-      const phaseOutEvidence: string[] = [];
-      for (const cert of describeChain(result.chain)) {
-        if (cert.isRoot) {
-          continue;
-        }
-        const { rating, description } = rateCertificateKey(cert.key);
-        const message = `${cert.commonName}: ${description}`;
-        const evidence = formatCertificate(
-          cert,
-          description,
-          rateSignatureAlgorithm(cert.signatureOid).name,
-        );
-        if (rating === 'bad') {
-          bad.push(message);
-          badEvidence.push(evidence);
-        } else if (rating === 'phase-out') {
-          phaseOut.push(message);
-          phaseOutEvidence.push(evidence);
-        }
-      }
-      if (bad.length > 0) {
-        report(
-          `The public key of your website certificate is *not* based on a secure signing algorithm with secure parameters: ${bad.join('; ')}.`,
-          badEvidence.join('\n\n'),
-        );
-      }
-      if (phaseOut.length > 0) {
-        report(
-          `The public key of your website certificate is based on a signing algorithm with parameters that should be *phased out* as they are weaker, although you might still use them if absolutely needed. In a future update, they will likely become insufficient: ${phaseOut.join('; ')}.`,
-          phaseOutEvidence.join('\n\n'),
-          Severity.warning,
-        );
-      }
-    });
+    onTlsSite(context, checkCertPubkey);
   },
 });

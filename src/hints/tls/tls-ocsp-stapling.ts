@@ -2,7 +2,34 @@ import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { tryConnect } from '../../lib/tls/client.js';
 import { rateOcsp } from '../../lib/tls/evaluate.js';
-import { onTlsSite } from './on-tls-site.js';
+import { onTlsSite, type TlsSite } from './on-tls-site.js';
+
+/** Runs the check of the `tls-ocsp-stapling` hint against one TLS endpoint. */
+export async function checkTlsOcspStapling({
+  target,
+  report,
+  couldNotTest,
+  subject,
+}: TlsSite): Promise<void> {
+  const result = await tryConnect(target, { requestOCSP: true });
+  if (result === null) {
+    couldNotTest(`no TLS connection to ${target.host}:${target.port}`);
+    return;
+  }
+  // Node lists the Authority Information Access entries by method name.
+  const pointer = result.peerCertificate.infoAccess?.['OCSP - URI'];
+  const status = rateOcsp(
+    (pointer?.length ?? 0) > 0,
+    result.ocspResponse !== null && result.ocspResponse.length > 0,
+  );
+  if (status === 'ok') {
+    report(
+      `Your ${subject.server} does *not* support OCSP stapling, although your ${subject.certificate} has an OCSP pointer.`,
+      `OCSP - URI: ${(pointer ?? []).join(', ')}\nStapled OCSP response: none`,
+      Severity.hint,
+    );
+  }
+}
 
 /**
  * Internet.nl "OCSP stapling": when the certificate has an OCSP pointer, the
@@ -22,25 +49,6 @@ export default defineHint({
   reference:
     'https://github.com/internetstandards/Internet.nl/blob/main/documentation/tls.md',
   setup(context) {
-    onTlsSite(context, async ({ target, report, couldNotTest }) => {
-      const result = await tryConnect(target, { requestOCSP: true });
-      if (result === null) {
-        couldNotTest(`no TLS connection to ${target.host}:${target.port}`);
-        return;
-      }
-      // Node lists the Authority Information Access entries by method name.
-      const pointer = result.peerCertificate.infoAccess?.['OCSP - URI'];
-      const status = rateOcsp(
-        (pointer?.length ?? 0) > 0,
-        result.ocspResponse !== null && result.ocspResponse.length > 0,
-      );
-      if (status === 'ok') {
-        report(
-          'Your web server does *not* support OCSP stapling, although your website certificate has an OCSP pointer.',
-          `OCSP - URI: ${(pointer ?? []).join(', ')}\nStapled OCSP response: none`,
-          Severity.hint,
-        );
-      }
-    });
+    onTlsSite(context, checkTlsOcspStapling);
   },
 });

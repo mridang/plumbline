@@ -111,6 +111,8 @@ function sClientArgs(target: TlsTarget, extra: readonly string[]): string[] {
     connectArg(target),
     // SNI must be a name, never an IP address.
     ...(isIP(target.host) ? [] : ['-servername', target.host]),
+    // A mail server starts in plain SMTP and is upgraded by `s_client`.
+    ...(target.starttls ? ['-starttls', target.starttls] : []),
     ...extra,
   ];
 }

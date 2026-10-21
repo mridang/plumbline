@@ -19,6 +19,7 @@ const TYPE_NUMBERS: Record<string, number> = {
   TXT: 16,
   AAAA: 28,
   TLSA: 52,
+  CAA: 257,
 };
 
 /** What a fake zone answers for one `<name> <type>` key. */

@@ -18,7 +18,7 @@ export default defineHint({
   name: 'Valid security.txt',
   description: 'Checks that /.well-known/security.txt follows RFC 9116.',
   category: Category.security,
-  groups: ['files', 'security-headers'],
+  groups: ['files', 'internetnl', 'security-headers'],
   reference: 'https://www.rfc-editor.org/rfc/rfc9116',
   setup(context) {
     onSite(context, async (site) => {

@@ -3,13 +3,20 @@ import {
   acceptedCiphers,
   fetchCertificate,
   highestLegacyVersion,
+  mailTargetFor,
   resourceFor,
   supportedVersions,
   targetFor,
   tlsProbe,
   tryConnect,
 } from '../../../src/lib/tls/client.js';
-import { pointAt, restoreProbe, startServer } from './local-server.js';
+import {
+  pointAt,
+  pointAtMail,
+  restoreProbe,
+  startMailServer,
+  startServer,
+} from './local-server.js';
 
 afterEach(restoreProbe);
 
@@ -225,5 +232,59 @@ describe('fetchCertificate', () => {
     const port = server.port;
     await server.close();
     expect(await fetchCertificate(at(port))).toBeNull();
+  });
+});
+
+describe('mailTargetFor', () => {
+  it('targets the SMTP port with a STARTTLS upgrade', () => {
+    expect(mailTargetFor('mx.example.test')).toEqual({
+      host: 'mx.example.test',
+      port: 25,
+      starttls: 'smtp',
+    });
+  });
+
+  it('follows the probe settings', () => {
+    pointAtMail(2525);
+    expect(mailTargetFor('mx.example.test').port).toBe(2525);
+  });
+});
+
+describe('tryConnect with a STARTTLS target', () => {
+  it('upgrades the plain connection and reports the handshake', async () => {
+    const server = await startMailServer();
+    pointAtMail(server.port);
+    const result = await tryConnect(mailTargetFor('127.0.0.1'), {});
+    expect(result).toMatchObject({ protocol: 'TLSv1.3', authorized: true });
+    expect(result?.chain).toHaveLength(2);
+    expect(server.upgrades()).toBe(1);
+    await server.close();
+  });
+
+  it('upgrades again for every probe', async () => {
+    const server = await startMailServer({ maxVersion: 'TLSv1.2' });
+    pointAtMail(server.port);
+    expect(await supportedVersions(mailTargetFor('127.0.0.1'))).toEqual([
+      'TLSv1.2',
+      'TLSv1.1',
+      'TLSv1',
+    ]);
+    expect(server.upgrades()).toBeGreaterThanOrEqual(4);
+    await server.close();
+  });
+
+  it('returns null when the server does not offer STARTTLS', async () => {
+    const server = await startMailServer({ starttls: false });
+    pointAtMail(server.port);
+    expect(await tryConnect(mailTargetFor('127.0.0.1'), {})).toBeNull();
+    expect(server.upgrades()).toBe(0);
+    await server.close();
+  });
+
+  it('returns null when nothing listens', async () => {
+    const server = await startMailServer();
+    pointAtMail(server.port);
+    await server.close();
+    expect(await tryConnect(mailTargetFor('127.0.0.1'), {})).toBeNull();
   });
 });

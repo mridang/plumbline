@@ -1,7 +1,40 @@
 import { Category, defineHint } from '../../core/define-hint.js';
 import { tryConnect } from '../../lib/tls/client.js';
 import { testZeroRtt } from '../../lib/tls/openssl.js';
-import { onTlsSite } from './on-tls-site.js';
+import { onTlsSite, type TlsSite } from './on-tls-site.js';
+
+/** Runs the check of the `tls-zero-rtt` hint against one TLS endpoint. */
+export async function checkTlsZeroRtt({
+  target,
+  report,
+  couldNotTest,
+  subject,
+}: TlsSite): Promise<void> {
+  // early data only exists in TLS 1.3
+  if (
+    (await tryConnect(target, {
+      minVersion: 'TLSv1.3',
+      maxVersion: 'TLSv1.3',
+    })) === null
+  ) {
+    return;
+  }
+  const outcome = await testZeroRtt(target);
+  if (outcome.kind === 'unavailable') {
+    couldNotTest('openssl not available');
+    return;
+  }
+  if (outcome.kind === 'failed') {
+    couldNotTest(outcome.reason);
+    return;
+  }
+  if (outcome.value) {
+    report(
+      `Your ${subject.server} supports 0-RTT, which is *not* secure.`,
+      outcome.evidence,
+    );
+  }
+}
 
 /**
  * Internet.nl "0-RTT": TLS 1.3 early data has no replay protection at the TLS
@@ -19,31 +52,6 @@ export default defineHint({
   reference:
     'https://github.com/internetstandards/Internet.nl/blob/main/documentation/tls.md',
   setup(context) {
-    onTlsSite(context, async ({ target, report, couldNotTest }) => {
-      // early data only exists in TLS 1.3
-      if (
-        (await tryConnect(target, {
-          minVersion: 'TLSv1.3',
-          maxVersion: 'TLSv1.3',
-        })) === null
-      ) {
-        return;
-      }
-      const outcome = await testZeroRtt(target);
-      if (outcome.kind === 'unavailable') {
-        couldNotTest('openssl not available');
-        return;
-      }
-      if (outcome.kind === 'failed') {
-        couldNotTest(outcome.reason);
-        return;
-      }
-      if (outcome.value) {
-        report(
-          'Your web server supports 0-RTT, which is *not* secure.',
-          outcome.evidence,
-        );
-      }
-    });
+    onTlsSite(context, checkTlsZeroRtt);
   },
 });

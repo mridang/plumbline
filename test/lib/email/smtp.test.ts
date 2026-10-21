@@ -1,6 +1,10 @@
 import { connect } from 'node:net';
 import { afterEach, describe, expect, it } from '@jest/globals';
-import { probeStarttls, tlsVersionLevel } from '../../../src/lib/email/smtp.js';
+import {
+  negotiateStarttls,
+  probeStarttls,
+  tlsVersionLevel,
+} from '../../../src/lib/email/smtp.js';
 import { startSmtp, type FakeSmtp, type SmtpOptions } from './fake-smtp.js';
 import { TEST_CERT } from './test-cert.js';
 
@@ -98,5 +102,44 @@ describe('tlsVersionLevel', () => {
     expect(tlsVersionLevel('TLSv1')).toBe('insufficient');
     expect(tlsVersionLevel('SSLv3')).toBe('insufficient');
     expect(tlsVersionLevel(null)).toBe('insufficient');
+  });
+});
+
+describe('negotiateStarttls', () => {
+  /** Runs the dialog against a fake server and returns its outcome. */
+  async function negotiate(options: SmtpOptions = {}) {
+    server = await startSmtp(options);
+    const socket = connect({ host: '127.0.0.1', port: server.port });
+    try {
+      return await negotiateStarttls(socket, { timeoutMs: 3000 });
+    } finally {
+      socket.destroy();
+    }
+  }
+
+  it('is ready for TLS when STARTTLS is offered', async () => {
+    expect(await negotiate()).toBe(true);
+  });
+
+  it('is not ready when STARTTLS is not offered', async () => {
+    expect(await negotiate({ starttls: false })).toBe(false);
+  });
+
+  it('rejects a greeting that is not 220', async () => {
+    await expect(negotiate({ greeting: '554 no service\r\n' })).rejects.toThrow(
+      'unexpected greeting 554',
+    );
+  });
+
+  it('rejects when the connection fails', async () => {
+    server = await startSmtp();
+    const { port } = server;
+    await server.close();
+    server = undefined;
+    await expect(
+      negotiateStarttls(connect({ host: '127.0.0.1', port }), {
+        timeoutMs: 3000,
+      }),
+    ).rejects.toThrow();
   });
 });

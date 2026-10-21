@@ -40,7 +40,13 @@ export default defineHint({
   description:
     'Checks that a Content Security Policy is set and does not allow unsafe sources.',
   category: Category.security,
-  groups: ['observatory', 'owasp', 'webbkoll', 'security-headers'],
+  groups: [
+    'observatory',
+    'owasp',
+    'webbkoll',
+    'internetnl',
+    'security-headers',
+  ],
   reference:
     'https://developer.mozilla.org/docs/Web/Security/Practical_implementation_guides/CSP',
   schema: PROFILE_SCHEMA,

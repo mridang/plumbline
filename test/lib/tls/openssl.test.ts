@@ -25,7 +25,7 @@ afterEach(() => {
 });
 
 /** The tests that run the real binary need openssl on the PATH. */
-const hasOpenssl = spawnSync('openssl', ['version']).status === 0;
+const hasOpenssl = spawnSync(openssl.command, ['version']).status === 0;
 const realIt = hasOpenssl ? it : it.skip;
 
 const target = { host: '127.0.0.1', port: 4433 };
@@ -134,6 +134,25 @@ describe('probes with a fake openssl', () => {
       's_client',
       '-connect',
       '127.0.0.1:4433',
+      '-tls1_2',
+    ]);
+  });
+
+  it('asks s_client to upgrade a mail server with STARTTLS', async () => {
+    const calls = fake('Secure Renegotiation IS supported');
+    await testSecureRenegotiation({
+      host: 'mx.example.test',
+      port: 25,
+      starttls: 'smtp',
+    });
+    expect(calls[0]).toEqual([
+      's_client',
+      '-connect',
+      'mx.example.test:25',
+      '-servername',
+      'mx.example.test',
+      '-starttls',
+      'smtp',
       '-tls1_2',
     ]);
   });

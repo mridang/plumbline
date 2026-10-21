@@ -106,6 +106,20 @@ export function formatTlsa(record: Tlsa, name: string): string {
   return `${name}. IN TLSA ${record.usage} ${record.selector} ${record.matching} ${record.data}`;
 }
 
+/**
+ * Internet.nl's DANE rollover test: an active scheme has at least two usable
+ * records, either two DANE-EE(3) records (the current and the next key) or a
+ * DANE-EE(3) and a DANE-TA(2) record (the current key and its issuer). Other
+ * usages do not count towards a scheme.
+ */
+export function hasDaneRollover(
+  records: readonly { usage: number }[],
+): boolean {
+  const daneEe = records.filter((record) => record.usage === 3).length;
+  const daneTa = records.filter((record) => record.usage === 2).length;
+  return daneEe > 1 || (daneEe > 0 && daneTa > 0);
+}
+
 /** Looks up the TLSA records of `_<port>._tcp.<host>`. */
 export async function daneExistence(
   host: string,

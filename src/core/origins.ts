@@ -520,6 +520,16 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Parses the CSP header and meta tag and grades the policy by unsafe-inline, unsafe-eval and insecure sources.',
       licence: 'MIT',
     },
+    {
+      source: 'internetnl',
+      upstreamId: 'WebAppsecprivHttpCsp',
+      title: 'Content Security Policy',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L2543',
+      docsUrl: 'https://internet.nl/faqs/appsecpriv/',
+      summary:
+        'Internet.nl subtest WebAppsecprivHttpCsp: Checks that the site sends a Content Security Policy that restricts where content may be loaded from.',
+      licence: 'Apache-2.0',
+    },
   ],
   'csp-reporting': [
     {
@@ -886,6 +896,16 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Internet.nl subtest MailAuthDmarc: Requires the site domain to publish a valid DMARC record with a policy other than none and valid report addresses.',
       licence: 'Apache-2.0',
     },
+    {
+      source: 'internetnl',
+      upstreamId: 'MailAuthDmarcPolicy',
+      title: 'DMARC policy',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L2386',
+      docsUrl: 'https://internet.nl/faqs/mailauth/',
+      summary:
+        'Internet.nl subtest MailAuthDmarcPolicy: Checks that the DMARC policy of the site domain is strict enough to reject or quarantine spoofed mail.',
+      licence: 'Apache-2.0',
+    },
   ],
   'mail-dnssec': [
     {
@@ -898,6 +918,36 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Internet.nl subtest MailDnssecValid: Requires the site domain and the domains of its mail servers (MX) to be DNSSEC signed with a valid signature.',
       licence: 'Apache-2.0',
     },
+    {
+      source: 'internetnl',
+      upstreamId: 'MailDnssecExists',
+      title: 'DNSSEC existence (mail domain)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L739',
+      docsUrl: 'https://internet.nl/faqs/dnssec/',
+      summary:
+        'Internet.nl subtest MailDnssecExists: Checks that the mail domain is signed with DNSSEC.',
+      licence: 'Apache-2.0',
+    },
+    {
+      source: 'internetnl',
+      upstreamId: 'MailDnssecMxExists',
+      title: 'DNSSEC existence (mail servers)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L807',
+      docsUrl: 'https://internet.nl/faqs/dnssec/',
+      summary:
+        'Internet.nl subtest MailDnssecMxExists: Checks that the domains of the mail servers (MX) are signed with DNSSEC.',
+      licence: 'Apache-2.0',
+    },
+    {
+      source: 'internetnl',
+      upstreamId: 'MailDnssecMxValid',
+      title: 'DNSSEC validity (mail servers)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L865',
+      docsUrl: 'https://internet.nl/faqs/dnssec/',
+      summary:
+        'Internet.nl subtest MailDnssecMxValid: Checks that the DNSSEC signatures of the mail server domains (MX) validate.',
+      licence: 'Apache-2.0',
+    },
   ],
   'mail-ipv6': [
     {
@@ -908,6 +958,16 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       docsUrl: 'https://internet.nl/faqs/ipv6/',
       summary:
         'Internet.nl subtest MailIpv6MxAaaa: Requires the mail servers (MX) of the site domain to have IPv6 addresses that are reachable on port 25.',
+      licence: 'Apache-2.0',
+    },
+    {
+      source: 'internetnl',
+      upstreamId: 'MailIpv6MxReach',
+      title: 'IPv6 reachability of mail servers',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L638',
+      docsUrl: 'https://internet.nl/faqs/ipv6/',
+      summary:
+        'Internet.nl subtest MailIpv6MxReach: Checks that the IPv6 addresses of the mail servers (MX) accept connections on port 25.',
       licence: 'Apache-2.0',
     },
   ],
@@ -932,6 +992,16 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       docsUrl: 'https://internet.nl/faqs/mailauth/',
       summary:
         'Internet.nl subtest MailAuthSpf: Requires the site domain to have a valid SPF record within the 10 lookup limit that ends in -all or ~all.',
+      licence: 'Apache-2.0',
+    },
+    {
+      source: 'internetnl',
+      upstreamId: 'MailAuthSpfPolicy',
+      title: 'SPF policy',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L2451',
+      docsUrl: 'https://internet.nl/faqs/mailauth/',
+      summary:
+        'Internet.nl subtest MailAuthSpfPolicy: Checks that the SPF record of the site domain ends in a policy that rejects or soft-fails mail from other servers.',
       licence: 'Apache-2.0',
     },
   ],
@@ -1365,6 +1435,16 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Reports the Referrer-Policy in use from header, meta referrer or http-equiv, and whether it limits leaks.',
       licence: 'MIT',
     },
+    {
+      source: 'internetnl',
+      upstreamId: 'WebAppsecprivHttpReferrerPolicy',
+      title: 'Referrer Policy',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L2568',
+      docsUrl: 'https://internet.nl/faqs/appsecpriv/',
+      summary:
+        'Internet.nl subtest WebAppsecprivHttpReferrerPolicy: Checks that the site sends a Referrer-Policy that stops the full address leaking to other sites.',
+      licence: 'Apache-2.0',
+    },
   ],
   'robots-txt': [
     {
@@ -1436,6 +1516,16 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       summary:
         'Validates security.txt fields such as Contact and Expires per RFC 9116.',
       licence: 'IETF',
+    },
+    {
+      source: 'internetnl',
+      upstreamId: 'WebAppsecprivSecuritytxt',
+      title: 'security.txt',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L2598',
+      docsUrl: 'https://internet.nl/faqs/appsecpriv/',
+      summary:
+        'Internet.nl subtest WebAppsecprivSecuritytxt: Checks that the site publishes a valid security.txt with contact details for reporting vulnerabilities.',
+      licence: 'Apache-2.0',
     },
   ],
   'seo-canonical-mismatch': [
@@ -1973,6 +2063,258 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       summary:
         'Evaluates the X-XSS-Protection header, taking CSP into account.',
       licence: 'MIT',
+    },
+  ],
+  'mail-tls-version': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailTlsVersion',
+      title: 'TLS version (mail)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L1772',
+      docsUrl: 'https://internet.nl/faqs/starttls/',
+      summary:
+        'Internet.nl subtest MailTlsVersion: Requires every mail server (MX) to accept only TLS 1.3 and TLS 1.2 over STARTTLS, probing each version separately.',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'mail-tls-ciphers': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailTlsCiphers',
+      title: 'Cipher suites (mail)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L1702',
+      docsUrl: 'https://internet.nl/faqs/starttls/',
+      summary:
+        'Internet.nl subtest MailTlsCiphers: Requires every mail server (MX) to accept only good or sufficient cipher suites, found by offering all suites and removing the one chosen until none is left.',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'mail-tls-cipher-order': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailTlsCipherOrder',
+      title: 'Cipher suite order (mail)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L1737',
+      docsUrl: 'https://internet.nl/faqs/starttls/',
+      summary:
+        'Internet.nl subtest MailTlsCipherOrder: Requires every mail server (MX) to apply its own cipher preference and rank the secure suites above the phase out ones.',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'mail-tls-kex-params': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailTlsFsParams',
+      title: 'Key exchange parameters (mail)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L1661',
+      docsUrl: 'https://internet.nl/faqs/starttls/',
+      summary:
+        'Internet.nl subtest MailTlsFsParams: Rates the Diffie-Hellman group sizes and elliptic curves that every mail server (MX) accepts for key exchange.',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'mail-tls-kex-hash': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailTlsKexHashFunc',
+      title: 'Key exchange hash function (mail)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L2151',
+      docsUrl: 'https://internet.nl/faqs/starttls/',
+      summary:
+        'Internet.nl subtest MailTlsKexHashFunc: Flags mail servers (MX) that sign the key exchange with SHA-1 (insufficient) or SHA-224 (phase out).',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'mail-tls-ocsp-stapling': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailTlsOCSPStapling',
+      title: 'OCSP stapling (mail)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L2112',
+      docsUrl: 'https://internet.nl/faqs/starttls/',
+      summary:
+        'Internet.nl subtest MailTlsOCSPStapling: Reports mail servers (MX) whose certificate names an OCSP responder but that do not staple a response; information only.',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'mail-cert-trust': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailTlsCertTrust',
+      title: 'Trust chain of certificate (mail)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L1902',
+      docsUrl: 'https://internet.nl/faqs/starttls/',
+      summary:
+        'Internet.nl subtest MailTlsCertTrust: Checks that the certificate chain of every mail server (MX) is complete and ends in a publicly trusted root; information only for mail.',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'mail-cert-pubkey': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailTlsCertPubkey',
+      title: 'Public key of certificate (mail)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L1933',
+      docsUrl: 'https://internet.nl/faqs/starttls/',
+      summary:
+        'Internet.nl subtest MailTlsCertPubkey: Rates the public key type and size of every certificate in the chain of each mail server (MX).',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'mail-cert-signature': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailTlsCertSignature',
+      title: 'Signature of certificate (mail)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L1967',
+      docsUrl: 'https://internet.nl/faqs/starttls/',
+      summary:
+        'Internet.nl subtest MailTlsCertSignature: Rates the signature algorithm and hash function of every certificate in the chain of each mail server (MX).',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'mail-cert-hostname': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailTlsCertHostmatch',
+      title: 'Domain name on certificate (mail)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L2002',
+      docsUrl: 'https://internet.nl/faqs/starttls/',
+      summary:
+        'Internet.nl subtest MailTlsCertHostmatch: Checks that the name of each mail server (MX) appears on its certificate; information only unless a DANE-TA record is published.',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'mail-caa': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailCaa',
+      title: 'CAA for mail server',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L2038',
+      docsUrl: 'https://internet.nl/faqs/starttls/',
+      summary:
+        'Internet.nl subtest MailCaa: Looks up the CAA records that cover each mail server (MX) name and flags missing, malformed or issue-less policies as notices.',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'mail-tls-compression': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailTlsCompression',
+      title: 'TLS compression (mail)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L1807',
+      docsUrl: 'https://internet.nl/faqs/starttls/',
+      summary:
+        'Internet.nl subtest MailTlsCompression: Fails mail servers (MX) that negotiate TLS compression, tested with an STARTTLS handshake that offers it.',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'mail-tls-renegotiation-secure': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailTlsRenegotiationSecure',
+      title: 'Secure renegotiation (mail)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L1835',
+      docsUrl: 'https://internet.nl/faqs/starttls/',
+      summary:
+        'Internet.nl subtest MailTlsRenegotiationSecure: Fails mail servers (MX) that do not support the RFC 5746 secure renegotiation extension.',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'mail-tls-renegotiation-client': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailTlsRenegotiationClient',
+      title: 'Client-initiated renegotiation (mail)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L1863',
+      docsUrl: 'https://internet.nl/faqs/starttls/',
+      summary:
+        'Internet.nl subtest MailTlsRenegotiationClient: Reports mail servers (MX) that let a client renegotiate more often than the allowed limit; information only.',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'mail-tls-zero-rtt': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailTlsZeroRTT',
+      title: '0-RTT (mail)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L2078',
+      docsUrl: 'https://internet.nl/faqs/starttls/',
+      summary:
+        'Internet.nl subtest MailTlsZeroRTT: Fails mail servers (MX) that accept TLS 1.3 early data when a session is resumed.',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'mail-tls-ems': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailTLSExtendedMasterSecret',
+      title: 'Extended Master Secret (mail)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L2191',
+      docsUrl: 'https://internet.nl/faqs/starttls/',
+      summary:
+        'Internet.nl subtest MailTLSExtendedMasterSecret: Reports mail servers (MX) that do not use the TLS 1.2 Extended Master Secret.',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'mail-dane-rollover': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailTlsDaneRollover',
+      title: 'DANE rollover scheme (mail)',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L2302',
+      docsUrl: 'https://internet.nl/faqs/starttls/',
+      summary:
+        'Internet.nl subtest MailTlsDaneRollover: Checks that a mail server (MX) with DANE publishes two usable TLSA records, so a certificate can be replaced without breaking DANE.',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'dane-rollover': [
+    {
+      source: 'internetnl',
+      upstreamId: 'WebTlsDaneRollover',
+      title: 'DANE rollover scheme',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L1416',
+      docsUrl: 'https://internet.nl/faqs/https/',
+      summary:
+        'Internet.nl subtest WebTlsDaneRollover: Checks that a website with DANE publishes two usable TLSA records so a certificate can be replaced without breaking DANE; upstream the test is currently disabled.',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'mail-ns-rpki-exists': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailMxNsRpkiExists',
+      title: 'RPKI existence for mail server name servers',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L427',
+      docsUrl: 'https://internet.nl/faqs/rpki/',
+      summary:
+        'Internet.nl subtest MailMxNsRpkiExists: Requires a published ROA for every IP address of the name servers of each mail server (MX).',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'mail-ns-rpki-valid': [
+    {
+      source: 'internetnl',
+      upstreamId: 'MailMxNsRpkiValid',
+      title: 'RPKI validity for mail server name servers',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L437',
+      docsUrl: 'https://internet.nl/faqs/rpki/',
+      summary:
+        'Internet.nl subtest MailMxNsRpkiValid: Requires the route announcement of every IP address of the name servers of each mail server (MX) to be RPKI valid.',
+      licence: 'Apache-2.0',
+    },
+  ],
+  'https-available': [
+    {
+      source: 'internetnl',
+      upstreamId: 'WebTlsHttpsExists',
+      title: 'HTTPS available',
+      url: 'https://github.com/internetstandards/Internet.nl/blob/ad507d18bee333f3db5a3a3cf965678a41b5893a/checks/categories.py#L902',
+      docsUrl: 'https://internet.nl/faqs/https/',
+      summary:
+        'Internet.nl subtest WebTlsHttpsExists: Checks that the website completes a TLS handshake on the HTTPS port.',
+      licence: 'Apache-2.0',
     },
   ],
 };

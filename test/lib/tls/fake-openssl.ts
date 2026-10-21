@@ -11,7 +11,7 @@ import {
 } from '../../../src/lib/tls/openssl.js';
 
 /** Whether the real `openssl` binary is on the PATH. */
-const hasOpenssl = spawnSync('openssl', ['version']).status === 0;
+const hasOpenssl = spawnSync(openssl.command, ['version']).status === 0;
 
 /** `it` when the real binary exists, `it.skip` otherwise. */
 export const realIt = hasOpenssl ? it : it.skip;

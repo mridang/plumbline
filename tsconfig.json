@@ -14,5 +14,5 @@
     "declaration": true
   },
   "include": ["src/**/*", "types/**/*"],
-  "exclude": ["node_modules", "**/*.spec.ts", "dist", "test", "formatter"]
+  "exclude": ["node_modules", "**/*.spec.ts", "dist", "test"]
 }

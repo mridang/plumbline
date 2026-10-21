@@ -21,6 +21,7 @@
     "@mridang/webhint-hint-extra/expect-ct": "default",
     "@mridang/webhint-hint-extra/feature-policy": "default",
     "@mridang/webhint-hint-extra/hsts": "default",
+    "@mridang/webhint-hint-extra/https-available": "default",
     "@mridang/webhint-hint-extra/internetnl-http-compression": "default",
     "@mridang/webhint-hint-extra/permissions-policy": "default",
     "@mridang/webhint-hint-extra/privacy-insecure-first-party": "default",

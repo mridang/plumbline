@@ -4,6 +4,7 @@ import {
   daneExistence,
   daneValidity,
   formatTlsa,
+  hasDaneRollover,
   parseTlsa,
   tls,
   tlsaMatches,
@@ -177,5 +178,26 @@ describe('formatTlsa', () => {
         '_443._tcp.example.test',
       ),
     ).toBe('_443._tcp.example.test. IN TLSA 3 1 1 ab');
+  });
+});
+
+describe('hasDaneRollover', () => {
+  it('accepts two DANE-EE records, the current and the next key', () => {
+    expect(hasDaneRollover([{ usage: 3 }, { usage: 3 }])).toBe(true);
+  });
+
+  it('accepts a DANE-EE record with a DANE-TA record', () => {
+    expect(hasDaneRollover([{ usage: 3 }, { usage: 2 }])).toBe(true);
+  });
+
+  it('rejects a single record', () => {
+    expect(hasDaneRollover([{ usage: 3 }])).toBe(false);
+    expect(hasDaneRollover([])).toBe(false);
+  });
+
+  it('rejects records without a DANE-EE record or of the PKIX usages', () => {
+    expect(hasDaneRollover([{ usage: 2 }, { usage: 2 }])).toBe(false);
+    expect(hasDaneRollover([{ usage: 3 }, { usage: 1 }])).toBe(false);
+    expect(hasDaneRollover([{ usage: 0 }, { usage: 1 }])).toBe(false);
   });
 });

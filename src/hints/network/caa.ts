@@ -9,6 +9,41 @@ import {
 } from '../../lib/network/caa.js';
 
 /**
+ * Looks up the CAA records of `host` and reports what is wrong with them.
+ * `owner` is what the records protect in the message, `domain` for the
+ * website and `mail server` for an MX host; every finding is a warning.
+ */
+export async function checkCaa(
+  host: string,
+  owner: string,
+  report: (message: string, codeSnippet: string) => void,
+): Promise<void> {
+  const result = await retrieveCaa(host);
+  if (!result.found) {
+    report(
+      `Your ${owner} does not have CAA.`,
+      `${host}. IN CAA 0 issue "ca.example.net"`,
+    );
+    return;
+  }
+  const found = result.records
+    .map((record) => formatCaa(record, result.foundOn ?? host))
+    .join('\n');
+  const syntax = result.errors.filter((e) => e.id !== MISSING_ISSUE);
+  if (syntax.length > 0) {
+    report(
+      `Your ${owner} has an invalid CAA (found on ${result.foundOn}): ${syntax.map((e) => e.message).join('; ')}.`,
+      found,
+    );
+  } else if (result.errors.length > 0) {
+    report(
+      `Your ${owner} has a valid, but insufficiently protective CAA (found on ${result.foundOn}): Required 'issue' property missing.`,
+      `${found}\n${result.foundOn ?? host}. IN CAA 0 issue "ca.example.net"`,
+    );
+  }
+}
+
+/**
  * Internet.nl `caa`: the domain should publish CAA records (found by
  * climbing the DNS tree, RFC 8659) with valid syntax and at least one
  * `issue` property, so only the intended certificate authorities may issue
@@ -29,34 +64,12 @@ export default defineHint({
       if (!host) {
         return;
       }
-      const result = await retrieveCaa(host);
-      if (!result.found) {
-        site.report(site.url.href, 'Your domain does not have CAA.', {
+      await checkCaa(host, 'domain', (message, codeSnippet) =>
+        site.report(site.url.href, message, {
           severity: Severity.warning,
-          codeSnippet: `${host}. IN CAA 0 issue "ca.example.net"`,
-        });
-        return;
-      }
-      const found = result.records
-        .map((record) => formatCaa(record, result.foundOn ?? host))
-        .join('\n');
-      const syntax = result.errors.filter((e) => e.id !== MISSING_ISSUE);
-      if (syntax.length > 0) {
-        site.report(
-          site.url.href,
-          `Your domain has an invalid CAA (found on ${result.foundOn}): ${syntax.map((e) => e.message).join('; ')}.`,
-          { severity: Severity.warning, codeSnippet: found },
-        );
-      } else if (result.errors.length > 0) {
-        site.report(
-          site.url.href,
-          `Your domain has a valid, but insufficiently protective CAA (found on ${result.foundOn}): Required 'issue' property missing.`,
-          {
-            severity: Severity.warning,
-            codeSnippet: `${found}\n${result.foundOn ?? host}. IN CAA 0 issue "ca.example.net"`,
-          },
-        );
-      }
+          codeSnippet,
+        }),
+      );
     });
   },
 });

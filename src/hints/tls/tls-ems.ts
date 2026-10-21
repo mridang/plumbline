@@ -1,7 +1,37 @@
 import { Category, defineHint } from '../../core/define-hint.js';
 import { tryConnect } from '../../lib/tls/client.js';
 import { testExtendedMasterSecret } from '../../lib/tls/openssl.js';
-import { onTlsSite } from './on-tls-site.js';
+import { onTlsSite, type TlsSite } from './on-tls-site.js';
+
+/** Runs the check of the `tls-ems` hint against one TLS endpoint. */
+export async function checkTlsEms({
+  target,
+  report,
+  couldNotTest,
+  subject,
+}: TlsSite): Promise<void> {
+  // EMS only exists in TLS 1.2
+  if (
+    (await tryConnect(target, {
+      minVersion: 'TLSv1.2',
+      maxVersion: 'TLSv1.2',
+    })) === null
+  ) {
+    return;
+  }
+  const outcome = await testExtendedMasterSecret(target);
+  if (outcome.kind === 'unavailable') {
+    couldNotTest('openssl not available');
+    return;
+  }
+  if (outcome.kind === 'failed') {
+    couldNotTest(outcome.reason);
+    return;
+  }
+  if (outcome.value === 'not-supported') {
+    report(`Your ${subject.server} does *not* support EMS.`, outcome.evidence);
+  }
+}
 
 /**
  * Internet.nl "Extended Master Secret (EMS)": RFC 7627 prevents triple
@@ -19,28 +49,6 @@ export default defineHint({
   reference:
     'https://github.com/internetstandards/Internet.nl/blob/main/documentation/tls.md',
   setup(context) {
-    onTlsSite(context, async ({ target, report, couldNotTest }) => {
-      // EMS only exists in TLS 1.2
-      if (
-        (await tryConnect(target, {
-          minVersion: 'TLSv1.2',
-          maxVersion: 'TLSv1.2',
-        })) === null
-      ) {
-        return;
-      }
-      const outcome = await testExtendedMasterSecret(target);
-      if (outcome.kind === 'unavailable') {
-        couldNotTest('openssl not available');
-        return;
-      }
-      if (outcome.kind === 'failed') {
-        couldNotTest(outcome.reason);
-        return;
-      }
-      if (outcome.value === 'not-supported') {
-        report('Your web server does *not* support EMS.', outcome.evidence);
-      }
-    });
+    onTlsSite(context, checkTlsEms);
   },
 });

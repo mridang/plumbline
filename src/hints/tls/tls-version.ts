@@ -2,7 +2,35 @@ import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { supportedVersions } from '../../lib/tls/client.js';
 import { evaluateProtocols, formatVersion } from '../../lib/tls/evaluate.js';
-import { onTlsSite } from './on-tls-site.js';
+import { onTlsSite, type TlsSite } from './on-tls-site.js';
+
+/** Runs the check of the `tls-version` hint against one TLS endpoint. */
+export async function checkTlsVersion({
+  target,
+  report,
+  couldNotTest,
+  subject,
+}: TlsSite): Promise<void> {
+  const accepted = await supportedVersions(target);
+  if (accepted.length === 0) {
+    couldNotTest(`no TLS connection to ${target.host}:${target.port}`);
+    return;
+  }
+  const { bad, phaseOut } = evaluateProtocols(accepted);
+  if (bad.length > 0) {
+    report(
+      `Your ${subject.server} supports *insufficiently* secure TLS versions: ${bad.map(formatVersion).join(', ')}.`,
+      bad.map(formatVersion).join('\n'),
+    );
+  }
+  if (phaseOut.length > 0) {
+    report(
+      `Your ${subject.server} supports TLS versions that should be *phased out* deliberately, because they are known to be fragile and at risk of becoming *insufficiently* secure: ${phaseOut.map(formatVersion).join(', ')}.`,
+      phaseOut.map(formatVersion).join('\n'),
+      Severity.warning,
+    );
+  }
+}
 
 /**
  * Internet.nl "TLS version": the server may only accept secure TLS versions,
@@ -23,26 +51,6 @@ export default defineHint({
   reference:
     'https://github.com/internetstandards/Internet.nl/blob/main/documentation/tls.md',
   setup(context) {
-    onTlsSite(context, async ({ target, report, couldNotTest }) => {
-      const accepted = await supportedVersions(target);
-      if (accepted.length === 0) {
-        couldNotTest(`no TLS connection to ${target.host}:${target.port}`);
-        return;
-      }
-      const { bad, phaseOut } = evaluateProtocols(accepted);
-      if (bad.length > 0) {
-        report(
-          `Your web server supports *insufficiently* secure TLS versions: ${bad.map(formatVersion).join(', ')}.`,
-          bad.map(formatVersion).join('\n'),
-        );
-      }
-      if (phaseOut.length > 0) {
-        report(
-          `Your web server supports TLS versions that should be *phased out* deliberately, because they are known to be fragile and at risk of becoming *insufficiently* secure: ${phaseOut.map(formatVersion).join(', ')}.`,
-          phaseOut.map(formatVersion).join('\n'),
-          Severity.warning,
-        );
-      }
-    });
+    onTlsSite(context, checkTlsVersion);
   },
 });

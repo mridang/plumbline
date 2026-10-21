@@ -2,11 +2,12 @@ import { describe, expect, it } from '@jest/globals';
 import { tlsHints } from '../../../src/hints/tls/index.js';
 
 describe('tlsHints', () => {
-  it('lists the fifteen Internet.nl TLS and certificate hints once each', () => {
+  it('lists the sixteen Internet.nl TLS and certificate hints once each', () => {
     const ids = tlsHints.map((hint) => hint.id);
-    expect(new Set(ids).size).toBe(15);
+    expect(new Set(ids).size).toBe(16);
     expect(ids).toEqual(
       expect.arrayContaining([
+        'https-available',
         'tls-version',
         'tls-ciphers',
         'tls-cipher-order',

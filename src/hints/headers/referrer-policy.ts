@@ -33,7 +33,14 @@ export default defineHint({
   description:
     'Checks that a Referrer-Policy is set and does not leak the full URL to other sites.',
   category: Category.security,
-  groups: ['observatory', 'owasp', 'webbkoll', 'security-headers', 'privacy'],
+  groups: [
+    'observatory',
+    'owasp',
+    'webbkoll',
+    'internetnl',
+    'security-headers',
+    'privacy',
+  ],
   reference:
     'https://developer.mozilla.org/docs/Web/Security/Practical_implementation_guides/Referrer_policy',
   schema: PROFILE_SCHEMA,

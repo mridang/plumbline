@@ -1,6 +1,7 @@
 import type { HintDefinition } from '../../core/define-hint.js';
 import caa from './caa.js';
 import daneExists from './dane-exists.js';
+import daneRollover from './dane-rollover.js';
 import daneValid from './dane-valid.js';
 import dnssecExists from './dnssec-exists.js';
 import dnssecValid from './dnssec-valid.js';
@@ -26,6 +27,7 @@ export const networkHints: readonly HintDefinition[] = [
   dnssecValid,
   daneExists,
   daneValid,
+  daneRollover,
   rpkiNsExists,
   rpkiNsValid,
   rpkiWebExists,

@@ -6,7 +6,41 @@ import {
   tryConnect,
 } from '../../lib/tls/client.js';
 import { evaluateCipherOrder } from '../../lib/tls/evaluate.js';
-import { onTlsSite } from './on-tls-site.js';
+import { onTlsSite, type TlsSite } from './on-tls-site.js';
+
+/** Runs the check of the `tls-cipher-order` hint against one TLS endpoint. */
+export async function checkTlsCipherOrder({
+  target,
+  report,
+  couldNotTest,
+  subject,
+}: TlsSite): Promise<void> {
+  const versions = await supportedVersions(target);
+  if (versions.length === 0) {
+    couldNotTest(`no TLS connection to ${target.host}:${target.port}`);
+    return;
+  }
+  const legacy = highestLegacyVersion(versions);
+  if (legacy === null) {
+    return;
+  }
+  const accepted = await acceptedCiphers(target, legacy);
+  const evaluation = await evaluateCipherOrder(accepted, async (offered) => {
+    const result = await tryConnect(target, {
+      minVersion: legacy,
+      maxVersion: legacy,
+      ciphers: offered.map((cipher) => cipher.name).join(':'),
+    });
+    return result?.cipher ?? null;
+  });
+  if (evaluation.status === 'bad' && evaluation.violation) {
+    const [preferred, expected] = evaluation.violation;
+    report(
+      `Your ${subject.server} does *not* enforce its own preference for cipher suites in descending order of their security level: it preferred ${preferred} instead of ${expected}.`,
+      `${legacy}\nServer chose: ${preferred}\nShould have chosen: ${expected}`,
+    );
+  }
+}
 
 /**
  * Internet.nl "Cipher suite order": the server must enforce its own cipher
@@ -29,35 +63,6 @@ export default defineHint({
   reference:
     'https://github.com/internetstandards/Internet.nl/blob/main/documentation/tls.md',
   setup(context) {
-    onTlsSite(context, async ({ target, report, couldNotTest }) => {
-      const versions = await supportedVersions(target);
-      if (versions.length === 0) {
-        couldNotTest(`no TLS connection to ${target.host}:${target.port}`);
-        return;
-      }
-      const legacy = highestLegacyVersion(versions);
-      if (legacy === null) {
-        return;
-      }
-      const accepted = await acceptedCiphers(target, legacy);
-      const evaluation = await evaluateCipherOrder(
-        accepted,
-        async (offered) => {
-          const result = await tryConnect(target, {
-            minVersion: legacy,
-            maxVersion: legacy,
-            ciphers: offered.map((cipher) => cipher.name).join(':'),
-          });
-          return result?.cipher ?? null;
-        },
-      );
-      if (evaluation.status === 'bad' && evaluation.violation) {
-        const [preferred, expected] = evaluation.violation;
-        report(
-          `Your web server does *not* enforce its own preference for cipher suites in descending order of their security level: it preferred ${preferred} instead of ${expected}.`,
-          `${legacy}\nServer chose: ${preferred}\nShould have chosen: ${expected}`,
-        );
-      }
-    });
+    onTlsSite(context, checkTlsCipherOrder);
   },
 });

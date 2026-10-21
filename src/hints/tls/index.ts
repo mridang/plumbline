@@ -3,6 +3,7 @@ import certHostname from './cert-hostname.js';
 import certPubkey from './cert-pubkey.js';
 import certSignature from './cert-signature.js';
 import certTrust from './cert-trust.js';
+import httpsAvailable from './https-available.js';
 import tlsCipherOrder from './tls-cipher-order.js';
 import tlsCiphers from './tls-ciphers.js';
 import tlsCompression from './tls-compression.js';
@@ -17,6 +18,7 @@ import tlsZeroRtt from './tls-zero-rtt.js';
 
 /** Hints of the `tls` set. */
 export const tlsHints: readonly HintDefinition[] = [
+  httpsAvailable,
   tlsVersion,
   tlsCiphers,
   tlsCipherOrder,

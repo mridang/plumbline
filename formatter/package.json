@@ -2,6 +2,10 @@
   "name": "@mridang/webhint-formatter-extra",
   "version": "0.0.0",
   "type": "module",
+  "scripts": {
+    "prepack": "tsc",
+    "build": "tsc"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "keywords": [
@@ -34,13 +38,5 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "sources": [
-    {
-      "id": "webhint-formatter-html",
-      "name": "webhint formatter-html (report layout, severity counts and the stock hint doc links)",
-      "url": "https://github.com/webhintio/hint/tree/main/packages/formatter-html",
-      "licence": "Apache-2.0"
-    }
-  ]
+  }
 }
