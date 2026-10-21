@@ -8,7 +8,7 @@
  * The source each check was taken from. Keeping the original grouping lets
  * the checks of one reference be enabled or disabled together.
  */
-const SOURCE_GROUPS = [
+export const SOURCE_GROUPS = [
   'observatory',
   'owasp',
   'opengraph',

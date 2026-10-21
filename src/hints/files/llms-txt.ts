@@ -11,7 +11,7 @@ export default defineHint({
   id: 'llms-txt',
   name: 'Valid llms.txt',
   description: 'Checks that /llms.txt follows the llmstxt.org format.',
-  category: Category.other,
+  category: Category.development,
   groups: ['files', 'agent'],
   reference: 'https://llmstxt.org',
   setup(context) {

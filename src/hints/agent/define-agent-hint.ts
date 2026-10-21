@@ -31,7 +31,7 @@ export function agentHint(spec: AgentHintSpec): HintDefinition {
     id: spec.id,
     name: spec.name,
     description: spec.description,
-    category: spec.category ?? Category.other,
+    category: spec.category ?? Category.development,
     groups: ['agent-ready', 'agent', ...(spec.extraGroups ?? [])],
     reference: spec.reference,
     setup(context) {

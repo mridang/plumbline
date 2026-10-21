@@ -14,7 +14,7 @@ export default defineHint({
   id: 'agent-score',
   name: 'Agent readiness score',
   description: 'Reports the overall agent readiness score and level.',
-  category: Category.other,
+  category: Category.development,
   groups: ['agent-ready', 'agent'],
   reference: 'https://isitagentready.com',
   setup(context) {

@@ -11,7 +11,7 @@ export default defineHint({
   id: 'llms-full-txt',
   name: 'Valid llms-full.txt',
   description: 'Checks that /llms-full.txt is non-empty markdown that parses.',
-  category: Category.other,
+  category: Category.development,
   groups: ['files', 'agent'],
   reference: 'https://llmstxt.org',
   setup(context) {

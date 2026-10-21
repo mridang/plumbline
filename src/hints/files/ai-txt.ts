@@ -12,7 +12,7 @@ export default defineHint({
   name: 'Valid ai.txt',
   description:
     'Checks that /ai.txt is valid in the aitxt.ing or Spawning format.',
-  category: Category.other,
+  category: Category.development,
   groups: ['files', 'agent'],
   reference: 'https://llmstxtvalidator.dev',
   setup(context) {

@@ -12,7 +12,7 @@ export default defineHint({
   name: 'Valid robots.txt',
   description:
     'Checks that robots.txt follows RFC 9309, including Content-Signal lines.',
-  category: Category.other,
+  category: Category.development,
   groups: ['files', 'seo', 'agent'],
   reference: 'https://www.rfc-editor.org/rfc/rfc9309',
   setup(context) {
