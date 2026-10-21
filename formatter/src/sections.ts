@@ -1,8 +1,8 @@
 /**
  * Groups hints and their findings into the report's sections. A hint lands
- * in the section of the first topic group (by a fixed precedence) found in
- * its `meta.docs.groups`; hints without a topic group fall back to a section
- * named after their webhint category.
+ * in the section stamped on its metadata (`meta.docs.section`); hints without
+ * one, such as stock webhint hints, fall back to a section named after their
+ * webhint category.
  */
 
 /** Numeric severities, mirroring webhint's `Severity` enum. */
@@ -23,19 +23,8 @@ export const SOURCE_GROUPS = [
   'internetnl',
   'files',
   'llmscout',
+  'original',
 ] as const;
-
-/** Topic groups in section precedence order, with their display titles. */
-const TOPICS: readonly (readonly [string, string])[] = [
-  ['agent', 'Agent readiness'],
-  ['email', 'Email'],
-  ['dns', 'DNS'],
-  ['tls', 'TLS and certificates'],
-  ['privacy', 'Privacy'],
-  ['security-headers', 'Security headers'],
-  ['social', 'Social previews'],
-  ['seo', 'SEO'],
-];
 
 /** What the report needs to know about a hint that ran. */
 export interface HintInfo {
@@ -43,11 +32,31 @@ export interface HintInfo {
   id: string;
   name: string;
   description: string;
-  /** Webhint category, used when the hint has no topic group. */
+  /** Webhint category, used when the hint has no section of its own. */
   category: string;
   groups: readonly string[];
   /** The `meta.docs.url` reference link, when the hint has one. */
   url?: string;
+  /** Section id, title, one-line description and position, when stamped. */
+  section?: string;
+  sectionTitle?: string;
+  sectionDescription?: string;
+  sectionOrder?: number;
+  /** Ids of other sections the hint also touches. */
+  tags?: readonly string[];
+  /** Where the hint came from; absent for hints that do not record it. */
+  origins?: readonly Origin[];
+}
+
+/** One upstream check a hint was ported from. */
+export interface Origin {
+  source: string;
+  upstreamId: string;
+  title: string;
+  url: string;
+  docsUrl: string;
+  summary: string;
+  licence: string;
 }
 
 /** One finding, reduced to the fields the report shows. */
@@ -74,7 +83,7 @@ export interface HintBlock {
   info: HintInfo;
   findings: Finding[];
   counts: Counts;
-  /** The hint's groups other than the one that chose its section. */
+  /** Source groups the hint came from and the other sections it touches. */
   badges: string[];
 }
 
@@ -83,6 +92,8 @@ export interface Section {
   /** Stable key, usable as an HTML id fragment. */
   key: string;
   title: string;
+  /** One line saying what the section holds, when known. */
+  description?: string;
   hints: HintBlock[];
   counts: Counts;
   /** True when no hint in the section has a finding. */
@@ -93,16 +104,14 @@ export interface Section {
  * Chooses the section of a hint.
  *
  * @param info The hint's metadata.
- * @returns The section key, its title and the topic group used (if any).
+ * @returns The section key and title.
  */
-export function sectionFor(info: HintInfo): {
-  key: string;
-  title: string;
-  topic?: string;
-} {
-  const topic = TOPICS.find(([name]) => info.groups.includes(name));
-  if (topic) {
-    return { key: topic[0], title: topic[1], topic: topic[0] };
+export function sectionFor(info: HintInfo): { key: string; title: string } {
+  if (info.section) {
+    return {
+      key: info.section,
+      title: info.sectionTitle || titleCase(info.section),
+    };
   }
   const category = info.category || 'other';
   return { key: `category-${category}`, title: titleCase(category) };
@@ -160,9 +169,10 @@ function weight(counts: Counts): number {
  * Builds the sections of the report.
  *
  * Hints that produced findings but are missing from `hints` are still shown,
- * with metadata derived from the finding. Topic sections come first in
- * precedence order, then category sections alphabetically. Inside a section
- * hints with the most severe findings come first, passed hints last.
+ * with metadata derived from the finding. Sections that hints were stamped
+ * with come first in their stamped order, then category sections for other
+ * hints alphabetically. Inside a section hints with the most severe findings
+ * come first, passed hints last.
  *
  * @param hints Every hint that ran.
  * @param findings Every finding of the scan.
@@ -188,19 +198,34 @@ export function buildSections(
     }
   }
 
-  const sections = new Map<string, Section>();
+  // Titles of stamped sections, so a tag (a section id) can show its title.
+  const titles = new Map<string, string>();
   for (const info of infos.values()) {
-    const { key, title, topic } = sectionFor(info);
+    if (info.section && info.sectionTitle) {
+      titles.set(info.section, info.sectionTitle);
+    }
+  }
+
+  const sections = new Map<string, Section>();
+  const order = new Map<string, number>();
+  for (const info of infos.values()) {
+    const { key, title } = sectionFor(info);
     const own = findings.filter((f) => f.hintId === info.id);
     const block: HintBlock = {
       info,
       findings: own,
       counts: countFindings(own),
-      badges: info.groups.filter((group) => group !== topic),
+      badges: [
+        ...info.groups.filter((g) =>
+          (SOURCE_GROUPS as readonly string[]).includes(g),
+        ),
+        ...(info.tags ?? []).map((tag) => titles.get(tag) ?? tag),
+      ],
     };
     const section = sections.get(key) ?? {
       key,
       title,
+      description: info.sectionDescription,
       hints: [],
       counts: { error: 0, warning: 0, hint: 0 },
       passed: true,
@@ -209,13 +234,12 @@ export function buildSections(
     section.counts = add(section.counts, block.counts);
     section.passed = section.passed && own.length === 0;
     sections.set(key, section);
+    if (info.sectionOrder !== undefined) {
+      order.set(key, info.sectionOrder);
+    }
   }
 
-  const order = TOPICS.map(([name]) => name);
-  const rank = (key: string): number => {
-    const index = order.indexOf(key);
-    return index === -1 ? order.length : index;
-  };
+  const rank = (key: string): number => order.get(key) ?? order.size + 1;
   const result = [...sections.values()].sort(
     (a, b) => rank(a.key) - rank(b.key) || a.title.localeCompare(b.title),
   );

@@ -9,6 +9,22 @@ const ours: HintInfo = {
   category: 'security',
   groups: ['owasp', 'security-headers'],
   url: 'https://ref.test/csp',
+  section: 'site-protection',
+  sectionTitle: 'Site protection',
+  sectionDescription: 'Response headers that harden the site.',
+  sectionOrder: 4,
+  tags: [],
+  origins: [
+    {
+      source: 'owasp',
+      upstreamId: 'csp',
+      title: 'Content-Security-Policy',
+      url: 'https://src.test/csp',
+      docsUrl: 'https://docs.test/csp',
+      summary: 'Checks the policy.',
+      licence: 'Apache-2.0',
+    },
+  ],
 };
 const stock: HintInfo = {
   id: 'axe/aria',
@@ -42,7 +58,11 @@ describe('generateReport', () => {
     );
     expect(html).toContain('2 hints run, 1 with findings');
     expect(html).toContain('1 error');
-    expect(html).toContain('Security headers');
+    expect(html).toContain('Site protection');
+    expect(html).toContain('Response headers that harden the site.');
+    expect(html).toContain('Origin (1)');
+    expect(html).toContain('href="https://src.test/csp"');
+    expect(html).toContain('Apache-2.0');
     expect(html).toContain('Checks the CSP.');
     expect(html).toContain('href="https://ref.test/csp"');
     expect(html).toContain('3:7');
@@ -55,7 +75,7 @@ describe('generateReport', () => {
 
   it('lists sections without findings as passed', () => {
     const html = page([{ ...ours, groups: ['tls'] }], []);
-    expect(html).toContain('TLS and certificates');
+    expect(html).toContain('Site protection');
     expect(html).toContain('&#10003;');
     expect(html).toContain('1 passed');
     expect(html).toContain('No findings');

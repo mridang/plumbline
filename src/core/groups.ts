@@ -17,6 +17,7 @@ export const SOURCE_GROUPS = [
   'internetnl',
   'files',
   'llmscout',
+  'original',
 ] as const;
 
 /** What a check is about, regardless of where it came from. */

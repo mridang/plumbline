@@ -8,7 +8,6 @@
     "@mridang/webhint-hint-extra/csp-reporting": "default",
     "@mridang/webhint-hint-extra/hsts": "default",
     "@mridang/webhint-hint-extra/privacy-cookies": "default",
-    "@mridang/webhint-hint-extra/privacy-geolocation": "default",
     "@mridang/webhint-hint-extra/privacy-insecure-first-party": "default",
     "@mridang/webhint-hint-extra/privacy-local-storage": "default",
     "@mridang/webhint-hint-extra/privacy-mixed-content": "default",

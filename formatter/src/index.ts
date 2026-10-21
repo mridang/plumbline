@@ -1,27 +1,54 @@
 /**
  * The webhint formatter `@mridang/webhint-formatter-extra`. It writes one
- * self-contained HTML report that groups hints by topic, shows hint
- * descriptions and references, and filters by source group.
+ * self-contained HTML report that groups hints into the sections stamped on
+ * their metadata, shows descriptions, references and origins, and filters by
+ * source group.
  */
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { FormatterOptions, IFormatter } from 'hint';
 import type { Problem } from '@hint/utils-types';
 import { generateReport } from './render.js';
-import type { Finding, HintInfo } from './sections.js';
+import type { Finding, HintInfo, Origin } from './sections.js';
 
-/** Reads `meta.docs.groups`, which webhint's own types do not declare. */
-function groupsOf(docs: unknown): string[] {
-  const groups = (docs as { groups?: unknown } | undefined)?.groups;
-  return Array.isArray(groups)
-    ? groups.filter((g): g is string => typeof g === 'string')
-    : [];
+/** The extra fields our hints stamp on `meta.docs`; webhint does not type them. */
+interface Extras {
+  groups?: unknown;
+  url?: unknown;
+  section?: unknown;
+  sectionTitle?: unknown;
+  sectionDescription?: unknown;
+  sectionOrder?: unknown;
+  tags?: unknown;
+  origins?: unknown;
 }
 
-/** Reads `meta.docs.url`, which webhint's own types do not declare. */
-function urlOf(docs: unknown): string | undefined {
-  const url = (docs as { url?: unknown } | undefined)?.url;
-  return typeof url === 'string' ? url : undefined;
+const text = (value: unknown): string | undefined =>
+  typeof value === 'string' ? value : undefined;
+
+const texts = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value.filter((v): v is string => typeof v === 'string')
+    : [];
+
+/** Reads the origins, ignoring entries that are not objects of strings. */
+function originsOf(value: unknown): Origin[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  return value
+    .filter(
+      (o): o is Record<string, unknown> => typeof o === 'object' && o !== null,
+    )
+    .map((o) => ({
+      source: text(o.source) ?? '',
+      upstreamId: text(o.upstreamId) ?? '',
+      title: text(o.title) ?? '',
+      url: text(o.url) ?? '',
+      docsUrl: text(o.docsUrl) ?? '',
+      summary: text(o.summary) ?? '',
+      licence: text(o.licence) ?? '',
+    }));
 }
 
 /**
@@ -55,14 +82,23 @@ export default class ExtraFormatter implements IFormatter {
   ): Promise<void> {
     const target = options.target ?? '';
     const hints: HintInfo[] = (options.resources?.hints ?? []).map((ctor) => {
-      const docs: unknown = ctor.meta.docs;
+      const extras = (ctor.meta.docs ?? {}) as Extras;
       return {
         id: ctor.meta.id,
         name: ctor.meta.docs?.name ?? ctor.meta.id,
         description: ctor.meta.docs?.description ?? '',
         category: String(ctor.meta.docs?.category ?? 'other'),
-        groups: groupsOf(docs),
-        url: urlOf(docs),
+        groups: texts(extras.groups),
+        url: text(extras.url),
+        section: text(extras.section),
+        sectionTitle: text(extras.sectionTitle),
+        sectionDescription: text(extras.sectionDescription),
+        sectionOrder:
+          typeof extras.sectionOrder === 'number'
+            ? extras.sectionOrder
+            : undefined,
+        tags: texts(extras.tags),
+        origins: originsOf(extras.origins),
       };
     });
     const findings: Finding[] = problems.map((p) => ({

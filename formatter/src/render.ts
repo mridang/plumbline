@@ -14,6 +14,7 @@ import {
   type Finding,
   type HintBlock,
   type HintInfo,
+  type Origin,
   type Section,
 } from './sections.js';
 
@@ -142,7 +143,24 @@ function renderStockButtons(id: string): string {
   return `<p class="buttons"><a class="btn" href="${base}#why-is-this-important" target="_blank" rel="noopener noreferrer">Why is this important</a> <a class="btn" href="${base}#examples-that-pass-the-hint" target="_blank" rel="noopener noreferrer">How to fix it</a></p>`;
 }
 
-/** Renders the body header of a hint: description, reference, buttons. */
+/** Renders where a hint came from: its upstream checks, links and licences. */
+function renderOrigins(origins: readonly Origin[] | undefined): string {
+  if (origins === undefined) {
+    return '';
+  }
+  if (origins.length === 0) {
+    return '<p class="origin">Written for this package; there is no upstream check.</p>';
+  }
+  const items = origins
+    .map((o) => {
+      const docs = safeUrl(o.docsUrl) ? ` (${link(o.docsUrl, 'docs')})` : '';
+      return `<li><span class="badge">${escapeHtml(o.source)}</span> ${link(o.url, o.title || o.upstreamId)}${docs} <span class="muted">${escapeHtml(o.licence)}</span><br>${escapeHtml(o.summary)}</li>`;
+    })
+    .join('');
+  return `<details class="origins"><summary>Origin (${origins.length})</summary><ul>${items}</ul></details>`;
+}
+
+/** Renders the body header of a hint: description, reference, origins, buttons. */
 function renderHintHead(block: HintBlock): string {
   const { info } = block;
   const reference = safeUrl(info.url)
@@ -151,7 +169,7 @@ function renderHintHead(block: HintBlock): string {
   const description = info.description
     ? `<p class="desc">${escapeHtml(info.description)}</p>`
     : '';
-  return `${description}${reference}${info.id.startsWith('extra/') ? '' : renderStockButtons(info.id)}`;
+  return `${description}${reference}${renderOrigins(info.origins)}${info.id.startsWith('extra/') ? '' : renderStockButtons(info.id)}`;
 }
 
 /** Renders a hint that has findings as a collapsible block. */
@@ -189,7 +207,7 @@ function renderSection(section: Section): string {
   const status = section.passed
     ? '<span class="ok" title="Passed">&#10003;</span>'
     : renderCounts(section.counts);
-  return `<section class="section" id="${anchor(section.key)}"><h2>${escapeHtml(section.title)} ${status}</h2>${failing.map(renderHint).join('')}${renderPassed(passing)}</section>`;
+  return `<section class="section" id="${anchor(section.key)}"><h2>${escapeHtml(section.title)} ${status}</h2>${section.description ? `<p class="section-desc">${escapeHtml(section.description)}</p>` : ''}${failing.map(renderHint).join('')}${renderPassed(passing)}</section>`;
 }
 
 /** Renders the sidebar navigation. */
@@ -243,7 +261,7 @@ main{flex:1;min-width:0}h1{margin:0 0 4px;font-size:22px;word-break:break-all}h2
 .toggle{border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:14px;padding:2px 10px;cursor:pointer}
 .toggle[aria-pressed=true]{background:var(--hint);color:var(--bg);border-color:var(--hint)}
 details.hint,details.passed{border:1px solid var(--line);border-radius:8px;margin:8px 0;padding:8px 12px}
-summary{cursor:pointer}.name{font-weight:600}.badge{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:0 6px;font-size:11px;margin-left:4px;color:var(--muted)}
+summary{cursor:pointer}.name{font-weight:600}.muted{color:var(--muted);font-size:12px}.section-desc{color:var(--muted);margin:-4px 0 8px}details.origins{margin:6px 0;font-size:13px}details.origins ul{margin:6px 0 0;padding-left:18px}details.origins li{margin:6px 0}.origin{color:var(--muted);font-size:13px}.badge{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:0 6px;font-size:11px;margin-left:4px;color:var(--muted)}
 .desc,.ref{margin:6px 0;color:var(--muted)}.btn{display:inline-block;border:1px solid var(--line);border-radius:6px;padding:2px 10px;text-decoration:none}
 .findings{list-style:none;padding:0}.finding{border-top:1px solid var(--line);padding:8px 0}.res,.loc,.docs{color:var(--muted);font-size:13px;word-break:break-all}
 pre{position:relative;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:8px;overflow:auto;margin:6px 0}

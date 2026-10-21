@@ -6,6 +6,8 @@ import {
 } from 'hint';
 import { Category } from '@hint/utils-types';
 import type { Group } from './groups.js';
+import { ORIGINS, type Origin } from './origins.js';
+import { CATEGORIES, PLACEMENT } from './taxonomy.js';
 
 /** Describes one hint and how it attaches itself to a scan. */
 export interface HintSpec {
@@ -70,17 +72,36 @@ function withReference(context: HintContext, spec: HintSpec): HintContext {
 
 /** Turns a spec into the class webhint instantiates for each scan. */
 export function defineHint(spec: HintSpec): HintDefinition {
-  // Webhint types `docs` with three fields. `url` and `groups` are extras
-  // that stock formatters ignore and a custom report can show.
+  // Webhint types `docs` with three fields. The rest are extras that stock
+  // formatters ignore and our report formatter shows: the groups, the
+  // reference, the section the hint is sorted into and where it came from.
+  const placement = PLACEMENT[spec.id];
+  const section = CATEGORIES.find((c) => c.id === placement?.category);
   const docs: HintMetadata['docs'] & {
     url?: string;
     groups: readonly Group[];
+    section?: string;
+    sectionTitle?: string;
+    sectionDescription?: string;
+    sectionOrder?: number;
+    tags: readonly string[];
+    origins: readonly Origin[];
   } = {
     category: spec.category,
     description: spec.description,
     name: spec.name,
     groups: spec.groups,
     ...(spec.reference ? { url: spec.reference } : {}),
+    ...(section
+      ? {
+          section: section.id,
+          sectionTitle: section.title,
+          sectionDescription: section.description,
+          sectionOrder: CATEGORIES.indexOf(section),
+        }
+      : {}),
+    tags: placement?.tags ?? [],
+    origins: ORIGINS[spec.id] ?? [],
   };
   const meta: HintMetadata = {
     docs,

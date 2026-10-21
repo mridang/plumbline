@@ -31,7 +31,7 @@ export default defineHint({
   name: 'Geolocation use',
   description: 'Finds inline and loaded scripts that use the Geolocation API.',
   category: Category.security,
-  groups: ['webbkoll', 'privacy'],
+  groups: ['original', 'privacy'],
   reference: 'https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API',
   setup(context) {
     let url = '';

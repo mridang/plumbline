@@ -24,17 +24,25 @@ const finding = (hintId: string, severity = 4): Finding => ({
 });
 
 describe('sectionFor', () => {
-  it('uses the first topic by precedence, not by listing order', () => {
-    const info = hint('extra/a', { groups: ['seo', 'tls', 'owasp'] });
-    expect(sectionFor(info)).toMatchObject({ key: 'tls', topic: 'tls' });
+  it('uses the section stamped on the hint', () => {
+    const info = hint('extra/a', {
+      section: 'https-tls',
+      sectionTitle: 'HTTPS and certificates',
+      groups: ['seo', 'tls'],
+    });
+    expect(sectionFor(info)).toEqual({
+      key: 'https-tls',
+      title: 'HTTPS and certificates',
+    });
   });
 
-  it('prefers agent over everything', () => {
-    const info = hint('extra/a', { groups: ['seo', 'agent', 'dns'] });
-    expect(sectionFor(info).title).toBe('Agent readiness');
+  it('title-cases the section id when no title was stamped', () => {
+    expect(sectionFor(hint('extra/a', { section: 'dns-network' })).title).toBe(
+      'Dns Network',
+    );
   });
 
-  it('falls back to the title-cased category', () => {
+  it('falls back to the title-cased category for hints without a section', () => {
     const info = hint('axe/x', {
       category: 'best-practices',
       groups: ['owasp'],
@@ -59,20 +67,54 @@ describe('countFindings', () => {
   });
 });
 
+const stamped = (
+  id: string,
+  section: string,
+  title: string,
+  order: number,
+  over: Partial<HintInfo> = {},
+): HintInfo =>
+  hint(id, {
+    section,
+    sectionTitle: title,
+    sectionDescription: `About ${title}`,
+    sectionOrder: order,
+    ...over,
+  });
+
 describe('buildSections', () => {
-  it('orders topics first, then categories, and badges skip the topic', () => {
+  it('orders stamped sections by their stamped order, then other categories', () => {
     const sections = buildSections(
       [
         hint('stock/a', { category: 'pwa' }),
-        hint('extra/b', { groups: ['owasp', 'seo'] }),
-        hint('extra/c', { groups: ['dns', 'internetnl'] }),
+        stamped('extra/b', 'search', 'Search', 1),
+        stamped('extra/c', 'llms-ai', 'LLMs and AI', 0),
       ],
       [finding('extra/b')],
     );
-    expect(sections.map((s) => s.key)).toEqual(['dns', 'seo', 'category-pwa']);
-    expect(sections[1]?.hints[0]?.badges).toEqual(['owasp']);
+    expect(sections.map((s) => s.key)).toEqual([
+      'llms-ai',
+      'search',
+      'category-pwa',
+    ]);
     expect(sections[1]?.passed).toBe(false);
     expect(sections[0]?.passed).toBe(true);
+    expect(sections[0]?.description).toBe('About LLMs and AI');
+  });
+
+  it('shows source groups and the titles of tagged sections as badges', () => {
+    const sections = buildSections(
+      [
+        stamped('extra/a', 'search', 'Search', 1, {
+          groups: ['owasp', 'seo'],
+          tags: ['llms-ai'],
+        }),
+        stamped('extra/b', 'llms-ai', 'LLMs and AI', 0),
+      ],
+      [],
+    );
+    const search = sections.find((s) => s.key === 'search');
+    expect(search?.hints[0]?.badges).toEqual(['owasp', 'LLMs and AI']);
   });
 
   it('puts failing hints before passed ones', () => {
