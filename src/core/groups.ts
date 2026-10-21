@@ -16,6 +16,7 @@ const SOURCE_GROUPS = [
   'webbkoll',
   'internetnl',
   'files',
+  'llmscout',
 ] as const;
 
 /** What a check is about, regardless of where it came from. */
