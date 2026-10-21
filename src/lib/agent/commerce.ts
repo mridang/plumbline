@@ -164,7 +164,8 @@ export async function checkAcp(env: AgentEnv): Promise<CheckResult> {
 
 /**
  * True when the site looks like a shop: a commerce protocol answered, or the
- * home page shows storefront markers. Only then does Commerce count.
+ * home page shows storefront markers. Only then does Commerce count. An
+ * `Offer` is not a marker: free apps publish one with a price of 0.
  */
 export async function detectCommerceSignals(
   env: AgentEnv,
@@ -174,7 +175,7 @@ export async function detectCommerceSignals(
     return true;
   }
   const home = await env.probe('/');
-  return /add to cart|add to basket|shopify|woocommerce|schema\.org\/(Product|Offer)|"@type"\s*:\s*"(Product|Offer)"/i.test(
+  return /add to cart|add to basket|shopify|woocommerce|schema\.org\/Product|"@type"\s*:\s*"Product"/i.test(
     home?.body ?? '',
   );
 }

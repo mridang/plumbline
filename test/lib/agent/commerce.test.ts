@@ -116,6 +116,24 @@ describe('detectCommerceSignals', () => {
       ),
     ).toBe(true);
   });
+  it('detects a Product in structured data', async () => {
+    expect(
+      await detectCommerceSignals(
+        fakeEnv({ '/': '<script>{"@type": "Product"}</script>' }),
+        [],
+      ),
+    ).toBe(true);
+  });
+  it('does not treat a free Offer as a shop, as on a free app', async () => {
+    expect(
+      await detectCommerceSignals(
+        fakeEnv({
+          '/': '<script>{"offers":{"@type":"Offer","price":"0"}}</script>',
+        }),
+        [],
+      ),
+    ).toBe(false);
+  });
   it('is false for a plain site', async () => {
     expect(
       await detectCommerceSignals(fakeEnv({ '/': '<p>hello</p>' }), []),
