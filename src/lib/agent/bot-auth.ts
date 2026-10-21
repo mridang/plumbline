@@ -1,5 +1,11 @@
 import type { AgentEnv, CheckResult } from './types.js';
-import { isHtml, isOk, parseJsonObject, result } from './util.js';
+import {
+  isHtml,
+  isOk,
+  missingReason,
+  parseJsonObject,
+  result,
+} from './util.js';
 
 /**
  * UNVERIFIED: the well-known path and the `keys` check come from
@@ -19,7 +25,7 @@ export async function checkWebBotAuth(env: AgentEnv): Promise<CheckResult> {
       id,
       'bot-access',
       false,
-      'No Web Bot Auth key directory was found.',
+      `${missingReason('/.well-known/http-message-signatures-directory', probe)}.`,
     );
   }
   const keys = parseJsonObject(probe)?.keys;

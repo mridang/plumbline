@@ -15,6 +15,8 @@ export function fakeEnv(
     origin?: string;
     dnsAnswers?: Record<string, string[]>;
     evaluate?: AgentEnv['evaluate'];
+    /** Answer for every path not in `routes` (default: unreachable). */
+    fallback?: FakeRoute;
   } = {},
 ): AgentEnv {
   const origin = options.origin ?? 'https://example.com';
@@ -23,7 +25,7 @@ export function fakeEnv(
     host: new URL(origin).hostname,
     async probe(path, headers = {}) {
       const key = headers.accept ? `${path} ${headers.accept}` : path;
-      const route = routes[key] ?? routes[path];
+      const route = routes[key] ?? routes[path] ?? options.fallback;
       if (route === undefined) {
         return null;
       }

@@ -1,0 +1,13 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": ["html"],
+  "hints": {
+    "@mridang/webhint-hint-extra/ai-txt": "default",
+    "@mridang/webhint-hint-extra/llms-full-txt": "default",
+    "@mridang/webhint-hint-extra/llms-txt": "default",
+    "@mridang/webhint-hint-extra/robots-txt": "default",
+    "@mridang/webhint-hint-extra/security-txt": "default"
+  }
+}

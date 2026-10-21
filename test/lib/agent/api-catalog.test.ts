@@ -43,7 +43,7 @@ describe('checkApiCatalog', () => {
   it('fails for a missing linkset or catalog', async () => {
     expect((await checkApiCatalog(fakeEnv({ [key]: {} }))).passed).toBe(false);
     expect((await checkApiCatalog(fakeEnv())).detail).toContain(
-      'No API catalog',
+      '/.well-known/api-catalog was not found',
     );
   });
 });

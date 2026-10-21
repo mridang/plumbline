@@ -1,11 +1,11 @@
 import type { AgentEnv, CheckResult } from './types.js';
 import {
   bareHost,
-  firstJson,
   isHtml,
   isLoopback,
   isOk,
   isText,
+  missingReason,
   parseJsonObject,
   result,
 } from './util.js';
@@ -37,29 +37,28 @@ export function isIdentifierUrl(value: unknown): value is string {
  */
 export async function checkOauthDiscovery(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-oauth-discovery';
-  const found = await firstJson(
-    [
-      '/.well-known/openid-configuration',
-      '/.well-known/oauth-authorization-server',
-    ],
-    (path) => env.probe(path),
-  );
-  if (!found) {
-    return result(
-      id,
-      'discovery',
-      false,
-      'No OAuth or OIDC metadata was found.',
-    );
-  }
-  return isIdentifierUrl(found.json.issuer)
-    ? result(
+  const paths = [
+    '/.well-known/openid-configuration',
+    '/.well-known/oauth-authorization-server',
+  ];
+  const reasons: string[] = [];
+  // Either document is enough: report only when both fail.
+  for (const path of paths) {
+    const probe = await env.probe(path);
+    const json = parseJsonObject(probe);
+    if (json && isIdentifierUrl(json.issuer)) {
+      return result(
         id,
         'discovery',
         true,
-        `${found.path} names issuer ${String(found.json.issuer)}.`,
-      )
-    : result(id, 'discovery', false, `${found.path} has no valid issuer URL.`);
+        `${path} names issuer ${json.issuer}.`,
+      );
+    }
+    reasons.push(
+      json ? `${path} has no valid issuer URL` : missingReason(path, probe),
+    );
+  }
+  return result(id, 'discovery', false, `${reasons.join('; ')}.`);
 }
 
 /**
@@ -90,7 +89,10 @@ export async function checkOauthProtectedResource(
       id,
       'discovery',
       false,
-      'No protected resource metadata was found.',
+      `${missingReason(
+        '/.well-known/oauth-protected-resource',
+        await env.probe('/.well-known/oauth-protected-resource'),
+      )}.`,
     );
   }
   if (!isIdentifierUrl(json.resource)) {
@@ -101,20 +103,33 @@ export async function checkOauthProtectedResource(
       'The metadata has no valid resource URL.',
     );
   }
-  const same = bareHost(new URL(json.resource).hostname) === bareHost(env.host);
-  return same
-    ? result(
-        id,
-        'discovery',
-        true,
-        `The metadata describes resource ${json.resource}.`,
-      )
-    : result(
-        id,
-        'discovery',
-        false,
-        `The resource ${json.resource} is not on ${env.host}.`,
-      );
+  const resource = new URL(json.resource);
+  if (bareHost(resource.hostname) !== bareHost(env.host)) {
+    return result(
+      id,
+      'discovery',
+      false,
+      `The resource ${json.resource} is not on ${env.host}.`,
+    );
+  }
+  // isitagentready.com requires the metadata at the root well-known path to
+  // describe the site itself. RFC 9728 section 3.1 puts the metadata of a
+  // resource that has a path under that path, for example
+  // /.well-known/oauth-protected-resource/api/mcp for /api/mcp.
+  if (resource.pathname !== '/') {
+    return result(
+      id,
+      'discovery',
+      false,
+      `The resource ${json.resource} does not match the site; metadata for a resource with a path belongs at /.well-known/oauth-protected-resource${resource.pathname}.`,
+    );
+  }
+  return result(
+    id,
+    'discovery',
+    true,
+    `The metadata describes resource ${json.resource}.`,
+  );
 }
 
 /**
@@ -138,5 +153,5 @@ export async function checkAuthMd(env: AgentEnv): Promise<CheckResult> {
       'The authorization server metadata has an agent_auth block.',
     );
   }
-  return result(id, 'discovery', false, '/auth.md was not found.');
+  return result(id, 'discovery', false, `${missingReason('/auth.md', doc)}.`);
 }

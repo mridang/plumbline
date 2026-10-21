@@ -37,6 +37,12 @@ export function agentHint(spec: AgentHintSpec): HintDefinition {
     setup(context) {
       onSite(context, async (site) => {
         const outcome = await resultFor(context, site, spec.id);
+        if (outcome.passed && outcome.note) {
+          // A pass that still has an informational conclusion to show.
+          site.report(site.url.href, `${spec.name}: ${outcome.detail}`, {
+            severity: Severity.hint,
+          });
+        }
         if (!outcome.passed) {
           site.report(site.url.href, `${spec.name}: ${outcome.detail}`, {
             severity: spec.informational ? Severity.hint : Severity.warning,

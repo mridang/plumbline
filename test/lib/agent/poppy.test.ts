@@ -89,6 +89,8 @@ describe('checkPoppy', () => {
     );
   });
   it('fails when missing', async () => {
-    expect((await checkPoppy(fakeEnv())).detail).toContain('No poppy.json');
+    expect((await checkPoppy(fakeEnv())).detail).toContain(
+      '/.well-known/poppy.json was not found',
+    );
   });
 });

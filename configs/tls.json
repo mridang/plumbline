@@ -1,0 +1,28 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": ["html"],
+  "hints": {
+    "@mridang/webhint-hint-extra/caa": "default",
+    "@mridang/webhint-hint-extra/cert-hostname": "default",
+    "@mridang/webhint-hint-extra/cert-pubkey": "default",
+    "@mridang/webhint-hint-extra/cert-signature": "default",
+    "@mridang/webhint-hint-extra/cert-trust": "default",
+    "@mridang/webhint-hint-extra/dane-exists": "default",
+    "@mridang/webhint-hint-extra/dane-valid": "default",
+    "@mridang/webhint-hint-extra/mail-dane": "default",
+    "@mridang/webhint-hint-extra/mail-starttls": "default",
+    "@mridang/webhint-hint-extra/tls-cipher-order": "default",
+    "@mridang/webhint-hint-extra/tls-ciphers": "default",
+    "@mridang/webhint-hint-extra/tls-compression": "default",
+    "@mridang/webhint-hint-extra/tls-ems": "default",
+    "@mridang/webhint-hint-extra/tls-kex-hash": "default",
+    "@mridang/webhint-hint-extra/tls-kex-params": "default",
+    "@mridang/webhint-hint-extra/tls-ocsp-stapling": "default",
+    "@mridang/webhint-hint-extra/tls-renegotiation-client": "default",
+    "@mridang/webhint-hint-extra/tls-renegotiation-secure": "default",
+    "@mridang/webhint-hint-extra/tls-version": "default",
+    "@mridang/webhint-hint-extra/tls-zero-rtt": "default"
+  }
+}

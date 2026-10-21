@@ -25,6 +25,43 @@ describe('isIdentifierUrl', () => {
   });
 });
 
+describe('checkOauthDiscovery with a JSON 404 fallback', () => {
+  const notFound = {
+    status: 404,
+    contentType: 'application/json',
+    body: '{"error":"not_found"}',
+  };
+  it('passes when only oauth-authorization-server is valid', async () => {
+    const env = fakeEnv(
+      {
+        '/.well-known/oauth-authorization-server': {
+          issuer: 'https://example.com',
+        },
+      },
+      { fallback: notFound },
+    );
+    const r = await checkOauthDiscovery(env);
+    expect(r.passed).toBe(true);
+    expect(r.detail).toContain('oauth-authorization-server');
+  });
+  it('passes when openid-configuration has no issuer but the other is valid', async () => {
+    const env = fakeEnv({
+      '/.well-known/openid-configuration': {},
+      '/.well-known/oauth-authorization-server': {
+        issuer: 'https://example.com',
+      },
+    });
+    expect((await checkOauthDiscovery(env)).passed).toBe(true);
+  });
+  it('names both paths when both fail', async () => {
+    const r = await checkOauthDiscovery(fakeEnv({}, { fallback: notFound }));
+    expect(r.passed).toBe(false);
+    expect(r.detail).toBe(
+      '/.well-known/openid-configuration was not found (HTTP 404); /.well-known/oauth-authorization-server was not found (HTTP 404).',
+    );
+  });
+});
+
 describe('checkOauthDiscovery', () => {
   it('passes with OIDC metadata', async () => {
     const env = fakeEnv({
@@ -68,9 +105,9 @@ describe('checkOauthDiscovery', () => {
 
 describe('checkOauthProtectedResource', () => {
   const path = '/.well-known/oauth-protected-resource';
-  it('passes when the resource is on the site, ignoring www', async () => {
+  it('passes when the resource is the site, ignoring www', async () => {
     const env = fakeEnv({
-      [path]: { resource: 'https://www.example.com/api' },
+      [path]: { resource: 'https://www.example.com' },
     });
     expect((await checkOauthProtectedResource(env)).passed).toBe(true);
   });
@@ -86,6 +123,16 @@ describe('checkOauthProtectedResource', () => {
       'https://example.com/meta.json': { resource: 'https://example.com' },
     });
     expect((await checkOauthProtectedResource(env)).passed).toBe(true);
+  });
+  it('fails for a resource at a path, as the scanner does', async () => {
+    const env = fakeEnv({
+      [path]: { resource: 'https://example.com/api/mcp' },
+    });
+    const outcome = await checkOauthProtectedResource(env);
+    expect(outcome.passed).toBe(false);
+    expect(outcome.detail).toContain(
+      '/.well-known/oauth-protected-resource/api/mcp',
+    );
   });
   it('fails for a resource with a fragment', async () => {
     const env = fakeEnv({ [path]: { resource: 'https://example.com/#x' } });

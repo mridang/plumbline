@@ -4,6 +4,7 @@ import {
   isOk,
   isRecord,
   isText,
+  missingReason,
   parseJsonObject,
   result,
 } from './util.js';
@@ -79,10 +80,18 @@ export async function checkMpp(env: AgentEnv): Promise<CheckResult> {
  */
 export async function checkUcp(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-ucp';
-  const profile = parseJsonObject(await env.probe('/.well-known/ucp'));
+  const probe = await env.probe('/.well-known/ucp');
+  const profile = parseJsonObject(probe);
   const ucp = profile?.ucp;
   if (!isRecord(ucp)) {
-    return result(id, 'commerce', false, 'No UCP profile was found.');
+    return result(
+      id,
+      'commerce',
+      false,
+      profile
+        ? '/.well-known/ucp has no ucp object.'
+        : `${missingReason('/.well-known/ucp', probe)}.`,
+    );
   }
   // ucp.dev: version (YYYY-MM-DD), services and payment_handlers are
   // required, and the registries must exist even when empty.
@@ -112,13 +121,14 @@ export async function checkUcp(env: AgentEnv): Promise<CheckResult> {
  */
 export async function checkAcp(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-acp';
-  const doc = parseJsonObject(await env.probe('/.well-known/acp.json'));
+  const probe = await env.probe('/.well-known/acp.json');
+  const doc = parseJsonObject(probe);
   if (!doc) {
     return result(
       id,
       'commerce',
       false,
-      'No ACP discovery document was found.',
+      `${missingReason('/.well-known/acp.json', probe)}.`,
     );
   }
   // ACP discovery RFC: protocol {name "acp", version}, api_base_url,

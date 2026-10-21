@@ -15,6 +15,11 @@ export interface CheckResult {
   passed: boolean;
   /** One sentence saying what was found (or why nothing was). */
   detail: string;
+  /**
+   * True when a passed check still has something to say (shown as an
+   * informational message by its hint).
+   */
+  note?: boolean;
 }
 
 /** A response the scanner got while probing the site. */

@@ -1,5 +1,5 @@
 import type { AgentEnv, CheckResult, Probe } from './types.js';
-import { isOk, result } from './util.js';
+import { isHtml, isOk, missingReason, result } from './util.js';
 
 /** The directives of a robots.txt file that the agent checks care about. */
 export interface Robots {
@@ -52,7 +52,8 @@ export function parseRobots(body: string): Robots {
 /** Fetches and parses /robots.txt; undefined when it is missing. */
 export async function loadRobots(env: AgentEnv): Promise<Robots | undefined> {
   const probe = await env.probe('/robots.txt');
-  return isOk(probe) ? parseRobots(probe.body) : undefined;
+  // An HTML answer is a soft 404, not a robots.txt.
+  return isOk(probe) && !isHtml(probe) ? parseRobots(probe.body) : undefined;
 }
 
 /**
@@ -63,7 +64,12 @@ export async function checkRobotsTxt(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-robots-txt';
   const probe = await env.probe('/robots.txt');
   if (!isOk(probe)) {
-    return result(id, 'discoverability', false, '/robots.txt was not found.');
+    return result(
+      id,
+      'discoverability',
+      false,
+      `${missingReason('/robots.txt', probe)}.`,
+    );
   }
   if (!/^text\/plain/i.test(probe.contentType)) {
     return result(
@@ -155,32 +161,52 @@ export const AI_BOTS: readonly string[] = [
 ];
 
 /**
- * AI bot rules: robots.txt names at least one known AI crawler in a
- * `User-agent` line. A `*` group alone does not count.
+ * AI bot rules: a valid robots.txt passes. When it names a known AI crawler
+ * the rules are specific; otherwise only the wildcard rules apply, which
+ * passes too (as on isitagentready.com) but carries an informational note.
  */
 export async function checkAiBotRules(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-ai-bot-rules';
   const robots = await loadRobots(env);
   if (!robots) {
-    return result(id, 'bot-access', false, '/robots.txt was not found.');
+    return result(
+      id,
+      'bot-access',
+      false,
+      `${missingReason('/robots.txt', await env.probe('/robots.txt'))}.`,
+    );
+  }
+  if (robots.userAgents.length === 0) {
+    return result(
+      id,
+      'bot-access',
+      false,
+      '/robots.txt has no User-agent directive.',
+    );
   }
   const known = new Set(AI_BOTS.map((bot) => bot.toLowerCase()));
   const named = robots.userAgents.filter((agent) =>
     known.has(agent.toLowerCase()),
   );
-  return named.length > 0
-    ? result(
-        id,
-        'bot-access',
-        true,
-        `robots.txt has rules for ${[...new Set(named)].join(', ')}.`,
-      )
-    : result(
-        id,
-        'bot-access',
-        false,
-        'robots.txt has no rules for any known AI crawler.',
-      );
+  if (named.length > 0) {
+    return result(
+      id,
+      'bot-access',
+      true,
+      `robots.txt has rules for ${[...new Set(named)].join(', ')}.`,
+    );
+  }
+  // isitagentready.com passes a valid robots.txt whose wildcard rules apply
+  // to AI bots; the hint adds an informational note.
+  return {
+    ...result(
+      id,
+      'bot-access',
+      true,
+      `Checked ${AI_BOTS.length} AI bot user agents -- none found, but wildcard rules apply.`,
+    ),
+    note: true,
+  };
 }
 
 /** The three signals defined by contentsignals.org. */
@@ -206,7 +232,12 @@ export async function checkContentSignals(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-content-signals';
   const robots = await loadRobots(env);
   if (!robots) {
-    return result(id, 'bot-access', false, '/robots.txt was not found.');
+    return result(
+      id,
+      'bot-access',
+      false,
+      `${missingReason('/robots.txt', await env.probe('/robots.txt'))}.`,
+    );
   }
   for (const value of robots.contentSignals) {
     const signals = parseContentSignal(value);

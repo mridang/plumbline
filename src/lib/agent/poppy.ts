@@ -4,6 +4,7 @@ import {
   isLoopback,
   isRecord,
   isText,
+  missingReason,
   parseJsonObject,
   result,
 } from './util.js';
@@ -20,8 +21,9 @@ import {
 export async function checkPoppy(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-poppy';
   const fail = (detail: string) => result(id, 'discovery', false, detail);
-  const doc = parseJsonObject(await env.probe('/.well-known/poppy.json'));
-  if (!doc) return fail('No poppy.json was found.');
+  const probe = await env.probe('/.well-known/poppy.json');
+  const doc = parseJsonObject(probe);
+  if (!doc) return fail(`${missingReason('/.well-known/poppy.json', probe)}.`);
   if (!env.origin.startsWith('https://') && !isLoopback(env.host)) {
     return fail('poppy.json must be served over HTTPS.');
   }

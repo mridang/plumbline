@@ -1,0 +1,16 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": ["html"],
+  "hints": {
+    "@mridang/webhint-hint-extra/mail-dane": "default",
+    "@mridang/webhint-hint-extra/mail-dkim": "default",
+    "@mridang/webhint-hint-extra/mail-dmarc": "default",
+    "@mridang/webhint-hint-extra/mail-dnssec": "default",
+    "@mridang/webhint-hint-extra/mail-ipv6": "default",
+    "@mridang/webhint-hint-extra/mail-rpki": "default",
+    "@mridang/webhint-hint-extra/mail-spf": "default",
+    "@mridang/webhint-hint-extra/mail-starttls": "default"
+  }
+}

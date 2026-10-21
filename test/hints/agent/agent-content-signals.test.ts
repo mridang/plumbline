@@ -4,7 +4,10 @@ import hint from '../../../src/hints/agent/agent-content-signals.js';
 import { runHint, type Routes } from '../../helpers/run-hint.js';
 
 const routes: Routes = {
-  '/robots.txt': { body: 'Content-Signal: ai-train=no, search=yes' },
+  '/robots.txt': {
+    headers: { 'content-type': 'text/plain' },
+    body: 'Content-Signal: ai-train=no, search=yes',
+  },
 };
 
 describe('agent-content-signals', () => {

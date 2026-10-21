@@ -1,6 +1,6 @@
 import { loadRobots } from './robots.js';
 import type { AgentEnv, CheckResult } from './types.js';
-import { isRecord, isText, parseJsonObject, result } from './util.js';
+import { isRecord, isText, notFound, parseJsonObject, result } from './util.js';
 
 /**
  * Where a catalog lives: `/.well-known/ard.json` (agenticresourcediscovery.org
@@ -101,7 +101,8 @@ async function candidates(env: AgentEnv): Promise<string[]> {
 export async function checkArd(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-ard';
   let lastProblems: string[] = [];
-  for (const url of await candidates(env)) {
+  const urls = await candidates(env);
+  for (const url of urls) {
     const catalog = parseJsonObject(await env.probe(url));
     if (!catalog) continue;
     lastProblems = catalogProblems(catalog, url.endsWith('ai-catalog.json'));
@@ -115,6 +116,6 @@ export async function checkArd(env: AgentEnv): Promise<CheckResult> {
     false,
     lastProblems.length > 0
       ? `The AI catalog is invalid: ${lastProblems[0]}.`
-      : 'No AI catalog was found.',
+      : await notFound(urls.slice(0, 2), (url) => env.probe(url)),
   );
 }

@@ -131,6 +131,8 @@ describe('checkArd', () => {
   it('fails when no catalog is found, even if DNS errors', async () => {
     const env = fakeEnv();
     env.dns = { query: () => Promise.reject(new Error('down')) };
-    expect((await checkArd(env)).detail).toContain('No AI catalog');
+    expect((await checkArd(env)).detail).toContain(
+      '/.well-known/ard.json was not found',
+    );
   });
 });

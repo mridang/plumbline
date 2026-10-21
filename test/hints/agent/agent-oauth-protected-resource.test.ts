@@ -10,7 +10,7 @@ const json = (value: unknown) => ({
 
 const routes: Routes = {
   '/.well-known/oauth-protected-resource': json({
-    resource: 'http://127.0.0.1/api',
+    resource: 'http://127.0.0.1',
   }),
 };
 

@@ -3,6 +3,7 @@ import {
   firstJson,
   isRecord,
   isText,
+  notFound,
   parseJsonObject,
   result,
 } from './util.js';
@@ -19,6 +20,12 @@ const MCP_CARD_PATHS: readonly string[] = [
   '/.well-known/mcp/server-card.json',
   '/.well-known/mcp/server-cards.json',
   '/.well-known/mcp.json',
+];
+
+const A2A_PATHS = ['/.well-known/agent-card.json', '/.well-known/agent.json'];
+const SKILLS_PATHS = [
+  '/.well-known/agent-skills/index.json',
+  '/.well-known/skills/index.json',
 ];
 
 /** Media type of an MCP server card in an AI catalog (SEP-2127). */
@@ -120,7 +127,12 @@ export async function checkMcpServerCard(env: AgentEnv): Promise<CheckResult> {
       }
     }
   }
-  return result(id, 'discovery', false, 'No MCP server card was found.');
+  return result(
+    id,
+    'discovery',
+    false,
+    await notFound(MCP_CARD_PATHS, (path) => env.probe(path)),
+  );
 }
 
 /**
@@ -135,12 +147,14 @@ export async function checkMcpServerCard(env: AgentEnv): Promise<CheckResult> {
  */
 export async function checkA2aAgentCard(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-a2a-agent-card';
-  const found = await firstJson(
-    ['/.well-known/agent-card.json', '/.well-known/agent.json'],
-    (path) => env.probe(path),
-  );
+  const found = await firstJson(A2A_PATHS, (path) => env.probe(path));
   if (!found) {
-    return result(id, 'discovery', false, 'No A2A agent card was found.');
+    return result(
+      id,
+      'discovery',
+      false,
+      await notFound(A2A_PATHS, (path) => env.probe(path)),
+    );
   }
   const card = found.json;
   const missing = ['name', 'description', 'version'].filter(
@@ -222,12 +236,14 @@ export function skillProblems(skill: unknown): string[] {
  */
 export async function checkSkills(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-skills';
-  const found = await firstJson(
-    ['/.well-known/agent-skills/index.json', '/.well-known/skills/index.json'],
-    (path) => env.probe(path),
-  );
+  const found = await firstJson(SKILLS_PATHS, (path) => env.probe(path));
   if (!found) {
-    return result(id, 'discovery', false, 'No agent skills index was found.');
+    return result(
+      id,
+      'discovery',
+      false,
+      await notFound(SKILLS_PATHS, (path) => env.probe(path)),
+    );
   }
   const { $schema: schema } = found.json;
   if (schema !== undefined && schema !== SKILLS_SCHEMA) {

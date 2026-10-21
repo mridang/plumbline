@@ -1,0 +1,20 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": ["html"],
+  "hints": {
+    "@mridang/webhint-hint-extra/geo-content-extraction": "default",
+    "@mridang/webhint-hint-extra/geo-faq-schema": "default",
+    "@mridang/webhint-hint-extra/geo-organization-schema": "default",
+    "@mridang/webhint-hint-extra/geo-speakable-schema": "default",
+    "@mridang/webhint-hint-extra/geo-structured-data-invalid": "default",
+    "@mridang/webhint-hint-extra/technical-canonical-invalid": "default",
+    "@mridang/webhint-hint-extra/technical-heading-hierarchy": "default",
+    "@mridang/webhint-hint-extra/technical-image-alt-coverage": "default",
+    "@mridang/webhint-hint-extra/technical-image-weight": "default",
+    "@mridang/webhint-hint-extra/technical-redirect-chain": "default",
+    "@mridang/webhint-hint-extra/technical-robots-meta-advanced": "default",
+    "@mridang/webhint-hint-extra/technical-twitter-card-type": "default"
+  }
+}

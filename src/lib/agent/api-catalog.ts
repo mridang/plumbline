@@ -1,5 +1,11 @@
 import type { AgentEnv, CheckResult } from './types.js';
-import { isRecord, isText, parseJsonObject, result } from './util.js';
+import {
+  isRecord,
+  isText,
+  missingReason,
+  parseJsonObject,
+  result,
+} from './util.js';
 
 /**
  * API Catalog (RFC 9727): `/.well-known/api-catalog`, asked for as
@@ -8,13 +14,11 @@ import { isRecord, isText, parseJsonObject, result } from './util.js';
  */
 export async function checkApiCatalog(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-api-catalog';
-  const json = parseJsonObject(
-    await env.probe('/.well-known/api-catalog', {
-      accept: 'application/linkset+json',
-    }),
-  );
+  const path = '/.well-known/api-catalog';
+  const probe = await env.probe(path, { accept: 'application/linkset+json' });
+  const json = parseJsonObject(probe);
   if (!json) {
-    return result(id, 'discovery', false, 'No API catalog was found.');
+    return result(id, 'discovery', false, `${missingReason(path, probe)}.`);
   }
   const linkset = Array.isArray(json.linkset) ? json.linkset : [];
   const valid = linkset.filter(

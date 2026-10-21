@@ -1,11 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
-import { CHECKS } from '../../../src/lib/agent/checks.js';
+import { CHECKS, runCheck } from '../../../src/lib/agent/checks.js';
 import {
   CATEGORY_WEIGHTS,
   LEVELS,
   computeScore,
   levelFor,
 } from '../../../src/lib/agent/score.js';
+import { fakeEnv } from './fake-env.js';
 import type { CheckResult } from '../../../src/lib/agent/types.js';
 
 /** Results where exactly the given ids pass. */
@@ -61,6 +62,38 @@ describe('computeScore', () => {
     expect(by.commerce.counted).toBe(false);
     expect(r.score).toBe(27);
     expect(r.level).toMatchObject({ level: 1, name: 'Basic Web Presence' });
+  });
+  it('reproduces chowdown from what the site really answers', async () => {
+    // Every missing path answers 404 with a JSON error; robots.txt has
+    // wildcard rules only; only oauth-authorization-server exists.
+    const env = fakeEnv(
+      {
+        '/robots.txt': 'User-agent: *\nAllow: /',
+        '/sitemap.xml': {
+          contentType: 'application/xml',
+          body: '<urlset></urlset>',
+        },
+        '/.well-known/oauth-authorization-server': {
+          issuer: 'https://chowdown.example',
+        },
+      },
+      {
+        fallback: {
+          status: 404,
+          contentType: 'application/json',
+          body: '{"error":"not_found"}',
+        },
+        origin: 'https://chowdown.example',
+      },
+    );
+    const real = await Promise.all(CHECKS.map((c) => runCheck(c, env)));
+    const r = computeScore(real, false);
+    const by = Object.fromEntries(r.categories.map((c) => [c.category, c]));
+    expect(by.discoverability).toMatchObject({ passed: 2, total: 4 });
+    expect(by['bot-access']).toMatchObject({ passed: 1, total: 2 });
+    expect(by.discovery).toMatchObject({ passed: 1, total: 8 });
+    expect(r.score).toBe(27);
+    expect(r.level.level).toBe(1);
   });
   it('does not count unscored checks', () => {
     const r = computeScore(

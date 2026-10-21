@@ -32,7 +32,9 @@ export function isHtml(probe: Probe): boolean {
 
 /** Parses the body as JSON; undefined when it is not valid JSON. */
 function parseJson(probe: Probe | null): unknown {
-  if (!probe) {
+  // Only a 200 answer is a document: the body of a 404 (often a JSON
+  // error) or of an HTML soft 404 must never be interpreted.
+  if (!isOk(probe) || isHtml(probe)) {
     return undefined;
   }
   try {
@@ -72,4 +74,30 @@ export function bareHost(host: string): string {
 /** True for host names that are only reachable locally (dev servers). */
 export function isLoopback(host: string): boolean {
   return host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+}
+
+/** Why a probe is not a usable document, in the scanner's words. */
+export function missingReason(path: string, probe: Probe | null): string {
+  if (probe === null) {
+    return `${path} was not found (no response)`;
+  }
+  if (probe.status !== 200) {
+    return `${path} was not found (HTTP ${probe.status})`;
+  }
+  if (isHtml(probe)) {
+    return `${path} was not found (HTML page instead of a document)`;
+  }
+  return `${path} is not a JSON object`;
+}
+
+/** Probes each path again (cached) and explains why none was usable. */
+export async function notFound(
+  paths: readonly string[],
+  probe: (path: string) => Promise<Probe | null>,
+): Promise<string> {
+  const reasons: string[] = [];
+  for (const path of paths) {
+    reasons.push(missingReason(path, await probe(path)));
+  }
+  return `${reasons.join('; ')}.`;
 }

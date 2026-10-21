@@ -1,0 +1,24 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": ["html"],
+  "hints": {
+    "@mridang/webhint-hint-extra/cache-control": "default",
+    "@mridang/webhint-hint-extra/clear-site-data": "default",
+    "@mridang/webhint-hint-extra/coep": "default",
+    "@mridang/webhint-hint-extra/coop": "default",
+    "@mridang/webhint-hint-extra/corp": "default",
+    "@mridang/webhint-hint-extra/csp": "default",
+    "@mridang/webhint-hint-extra/expect-ct": "default",
+    "@mridang/webhint-hint-extra/feature-policy": "default",
+    "@mridang/webhint-hint-extra/hsts": "default",
+    "@mridang/webhint-hint-extra/permissions-policy": "default",
+    "@mridang/webhint-hint-extra/public-key-pins": "default",
+    "@mridang/webhint-hint-extra/referrer-policy": "default",
+    "@mridang/webhint-hint-extra/x-dns-prefetch-control": "default",
+    "@mridang/webhint-hint-extra/x-frame-options": "default",
+    "@mridang/webhint-hint-extra/x-permitted-cross-domain-policies": "default",
+    "@mridang/webhint-hint-extra/x-xss-protection": "default"
+  }
+}

@@ -133,14 +133,31 @@ describe('checkAiBotRules', () => {
   });
   it('passes when a known crawler is named, ignoring case', async () => {
     const env = fakeEnv({ '/robots.txt': 'User-agent: gptbot\nDisallow: /' });
-    expect((await checkAiBotRules(env)).passed).toBe(true);
+    const r = await checkAiBotRules(env);
+    expect(r.passed).toBe(true);
+    expect(r.note).toBeUndefined();
   });
-  it('fails for a wildcard only', async () => {
+  it('passes with a note when only wildcard rules apply', async () => {
     const env = fakeEnv({ '/robots.txt': 'User-agent: *\nDisallow: /' });
-    expect((await checkAiBotRules(env)).passed).toBe(false);
+    const r = await checkAiBotRules(env);
+    expect(r.passed).toBe(true);
+    expect(r.note).toBe(true);
+    expect(r.detail).toContain('none found, but wildcard rules apply');
   });
-  it('fails without robots.txt', async () => {
-    expect((await checkAiBotRules(fakeEnv())).passed).toBe(false);
+  it('fails for a robots.txt without any User-agent', async () => {
+    const env = fakeEnv({ '/robots.txt': 'Disallow: /' });
+    expect((await checkAiBotRules(env)).detail).toContain('no User-agent');
+  });
+  it('fails without robots.txt, saying why', async () => {
+    const r = await checkAiBotRules(fakeEnv({}, { fallback: { status: 404 } }));
+    expect(r.passed).toBe(false);
+    expect(r.detail).toBe('/robots.txt was not found (HTTP 404).');
+  });
+  it('treats an HTML soft 404 as missing', async () => {
+    const env = fakeEnv({
+      '/robots.txt': { contentType: 'text/html', body: 'User-agent: *' },
+    });
+    expect((await checkAiBotRules(env)).passed).toBe(false);
   });
 });
 
