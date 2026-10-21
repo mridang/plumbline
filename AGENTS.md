@@ -1,0 +1,48 @@
+# Agent instructions
+
+This package adds extra hints to [webhint](https://webhint.io). Every hint is a small class built with `defineHint`, listed in the registry, and tested against a real webhint scan.
+
+## Commands
+
+Run every command through devbox, inside this directory.
+
+- `devbox run -- npm test -- --coverage=false <path>` runs tests.
+- `devbox run -- npx tsc --noEmit -p tsconfig.jest.json` type checks source and tests.
+- `devbox run -- npx eslint <paths>` lints. Never suppress a warning inline and never turn a rule off.
+- `devbox run -- npx prettier --write <paths>` formats.
+- `devbox run -- npm run build` compiles to `dist/`.
+
+Do not run `npm install` unless you have been told to. Use Node built-ins and the `@hint/*` packages that are already installed. Do not add a dependency that needs a native binary.
+
+## Layout
+
+- `src/core/` shared helpers: `defineHint`, `groups`, `http` (header helpers), `page` (`onPage`, `onSite`). Do not edit these; add your own helper file instead.
+- `src/lib/` pure logic with no webhint types (parsers, validators, scoring). Put anything non-trivial here so it can be tested without a scan.
+- `src/hints/<set>/<id>.ts` one hint per file, default export of `defineHint(...)`.
+- `src/hints/<set>/index.ts` lists the set's hints in an exported array. This is the only registration needed.
+- `test/` mirrors `src/`: `src/lib/x.ts` is tested by `test/lib/x.test.ts`, and `src/hints/<set>/<id>.ts` by `test/hints/<set>/<id>.test.ts`. Never create a test file named after a feature, a bug or a review. Never create a catch-all test file.
+
+## Writing a hint
+
+A hint has an `id` (kebab-case, unique), a `name`, a one-sentence `description`, a `category`, the `groups` it belongs to, an optional `reference` link, and a `setup(context)` that subscribes to webhint events. Use `onPage` for work on the scanned page (its headers and DOM) and `onSite` for work that fetches other URLs, resolves DNS or opens connections after the scan.
+
+`groups` lists the original source (`observatory`, `owasp`, `opengraph`, `agent-ready`, `webbkoll`, `internetnl`, `files`) and every topic that applies (`security-headers`, `tls`, `dns`, `privacy`, `seo`, `social`, `email`, `agent`). A hint may be in several groups. Keep the original source group even when a check came from more than one source: list each.
+
+Messages state the problem plainly. Report with `severity` `Severity.error` for a failed rule, `Severity.warning` for advice and `Severity.hint` for information. Where a source defines levels, keep them.
+
+Comment generously: a doc comment on every hint saying what is checked, where the rule comes from and why, and inline comments for non-obvious logic.
+
+## Tests
+
+- Unit-test pure logic in `src/lib` directly, with every failure path and edge case.
+- Test each hint with `runHint(hint, routes)` from `test/helpers/run-hint.ts`. It starts a local server, runs one real scan with only that hint switched on and returns the problems. Cover the passing case, each failing case and each warning.
+- Tests never touch the internet. Hints that resolve DNS, query DNS-over-HTTPS, open TLS connections or call third-party APIs take their client as an injectable dependency with a real default, and tests pass a fake or point at a local server.
+- Every rule has a test that fails without it.
+
+## Commits
+
+Conventional Commits, short body under 100 columns, no trailers and no attribution of any kind. The lead commits; agents do not.
+
+## References
+
+Every source is listed in `README.md`. Keep a rule's wording and thresholds faithful to its source, and link the source in the hint's `reference`.
