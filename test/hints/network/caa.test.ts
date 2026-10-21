@@ -25,6 +25,9 @@ describe('caa', () => {
     const problems = await run({});
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toBe('Your domain does not have CAA.');
+    expect(problems[0].sourceCode).toBe(
+      'example.test. IN CAA 0 issue "ca.example.net"',
+    );
   });
 
   it('warns about a syntax error', async () => {
@@ -32,11 +35,18 @@ describe('caa', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('invalid CAA');
     expect(problems[0].message).toContain('iodef');
+    expect(problems[0].sourceCode).toBe(
+      'example.test. IN CAA 0 issue "ca.test"\nexample.test. IN CAA 0 iodef "ftp://x"',
+    );
   });
 
   it('warns about a missing issue property', async () => {
     const problems = await run(caa('0 iodef "mailto:a@example.org"'));
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('insufficiently protective');
+    expect(problems[0].sourceCode).toContain(
+      'example.test. IN CAA 0 iodef "mailto:a@example.org"',
+    );
+    expect(problems[0].sourceCode).toContain('IN CAA 0 issue "ca.example.net"');
   });
 });

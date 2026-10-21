@@ -20,6 +20,7 @@ export default defineHint({
       if (href !== null && !resolvesAsUrl(href, page.url)) {
         page.report(`Canonical href "${href}" is not a valid URL.`, {
           severity: Severity.error,
+          element: page.document.querySelector('link[rel~="canonical" i]'),
         });
       }
     });

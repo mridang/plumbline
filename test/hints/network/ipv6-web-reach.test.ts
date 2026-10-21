@@ -27,6 +27,9 @@ describe('ipv6-web-reach', () => {
     const problems = await runHint(hint);
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('2001:db8::2');
+    expect(problems[0].sourceCode).toBe(
+      'example.test. AAAA 2001:db8::2 ; ports 80 and 443 unreachable',
+    );
   });
 
   it('does nothing without IPv6 addresses', async () => {

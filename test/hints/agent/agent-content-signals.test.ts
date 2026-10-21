@@ -19,5 +19,18 @@ describe('agent-content-signals', () => {
     const problems = await runHint(hint, {});
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.warning);
+    expect(problems[0].resource.endsWith('/robots.txt')).toBe(true);
+    expect(problems[0].sourceCode).toContain('Content-Signal: ai-train=no');
+  });
+
+  it('shows the offending Content-Signal line', async () => {
+    const problems = await runHint(hint, {
+      '/robots.txt': {
+        headers: { 'content-type': 'text/plain' },
+        body: 'Content-Signal: ai-train=maybe',
+      },
+    });
+    expect(problems[0].resource.endsWith('/robots.txt')).toBe(true);
+    expect(problems[0].sourceCode).toBe('Content-Signal: ai-train=maybe');
   });
 });

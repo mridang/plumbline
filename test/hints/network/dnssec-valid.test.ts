@@ -27,6 +27,7 @@ describe('dnssec-valid', () => {
     });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain("'bogus'");
+    expect(problems[0].sourceCode).toContain('example.test. IN SOA');
   });
 
   it('leaves unsigned domains to dnssec-exists', async () => {

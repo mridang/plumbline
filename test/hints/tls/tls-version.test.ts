@@ -34,6 +34,7 @@ describe('tls-version', () => {
       '*insufficiently* secure TLS versions',
     );
     expect(problems[0].message).toContain('TLS 1.1, TLS 1.0');
+    expect(problems[0].sourceCode).toContain('TLS 1.1\nTLS 1.0');
   });
 
   it('says so when it cannot connect', async () => {

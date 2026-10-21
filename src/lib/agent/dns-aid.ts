@@ -64,5 +64,8 @@ export async function checkDnsAid(env: AgentEnv): Promise<CheckResult> {
         'discoverability',
         false,
         `No SVCB or HTTPS record was found under _agents.${env.host}.`,
+        {
+          snippet: `_index._agents.${env.host}. 300 IN SVCB 1 ${env.host}. alpn=h2 port=443`,
+        },
       );
 }

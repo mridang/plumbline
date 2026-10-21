@@ -16,6 +16,9 @@ describe('x-permitted-cross-domain-policies', () => {
 
   it('reports a missing header', async () => {
     const problems = await runHint(hint, page());
+    expect(problems[0]?.sourceCode).toBe(
+      'X-Permitted-Cross-Domain-Policies: none',
+    );
     expect(problems[0]?.message).toContain('was not specified');
   });
 
@@ -23,6 +26,9 @@ describe('x-permitted-cross-domain-policies', () => {
     const problems = await runHint(
       hint,
       page({ 'x-permitted-cross-domain-policies': 'master-only' }),
+    );
+    expect(problems[0]?.sourceCode).toBe(
+      'X-Permitted-Cross-Domain-Policies: master-only',
     );
     expect(problems[0]?.message).toContain("should be 'none'");
   });

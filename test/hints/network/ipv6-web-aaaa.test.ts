@@ -23,6 +23,9 @@ describe('ipv6-web-aaaa', () => {
     });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('None of your web servers');
+    expect(problems[0].sourceCode).toContain(
+      'example.test. IN AAAA <IPv6 address of the web server>',
+    );
   });
 
   it('does not count IPv4-mapped addresses', async () => {

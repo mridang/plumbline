@@ -47,4 +47,23 @@ describe('technical-robots-meta-advanced', () => {
       await runHint(hint, page('', '<meta name="robots" content="noindex">')),
     ).toEqual([]);
   });
+
+  it('suggests a robots meta tag when missing', async () => {
+    const problems = await runHint(hint, page(''));
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain('max-snippet:-1');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
+
+  it('points at an incomplete robots meta tag', async () => {
+    const problems = await runHint(
+      hint,
+      page('', '<meta name="robots" content="index">'),
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain(
+      '<meta name="robots" content="index">',
+    );
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

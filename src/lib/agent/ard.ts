@@ -1,6 +1,14 @@
 import { loadRobots } from './robots.js';
 import type { AgentEnv, CheckResult } from './types.js';
-import { isRecord, isText, notFound, parseJsonObject, result } from './util.js';
+import {
+  isRecord,
+  isText,
+  notFound,
+  parseJsonObject,
+  pretty,
+  result,
+  urlOf,
+} from './util.js';
 
 /**
  * Where a catalog lives: `/.well-known/ard.json` (agenticresourcediscovery.org
@@ -101,11 +109,13 @@ async function candidates(env: AgentEnv): Promise<string[]> {
 export async function checkArd(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-ard';
   let lastProblems: string[] = [];
+  let invalid: { url: string; catalog: Record<string, unknown> } | undefined;
   const urls = await candidates(env);
   for (const url of urls) {
     const catalog = parseJsonObject(await env.probe(url));
     if (!catalog) continue;
     lastProblems = catalogProblems(catalog, url.endsWith('ai-catalog.json'));
+    invalid = { url: urlOf(env, url), catalog };
     if (lastProblems.length === 0) {
       return result(id, 'discovery', true, `${url} is a valid AI catalog.`);
     }
@@ -117,5 +127,20 @@ export async function checkArd(env: AgentEnv): Promise<CheckResult> {
     lastProblems.length > 0
       ? `The AI catalog is invalid: ${lastProblems[0]}.`
       : await notFound(urls.slice(0, 2), (url) => env.probe(url)),
+    invalid && lastProblems.length > 0
+      ? { resource: invalid.url, snippet: pretty(invalid.catalog) }
+      : {
+          resource: urlOf(env, urls[0]),
+          snippet: pretty({
+            entries: [
+              {
+                identifier: `urn:air:${env.host}:example`,
+                displayName: 'Example',
+                type: 'application/mcp-server-card+json',
+                url: `${env.origin}/.well-known/mcp/server-card.json`,
+              },
+            ],
+          }),
+        },
   );
 }

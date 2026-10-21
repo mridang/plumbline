@@ -61,7 +61,8 @@ export default defineHint({
       if (spf.length !== 1) {
         mail.report('Your domain does *not* have a valid SPF record.', {
           severity: Severity.error,
-          codeSnippet: spf.join('\n') || undefined,
+          codeSnippet:
+            spf.join('\n') || `${mail.domain}. IN TXT "v=spf1 mx -all"`,
         });
         return;
       }

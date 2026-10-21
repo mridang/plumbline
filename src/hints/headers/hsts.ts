@@ -32,6 +32,9 @@ import {
  * HSTS makes browsers refuse plain HTTP for the site, which defeats
  * downgrade and cookie hijacking attacks.
  */
+/** The header to add when the site sends none. */
+const HSTS_SUGGESTION = 'max-age=31536000; includeSubDomains';
+
 export default defineHint({
   id: 'hsts',
   name: 'Strict-Transport-Security',
@@ -55,7 +58,11 @@ export default defineHint({
       reportFindings(
         page,
         hstsFindings({ header, secure: isSecure(page.url), profile }),
-        { name: 'Strict-Transport-Security', value: header },
+        {
+          name: 'Strict-Transport-Security',
+          value: header,
+          suggest: HSTS_SUGGESTION,
+        },
       );
     });
 
@@ -77,7 +84,11 @@ export default defineHint({
         site,
         `https://${base}/`,
         baseDomainHstsFindings(host, baseHeader),
-        { name: 'Strict-Transport-Security', value: baseHeader ?? null },
+        {
+          name: 'Strict-Transport-Security',
+          value: baseHeader ?? null,
+          suggest: HSTS_SUGGESTION,
+        },
       );
     });
   },

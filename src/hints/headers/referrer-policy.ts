@@ -1,6 +1,10 @@
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage } from '../../core/page.js';
-import { headerValues, metaContents } from '../../lib/headers/http-headers.js';
+import {
+  headerValues,
+  metaContents,
+  metaElements,
+} from '../../lib/headers/http-headers.js';
 import {
   effectiveReferrerPolicy,
   referrerPolicyFindings,
@@ -49,6 +53,13 @@ export default defineHint({
       reportFindings(page, referrerPolicyFindings(declared, profile), {
         name: 'Referrer-Policy',
         value: declared,
+        suggest:
+          profile === 'owasp'
+            ? 'no-referrer'
+            : 'strict-origin-when-cross-origin',
+        element:
+          metaElements(page.document, 'name', 'referrer').at(-1) ??
+          metaElements(page.document, 'http-equiv', 'referrer-policy').at(-1),
       });
     });
   },

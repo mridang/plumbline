@@ -72,4 +72,18 @@ describe('seo-canonical-mismatch', () => {
   it('ignores a missing canonical', async () => {
     expect(await runHint(hint, pageRoutes({ head: '' }))).toEqual([]);
   });
+
+  it('points at the canonical link', async () => {
+    const problems = await runHint(
+      hint,
+      pageRoutes({
+        head: '<link rel="canonical" href="https://other.example/">',
+      }),
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain(
+      '<link rel="canonical" href="https://other.example/">',
+    );
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

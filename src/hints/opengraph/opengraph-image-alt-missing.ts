@@ -11,6 +11,7 @@ export default defineOgHint({
   name: 'Describe the og:image with alt text',
   description: 'Requires og:image:alt next to og:image.',
   slug: 'missing-og-image-alt',
+  add: '<meta property="og:image:alt" content="Describe the image">',
   severity: Severity.hint,
   extraGroups: ['seo'],
   category: Category.accessibility,

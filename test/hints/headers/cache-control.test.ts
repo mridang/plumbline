@@ -26,11 +26,13 @@ describe('cache-control', () => {
 
   it('reports a missing header when enforced', async () => {
     const problems = await runHint(hint, page(), enforce);
+    expect(problems[0]?.sourceCode).toBe('Cache-Control: no-store, max-age=0');
     expect(problems[0]?.message).toContain('was not specified');
   });
 
   it('reports another value when enforced', async () => {
     const problems = await runHint(hint, page('public, max-age=600'), enforce);
+    expect(problems[0]?.sourceCode).toBe('Cache-Control: public, max-age=600');
     expect(problems[0]?.message).toContain("should be 'no-store, max-age=0'");
   });
 });

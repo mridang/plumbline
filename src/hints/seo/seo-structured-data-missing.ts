@@ -23,7 +23,19 @@ export default defineHint({
       if (!hasJsonLd(page.document)) {
         page.report(
           `No JSON-LD structured data found. Add a <script type="application/ld+json"> block, for example WebPage or Article. Read more: ${REF}`,
-          { severity: Severity.hint },
+          {
+            severity: Severity.hint,
+            element: page.document.querySelector('head'),
+            codeSnippet: `<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "Page title",
+  "url": "${page.url}"
+}
+</script>`,
+            codeLanguage: 'html',
+          },
         );
       }
     });

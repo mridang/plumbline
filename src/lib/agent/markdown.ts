@@ -1,5 +1,5 @@
 import type { AgentEnv, CheckResult } from './types.js';
-import { result } from './util.js';
+import { evidenceFor, result } from './util.js';
 
 /**
  * Markdown negotiation: `GET /` with `Accept: text/markdown` is answered
@@ -28,5 +28,12 @@ export async function checkMarkdownNegotiation(
     'content',
     false,
     'The home page does not return text/markdown when asked for it.',
+    evidenceFor(
+      env,
+      '/',
+      probe,
+      'Content-Type: text/markdown; charset=utf-8',
+      'http',
+    ),
   );
 }

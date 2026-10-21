@@ -23,7 +23,13 @@ export default defineHint({
       if (getMetaDescription(page.document) === null) {
         page.report(
           `The page has no <meta name="description"> tag. Add one of about 120-160 characters. Read more: ${REF}`,
-          { severity: Severity.error },
+          {
+            severity: Severity.error,
+            element: page.document.querySelector('head'),
+            codeSnippet:
+              '<meta name="description" content="A summary of the page of about 120-160 characters.">',
+            codeLanguage: 'html',
+          },
         );
       }
     });

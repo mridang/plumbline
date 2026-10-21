@@ -90,11 +90,13 @@ export default defineHint({
       if (bad.length > 0) {
         report(
           `Your web server supports *insufficiently* secure parameters for Diffie-Hellman key exchange: ${bad.join(', ')}.`,
+          bad.join('\n'),
         );
       }
       if (phaseOut.length > 0) {
         report(
           `Your web server supports parameters for Diffie-Hellman key exchange that should be *phased out* as they are weaker, although you might still use them if absolutely needed. In a future update, they will likely become insufficient: ${phaseOut.join(', ')}.`,
+          phaseOut.join('\n'),
           Severity.warning,
         );
       }

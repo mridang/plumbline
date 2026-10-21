@@ -37,6 +37,9 @@ describe('rpki-ns-exists', () => {
     const problems = await runHint(hint);
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('ns.example.net (192.0.2.9)');
+    expect(problems[0].sourceCode).toBe(
+      'ns.example.net 192.0.2.9 192.0.2.0/24 AS64500 unknown',
+    );
   });
 
   it('does nothing without name server addresses', async () => {

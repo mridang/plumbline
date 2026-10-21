@@ -25,6 +25,7 @@ describe('cors', () => {
       '/': { headers: { 'access-control-allow-origin': '*' } },
     });
     expect(problems).toHaveLength(1);
+    expect(problems[0]?.sourceCode).toBe('Access-Control-Allow-Origin: *');
     expect(problems[0]?.message).toContain('Public content');
   });
 

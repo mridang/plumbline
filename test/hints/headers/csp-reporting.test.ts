@@ -32,6 +32,9 @@ describe('csp-reporting', () => {
       }),
     );
     expect(problems).toHaveLength(1);
+    expect(problems[0]?.sourceCode).toBe(
+      "content-security-policy: default-src 'self'; report-uri https://r.example.net/c",
+    );
     expect(problems[0]?.message).toContain('https://r.example.net/c');
     expect(problems[0]?.message).toContain('Content-Security-Policy header');
   });

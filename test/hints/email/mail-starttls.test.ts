@@ -57,6 +57,7 @@ describe('mail-starttls', () => {
       'At least one of your mail servers does *not* offer STARTTLS.',
     );
     expect(problems[0].severity).toBe(Severity.error);
+    expect(problems[0].sourceCode).toBe('mail.example.test');
   });
 
   it('reports an insufficient TLS version', async () => {
@@ -69,6 +70,7 @@ describe('mail-starttls', () => {
       '*insufficiently* secure TLS versions',
     );
     expect(problems[0].severity).toBe(Severity.error);
+    expect(problems[0].sourceCode).toBe('mail.example.test: TLSv1.1');
   });
 
   it('warns about an untrusted certificate chain', async () => {
@@ -79,6 +81,9 @@ describe('mail-starttls', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('trust chain');
     expect(problems[0].severity).toBe(Severity.warning);
+    expect(problems[0].sourceCode).toBe(
+      'mail.example.test: DEPTH_ZERO_SELF_SIGNED_CERT',
+    );
   });
 
   it('warns about a certificate for another host name', async () => {
@@ -89,6 +94,7 @@ describe('mail-starttls', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('does *not* match the domain name');
     expect(problems[0].severity).toBe(Severity.warning);
+    expect(problems[0].sourceCode).toBe('mail.example.test');
   });
 
   it('gives a hint when the server cannot be reached', async () => {
@@ -99,6 +105,7 @@ describe('mail-starttls', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.hint);
     expect(problems[0].message).toContain('Could not connect');
+    expect(problems[0].sourceCode).toBe('mail.example.test: timed out');
   });
 
   it('passes a real local server end to end', async () => {

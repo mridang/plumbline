@@ -12,6 +12,7 @@ describe('feature-policy', () => {
       '/': { headers: { 'feature-policy': 'camera none' } },
     });
     expect(problems).toHaveLength(1);
+    expect(problems[0]?.sourceCode).toBe('Feature-Policy: camera none');
     expect(problems[0]?.message).toContain(
       "The 'Feature-Policy' header is deprecated",
     );

@@ -34,6 +34,8 @@ describe('cert-hostname', () => {
     expect(problems[0].severity).toBe(Severity.error);
     expect(problems[0].message).toContain('does *not* match');
     expect(problems[0].message).toContain('DNS:other.example.test');
+    expect(problems[0].sourceCode).toContain('Requested host: 127.0.0.1');
+    expect(problems[0].sourceCode).toContain('DNS:other.example.test');
   });
 
   it('says so when it cannot connect', async () => {

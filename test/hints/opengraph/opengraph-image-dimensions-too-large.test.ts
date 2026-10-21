@@ -58,4 +58,22 @@ describe('opengraph-image-dimensions-too-large', () => {
     ).toBe(true);
     expect(problems[0].severity).toBe(Severity.warning);
   });
+
+  it('reports the image URL and carries the og:image tag', async () => {
+    const [problem] = await runHint(
+      hint,
+      page('<meta property="og:image" content="/i.svg">', {
+        '/i.svg': {
+          status: 200,
+          headers: { 'content-type': 'image/svg+xml' },
+          body: '<svg xmlns="http://www.w3.org/2000/svg" width="5000" height="100"></svg>',
+        },
+      }),
+    );
+    expect(problem.resource.endsWith('/i.svg')).toBe(true);
+    expect(problem.sourceCode).toContain(
+      '<meta property="og:image" content="/i.svg">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

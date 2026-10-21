@@ -46,4 +46,17 @@ describe('twitter-card-not-large', () => {
       await runHint(hint, page('<meta name="twitter:card" content="player">')),
     ).toEqual([]);
   });
+
+  it('carries the offending tag and its location', async () => {
+    const [problem] = await runHint(
+      hint,
+      page(
+        '<meta name="twitter:card" content="summary"><meta property="og:image" content="/i.png">',
+      ),
+    );
+    expect(problem.sourceCode).toContain(
+      '<meta name="twitter:card" content="summary">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

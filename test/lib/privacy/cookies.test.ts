@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  cookieLine,
   cookiesFromDocument,
   cookiesFromHeaders,
   describeCookie,
@@ -154,5 +155,22 @@ describe('describeCookie', () => {
     expect(describeCookie(cookie)).toBe(
       'example.com a (session, not Secure, not HttpOnly, no SameSite)',
     );
+  });
+});
+
+describe('cookieLine', () => {
+  it('writes the attributes and never the value', () => {
+    const [cookie] = cookiesFromHeaders(
+      'sid=secret; Path=/a; Secure; SameSite=Lax',
+      'example.com',
+    );
+    expect(cookieLine(cookie)).toBe(
+      'Set-Cookie: sid; Domain=example.com; Path=/a; Secure; SameSite=Lax',
+    );
+  });
+
+  it('writes a script cookie with only its name', () => {
+    const [cookie] = cookiesFromDocument('a=1', 'example.com');
+    expect(cookieLine(cookie)).toBe('Cookie: a');
   });
 });

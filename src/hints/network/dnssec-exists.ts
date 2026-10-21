@@ -27,20 +27,29 @@ export default defineHint({
         site.report(
           site.url.href,
           'Your domain is insecure, because it is not DNSSEC signed.',
-          { severity: Severity.error },
+          {
+            severity: Severity.error,
+            codeSnippet: `${host}. IN SOA ; no AD flag, no DS record found\n<zone>. IN DS <key tag> <algorithm> <digest type> <digest>`,
+          },
         );
       } else if (state === 'servfail') {
         site.report(
           site.url.href,
           'The name servers of your domain are broken. They returned an error (SERVFAIL) to our queries for a DNSSEC signature. Please contact your name server operator (often your hosting provider and/or registrar) to fix this soon.',
-          { severity: Severity.error },
+          {
+            severity: Severity.error,
+            codeSnippet: `${host}. IN SOA ; answered SERVFAIL`,
+          },
         );
       } else if (state === 'error') {
         // The failure is on our side, so it is advice rather than a failure.
         site.report(
           site.url.href,
           'An error occurred in the DNS resolver while checking DNSSEC. The check could not be completed.',
-          { severity: Severity.warning },
+          {
+            severity: Severity.warning,
+            codeSnippet: `${host}. IN SOA ; the lookup failed`,
+          },
         );
       }
     });

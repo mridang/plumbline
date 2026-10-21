@@ -25,7 +25,10 @@ export default defineHint({
         site.report(
           site.url.href,
           'None of your web servers has an IPv6 address.',
-          { severity: Severity.error },
+          {
+            severity: Severity.error,
+            codeSnippet: `${host}. IN AAAA ; none published\n${host}. IN AAAA <IPv6 address of the web server>`,
+          },
         );
       }
     });

@@ -11,6 +11,7 @@ export default defineOgHint({
   name: 'Keep URLs out of og:description',
   description: 'Flags an og:description that starts with a URL.',
   slug: 'description-is-url',
+  at: 'og:description',
   severity: Severity.warning,
   extraGroups: ['seo'],
   check(ctx) {

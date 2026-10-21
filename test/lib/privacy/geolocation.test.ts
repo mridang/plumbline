@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  findGeolocationCall,
   stripCommentsAndStrings,
   usesGeolocation,
 } from '../../../src/lib/privacy/geolocation.js';
@@ -46,5 +47,33 @@ describe('stripCommentsAndStrings', () => {
     expect(stripCommentsAndStrings('x("a\\"b");')).toBe('x("");');
     expect(stripCommentsAndStrings('/* open')).toBe(' ');
     expect(stripCommentsAndStrings('"open')).toBe('""');
+  });
+});
+
+describe('findGeolocationCall', () => {
+  it('returns the line, column and text of the call', () => {
+    expect(
+      findGeolocationCall('var a;\n  navigator.geolocation.watchPosition(f);'),
+    ).toEqual({
+      line: 1,
+      column: 24,
+      text: 'navigator.geolocation.watchPosition(f);',
+    });
+  });
+
+  it('keeps line numbers across comments and strings', () => {
+    expect(
+      findGeolocationCall(
+        '/* a\nb */\nvar s = `x\ny`;\ngeolocation.watchPosition(f)',
+      )?.line,
+    ).toBe(4);
+  });
+
+  it.each([
+    'if (navigator.geolocation) { show(); }',
+    'getCurrentPosition(f)',
+    '// navigator.geolocation.watchPosition(f)',
+  ])('returns null for %s', (source) => {
+    expect(findGeolocationCall(source)).toBeNull();
   });
 });

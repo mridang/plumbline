@@ -51,4 +51,16 @@ describe('seo-meta-description-too-long', () => {
   it('ignores a missing description', async () => {
     expect(await runHint(hint, pageRoutes({ head: '' }))).toEqual([]);
   });
+
+  it('points at the meta description', async () => {
+    const problems = await runHint(
+      hint,
+      pageRoutes({
+        head: '<meta name="description" content="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">',
+      }),
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain('<meta name="description"');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

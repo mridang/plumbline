@@ -73,6 +73,9 @@ describe('tls-renegotiation-secure', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.error);
     expect(problems[0].message).toContain('supports insecure renegotiation');
+    expect(problems[0].sourceCode).toContain(
+      'Secure Renegotiation IS NOT supported',
+    );
   });
 
   realIt('passes against a real server', async () => {

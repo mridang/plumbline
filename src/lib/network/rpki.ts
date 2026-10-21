@@ -76,6 +76,22 @@ export function judgeValidity(all: IpRpki[]): {
   return { verdict: 'good', offenders: [] };
 }
 
+/** One line per entry with the route and its validation state, as evidence. */
+export const rpkiLines = (entries: IpRpki[]): string =>
+  entries
+    .map(({ host, ip, result }) =>
+      [
+        host,
+        ip,
+        result.prefix ?? 'no route',
+        result.asn === null ? null : `AS${result.asn}`,
+        result.status,
+      ]
+        .filter((part) => part !== null)
+        .join(' '),
+    )
+    .join('\n');
+
 /** Renders `host (ip)` pairs for messages. */
 export const describe = (entries: IpRpki[]): string =>
   entries.map((e) => `${e.host} (${e.ip})`).join(', ');

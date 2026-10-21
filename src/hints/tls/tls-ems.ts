@@ -39,7 +39,7 @@ export default defineHint({
         return;
       }
       if (outcome.value === 'not-supported') {
-        report('Your web server does *not* support EMS.');
+        report('Your web server does *not* support EMS.', outcome.evidence);
       }
     });
   },

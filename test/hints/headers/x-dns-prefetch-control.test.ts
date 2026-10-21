@@ -19,6 +19,7 @@ describe('x-dns-prefetch-control', () => {
   it('reports a missing header', async () => {
     const problems = await runHint(hint, page({}));
     expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toBe('X-DNS-Prefetch-Control: off');
     expect(problems[0].message).toContain('was not specified');
   });
 
@@ -28,6 +29,7 @@ describe('x-dns-prefetch-control', () => {
       page({ 'x-dns-prefetch-control': 'on' }),
     );
     expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toBe('X-DNS-Prefetch-Control: on');
     expect(problems[0].message).toContain("should be 'off'");
   });
 });

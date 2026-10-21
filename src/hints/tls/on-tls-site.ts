@@ -10,8 +10,11 @@ import {
 /** What a TLS hint gets: the target and ways to report against it. */
 export interface TlsSite {
   target: TlsTarget;
-  /** Reports a failed rule (an error unless told otherwise). */
-  report(message: string, severity?: Severity): void;
+  /**
+   * Reports a failed rule (an error unless told otherwise) with the evidence
+   * it rests on, shown as the code snippet of the finding.
+   */
+  report(message: string, codeSnippet: string, severity?: Severity): void;
   /** Reports that the check could not be made, as information. */
   couldNotTest(reason: string): void;
 }
@@ -30,11 +33,12 @@ export function onTlsSite(
     const resource = resourceFor(target);
     await check({
       target,
-      report: (message, severity = Severity.error) =>
-        site.report(resource, message, { severity }),
+      report: (message, codeSnippet, severity = Severity.error) =>
+        site.report(resource, message, { severity, codeSnippet }),
       couldNotTest: (reason) =>
         site.report(resource, `Could not test: ${reason}.`, {
           severity: Severity.hint,
+          codeSnippet: `${target.host}:${target.port}`,
         }),
     });
   });

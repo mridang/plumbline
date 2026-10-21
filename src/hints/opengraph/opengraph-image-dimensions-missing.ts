@@ -10,6 +10,7 @@ export default defineOgHint({
   name: 'Declare og:image dimensions',
   description: 'Requires og:image:width and og:image:height next to og:image.',
   slug: 'missing-image-dimensions',
+  add: '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">',
   severity: Severity.warning,
   check(ctx) {
     if (ctx.meta('og:image') === null) {

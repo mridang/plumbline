@@ -20,7 +20,11 @@ export default defineHint({
       if (coverage) {
         page.report(
           `${coverage.missing} of ${coverage.total} <img> tags are missing an alt attribute (${coverage.percent}% coverage). Add descriptive alt text, or alt="" for purely decorative images.`,
-          { severity: coverage.failing ? Severity.error : Severity.warning },
+          {
+            severity: coverage.failing ? Severity.error : Severity.warning,
+            // The first image without an alt attribute.
+            element: page.document.querySelector('img:not([alt])'),
+          },
         );
       }
     });

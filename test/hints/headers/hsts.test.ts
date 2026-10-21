@@ -55,6 +55,9 @@ describe('hsts', () => {
 
   it('owasp: reports a missing header', async () => {
     const problems = await runHint(hint, page(), owasp);
+    expect(problems[0]?.sourceCode).toBe(
+      'Strict-Transport-Security: max-age=31536000; includeSubDomains',
+    );
     expect(problems[0]?.message).toContain('not specified');
   });
 

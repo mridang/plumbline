@@ -40,6 +40,7 @@ export default defineHint({
         .join('; ');
       context.report(url, `localStorage used (${entries.length}): ${list}`, {
         severity: Severity.hint,
+        codeSnippet: entries.map((entry) => truncate(entry.key)).join('\n'),
       });
     });
   },

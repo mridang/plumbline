@@ -6,7 +6,9 @@ import {
   isText,
   missingReason,
   parseJsonObject,
+  pretty,
   result,
+  urlOf,
 } from './util.js';
 
 /**
@@ -31,6 +33,11 @@ export async function checkX402(env: AgentEnv): Promise<CheckResult> {
     'commerce',
     false,
     'No endpoint answers 402 Payment Required.',
+    {
+      resource: urlOf(env, '/api'),
+      snippet: 'HTTP/1.1 402 Payment Required',
+      language: 'http',
+    },
   );
 }
 
@@ -71,6 +78,11 @@ export async function checkMpp(env: AgentEnv): Promise<CheckResult> {
     'commerce',
     false,
     '/openapi.json does not advertise payment info.',
+    {
+      resource: probe?.url ?? urlOf(env, '/openapi.json'),
+      snippet: 'HTTP/1.1 402 Payment Required\nWWW-Authenticate: Payment',
+      language: 'http',
+    },
   );
 }
 
@@ -91,6 +103,18 @@ export async function checkUcp(env: AgentEnv): Promise<CheckResult> {
       profile
         ? '/.well-known/ucp has no ucp object.'
         : `${missingReason('/.well-known/ucp', probe)}.`,
+      {
+        resource: probe?.url ?? urlOf(env, '/.well-known/ucp'),
+        snippet: pretty(
+          profile ?? {
+            ucp: {
+              version: '2026-01-11',
+              services: {},
+              payment_handlers: {},
+            },
+          },
+        ),
+      },
     );
   }
   // ucp.dev: version (YYYY-MM-DD), services and payment_handlers are
@@ -112,6 +136,10 @@ export async function checkUcp(env: AgentEnv): Promise<CheckResult> {
         'commerce',
         false,
         `The UCP profile needs ${missing.join(', ')}.`,
+        {
+          resource: probe?.url ?? urlOf(env, '/.well-known/ucp'),
+          snippet: pretty(ucp),
+        },
       );
 }
 
@@ -129,6 +157,15 @@ export async function checkAcp(env: AgentEnv): Promise<CheckResult> {
       'commerce',
       false,
       `${missingReason('/.well-known/acp.json', probe)}.`,
+      {
+        resource: probe?.url ?? urlOf(env, '/.well-known/acp.json'),
+        snippet: pretty({
+          protocol: { name: 'acp', version: '1.0' },
+          api_base_url: `${env.origin}/acp`,
+          transports: ['rest'],
+          capabilities: {},
+        }),
+      },
     );
   }
   // ACP discovery RFC: protocol {name "acp", version}, api_base_url,
@@ -159,6 +196,10 @@ export async function checkAcp(env: AgentEnv): Promise<CheckResult> {
         'commerce',
         false,
         `The ACP document needs ${missing.join(', ')}.`,
+        {
+          resource: probe?.url ?? urlOf(env, '/.well-known/acp.json'),
+          snippet: pretty(doc),
+        },
       );
 }
 

@@ -63,7 +63,7 @@ export default defineHint({
         site,
         target,
         exactHeaderFindings('Clear-Site-Data', normalised, [EXPECTED]),
-        { name: 'Clear-Site-Data', value },
+        { name: 'Clear-Site-Data', value, suggest: EXPECTED },
       );
     });
   },

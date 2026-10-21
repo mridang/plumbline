@@ -21,6 +21,10 @@ export interface JsonLdBlocks {
   invalid: number;
   /** The parsed value of every valid block. */
   parsed: unknown[];
+  /** Position among the blocks of each entry of `parsed`. */
+  parsedAt: number[];
+  /** Position among the blocks of each invalid one. */
+  invalidAt: number[];
 }
 
 /** Entity types that count for the Organization/Person check. */
@@ -33,15 +37,23 @@ export const ENTITY_TYPE_LABEL = ENTITY_TYPES.join('/');
 export function readJsonLd(doc: JsonLdDocument): JsonLdBlocks {
   const elements = doc.querySelectorAll('script[type="application/ld+json" i]');
   const parsed: unknown[] = [];
-  let invalid = 0;
-  for (const element of elements) {
+  const parsedAt: number[] = [];
+  const invalidAt: number[] = [];
+  elements.forEach((element, index) => {
     try {
       parsed.push(JSON.parse(element.textContent));
+      parsedAt.push(index);
     } catch {
-      invalid++;
+      invalidAt.push(index);
     }
-  }
-  return { total: elements.length, invalid, parsed };
+  });
+  return {
+    total: elements.length,
+    invalid: invalidAt.length,
+    parsed,
+    parsedAt,
+    invalidAt,
+  };
 }
 
 /** True when a node's `@type` is, or (as an array) contains, `type`. */

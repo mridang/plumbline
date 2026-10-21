@@ -140,15 +140,19 @@ describe('probes with a fake openssl', () => {
 
   it('finds compression', async () => {
     fake('Compression: zlib\n', 'compression_methods (len=2)\n');
-    expect(await testCompression(target)).toEqual({
+    expect(await testCompression(target)).toMatchObject({
       kind: 'ok',
       value: 'compressed',
     });
+    const outcome = await testCompression(target);
+    expect(outcome.kind === 'ok' ? outcome.evidence : '').toBe(
+      '$ openssl s_client -connect 127.0.0.1:4433 -tls1_2 -comp -trace\nCompression: zlib',
+    );
   });
 
   it('finds no compression', async () => {
     fake('Compression: NONE\n', 'compression_methods (len=2)\n');
-    expect(await testCompression(target)).toEqual({
+    expect(await testCompression(target)).toMatchObject({
       kind: 'ok',
       value: 'none',
     });
@@ -156,7 +160,7 @@ describe('probes with a fake openssl', () => {
 
   it('knows when openssl cannot offer compression', async () => {
     fake('Compression: NONE\ncompression_methods (len=1)\n');
-    expect(await testCompression(target)).toEqual({
+    expect(await testCompression(target)).toMatchObject({
       kind: 'ok',
       value: 'cannot-compress',
     });
@@ -169,10 +173,14 @@ describe('probes with a fake openssl', () => {
 
   it('finds missing secure renegotiation', async () => {
     fake('Secure Renegotiation IS NOT supported');
-    expect(await testSecureRenegotiation(target)).toEqual({
+    expect(await testSecureRenegotiation(target)).toMatchObject({
       kind: 'ok',
       value: 'not-supported',
     });
+    const outcome = await testSecureRenegotiation(target);
+    expect(outcome.kind === 'ok' ? outcome.evidence : '').toBe(
+      '$ openssl s_client -connect 127.0.0.1:4433 -tls1_2\nSecure Renegotiation IS NOT supported',
+    );
   });
 
   it('fails the secure renegotiation test without a handshake', async () => {
@@ -184,11 +192,15 @@ describe('probes with a fake openssl', () => {
     const done =
       'RENEGOTIATING\nSSL_connect:SSL negotiation finished successfully\n';
     const calls = fake(`Secure Renegotiation IS supported\n${done.repeat(11)}`);
-    expect(await testClientRenegotiation(target)).toEqual({
+    expect(await testClientRenegotiation(target)).toMatchObject({
       kind: 'ok',
       value: 11,
     });
     expect(calls[0]).toContain('-state');
+    const outcome = await testClientRenegotiation(target);
+    expect(outcome.kind === 'ok' ? outcome.evidence : '').toContain(
+      'client renegotiations completed: 11',
+    );
   });
 
   it('fails the client renegotiation test without a handshake', async () => {
@@ -198,15 +210,19 @@ describe('probes with a fake openssl', () => {
 
   it('finds a missing extended master secret', async () => {
     fake('Extended master secret: no');
-    expect(await testExtendedMasterSecret(target)).toEqual({
+    expect(await testExtendedMasterSecret(target)).toMatchObject({
       kind: 'ok',
       value: 'not-supported',
     });
+    const outcome = await testExtendedMasterSecret(target);
+    expect(outcome.kind === 'ok' ? outcome.evidence : '').toContain(
+      'Extended master secret: no',
+    );
   });
 
   it('finds a supported extended master secret', async () => {
     fake('Extended master secret: yes');
-    expect(await testExtendedMasterSecret(target)).toEqual({
+    expect(await testExtendedMasterSecret(target)).toMatchObject({
       kind: 'ok',
       value: 'supported',
     });
@@ -219,16 +235,26 @@ describe('probes with a fake openssl', () => {
 
   it('finds accepted early data', async () => {
     const calls = fake('Early data was accepted');
-    expect(await testZeroRtt(target)).toEqual({ kind: 'ok', value: true });
+    expect(await testZeroRtt(target)).toMatchObject({
+      kind: 'ok',
+      value: true,
+    });
     expect(calls).toHaveLength(2);
     expect(calls[0]).toContain('-sess_out');
     expect(calls[1]).toContain('-sess_in');
     expect(calls[1]).toContain('-early_data');
+    const outcome = await testZeroRtt(target);
+    expect(outcome.kind === 'ok' ? outcome.evidence : '').toContain(
+      'Early data was accepted',
+    );
   });
 
   it('finds refused early data', async () => {
     fake('Early data was rejected');
-    expect(await testZeroRtt(target)).toEqual({ kind: 'ok', value: false });
+    expect(await testZeroRtt(target)).toMatchObject({
+      kind: 'ok',
+      value: false,
+    });
   });
 
   it('fails the 0-RTT test when the session cannot be resumed', async () => {
@@ -284,8 +310,8 @@ describe('probes with the real openssl against a local server', () => {
       const secure = await testSecureRenegotiation(at);
       const ems = await testExtendedMasterSecret(at);
       await server.close();
-      expect(secure).toEqual({ kind: 'ok', value: 'supported' });
-      expect(ems).toEqual({ kind: 'ok', value: 'supported' });
+      expect(secure).toMatchObject({ kind: 'ok', value: 'supported' });
+      expect(ems).toMatchObject({ kind: 'ok', value: 'supported' });
     },
   );
 
@@ -306,7 +332,7 @@ describe('probes with the real openssl against a local server', () => {
     const server = await startServer({ keepOpen: true });
     const outcome = await testZeroRtt({ host: '127.0.0.1', port: server.port });
     await server.close();
-    expect(outcome).toEqual({ kind: 'ok', value: false });
+    expect(outcome).toMatchObject({ kind: 'ok', value: false });
   });
 
   realIt(

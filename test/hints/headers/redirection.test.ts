@@ -50,6 +50,9 @@ describe('redirection', () => {
     fakeSite(() => [200]);
     const problems = await runHint(hint, {});
     expect(problems).toHaveLength(1);
+    expect(problems[0]?.sourceCode).toMatch(
+      /^200 http:\/\/127\.0\.0\.1:\d+\/$/,
+    );
     expect(problems[0]?.message).toContain(
       'Does not redirect to an HTTPS site',
     );

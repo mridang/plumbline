@@ -34,4 +34,14 @@ describe('technical-twitter-card-type', () => {
     );
     expect(problems[0].severity).toBe(Severity.error);
   });
+
+  it('points at the twitter:card tag', async () => {
+    const problems = await runHint(
+      hint,
+      page('', '<meta name="twitter:card" content="bogus">'),
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain('content="bogus"');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

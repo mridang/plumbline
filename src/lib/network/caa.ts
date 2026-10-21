@@ -28,6 +28,11 @@ export interface CaaEvaluation {
 /** Internet.nl's id for "no `issue` property". */
 export const MISSING_ISSUE = 'missing-required-property-issue';
 
+/** Renders a record as a zone file line, for use as report evidence. */
+export function formatCaa(record: CaaRecord, name: string): string {
+  return `${name}. IN CAA ${record.flags} ${record.tag} "${record.value}"`;
+}
+
 /** Decodes the hex of a generic `\# n hex` record into bytes. */
 function fromGeneric(data: string): Buffer | null {
   const m = /^\\#\s+\d+\s*([0-9a-fA-F\s]*)$/.exec(data.trim());

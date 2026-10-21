@@ -41,6 +41,7 @@ export default defineHint({
       if (outcome.value === 'not-supported') {
         report(
           'Your web server supports insecure renegotiation, which is obviously *not* secure.',
+          outcome.evidence,
         );
       }
     });

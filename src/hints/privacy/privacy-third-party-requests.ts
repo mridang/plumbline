@@ -30,6 +30,14 @@ export default defineHint({
       const types = Object.entries(result.byType)
         .map(([type, count]) => `${type}: ${count}`)
         .join(', ');
+      const counts = new Map<string, number>();
+      for (const request of result.thirdParty) {
+        const host = new URL(request.url).hostname.toLowerCase();
+        counts.set(host, (counts.get(host) ?? 0) + 1);
+      }
+      const hosts = [...counts]
+        .map(([host, count]) => `${host}: ${count}`)
+        .join('\n');
       context.report(
         collected.pageUrl,
         `${total} third-party ${total === 1 ? 'request' : 'requests'} ` +
@@ -39,7 +47,10 @@ export default defineHint({
           `${result.thirdPartyHosts.join(', ')}. By type: ${types}. ` +
           `A third-party request is a request to a domain that is not ` +
           `${result.pageDomain} or one of its subdomains.`,
-        { severity: result.insecure > 0 ? Severity.warning : Severity.hint },
+        {
+          severity: result.insecure > 0 ? Severity.warning : Severity.hint,
+          codeSnippet: hosts,
+        },
       );
     });
   },

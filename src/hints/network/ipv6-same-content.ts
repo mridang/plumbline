@@ -29,28 +29,27 @@ export default defineHint({
       if (!host) {
         return;
       }
-      const verdict = await compareIpFamilies(
-        host,
-        await ipv4Addresses(host),
-        await ipv6Addresses(host),
-      );
+      const v4 = await ipv4Addresses(host);
+      const v6 = await ipv6Addresses(host);
+      const verdict = await compareIpFamilies(host, v4, v6);
+      const codeSnippet = `${host}. IN A ${v4.join(', ')}\n${host}. IN AAAA ${v6.join(', ')}`;
       if (verdict === 'bad') {
         site.report(
           site.url.href,
           'Available ports or offered headers of your website via IPv4 are not the same via IPv6.',
-          { severity: Severity.error },
+          { severity: Severity.error, codeSnippet },
         );
       } else if (verdict === 'notice') {
         site.report(
           site.url.href,
           'The HTML content of your website via IPv4 is not the same via IPv6.',
-          { severity: Severity.warning },
+          { severity: Severity.warning, codeSnippet },
         );
       } else if (verdict === 'notice-status-code') {
         site.report(
           site.url.href,
           'Your website via IPv6 looks identical via IPv4, but the HTTP response code is in the 4xx or 5xx range. This may indicate a configuration issue.',
-          { severity: Severity.warning },
+          { severity: Severity.warning, codeSnippet },
         );
       }
     });

@@ -11,6 +11,7 @@ export default defineOgHint({
   name: 'Use more of the og:description space',
   description: 'Flags an og:description of 50 to 70 characters.',
   slug: 'description-could-be-longer',
+  at: 'og:description',
   severity: Severity.hint,
   extraGroups: ['seo'],
   check(ctx) {

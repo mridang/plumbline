@@ -1,4 +1,10 @@
-import type { AgentCategory, CheckResult, Probe } from './types.js';
+import type {
+  AgentCategory,
+  AgentEnv,
+  CheckResult,
+  Evidence,
+  Probe,
+} from './types.js';
 
 /** Builds a check result. */
 export function result(
@@ -6,8 +12,35 @@ export function result(
   category: AgentCategory,
   passed: boolean,
   detail: string,
+  evidence?: Evidence,
 ): CheckResult {
-  return { id, category, passed, detail };
+  return { id, category, passed, detail, ...(evidence ? { evidence } : {}) };
+}
+
+/** The absolute URL of a path on the scanned site. */
+export function urlOf(env: AgentEnv, path: string): string {
+  return new URL(path, env.origin).href;
+}
+
+/** Evidence for a document that may or may not have been fetched. */
+export function evidenceFor(
+  env: AgentEnv,
+  path: string,
+  probe: Probe | null,
+  snippet: string,
+  language?: Evidence['language'],
+): Evidence {
+  return {
+    resource: probe?.url ?? urlOf(env, path),
+    snippet,
+    ...(language ? { language } : {}),
+  };
+}
+
+/** Pretty prints a value as a snippet, cut to `max` characters. */
+export function pretty(value: unknown, max = 800): string {
+  const text = JSON.stringify(value, null, 2);
+  return text.length > max ? `${text.slice(0, max)}\n...` : text;
 }
 
 /** True for a plain object (not null, not an array). */

@@ -34,4 +34,15 @@ describe('opengraph-image-alt-missing', () => {
   it('passes without og:image', async () => {
     expect(await runHint(hint, page(''))).toEqual([]);
   });
+
+  it('carries the head and the tag to add', async () => {
+    const [problem] = await runHint(
+      hint,
+      page('<meta property="og:image" content="/i.png">'),
+    );
+    expect(problem.sourceCode).toBe(
+      '<meta property="og:image:alt" content="Describe the image">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

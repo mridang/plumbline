@@ -63,4 +63,14 @@ describe('seo-meta-description-too-short', () => {
   it('ignores a missing description', async () => {
     expect(await runHint(hint, pageRoutes({ head: '' }))).toEqual([]);
   });
+
+  it('points at the meta description', async () => {
+    const problems = await runHint(
+      hint,
+      pageRoutes({ head: '<meta name="description" content="short">' }),
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain('content="short"');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

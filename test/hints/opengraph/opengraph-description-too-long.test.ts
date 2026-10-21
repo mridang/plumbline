@@ -32,4 +32,17 @@ describe('opengraph-description-too-long', () => {
   it('passes without og:description', async () => {
     expect(await runHint(hint, page(''))).toEqual([]);
   });
+
+  it('carries the offending tag and its location', async () => {
+    const [problem] = await runHint(
+      hint,
+      page(
+        '<meta property="og:description" content="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">',
+      ),
+    );
+    expect(problem.sourceCode).toContain(
+      '<meta property="og:description" content="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

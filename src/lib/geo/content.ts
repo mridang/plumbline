@@ -28,6 +28,8 @@ export interface ContentStats {
   paragraphCount: number;
   /** Length of the longest `<div>` holding text but no heading, p or li. */
   maxUnstructuredLength: number;
+  /** Position of that `<div>` among the root's divs, -1 when there is none. */
+  unstructuredIndex: number;
 }
 
 /**
@@ -45,14 +47,22 @@ export function measureContent(doc: ContentDocument): ContentStats | null {
   ).length;
 
   let maxUnstructuredLength = 0;
-  for (const div of Array.from(root.querySelectorAll('div'))) {
+  let unstructuredIndex = -1;
+  const divs = Array.from(root.querySelectorAll('div'));
+  for (const [index, div] of divs.entries()) {
     // A div with headings or paragraphs inside is already structured.
     if (div.querySelectorAll(`${HEADINGS}, p, li`).length === 0) {
-      maxUnstructuredLength = Math.max(
-        maxUnstructuredLength,
-        div.textContent.trim().length,
-      );
+      const length = div.textContent.trim().length;
+      if (length > maxUnstructuredLength) {
+        maxUnstructuredLength = length;
+        unstructuredIndex = index;
+      }
     }
   }
-  return { headingCount, paragraphCount, maxUnstructuredLength };
+  return {
+    headingCount,
+    paragraphCount,
+    maxUnstructuredLength,
+    unstructuredIndex,
+  };
 }

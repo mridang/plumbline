@@ -1,3 +1,5 @@
+import type { ReportOptions } from 'hint';
+import type { CheckResult } from '../../lib/agent/types.js';
 import { Severity } from '@hint/utils-types';
 import {
   Category,
@@ -21,6 +23,20 @@ export interface AgentHintSpec {
   category?: Category;
 }
 
+/** The code snippet options of a check's evidence, if it has any. */
+function snippetOptions(
+  outcome: CheckResult,
+): Pick<ReportOptions, 'codeLanguage' | 'codeSnippet'> | undefined {
+  const evidence = outcome.evidence;
+  if (!evidence?.snippet) {
+    return undefined;
+  }
+  return {
+    codeSnippet: evidence.snippet,
+    ...(evidence.language ? { codeLanguage: evidence.language } : {}),
+  };
+}
+
 /**
  * Builds the hint for one isitagentready.com check: it runs the check from
  * `src/lib/agent` once the scan is done and reports its detail when the
@@ -39,14 +55,21 @@ export function agentHint(spec: AgentHintSpec): HintDefinition {
         const outcome = await resultFor(context, site, spec.id);
         if (outcome.passed && outcome.note) {
           // A pass that still has an informational conclusion to show.
-          site.report(site.url.href, `${spec.name}: ${outcome.detail}`, {
-            severity: Severity.hint,
-          });
+          site.report(
+            outcome.evidence?.resource ?? site.url.href,
+            `${spec.name}: ${outcome.detail}`,
+            { severity: Severity.hint, ...snippetOptions(outcome) },
+          );
         }
         if (!outcome.passed) {
-          site.report(site.url.href, `${spec.name}: ${outcome.detail}`, {
-            severity: spec.informational ? Severity.hint : Severity.warning,
-          });
+          site.report(
+            outcome.evidence?.resource ?? site.url.href,
+            `${spec.name}: ${outcome.detail}`,
+            {
+              severity: spec.informational ? Severity.hint : Severity.warning,
+              ...snippetOptions(outcome),
+            },
+          );
         }
       });
     },

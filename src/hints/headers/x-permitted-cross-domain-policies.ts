@@ -28,7 +28,11 @@ export default defineHint({
         exactHeaderFindings('X-Permitted-Cross-Domain-Policies', value, [
           'none',
         ]),
-        { name: 'X-Permitted-Cross-Domain-Policies', value },
+        {
+          name: 'X-Permitted-Cross-Domain-Policies',
+          value,
+          suggest: 'none',
+        },
       );
     });
   },

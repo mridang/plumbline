@@ -11,6 +11,7 @@ export default defineOgHint({
   name: 'Keep og:image dimensions reasonable',
   description: 'Flags an og:image over 4096 pixels on a side.',
   slug: 'og-image-dimensions-too-large',
+  image: true,
   severity: Severity.warning,
   category: Category.performance,
   async check(ctx) {

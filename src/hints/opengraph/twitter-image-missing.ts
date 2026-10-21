@@ -10,6 +10,7 @@ export default defineOgHint({
   name: 'Require twitter:image',
   description: 'Requires a twitter:image meta tag.',
   slug: 'missing-twitter-image',
+  add: '<meta name="twitter:image" content="https://example.com/og-image.png">',
   severity: Severity.warning,
   check(ctx) {
     // The article fires only when neither twitter:image nor the og:image fallback exists.

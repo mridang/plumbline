@@ -23,7 +23,12 @@ export default defineHint({
       if (countH1(page.document) === 0) {
         page.report(
           `The page has no <h1> heading. Add one that states the main topic. Read more: ${REF}`,
-          { severity: Severity.warning },
+          {
+            severity: Severity.warning,
+            element: page.document.querySelector('body'),
+            codeSnippet: '<h1>Main topic of the page</h1>',
+            codeLanguage: 'html',
+          },
         );
       }
     });

@@ -10,6 +10,7 @@ export default defineOgHint({
   name: 'Require twitter:title',
   description: 'Requires a twitter:title meta tag.',
   slug: 'missing-twitter-title',
+  add: '<meta name="twitter:title" content="Your page title">',
   severity: Severity.warning,
   check(ctx) {
     return ctx.meta('twitter:title') === null

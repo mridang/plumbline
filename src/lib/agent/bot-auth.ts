@@ -4,8 +4,12 @@ import {
   isOk,
   missingReason,
   parseJsonObject,
+  pretty,
   result,
+  urlOf,
 } from './util.js';
+
+const DIRECTORY = '/.well-known/http-message-signatures-directory';
 
 /**
  * UNVERIFIED: the well-known path and the `keys` check come from
@@ -17,15 +21,19 @@ import {
  */
 export async function checkWebBotAuth(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-web-bot-auth';
-  const probe = await env.probe(
-    '/.well-known/http-message-signatures-directory',
-  );
+  const probe = await env.probe(DIRECTORY);
   if (!isOk(probe) || isHtml(probe)) {
     return result(
       id,
       'bot-access',
       false,
       `${missingReason('/.well-known/http-message-signatures-directory', probe)}.`,
+      {
+        resource: probe?.url ?? urlOf(env, DIRECTORY),
+        snippet: pretty({
+          keys: [{ kty: 'OKP', crv: 'Ed25519', x: '<base64url public key>' }],
+        }),
+      },
     );
   }
   const keys = parseJsonObject(probe)?.keys;
@@ -36,5 +44,8 @@ export async function checkWebBotAuth(env: AgentEnv): Promise<CheckResult> {
         true,
         `The key directory lists ${keys.length} key(s).`,
       )
-    : result(id, 'bot-access', false, 'The key directory has no keys.');
+    : result(id, 'bot-access', false, 'The key directory has no keys.', {
+        resource: probe.url,
+        snippet: pretty(parseJsonObject(probe) ?? probe.body.slice(0, 800)),
+      });
 }

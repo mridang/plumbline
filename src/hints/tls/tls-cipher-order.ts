@@ -55,6 +55,7 @@ export default defineHint({
         const [preferred, expected] = evaluation.violation;
         report(
           `Your web server does *not* enforce its own preference for cipher suites in descending order of their security level: it preferred ${preferred} instead of ${expected}.`,
+          `${legacy}\nServer chose: ${preferred}\nShould have chosen: ${expected}`,
         );
       }
     });

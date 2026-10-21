@@ -21,6 +21,8 @@ describe('ai-txt', () => {
     const problems = await runHint(hint, {});
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('was not found');
+    expect(problems[0].resource).toContain('/ai.txt');
+    expect(problems[0].sourceCode).toContain('User-agent');
   });
 
   it('reports a 404 served by the route', async () => {
@@ -51,8 +53,11 @@ describe('ai-txt', () => {
 
   it('reports an invalid file with a line number', async () => {
     const problems = await runHint(hint, serve(`Allow: images\n`));
-    expect(problems.map((p) => p.message).join()).toContain(
-      'before any User-Agent',
+    const problem = problems.find((p) =>
+      p.message.includes('before any User-Agent'),
     );
+    expect(problem?.resource).toContain('/ai.txt');
+    expect(problem?.sourceCode).toContain('Allow: images');
+    expect(problem?.location.line).toBe(0);
   });
 });

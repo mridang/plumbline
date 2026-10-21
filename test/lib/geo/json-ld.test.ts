@@ -14,11 +14,23 @@ const doc = (...texts: string[]) => ({
 describe('readJsonLd', () => {
   it('parses valid blocks and counts invalid ones', () => {
     const result = readJsonLd(doc('{"a":1}', '{oops', ''));
-    expect(result).toEqual({ total: 3, invalid: 2, parsed: [{ a: 1 }] });
+    expect(result).toEqual({
+      total: 3,
+      invalid: 2,
+      parsed: [{ a: 1 }],
+      parsedAt: [0],
+      invalidAt: [1, 2],
+    });
   });
 
   it('handles no blocks', () => {
-    expect(readJsonLd(doc())).toEqual({ total: 0, invalid: 0, parsed: [] });
+    expect(readJsonLd(doc())).toEqual({
+      total: 0,
+      invalid: 0,
+      parsed: [],
+      parsedAt: [],
+      invalidAt: [],
+    });
   });
 });
 

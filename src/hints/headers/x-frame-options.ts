@@ -46,7 +46,7 @@ export default defineHint({
       reportFindings(
         page,
         frameOptionsFindings({ header, cspFrameAncestors, profile }),
-        { name: 'X-Frame-Options', value: header },
+        { name: 'X-Frame-Options', value: header, suggest: 'DENY' },
       );
     });
   },

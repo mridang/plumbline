@@ -50,4 +50,10 @@ describe('geo-speakable-schema', () => {
     expect(problems[0].severity).toBe(Severity.warning);
     expect(problems[0].message).toContain('No Speakable');
   });
+
+  it('suggests a speakable block in the head', async () => {
+    const problems = await runHint(hint, page([]));
+    expect(problems[0].sourceCode).toContain('SpeakableSpecification');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

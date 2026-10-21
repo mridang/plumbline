@@ -61,4 +61,20 @@ describe('geo-organization-schema', () => {
     expect(problems[0].severity).toBe(Severity.warning);
     expect(problems[0].message).toContain('no sameAs');
   });
+
+  it('suggests an Organization block with sameAs', async () => {
+    const problems = await runHint(hint, page([]));
+    expect(problems[0].sourceCode).toContain('"sameAs"');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
+
+  it('points at the block that lacks sameAs', async () => {
+    const problems = await runHint(
+      hint,
+      page(['{"@type":"WebPage"}', '{"@type":"Organization","name":"Acme"}']),
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain('"name":"Acme"');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

@@ -63,4 +63,14 @@ describe('icons-favicon-svg-missing', () => {
       'https://www.opengraph.to/articles/missing-svg-favicon',
     );
   });
+
+  it('suggests the link to add to the head', async () => {
+    const problems = await runHint(
+      hint,
+      pageRoutes({ head: '<title>A fine page title</title>' }),
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain('image/svg+xml');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

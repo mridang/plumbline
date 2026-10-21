@@ -21,7 +21,12 @@ describe('measureContent', () => {
       measure(
         `<body><h1>a</h1><h2>b</h2><p>${LONG}</p><p>${'y'.repeat(30)}</p><ul><li>${LONG}</li></ul></body>`,
       ),
-    ).toEqual({ headingCount: 2, paragraphCount: 2, maxUnstructuredLength: 0 });
+    ).toEqual({
+      headingCount: 2,
+      paragraphCount: 2,
+      maxUnstructuredLength: 0,
+      unstructuredIndex: -1,
+    });
   });
 
   it('prefers <main> over the rest of the body', () => {

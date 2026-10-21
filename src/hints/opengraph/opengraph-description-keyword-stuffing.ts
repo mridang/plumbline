@@ -12,6 +12,7 @@ export default defineOgHint({
   description:
     'Flags an og:description that repeats the same word excessively.',
   slug: 'description-keyword-stuffing',
+  at: 'og:description',
   severity: Severity.warning,
   extraGroups: ['seo'],
   check(ctx) {

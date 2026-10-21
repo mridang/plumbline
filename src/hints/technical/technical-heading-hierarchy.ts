@@ -20,7 +20,12 @@ export default defineHint({
       if (skipped) {
         page.report(
           `Heading hierarchy skips a level (h${skipped.from} is directly followed by h${skipped.to}). Avoid skipping heading levels.`,
-          { severity: Severity.warning },
+          {
+            severity: Severity.warning,
+            element: page.document.querySelectorAll('h1, h2, h3, h4, h5, h6')[
+              skipped.index
+            ],
+          },
         );
       }
     });

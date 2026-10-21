@@ -37,7 +37,7 @@ export default defineHint({
       );
       reportFindings(page, cookieFindings(cookies, protectedByHsts), {
         name: 'Set-Cookie',
-        value: cookies.join('\n') || null,
+        value: cookies,
       });
     });
   },

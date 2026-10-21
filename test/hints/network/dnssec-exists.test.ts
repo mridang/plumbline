@@ -22,12 +22,17 @@ describe('dnssec-exists', () => {
     const problems = await run({ 'example.test': { SOA: { data: ['x'] } } });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('not DNSSEC signed');
+    expect(problems[0].sourceCode).toContain('example.test. IN SOA');
+    expect(problems[0].sourceCode).toContain('IN DS <key tag>');
   });
 
   it('reports broken name servers', async () => {
     const problems = await run({ 'example.test': { SOA: { status: 2 } } });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('SERVFAIL');
+    expect(problems[0].sourceCode).toBe(
+      'example.test. IN SOA ; answered SERVFAIL',
+    );
   });
 
   it('warns when the resolver fails', async () => {
@@ -36,6 +41,7 @@ describe('dnssec-exists', () => {
     const problems = await runHint(hint);
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('error occurred');
+    expect(problems[0].sourceCode).toContain('example.test. IN SOA');
   });
 
   it('does not report a bogus domain, which is signed', async () => {

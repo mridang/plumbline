@@ -32,4 +32,11 @@ describe('technical-image-alt-coverage', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.error);
   });
+
+  it('points at an image without alt', async () => {
+    const problems = await runHint(hint, page('<img src="/a.png">'));
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain('<img src="/a.png">');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

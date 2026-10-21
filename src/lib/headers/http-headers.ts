@@ -41,19 +41,28 @@ export interface QueryableDocument {
 }
 
 /**
- * Returns the `content` of every `<meta>` whose `attribute` equals `value`
- * (compared case-insensitively), in document order.
+ * Returns every `<meta>` whose `attribute` equals `value` (compared
+ * case-insensitively), in document order.
  */
+export function metaElements<
+  E extends { getAttribute(name: string): string | null },
+>(
+  document: { querySelectorAll(selector: string): Iterable<E> },
+  attribute: 'http-equiv' | 'name',
+  value: string,
+): E[] {
+  return [...document.querySelectorAll(`meta[${attribute}]`)].filter(
+    (meta) => meta.getAttribute(attribute)?.trim().toLowerCase() === value,
+  );
+}
+
+/** Returns the `content` of every `<meta>` found by `metaElements`. */
 export function metaContents(
   document: QueryableDocument,
   attribute: 'http-equiv' | 'name',
   value: string,
 ): string[] {
-  const contents: string[] = [];
-  for (const meta of document.querySelectorAll(`meta[${attribute}]`)) {
-    if (meta.getAttribute(attribute)?.trim().toLowerCase() === value) {
-      contents.push(meta.getAttribute('content') ?? '');
-    }
-  }
-  return contents;
+  return metaElements(document, attribute, value).map(
+    (meta) => meta.getAttribute('content') ?? '',
+  );
 }

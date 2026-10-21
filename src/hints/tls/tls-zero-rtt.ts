@@ -39,7 +39,10 @@ export default defineHint({
         return;
       }
       if (outcome.value) {
-        report('Your web server supports 0-RTT, which is *not* secure.');
+        report(
+          'Your web server supports 0-RTT, which is *not* secure.',
+          outcome.evidence,
+        );
       }
     });
   },

@@ -10,6 +10,7 @@ export default defineOgHint({
   name: 'Require twitter:site',
   description: 'Requires a twitter:site meta tag.',
   slug: 'missing-twitter-site',
+  add: '<meta name="twitter:site" content="@yourhandle">',
   severity: Severity.hint,
   check(ctx) {
     return ctx.meta('twitter:site') === null

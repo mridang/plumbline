@@ -12,6 +12,7 @@ describe('expect-ct', () => {
       '/': { headers: { 'expect-ct': 'max-age=86400, enforce' } },
     });
     expect(problems).toHaveLength(1);
+    expect(problems[0]?.sourceCode).toBe('Expect-CT: max-age=86400, enforce');
     expect(problems[0]?.message).toContain(
       "The 'Expect-CT' header is deprecated",
     );

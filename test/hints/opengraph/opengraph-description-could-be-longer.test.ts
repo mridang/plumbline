@@ -60,4 +60,17 @@ describe('opengraph-description-could-be-longer', () => {
       ),
     ).toEqual([]);
   });
+
+  it('carries the offending tag and its location', async () => {
+    const [problem] = await runHint(
+      hint,
+      page(
+        '<meta property="og:description" content="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">',
+      ),
+    );
+    expect(problem.sourceCode).toContain(
+      '<meta property="og:description" content="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

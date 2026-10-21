@@ -11,6 +11,7 @@ export default defineOgHint({
   name: 'Keep og:title short',
   description: 'Requires og:title to be 60 characters or fewer.',
   slug: 'title-too-long',
+  at: 'og:title',
   severity: Severity.warning,
   extraGroups: ['seo'],
   check(ctx) {

@@ -28,5 +28,19 @@ describe('agent-api-catalog', () => {
     const problems = await runHint(hint, {});
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.warning);
+    expect(problems[0].resource.endsWith('/.well-known/api-catalog')).toBe(
+      true,
+    );
+    expect(problems[0].sourceCode).toContain('service-desc');
+  });
+
+  it('shows the fetched document when it is invalid', async () => {
+    const problems = await runHint(hint, {
+      '/.well-known/api-catalog': json({ linkset: [{ anchor: 'x' }] }),
+    });
+    expect(problems[0].resource.endsWith('/.well-known/api-catalog')).toBe(
+      true,
+    );
+    expect(problems[0].sourceCode).toContain('"anchor": "x"');
   });
 });

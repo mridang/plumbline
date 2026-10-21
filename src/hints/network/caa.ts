@@ -2,7 +2,11 @@ import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onSite } from '../../core/page.js';
 import { siteHost } from '../../lib/network/dns-util.js';
-import { retrieveCaa, MISSING_ISSUE } from '../../lib/network/caa.js';
+import {
+  formatCaa,
+  retrieveCaa,
+  MISSING_ISSUE,
+} from '../../lib/network/caa.js';
 
 /**
  * Internet.nl `caa`: the domain should publish CAA records (found by
@@ -29,21 +33,28 @@ export default defineHint({
       if (!result.found) {
         site.report(site.url.href, 'Your domain does not have CAA.', {
           severity: Severity.warning,
+          codeSnippet: `${host}. IN CAA 0 issue "ca.example.net"`,
         });
         return;
       }
+      const found = result.records
+        .map((record) => formatCaa(record, result.foundOn ?? host))
+        .join('\n');
       const syntax = result.errors.filter((e) => e.id !== MISSING_ISSUE);
       if (syntax.length > 0) {
         site.report(
           site.url.href,
           `Your domain has an invalid CAA (found on ${result.foundOn}): ${syntax.map((e) => e.message).join('; ')}.`,
-          { severity: Severity.warning },
+          { severity: Severity.warning, codeSnippet: found },
         );
       } else if (result.errors.length > 0) {
         site.report(
           site.url.href,
           `Your domain has a valid, but insufficiently protective CAA (found on ${result.foundOn}): Required 'issue' property missing.`,
-          { severity: Severity.warning },
+          {
+            severity: Severity.warning,
+            codeSnippet: `${found}\n${result.foundOn ?? host}. IN CAA 0 issue "ca.example.net"`,
+          },
         );
       }
     });

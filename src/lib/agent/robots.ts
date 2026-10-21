@@ -1,5 +1,12 @@
-import type { AgentEnv, CheckResult, Probe } from './types.js';
-import { isHtml, isOk, missingReason, result } from './util.js';
+import type { AgentEnv, CheckResult, Evidence, Probe } from './types.js';
+import {
+  evidenceFor,
+  isHtml,
+  isOk,
+  missingReason,
+  result,
+  urlOf,
+} from './util.js';
 
 /** The directives of a robots.txt file that the agent checks care about. */
 export interface Robots {
@@ -49,6 +56,26 @@ export function parseRobots(body: string): Robots {
   return robots;
 }
 
+/** A minimal robots.txt to publish. */
+function robotsExample(env: AgentEnv, signal = false): string {
+  return [
+    'User-agent: *',
+    ...(signal ? ['Content-Signal: ai-train=no, search=yes, ai-input=no'] : []),
+    'Allow: /',
+    '',
+    `Sitemap: ${env.origin}/sitemap.xml`,
+  ].join('\n');
+}
+
+/** Evidence for a robots.txt that is missing or lacks something. */
+function robotsEvidence(
+  env: AgentEnv,
+  probe: Probe | null,
+  signal = false,
+): Evidence {
+  return evidenceFor(env, '/robots.txt', probe, robotsExample(env, signal));
+}
+
 /** Fetches and parses /robots.txt; undefined when it is missing. */
 export async function loadRobots(env: AgentEnv): Promise<Robots | undefined> {
   const probe = await env.probe('/robots.txt');
@@ -69,6 +96,7 @@ export async function checkRobotsTxt(env: AgentEnv): Promise<CheckResult> {
       'discoverability',
       false,
       `${missingReason('/robots.txt', probe)}.`,
+      robotsEvidence(env, probe),
     );
   }
   if (!/^text\/plain/i.test(probe.contentType)) {
@@ -77,6 +105,13 @@ export async function checkRobotsTxt(env: AgentEnv): Promise<CheckResult> {
       'discoverability',
       false,
       `/robots.txt is served as '${probe.contentType || 'no content type'}', not text/plain.`,
+      evidenceFor(
+        env,
+        '/robots.txt',
+        probe,
+        `Content-Type: ${probe.contentType || 'text/plain; charset=utf-8'}`,
+        'http',
+      ),
     );
   }
   const robots = parseRobots(probe.body);
@@ -86,6 +121,7 @@ export async function checkRobotsTxt(env: AgentEnv): Promise<CheckResult> {
       'discoverability',
       false,
       '/robots.txt has no User-agent directive.',
+      robotsEvidence(env, probe),
     );
   }
   return result(
@@ -115,9 +151,12 @@ export async function checkSitemap(env: AgentEnv): Promise<CheckResult> {
   const robots = await loadRobots(env);
   const declared = robots?.sitemaps ?? [];
   const candidates = declared.length > 0 ? declared : ['/sitemap.xml'];
+  let first: Probe | null = null;
   // A handful of sitemaps is enough to prove the site has one.
-  for (const candidate of candidates.slice(0, 5)) {
-    if (isSitemap(await env.probe(candidate))) {
+  for (const [index, candidate] of candidates.slice(0, 5).entries()) {
+    const probe = await env.probe(candidate);
+    if (index === 0) first = probe;
+    if (isSitemap(probe)) {
       return result(
         id,
         'discoverability',
@@ -133,6 +172,12 @@ export async function checkSitemap(env: AgentEnv): Promise<CheckResult> {
     declared.length > 0
       ? 'No Sitemap listed in robots.txt is a valid XML sitemap.'
       : 'robots.txt lists no Sitemap and /sitemap.xml is not a valid sitemap.',
+    evidenceFor(
+      env,
+      candidates[0],
+      first,
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>${env.origin}/</loc></url>\n</urlset>`,
+    ),
   );
 }
 
@@ -168,12 +213,14 @@ export const AI_BOTS: readonly string[] = [
 export async function checkAiBotRules(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-ai-bot-rules';
   const robots = await loadRobots(env);
+  const probe = await env.probe('/robots.txt');
   if (!robots) {
     return result(
       id,
       'bot-access',
       false,
-      `${missingReason('/robots.txt', await env.probe('/robots.txt'))}.`,
+      `${missingReason('/robots.txt', probe)}.`,
+      robotsEvidence(env, probe),
     );
   }
   if (robots.userAgents.length === 0) {
@@ -182,6 +229,7 @@ export async function checkAiBotRules(env: AgentEnv): Promise<CheckResult> {
       'bot-access',
       false,
       '/robots.txt has no User-agent directive.',
+      robotsEvidence(env, probe),
     );
   }
   const known = new Set(AI_BOTS.map((bot) => bot.toLowerCase()));
@@ -204,6 +252,12 @@ export async function checkAiBotRules(env: AgentEnv): Promise<CheckResult> {
       'bot-access',
       true,
       `Checked ${AI_BOTS.length} AI bot user agents -- none found, but wildcard rules apply.`,
+      evidenceFor(
+        env,
+        '/robots.txt',
+        probe,
+        'User-agent: GPTBot\nDisallow: /private/',
+      ),
     ),
     note: true,
   };
@@ -231,12 +285,14 @@ export function parseContentSignal(value: string): Record<string, boolean> {
 export async function checkContentSignals(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-content-signals';
   const robots = await loadRobots(env);
+  const probe = await env.probe('/robots.txt');
   if (!robots) {
     return result(
       id,
       'bot-access',
       false,
-      `${missingReason('/robots.txt', await env.probe('/robots.txt'))}.`,
+      `${missingReason('/robots.txt', probe)}.`,
+      robotsEvidence(env, probe, true),
     );
   }
   for (const value of robots.contentSignals) {
@@ -257,5 +313,16 @@ export async function checkContentSignals(env: AgentEnv): Promise<CheckResult> {
     robots.contentSignals.length > 0
       ? 'The Content-Signal directive has no valid ai-train, search or ai-input value.'
       : 'robots.txt has no Content-Signal directive.',
+    robots.contentSignals.length > 0
+      ? {
+          resource: probe?.url ?? urlOf(env, '/robots.txt'),
+          snippet: `Content-Signal: ${robots.contentSignals[0]}`,
+        }
+      : evidenceFor(
+          env,
+          '/robots.txt',
+          probe,
+          'User-agent: *\nContent-Signal: ai-train=no, search=yes, ai-input=no',
+        ),
   );
 }

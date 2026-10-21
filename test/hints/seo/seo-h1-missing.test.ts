@@ -38,4 +38,14 @@ describe('seo-h1-missing', () => {
       'https://www.opengraph.to/articles/missing-h1',
     );
   });
+
+  it('suggests an h1', async () => {
+    const problems = await runHint(
+      hint,
+      pageRoutes({ head: '', body: '<p>text</p>' }),
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain('<h1>');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

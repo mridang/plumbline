@@ -3,6 +3,7 @@ import { Category, defineHint } from '../../core/define-hint.js';
 import {
   cookiesFromDocument,
   cookiesFromHeaders,
+  cookieLine,
   describeCookie,
   summarizeCookies,
   type CookieRecord,
@@ -70,7 +71,13 @@ export default defineHint({
           '.' +
           list('First-party cookies', summary.firstParty) +
           list('Third-party cookies', summary.thirdParty),
-        { severity: third > 0 ? Severity.warning : Severity.hint },
+        {
+          severity: third > 0 ? Severity.warning : Severity.hint,
+          codeSnippet: [...summary.firstParty, ...summary.thirdParty]
+            .map(cookieLine)
+            .join('\n'),
+          codeLanguage: 'http',
+        },
       );
     });
   },

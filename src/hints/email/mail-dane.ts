@@ -86,13 +86,26 @@ export default defineHint({
       if (missing.length > 0) {
         mail.report(
           'At least one of your mail server domains does *not* provide a TLSA record for DANE.',
-          { severity: Severity.error, codeSnippet: missing.join('\n') },
+          {
+            severity: Severity.error,
+            codeSnippet: missing
+              .map(
+                (host) =>
+                  `_25._tcp.${host}. IN TLSA 3 1 1 <SHA-256 of the certificate public key>`,
+              )
+              .join('\n'),
+          },
         );
       }
       if (bogus.length > 0) {
         mail.report(
           'At least one of your mail server domains does *not* provide DNSSEC proof that DANE TLSA records do not exist. This could lead to non-deliverability of mail sent to you by DANE validating mail senders. You should ask your name server operator to fix this issue.',
-          { severity: Severity.error, codeSnippet: bogus.join('\n') },
+          {
+            severity: Severity.error,
+            codeSnippet: bogus
+              .map((host) => `_25._tcp.${host}. IN TLSA ; SERVFAIL`)
+              .join('\n'),
+          },
         );
       }
       if (invalid.length > 0) {

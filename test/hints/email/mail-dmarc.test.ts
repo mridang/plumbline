@@ -28,6 +28,9 @@ describe('mail-dmarc', () => {
     expect(problems.map((p) => p.message)).toEqual([
       'Your domain does *not* have a DMARC record.',
     ]);
+    expect(problems[0].sourceCode).toBe(
+      '_dmarc.example.test. IN TXT "v=DMARC1; p=quarantine; rua=mailto:dmarc@example.test"',
+    );
   });
 
   it('ignores TXT records that are not DMARC', async () => {
@@ -42,6 +45,9 @@ describe('mail-dmarc', () => {
     });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('does *not* have a DMARC record');
+    expect(problems[0].sourceCode).toBe(
+      'v=DMARC1; p=reject\nv=DMARC1; p=quarantine',
+    );
   });
 
   it('is silent when the lookup fails', async () => {
@@ -53,6 +59,7 @@ describe('mail-dmarc', () => {
     expect(problems.map((p) => p.message)).toEqual([
       'Your DMARC policy is *not* syntactically correct.',
     ]);
+    expect(problems[0].sourceCode).toBe('v=DMARC1; p=allow');
   });
 
   it('reports a policy of none', async () => {
@@ -61,6 +68,7 @@ describe('mail-dmarc', () => {
       'Your DMARC policy is *not* sufficiently strict.',
     ]);
     expect(problems[0].severity).toBe(Severity.error);
+    expect(problems[0].sourceCode).toBe('v=DMARC1; p=none');
   });
 
   it('reports quarantine in test mode', async () => {
@@ -76,6 +84,9 @@ describe('mail-dmarc', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('external mail address');
     expect(problems[0].severity).toBe(Severity.warning);
+    expect(problems[0].sourceCode).toBe(
+      'v=DMARC1; p=reject; rua=mailto:r@vendor.test',
+    );
   });
 
   it('accepts an authorised external report address', async () => {

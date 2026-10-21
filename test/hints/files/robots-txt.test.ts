@@ -26,6 +26,8 @@ describe('robots-txt', () => {
     const problems = await runHint(hint, {});
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('was not found');
+    expect(problems[0].resource).toContain('/robots.txt');
+    expect(problems[0].sourceCode).toContain('Sitemap:');
   });
 
   it('reports a 404 served by the route', async () => {
@@ -62,8 +64,11 @@ describe('robots-txt', () => {
       hint,
       serve(`User-agent: *\nDisallow: private\n`),
     );
-    expect(problems.map((p) => p.message).join()).toContain(
-      "must start with '/'",
+    const problem = problems.find((p) =>
+      p.message.includes("must start with '/'"),
     );
+    expect(problem?.resource).toContain('/robots.txt');
+    expect(problem?.sourceCode).toContain('Disallow: private');
+    expect(problem?.location.line).toBe(1);
   });
 });

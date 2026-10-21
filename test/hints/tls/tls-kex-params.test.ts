@@ -37,6 +37,7 @@ describe('tls-kex-params', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.warning);
     expect(problems[0].message).toContain('ECDH-secp224r1');
+    expect(problems[0].sourceCode).toContain('ECDH-secp224r1');
   });
 
   it('reports an insufficient curve', async () => {
@@ -44,6 +45,7 @@ describe('tls-kex-params', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.error);
     expect(problems[0].message).toContain('ECDH-secp256k1');
+    expect(problems[0].sourceCode).toContain('ECDH-secp256k1');
   });
 
   it('reports finite field Diffie-Hellman with a small group', async () => {
@@ -55,6 +57,7 @@ describe('tls-kex-params', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.error);
     expect(problems[0].message).toContain('DH-2048');
+    expect(problems[0].sourceCode).toContain('DH-2048');
   });
 
   it('says so when it cannot connect', async () => {

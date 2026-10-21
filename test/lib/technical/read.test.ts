@@ -30,7 +30,7 @@ describe('headings', () => {
     ]);
   });
   it('finds a skipped level', () => {
-    expect(firstSkippedLevel([1, 2, 4])).toEqual({ from: 2, to: 4 });
+    expect(firstSkippedLevel([1, 2, 4])).toEqual({ from: 2, to: 4, index: 2 });
   });
   it('accepts going back up and one step down', () => {
     expect(firstSkippedLevel([1, 2, 3, 1, 2])).toBeNull();

@@ -36,4 +36,17 @@ describe('opengraph-description-keyword-stuffing', () => {
   it('passes without og:description', async () => {
     expect(await runHint(hint, page(''))).toEqual([]);
   });
+
+  it('carries the offending tag and its location', async () => {
+    const [problem] = await runHint(
+      hint,
+      page(
+        '<meta property="og:description" content="cheap shoes buy shoes best shoes online shoes">',
+      ),
+    );
+    expect(problem.sourceCode).toContain(
+      '<meta property="og:description" content="cheap shoes buy shoes best shoes online shoes">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

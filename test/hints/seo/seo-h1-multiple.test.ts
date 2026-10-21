@@ -44,4 +44,14 @@ describe('seo-h1-multiple', () => {
       await runHint(hint, pageRoutes({ head: '', body: '<p>x</p>' })),
     ).toEqual([]);
   });
+
+  it('points at the extra h1', async () => {
+    const problems = await runHint(
+      hint,
+      pageRoutes({ head: '', body: '<h1>a</h1><h1>second</h1>' }),
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain('<h1>second</h1>');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

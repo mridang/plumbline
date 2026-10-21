@@ -32,6 +32,12 @@ describe('cert-trust', () => {
     expect(problems[0].severity).toBe(Severity.error);
     expect(problems[0].message).toContain('*not* complete and/or *not* signed');
     expect(problems[0].message).toContain('UNABLE_TO_VERIFY_LEAF_SIGNATURE');
+    expect(problems[0].sourceCode).toContain(
+      'Error: UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+    );
+    expect(problems[0].sourceCode).toContain(
+      'Certificate 1: CN=localhost, issued by CN=',
+    );
   });
 
   it('says so when it cannot connect', async () => {

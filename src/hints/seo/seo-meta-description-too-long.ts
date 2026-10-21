@@ -25,7 +25,10 @@ export default defineHint({
       if (description !== null && description.length > MAX) {
         page.report(
           `The meta description is ${description.length} characters long; keep it to ${MAX} or fewer (150-160 is ideal) so it is not truncated. Read more: ${REF}`,
-          { severity: Severity.hint },
+          {
+            severity: Severity.hint,
+            element: page.document.querySelector('meta[name="description" i]'),
+          },
         );
       }
     });

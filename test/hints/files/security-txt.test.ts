@@ -31,6 +31,8 @@ describe('security-txt', () => {
     const problems = await runHint(hint, {});
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('was not found');
+    expect(problems[0].resource).toContain('/.well-known/security.txt');
+    expect(problems[0].sourceCode).toContain('Contact: mailto:');
   });
 
   it('reports a 404 served by the route', async () => {

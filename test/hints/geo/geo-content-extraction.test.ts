@@ -52,4 +52,19 @@ describe('geo-content-extraction', () => {
       await runHint(hint, page(`<h1>T</h1><div>${'a'.repeat(800)}</div>`)),
     ).toEqual([]);
   });
+
+  it('points at the body when there is no structure', async () => {
+    const problems = await runHint(hint, page('<span>text</span>'));
+    expect(problems[0].sourceCode).toContain('<body>');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
+
+  it('points at the unstructured block', async () => {
+    const problems = await runHint(
+      hint,
+      page(`<h1>Title</h1><div id="wall">${'a'.repeat(801)}</div>`),
+    );
+    expect(problems[0].sourceCode).toContain('<div id="wall">');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

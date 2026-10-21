@@ -11,6 +11,7 @@ export default defineOgHint({
   name: 'Trim a slightly long og:description',
   description: 'Flags an og:description of 161 to 200 characters.',
   slug: 'description-slightly-long',
+  at: 'og:description',
   severity: Severity.hint,
   extraGroups: ['seo'],
   check(ctx) {

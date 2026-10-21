@@ -7,6 +7,16 @@ import type { DnsResponse, DnsType } from '../../core/dns.js';
 export type AgentCategory =
   'discoverability' | 'content' | 'bot-access' | 'discovery' | 'commerce';
 
+/** What a failed check shows next to its message. */
+export interface Evidence {
+  /** The URL that was inspected; the page when left out. */
+  resource?: string;
+  /** The offending part of a document, or an example of what to publish. */
+  snippet?: string;
+  /** `http` for headers, `html` for markup; plain text when left out. */
+  language?: 'http' | 'html';
+}
+
 /** The outcome of one check. */
 export interface CheckResult {
   /** The hint id of the check, for example `agent-robots-txt`. */
@@ -20,6 +30,8 @@ export interface CheckResult {
    * informational message by its hint).
    */
   note?: boolean;
+  /** Where and what the hint should point at when it reports. */
+  evidence?: Evidence;
 }
 
 /** A response the scanner got while probing the site. */

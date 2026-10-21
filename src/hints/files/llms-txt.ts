@@ -21,6 +21,8 @@ export default defineHint({
         label: 'llms.txt',
         mediaTypes: ['text/plain', 'text/markdown'],
         missing: 'warning',
+        example: (origin) =>
+          `# ${new URL(origin).hostname}\n\n> One sentence describing the site.\n\n## Docs\n\n- [Home](${origin}/): What the page offers\n`,
         validate: (text) => validateLlmsTxt(text),
       });
     });

@@ -29,13 +29,19 @@ export default defineHint({
         site.report(
           site.url.href,
           'Your website domain does not contain a TLSA record for DANE.',
-          { severity: Severity.hint },
+          {
+            severity: Severity.hint,
+            codeSnippet: `_443._tcp.${host}. IN TLSA 3 1 1 <SHA-256 of the certificate public key>`,
+          },
         );
       } else if (result.state === 'bogus') {
         site.report(
           site.url.href,
           'Your website domain does not provide DNSSEC proof that DANE TLSA records do not exist. You should ask your name server operator to fix this issue.',
-          { severity: Severity.error },
+          {
+            severity: Severity.error,
+            codeSnippet: `_443._tcp.${host}. IN TLSA ; the DNSSEC proof of the answer did not validate (SERVFAIL)`,
+          },
         );
       }
     });

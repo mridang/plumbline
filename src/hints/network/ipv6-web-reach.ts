@@ -29,7 +29,12 @@ export default defineHint({
         site.report(
           site.url.href,
           `At least one of your web servers with an IPv6 address is not reachable over IPv6: ${bad.join(', ')}.`,
-          { severity: Severity.error },
+          {
+            severity: Severity.error,
+            codeSnippet: bad
+              .map((ip) => `${host}. AAAA ${ip} ; ports 80 and 443 unreachable`)
+              .join('\n'),
+          },
         );
       }
     });

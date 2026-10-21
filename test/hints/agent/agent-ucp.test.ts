@@ -23,5 +23,7 @@ describe('agent-ucp', () => {
     const problems = await runHint(hint, {});
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.hint);
+    expect(problems[0].resource.endsWith('/.well-known/ucp')).toBe(true);
+    expect(problems[0].sourceCode).toContain('payment_handlers');
   });
 });

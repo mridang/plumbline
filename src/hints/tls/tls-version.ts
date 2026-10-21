@@ -33,11 +33,13 @@ export default defineHint({
       if (bad.length > 0) {
         report(
           `Your web server supports *insufficiently* secure TLS versions: ${bad.map(formatVersion).join(', ')}.`,
+          bad.map(formatVersion).join('\n'),
         );
       }
       if (phaseOut.length > 0) {
         report(
           `Your web server supports TLS versions that should be *phased out* deliberately, because they are known to be fragile and at risk of becoming *insufficiently* secure: ${phaseOut.map(formatVersion).join(', ')}.`,
+          phaseOut.map(formatVersion).join('\n'),
           Severity.warning,
         );
       }

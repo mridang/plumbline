@@ -22,6 +22,9 @@ describe('mail-spf', () => {
     expect(problems[0].message).toBe(
       'Your domain does *not* have a valid SPF record.',
     );
+    expect(problems[0].sourceCode).toBe(
+      'example.test. IN TXT "v=spf1 mx -all"',
+    );
   });
 
   it('reports a domain that does not exist as TXT', async () => {
@@ -37,6 +40,7 @@ describe('mail-spf', () => {
     });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('does *not* have a valid SPF record');
+    expect(problems[0].sourceCode).toBe('v=spf1 -all\nv=spf1 ~all');
   });
 
   it('is silent when the lookup fails', async () => {
@@ -50,6 +54,7 @@ describe('mail-spf', () => {
     expect(problems.map((p) => p.message)).toEqual([
       'Your SPF policy is *not* syntactically correct.',
     ]);
+    expect(problems[0].sourceCode).toBe('example.test: v=spf1 nonsense -all');
   });
 
   it('reports a weak policy', async () => {
@@ -57,6 +62,7 @@ describe('mail-spf', () => {
     expect(problems.map((p) => p.message)).toEqual([
       'Your SPF policy is *not* sufficiently strict.',
     ]);
+    expect(problems[0].sourceCode).toBe('example.test: v=spf1 mx ?all');
   });
 
   it('reports more than ten lookups', async () => {

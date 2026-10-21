@@ -50,4 +50,10 @@ describe('geo-faq-schema', () => {
     expect(problems[0].severity).toBe(Severity.warning);
     expect(problems[0].message).toContain('No FAQPage');
   });
+
+  it('suggests a FAQPage block in the head', async () => {
+    const problems = await runHint(hint, page([]));
+    expect(problems[0].sourceCode).toContain('"@type": "FAQPage"');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

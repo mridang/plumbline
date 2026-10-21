@@ -59,5 +59,7 @@ describe('agent-ard', () => {
     const problems = await runHint(hint, {});
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.warning);
+    expect(problems[0].resource.endsWith('/.well-known/ard.json')).toBe(true);
+    expect(problems[0].sourceCode).toContain('urn:air:');
   });
 });

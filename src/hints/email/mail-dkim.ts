@@ -53,7 +53,10 @@ export default defineHint({
       if (selectors.length === 0) {
         mail.report(
           'DKIM keys cannot be discovered without their selectors, which only appear in the headers of mail the domain sends. Configure the `selectors` option of this hint to check the DKIM records of the domain.',
-          { severity: Severity.hint },
+          {
+            severity: Severity.hint,
+            codeSnippet: `<selector>._domainkey.${mail.domain}. IN TXT "v=DKIM1; k=rsa; p=<public key>"`,
+          },
         );
         return;
       }

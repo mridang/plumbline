@@ -1,5 +1,5 @@
 import { Severity } from '@hint/utils-types';
-import type { FileIssue } from '../../lib/files/issue.js';
+import { splitLines, type FileIssue } from '../../lib/files/issue.js';
 import type { Site } from '../../core/page.js';
 
 const SEVERITY = {
@@ -17,6 +17,8 @@ export interface CheckFileOptions {
   mediaTypes: readonly string[];
   /** Severity when the file is missing. */
   missing: 'error' | 'warning' | 'hint';
+  /** A minimal valid file, shown when the file is missing. */
+  example(origin: string): string;
   /** Validates the body. */
   validate(text: string, url: string): FileIssue[];
 }
@@ -36,6 +38,7 @@ export async function checkFile(
     const status = data ? ` (HTTP ${data.response.statusCode})` : '';
     site.report(url, `${o.label} was not found${status}.`, {
       severity: SEVERITY[o.missing],
+      codeSnippet: o.example(site.origin),
     });
     return false;
   }
@@ -52,13 +55,16 @@ export async function checkFile(
       severity: Severity.error,
     });
   }
-  for (const issue of o.validate(data.response.body.content, url)) {
+  const body = data.response.body.content;
+  const lines = splitLines(body);
+  for (const issue of o.validate(body, url)) {
+    const snippet = issue.snippet ?? (issue.line ? lines[issue.line - 1] : '');
     site.report(url, issue.message, {
       severity: SEVERITY[issue.severity],
       ...(issue.line
         ? {
             location: { column: 0, line: issue.line - 1 },
-            codeSnippet: issue.snippet,
+            ...(snippet ? { codeSnippet: snippet } : {}),
           }
         : {}),
     });

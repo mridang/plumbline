@@ -100,4 +100,22 @@ describe('opengraph-image-non-optimal-size', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('1250x654');
   });
+
+  it('reports the image URL and carries the og:image tag', async () => {
+    const [problem] = await runHint(
+      hint,
+      page('<meta property="og:image" content="/i.svg">', {
+        '/i.svg': {
+          status: 200,
+          headers: { 'content-type': 'image/svg+xml' },
+          body: '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400"></svg>',
+        },
+      }),
+    );
+    expect(problem.resource.endsWith('/i.svg')).toBe(true);
+    expect(problem.sourceCode).toContain(
+      '<meta property="og:image" content="/i.svg">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

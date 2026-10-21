@@ -3,6 +3,7 @@ import { X509Certificate, createHash } from 'node:crypto';
 import {
   daneExistence,
   daneValidity,
+  formatTlsa,
   parseTlsa,
   tls,
   tlsaMatches,
@@ -165,5 +166,16 @@ describe('daneValidity', () => {
     ).toBe('invalid');
     tls.fetchChain = async () => null;
     expect(await daneValidity('example.test', good)).toBe('untested');
+  });
+});
+
+describe('formatTlsa', () => {
+  it('renders a zone file line', () => {
+    expect(
+      formatTlsa(
+        { usage: 3, selector: 1, matching: 1, data: 'ab' },
+        '_443._tcp.example.test',
+      ),
+    ).toBe('_443._tcp.example.test. IN TLSA 3 1 1 ab');
   });
 });

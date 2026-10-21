@@ -10,6 +10,7 @@ export default defineOgHint({
   name: 'Prefer the large Twitter card',
   description: 'Suggests summary_large_image instead of summary.',
   slug: 'twitter-card-not-large',
+  at: 'twitter:card',
   severity: Severity.hint,
   check(ctx) {
     // The article only applies when an image is available; with no image a summary card is fine.

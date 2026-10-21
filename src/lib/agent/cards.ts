@@ -5,7 +5,9 @@ import {
   isText,
   notFound,
   parseJsonObject,
+  pretty,
   result,
+  urlOf,
 } from './util.js';
 
 /**
@@ -108,6 +110,7 @@ export async function checkMcpServerCard(env: AgentEnv): Promise<CheckResult> {
           'discovery',
           false,
           `${found.path} needs a name, a version and a transport endpoint.`,
+          { resource: urlOf(env, found.path), snippet: pretty(found.json) },
         );
   }
   // SEP-2127: a catalog entry points to (or embeds) the card.
@@ -132,6 +135,14 @@ export async function checkMcpServerCard(env: AgentEnv): Promise<CheckResult> {
     'discovery',
     false,
     await notFound(MCP_CARD_PATHS, (path) => env.probe(path)),
+    {
+      resource: urlOf(env, MCP_CARD_PATHS[0]),
+      snippet: pretty({
+        name: env.host,
+        version: '1.0.0',
+        remotes: [{ type: 'streamable-http', url: `${env.origin}/mcp` }],
+      }),
+    },
   );
 }
 
@@ -154,6 +165,25 @@ export async function checkA2aAgentCard(env: AgentEnv): Promise<CheckResult> {
       'discovery',
       false,
       await notFound(A2A_PATHS, (path) => env.probe(path)),
+      {
+        resource: urlOf(env, A2A_PATHS[0]),
+        snippet: pretty({
+          name: env.host,
+          description: 'What the agent does',
+          version: '1.0.0',
+          capabilities: {},
+          defaultInputModes: ['text/plain'],
+          defaultOutputModes: ['text/plain'],
+          skills: [],
+          supportedInterfaces: [
+            {
+              url: `${env.origin}/a2a`,
+              protocolBinding: 'JSONRPC',
+              protocolVersion: '1.0',
+            },
+          ],
+        }),
+      },
     );
   }
   const card = found.json;
@@ -194,6 +224,7 @@ export async function checkA2aAgentCard(env: AgentEnv): Promise<CheckResult> {
         'discovery',
         false,
         `${found.path} is missing ${missing.join(', ')}.`,
+        { resource: urlOf(env, found.path), snippet: pretty(card) },
       );
 }
 
@@ -243,6 +274,21 @@ export async function checkSkills(env: AgentEnv): Promise<CheckResult> {
       'discovery',
       false,
       await notFound(SKILLS_PATHS, (path) => env.probe(path)),
+      {
+        resource: urlOf(env, SKILLS_PATHS[0]),
+        snippet: pretty({
+          $schema: SKILLS_SCHEMA,
+          skills: [
+            {
+              name: 'example',
+              type: 'skill-md',
+              description: 'What the skill does',
+              url: `${env.origin}/.well-known/agent-skills/example/SKILL.md`,
+              digest: `sha256:${'0'.repeat(64)}`,
+            },
+          ],
+        }),
+      },
     );
   }
   const { $schema: schema } = found.json;
@@ -252,11 +298,18 @@ export async function checkSkills(env: AgentEnv): Promise<CheckResult> {
       'discovery',
       false,
       `${found.path} has an unrecognised $schema.`,
+      {
+        resource: urlOf(env, found.path),
+        snippet: `"$schema": ${JSON.stringify(schema)}`,
+      },
     );
   }
   const skills = Array.isArray(found.json.skills) ? found.json.skills : [];
   if (skills.length === 0) {
-    return result(id, 'discovery', false, `${found.path} lists no skills.`);
+    return result(id, 'discovery', false, `${found.path} lists no skills.`, {
+      resource: urlOf(env, found.path),
+      snippet: pretty(found.json),
+    });
   }
   const bad = skills.filter((skill) => skillProblems(skill).length > 0);
   return bad.length === 0
@@ -271,5 +324,6 @@ export async function checkSkills(env: AgentEnv): Promise<CheckResult> {
         'discovery',
         false,
         `${bad.length} skill(s) are invalid: ${skillProblems(bad[0]).join('; ')}.`,
+        { resource: urlOf(env, found.path), snippet: pretty(bad[0]) },
       );
 }

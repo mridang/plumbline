@@ -10,6 +10,7 @@ export default defineOgHint({
   name: 'Require twitter:description',
   description: 'Requires a twitter:description meta tag.',
   slug: 'missing-twitter-description',
+  add: '<meta name="twitter:description" content="A short summary of the page">',
   severity: Severity.warning,
   check(ctx) {
     return ctx.meta('twitter:description') === null

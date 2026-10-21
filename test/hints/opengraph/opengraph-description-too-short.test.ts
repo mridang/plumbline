@@ -36,4 +36,15 @@ describe('opengraph-description-too-short', () => {
   it('passes without og:description', async () => {
     expect(await runHint(hint, page(''))).toEqual([]);
   });
+
+  it('carries the offending tag and its location', async () => {
+    const [problem] = await runHint(
+      hint,
+      page('<meta property="og:description" content="short">'),
+    );
+    expect(problem.sourceCode).toContain(
+      '<meta property="og:description" content="short">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

@@ -19,5 +19,9 @@ describe('privacy-insecure-first-party', () => {
     });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('/a.png');
+    expect(problems[0].resource).toMatch(/\/a\.png$/);
+    expect(problems[0].sourceCode).toContain('<img src="http://');
+    expect(problems[0].sourceCode).toContain('/a.png');
+    expect(problems[0].location.line).toBe(0);
   });
 });

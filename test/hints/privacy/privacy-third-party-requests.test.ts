@@ -44,5 +44,6 @@ describe('privacy-third-party-requests', () => {
     expect(problems[0].message).toContain('0 secure, 3 insecure');
     expect(problems[0].message).toContain('1 unique host: localhost');
     expect(problems[0].message).toContain('script: 1, image: 2');
+    expect(problems[0].sourceCode).toBe('localhost: 3');
   });
 });

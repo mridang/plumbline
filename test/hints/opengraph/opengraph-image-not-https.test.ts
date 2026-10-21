@@ -32,4 +32,16 @@ describe('opengraph-image-not-https', () => {
   it('passes without og:image', async () => {
     expect(await runHint(hint, page(''))).toEqual([]);
   });
+
+  it('reports the image URL and carries the og:image tag', async () => {
+    const [problem] = await runHint(
+      hint,
+      page('<meta property="og:image" content="http://127.0.0.1:9/i.png">'),
+    );
+    expect(problem.resource).toBe('http://127.0.0.1:9/i.png');
+    expect(problem.sourceCode).toContain(
+      '<meta property="og:image" content="http://127.0.0.1:9/i.png">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

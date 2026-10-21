@@ -27,24 +27,48 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      const { parsed } = readJsonLd(page.document);
+      const { parsed, parsedAt } = readJsonLd(page.document);
       // The first entity node found, across all blocks, is the one judged.
       let entity: Record<string, unknown> | null = null;
-      for (const data of parsed) {
+      let block = -1;
+      for (const [index, data] of parsed.entries()) {
         entity = findEntityNode(data);
         if (entity) {
+          block = parsedAt[index];
           break;
         }
       }
       if (!entity) {
         page.report(
           `No ${ENTITY_TYPE_LABEL} structured data found. Add Organization (or Person) JSON-LD with a sameAs array of your official social/profile URLs to strengthen Knowledge Panel signals. Read more: ${REF}`,
-          { severity: Severity.warning },
+          {
+            severity: Severity.warning,
+            element: page.document.querySelector('head'),
+            codeSnippet: `<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Your organization",
+  "url": "https://example.com",
+  "sameAs": [
+    "https://www.linkedin.com/company/your-organization",
+    "https://x.com/your-organization"
+  ]
+}
+</script>`,
+            codeLanguage: 'html',
+          },
         );
       } else if (!hasNonEmptySameAs(entity)) {
         page.report(
           `The ${ENTITY_TYPE_LABEL} structured data has no sameAs property. Add a sameAs array of your official social/profile URLs. Read more: ${REF}`,
-          { severity: Severity.warning },
+          {
+            severity: Severity.warning,
+            // The block that holds the entity lacking sameAs.
+            element: page.document.querySelectorAll(
+              'script[type="application/ld+json" i]',
+            )[block],
+          },
         );
       }
     });

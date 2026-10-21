@@ -56,4 +56,22 @@ describe('opengraph-image-too-large', () => {
   it('passes without og:image', async () => {
     expect(await runHint(hint, page(''))).toEqual([]);
   });
+
+  it('reports the image URL and carries the og:image tag', async () => {
+    const [problem] = await runHint(
+      hint,
+      page('<meta property="og:image" content="/i.svg">', {
+        '/i.svg': {
+          status: 200,
+          headers: { 'content-type': 'image/svg+xml' },
+          body: `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"><!--${'x'.repeat(600000)}--></svg>`,
+        },
+      }),
+    );
+    expect(problem.resource.endsWith('/i.svg')).toBe(true);
+    expect(problem.sourceCode).toContain(
+      '<meta property="og:image" content="/i.svg">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

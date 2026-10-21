@@ -24,7 +24,11 @@ export default defineHint({
       if (count > 1) {
         page.report(
           `The page has ${count} <h1> headings; use one and make the others <h2> or lower. Read more: ${REF}`,
-          { severity: Severity.hint },
+          {
+            severity: Severity.hint,
+            // The first extra heading is the one to demote.
+            element: page.document.querySelectorAll('h1')[1],
+          },
         );
       }
     });

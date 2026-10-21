@@ -12,6 +12,8 @@ import type { CertKey } from './evaluate.js';
 export interface ChainCertificate {
   /** The subject common name, or `-` as Internet.nl prints it. */
   commonName: string;
+  /** The issuer common name, or `-`. */
+  issuer: string;
   key: CertKey;
   /** Dotted OID of the signature algorithm. */
   signatureOid: string;
@@ -55,6 +57,7 @@ export function describeChain(chain: readonly Buffer[]): ChainCertificate[] {
     const cert = new X509Certificate(der);
     return {
       commonName: commonName(cert.subject),
+      issuer: commonName(cert.issuer),
       key: keyOf(cert),
       signatureOid: signatureAlgorithmOid(der),
       isRoot:
@@ -62,4 +65,21 @@ export function describeChain(chain: readonly Buffer[]): ChainCertificate[] {
         (index > 0 && cert.checkIssued(cert)),
     };
   });
+}
+
+/**
+ * Renders a certificate as report evidence: who it is for, who issued it,
+ * and the key and signature algorithm that were rated.
+ */
+export function formatCertificate(
+  cert: ChainCertificate,
+  key: string,
+  signature: string,
+): string {
+  return [
+    `Subject: CN=${cert.commonName}`,
+    `Issuer: CN=${cert.issuer}`,
+    `Public key: ${key}`,
+    `Signature algorithm: ${signature}`,
+  ].join('\n');
 }

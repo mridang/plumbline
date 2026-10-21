@@ -52,4 +52,23 @@ describe('seo-title-missing', () => {
       'https://www.opengraph.to/articles/missing-html-title',
     );
   });
+
+  it('suggests a title when there is none', async () => {
+    const problems = await runHint(hint, pageRoutes({ head: '' }));
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain(
+      '<title>Descriptive page title</title>',
+    );
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
+
+  it('points at an empty title', async () => {
+    const problems = await runHint(
+      hint,
+      pageRoutes({ head: '<title></title>' }),
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain('<title></title>');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

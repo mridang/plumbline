@@ -25,4 +25,12 @@ describe('opengraph-url-missing', () => {
     ).toBe(true);
     expect(problems[0].severity).toBe(Severity.warning);
   });
+
+  it('carries the head and the tag to add', async () => {
+    const [problem] = await runHint(hint, page(''));
+    expect(problem.sourceCode).toBe(
+      '<meta property="og:url" content="https://example.com/page">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

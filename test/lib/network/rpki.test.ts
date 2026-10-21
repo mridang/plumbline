@@ -6,6 +6,7 @@ import {
   judgeValidity,
   missingRoa,
   nsRpki,
+  rpkiLines,
   webRpki,
   type IpRpki,
 } from '../../../src/lib/network/rpki.js';
@@ -109,5 +110,13 @@ describe('judgeValidity', () => {
   });
   it('describes entries', () => {
     expect(describeEntries([entry('valid')])).toBe('h (192.0.2.1)');
+  });
+});
+
+describe('rpkiLines', () => {
+  it('renders the route and state of each entry', () => {
+    expect(rpkiLines([entry('invalid'), entry('unknown', null)])).toBe(
+      'h 192.0.2.1 192.0.2.0/24 AS1 invalid\nh 192.0.2.1 no route unknown',
+    );
   });
 });

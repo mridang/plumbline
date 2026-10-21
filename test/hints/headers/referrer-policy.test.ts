@@ -24,6 +24,9 @@ describe('referrer-policy', () => {
   it('warns when no policy is set', async () => {
     const problems = await runHint(hint, page());
     expect(problems).toHaveLength(1);
+    expect(problems[0]?.sourceCode).toBe(
+      'Referrer-Policy: strict-origin-when-cross-origin',
+    );
     expect(problems[0]?.message).toContain('not implemented');
   });
 
@@ -32,6 +35,7 @@ describe('referrer-policy', () => {
       hint,
       page({ 'referrer-policy': 'unsafe-url' }),
     );
+    expect(problems[0]?.sourceCode).toBe('Referrer-Policy: unsafe-url');
     expect(problems[0]?.message).toContain('set unsafely');
   });
 
@@ -62,6 +66,9 @@ describe('referrer-policy', () => {
         { 'referrer-policy': 'no-referrer' },
         '<meta http-equiv="Referrer-Policy" content="unsafe-url">',
       ),
+    );
+    expect(problems[0]?.sourceCode).toBe(
+      '<meta http-equiv="Referrer-Policy" content="unsafe-url">',
     );
     expect(problems[0]?.message).toContain('set unsafely');
   });

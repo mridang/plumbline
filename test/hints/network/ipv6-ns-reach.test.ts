@@ -29,6 +29,9 @@ describe('ipv6-ns-reach', () => {
     const problems = await runHint(hint);
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('b.example.net (2001:db8::2)');
+    expect(problems[0].sourceCode).toBe(
+      'b.example.net. AAAA 2001:db8::2 ; port 53 unreachable',
+    );
   });
 
   it('does nothing without IPv6 name servers', async () => {

@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import { describe, expect, it } from '@jest/globals';
 import {
   countH1,
+  findRobotsSource,
   getCanonical,
   getHtmlLang,
   getMetaDescription,
@@ -155,5 +156,33 @@ describe('audit fixes', () => {
     expect(ld('"text"')).toBe(false);
     expect(ld('{"@graph":[{"@type":"WebPage"}]}')).toBe(true);
     expect(ld('[{"@type":"WebPage"}]')).toBe(true);
+  });
+});
+
+describe('findRobotsSource', () => {
+  it('finds the meta tag that carries the directive', () => {
+    const doc = parse(
+      '<meta name="robots" content="index"><meta name="googlebot" content="noindex">',
+    );
+    const found = findRobotsSource(doc as never, {}, 'noindex');
+    expect(found).toHaveProperty('element');
+  });
+  it('falls back to the X-Robots-Tag header', () => {
+    expect(
+      findRobotsSource(
+        parse('') as never,
+        { 'x-robots-tag': 'noindex' },
+        'noindex',
+      ),
+    ).toEqual({ header: { name: 'X-Robots-Tag', value: 'noindex' } });
+  });
+  it('returns null when nothing carries it', () => {
+    expect(
+      findRobotsSource(
+        parse('') as never,
+        { 'x-robots-tag': 'noarchive' },
+        'noindex',
+      ),
+    ).toBeNull();
   });
 });

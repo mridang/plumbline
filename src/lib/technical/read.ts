@@ -33,13 +33,13 @@ export function headingLevels(doc: TechDocumentLike): number[] {
   return levels;
 }
 
-/** Finds the first heading that jumps down by more than one level. */
+/** Finds the first heading that jumps down by more than one level; `index` is that heading's position. */
 export function firstSkippedLevel(
   levels: readonly number[],
-): { from: number; to: number } | null {
+): { from: number; to: number; index: number } | null {
   for (let i = 1; i < levels.length; i++) {
     if (levels[i] - levels[i - 1] > 1) {
-      return { from: levels[i - 1], to: levels[i] };
+      return { from: levels[i - 1], to: levels[i], index: i };
     }
   }
   return null;

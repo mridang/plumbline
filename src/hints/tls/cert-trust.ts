@@ -1,5 +1,6 @@
 import { Category, defineHint } from '../../core/define-hint.js';
 import { fetchCertificate } from '../../lib/tls/client.js';
+import { describeChain } from '../../lib/tls/certs.js';
 import { onTlsSite } from './on-tls-site.js';
 
 /**
@@ -27,6 +28,13 @@ export default defineHint({
       if (!result.authorized) {
         report(
           `The trust chain of your website certificate is *not* complete and/or *not* signed by a trusted root certificate authority (${result.authorizationError ?? 'unknown error'}).`,
+          [
+            `Error: ${result.authorizationError ?? 'unknown error'}`,
+            ...describeChain(result.chain).map(
+              (cert, index) =>
+                `Certificate ${index + 1}: CN=${cert.commonName}, issued by CN=${cert.issuer}`,
+            ),
+          ].join('\n'),
         );
       }
     });

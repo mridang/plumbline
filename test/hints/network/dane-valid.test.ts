@@ -30,6 +30,9 @@ describe('dane-valid', () => {
     const problems = await runHint(hint);
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('not valid for your web certificate');
+    expect(problems[0].sourceCode).toBe(
+      `_443._tcp.example.test. IN TLSA 3 0 1 ${'00'.repeat(32)}`,
+    );
   });
 
   it('is not tested when DANE does not exist', async () => {

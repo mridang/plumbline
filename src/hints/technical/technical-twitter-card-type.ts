@@ -23,7 +23,10 @@ export default defineHint({
       if (type !== null && !TWITTER_CARD_TYPES.includes(type as never)) {
         page.report(
           `twitter:card value "${type}" is not a recognized card type. Use one of: ${TWITTER_CARD_TYPES.join(', ')}.`,
-          { severity: Severity.error },
+          {
+            severity: Severity.error,
+            element: page.document.querySelector('meta[name="twitter:card" i]'),
+          },
         );
       }
     });

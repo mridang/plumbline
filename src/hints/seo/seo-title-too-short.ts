@@ -26,7 +26,10 @@ export default defineHint({
       if (title !== null && title !== '' && title.length < MIN) {
         page.report(
           `The <title> is only ${title.length} characters long; use a more descriptive title of about 50-60 characters. Read more: ${REF}`,
-          { severity: Severity.hint },
+          {
+            severity: Severity.hint,
+            element: page.document.querySelector('title:not(svg title)'),
+          },
         );
       }
     });

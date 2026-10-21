@@ -23,6 +23,7 @@ describe('dane-exists', () => {
     const problems = await run({});
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('does not contain a TLSA record');
+    expect(problems[0].sourceCode).toContain('_443._tcp.example.test. IN TLSA');
     expect(problems[0].severity).toBe(Severity.hint);
   });
 
@@ -30,6 +31,8 @@ describe('dane-exists', () => {
     const problems = await run({ [name]: { TLSA: { status: 2 } } });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('DNSSEC proof');
+    expect(problems[0].sourceCode).toContain('_443._tcp.example.test. IN TLSA');
+    expect(problems[0].sourceCode).toContain('SERVFAIL');
     expect(problems[0].severity).toBe(Severity.error);
   });
 });

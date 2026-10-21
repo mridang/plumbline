@@ -58,4 +58,15 @@ describe('opengraph-description-is-url', () => {
       ),
     ).toEqual([]);
   });
+
+  it('carries the offending tag and its location', async () => {
+    const [problem] = await runHint(
+      hint,
+      page('<meta property="og:description" content="https://example.com/x">'),
+    );
+    expect(problem.sourceCode).toContain(
+      '<meta property="og:description" content="https://example.com/x">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

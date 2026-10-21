@@ -10,6 +10,7 @@ export default defineOgHint({
   name: 'Require og:site_name',
   description: 'Requires an og:site_name meta tag.',
   slug: 'missing-og-site-name',
+  add: '<meta property="og:site_name" content="Your site name">',
   severity: Severity.hint,
   check(ctx) {
     return ctx.meta('og:site_name') === null

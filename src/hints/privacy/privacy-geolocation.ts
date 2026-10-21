@@ -1,6 +1,19 @@
 import { Severity } from '@hint/utils-types';
+import type { HTMLElement } from '@hint/utils-dom';
 import { Category, defineHint } from '../../core/define-hint.js';
-import { usesGeolocation } from '../../lib/privacy/geolocation.js';
+import {
+  findGeolocationCall,
+  type GeolocationCall,
+} from '../../lib/privacy/geolocation.js';
+
+/** One script that uses the API and where. */
+interface Finding {
+  resource: string;
+  source: string;
+  call: GeolocationCall;
+  /** The inline script element, absent for a fetched script. */
+  element?: HTMLElement;
+}
 
 /**
  * Looks for page code that asks for the visitor's position through the
@@ -22,7 +35,7 @@ export default defineHint({
   reference: 'https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API',
   setup(context) {
     let url = '';
-    const found = new Set<string>();
+    const found = new Map<string, Finding>();
     context.on('scan::start', (event) => {
       url = event.resource;
     });
@@ -31,24 +44,38 @@ export default defineHint({
       for (const script of event.document.querySelectorAll(
         'script:not([src])',
       )) {
-        if (usesGeolocation(script.textContent ?? '')) {
-          found.add(`${url} (inline script)`);
+        const call = findGeolocationCall(script.textContent ?? '');
+        if (call) {
+          const source = `${url} (inline script)`;
+          found.set(source, { resource: url, source, call, element: script });
         }
       }
     });
     // External scripts are fetched by the connector.
     context.on('fetch::end::script', (event) => {
-      if (usesGeolocation(event.response.body.content)) {
-        found.add(event.resource);
+      const call = findGeolocationCall(event.response.body.content);
+      if (call) {
+        found.set(event.resource, {
+          resource: event.resource,
+          source: event.resource,
+          call,
+        });
       }
     });
     context.on('scan::end', () => {
-      for (const source of found) {
+      for (const { resource, source, call, element } of found.values()) {
         context.report(
-          url,
+          resource,
           `The script ${source} uses the Geolocation API to read the visitor's position.`,
           {
             severity: Severity.warning,
+            codeSnippet: call.text,
+            codeLanguage: 'javascript',
+            // An inline script is located by its element in the page; a
+            // fetched script by the line inside the file.
+            ...(element
+              ? { element }
+              : { location: { line: call.line, column: call.column } }),
           },
         );
       }

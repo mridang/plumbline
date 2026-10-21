@@ -25,7 +25,10 @@ export default defineHint({
       if (title !== null && title.length > MAX) {
         page.report(
           `The <title> is ${title.length} characters long; keep it to ${MAX} or fewer (50-60 is ideal) so it is not truncated in search results. Read more: ${REF}`,
-          { severity: Severity.warning },
+          {
+            severity: Severity.warning,
+            element: page.document.querySelector('title:not(svg title)'),
+          },
         );
       }
     });

@@ -39,20 +39,26 @@ export default defineHint({
         return;
       }
       const names: string[] = [];
+      const offeredOn = new Map<string, string>();
+      const lines = (list: string[]): string =>
+        list.map((name) => `${offeredOn.get(name)} ${name}`).join('\n');
       for (const version of probed) {
         for (const cipher of await acceptedCiphers(target, version)) {
           names.push(cipher.standardName);
+          offeredOn.set(cipher.standardName, version);
         }
       }
       const { bad, phaseOut } = evaluateCiphers(names);
       if (bad.length > 0) {
         report(
           `Your web server supports one or more *insufficiently* secure cipher suites: ${bad.join(', ')}.`,
+          lines(bad),
         );
       }
       if (phaseOut.length > 0) {
         report(
           `Your web server supports one or more cipher suites that should be *phased out* as they are weaker, although you might still use them if absolutely needed. In a future update, they will likely become insufficient: ${phaseOut.join(', ')}.`,
+          lines(phaseOut),
           Severity.warning,
         );
       }

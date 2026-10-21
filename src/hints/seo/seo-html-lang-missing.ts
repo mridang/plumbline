@@ -23,7 +23,12 @@ export default defineHint({
       if (getHtmlLang(page.document) === null) {
         page.report(
           `The <html> element has no lang attribute, for example <html lang="en">. Read more: ${REF}`,
-          { severity: Severity.warning },
+          {
+            severity: Severity.warning,
+            element: page.document.documentElement,
+            codeSnippet: '<html lang="en">',
+            codeLanguage: 'html',
+          },
         );
       }
     });

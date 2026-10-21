@@ -51,6 +51,8 @@ export default defineHint({
         label: 'security.txt',
         mediaTypes: ['text/plain'],
         missing: 'warning',
+        example: (origin) =>
+          `Contact: mailto:security@${new URL(origin).hostname}\nExpires: ${new Date(Date.now() + 180 * 86400000).toISOString()}\n`,
         validate: (text, url) => validateSecurityTxt(text, { url }),
       });
     });

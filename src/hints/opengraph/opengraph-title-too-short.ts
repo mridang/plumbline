@@ -11,6 +11,7 @@ export default defineOgHint({
   name: 'Make og:title descriptive',
   description: 'Flags an og:title shorter than 15 characters.',
   slug: 'title-too-short',
+  at: 'og:title',
   severity: Severity.hint,
   extraGroups: ['seo'],
   check(ctx) {

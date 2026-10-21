@@ -1,8 +1,11 @@
 import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { fetchCertificate } from '../../lib/tls/client.js';
-import { describeChain } from '../../lib/tls/certs.js';
-import { rateSignatureAlgorithm } from '../../lib/tls/evaluate.js';
+import { describeChain, formatCertificate } from '../../lib/tls/certs.js';
+import {
+  rateCertificateKey,
+  rateSignatureAlgorithm,
+} from '../../lib/tls/evaluate.js';
 import { onTlsSite } from './on-tls-site.js';
 
 /**
@@ -30,25 +33,36 @@ export default defineHint({
       }
       const bad: string[] = [];
       const phaseOut: string[] = [];
+      const badEvidence: string[] = [];
+      const phaseOutEvidence: string[] = [];
       for (const cert of describeChain(result.chain)) {
         if (cert.isRoot) {
           continue;
         }
         const { rating, name } = rateSignatureAlgorithm(cert.signatureOid);
+        const evidence = formatCertificate(
+          cert,
+          rateCertificateKey(cert.key).description,
+          name,
+        );
         if (rating === 'bad') {
           bad.push(`${cert.commonName}: ${name}`);
+          badEvidence.push(evidence);
         } else if (rating === 'phase-out') {
           phaseOut.push(`${cert.commonName}: ${name}`);
+          phaseOutEvidence.push(evidence);
         }
       }
       if (bad.length > 0) {
         report(
           `Your website certificate is signed using an *insufficiently* secure signing algorithm and hash function: ${bad.join('; ')}.`,
+          badEvidence.join('\n\n'),
         );
       }
       if (phaseOut.length > 0) {
         report(
           `Your website certificate is signed using a signing algorithm and hash function that should be *phased out* as they are weaker, although you might still use them if absolutely needed. In a future update, they will likely become insufficient: ${phaseOut.join('; ')}.`,
+          phaseOutEvidence.join('\n\n'),
           Severity.warning,
         );
       }

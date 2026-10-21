@@ -75,6 +75,7 @@ describe('tls-zero-rtt', () => {
     expect(problems[0].message).toBe(
       'Your web server supports 0-RTT, which is *not* secure.',
     );
+    expect(problems[0].sourceCode).toContain('Early data was accepted');
   });
 
   realIt('passes against a real server', async () => {

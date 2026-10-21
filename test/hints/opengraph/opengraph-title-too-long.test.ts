@@ -36,4 +36,17 @@ describe('opengraph-title-too-long', () => {
   it('passes without og:title', async () => {
     expect(await runHint(hint, page(''))).toEqual([]);
   });
+
+  it('carries the offending tag and its location', async () => {
+    const [problem] = await runHint(
+      hint,
+      page(
+        '<meta property="og:title" content="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">',
+      ),
+    );
+    expect(problem.sourceCode).toContain(
+      '<meta property="og:title" content="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from '@jest/globals';
 import {
   evaluateCaa,
+  formatCaa,
   MISSING_ISSUE,
   parseCaa,
   retrieveCaa,
@@ -131,5 +132,13 @@ describe('retrieveCaa', () => {
       records: [],
       errors: [],
     });
+  });
+});
+
+describe('formatCaa', () => {
+  it('renders a zone file line', () => {
+    expect(formatCaa(rec('issue', 'ca.test', 128), 'example.test')).toBe(
+      'example.test. IN CAA 128 issue "ca.test"',
+    );
   });
 });

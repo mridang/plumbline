@@ -10,6 +10,7 @@ export default defineOgHint({
   name: 'Require og:description',
   description: 'Requires an og:description meta tag.',
   slug: 'missing-og-description',
+  add: '<meta property="og:description" content="A 110 to 160 character summary of the page">',
   severity: Severity.error,
   extraGroups: ['seo'],
   check(ctx) {

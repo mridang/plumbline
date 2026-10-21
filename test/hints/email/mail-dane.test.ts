@@ -76,6 +76,9 @@ describe('mail-dane', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('does *not* provide a TLSA record');
     expect(problems[0].severity).toBe(Severity.error);
+    expect(problems[0].sourceCode).toContain(
+      '_25._tcp.mx.example.test. IN TLSA 3 1 1',
+    );
   });
 
   it('reports a TLSA record that is not DNSSEC signed', async () => {
@@ -98,6 +101,9 @@ describe('mail-dane', () => {
     const problems = await run({ status: 2 });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('does *not* provide DNSSEC proof');
+    expect(problems[0].sourceCode).toBe(
+      '_25._tcp.mx.example.test. IN TLSA ; SERVFAIL',
+    );
   });
 
   it('reports fingerprints that do not match the certificate', async () => {
@@ -109,6 +115,7 @@ describe('mail-dane', () => {
     expect(problems[0].message).toContain(
       'does *not* have any valid DANE fingerprints',
     );
+    expect(problems[0].sourceCode).toBe('mx.example.test');
   });
 
   it('reports malformed TLSA data as not matching', async () => {
@@ -130,6 +137,7 @@ describe('mail-dane', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.hint);
     expect(problems[0].message).toContain('not checked');
+    expect(problems[0].sourceCode).toBe('mx.example.test: timed out');
   });
 
   it('is silent without MX records', async () => {

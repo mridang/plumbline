@@ -1,10 +1,8 @@
 import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage } from '../../core/page.js';
-import {
-  getRobotsDirectives,
-  getRobotsHeaderDirectives,
-} from '../../lib/seo/read.js';
+import { headerSnippet } from '../../core/http.js';
+import { findRobotsSource } from '../../lib/seo/read.js';
 
 const REF = 'https://www.opengraph.to/articles/robots-nofollow';
 
@@ -23,15 +21,20 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      if (
-        [
-          ...getRobotsDirectives(page.document),
-          ...getRobotsHeaderDirectives(page.headers),
-        ].includes('nofollow')
-      ) {
+      const source = findRobotsSource(page.document, page.headers, 'nofollow');
+      if (source) {
         page.report(
           `The robots meta tag contains "nofollow", so links on this page will not pass SEO value. Remove it if that is unintended. Read more: ${REF}`,
-          { severity: Severity.hint },
+          'element' in source
+            ? { severity: Severity.hint, element: source.element }
+            : {
+                severity: Severity.hint,
+                codeSnippet: headerSnippet(
+                  source.header.name,
+                  source.header.value,
+                ),
+                codeLanguage: 'http',
+              },
         );
       }
     });

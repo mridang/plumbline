@@ -39,6 +39,7 @@ export default defineHint({
       reportFindings(page, cacheControlFindings(value), {
         name: 'Cache-Control',
         value,
+        suggest: 'no-store, max-age=0',
       });
     });
   },

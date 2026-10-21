@@ -30,6 +30,7 @@ describe('cookies', () => {
   it('suggests SameSite', async () => {
     const problems = await runHint(hint, page('a=1; Secure; HttpOnly'));
     expect(problems).toHaveLength(1);
+    expect(problems[0]?.sourceCode).toBe('Set-Cookie: a=1; Secure; HttpOnly');
     expect(problems[0]?.message).toContain('Use SameSite');
   });
 
@@ -58,6 +59,9 @@ describe('cookies', () => {
 
   it('reports an anti-CSRF cookie without SameSite', async () => {
     const problems = await runHint(hint, page('csrftoken=1; Secure; HttpOnly'));
+    expect(problems[0]?.sourceCode).toBe(
+      'Set-Cookie: csrftoken=1; Secure; HttpOnly',
+    );
     expect(problems[0]?.message).toContain('Anti-CSRF');
   });
 

@@ -16,7 +16,8 @@ const KEPT_STRINGS: ReadonlySet<string> = new Set([
  * strings is not mistaken for a call. Comments are dropped. A string literal
  * becomes `""`, except one that is exactly a name of the API, so that
  * `navigator['geolocation']` and `geo['watchPosition'](cb)` still match.
- * Regular expression literals are not recognised, which only matters for one
+ * Line breaks inside comments and strings are kept, so a position in the
+ * result is on the same line as in the source. Regular expression literals are not recognised, which only matters for one
  * that contains a quote or comment marker.
  */
 export function stripCommentsAndStrings(source: string): string {
@@ -31,15 +32,18 @@ export function stripCommentsAndStrings(source: string): string {
       }
     } else if (char === '/' && next === '*') {
       const end = source.indexOf('*/', index + 2);
+      const comment = source.slice(index, end === -1 ? source.length : end);
       index = end === -1 ? source.length : end + 2;
-      out += ' ';
+      out += ' ' + '\n'.repeat((comment.match(/\n/g) ?? []).length);
     } else if (char === '"' || char === "'" || char === '`') {
       let end = index + 1;
       while (end < source.length && source[end] !== char) {
         end += source[end] === '\\' ? 2 : 1;
       }
       const content = source.slice(index + 1, end);
-      out += KEPT_STRINGS.has(content) ? content : '""';
+      out += KEPT_STRINGS.has(content)
+        ? content
+        : '""' + '\n'.repeat((content.match(/\n/g) ?? []).length);
       index = end + 1;
     } else {
       out += char;
@@ -62,4 +66,36 @@ export function stripCommentsAndStrings(source: string): string {
 export function usesGeolocation(source: string): boolean {
   const code = stripCommentsAndStrings(source);
   return GEOLOCATION.test(code) && POSITION_METHODS.test(code);
+}
+
+/** Where a script asks for the visitor's position. */
+export interface GeolocationCall {
+  /** Zero-based line of the call. */
+  line: number;
+  /** Zero-based column of the method name on that line. */
+  column: number;
+  /** The source line holding the call, trimmed. */
+  text: string;
+}
+
+/**
+ * Finds the first call that asks for the position, or null when the script
+ * does not use the API in the way `usesGeolocation` describes.
+ */
+export function findGeolocationCall(source: string): GeolocationCall | null {
+  const code = stripCommentsAndStrings(source);
+  if (!GEOLOCATION.test(code)) {
+    return null;
+  }
+  const match = POSITION_METHODS.exec(code);
+  if (!match) {
+    return null;
+  }
+  const line = code.slice(0, match.index).split('\n').length - 1;
+  const original = source.split('\n')[line] ?? '';
+  return {
+    line,
+    column: Math.max(original.search(POSITION_METHODS), 0),
+    text: original.trim(),
+  };
 }

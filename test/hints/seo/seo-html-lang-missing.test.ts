@@ -50,4 +50,14 @@ describe('seo-html-lang-missing', () => {
       'https://www.opengraph.to/articles/missing-html-lang',
     );
   });
+
+  it('suggests the lang attribute', async () => {
+    const problems = await runHint(
+      hint,
+      pageRoutes({ head: '', html: '<html>' }),
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain('<html lang="en">');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

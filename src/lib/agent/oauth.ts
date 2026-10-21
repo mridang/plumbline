@@ -1,4 +1,4 @@
-import type { AgentEnv, CheckResult } from './types.js';
+import type { AgentEnv, CheckResult, Evidence } from './types.js';
 import {
   bareHost,
   isHtml,
@@ -7,7 +7,9 @@ import {
   isText,
   missingReason,
   parseJsonObject,
+  pretty,
   result,
+  urlOf,
 } from './util.js';
 
 /**
@@ -42,6 +44,7 @@ export async function checkOauthDiscovery(env: AgentEnv): Promise<CheckResult> {
     '/.well-known/oauth-authorization-server',
   ];
   const reasons: string[] = [];
+  let evidence: Evidence | undefined;
   // Either document is enough: report only when both fail.
   for (const path of paths) {
     const probe = await env.probe(path);
@@ -57,9 +60,29 @@ export async function checkOauthDiscovery(env: AgentEnv): Promise<CheckResult> {
     reasons.push(
       json ? `${path} has no valid issuer URL` : missingReason(path, probe),
     );
+    // Point at a document that exists but is wrong, else at the first path.
+    if (json && evidence?.snippet === undefined) {
+      evidence = { resource: urlOf(env, path), snippet: pretty(json) };
+    }
   }
-  return result(id, 'discovery', false, `${reasons.join('; ')}.`);
+  return result(
+    id,
+    'discovery',
+    false,
+    `${reasons.join('; ')}.`,
+    evidence ?? {
+      resource: urlOf(env, paths[0]),
+      snippet: pretty({
+        issuer: env.origin,
+        authorization_endpoint: `${env.origin}/authorize`,
+        token_endpoint: `${env.origin}/token`,
+        jwks_uri: `${env.origin}/.well-known/jwks.json`,
+      }),
+    },
+  );
 }
+
+const RESOURCE_PATH = '/.well-known/oauth-protected-resource';
 
 /**
  * OAuth protected resource metadata (RFC 9728): the JSON at
@@ -70,9 +93,9 @@ export async function checkOauthProtectedResource(
   env: AgentEnv,
 ): Promise<CheckResult> {
   const id = 'agent-oauth-protected-resource';
-  let json = parseJsonObject(
-    await env.probe('/.well-known/oauth-protected-resource'),
-  );
+  const rootProbe = await env.probe('/.well-known/oauth-protected-resource');
+  let json = parseJsonObject(rootProbe);
+  let source = rootProbe?.url ?? urlOf(env, RESOURCE_PATH);
   if (!json) {
     // RFC 9728 section 5: a 401 challenge names the metadata URL in the
     // `resource_metadata` parameter of WWW-Authenticate.
@@ -82,6 +105,7 @@ export async function checkOauthProtectedResource(
     );
     if (url) {
       json = parseJsonObject(await env.probe(url[1]));
+      source = new URL(url[1], env.origin).href;
     }
   }
   if (!json) {
@@ -89,10 +113,14 @@ export async function checkOauthProtectedResource(
       id,
       'discovery',
       false,
-      `${missingReason(
-        '/.well-known/oauth-protected-resource',
-        await env.probe('/.well-known/oauth-protected-resource'),
-      )}.`,
+      `${missingReason('/.well-known/oauth-protected-resource', rootProbe)}.`,
+      {
+        resource: source,
+        snippet: pretty({
+          resource: env.origin,
+          authorization_servers: [env.origin],
+        }),
+      },
     );
   }
   if (!isIdentifierUrl(json.resource)) {
@@ -101,6 +129,7 @@ export async function checkOauthProtectedResource(
       'discovery',
       false,
       'The metadata has no valid resource URL.',
+      { resource: source, snippet: pretty(json) },
     );
   }
   const resource = new URL(json.resource);
@@ -110,6 +139,10 @@ export async function checkOauthProtectedResource(
       'discovery',
       false,
       `The resource ${json.resource} is not on ${env.host}.`,
+      {
+        resource: source,
+        snippet: `"resource": ${JSON.stringify(json.resource)}`,
+      },
     );
   }
   // isitagentready.com requires the metadata at the root well-known path to
@@ -122,6 +155,10 @@ export async function checkOauthProtectedResource(
       'discovery',
       false,
       `The resource ${json.resource} does not match the site; metadata for a resource with a path belongs at /.well-known/oauth-protected-resource${resource.pathname}.`,
+      {
+        resource: source,
+        snippet: `"resource": ${JSON.stringify(json.resource)}`,
+      },
     );
   }
   return result(
@@ -153,5 +190,8 @@ export async function checkAuthMd(env: AgentEnv): Promise<CheckResult> {
       'The authorization server metadata has an agent_auth block.',
     );
   }
-  return result(id, 'discovery', false, `${missingReason('/auth.md', doc)}.`);
+  return result(id, 'discovery', false, `${missingReason('/auth.md', doc)}.`, {
+    resource: doc?.url ?? urlOf(env, '/auth.md'),
+    snippet: `# Authentication\n\nAgents register at ${env.origin}/register and receive credentials for ${env.origin}/api.`,
+  });
 }

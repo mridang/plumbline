@@ -33,6 +33,7 @@ export default defineHint({
         ].filter((name) => name);
         report(
           `The domain name of your website does *not* match the domain name on your website certificate (${names.join(', ')}).`,
+          `Requested host: ${target.host}\nSubject: CN=${result.peerCertificate.subject?.CN ?? '-'}\nSubject Alternative Name: ${result.peerCertificate.subjectaltname ?? '-'}`,
         );
       }
     });

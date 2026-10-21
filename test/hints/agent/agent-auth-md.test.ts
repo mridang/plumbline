@@ -16,5 +16,7 @@ describe('agent-auth-md', () => {
     const problems = await runHint(hint, {});
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.warning);
+    expect(problems[0].resource.endsWith('/auth.md')).toBe(true);
+    expect(problems[0].sourceCode).toContain('# Authentication');
   });
 });

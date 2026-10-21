@@ -22,12 +22,17 @@ export default defineHint({
   reference: 'https://internet.nl/',
   setup(context) {
     onSite(context, async (site) => {
-      const encoding = await compression.probe(new URL('/', site.url));
+      const root = new URL('/', site.url);
+      const encoding = await compression.probe(root);
       if (encoding) {
         site.report(
-          site.url.href,
+          root.href,
           `Your web server supports HTTP compression, which could be a security risk (Content-Encoding: ${encoding}).`,
-          { severity: Severity.hint },
+          {
+            severity: Severity.hint,
+            codeLanguage: 'http',
+            codeSnippet: `Content-Encoding: ${encoding}`,
+          },
         );
       }
     });

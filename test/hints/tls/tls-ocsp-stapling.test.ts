@@ -38,6 +38,8 @@ describe('tls-ocsp-stapling', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.hint);
     expect(problems[0].message).toContain('does *not* support OCSP stapling');
+    expect(problems[0].sourceCode).toContain('OCSP - URI: ');
+    expect(problems[0].sourceCode).toContain('Stapled OCSP response: none');
   });
 
   it('does not apply to a certificate without an OCSP pointer', async () => {

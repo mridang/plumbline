@@ -31,12 +31,18 @@ describe('rpki-ns-valid', () => {
     const problems = await run({ asn: 1, prefix: 'p', status: 'invalid' });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('Invalid validation state');
+    expect(problems[0].sourceCode).toMatch(
+      /^ns\.example\.net \S+ p AS1 invalid$/,
+    );
   });
 
   it('reports a NotFound announcement', async () => {
     const problems = await run({ asn: 1, prefix: 'p', status: 'unknown' });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('NotFound validation state');
+    expect(problems[0].sourceCode).toMatch(
+      /^ns\.example\.net \S+ p AS1 unknown$/,
+    );
   });
 
   it('is not tested when nothing is routed', async () => {

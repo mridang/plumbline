@@ -130,6 +130,16 @@ export async function zoneNameservers(
   return { zone, servers: await nameserverAddresses(zone.nameservers) };
 }
 
+/** One line per name server with its addresses, as evidence. */
+export function nameserverLines(servers: NsAddresses[]): string {
+  return servers
+    .map(
+      ({ name, v4, v6 }) =>
+        `${name}. A ${v4.join(', ') || 'none'}; AAAA ${v6.join(', ') || 'none'}`,
+    )
+    .join('\n');
+}
+
 /** `none`: no name server has IPv6; `one`: just one; `good`: two or more. */
 export type NsAaaaVerdict = 'none' | 'one' | 'good';
 

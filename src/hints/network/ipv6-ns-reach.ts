@@ -35,7 +35,16 @@ export default defineHint({
         site.report(
           site.url.href,
           `Not all name servers that have an IPv6 address are reachable over IPv6: ${detail}.`,
-          { severity: Severity.error },
+          {
+            severity: Severity.error,
+            codeSnippet: bad
+              .flatMap((b) =>
+                b.ips.map(
+                  (ip) => `${b.name}. AAAA ${ip} ; port 53 unreachable`,
+                ),
+              )
+              .join('\n'),
+          },
         );
       }
     });

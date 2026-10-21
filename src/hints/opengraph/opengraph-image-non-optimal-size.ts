@@ -10,6 +10,7 @@ export default defineOgHint({
   name: 'Use the recommended og:image size',
   description: 'Flags an og:image that is not 1200x630 pixels (1.91:1).',
   slug: 'non-optimal-image-size',
+  image: true,
   severity: Severity.hint,
   async check(ctx) {
     const image = await ctx.image();

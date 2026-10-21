@@ -44,6 +44,9 @@ describe('tls-kex-hash', () => {
       '*insufficiently* secure hash functions',
     );
     expect(problems[0].message).toContain('SHA1');
+    expect(problems[0].sourceCode).toContain(
+      'accepts only: RSA+SHA1, ECDSA+SHA1',
+    );
   });
 
   it('warns about a server that signs with SHA-224', async () => {
@@ -55,6 +58,9 @@ describe('tls-kex-hash', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.warning);
     expect(problems[0].message).toContain('SHA224');
+    expect(problems[0].sourceCode).toContain(
+      'accepts only: RSA+SHA224, ECDSA+SHA224',
+    );
   });
 
   it('does not apply to a TLS 1.3 only server', async () => {

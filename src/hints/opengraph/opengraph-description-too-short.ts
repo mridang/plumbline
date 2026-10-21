@@ -11,6 +11,7 @@ export default defineOgHint({
   name: 'Expand a very short og:description',
   description: 'Flags an og:description shorter than 50 characters.',
   slug: 'description-too-short',
+  at: 'og:description',
   severity: Severity.hint,
   extraGroups: ['seo'],
   check(ctx) {

@@ -23,7 +23,12 @@ export default defineHint({
       if (getCanonical(page.document) === null) {
         page.report(
           `No canonical URL found. Add <link rel="canonical"> to the <head> with the page's preferred absolute URL. Read more: ${REF}`,
-          { severity: Severity.hint },
+          {
+            severity: Severity.hint,
+            element: page.document.querySelector('head'),
+            codeSnippet: `<link rel="canonical" href="${page.url}">`,
+            codeLanguage: 'html',
+          },
         );
       }
     });

@@ -26,6 +26,11 @@ export default defineHint({
         context.report(event.resource, verdict.message, {
           severity:
             verdict.severity === 'error' ? Severity.error : Severity.warning,
+          codeSnippet: [
+            ...event.response.hops,
+            `${event.response.url} (HTTP ${event.response.statusCode})`,
+          ].join('\n-> '),
+          codeLanguage: 'http',
         });
       }
     });

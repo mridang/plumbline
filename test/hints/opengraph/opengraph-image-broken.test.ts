@@ -72,4 +72,22 @@ describe('opengraph-image-broken', () => {
     ).toBe(true);
     expect(problems[0].severity).toBe(Severity.error);
   });
+
+  it('reports the image URL and carries the og:image tag', async () => {
+    const [problem] = await runHint(
+      hint,
+      page('<meta property="og:image" content="/gone">', {
+        '/gone': {
+          status: 404,
+          headers: { 'content-type': 'text/plain' },
+          body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>',
+        },
+      }),
+    );
+    expect(problem.resource.endsWith('/gone')).toBe(true);
+    expect(problem.sourceCode).toContain(
+      '<meta property="og:image" content="/gone">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

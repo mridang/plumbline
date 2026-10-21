@@ -1,5 +1,5 @@
 import type { AgentEnv, CheckResult } from './types.js';
-import { result } from './util.js';
+import { evidenceFor, result } from './util.js';
 
 /** One link of a `Link` header (RFC 8288). */
 export interface WebLink {
@@ -82,6 +82,13 @@ export async function checkLinkHeaders(env: AgentEnv): Promise<CheckResult> {
       'discoverability',
       false,
       'The home page sends no Link header.',
+      evidenceFor(
+        env,
+        '/',
+        probe,
+        'Link: </.well-known/api-catalog>; rel="api-catalog"',
+        'http',
+      ),
     );
   }
   const useful = parseLinkHeader(header).flatMap((link) =>
@@ -99,5 +106,6 @@ export async function checkLinkHeaders(env: AgentEnv): Promise<CheckResult> {
         'discoverability',
         false,
         'The Link header has no agent-useful relation such as api-catalog or service-desc.',
+        evidenceFor(env, '/', probe, `Link: ${header}`, 'http'),
       );
 }

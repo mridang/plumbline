@@ -37,6 +37,7 @@ export default defineHint({
       if (status === 'ok') {
         report(
           'Your web server does *not* support OCSP stapling, although your website certificate has an OCSP pointer.',
+          `OCSP - URI: ${(pointer ?? []).join(', ')}\nStapled OCSP response: none`,
           Severity.hint,
         );
       }

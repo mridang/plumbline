@@ -63,5 +63,9 @@ export async function checkWebMcp(env: AgentEnv): Promise<CheckResult> {
         true,
         `The page registers ${tools} tool(s) and ${forms} declarative form tool(s).`,
       )
-    : result(id, 'discovery', false, 'The page registers no WebMCP tools.');
+    : result(id, 'discovery', false, 'The page registers no WebMCP tools.', {
+        snippet:
+          '<form toolname="search" tooldescription="Search the site">\n  <input name="q" toolparamdescription="Search terms">\n</form>',
+        language: 'html',
+      });
 }

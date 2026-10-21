@@ -1,8 +1,11 @@
 import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { fetchCertificate } from '../../lib/tls/client.js';
-import { describeChain } from '../../lib/tls/certs.js';
-import { rateCertificateKey } from '../../lib/tls/evaluate.js';
+import { describeChain, formatCertificate } from '../../lib/tls/certs.js';
+import {
+  rateCertificateKey,
+  rateSignatureAlgorithm,
+} from '../../lib/tls/evaluate.js';
 import { onTlsSite } from './on-tls-site.js';
 
 /**
@@ -30,26 +33,37 @@ export default defineHint({
       }
       const bad: string[] = [];
       const phaseOut: string[] = [];
+      const badEvidence: string[] = [];
+      const phaseOutEvidence: string[] = [];
       for (const cert of describeChain(result.chain)) {
         if (cert.isRoot) {
           continue;
         }
         const { rating, description } = rateCertificateKey(cert.key);
         const message = `${cert.commonName}: ${description}`;
+        const evidence = formatCertificate(
+          cert,
+          description,
+          rateSignatureAlgorithm(cert.signatureOid).name,
+        );
         if (rating === 'bad') {
           bad.push(message);
+          badEvidence.push(evidence);
         } else if (rating === 'phase-out') {
           phaseOut.push(message);
+          phaseOutEvidence.push(evidence);
         }
       }
       if (bad.length > 0) {
         report(
           `The public key of your website certificate is *not* based on a secure signing algorithm with secure parameters: ${bad.join('; ')}.`,
+          badEvidence.join('\n\n'),
         );
       }
       if (phaseOut.length > 0) {
         report(
           `The public key of your website certificate is based on a signing algorithm with parameters that should be *phased out* as they are weaker, although you might still use them if absolutely needed. In a future update, they will likely become insufficient: ${phaseOut.join('; ')}.`,
+          phaseOutEvidence.join('\n\n'),
           Severity.warning,
         );
       }

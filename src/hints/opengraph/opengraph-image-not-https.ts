@@ -11,6 +11,8 @@ export default defineOgHint({
   name: 'Serve og:image over HTTPS',
   description: 'Requires the og:image URL to use HTTPS.',
   slug: 'image-not-https',
+  at: 'og:image',
+  image: true,
   severity: Severity.warning,
   category: Category.security,
   check(ctx) {

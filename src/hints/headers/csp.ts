@@ -5,7 +5,11 @@ import {
   cspFindings,
   owaspCspFindings,
 } from '../../lib/headers/csp.js';
-import { headerValues, metaContents } from '../../lib/headers/http-headers.js';
+import {
+  headerValues,
+  metaContents,
+  metaElements,
+} from '../../lib/headers/http-headers.js';
 import {
   PROFILE_SCHEMA,
   isSecure,
@@ -44,9 +48,22 @@ export default defineHint({
     const profile = readProfile(context.hintOptions);
     onPage(context, (page) => {
       const values = headerValues(page.headers, 'content-security-policy');
+      const metaElement =
+        values.length === 0
+          ? metaElements(
+              page.document,
+              'http-equiv',
+              'content-security-policy',
+            ).at(-1)
+          : undefined;
       const snippet = {
         name: 'Content-Security-Policy',
-        value: values.length > 0 ? values.join(', ') : null,
+        value: values,
+        suggest:
+          profile === 'owasp'
+            ? "default-src 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests"
+            : "default-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+        element: metaElement,
       };
       if (profile === 'owasp') {
         reportFindings(page, owaspCspFindings(values), snippet);

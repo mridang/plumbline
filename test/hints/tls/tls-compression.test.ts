@@ -74,6 +74,8 @@ describe('tls-compression', () => {
     expect(problems[0].message).toBe(
       'Your web server supports TLS compression, which is *not* secure.',
     );
+    expect(problems[0].sourceCode).toContain('$ openssl s_client -connect ');
+    expect(problems[0].sourceCode).toContain('Compression: zlib');
   });
 
   it('says so when openssl cannot offer compression', async () => {

@@ -75,4 +75,14 @@ describe('icons-favicon-ico-or-png-missing', () => {
       'https://www.opengraph.to/articles/favicon-icon-missing',
     );
   });
+
+  it('suggests the link to add to the head', async () => {
+    const problems = await runHint(
+      hint,
+      pageRoutes({ head: '<title>A fine page title</title>' }),
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain('/favicon.ico');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

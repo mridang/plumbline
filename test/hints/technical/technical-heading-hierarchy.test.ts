@@ -26,4 +26,11 @@ describe('technical-heading-hierarchy', () => {
     expect(problems[0].message).toContain('h2 is directly followed by h4');
     expect(problems[0].severity).toBe(Severity.warning);
   });
+
+  it('points at the heading that skips a level', async () => {
+    const problems = await runHint(hint, page('<h1>a</h1><h3>jumped</h3>'));
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain('<h3>jumped</h3>');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

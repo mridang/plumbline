@@ -44,6 +44,7 @@ describe('tls-ciphers', () => {
     expect(problems[0].message).toContain(
       'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256',
     );
+    expect(problems[0].sourceCode).toContain('TLSv1.2 TLS_');
   });
 
   it('reports insufficiently secure suites', async () => {
@@ -57,6 +58,9 @@ describe('tls-ciphers', () => {
       '*insufficiently* secure cipher suites',
     );
     expect(problems[0].message).toContain('TLS_RSA_WITH_AES_128_CBC_SHA');
+    expect(problems[0].sourceCode).toContain(
+      'TLSv1.2 TLS_RSA_WITH_AES_128_CBC_SHA',
+    );
   });
 
   it('says so when it cannot connect', async () => {

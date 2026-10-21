@@ -33,6 +33,7 @@ describe('ipv6-same-content', () => {
     const problems = await runHint(hint);
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('are not the same via IPv6');
+    expect(problems[0].sourceCode).toContain('example.test. IN AAAA');
   });
 
   it('warns about different content', async () => {
@@ -44,6 +45,7 @@ describe('ipv6-same-content', () => {
     const problems = await runHint(hint);
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('HTML content');
+    expect(problems[0].sourceCode).toContain('example.test. IN A ');
   });
 
   it('warns about identical error pages', async () => {
@@ -52,6 +54,7 @@ describe('ipv6-same-content', () => {
     const problems = await runHint(hint);
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('4xx or 5xx');
+    expect(problems[0].sourceCode).toContain('example.test. IN AAAA ');
   });
 
   it('is not applicable without both address families', async () => {

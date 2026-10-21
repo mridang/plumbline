@@ -2,7 +2,11 @@ import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onSite } from '../../core/page.js';
 import { siteHost } from '../../lib/network/dns-util.js';
-import { judgeNsAaaa, zoneNameservers } from '../../lib/network/ipv6.js';
+import {
+  judgeNsAaaa,
+  nameserverLines,
+  zoneNameservers,
+} from '../../lib/network/ipv6.js';
 
 /**
  * Internet.nl `ns_aaaa`: the domain needs at least two name servers with an
@@ -29,17 +33,18 @@ export default defineHint({
         return;
       }
       const verdict = judgeNsAaaa(servers);
+      const codeSnippet = nameserverLines(servers);
       if (verdict === 'none') {
         site.report(
           site.url.href,
           'None of the name servers of your domain has an IPv6 address.',
-          { severity: Severity.error },
+          { severity: Severity.error, codeSnippet },
         );
       } else if (verdict === 'one') {
         site.report(
           site.url.href,
           'Only one name server of your domain has an IPv6 address.',
-          { severity: Severity.error },
+          { severity: Severity.error, codeSnippet },
         );
       }
     });

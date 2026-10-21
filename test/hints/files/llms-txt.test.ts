@@ -24,6 +24,8 @@ describe('llms-txt', () => {
     const problems = await runHint(hint, {});
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('was not found');
+    expect(problems[0].resource).toContain('/llms.txt');
+    expect(problems[0].sourceCode).toContain('## Docs');
   });
 
   it('reports a 404 served by the route', async () => {
@@ -57,6 +59,9 @@ describe('llms-txt', () => {
 
   it('reports an invalid file with a line number', async () => {
     const problems = await runHint(hint, serve(`# A\n## Docs\n- [G](/g.md)\n`));
-    expect(problems.map((p) => p.message).join()).toContain('absolute URL');
+    const problem = problems.find((p) => p.message.includes('absolute URL'));
+    expect(problem?.resource).toContain('/llms.txt');
+    expect(problem?.sourceCode).toContain('/g.md');
+    expect(problem?.location.line).toBe(2);
   });
 });

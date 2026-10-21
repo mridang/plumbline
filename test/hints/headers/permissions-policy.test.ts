@@ -23,12 +23,18 @@ describe('permissions-policy', () => {
 
   it('reports a missing header', async () => {
     const problems = await runHint(hint, page());
+    expect(problems[0]?.sourceCode).toMatch(
+      /^Permissions-Policy: accelerometer=\(\), /,
+    );
     expect(problems[0]?.message).toContain('was not specified');
   });
 
   it('lists features that are not disabled', async () => {
     const problems = await runHint(hint, page('camera=(), microphone=(self)'));
     expect(problems).toHaveLength(1);
+    expect(problems[0]?.sourceCode).toBe(
+      'Permissions-Policy: camera=(), microphone=(self)',
+    );
     expect(problems[0]?.message).toContain('microphone');
     expect(problems[0]?.message).toContain('geolocation');
     expect(problems[0]?.message).not.toMatch(/ camera[,.]/);

@@ -22,6 +22,7 @@ describe('internetnl-http-compression', () => {
     );
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('supports HTTP compression');
+    expect(problems[0].sourceCode).toBe('Content-Encoding: x-custom');
     expect(problems[0].severity).toBe(Severity.hint);
   });
 });

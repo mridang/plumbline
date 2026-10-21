@@ -1,7 +1,11 @@
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage } from '../../core/page.js';
 import { crossOriginFindings } from '../../lib/headers/cross-origin.js';
-import { headerValues, metaContents } from '../../lib/headers/http-headers.js';
+import {
+  headerValues,
+  metaContents,
+  metaElements,
+} from '../../lib/headers/http-headers.js';
 import { PROFILE_SCHEMA, readProfile, reportFindings } from './shared.js';
 
 /**
@@ -36,8 +40,17 @@ export default defineHint({
         page,
         crossOriginFindings('corp', values, metas, profile),
         {
-          name: 'cross-origin-resource-policy',
-          value: values.length > 0 ? values.join(', ') : null,
+          name: 'Cross-Origin-Resource-Policy',
+          value: values,
+          suggest: 'same-origin',
+          element:
+            values.length === 0
+              ? metaElements(
+                  page.document,
+                  'http-equiv',
+                  'cross-origin-resource-policy',
+                ).at(-1)
+              : undefined,
         },
       );
     });

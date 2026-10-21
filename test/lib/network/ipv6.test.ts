@@ -6,6 +6,7 @@ import {
   httpGetByIp,
   judgeNsAaaa,
   nameserverAddresses,
+  nameserverLines,
   network,
   quickRatio,
   stripIrrelevantHtml,
@@ -219,6 +220,19 @@ describe('compareIpFamilies', () => {
     serve(both(page(500, 'oops')), both(page(500, 'oops')));
     expect(await compareIpFamilies('h', ['192.0.2.1'], ['2001:db8::1'])).toBe(
       'notice-status-code',
+    );
+  });
+});
+
+describe('nameserverLines', () => {
+  it('lists the addresses of each name server', () => {
+    expect(
+      nameserverLines([
+        { name: 'a.example.net', v4: ['192.0.2.1'], v6: ['2001:db8::1'] },
+        { name: 'b.example.net', v4: [], v6: [] },
+      ]),
+    ).toBe(
+      'a.example.net. A 192.0.2.1; AAAA 2001:db8::1\nb.example.net. A none; AAAA none',
     );
   });
 });

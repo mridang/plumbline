@@ -21,5 +21,7 @@ describe('agent-webmcp', () => {
     const problems = await runHint(hint, {});
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.warning);
+    expect(problems[0].sourceCode).toContain('toolname');
+    expect(problems[0].codeLanguage).toBe('html');
   });
 });

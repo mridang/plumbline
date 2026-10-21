@@ -25,6 +25,9 @@ describe('mail-dkim', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.hint);
     expect(problems[0].message).toContain('without their selectors');
+    expect(problems[0].sourceCode).toContain(
+      '<selector>._domainkey.example.test. IN TXT',
+    );
   });
 
   it('treats an empty selector list as not configured', async () => {
@@ -48,6 +51,7 @@ describe('mail-dkim', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain("no DKIM record for selector 'gone'");
     expect(problems[0].severity).toBe(Severity.error);
+    expect(problems[0].sourceCode).toBe('gone._domainkey.example.test');
   });
 
   it('reports a lookup that failed', async () => {
@@ -68,6 +72,7 @@ describe('mail-dkim', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('is not valid');
     expect(problems[0].message).toContain("'p' tag is missing");
+    expect(problems[0].sourceCode).toBe('v=DKIM1; k=rsa');
   });
 
   it('reports a revoked key', async () => {

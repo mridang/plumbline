@@ -22,4 +22,12 @@ describe('twitter-title-missing', () => {
     ).toBe(true);
     expect(problems[0].severity).toBe(Severity.warning);
   });
+
+  it('carries the head and the tag to add', async () => {
+    const [problem] = await runHint(hint, page(''));
+    expect(problem.sourceCode).toBe(
+      '<meta name="twitter:title" content="Your page title">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

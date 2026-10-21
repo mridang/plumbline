@@ -25,4 +25,12 @@ describe('opengraph-site-name-missing', () => {
     ).toBe(true);
     expect(problems[0].severity).toBe(Severity.hint);
   });
+
+  it('carries the head and the tag to add', async () => {
+    const [problem] = await runHint(hint, page(''));
+    expect(problem.sourceCode).toBe(
+      '<meta property="og:site_name" content="Your site name">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

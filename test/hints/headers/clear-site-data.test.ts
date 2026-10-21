@@ -29,6 +29,9 @@ describe('clear-site-data', () => {
 
   it('reports a missing header', async () => {
     const problems = await runHint(hint, { '/logout': {} }, options);
+    expect(problems[0]?.sourceCode).toBe(
+      'Clear-Site-Data: "cache","cookies","storage"',
+    );
     expect(problems[0]?.message).toContain('was not specified');
   });
 
@@ -38,6 +41,7 @@ describe('clear-site-data', () => {
       { '/logout': { headers: { 'clear-site-data': '"cookies"' } } },
       options,
     );
+    expect(problems[0]?.sourceCode).toBe('Clear-Site-Data: "cookies"');
     expect(problems[0]?.message).toContain('should be');
   });
 

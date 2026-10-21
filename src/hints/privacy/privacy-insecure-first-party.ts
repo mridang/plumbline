@@ -1,7 +1,7 @@
 import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { classifyRequests } from '../../lib/privacy/requests.js';
-import { collectRequests } from './collect.js';
+import { collectRequests, evidence } from './collect.js';
 
 /**
  * Webbkoll, "Insecure first-party requests": every request to the page's own
@@ -24,9 +24,12 @@ export default defineHint({
       const result = classifyRequests(collected.pageUrl, collected.requests);
       for (const request of result.insecureFirstParty) {
         context.report(
-          collected.pageUrl,
+          request.url,
           `Insecure first-party request: ${request.url}`,
-          { severity: Severity.error },
+          {
+            severity: Severity.error,
+            ...evidence(collected, request.url),
+          },
         );
       }
     });

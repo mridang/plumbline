@@ -40,21 +40,40 @@ const SEVERITIES: Record<FindingSeverity, Severity> = {
 
 /** The header shown next to a finding as a code snippet. */
 export interface Snippet {
-  name: string;
-  value: string | null;
+  /** Header name; leave out when `lines` is given. */
+  name?: string;
+  /** Header lines already rendered, for findings that span several headers. */
+  lines?: string[];
+  /** The value(s) received; one line per entry; null or empty when absent. */
+  value?: string | string[] | null;
+  /** The recommended value, shown as the header to add when none was sent. */
+  suggest?: string;
+  /**
+   * The `<meta>` the policy was declared in. Webhint then derives the line,
+   * column and code from the element, so no header line is added.
+   */
+  element?: ReportOptions['element'];
 }
 
 function options(
   severity: FindingSeverity,
   snippet?: Snippet,
 ): Partial<ReportOptions> {
+  const values = [snippet?.value ?? []].flat().filter((v) => v !== '');
+  const lines = snippet?.lines
+    ? snippet.lines
+    : values.length > 0
+      ? values.map((value) => `${snippet?.name}: ${value}`)
+      : snippet?.suggest === undefined
+        ? []
+        : [`${snippet.name}: ${snippet.suggest}`];
+  if (snippet?.element) {
+    return { severity: SEVERITIES[severity], element: snippet.element };
+  }
   return {
     severity: SEVERITIES[severity],
-    ...(snippet?.value
-      ? {
-          codeLanguage: 'http',
-          codeSnippet: `${snippet.name}: ${snippet.value}`,
-        }
+    ...(lines.length > 0
+      ? { codeLanguage: 'http', codeSnippet: lines.join('\n') }
       : {}),
   };
 }

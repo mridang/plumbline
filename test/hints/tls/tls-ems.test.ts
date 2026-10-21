@@ -73,6 +73,7 @@ describe('tls-ems', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.error);
     expect(problems[0].message).toBe('Your web server does *not* support EMS.');
+    expect(problems[0].sourceCode).toContain('Extended master secret: no');
   });
 
   realIt('passes against a real server', async () => {

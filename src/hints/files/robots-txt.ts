@@ -22,6 +22,8 @@ export default defineHint({
         label: 'robots.txt',
         mediaTypes: ['text/plain'],
         missing: 'warning',
+        example: (origin) =>
+          `User-agent: *\nAllow: /\n\nSitemap: ${origin}/sitemap.xml\n`,
         validate: (text) => validateRobotsTxt(text),
       });
     });

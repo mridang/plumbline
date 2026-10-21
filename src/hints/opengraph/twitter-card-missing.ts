@@ -10,6 +10,7 @@ export default defineOgHint({
   name: 'Require twitter:card',
   description: 'Requires a twitter:card meta tag.',
   slug: 'missing-twitter-card',
+  add: '<meta name="twitter:card" content="summary_large_image">',
   severity: Severity.warning,
   check(ctx) {
     return ctx.meta('twitter:card') === null

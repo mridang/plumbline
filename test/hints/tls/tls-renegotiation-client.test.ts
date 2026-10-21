@@ -81,5 +81,8 @@ describe('tls-renegotiation-client', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.hint);
     expect(problems[0].message).toContain('client-initiated renegotiation');
+    expect(problems[0].sourceCode).toContain(
+      'client renegotiations completed: ',
+    );
   });
 });

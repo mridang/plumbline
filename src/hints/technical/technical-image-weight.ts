@@ -41,10 +41,12 @@ export default defineHint({
         const bytes = sizes[i];
         const level = bytes === null ? 'ok' : imageWeightLevel(bytes);
         if (bytes !== null && level !== 'ok') {
-          page.report(
+          context.report(
+            url,
             `The image ${url} weighs ${formatKb(bytes)}; keep images under ${level === 'fail' ? '500' : '200'} KB.`,
             {
               severity: level === 'fail' ? Severity.error : Severity.warning,
+              codeSnippet: `${formatKb(bytes)} (${bytes} bytes)`,
             },
           );
         }

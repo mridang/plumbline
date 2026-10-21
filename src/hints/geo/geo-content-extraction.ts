@@ -27,18 +27,24 @@ export default defineHint({
   setup(context) {
     onPage(context, (page) => {
       const stats = measureContent(page.document);
+      const root =
+        page.document.querySelector('main') ??
+        page.document.querySelector('body');
       if (!stats) {
         return;
       }
       if (stats.headingCount === 0 && stats.paragraphCount === 0) {
         page.report(
           `No headings or paragraph-level structure detected; a generative engine may struggle to extract distinct sections from this page. Break content into headings (<h2>, <h3>, ...) and paragraphs (<p>) rather than unstructured text. Read more: ${REF}`,
-          { severity: Severity.warning },
+          { severity: Severity.warning, element: root },
         );
       } else if (stats.maxUnstructuredLength > UNSTRUCTURED_BLOCK_THRESHOLD) {
         page.report(
           `Found a ${stats.maxUnstructuredLength}-character block of text with no internal heading or paragraph structure. Break large unstructured blocks into headed sections and paragraphs. Read more: ${REF}`,
-          { severity: Severity.warning },
+          {
+            severity: Severity.warning,
+            element: root?.querySelectorAll('div')[stats.unstructuredIndex],
+          },
         );
       }
     });

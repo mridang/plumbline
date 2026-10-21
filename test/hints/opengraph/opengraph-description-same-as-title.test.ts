@@ -58,4 +58,17 @@ describe('opengraph-description-same-as-title', () => {
       ),
     ).toEqual([]);
   });
+
+  it('carries the offending tag and its location', async () => {
+    const [problem] = await runHint(
+      hint,
+      page(
+        '<meta property="og:title" content="Same words here for both"><meta property="og:description" content="Same words here for both">',
+      ),
+    );
+    expect(problem.sourceCode).toContain(
+      '<meta property="og:description" content="Same words here for both">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

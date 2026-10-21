@@ -48,7 +48,9 @@ export default defineHint({
       if (records.length !== 1) {
         mail.report('Your domain does *not* have a DMARC record.', {
           severity: Severity.error,
-          codeSnippet: records.join('\n') || undefined,
+          codeSnippet:
+            records.join('\n') ||
+            `_dmarc.${mail.domain}. IN TXT "v=DMARC1; p=quarantine; rua=mailto:dmarc@${mail.domain}"`,
         });
         return;
       }

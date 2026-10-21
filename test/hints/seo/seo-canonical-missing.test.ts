@@ -51,4 +51,16 @@ describe('seo-canonical-missing', () => {
       ),
     ).toHaveLength(1);
   });
+
+  it('suggests the canonical link to add', async () => {
+    const problems = await runHint(
+      hint,
+      pageRoutes({ head: '<title>A fine page title</title>' }),
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain(
+      '<link rel="canonical" href="http://127.0.0.1:',
+    );
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

@@ -50,6 +50,18 @@ export default defineHint({
           nel: nel[0] ?? null,
           reportTo: join(headerValues(page.headers, 'report-to'), ', '),
         }),
+        {
+          lines: [
+            'content-security-policy',
+            'content-security-policy-report-only',
+            'report-to',
+            'nel',
+          ].flatMap((name) =>
+            headerValues(page.headers, name).map(
+              (value) => `${name}: ${value}`,
+            ),
+          ),
+        },
       );
     });
   },

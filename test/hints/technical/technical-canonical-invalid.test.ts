@@ -37,4 +37,14 @@ describe('technical-canonical-invalid', () => {
     expect(problems[0].message).toContain('not a valid URL');
     expect(problems[0].severity).toBe(Severity.error);
   });
+
+  it('points at the canonical link', async () => {
+    const problems = await runHint(
+      hint,
+      page('', '<link rel="canonical" href="http://[bad">'),
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain('rel="canonical"');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

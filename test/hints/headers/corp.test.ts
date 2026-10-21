@@ -24,6 +24,9 @@ describe('corp', () => {
   it('gives advice when the header is missing', async () => {
     const problems = await runHint(hint, page());
     expect(problems).toHaveLength(1);
+    expect(problems[0]?.sourceCode).toBe(
+      'Cross-Origin-Resource-Policy: same-origin',
+    );
     expect(problems[0]?.message).toContain('not implemented');
   });
 
@@ -40,6 +43,7 @@ describe('corp', () => {
       hint,
       page({ 'cross-origin-resource-policy': 'bogus' }),
     );
+    expect(problems[0]?.sourceCode).toBe('Cross-Origin-Resource-Policy: bogus');
     expect(problems[0]?.message).toContain('cannot be recognized');
   });
 

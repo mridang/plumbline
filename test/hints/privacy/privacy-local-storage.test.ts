@@ -25,6 +25,8 @@ describe('privacy-local-storage', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('localStorage used (2)');
     expect(problems[0].message).toContain('theme = dark');
+    expect(problems[0].sourceCode).toBe('theme\nblob');
+    expect(problems[0].sourceCode).not.toContain('dark');
     expect(problems[0].message).toContain(`${'x'.repeat(50)}...`);
   });
 });

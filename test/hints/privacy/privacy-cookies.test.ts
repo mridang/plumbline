@@ -25,12 +25,17 @@ describe('privacy-cookies', () => {
     });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('1 first-party and 0 third-party');
+    expect(problems[0].sourceCode).toBe(
+      'Set-Cookie: sid; Domain=127.0.0.1; Path=/',
+    );
+    expect(problems[0].codeLanguage).toBe('http');
   });
 
   it('counts document.cookie as first party', async () => {
     setEvaluate(() => 'a=1; b=2');
     const problems = await runHint(hint, { '/': html('') });
     expect(problems[0].message).toContain('2 first-party and 0 third-party');
+    expect(problems[0].sourceCode).toBe('Cookie: a\nCookie: b');
   });
 
   it('reports third-party cookies and their domains', async () => {
@@ -56,6 +61,10 @@ describe('privacy-cookies', () => {
       'First-party cookies: 127.0.0.1 sid (expires ',
     );
     expect(problems[0].message).toContain('Secure, HttpOnly, SameSite=Strict');
+    expect(problems[0].sourceCode).toMatch(
+      /^Set-Cookie: sid; Domain=127\.0\.0\.1; Path=\/; Expires=.+; Secure; HttpOnly; SameSite=Strict$/,
+    );
+    expect(problems[0].sourceCode).not.toContain('sid=');
   });
 
   it('does not count a cookie the server deletes', async () => {

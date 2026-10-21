@@ -25,7 +25,24 @@ export default defineHint({
       if (!parsed.some((data) => containsType(data, 'FAQPage'))) {
         page.report(
           `No FAQPage structured data found. If this page has an FAQ section, mark it up with FAQPage JSON-LD so generative engines can surface individual answers. Read more: ${REF}`,
-          { severity: Severity.warning },
+          {
+            severity: Severity.warning,
+            element: page.document.querySelector('head'),
+            codeSnippet: `<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Your question?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Your answer." }
+    }
+  ]
+}
+</script>`,
+            codeLanguage: 'html',
+          },
         );
       }
     });

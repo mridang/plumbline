@@ -40,4 +40,12 @@ describe('opengraph-title-missing', () => {
     ).toBe(true);
     expect(problems[0].severity).toBe(Severity.error);
   });
+
+  it('carries the head and the tag to add', async () => {
+    const [problem] = await runHint(hint, page(''));
+    expect(problem.sourceCode).toBe(
+      '<meta property="og:title" content="Your page title">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

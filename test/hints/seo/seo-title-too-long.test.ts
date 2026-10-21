@@ -51,4 +51,16 @@ describe('seo-title-too-long', () => {
   it('ignores a missing title', async () => {
     expect(await runHint(hint, pageRoutes({ head: '' }))).toEqual([]);
   });
+
+  it('points at the title', async () => {
+    const problems = await runHint(
+      hint,
+      pageRoutes({
+        head: '<title>xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</title>',
+      }),
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain('<title>xxx');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

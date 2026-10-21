@@ -236,3 +236,23 @@ export function describeCookie(cookie: CookieRecord): string {
     `${cookie.sameSite ? `SameSite=${cookie.sameSite}` : 'no SameSite'})`
   );
 }
+
+/**
+ * Writes one cookie as the header line that set it, with the attributes that
+ * were seen and no value. A cookie read from `document.cookie` has no header,
+ * so it is written as `Cookie` with only its name.
+ */
+export function cookieLine(cookie: CookieRecord): string {
+  if (cookie.fromScript) {
+    return `Cookie: ${cookie.name}`;
+  }
+  return [
+    `Set-Cookie: ${cookie.name}`,
+    `Domain=${cookie.domain}`,
+    `Path=${cookie.path}`,
+    ...(cookie.expires ? [`Expires=${cookie.expires}`] : []),
+    ...(cookie.secure ? ['Secure'] : []),
+    ...(cookie.httpOnly ? ['HttpOnly'] : []),
+    ...(cookie.sameSite ? [`SameSite=${cookie.sameSite}`] : []),
+  ].join('; ');
+}

@@ -40,4 +40,11 @@ describe('seo-meta-description-missing', () => {
       'https://www.opengraph.to/articles/missing-meta-description',
     );
   });
+
+  it('suggests a meta description', async () => {
+    const problems = await runHint(hint, pageRoutes({ head: '' }));
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain('<meta name="description"');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

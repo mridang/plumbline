@@ -22,6 +22,7 @@ describe('x-frame-options', () => {
   it('reports a missing header', async () => {
     const problems = await runHint(hint, page());
     expect(problems).toHaveLength(1);
+    expect(problems[0]?.sourceCode).toBe('X-Frame-Options: DENY');
     expect(problems[0]?.message).toContain('not implemented');
   });
 
@@ -29,6 +30,9 @@ describe('x-frame-options', () => {
     const problems = await runHint(
       hint,
       page({ 'x-frame-options': 'ALLOW-FROM https://a.example' }),
+    );
+    expect(problems[0]?.sourceCode).toBe(
+      'X-Frame-Options: ALLOW-FROM https://a.example',
     );
     expect(problems[0]?.message).toContain('ALLOW-FROM');
   });

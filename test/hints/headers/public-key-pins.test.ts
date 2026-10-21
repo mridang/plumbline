@@ -12,6 +12,9 @@ describe('public-key-pins', () => {
       '/': { headers: { 'public-key-pins': 'pin-sha256=abc; max-age=100' } },
     });
     expect(problems).toHaveLength(1);
+    expect(problems[0]?.sourceCode).toBe(
+      'Public-Key-Pins: pin-sha256=abc; max-age=100',
+    );
     expect(problems[0]?.message).toContain(
       "The 'Public-Key-Pins' header is deprecated",
     );

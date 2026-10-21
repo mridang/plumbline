@@ -68,12 +68,14 @@ export default defineHint({
       if (await acceptsOnly(target, legacy, SIGNATURE_ALGORITHMS_BAD_HASH)) {
         report(
           'Your web server supports one or more *insufficiently* secure hash functions for key exchange: SHA1.',
+          `${legacy} accepts only: ${SIGNATURE_ALGORITHMS_BAD_HASH.replaceAll(':', ', ')}`,
         );
       } else if (
         await acceptsOnly(target, legacy, SIGNATURE_ALGORITHMS_PHASE_OUT_HASH)
       ) {
         report(
           'Your web server supports a hash function for key exchange that should be *phased out* as it is weaker, although you might still use it if absolutely needed. In a future update, it will likely become insufficient: SHA224.',
+          `${legacy} accepts only: ${SIGNATURE_ALGORITHMS_PHASE_OUT_HASH.replaceAll(':', ', ')}`,
           Severity.warning,
         );
       }

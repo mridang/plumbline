@@ -37,6 +37,8 @@ describe('cert-pubkey', () => {
     expect(problems[0].severity).toBe(Severity.warning);
     expect(problems[0].message).toContain('*phased out*');
     expect(problems[0].message).toContain(`localhost: ${description}`);
+    expect(problems[0].sourceCode).toContain('Subject: CN=localhost');
+    expect(problems[0].sourceCode).toContain(`Public key: ${description}`);
   });
 
   it.each([
@@ -50,6 +52,8 @@ describe('cert-pubkey', () => {
       '*not* based on a secure signing algorithm',
     );
     expect(problems[0].message).toContain(`localhost: ${description}`);
+    expect(problems[0].sourceCode).toContain('Subject: CN=localhost');
+    expect(problems[0].sourceCode).toContain(`Public key: ${description}`);
   });
 
   it('says so when it cannot connect', async () => {

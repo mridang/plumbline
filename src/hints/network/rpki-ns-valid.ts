@@ -2,7 +2,12 @@ import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onSite } from '../../core/page.js';
 import { siteHost } from '../../lib/network/dns-util.js';
-import { describe, judgeValidity, nsRpki } from '../../lib/network/rpki.js';
+import {
+  describe,
+  rpkiLines,
+  judgeValidity,
+  nsRpki,
+} from '../../lib/network/rpki.js';
 
 /**
  * Internet.nl `ns rpki valid`: the route announcement of every IP address
@@ -29,13 +34,13 @@ export default defineHint({
         site.report(
           site.url.href,
           `At least one IP address of your name servers has an Invalid validation state. The route announcement of the affected IP addresses is not matched by the published RPKI Route Origin Authorisation (ROA): ${describe(offenders)}. This indicates an unintentional or malicious route configuration error. Contact your hoster as soon as possible.`,
-          { severity: Severity.error },
+          { severity: Severity.error, codeSnippet: rpkiLines(offenders) },
         );
       } else if (verdict === 'bad') {
         site.report(
           site.url.href,
           `At least one IP address of your name servers has a NotFound validation state. There is no RPKI Route Origin Authorisation (ROA) published for the route announcement of each of the affected IP addresses: ${describe(offenders)}.`,
-          { severity: Severity.error },
+          { severity: Severity.error, codeSnippet: rpkiLines(offenders) },
         );
       }
     });

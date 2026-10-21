@@ -46,4 +46,14 @@ describe('seo-title-too-short', () => {
       await runHint(hint, pageRoutes({ head: '<title></title>' })),
     ).toEqual([]);
   });
+
+  it('points at the title', async () => {
+    const problems = await runHint(
+      hint,
+      pageRoutes({ head: '<title>short</title>' }),
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain('<title>short</title>');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

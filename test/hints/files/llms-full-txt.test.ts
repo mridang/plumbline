@@ -19,6 +19,8 @@ describe('llms-full-txt', () => {
     const problems = await runHint(hint, {});
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('was not found');
+    expect(problems[0].resource).toContain('/llms-full.txt');
+    expect(problems[0].sourceCode).toContain('# ');
   });
 
   it('reports a 404 served by the route', async () => {

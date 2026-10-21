@@ -5,12 +5,13 @@
  * plus one `check` function and this module turns it into a webhint hint.
  */
 import type { HintContext } from 'hint';
+import type { HTMLElement } from '@hint/utils-dom';
 import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import type { HintDefinition } from '../../core/define-hint.js';
 import type { Group } from '../../core/groups.js';
 import { onPage } from '../../core/page.js';
-import { metaValue, type MetaDocument } from './meta.js';
+import { metaElement, metaValue, type MetaDocument } from './meta.js';
 import { sniffImage, type ImageInfo } from './image-size.js';
 
 /** The downloaded `og:image` file. */
@@ -49,6 +50,18 @@ export interface OgRule {
   /** Extra topic groups; `opengraph` and `social` are always added. */
   extraGroups?: readonly Group[];
   category?: Category;
+  /**
+   * Meta tag that is wrong when it is present; the finding then carries that
+   * tag. When the tag is absent the finding carries `<head>` and `add`.
+   */
+  at?: string;
+  /** Tag(s) to suggest when the finding is about something missing. */
+  add?: string;
+  /**
+   * Reports against the resolved `og:image` URL instead of the page, keeping
+   * the `og:image` tag as the element.
+   */
+  image?: boolean;
   /** Returns the problem message (without the link), or null when fine. */
   check(ctx: OgContext): string | null | Promise<string | null>;
 }
@@ -56,6 +69,15 @@ export interface OgRule {
 /** Article URL for a slug. */
 const articleUrl = (slug: string): string =>
   `https://www.opengraph.to/articles/${slug}`;
+
+/** Resolves a possibly relative URL, or returns it unchanged when invalid. */
+function resolveUrl(src: string, base: string): string {
+  try {
+    return new URL(src, base).href;
+  } catch {
+    return src;
+  }
+}
 
 /** Downloads the image and sniffs its header; never throws. */
 async function fetchImage(context: HintContext, url: string): Promise<OgImage> {
@@ -114,9 +136,24 @@ export function defineOgHint(rule: OgRule): HintDefinition {
           },
         });
         if (message !== null) {
-          page.report(`${message} See ${articleUrl(rule.slug)}`, {
-            severity: rule.severity,
-          });
+          const tagKey = rule.image ? 'og:image' : rule.at;
+          const tag = tagKey ? metaElement(doc, tagKey) : null;
+          const head = page.document.querySelector('head');
+          const element = (tag ??
+            head ??
+            page.document.documentElement) as unknown as HTMLElement;
+          const src = rule.image ? metaValue(doc, 'og:image') : null;
+          context.report(
+            src === null ? page.url : resolveUrl(src, page.url),
+            `${message} See ${articleUrl(rule.slug)}`,
+            {
+              severity: rule.severity,
+              element,
+              ...(tag === null && rule.add
+                ? { codeSnippet: rule.add, codeLanguage: 'html' as const }
+                : {}),
+            },
+          );
         }
       });
     },

@@ -18,7 +18,10 @@ export default defineHint({
     onPage(context, (page) => {
       const value = headerValue(page.headers, 'x-dns-prefetch-control');
       if (value === null) {
-        page.report("The 'X-DNS-Prefetch-Control' header was not specified.");
+        page.report("The 'X-DNS-Prefetch-Control' header was not specified.", {
+          codeLanguage: 'http',
+          codeSnippet: headerSnippet('X-DNS-Prefetch-Control', 'off'),
+        });
       } else if (value.toLowerCase() !== 'off') {
         page.report("The 'X-DNS-Prefetch-Control' header should be 'off'.", {
           codeLanguage: 'http',

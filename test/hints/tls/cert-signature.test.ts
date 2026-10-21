@@ -33,6 +33,12 @@ describe('cert-signature', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.warning);
     expect(problems[0].message).toContain('localhost: ecdsa-with-SHA224');
+    expect(problems[0].sourceCode).toContain('Subject: CN=localhost');
+    expect(problems[0].sourceCode).toContain('Issuer: CN=');
+    expect(problems[0].sourceCode).toContain('Public key: ');
+    expect(problems[0].sourceCode).toContain(
+      'Signature algorithm: ecdsa-with-SHA224',
+    );
   });
 
   it('reports SHA-1', async () => {
@@ -43,6 +49,9 @@ describe('cert-signature', () => {
       '*insufficiently* secure signing algorithm',
     );
     expect(problems[0].message).toContain('localhost: ecdsa-with-SHA1');
+    expect(problems[0].sourceCode).toContain(
+      'Signature algorithm: ecdsa-with-SHA1',
+    );
   });
 
   it('says so when it cannot connect', async () => {

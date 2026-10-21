@@ -10,6 +10,7 @@ export default defineOgHint({
   name: 'Require og:url',
   description: 'Requires an og:url meta tag.',
   slug: 'missing-og-url',
+  add: '<meta property="og:url" content="https://example.com/page">',
   severity: Severity.warning,
   extraGroups: ['seo'],
   check(ctx) {

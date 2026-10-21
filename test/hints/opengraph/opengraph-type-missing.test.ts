@@ -22,4 +22,12 @@ describe('opengraph-type-missing', () => {
     ).toBe(true);
     expect(problems[0].severity).toBe(Severity.hint);
   });
+
+  it('carries the head and the tag to add', async () => {
+    const [problem] = await runHint(hint, page(''));
+    expect(problem.sourceCode).toBe(
+      '<meta property="og:type" content="website">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

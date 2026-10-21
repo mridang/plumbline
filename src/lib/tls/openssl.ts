@@ -86,7 +86,15 @@ export const openssl: { exec: OpensslExec; command: string } = {
 export type OpensslOutcome<T> =
   | { kind: 'unavailable' }
   | { kind: 'failed'; reason: string }
-  | { kind: 'ok'; value: T };
+  | {
+      kind: 'ok';
+      value: T;
+      /**
+       * The `openssl` command and the lines of its output the verdict rests
+       * on, ready to show as a code snippet. Empty from `runSClient`.
+       */
+      evidence: string;
+    };
 
 /** `host:port` as `s_client -connect` wants it (IPv6 in brackets). */
 function connectArg(target: TlsTarget): string {
@@ -121,13 +129,32 @@ async function runSClient(
       input: ['Q\n'],
       ...options,
     });
-    return { kind: 'ok', value: run };
+    return { kind: 'ok', value: run, evidence: '' };
   } catch (error) {
     const code = (error as { code?: string }).code;
     return code === 'ENOENT'
       ? { kind: 'unavailable' }
       : { kind: 'failed', reason: String(error) };
   }
+}
+
+/**
+ * The `openssl` command line and the lines of `output` that match `pattern`,
+ * so a report can show what the verdict rests on.
+ */
+function opensslEvidence(
+  target: TlsTarget,
+  extra: readonly string[],
+  output: string,
+  pattern: RegExp,
+): string {
+  const lines = output
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => pattern.test(line));
+  return [`$ openssl ${sClientArgs(target, extra).join(' ')}`, ...lines].join(
+    '\n',
+  );
 }
 
 /** Secure renegotiation support as `s_client` prints it (TLS 1.2 and older). */
@@ -199,7 +226,8 @@ export type CompressionResult = 'none' | 'compressed' | 'cannot-compress';
 export async function testCompression(
   target: TlsTarget,
 ): Promise<OpensslOutcome<CompressionResult>> {
-  const outcome = await runSClient(target, ['-tls1_2', '-comp', '-trace']);
+  const args = ['-tls1_2', '-comp', '-trace'];
+  const outcome = await runSClient(target, args);
   if (outcome.kind !== 'ok') {
     return outcome;
   }
@@ -208,12 +236,14 @@ export async function testCompression(
   if (parseCompression(output) === null) {
     return { kind: 'failed', reason: 'no TLS 1.2 handshake' };
   }
+  const evidence = opensslEvidence(target, args, output, /^Compression:/);
   if (!parseCanCompress(output)) {
-    return { kind: 'ok', value: 'cannot-compress' };
+    return { kind: 'ok', value: 'cannot-compress', evidence };
   }
   return {
     kind: 'ok',
     value: parseCompression(output) === 'none' ? 'none' : 'compressed',
+    evidence,
   };
 }
 
@@ -224,16 +254,25 @@ export type SecureRenegotiationResult = 'supported' | 'not-supported';
 export async function testSecureRenegotiation(
   target: TlsTarget,
 ): Promise<OpensslOutcome<SecureRenegotiationResult>> {
-  const outcome = await runSClient(target, ['-tls1_2']);
+  const args = ['-tls1_2'];
+  const outcome = await runSClient(target, args);
   if (outcome.kind !== 'ok') {
     return outcome;
   }
-  const result = parseSecureRenegotiation(
-    `${outcome.value.stdout}\n${outcome.value.stderr}`,
-  );
+  const output = `${outcome.value.stdout}\n${outcome.value.stderr}`;
+  const result = parseSecureRenegotiation(output);
   return result === null
     ? { kind: 'failed', reason: 'no TLS 1.2 handshake' }
-    : { kind: 'ok', value: result };
+    : {
+        kind: 'ok',
+        value: result,
+        evidence: opensslEvidence(
+          target,
+          args,
+          output,
+          /^Secure Renegotiation IS/i,
+        ),
+      };
 }
 
 /**
@@ -243,7 +282,8 @@ export async function testSecureRenegotiation(
 export async function testClientRenegotiation(
   target: TlsTarget,
 ): Promise<OpensslOutcome<number>> {
-  const outcome = await runSClient(target, ['-tls1_2', '-state'], {
+  const args = ['-tls1_2', '-state'];
+  const outcome = await runSClient(target, args, {
     input: [...Array(SCAN_RENEGOTIATION_LIMIT).fill('R\n'), 'Q\n'],
     inputDelayMs: 300,
     timeoutMs: 30000,
@@ -255,7 +295,12 @@ export async function testClientRenegotiation(
   if (parseSecureRenegotiation(output) === null) {
     return { kind: 'failed', reason: 'no TLS 1.2 handshake' };
   }
-  return { kind: 'ok', value: countRenegotiations(output) };
+  const count = countRenegotiations(output);
+  return {
+    kind: 'ok',
+    value: count,
+    evidence: `${opensslEvidence(target, args, output, /^Secure Renegotiation IS/i)}\nclient renegotiations completed: ${count} (sent ${SCAN_RENEGOTIATION_LIMIT})`,
+  };
 }
 
 /** Result of the Extended Master Secret test. */
@@ -265,16 +310,25 @@ export type ExtendedMasterSecretResult = 'supported' | 'not-supported';
 export async function testExtendedMasterSecret(
   target: TlsTarget,
 ): Promise<OpensslOutcome<ExtendedMasterSecretResult>> {
-  const outcome = await runSClient(target, ['-tls1_2']);
+  const args = ['-tls1_2'];
+  const outcome = await runSClient(target, args);
   if (outcome.kind !== 'ok') {
     return outcome;
   }
-  const used = parseExtendedMasterSecret(
-    `${outcome.value.stdout}\n${outcome.value.stderr}`,
-  );
+  const output = `${outcome.value.stdout}\n${outcome.value.stderr}`;
+  const used = parseExtendedMasterSecret(output);
   return used === null
     ? { kind: 'failed', reason: 'no TLS 1.2 handshake' }
-    : { kind: 'ok', value: used ? 'supported' : 'not-supported' };
+    : {
+        kind: 'ok',
+        value: used ? 'supported' : 'not-supported',
+        evidence: opensslEvidence(
+          target,
+          args,
+          output,
+          /^Extended master secret:/i,
+        ),
+      };
 }
 
 /**
@@ -303,20 +357,28 @@ export async function testZeroRtt(
     if (first.kind !== 'ok') {
       return first;
     }
-    const second = await runSClient(
-      target,
-      ['-tls1_3', '-sess_in', session, '-early_data', early],
-      { input: ['', 'Q\n'], inputDelayMs: 500 },
-    );
+    const resumeArgs = ['-tls1_3', '-sess_in', session, '-early_data', early];
+    const second = await runSClient(target, resumeArgs, {
+      input: ['', 'Q\n'],
+      inputDelayMs: 500,
+    });
     if (second.kind !== 'ok') {
       return second;
     }
-    const accepted = parseEarlyData(
-      `${second.value.stdout}\n${second.value.stderr}`,
-    );
+    const output = `${second.value.stdout}\n${second.value.stderr}`;
+    const accepted = parseEarlyData(output);
     return accepted === null
       ? { kind: 'failed', reason: 'session could not be resumed' }
-      : { kind: 'ok', value: accepted };
+      : {
+          kind: 'ok',
+          value: accepted,
+          evidence: opensslEvidence(
+            target,
+            resumeArgs,
+            output,
+            /^Early data was/i,
+          ),
+        };
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

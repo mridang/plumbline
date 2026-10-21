@@ -19,11 +19,17 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      const { total, invalid } = readJsonLd(page.document);
+      const { total, invalid, invalidAt } = readJsonLd(page.document);
       if (invalid > 0) {
         page.report(
           `${invalid} of ${total} JSON-LD block(s) contain invalid JSON. Fix the malformed JSON-LD block(s) so they parse as valid JSON. Read more: ${REF}`,
-          { severity: Severity.error },
+          {
+            severity: Severity.error,
+            // The first block that does not parse.
+            element: page.document.querySelectorAll(
+              'script[type="application/ld+json" i]',
+            )[invalidAt[0]],
+          },
         );
       }
     });

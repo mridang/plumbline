@@ -40,4 +40,10 @@ describe('geo-structured-data-invalid', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('1 of 1');
   });
+
+  it('points at the first invalid block', async () => {
+    const problems = await runHint(hint, page(['{"ok":1}', '{oops']));
+    expect(problems[0].sourceCode).toContain('{oops');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

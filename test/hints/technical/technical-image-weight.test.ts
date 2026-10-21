@@ -39,4 +39,14 @@ describe('technical-image-weight', () => {
     expect(mid?.severity).toBe(Severity.warning);
     expect(huge?.severity).toBe(Severity.error);
   });
+
+  it('reports against the image with its size as the snippet', async () => {
+    const problems = await runHint(hint, {
+      ...page('<img src="/mid.png">'),
+      '/mid.png': big(250),
+    });
+    expect(problems).toHaveLength(1);
+    expect(problems[0].resource).toMatch(/\/mid\.png$/);
+    expect(problems[0].sourceCode).toBe('250.0 KB (256000 bytes)');
+  });
 });

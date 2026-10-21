@@ -51,4 +51,15 @@ describe('opengraph-image-dimensions-missing', () => {
   it('passes without og:image', async () => {
     expect(await runHint(hint, page(''))).toEqual([]);
   });
+
+  it('carries the head and the tag to add', async () => {
+    const [problem] = await runHint(
+      hint,
+      page('<meta property="og:image" content="/i.png">'),
+    );
+    expect(problem.sourceCode).toBe(
+      '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

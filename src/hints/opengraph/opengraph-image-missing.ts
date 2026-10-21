@@ -10,6 +10,7 @@ export default defineOgHint({
   name: 'Require og:image',
   description: 'Requires an og:image meta tag.',
   slug: 'missing-og-image',
+  add: '<meta property="og:image" content="https://example.com/og-image.png">',
   severity: Severity.error,
   check(ctx) {
     return ctx.meta('og:image') === null

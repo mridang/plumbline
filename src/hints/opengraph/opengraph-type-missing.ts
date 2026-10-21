@@ -10,6 +10,7 @@ export default defineOgHint({
   name: 'Require og:type',
   description: 'Requires an og:type meta tag.',
   slug: 'missing-og-type',
+  add: '<meta property="og:type" content="website">',
   severity: Severity.hint,
   check(ctx) {
     return ctx.meta('og:type') === null

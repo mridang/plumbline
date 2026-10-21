@@ -36,12 +36,14 @@ describe('x-xss-protection', () => {
 
   it('only warns when the filter is disabled with 0', async () => {
     const problems = await runHint(hint, page({ 'x-xss-protection': '0' }));
+    expect(problems[0]?.sourceCode).toBe('X-XSS-Protection: 0');
     expect(problems[0]?.message).toContain('disables');
     expect(problems[0]?.severity).toBe(Severity.warning);
   });
 
   it('reports an invalid value', async () => {
     const problems = await runHint(hint, page({ 'x-xss-protection': 'on' }));
+    expect(problems[0]?.sourceCode).toBe('X-XSS-Protection: on');
     expect(problems[0]?.message).toContain('cannot be recognized');
   });
 });

@@ -101,6 +101,11 @@ export function parseTlsa(data: string): Tlsa | null {
 export type DaneExistence =
   { state: 'none' } | { state: 'bogus' } | { state: 'exists'; records: Tlsa[] };
 
+/** Renders a record as a zone file line, for use as report evidence. */
+export function formatTlsa(record: Tlsa, name: string): string {
+  return `${name}. IN TLSA ${record.usage} ${record.selector} ${record.matching} ${record.data}`;
+}
+
 /** Looks up the TLSA records of `_<port>._tcp.<host>`. */
 export async function daneExistence(
   host: string,

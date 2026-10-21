@@ -22,6 +22,7 @@ export default defineHint({
         label: 'ai.txt',
         mediaTypes: ['text/plain', 'text/markdown'],
         missing: 'hint',
+        example: () => `User-agent: *\nDisallow: /private/\n`,
         validate: (text) => validateAiTxt(text).issues,
       });
     });

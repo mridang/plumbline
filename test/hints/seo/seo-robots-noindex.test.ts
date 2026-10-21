@@ -93,4 +93,30 @@ describe('seo-robots-noindex', () => {
       ),
     ).toHaveLength(1);
   });
+
+  it('points at the robots meta tag', async () => {
+    const problems = await runHint(
+      hint,
+      pageRoutes({ head: '<meta name="robots" content="noindex">' }),
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain(
+      '<meta name="robots" content="noindex">',
+    );
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
+
+  it('shows the X-Robots-Tag header line', async () => {
+    const problems = await runHint(hint, {
+      '/': {
+        headers: {
+          'content-type': 'text/html; charset=utf-8',
+          'x-robots-tag': 'noindex',
+        },
+        body: '<!doctype html><html lang="en"><head><title>A fine page title</title></head><body><h1>h</h1></body></html>',
+      },
+    });
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toBe('X-Robots-Tag: noindex');
+  });
 });

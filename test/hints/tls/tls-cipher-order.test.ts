@@ -52,6 +52,8 @@ describe('tls-cipher-order', () => {
     expect(problems[0].message).toContain(
       'preferred TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256 instead of TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256',
     );
+    expect(problems[0].sourceCode).toContain('Server chose: ');
+    expect(problems[0].sourceCode).toContain('Should have chosen: ');
   });
 
   it('reports a server that prefers a worse suite of its own', async () => {

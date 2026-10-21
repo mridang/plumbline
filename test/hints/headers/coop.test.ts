@@ -24,6 +24,9 @@ describe('coop', () => {
   it('gives advice when the header is missing', async () => {
     const problems = await runHint(hint, page());
     expect(problems).toHaveLength(1);
+    expect(problems[0]?.sourceCode).toBe(
+      'Cross-Origin-Opener-Policy: same-origin',
+    );
     expect(problems[0]?.message).toContain('not implemented');
   });
 
@@ -40,6 +43,7 @@ describe('coop', () => {
       hint,
       page({ 'cross-origin-opener-policy': 'bogus' }),
     );
+    expect(problems[0]?.sourceCode).toBe('Cross-Origin-Opener-Policy: bogus');
     expect(problems[0]?.message).toContain('cannot be recognized');
   });
 

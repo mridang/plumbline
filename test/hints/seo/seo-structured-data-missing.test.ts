@@ -76,4 +76,11 @@ describe('seo-structured-data-missing', () => {
       ),
     ).toEqual([]);
   });
+
+  it('suggests a JSON-LD block', async () => {
+    const problems = await runHint(hint, pageRoutes({ head: '' }));
+    expect(problems).toHaveLength(1);
+    expect(problems[0].sourceCode).toContain('application/ld+json');
+    expect(problems[0].location.line).toBeGreaterThanOrEqual(0);
+  });
 });

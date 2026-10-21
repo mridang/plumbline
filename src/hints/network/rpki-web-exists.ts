@@ -2,7 +2,12 @@ import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onSite } from '../../core/page.js';
 import { siteHost } from '../../lib/network/dns-util.js';
-import { describe, webRpki, missingRoa } from '../../lib/network/rpki.js';
+import {
+  describe,
+  rpkiLines,
+  webRpki,
+  missingRoa,
+} from '../../lib/network/rpki.js';
 
 /**
  * Internet.nl `web rpki exists`: an RPKI Route Origin Authorisation (ROA)
@@ -29,7 +34,7 @@ export default defineHint({
         site.report(
           site.url.href,
           `For at least one of the IP addresses of your web server no RPKI Route Origin Authorisation (ROA) is published: ${describe(missing)}.`,
-          { severity: Severity.warning },
+          { severity: Severity.warning, codeSnippet: rpkiLines(missing) },
         );
       }
     });

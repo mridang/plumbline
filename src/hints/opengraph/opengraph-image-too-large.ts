@@ -11,6 +11,7 @@ export default defineOgHint({
   name: 'Keep og:image under 500 KB',
   description: "Flags an og:image over WhatsApp's 500 KB limit.",
   slug: 'og-image-too-large',
+  image: true,
   severity: Severity.warning,
   category: Category.performance,
   async check(ctx) {

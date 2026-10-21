@@ -11,6 +11,7 @@ export default defineOgHint({
   name: 'Differ og:description from og:title',
   description: 'Flags an og:description identical to the og:title.',
   slug: 'description-same-as-title',
+  at: 'og:description',
   severity: Severity.warning,
   extraGroups: ['seo'],
   check(ctx) {

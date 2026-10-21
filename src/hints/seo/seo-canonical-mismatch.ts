@@ -24,7 +24,10 @@ export default defineHint({
       if (canonical !== null && !sameUrl(canonical, page.url)) {
         page.report(
           `The canonical URL "${canonical}" differs from the page URL "${page.url}". Make it self-referencing unless this is intended. Read more: ${REF}`,
-          { severity: Severity.hint },
+          {
+            severity: Severity.hint,
+            element: page.document.querySelector('link[rel~="canonical" i]'),
+          },
         );
       }
     });

@@ -29,6 +29,9 @@ describe('ipv6-ns-aaaa', () => {
     });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('None of the name servers');
+    expect(problems[0].sourceCode).toBe(
+      'a.example.net. A 192.0.2.1; AAAA none\nb.example.net. A none; AAAA none',
+    );
   });
 
   it('reports when only one name server has IPv6', async () => {
@@ -38,6 +41,9 @@ describe('ipv6-ns-aaaa', () => {
     });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('Only one name server');
+    expect(problems[0].sourceCode).toBe(
+      'a.example.net. A none; AAAA 2001:db8::1\nb.example.net. A none; AAAA none',
+    );
   });
 
   it('does nothing when no name servers are found', async () => {

@@ -10,6 +10,7 @@ export default defineOgHint({
   name: 'Require og:locale',
   description: 'Requires an og:locale meta tag.',
   slug: 'missing-og-locale',
+  add: '<meta property="og:locale" content="en_US">',
   severity: Severity.hint,
   check(ctx) {
     return ctx.meta('og:locale') === null

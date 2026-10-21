@@ -96,6 +96,39 @@ export function getRobotsHeaderDirectives(
   );
 }
 
+/** Where a robots directive was found: the meta tag, or the response header. */
+type RobotsSource<E> =
+  { element: E } | { header: { name: string; value: string } };
+
+/**
+ * Finds what carries `directive`: the first robots, googlebot or bingbot
+ * meta tag that lists it, else the `X-Robots-Tag` header. Returns null when
+ * neither does.
+ */
+export function findRobotsSource<E extends ElementLike>(
+  doc: { querySelectorAll(selector: string): E[] },
+  headers: HttpHeaders | undefined,
+  directive: string,
+): RobotsSource<E> | null {
+  const element = doc
+    .querySelectorAll(
+      'meta[name="robots" i], meta[name="googlebot" i], meta[name="bingbot" i]',
+    )
+    .find((meta) =>
+      normalizeDirectives(
+        (meta.getAttribute('content') ?? '').split(','),
+      ).includes(directive),
+    );
+  if (element) {
+    return { element };
+  }
+  const value = headerValue(headers, 'x-robots-tag');
+  return value !== null &&
+    getRobotsHeaderDirectives(headers).includes(directive)
+    ? { header: { name: 'X-Robots-Tag', value } }
+    : null;
+}
+
 /** Returns the `href` of `<link rel="canonical">`, or null when absent. */
 export function getCanonical(doc: DocumentLike): string | null {
   const element = doc.querySelector('link[rel~="canonical" i]');

@@ -24,6 +24,9 @@ describe('csp', () => {
   it('reports a missing policy', async () => {
     const problems = await runHint(hint, page());
     expect(problems).toHaveLength(1);
+    expect(problems[0]?.sourceCode).toMatch(
+      /^Content-Security-Policy: default-src/,
+    );
     expect(problems[0]?.message).toContain('header not implemented');
   });
 
@@ -59,6 +62,9 @@ describe('csp', () => {
     const problems = await runHint(
       hint,
       page({ 'content-security-policy': "default-src 'self' 'unsafe-eval'" }),
+    );
+    expect(problems[0]?.sourceCode).toMatch(
+      /^Content-Security-Policy: .*unsafe-eval/,
     );
     expect(problems[0]?.message).toContain("allows 'unsafe-eval'");
   });
@@ -105,6 +111,9 @@ describe('csp', () => {
         {},
         '<meta http-equiv="Content-Security-Policy" content="frame-ancestors \'none\'">',
       ),
+    );
+    expect(problems[0]?.sourceCode).toBe(
+      '<meta http-equiv="Content-Security-Policy" content="frame-ancestors \'none\'">',
     );
     expect(problems[0]?.message).toContain('header not implemented');
   });

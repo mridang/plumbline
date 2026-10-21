@@ -40,6 +40,7 @@ export default defineHint({
       if (outcome.value === 'compressed') {
         report(
           'Your web server supports TLS compression, which is *not* secure.',
+          outcome.evidence,
         );
       } else if (outcome.value === 'cannot-compress') {
         couldNotTest('this openssl was built without TLS compression support');

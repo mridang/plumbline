@@ -22,9 +22,17 @@ export default defineHint({
     onPage(context, (page) => {
       const title = getTitle(page.document);
       if (title === null || title === '') {
+        const existing = page.document.querySelector('title:not(svg title)');
         page.report(
           `The page has no <title> (or it is empty). Add a descriptive <title> to the <head>. Read more: ${REF}`,
-          { severity: Severity.error },
+          existing
+            ? { severity: Severity.error, element: existing }
+            : {
+                severity: Severity.error,
+                element: page.document.querySelector('head'),
+                codeSnippet: '<title>Descriptive page title</title>',
+                codeLanguage: 'html',
+              },
         );
       }
     });

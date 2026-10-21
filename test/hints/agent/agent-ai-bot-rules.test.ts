@@ -31,5 +31,7 @@ describe('agent-ai-bot-rules', () => {
     const problems = await runHint(hint, {});
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.warning);
+    expect(problems[0].resource.endsWith('/robots.txt')).toBe(true);
+    expect(problems[0].sourceCode).toContain('User-agent: *');
   });
 });

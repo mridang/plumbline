@@ -25,4 +25,12 @@ describe('opengraph-description-missing', () => {
     ).toBe(true);
     expect(problems[0].severity).toBe(Severity.error);
   });
+
+  it('carries the head and the tag to add', async () => {
+    const [problem] = await runHint(hint, page(''));
+    expect(problem.sourceCode).toBe(
+      '<meta property="og:description" content="A 110 to 160 character summary of the page">',
+    );
+    expect(problem.location.line).toBeGreaterThanOrEqual(0);
+  });
 });

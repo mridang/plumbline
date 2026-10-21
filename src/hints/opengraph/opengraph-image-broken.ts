@@ -10,6 +10,7 @@ export default defineOgHint({
   name: 'Require a working og:image',
   description: 'Requires the og:image URL to return an image.',
   slug: 'broken-og-image',
+  image: true,
   severity: Severity.error,
   async check(ctx) {
     const image = await ctx.image();

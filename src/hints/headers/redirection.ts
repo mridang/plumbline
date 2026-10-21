@@ -36,7 +36,9 @@ export default defineHint({
           ? new URL(`http://${site.url.hostname}/`)
           : new URL('/', site.url);
       const route = await followRedirects(start);
-      reportSiteFindings(site, start.href, redirectionFindings(route));
+      reportSiteFindings(site, start.href, redirectionFindings(route), {
+        lines: route.hops.map((hop) => `${hop.status} ${hop.url.href}`),
+      });
     });
   },
 });

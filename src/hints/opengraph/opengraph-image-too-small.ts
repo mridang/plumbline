@@ -10,6 +10,7 @@ export default defineOgHint({
   name: 'Use a large enough og:image',
   description: 'Flags an og:image below the minimum size of social platforms.',
   slug: 'og-image-too-small',
+  image: true,
   severity: Severity.error,
   async check(ctx) {
     const image = await ctx.image();

@@ -1,7 +1,10 @@
 import { Category, defineHint } from '../../core/define-hint.js';
 import { headerValue } from '../../core/http.js';
 import { onPage } from '../../core/page.js';
-import { permissionsPolicyFindings } from '../../lib/headers/permissions-policy.js';
+import {
+  DISABLED_FEATURES,
+  permissionsPolicyFindings,
+} from '../../lib/headers/permissions-policy.js';
 import { reportFindings } from './shared.js';
 
 /**
@@ -27,6 +30,7 @@ export default defineHint({
       reportFindings(page, permissionsPolicyFindings(value), {
         name: 'Permissions-Policy',
         value,
+        suggest: DISABLED_FEATURES.map((feature) => `${feature}=()`).join(', '),
       });
     });
   },

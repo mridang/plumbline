@@ -47,6 +47,7 @@ export default defineHint({
       ) {
         report(
           'Your web server allows for client-initiated renegotiation, which could have negative impact on the availability of your website.',
+          outcome.evidence,
           Severity.hint,
         );
       }
