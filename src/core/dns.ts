@@ -66,7 +66,7 @@ const toRecord = (r: DohRecord): DnsRecord => ({
 });
 
 /** Creates a client that queries a DNS-over-HTTPS JSON endpoint. */
-export function dohClient(
+function dohClient(
   endpoint = 'https://cloudflare-dns.com/dns-query',
   fetchImpl: typeof fetch = fetch,
 ): DnsClient {

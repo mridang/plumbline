@@ -5,7 +5,7 @@
  * `rpki.client` with a fake so they never touch the internet.
  */
 
-export type RpkiStatus = 'valid' | 'invalid' | 'unknown';
+type RpkiStatus = 'valid' | 'invalid' | 'unknown';
 
 export interface RpkiResult {
   /** The AS number announcing the prefix, when one was found. */
@@ -29,7 +29,7 @@ interface RpkiValidationBody {
 }
 
 /** Creates a client backed by the RIPEstat Data API. */
-export function ripeStatClient(
+function ripeStatClient(
   fetchImpl: typeof fetch = fetch,
   base = 'https://stat.ripe.net/data',
 ): RpkiClient {

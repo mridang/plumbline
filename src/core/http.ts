@@ -17,14 +17,6 @@ export function headerValue(
   return null;
 }
 
-/** Splits a comma separated header or directive list into trimmed parts. */
-export function splitList(value: string): string[] {
-  return value
-    .split(',')
-    .map((part) => part.trim())
-    .filter((part) => part.length > 0);
-}
-
 /** Renders `Name: value` for use as a report snippet. */
 export function headerSnippet(name: string, value: string): string {
   return `${name}: ${value}`;

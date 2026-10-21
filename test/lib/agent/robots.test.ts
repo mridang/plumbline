@@ -1,0 +1,175 @@
+import { describe, expect, it } from '@jest/globals';
+import {
+  AI_BOTS,
+  checkAiBotRules,
+  checkContentSignals,
+  checkRobotsTxt,
+  checkSitemap,
+  isSitemap,
+  parseContentSignal,
+  parseRobots,
+} from '../../../src/lib/agent/robots.js';
+import { fakeEnv } from './fake-env.js';
+
+const SITEMAP =
+  '<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>';
+
+describe('parseRobots', () => {
+  it('reads directives, ignores comments and unknown lines', () => {
+    const robots = parseRobots(
+      [
+        '# comment',
+        'User-agent: GPTBot # inline',
+        'user-agent: *',
+        'Sitemap: https://example.com/s.xml',
+        'Content-Signal: ai-train=no',
+        'Agentmap: https://example.com/a.json',
+        'Disallow: /x',
+        'garbage',
+      ].join('\n'),
+    );
+    expect(robots.userAgents).toEqual(['GPTBot', '*']);
+    expect(robots.sitemaps).toEqual(['https://example.com/s.xml']);
+    expect(robots.contentSignals).toEqual(['ai-train=no']);
+    expect(robots.agentmaps).toEqual(['https://example.com/a.json']);
+  });
+
+  it('ignores directives with empty values', () => {
+    expect(parseRobots('User-agent:\nSitemap:')).toEqual({
+      userAgents: [],
+      sitemaps: [],
+      contentSignals: [],
+      agentmaps: [],
+    });
+  });
+});
+
+describe('checkRobotsTxt', () => {
+  it('passes with a User-agent directive', async () => {
+    const r = await checkRobotsTxt(fakeEnv({ '/robots.txt': 'User-agent: *' }));
+    expect(r.passed).toBe(true);
+  });
+  it('fails when missing', async () => {
+    expect((await checkRobotsTxt(fakeEnv())).passed).toBe(false);
+  });
+  it('fails for a non-200 status', async () => {
+    const env = fakeEnv({
+      '/robots.txt': { status: 404, body: 'User-agent: *' },
+    });
+    expect((await checkRobotsTxt(env)).passed).toBe(false);
+  });
+  it('fails for the wrong content type', async () => {
+    const env = fakeEnv({
+      '/robots.txt': { contentType: 'text/html', body: 'User-agent: *' },
+    });
+    expect((await checkRobotsTxt(env)).detail).toContain('not text/plain');
+  });
+  it('fails without a User-agent directive', async () => {
+    const env = fakeEnv({ '/robots.txt': 'Disallow: /' });
+    expect((await checkRobotsTxt(env)).detail).toContain('no User-agent');
+  });
+});
+
+describe('sitemap', () => {
+  it('recognises urlset and sitemapindex only', () => {
+    expect(
+      isSitemap({
+        url: '',
+        status: 200,
+        headers: {},
+        contentType: '',
+        body: SITEMAP,
+      }),
+    ).toBe(true);
+    expect(
+      isSitemap({
+        url: '',
+        status: 200,
+        headers: {},
+        contentType: '',
+        body: '<sitemapindex></sitemapindex>',
+      }),
+    ).toBe(true);
+    expect(
+      isSitemap({
+        url: '',
+        status: 200,
+        headers: {},
+        contentType: '',
+        body: '<html></html>',
+      }),
+    ).toBe(false);
+    expect(isSitemap(null)).toBe(false);
+  });
+  it('passes through a Sitemap directive', async () => {
+    const env = fakeEnv({
+      '/robots.txt': 'Sitemap: https://example.com/map.xml',
+      'https://example.com/map.xml': SITEMAP,
+    });
+    expect((await checkSitemap(env)).passed).toBe(true);
+  });
+  it('falls back to /sitemap.xml', async () => {
+    const env = fakeEnv({ '/sitemap.xml': SITEMAP });
+    expect((await checkSitemap(env)).passed).toBe(true);
+  });
+  it('fails when the declared sitemap is invalid', async () => {
+    const env = fakeEnv({
+      '/robots.txt': 'Sitemap: https://example.com/map.xml',
+      'https://example.com/map.xml': '<html></html>',
+      '/sitemap.xml': SITEMAP,
+    });
+    const r = await checkSitemap(env);
+    expect(r.passed).toBe(false);
+    expect(r.detail).toContain('listed in robots.txt');
+  });
+  it('fails when there is nothing', async () => {
+    expect((await checkSitemap(fakeEnv())).passed).toBe(false);
+  });
+});
+
+describe('checkAiBotRules', () => {
+  it('knows twenty crawlers', () => {
+    expect(AI_BOTS).toHaveLength(20);
+  });
+  it('passes when a known crawler is named, ignoring case', async () => {
+    const env = fakeEnv({ '/robots.txt': 'User-agent: gptbot\nDisallow: /' });
+    expect((await checkAiBotRules(env)).passed).toBe(true);
+  });
+  it('fails for a wildcard only', async () => {
+    const env = fakeEnv({ '/robots.txt': 'User-agent: *\nDisallow: /' });
+    expect((await checkAiBotRules(env)).passed).toBe(false);
+  });
+  it('fails without robots.txt', async () => {
+    expect((await checkAiBotRules(fakeEnv())).passed).toBe(false);
+  });
+});
+
+describe('content signals', () => {
+  it('parses valid pairs and drops invalid ones', () => {
+    expect(
+      parseContentSignal('ai-train=no, search=yes, bogus=yes, ai-input=maybe'),
+    ).toEqual({
+      'ai-train': false,
+      search: true,
+    });
+  });
+  it('passes with a valid directive', async () => {
+    const env = fakeEnv({
+      '/robots.txt': 'Content-Signal: ai-train=no, search=yes',
+    });
+    expect((await checkContentSignals(env)).passed).toBe(true);
+  });
+  it('fails with an invalid directive', async () => {
+    const env = fakeEnv({ '/robots.txt': 'Content-Signal: nonsense' });
+    expect((await checkContentSignals(env)).detail).toContain('no valid');
+  });
+  it('fails without the directive', async () => {
+    const env = fakeEnv({ '/robots.txt': 'User-agent: *' });
+    expect((await checkContentSignals(env)).detail).toContain(
+      'no Content-Signal',
+    );
+  });
+  it('fails without robots.txt', async () => {
+    expect((await checkContentSignals(fakeEnv())).passed).toBe(false);
+  });
+});

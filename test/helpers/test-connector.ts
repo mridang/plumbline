@@ -27,6 +27,12 @@ async function toNetworkData(
   response.headers.forEach((value, key) => {
     headers[key.toLowerCase()] = value;
   });
+  // Fetch folds repeated Set-Cookie headers into one string, which cannot be
+  // split safely because cookie dates contain commas, so keep them as a list.
+  const cookies = response.headers.getSetCookie();
+  if (cookies.length > 0) {
+    headers['set-cookie'] = cookies as unknown as string;
+  }
   const contentType = headers['content-type'] ?? '';
   const [mediaType = '', ...parameters] = String(contentType)
     .split(';')
@@ -115,8 +121,13 @@ export default class TestConnector implements IConnector {
     const add = (selector: string, attribute: string, kind: string) => {
       for (const element of this.dom?.querySelectorAll(selector) ?? []) {
         const value = element.getAttribute(attribute);
-        if (value) {
+        if (!value) {
+          continue;
+        }
+        try {
           found.push({ element, url: new URL(value, base).href, kind });
+        } catch {
+          // A malformed URL in the markup is skipped, as a browser would.
         }
       }
     };

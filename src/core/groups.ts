@@ -8,7 +8,7 @@
  * The source each check was taken from. Keeping the original grouping lets
  * the checks of one reference be enabled or disabled together.
  */
-export const SOURCE_GROUPS = [
+const SOURCE_GROUPS = [
   'observatory',
   'owasp',
   'opengraph',
@@ -19,7 +19,7 @@ export const SOURCE_GROUPS = [
 ] as const;
 
 /** What a check is about, regardless of where it came from. */
-export const TOPIC_GROUPS = [
+const TOPIC_GROUPS = [
   'security-headers',
   'tls',
   'dns',

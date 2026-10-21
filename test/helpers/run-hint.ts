@@ -15,7 +15,7 @@ const require = createRequire(import.meta.url);
 const { default: HTMLParser } = require('@hint/parser-html');
 
 /** What the test server answers for one path. */
-export interface Route {
+interface Route {
   status?: number;
   headers?: Record<string, string | string[]>;
   body?: string;
@@ -69,8 +69,8 @@ export async function runHint(
       connector: { name: 'test', options: {} },
       hints: {
         [hintKey]: options.hintOptions
-          ? ['error', options.hintOptions]
-          : 'error',
+          ? ['default', options.hintOptions]
+          : 'default',
       },
       parsers: ['html'],
     });
