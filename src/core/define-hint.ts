@@ -22,6 +22,11 @@ export interface HintSpec {
   reference?: string;
   /** Defaults to `site`, which runs once per scan. */
   scope?: HintScope;
+  /**
+   * JSON schema for the hint's options, as webhint expects it. Leave it out
+   * for a hint without options.
+   */
+  schema?: HintMetadata['schema'];
   /** Called once per scan with the context; subscribe to events here. */
   setup(context: HintContext): void;
 }
@@ -45,7 +50,7 @@ export function defineHint(spec: HintSpec): HintDefinition {
     getDescription: () => spec.description,
     getName: () => spec.name,
     id: `extra/${spec.id}`,
-    schema: [],
+    schema: spec.schema ?? [],
     scope: spec.scope ?? HintScope.site,
   };
 

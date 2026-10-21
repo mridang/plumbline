@@ -51,6 +51,18 @@ async function toNetworkData(
   };
 }
 
+let evaluateImpl: (code: string) => unknown = () => {
+  throw new Error('evaluate is not configured for this test');
+};
+
+/**
+ * Sets what `context.evaluate(code)` returns for the next scans, so tests
+ * can stand in for the browser a real connector would provide.
+ */
+export function setEvaluate(fn: (code: string) => unknown): void {
+  evaluateImpl = fn;
+}
+
 /**
  * A minimal connector for tests: it downloads the target with Node's fetch,
  * emits the same events a real connector would, and needs no browser and no
@@ -90,7 +102,43 @@ export default class TestConnector implements IConnector {
       resource: href,
       response: data.response,
     });
+    await this.fetchSubresources(target);
     await this.engine.emitAsync('scan::end', { resource: href });
+  }
+
+  /**
+   * Downloads the images, scripts and stylesheets the page references and
+   * emits a `fetch::end` event for each, as a browser based connector does.
+   */
+  private async fetchSubresources(base: URL): Promise<void> {
+    const found: { element: unknown; url: string; kind: string }[] = [];
+    const add = (selector: string, attribute: string, kind: string) => {
+      for (const element of this.dom?.querySelectorAll(selector) ?? []) {
+        const value = element.getAttribute(attribute);
+        if (value) {
+          found.push({ element, url: new URL(value, base).href, kind });
+        }
+      }
+    };
+    add('script[src]', 'src', 'script');
+    add('img[src]', 'src', 'image');
+    add('link[rel~="stylesheet"][href]', 'href', 'css');
+    for (const { element, url, kind } of found) {
+      try {
+        const data = await this.fetchContent(url);
+        await this.engine.emitAsync(
+          `fetch::end::${kind}` as 'fetch::end::*',
+          {
+            element,
+            request: data.request,
+            resource: url,
+            response: data.response,
+          } as never,
+        );
+      } catch {
+        // A resource that cannot be downloaded is not reported here.
+      }
+    }
   }
 
   public async fetchContent(
@@ -106,8 +154,8 @@ export default class TestConnector implements IConnector {
     return toNetworkData(response, url, requestHeaders);
   }
 
-  public evaluate(): Promise<unknown> {
-    return Promise.reject(new Error('evaluate is not supported in tests'));
+  public async evaluate(code: string): Promise<unknown> {
+    return evaluateImpl(code);
   }
 
   public querySelectorAll(query: string) {
