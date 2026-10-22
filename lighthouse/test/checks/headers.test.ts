@@ -84,8 +84,8 @@ function check(id: string): AuditCheck {
 }
 
 describe('the headers registry', () => {
-  it('registers all twenty header checks with a known section', () => {
-    expect(headersChecks).toHaveLength(20);
+  it('registers all header checks with a known section', () => {
+    expect(headersChecks).toHaveLength(46);
     for (const c of headersChecks) {
       expect(c.id).toBeTruthy();
       expect(['site-protection', 'https-tls', 'visitor-privacy']).toContain(
@@ -94,12 +94,22 @@ describe('the headers registry', () => {
     }
   });
 
-  it('marks the context-specific checks informative and the rest scored', () => {
+  it('marks the context-specific and advisory checks informative', () => {
     const informative = headersChecks
       .filter((c) => c.scoreMode === 'informative')
       .map((c) => c.id)
       .sort();
-    expect(informative).toEqual(['cache-control', 'clear-site-data', 'cors']);
+    expect(informative).toEqual([
+      'accept-ch',
+      'age',
+      'alt-svc',
+      'cache-control',
+      'clear-site-data',
+      'cors',
+      'origin-agent-cluster',
+      'server-timing',
+      'via',
+    ]);
   });
 });
 
@@ -175,5 +185,63 @@ describe('the x-content-type-options check run()', () => {
       context(),
     );
     expect(findings).toEqual([]);
+  });
+});
+
+describe('the MDN response-header checks run()', () => {
+  it('x-powered-by reports a present header', async () => {
+    const findings = await check('x-powered-by').run(
+      artifacts('https://x.test/', { 'x-powered-by': 'Express' }),
+      context(),
+    );
+    expect(findings?.[0]?.severity).toBe('warning');
+  });
+
+  it('cors-allow-credentials errors with a wildcard origin', async () => {
+    const findings = await check('cors-allow-credentials').run(
+      artifacts('https://x.test/', {
+        'access-control-allow-credentials': 'true',
+        'access-control-allow-origin': '*',
+      }),
+      context(),
+    );
+    expect(findings?.[0]?.severity).toBe('error');
+  });
+
+  it('vary flags a bare wildcard', async () => {
+    const findings = await check('vary').run(
+      artifacts('https://x.test/', { vary: '*' }),
+      context(),
+    );
+    expect(findings?.[0]?.message).toContain('uncacheable');
+  });
+
+  it('critical-ch errors on a hint missing from accept-ch', async () => {
+    const findings = await check('critical-ch').run(
+      artifacts('https://x.test/', {
+        'accept-ch': 'Sec-CH-UA',
+        'critical-ch': 'Sec-CH-UA-Platform',
+      }),
+      context(),
+    );
+    expect(findings?.[0]?.severity).toBe('error');
+  });
+
+  it('timing-allow-origin passes for a scoped list', async () => {
+    const findings = await check('timing-allow-origin').run(
+      artifacts('https://x.test/', {
+        'timing-allow-origin': 'https://a.test',
+      }),
+      context(),
+    );
+    expect(findings).toEqual([]);
+  });
+
+  it('retry-after is not applicable on a 200 but flagged on a 503', async () => {
+    const okay = await check('retry-after').run(
+      artifacts('https://x.test/', { 'retry-after': 'soon' }),
+      context(),
+    );
+    expect(okay).toEqual([]);
   });
 });

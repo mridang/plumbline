@@ -60,6 +60,12 @@ export const SOURCES: readonly Source[] = [
     licence: 'MIT',
   },
   {
+    id: 'mdn',
+    name: 'MDN HTTP headers reference',
+    url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers',
+    licence: 'CC-BY-SA-2.5',
+  },
+  {
     id: 'original',
     name: 'Written for this package',
     url: 'https://github.com/mridang/webhint-hints',

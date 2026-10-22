@@ -8,6 +8,8 @@ export interface Page {
   headers: HttpHeaders;
   document: HTMLDocument;
   content: string;
+  /** The HTTP status code of the main document's response. */
+  status: number;
   /** Reports a problem against the page URL. */
   report(message: string, options?: Partial<ReportOptions>): void;
 }
@@ -21,8 +23,14 @@ export function onPage(
   check: (page: Page) => void | Promise<void>,
 ): void {
   let url = '';
+  let status = 200;
   context.on('scan::start', (event) => {
     url = event.resource;
+  });
+  // The main document's response status is only on the fetch event, not on the
+  // engine's cached headers, so capture it as the page is fetched.
+  context.on('fetch::end::html', (event) => {
+    status = event.response.statusCode;
   });
   context.on('traverse::end', async (event) => {
     await check({
@@ -30,6 +38,7 @@ export function onPage(
       headers: context.pageHeaders ?? {},
       document: event.document,
       content: context.pageContent ?? '',
+      status,
       report: (message, options = {}) =>
         context.report(url || event.resource, message, {
           severity: Severity.error,

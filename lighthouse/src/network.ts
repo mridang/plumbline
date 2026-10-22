@@ -17,10 +17,11 @@ export interface HeaderArtifacts {
   URL: LH.Artifacts['URL'];
 }
 
-/** The main document's headers and whether it was served over HTTPS. */
+/** The main document's headers, HTTP status, and whether it used HTTPS. */
 export interface MainResponse {
   headers: HeaderBag;
   secure: boolean;
+  status: number;
 }
 
 /**
@@ -44,5 +45,6 @@ export async function mainResponse(
     secure: (document.url || mainDocumentUrl || '')
       .toLowerCase()
       .startsWith('https:'),
+    status: document.statusCode ?? 200,
   };
 }

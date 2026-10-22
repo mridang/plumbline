@@ -4,9 +4,11 @@
   },
   "parsers": ["html"],
   "hints": {
+    "@mridang/webhint-hint-extra/accept-ch": "default",
     "@mridang/webhint-hint-extra/agent-ai-bot-rules": "default",
     "@mridang/webhint-hint-extra/agent-content-signals": "default",
     "@mridang/webhint-hint-extra/cookies": "default",
+    "@mridang/webhint-hint-extra/critical-ch": "default",
     "@mridang/webhint-hint-extra/csp-reporting": "default",
     "@mridang/webhint-hint-extra/privacy-cookies": "default",
     "@mridang/webhint-hint-extra/privacy-geolocation": "default",
@@ -15,6 +17,7 @@
     "@mridang/webhint-hint-extra/privacy-mixed-content": "default",
     "@mridang/webhint-hint-extra/privacy-third-party-requests": "default",
     "@mridang/webhint-hint-extra/referrer-policy": "default",
+    "@mridang/webhint-hint-extra/timing-allow-origin": "default",
     "@mridang/webhint-hint-extra/x-dns-prefetch-control": "default"
   }
 }

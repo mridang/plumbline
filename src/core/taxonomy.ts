@@ -300,4 +300,38 @@ export const PLACEMENT: Readonly<Record<string, Placement>> = {
   'mail-ns-rpki-exists': { category: 'email', tags: ['dns-network'] },
   'mail-ns-rpki-valid': { category: 'email', tags: ['dns-network'] },
   'https-available': { category: 'https-tls', tags: [] },
+  // MDN response-header coverage: information-leak headers.
+  'server-banner': { category: 'site-protection', tags: [] },
+  'x-powered-by': { category: 'site-protection', tags: [] },
+  'server-timing': { category: 'site-protection', tags: [] },
+  via: { category: 'site-protection', tags: [] },
+  sourcemap: { category: 'site-protection', tags: [] },
+  // The rest of the CORS family.
+  'cors-allow-credentials': { category: 'site-protection', tags: [] },
+  'cors-allow-methods': { category: 'site-protection', tags: [] },
+  'cors-allow-headers': { category: 'site-protection', tags: [] },
+  'cors-expose-headers': { category: 'site-protection', tags: [] },
+  'cors-max-age': { category: 'site-protection', tags: [] },
+  // Reporting, isolation and integrity.
+  'reporting-endpoints': { category: 'site-protection', tags: [] },
+  nel: { category: 'site-protection', tags: ['visitor-privacy'] },
+  'origin-agent-cluster': { category: 'site-protection', tags: [] },
+  'integrity-policy': { category: 'site-protection', tags: [] },
+  'integrity-policy-report-only': { category: 'site-protection', tags: [] },
+  // Caching and conditional requests.
+  etag: { category: 'site-protection', tags: [] },
+  'last-modified': { category: 'site-protection', tags: [] },
+  expires: { category: 'site-protection', tags: [] },
+  age: { category: 'site-protection', tags: [] },
+  vary: { category: 'site-protection', tags: [] },
+  'no-vary-search': { category: 'site-protection', tags: [] },
+  // Performance, timing and client hints.
+  'accept-ch': { category: 'visitor-privacy', tags: ['site-protection'] },
+  'critical-ch': { category: 'visitor-privacy', tags: ['site-protection'] },
+  'timing-allow-origin': {
+    category: 'visitor-privacy',
+    tags: ['site-protection'],
+  },
+  'alt-svc': { category: 'site-protection', tags: [] },
+  'retry-after': { category: 'site-protection', tags: [] },
 };

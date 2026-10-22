@@ -1,0 +1,34 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": ["html"],
+  "hints": {
+    "@mridang/webhint-hint-extra/accept-ch": "default",
+    "@mridang/webhint-hint-extra/age": "default",
+    "@mridang/webhint-hint-extra/alt-svc": "default",
+    "@mridang/webhint-hint-extra/cors-allow-credentials": "default",
+    "@mridang/webhint-hint-extra/cors-allow-headers": "default",
+    "@mridang/webhint-hint-extra/cors-allow-methods": "default",
+    "@mridang/webhint-hint-extra/cors-expose-headers": "default",
+    "@mridang/webhint-hint-extra/cors-max-age": "default",
+    "@mridang/webhint-hint-extra/critical-ch": "default",
+    "@mridang/webhint-hint-extra/etag": "default",
+    "@mridang/webhint-hint-extra/expires": "default",
+    "@mridang/webhint-hint-extra/integrity-policy": "default",
+    "@mridang/webhint-hint-extra/integrity-policy-report-only": "default",
+    "@mridang/webhint-hint-extra/last-modified": "default",
+    "@mridang/webhint-hint-extra/nel": "default",
+    "@mridang/webhint-hint-extra/no-vary-search": "default",
+    "@mridang/webhint-hint-extra/origin-agent-cluster": "default",
+    "@mridang/webhint-hint-extra/reporting-endpoints": "default",
+    "@mridang/webhint-hint-extra/retry-after": "default",
+    "@mridang/webhint-hint-extra/server-banner": "default",
+    "@mridang/webhint-hint-extra/server-timing": "default",
+    "@mridang/webhint-hint-extra/sourcemap": "default",
+    "@mridang/webhint-hint-extra/timing-allow-origin": "default",
+    "@mridang/webhint-hint-extra/vary": "default",
+    "@mridang/webhint-hint-extra/via": "default",
+    "@mridang/webhint-hint-extra/x-powered-by": "default"
+  }
+}

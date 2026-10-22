@@ -17,6 +17,7 @@ export const SOURCE_GROUPS = [
   'internetnl',
   'files',
   'llmscout',
+  'mdn',
   'original',
 ] as const;
 

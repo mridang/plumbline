@@ -2,6 +2,10 @@
 
 This package adds extra hints to [webhint](https://webhint.io). Every hint is a small class built with `defineHint`, listed in the registry, and tested against a real webhint scan.
 
+## HTTP header coverage (standing rule)
+
+This package aims to check **every HTTP response header documented by MDN that is not deprecated**. The canonical list is the [MDN HTTP headers reference](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers). Whenever this project is next worked on, reconcile our `headers` set against that page: for every non-deprecated **response** header (request-only headers such as `Accept`, `Sec-Fetch-*` or `User-Agent` are out of scope — a scanner only sees responses), there must be a hint that checks its presence and/or validity and/or best-practice value. A deprecated header (for example `X-XSS-Protection`, `Expect-CT`, `Public-Key-Pins`, `Feature-Policy`, `Pragma`, `Warning`, `Tk`) is checked the other way: a hint that reports when it _is_ present. Headers that only appear on specific responses (`WWW-Authenticate`, `Content-Range`, `Allow`, `Accept-Ranges`) are checked for validity when present and are otherwise not applicable. When MDN adds a header, add a hint for it; do not wait to be asked.
+
 ## Commands
 
 Run every command through devbox, inside this directory.

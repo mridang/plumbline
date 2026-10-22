@@ -24,6 +24,19 @@ export function headerValues(
   return found;
 }
 
+/**
+ * Splits a comma separated header value into its trimmed, non-empty members.
+ * Used for the many list-shaped headers (CORS method/header lists, client-hint
+ * token lists, `Vary`, timing origins) where order does not matter and empty
+ * entries are noise.
+ */
+export function splitList(value: string): string[] {
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => item !== '');
+}
+
 /** Returns the first value of a header, trimmed, or null when absent. */
 export function firstHeader(
   headers: HeaderBag | undefined,

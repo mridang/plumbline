@@ -2317,4 +2317,315 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       licence: 'Apache-2.0',
     },
   ],
+  'server-banner': [
+    {
+      source: 'mdn',
+      upstreamId: 'Server',
+      title: 'Server',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Server',
+      docsUrl: '',
+      summary:
+        'Reports when the Server header discloses a software version or operating system.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'x-powered-by': [
+    {
+      source: 'mdn',
+      upstreamId: 'X-Powered-By',
+      title: 'X-Powered-By',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/X-Powered-By',
+      docsUrl: '',
+      summary:
+        'Reports the X-Powered-By header, which reveals the technology stack.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'server-timing': [
+    {
+      source: 'mdn',
+      upstreamId: 'Server-Timing',
+      title: 'Server-Timing',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Server-Timing',
+      docsUrl: '',
+      summary:
+        'Reports the Server-Timing header, which can expose backend metric names and timings.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  via: [
+    {
+      source: 'mdn',
+      upstreamId: 'Via',
+      title: 'Via',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Via',
+      docsUrl: '',
+      summary:
+        'Reports when the Via header names the proxy or gateway software in front of the site.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  sourcemap: [
+    {
+      source: 'mdn',
+      upstreamId: 'SourceMap',
+      title: 'SourceMap',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/SourceMap',
+      docsUrl: '',
+      summary:
+        'Reports the SourceMap or X-SourceMap header, which exposes source maps to every client.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'cors-allow-credentials': [
+    {
+      source: 'mdn',
+      upstreamId: 'Access-Control-Allow-Credentials',
+      title: 'Access-Control-Allow-Credentials',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Allow-Credentials',
+      docsUrl: '',
+      summary:
+        'Reports credentialed CORS access, especially when combined with a wildcard allow-origin.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'cors-allow-methods': [
+    {
+      source: 'mdn',
+      upstreamId: 'Access-Control-Allow-Methods',
+      title: 'Access-Control-Allow-Methods',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Allow-Methods',
+      docsUrl: '',
+      summary:
+        'Reports a wildcard or unrecognised method in Access-Control-Allow-Methods.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'cors-allow-headers': [
+    {
+      source: 'mdn',
+      upstreamId: 'Access-Control-Allow-Headers',
+      title: 'Access-Control-Allow-Headers',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Allow-Headers',
+      docsUrl: '',
+      summary:
+        'Reports a wildcard Access-Control-Allow-Headers that allows every request header.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'cors-expose-headers': [
+    {
+      source: 'mdn',
+      upstreamId: 'Access-Control-Expose-Headers',
+      title: 'Access-Control-Expose-Headers',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Expose-Headers',
+      docsUrl: '',
+      summary:
+        'Reports a wildcard or sensitive header in Access-Control-Expose-Headers.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'cors-max-age': [
+    {
+      source: 'mdn',
+      upstreamId: 'Access-Control-Max-Age',
+      title: 'Access-Control-Max-Age',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Max-Age',
+      docsUrl: '',
+      summary:
+        'Reports a malformed or excessively long Access-Control-Max-Age preflight cache.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'reporting-endpoints': [
+    {
+      source: 'mdn',
+      upstreamId: 'Reporting-Endpoints',
+      title: 'Reporting-Endpoints',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Reporting-Endpoints',
+      docsUrl: '',
+      summary:
+        'Checks that Reporting-Endpoints maps names to quoted absolute https URLs.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  nel: [
+    {
+      source: 'mdn',
+      upstreamId: 'NEL',
+      title: 'NEL',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/NEL',
+      docsUrl: '',
+      summary:
+        'Checks that the NEL header is valid JSON with a max_age and a report_to group.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'origin-agent-cluster': [
+    {
+      source: 'mdn',
+      upstreamId: 'Origin-Agent-Cluster',
+      title: 'Origin-Agent-Cluster',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Origin-Agent-Cluster',
+      docsUrl: '',
+      summary:
+        'Recommends Origin-Agent-Cluster: ?1 and reports any other value.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'integrity-policy': [
+    {
+      source: 'mdn',
+      upstreamId: 'Integrity-Policy',
+      title: 'Integrity-Policy',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Integrity-Policy',
+      docsUrl: '',
+      summary:
+        'Checks that Integrity-Policy declares a non-empty blocked-destinations list.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'integrity-policy-report-only': [
+    {
+      source: 'mdn',
+      upstreamId: 'Integrity-Policy-Report-Only',
+      title: 'Integrity-Policy-Report-Only',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Integrity-Policy-Report-Only',
+      docsUrl: '',
+      summary:
+        'Checks that Integrity-Policy-Report-Only declares a non-empty blocked-destinations list.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  etag: [
+    {
+      source: 'mdn',
+      upstreamId: 'ETag',
+      title: 'ETag',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/ETag',
+      docsUrl: '',
+      summary:
+        'Reports an ETag that looks like a filesystem inode and so leaks server internals.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'last-modified': [
+    {
+      source: 'mdn',
+      upstreamId: 'Last-Modified',
+      title: 'Last-Modified',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Last-Modified',
+      docsUrl: '',
+      summary: 'Checks that the Last-Modified header is a valid HTTP-date.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  expires: [
+    {
+      source: 'mdn',
+      upstreamId: 'Expires',
+      title: 'Expires',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Expires',
+      docsUrl: '',
+      summary:
+        'Checks that Expires is a valid HTTP-date and notes when Cache-Control max-age supersedes it.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  age: [
+    {
+      source: 'mdn',
+      upstreamId: 'Age',
+      title: 'Age',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Age',
+      docsUrl: '',
+      summary:
+        'Checks that the Age header is a non-negative number of seconds.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  vary: [
+    {
+      source: 'mdn',
+      upstreamId: 'Vary',
+      title: 'Vary',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Vary',
+      docsUrl: '',
+      summary:
+        'Reports Vary: * and a wildcard mixed with named headers, which defeat shared caching.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'no-vary-search': [
+    {
+      source: 'mdn',
+      upstreamId: 'No-Vary-Search',
+      title: 'No-Vary-Search',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/No-Vary-Search',
+      docsUrl: '',
+      summary:
+        'Checks that No-Vary-Search uses the recognised key-order, params or except keys.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'accept-ch': [
+    {
+      source: 'mdn',
+      upstreamId: 'Accept-CH',
+      title: 'Accept-CH',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Accept-CH',
+      docsUrl: '',
+      summary:
+        'Checks the Accept-CH token list and notes that each client hint adds to fingerprinting.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'critical-ch': [
+    {
+      source: 'mdn',
+      upstreamId: 'Critical-CH',
+      title: 'Critical-CH',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Critical-CH',
+      docsUrl: '',
+      summary:
+        'Checks that every hint in Critical-CH is also advertised in Accept-CH.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'timing-allow-origin': [
+    {
+      source: 'mdn',
+      upstreamId: 'Timing-Allow-Origin',
+      title: 'Timing-Allow-Origin',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Timing-Allow-Origin',
+      docsUrl: '',
+      summary:
+        'Reports Timing-Allow-Origin: * and malformed origins in the timing-exposure list.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'alt-svc': [
+    {
+      source: 'mdn',
+      upstreamId: 'Alt-Svc',
+      title: 'Alt-Svc',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Alt-Svc',
+      docsUrl: '',
+      summary:
+        'Reports the advertised alternative services and flags a malformed Alt-Svc value.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'retry-after': [
+    {
+      source: 'mdn',
+      upstreamId: 'Retry-After',
+      title: 'Retry-After',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Retry-After',
+      docsUrl: '',
+      summary:
+        'Checks that Retry-After is a valid delay on a 429 or 503 response.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
 };

@@ -7,11 +7,14 @@
  * `src/lib/headers/**` function takes, and calls that exact function, so a site
  * yields the same findings here as under the webhint hint.
  *
- * Twenty header hints are covered: csp, hsts, x-frame-options, referrer-policy,
- * x-content-type-options, coop, coep, corp, cors, cookies,
+ * The original twenty security hints are covered (csp, hsts, x-frame-options,
+ * referrer-policy, x-content-type-options, coop, coep, corp, cors, cookies,
  * x-permitted-cross-domain-policies, clear-site-data, permissions-policy,
  * cache-control, x-dns-prefetch-control, feature-policy, public-key-pins,
- * expect-ct, x-xss-protection and csp-reporting.
+ * expect-ct, x-xss-protection and csp-reporting), followed by the MDN
+ * response-header set (information-leak, the rest of the CORS family,
+ * reporting/isolation/integrity, caching/conditional and the performance,
+ * timing and client-hint headers).
  *
  * Titles, descriptions, references and sections come from the compiled hint
  * metadata (`../meta.ts`); only `x-content-type-options`, which has no webhint
@@ -24,6 +27,8 @@
  * reproduce — `cors` needs a cross-origin probe request, `clear-site-data` is a
  * logout-response rule, and `cache-control` is an opt-in private-page rule.
  * Those three are `informative`: their findings are surfaced but never scored.
+ * The same applies to MDN headers that are advisory on a plugin run (`age`,
+ * `alt-svc`, `server-timing`, `via`, `origin-agent-cluster` and `accept-ch`).
  */
 import type * as LH from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
@@ -58,6 +63,41 @@ import { xssProtectionFindings } from '../../../dist/lib/headers/xss-protection.
 import { cacheControlFindings } from '../../../dist/lib/headers/cache-control.js';
 import { reportingFindings } from '../../../dist/lib/headers/reporting.js';
 import { registrableDomain } from '../../../dist/lib/headers/registrable-domain.js';
+import {
+  serverBannerFindings,
+  serverTimingFindings,
+  sourcemapFindings,
+  viaFindings,
+  xPoweredByFindings,
+} from '../../../dist/lib/headers/info-leak.js';
+import {
+  corsAllowCredentialsFindings,
+  corsAllowHeadersFindings,
+  corsAllowMethodsFindings,
+  corsExposeHeadersFindings,
+  corsMaxAgeFindings,
+} from '../../../dist/lib/headers/cors-extra.js';
+import {
+  integrityPolicyFindings,
+  nelFindings,
+  originAgentClusterFindings,
+  reportingEndpointsFindings,
+} from '../../../dist/lib/headers/reporting-extra.js';
+import {
+  ageFindings,
+  etagFindings,
+  expiresFindings,
+  lastModifiedFindings,
+  noVarySearchFindings,
+  varyFindings,
+} from '../../../dist/lib/headers/caching.js';
+import {
+  acceptChFindings,
+  altSvcFindings,
+  criticalChFindings,
+  retryAfterFindings,
+  timingAllowOriginFindings,
+} from '../../../dist/lib/headers/client-hints.js';
 import { mainResponse } from '../network.js';
 import {
   cspMetaContents,
@@ -89,6 +129,32 @@ import xDnsPrefetchControlHint from '../../../dist/hints/headers/x-dns-prefetch-
 import xFrameOptionsHint from '../../../dist/hints/headers/x-frame-options.js';
 import xPermittedCrossDomainPoliciesHint from '../../../dist/hints/headers/x-permitted-cross-domain-policies.js';
 import xXssProtectionHint from '../../../dist/hints/headers/x-xss-protection.js';
+import serverBannerHint from '../../../dist/hints/headers/server-banner.js';
+import xPoweredByHint from '../../../dist/hints/headers/x-powered-by.js';
+import serverTimingHint from '../../../dist/hints/headers/server-timing.js';
+import viaHint from '../../../dist/hints/headers/via.js';
+import sourcemapHint from '../../../dist/hints/headers/sourcemap.js';
+import corsAllowCredentialsHint from '../../../dist/hints/headers/cors-allow-credentials.js';
+import corsAllowMethodsHint from '../../../dist/hints/headers/cors-allow-methods.js';
+import corsAllowHeadersHint from '../../../dist/hints/headers/cors-allow-headers.js';
+import corsExposeHeadersHint from '../../../dist/hints/headers/cors-expose-headers.js';
+import corsMaxAgeHint from '../../../dist/hints/headers/cors-max-age.js';
+import reportingEndpointsHint from '../../../dist/hints/headers/reporting-endpoints.js';
+import nelHint from '../../../dist/hints/headers/nel.js';
+import originAgentClusterHint from '../../../dist/hints/headers/origin-agent-cluster.js';
+import integrityPolicyHint from '../../../dist/hints/headers/integrity-policy.js';
+import integrityPolicyReportOnlyHint from '../../../dist/hints/headers/integrity-policy-report-only.js';
+import etagHint from '../../../dist/hints/headers/etag.js';
+import lastModifiedHint from '../../../dist/hints/headers/last-modified.js';
+import expiresHint from '../../../dist/hints/headers/expires.js';
+import ageHint from '../../../dist/hints/headers/age.js';
+import varyHint from '../../../dist/hints/headers/vary.js';
+import noVarySearchHint from '../../../dist/hints/headers/no-vary-search.js';
+import acceptChHint from '../../../dist/hints/headers/accept-ch.js';
+import criticalChHint from '../../../dist/hints/headers/critical-ch.js';
+import timingAllowOriginHint from '../../../dist/hints/headers/timing-allow-origin.js';
+import altSvcHint from '../../../dist/hints/headers/alt-svc.js';
+import retryAfterHint from '../../../dist/hints/headers/retry-after.js';
 
 /** The artifact set the header checks read (plus `MetaElements` where noted). */
 const HEADER_ARTIFACTS = ['DevtoolsLog', 'URL'] as const;
@@ -152,7 +218,7 @@ function crossOriginRun(
   };
 }
 
-/** The 20 header checks, in report order. */
+/** The header checks, in report order. */
 export const headersChecks: readonly AuditCheck[] = [
   fromHint(cspHint, {
     scoreMode: 'numeric',
@@ -502,6 +568,323 @@ export const headersChecks: readonly AuditCheck[] = [
         nel: nel[0] ?? null,
         reportTo: join(headerValues(main.headers, 'report-to'), ', '),
       });
+    },
+  }),
+
+  // --- MDN response-header coverage -------------------------------------
+  // Information-leak headers.
+  fromHint(serverBannerHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? serverBannerFindings(firstHeader(main.headers, 'server'))
+        : null;
+    },
+  }),
+
+  fromHint(xPoweredByHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? xPoweredByFindings(firstHeader(main.headers, 'x-powered-by'))
+        : null;
+    },
+  }),
+
+  fromHint(serverTimingHint, {
+    scoreMode: 'informative',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? serverTimingFindings(firstHeader(main.headers, 'server-timing'))
+        : null;
+    },
+  }),
+
+  fromHint(viaHint, {
+    scoreMode: 'informative',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main ? viaFindings(firstHeader(main.headers, 'via')) : null;
+    },
+  }),
+
+  fromHint(sourcemapHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? sourcemapFindings(
+            firstHeader(main.headers, 'sourcemap'),
+            firstHeader(main.headers, 'x-sourcemap'),
+          )
+        : null;
+    },
+  }),
+
+  // The rest of the CORS family (read from the main response; no preflight).
+  fromHint(corsAllowCredentialsHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? corsAllowCredentialsFindings(
+            firstHeader(main.headers, 'access-control-allow-credentials'),
+            firstHeader(main.headers, 'access-control-allow-origin'),
+          )
+        : null;
+    },
+  }),
+
+  fromHint(corsAllowMethodsHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? corsAllowMethodsFindings(
+            firstHeader(main.headers, 'access-control-allow-methods'),
+          )
+        : null;
+    },
+  }),
+
+  fromHint(corsAllowHeadersHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? corsAllowHeadersFindings(
+            firstHeader(main.headers, 'access-control-allow-headers'),
+          )
+        : null;
+    },
+  }),
+
+  fromHint(corsExposeHeadersHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? corsExposeHeadersFindings(
+            firstHeader(main.headers, 'access-control-expose-headers'),
+          )
+        : null;
+    },
+  }),
+
+  fromHint(corsMaxAgeHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? corsMaxAgeFindings(
+            firstHeader(main.headers, 'access-control-max-age'),
+          )
+        : null;
+    },
+  }),
+
+  // Reporting, isolation and integrity.
+  fromHint(reportingEndpointsHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? reportingEndpointsFindings(
+            firstHeader(main.headers, 'reporting-endpoints'),
+          )
+        : null;
+    },
+  }),
+
+  fromHint(nelHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main ? nelFindings(firstHeader(main.headers, 'nel')) : null;
+    },
+  }),
+
+  fromHint(originAgentClusterHint, {
+    scoreMode: 'informative',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? originAgentClusterFindings(
+            firstHeader(main.headers, 'origin-agent-cluster'),
+          )
+        : null;
+    },
+  }),
+
+  fromHint(integrityPolicyHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? integrityPolicyFindings(
+            'Integrity-Policy',
+            firstHeader(main.headers, 'integrity-policy'),
+          )
+        : null;
+    },
+  }),
+
+  fromHint(integrityPolicyReportOnlyHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? integrityPolicyFindings(
+            'Integrity-Policy-Report-Only',
+            firstHeader(main.headers, 'integrity-policy-report-only'),
+          )
+        : null;
+    },
+  }),
+
+  // Caching and conditional requests.
+  fromHint(etagHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main ? etagFindings(firstHeader(main.headers, 'etag')) : null;
+    },
+  }),
+
+  fromHint(lastModifiedHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? lastModifiedFindings(firstHeader(main.headers, 'last-modified'))
+        : null;
+    },
+  }),
+
+  fromHint(expiresHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      if (!main) {
+        return null;
+      }
+      const cacheControl = firstHeader(main.headers, 'cache-control') ?? '';
+      return expiresFindings(
+        firstHeader(main.headers, 'expires'),
+        /(^|,)\s*max-age\s*=/i.test(cacheControl),
+      );
+    },
+  }),
+
+  fromHint(ageHint, {
+    scoreMode: 'informative',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main ? ageFindings(firstHeader(main.headers, 'age')) : null;
+    },
+  }),
+
+  fromHint(varyHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main ? varyFindings(firstHeader(main.headers, 'vary')) : null;
+    },
+  }),
+
+  fromHint(noVarySearchHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? noVarySearchFindings(firstHeader(main.headers, 'no-vary-search'))
+        : null;
+    },
+  }),
+
+  // Performance, timing and client hints.
+  fromHint(acceptChHint, {
+    scoreMode: 'informative',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? acceptChFindings(firstHeader(main.headers, 'accept-ch'))
+        : null;
+    },
+  }),
+
+  fromHint(criticalChHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? criticalChFindings(
+            firstHeader(main.headers, 'critical-ch'),
+            firstHeader(main.headers, 'accept-ch'),
+          )
+        : null;
+    },
+  }),
+
+  fromHint(timingAllowOriginHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? timingAllowOriginFindings(
+            firstHeader(main.headers, 'timing-allow-origin'),
+          )
+        : null;
+    },
+  }),
+
+  fromHint(altSvcHint, {
+    scoreMode: 'informative',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main ? altSvcFindings(firstHeader(main.headers, 'alt-svc')) : null;
+    },
+  }),
+
+  fromHint(retryAfterHint, {
+    scoreMode: 'numeric',
+    requiredArtifacts: HEADER_ARTIFACTS,
+    run: async (artifacts, context) => {
+      const main = await mainResponse(artifacts, context);
+      return main
+        ? retryAfterFindings(
+            firstHeader(main.headers, 'retry-after'),
+            main.status,
+          )
+        : null;
     },
   }),
 ];
