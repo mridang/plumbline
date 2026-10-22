@@ -1,6 +1,5 @@
-import { Severity } from '@hint/utils-types';
 import { defineOgHint } from '../../lib/opengraph/define.js';
-import { normalizeText } from '../../lib/opengraph/text.js';
+import { ogDescriptionSameAsTitle } from '../../lib/opengraph/checks.js';
 
 /**
  * Open Graph rule `opengraph-description-same-as-title` from https://www.opengraph.to/articles/description-same-as-title:
@@ -12,15 +11,6 @@ export default defineOgHint({
   description: 'Flags an og:description identical to the og:title.',
   slug: 'description-same-as-title',
   at: 'og:description',
-  severity: Severity.warning,
   extraGroups: ['seo'],
-  check(ctx) {
-    const title = ctx.meta('og:title');
-    const text = ctx.meta('og:description');
-    return title !== null &&
-      text !== null &&
-      normalizeText(title) === normalizeText(text)
-      ? 'The og:description is the same as the og:title; the description should add new information.'
-      : null;
-  },
+  run: ogDescriptionSameAsTitle,
 });

@@ -1,15 +1,23 @@
-import { Severity } from '@hint/utils-types';
 import type { HTMLElement } from '@hint/utils-dom';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage, onSite } from '../../core/page.js';
-import { getIconLinks, isSvgIcon, type IconLink } from '../../lib/seo/icons.js';
+import type { DocumentLike } from '../../lib/seo/read.js';
+import {
+  faviconSvgMissing,
+  ICONS_FAVICON_SVG_MISSING_REF,
+} from '../../lib/seo/checks.js';
+import { toSeverity } from './to-severity.js';
 
-const REF = 'https://www.opengraph.to/articles/missing-svg-favicon';
+const REF = ICONS_FAVICON_SVG_MISSING_REF;
 
 /**
  * Reports sites without an SVG favicon link.
  *
  * SVG favicons scale perfectly and support dark mode. Source: opengraph.to "No SVG Favicon Found" (info).
+ *
+ * The predicate, message and severity live in `src/lib/seo/checks.ts` and are
+ * shared with the Lighthouse check; this hint only adds the `<head>` element
+ * and the snippet to add.
  */
 
 export default defineHint({
@@ -20,29 +28,26 @@ export default defineHint({
   groups: ['opengraph', 'seo'],
   reference: REF,
   setup(context) {
-    // The icons declared in the page, read once the DOM is parsed.
-    let icons: IconLink[] = [];
-    // The <head> the missing icon link belongs in.
+    // The parsed document and the <head> the missing icon link belongs in,
+    // captured once the DOM is available for the later onSite check.
+    let document: DocumentLike | null = null;
     let head: HTMLElement | null = null;
     onPage(context, (page) => {
-      icons = getIconLinks(page.document);
+      document = page.document;
       head = page.document.querySelector('head');
     });
     onSite(context, (site) => {
-      if (icons.some(isSvgIcon)) {
+      const [found] = document ? faviconSvgMissing(document) : [];
+      if (!found) {
         return;
       }
-      site.report(
-        site.url.href,
-        `No SVG favicon found. Add <link rel="icon" type="image/svg+xml" href="/favicon.svg">. Read more: ${REF}`,
-        {
-          severity: Severity.hint,
-          element: head,
-          codeSnippet:
-            '<link rel="icon" type="image/svg+xml" href="/favicon.svg">',
-          codeLanguage: 'html',
-        },
-      );
+      site.report(site.url.href, found.message, {
+        severity: toSeverity(found.severity),
+        element: head,
+        codeSnippet:
+          '<link rel="icon" type="image/svg+xml" href="/favicon.svg">',
+        codeLanguage: 'html',
+      });
     });
   },
 });

@@ -1,7 +1,8 @@
 import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage } from '../../core/page.js';
-import { canonicalHref, resolvesAsUrl } from '../../lib/technical/read.js';
+import { canonicalHref } from '../../lib/technical/read.js';
+import { canonicalInvalidFindings } from '../../lib/technical/checks.js';
 
 /**
  * Errors when the canonical href is not a valid URL. A relative href is legal and is resolved against the page URL, as LLMScout does. Missing and mismatching canonicals are covered by seo-canonical-*. Source: LLMScout "canonical" (fail).
@@ -17,9 +18,12 @@ export default defineHint({
   setup(context) {
     onPage(context, (page) => {
       const href = canonicalHref(page.document);
-      if (href !== null && !resolvesAsUrl(href, page.url)) {
-        page.report(`Canonical href "${href}" is not a valid URL.`, {
-          severity: Severity.error,
+      for (const { message, severity } of canonicalInvalidFindings(
+        href,
+        page.url,
+      )) {
+        page.report(message, {
+          severity: severity === 'error' ? Severity.error : Severity.warning,
           element: page.document.querySelector('link[rel~="canonical" i]'),
         });
       }

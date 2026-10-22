@@ -1,5 +1,5 @@
-import { Severity } from '@hint/utils-types';
 import { defineOgHint } from '../../lib/opengraph/define.js';
+import { ogImageDimensionsMissing } from '../../lib/opengraph/checks.js';
 
 /**
  * Open Graph rule `opengraph-image-dimensions-missing` from https://www.opengraph.to/articles/missing-image-dimensions:
@@ -11,16 +11,5 @@ export default defineOgHint({
   description: 'Requires og:image:width and og:image:height next to og:image.',
   slug: 'missing-image-dimensions',
   add: '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">',
-  severity: Severity.warning,
-  check(ctx) {
-    if (ctx.meta('og:image') === null) {
-      return null;
-    }
-    const absent = ['og:image:width', 'og:image:height'].filter(
-      (key) => ctx.meta(key) === null,
-    );
-    return absent.length > 0
-      ? `The og:image has no ${absent.join(' or ')}; declaring the size (for example 1200 by 630) avoids layout shifts and poor cropping.`
-      : null;
-  },
+  run: ogImageDimensionsMissing,
 });

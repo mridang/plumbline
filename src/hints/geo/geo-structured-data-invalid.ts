@@ -2,8 +2,7 @@ import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage } from '../../core/page.js';
 import { readJsonLd } from '../../lib/geo/json-ld.js';
-
-const REF = 'https://github.com/RudrenduPaul/LLMScout';
+import { structuredDataInvalidFindings, REF } from '../../lib/geo/checks.js';
 
 /**
  * Reports pages with JSON-LD blocks that do not parse as JSON, counting an
@@ -19,18 +18,17 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      const { total, invalid, invalidAt } = readJsonLd(page.document);
-      if (invalid > 0) {
-        page.report(
-          `${invalid} of ${total} JSON-LD block(s) contain invalid JSON. Fix the malformed JSON-LD block(s) so they parse as valid JSON. Read more: ${REF}`,
-          {
-            severity: Severity.error,
-            // The first block that does not parse.
-            element: page.document.querySelectorAll(
-              'script[type="application/ld+json" i]',
-            )[invalidAt[0]],
-          },
-        );
+      const blocks = readJsonLd(page.document);
+      for (const { message, severity } of structuredDataInvalidFindings(
+        blocks,
+      )) {
+        page.report(message, {
+          severity: severity === 'error' ? Severity.error : Severity.warning,
+          // The first block that does not parse.
+          element: page.document.querySelectorAll(
+            'script[type="application/ld+json" i]',
+          )[blocks.invalidAt[0]],
+        });
       }
     });
   },

@@ -1,6 +1,5 @@
-import { Severity } from '@hint/utils-types';
 import { defineOgHint } from '../../lib/opengraph/define.js';
-import { charLength } from '../../lib/opengraph/text.js';
+import { ogDescriptionTooLong } from '../../lib/opengraph/checks.js';
 
 /**
  * Open Graph rule `opengraph-description-too-long` from https://www.opengraph.to/articles/description-too-long:
@@ -12,13 +11,6 @@ export default defineOgHint({
   description: 'Flags an og:description of more than 160 characters.',
   slug: 'description-too-long',
   at: 'og:description',
-  severity: Severity.warning,
   extraGroups: ['seo'],
-  check(ctx) {
-    const text = ctx.meta('og:description');
-    // The article says the description "exceeds 160 characters"; the info-level "slightly long" hint overlaps on 161 to 200.
-    return text !== null && charLength(text) > 160
-      ? `The og:description is ${charLength(text)} characters long; descriptions over 160 characters may be cut off on social platforms.`
-      : null;
-  },
+  run: ogDescriptionTooLong,
 });

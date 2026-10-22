@@ -1,5 +1,5 @@
-import { Severity } from '@hint/utils-types';
 import { defineOgHint } from '../../lib/opengraph/define.js';
+import { ogTitleMissing } from '../../lib/opengraph/checks.js';
 
 /**
  * Open Graph rule `opengraph-title-missing` from https://www.opengraph.to/articles/missing-og-title:
@@ -11,11 +11,6 @@ export default defineOgHint({
   description: 'Requires an og:title meta tag.',
   slug: 'missing-og-title',
   add: '<meta property="og:title" content="Your page title">',
-  severity: Severity.error,
   extraGroups: ['seo'],
-  check(ctx) {
-    return ctx.meta('og:title') === null
-      ? 'The page has no og:title meta tag so social platforms fall back to the page title or URL; add one of 50 to 60 characters.'
-      : null;
-  },
+  run: ogTitleMissing,
 });

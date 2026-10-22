@@ -1,15 +1,17 @@
-import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage } from '../../core/page.js';
-import { getTitle } from '../../lib/seo/read.js';
+import { titleTooLong, SEO_TITLE_TOO_LONG_REF } from '../../lib/seo/checks.js';
+import { toSeverity } from './to-severity.js';
 
-const REF = 'https://www.opengraph.to/articles/html-title-too-long';
-const MAX = 70;
+const REF = SEO_TITLE_TOO_LONG_REF;
 
 /**
  * Warns when the <title> is longer than 70 characters.
  *
  * Titles over 70 characters are truncated in search results. Source: opengraph.to "HTML Title Too Long" (warning).
+ *
+ * The predicate, message and severity live in `src/lib/seo/checks.ts`; this
+ * hint only points the finding at the `<title>` element.
  */
 
 export default defineHint({
@@ -21,15 +23,12 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      const title = getTitle(page.document);
-      if (title !== null && title.length > MAX) {
-        page.report(
-          `The <title> is ${title.length} characters long; keep it to ${MAX} or fewer (50-60 is ideal) so it is not truncated in search results. Read more: ${REF}`,
-          {
-            severity: Severity.warning,
-            element: page.document.querySelector('title:not(svg title)'),
-          },
-        );
+      const [found] = titleTooLong(page.document);
+      if (found) {
+        page.report(found.message, {
+          severity: toSeverity(found.severity),
+          element: page.document.querySelector('title:not(svg title)'),
+        });
       }
     });
   },

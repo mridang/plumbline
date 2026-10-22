@@ -4,9 +4,9 @@ import { onPage } from '../../core/page.js';
 import {
   formatKb,
   imageUrls,
-  imageWeightLevel,
   mapWithConcurrency,
 } from '../../lib/technical/read.js';
+import { imageWeightFinding } from '../../lib/technical/checks.js';
 
 /**
  * Measures each distinct <img> through its Content-Length (falling back to the body size), five at a time. Over 200 KB is a warning, over 500 KB an error. Source: LLMScout "image-weight".
@@ -39,16 +39,16 @@ export default defineHint({
       });
       urls.forEach((url, i) => {
         const bytes = sizes[i];
-        const level = bytes === null ? 'ok' : imageWeightLevel(bytes);
-        if (bytes !== null && level !== 'ok') {
-          context.report(
-            url,
-            `The image ${url} weighs ${formatKb(bytes)}; keep images under ${level === 'fail' ? '500' : '200'} KB.`,
-            {
-              severity: level === 'fail' ? Severity.error : Severity.warning,
-              codeSnippet: `${formatKb(bytes)} (${bytes} bytes)`,
-            },
-          );
+        // An unreachable image (null size) cannot be measured and is skipped;
+        // the shared check turns a measured size into its finding, or null when
+        // the image is light enough to pass.
+        const found = bytes === null ? null : imageWeightFinding(url, bytes);
+        if (found !== null && bytes !== null) {
+          context.report(url, found.message, {
+            severity:
+              found.severity === 'error' ? Severity.error : Severity.warning,
+            codeSnippet: `${formatKb(bytes)} (${bytes} bytes)`,
+          });
         }
       });
     });

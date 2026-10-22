@@ -1,6 +1,5 @@
-import { Severity } from '@hint/utils-types';
 import { defineOgHint } from '../../lib/opengraph/define.js';
-import { startsWithUrl } from '../../lib/opengraph/text.js';
+import { ogDescriptionIsUrl } from '../../lib/opengraph/checks.js';
 
 /**
  * Open Graph rule `opengraph-description-is-url` from https://www.opengraph.to/articles/description-is-url:
@@ -12,12 +11,6 @@ export default defineOgHint({
   description: 'Flags an og:description that starts with a URL.',
   slug: 'description-is-url',
   at: 'og:description',
-  severity: Severity.warning,
   extraGroups: ['seo'],
-  check(ctx) {
-    const text = ctx.meta('og:description');
-    return text !== null && startsWithUrl(text)
-      ? 'The og:description starts with a URL; replace it with a readable summary of the page.'
-      : null;
-  },
+  run: ogDescriptionIsUrl,
 });

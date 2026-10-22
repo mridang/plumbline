@@ -1,5 +1,5 @@
-import { Severity } from '@hint/utils-types';
 import { defineOgHint } from '../../lib/opengraph/define.js';
+import { ogSiteNameMissing } from '../../lib/opengraph/checks.js';
 
 /**
  * Open Graph rule `opengraph-site-name-missing` from https://www.opengraph.to/articles/missing-og-site-name:
@@ -11,10 +11,5 @@ export default defineOgHint({
   description: 'Requires an og:site_name meta tag.',
   slug: 'missing-og-site-name',
   add: '<meta property="og:site_name" content="Your site name">',
-  severity: Severity.hint,
-  check(ctx) {
-    return ctx.meta('og:site_name') === null
-      ? 'The page has no og:site_name meta tag; add the brand name so platforms can identify your site.'
-      : null;
-  },
+  run: ogSiteNameMissing,
 });

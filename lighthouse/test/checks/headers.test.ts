@@ -1,0 +1,179 @@
+import { describe, expect, it } from '@jest/globals';
+import type * as LH from 'lighthouse';
+import type AuditNS from 'lighthouse/types/audit.js';
+import { headersChecks } from '../../src/checks/headers.js';
+import type { AuditCheck } from '../../src/checks/types.js';
+
+/**
+ * Builds the minimal devtools log Lighthouse's `NetworkRecords` computed
+ * artifact needs to reconstruct one main-document response with the given
+ * response headers. This is the only seam the header checks read through, so a
+ * synthetic log lets `run()` be exercised without a browser.
+ */
+function devtoolsLog(
+  url: string,
+  headers: Record<string, string>,
+): LH.Artifacts['DevtoolsLog'] {
+  const requestId = '1';
+  const events = [
+    {
+      method: 'Network.requestWillBeSent',
+      params: {
+        requestId,
+        loaderId: 'LOADER',
+        documentURL: url,
+        request: { url, method: 'GET' },
+        timestamp: 1,
+        wallTime: 1,
+        initiator: { type: 'other' },
+        type: 'Document',
+      },
+    },
+    {
+      method: 'Network.responseReceived',
+      params: {
+        requestId,
+        loaderId: 'LOADER',
+        timestamp: 2,
+        type: 'Document',
+        response: {
+          url,
+          status: 200,
+          statusText: 'OK',
+          headers,
+          mimeType: 'text/html',
+          connectionReused: false,
+          connectionId: 1,
+          fromDiskCache: false,
+          fromServiceWorker: false,
+          encodedDataLength: 100,
+          securityState: 'secure',
+          protocol: 'h2',
+        },
+      },
+    },
+    {
+      method: 'Network.loadingFinished',
+      params: { requestId, timestamp: 3, encodedDataLength: 100 },
+    },
+  ];
+  return events as unknown as LH.Artifacts['DevtoolsLog'];
+}
+
+/** Builds the artifacts a header check reads, over the given headers. */
+function artifacts(url: string, headers: Record<string, string>): LH.Artifacts {
+  return {
+    DevtoolsLog: devtoolsLog(url, headers),
+    URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
+    MetaElements: [],
+  } as unknown as LH.Artifacts;
+}
+
+/** A fresh audit context; the empty cache makes NetworkRecords recompute. */
+function context(): AuditNS.Context {
+  return { computedCache: new Map() } as unknown as AuditNS.Context;
+}
+
+/** Looks a check up by id, failing loudly if the registry drops it. */
+function check(id: string): AuditCheck {
+  const found = headersChecks.find((c) => c.id === id);
+  if (!found) {
+    throw new Error(`missing check '${id}'`);
+  }
+  return found;
+}
+
+describe('the headers registry', () => {
+  it('registers all twenty header checks with a known section', () => {
+    expect(headersChecks).toHaveLength(20);
+    for (const c of headersChecks) {
+      expect(c.id).toBeTruthy();
+      expect(['site-protection', 'https-tls', 'visitor-privacy']).toContain(
+        c.section,
+      );
+    }
+  });
+
+  it('marks the context-specific checks informative and the rest scored', () => {
+    const informative = headersChecks
+      .filter((c) => c.scoreMode === 'informative')
+      .map((c) => c.id)
+      .sort();
+    expect(informative).toEqual(['cache-control', 'clear-site-data', 'cors']);
+  });
+});
+
+describe('the csp check run()', () => {
+  const csp = check('csp');
+
+  it('reports a finding when the main document sends no CSP', async () => {
+    const findings = await csp.run(artifacts('https://x.test/', {}), context());
+    expect(findings).not.toBeNull();
+    expect(findings?.length).toBeGreaterThan(0);
+    expect(findings?.[0]?.severity).toBe('error');
+  });
+
+  it('reports nothing for a strict CSP', async () => {
+    const findings = await csp.run(
+      artifacts('https://x.test/', {
+        'content-security-policy':
+          "default-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+      }),
+      context(),
+    );
+    expect(findings).toEqual([]);
+  });
+
+  it('is not applicable when the run captured no document', async () => {
+    const empty = {
+      DevtoolsLog: [] as unknown as LH.Artifacts['DevtoolsLog'],
+      URL: { mainDocumentUrl: '', finalDisplayedUrl: '' },
+      MetaElements: [],
+    } as unknown as LH.Artifacts;
+    expect(await csp.run(empty, context())).toBeNull();
+  });
+});
+
+describe('the hsts check run()', () => {
+  const hsts = check('hsts');
+
+  it('errors when the header is absent on an HTTPS page', async () => {
+    const findings = await hsts.run(
+      artifacts('https://x.test/', {}),
+      context(),
+    );
+    expect(findings?.some((f) => f.severity === 'error')).toBe(true);
+  });
+
+  it('raises no error for a long max-age (preload advice only)', async () => {
+    const findings = await hsts.run(
+      artifacts('https://x.test/', {
+        'strict-transport-security': 'max-age=63072000; includeSubDomains',
+      }),
+      context(),
+    );
+    // Observatory passes this value but still advises preloading, so the only
+    // finding (if any) is advice, never an error.
+    expect(findings?.some((f) => f.severity === 'error')).toBe(false);
+  });
+});
+
+describe('the x-content-type-options check run()', () => {
+  const xcto = check('x-content-type-options');
+
+  it('errors when the header is not nosniff', async () => {
+    const findings = await xcto.run(
+      artifacts('https://x.test/', { 'x-content-type-options': 'sniff' }),
+      context(),
+    );
+    expect(findings?.[0]?.severity).toBe('error');
+  });
+
+  it('passes when the header is nosniff', async () => {
+    const findings = await xcto.run(
+      artifacts('https://x.test/', { 'x-content-type-options': 'nosniff' }),
+      context(),
+    );
+    expect(findings).toEqual([]);
+  });
+});

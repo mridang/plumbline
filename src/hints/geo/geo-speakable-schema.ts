@@ -1,9 +1,8 @@
 import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage } from '../../core/page.js';
-import { containsSpeakable, readJsonLd } from '../../lib/geo/json-ld.js';
-
-const REF = 'https://github.com/RudrenduPaul/LLMScout';
+import { readJsonLd } from '../../lib/geo/json-ld.js';
+import { speakableSchemaFindings, REF } from '../../lib/geo/checks.js';
 
 /**
  * Reports pages with no `SpeakableSpecification` node and no `speakable`
@@ -21,14 +20,12 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      const { parsed } = readJsonLd(page.document);
-      if (!parsed.some(containsSpeakable)) {
-        page.report(
-          `No Speakable structured data found. If this page has content suited for voice assistants, add a "speakable" SpeakableSpecification to its JSON-LD so voice search can surface it. Read more: ${REF}`,
-          {
-            severity: Severity.warning,
-            element: page.document.querySelector('head'),
-            codeSnippet: `<script type="application/ld+json">
+      const blocks = readJsonLd(page.document);
+      for (const { message, severity } of speakableSchemaFindings(blocks)) {
+        page.report(message, {
+          severity: severity === 'error' ? Severity.error : Severity.warning,
+          element: page.document.querySelector('head'),
+          codeSnippet: `<script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "WebPage",
@@ -38,9 +35,8 @@ export default defineHint({
   }
 }
 </script>`,
-            codeLanguage: 'html',
-          },
-        );
+          codeLanguage: 'html',
+        });
       }
     });
   },

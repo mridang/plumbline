@@ -1,14 +1,20 @@
-import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage } from '../../core/page.js';
-import { getCanonical } from '../../lib/seo/read.js';
+import {
+  canonicalMissing,
+  SEO_CANONICAL_MISSING_REF,
+} from '../../lib/seo/checks.js';
+import { toSeverity } from './to-severity.js';
 
-const REF = 'https://www.opengraph.to/articles/missing-canonical-url';
+const REF = SEO_CANONICAL_MISSING_REF;
 
 /**
  * Reports pages without <link rel="canonical">.
  *
  * A canonical link tells search engines the preferred URL. Source: opengraph.to "Missing Canonical URL" (info).
+ *
+ * The predicate, message and severity live in `src/lib/seo/checks.ts`; this
+ * hint only adds the `<head>` element and a page-specific snippet to add.
  */
 
 export default defineHint({
@@ -20,16 +26,14 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      if (getCanonical(page.document) === null) {
-        page.report(
-          `No canonical URL found. Add <link rel="canonical"> to the <head> with the page's preferred absolute URL. Read more: ${REF}`,
-          {
-            severity: Severity.hint,
-            element: page.document.querySelector('head'),
-            codeSnippet: `<link rel="canonical" href="${page.url}">`,
-            codeLanguage: 'html',
-          },
-        );
+      const [found] = canonicalMissing(page.document);
+      if (found) {
+        page.report(found.message, {
+          severity: toSeverity(found.severity),
+          element: page.document.querySelector('head'),
+          codeSnippet: `<link rel="canonical" href="${page.url}">`,
+          codeLanguage: 'html',
+        });
       }
     });
   },

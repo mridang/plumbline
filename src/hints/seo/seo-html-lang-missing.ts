@@ -1,14 +1,20 @@
-import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage } from '../../core/page.js';
-import { getHtmlLang } from '../../lib/seo/read.js';
+import {
+  htmlLangMissing,
+  SEO_HTML_LANG_MISSING_REF,
+} from '../../lib/seo/checks.js';
+import { toSeverity } from './to-severity.js';
 
-const REF = 'https://www.opengraph.to/articles/missing-html-lang';
+const REF = SEO_HTML_LANG_MISSING_REF;
 
 /**
  * Warns when <html> has no lang attribute.
  *
  * The lang attribute helps search engines and screen readers (WCAG level A). Source: opengraph.to "Missing lang Attribute on <html>" (warning).
+ *
+ * The predicate, message and severity live in `src/lib/seo/checks.ts`; this
+ * hint only adds the `<html>` element and the snippet to add.
  */
 
 export default defineHint({
@@ -20,16 +26,14 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      if (getHtmlLang(page.document) === null) {
-        page.report(
-          `The <html> element has no lang attribute, for example <html lang="en">. Read more: ${REF}`,
-          {
-            severity: Severity.warning,
-            element: page.document.documentElement,
-            codeSnippet: '<html lang="en">',
-            codeLanguage: 'html',
-          },
-        );
+      const [found] = htmlLangMissing(page.document);
+      if (found) {
+        page.report(found.message, {
+          severity: toSeverity(found.severity),
+          element: page.document.documentElement,
+          codeSnippet: '<html lang="en">',
+          codeLanguage: 'html',
+        });
       }
     });
   },

@@ -1,14 +1,20 @@
-import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage } from '../../core/page.js';
-import { hasJsonLd } from '../../lib/seo/read.js';
+import {
+  structuredDataMissing,
+  SEO_STRUCTURED_DATA_MISSING_REF,
+} from '../../lib/seo/checks.js';
+import { toSeverity } from './to-severity.js';
 
-const REF = 'https://www.opengraph.to/articles/missing-structured-data';
+const REF = SEO_STRUCTURED_DATA_MISSING_REF;
 
 /**
  * Reports pages without a JSON-LD block.
  *
  * Structured data helps search engines understand content. Source: opengraph.to "No Structured Data (JSON-LD) Found" (info).
+ *
+ * The predicate, message and severity live in `src/lib/seo/checks.ts`; this
+ * hint only adds the `<head>` element and a page-specific snippet to add.
  */
 
 export default defineHint({
@@ -20,13 +26,12 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      if (!hasJsonLd(page.document)) {
-        page.report(
-          `No JSON-LD structured data found. Add a <script type="application/ld+json"> block, for example WebPage or Article. Read more: ${REF}`,
-          {
-            severity: Severity.hint,
-            element: page.document.querySelector('head'),
-            codeSnippet: `<script type="application/ld+json">
+      const [found] = structuredDataMissing(page.document);
+      if (found) {
+        page.report(found.message, {
+          severity: toSeverity(found.severity),
+          element: page.document.querySelector('head'),
+          codeSnippet: `<script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "WebPage",
@@ -34,9 +39,8 @@ export default defineHint({
   "url": "${page.url}"
 }
 </script>`,
-            codeLanguage: 'html',
-          },
-        );
+          codeLanguage: 'html',
+        });
       }
     });
   },

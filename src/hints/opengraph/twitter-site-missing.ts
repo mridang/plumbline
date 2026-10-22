@@ -1,5 +1,5 @@
-import { Severity } from '@hint/utils-types';
 import { defineOgHint } from '../../lib/opengraph/define.js';
+import { twitterSiteMissing } from '../../lib/opengraph/checks.js';
 
 /**
  * Open Graph rule `twitter-site-missing` from https://www.opengraph.to/articles/missing-twitter-site:
@@ -11,10 +11,5 @@ export default defineOgHint({
   description: 'Requires a twitter:site meta tag.',
   slug: 'missing-twitter-site',
   add: '<meta name="twitter:site" content="@yourhandle">',
-  severity: Severity.hint,
-  check(ctx) {
-    return ctx.meta('twitter:site') === null
-      ? 'The page has no twitter:site meta tag; add your X/Twitter handle to attribute shared content to your account.'
-      : null;
-  },
+  run: twitterSiteMissing,
 });

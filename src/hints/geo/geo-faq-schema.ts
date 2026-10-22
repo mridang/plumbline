@@ -1,9 +1,8 @@
 import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage } from '../../core/page.js';
-import { containsType, readJsonLd } from '../../lib/geo/json-ld.js';
-
-const REF = 'https://github.com/RudrenduPaul/LLMScout';
+import { readJsonLd } from '../../lib/geo/json-ld.js';
+import { faqSchemaFindings, REF } from '../../lib/geo/checks.js';
 
 /**
  * Reports pages with no FAQPage JSON-LD node (also found inside `@graph`, arrays
@@ -21,14 +20,12 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      const { parsed } = readJsonLd(page.document);
-      if (!parsed.some((data) => containsType(data, 'FAQPage'))) {
-        page.report(
-          `No FAQPage structured data found. If this page has an FAQ section, mark it up with FAQPage JSON-LD so generative engines can surface individual answers. Read more: ${REF}`,
-          {
-            severity: Severity.warning,
-            element: page.document.querySelector('head'),
-            codeSnippet: `<script type="application/ld+json">
+      const blocks = readJsonLd(page.document);
+      for (const { message, severity } of faqSchemaFindings(blocks)) {
+        page.report(message, {
+          severity: severity === 'error' ? Severity.error : Severity.warning,
+          element: page.document.querySelector('head'),
+          codeSnippet: `<script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -41,9 +38,8 @@ export default defineHint({
   ]
 }
 </script>`,
-            codeLanguage: 'html',
-          },
-        );
+          codeLanguage: 'html',
+        });
       }
     });
   },

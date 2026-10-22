@@ -1,5 +1,5 @@
-import { Severity } from '@hint/utils-types';
 import { defineOgHint } from '../../lib/opengraph/define.js';
+import { twitterCardMissing } from '../../lib/opengraph/checks.js';
 
 /**
  * Open Graph rule `twitter-card-missing` from https://www.opengraph.to/articles/missing-twitter-card:
@@ -11,10 +11,5 @@ export default defineOgHint({
   description: 'Requires a twitter:card meta tag.',
   slug: 'missing-twitter-card',
   add: '<meta name="twitter:card" content="summary_large_image">',
-  severity: Severity.warning,
-  check(ctx) {
-    return ctx.meta('twitter:card') === null
-      ? 'The page has no twitter:card meta tag so X/Twitter shows a basic link preview; use summary_large_image.'
-      : null;
-  },
+  run: twitterCardMissing,
 });

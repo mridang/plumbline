@@ -1,5 +1,5 @@
-import { Severity } from '@hint/utils-types';
 import { defineOgHint } from '../../lib/opengraph/define.js';
+import { ogImageMissing } from '../../lib/opengraph/checks.js';
 
 /**
  * Open Graph rule `opengraph-image-missing` from https://www.opengraph.to/articles/missing-og-image:
@@ -11,10 +11,5 @@ export default defineOgHint({
   description: 'Requires an og:image meta tag.',
   slug: 'missing-og-image',
   add: '<meta property="og:image" content="https://example.com/og-image.png">',
-  severity: Severity.error,
-  check(ctx) {
-    return ctx.meta('og:image') === null
-      ? 'The page has no og:image meta tag; pages without an image get significantly less engagement when shared.'
-      : null;
-  },
+  run: ogImageMissing,
 });

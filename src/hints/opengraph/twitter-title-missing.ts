@@ -1,5 +1,5 @@
-import { Severity } from '@hint/utils-types';
 import { defineOgHint } from '../../lib/opengraph/define.js';
+import { twitterTitleMissing } from '../../lib/opengraph/checks.js';
 
 /**
  * Open Graph rule `twitter-title-missing` from https://www.opengraph.to/articles/missing-twitter-title:
@@ -11,10 +11,5 @@ export default defineOgHint({
   description: 'Requires a twitter:title meta tag.',
   slug: 'missing-twitter-title',
   add: '<meta name="twitter:title" content="Your page title">',
-  severity: Severity.warning,
-  check(ctx) {
-    return ctx.meta('twitter:title') === null
-      ? 'The page has no twitter:title meta tag; X falls back to og:title or the page title, which may not suit social sharing.'
-      : null;
-  },
+  run: twitterTitleMissing,
 });

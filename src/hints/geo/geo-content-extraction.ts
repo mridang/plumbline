@@ -1,12 +1,8 @@
 import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage } from '../../core/page.js';
-import {
-  measureContent,
-  UNSTRUCTURED_BLOCK_THRESHOLD,
-} from '../../lib/geo/content.js';
-
-const REF = 'https://github.com/RudrenduPaul/LLMScout';
+import { measureContent } from '../../lib/geo/content.js';
+import { contentExtractionFindings, REF } from '../../lib/geo/checks.js';
 
 /**
  * A heuristic for how well a generative engine can chunk the page. Reports a
@@ -27,25 +23,24 @@ export default defineHint({
   setup(context) {
     onPage(context, (page) => {
       const stats = measureContent(page.document);
-      const root =
-        page.document.querySelector('main') ??
-        page.document.querySelector('body');
       if (!stats) {
         return;
       }
-      if (stats.headingCount === 0 && stats.paragraphCount === 0) {
-        page.report(
-          `No headings or paragraph-level structure detected; a generative engine may struggle to extract distinct sections from this page. Break content into headings (<h2>, <h3>, ...) and paragraphs (<p>) rather than unstructured text. Read more: ${REF}`,
-          { severity: Severity.warning, element: root },
-        );
-      } else if (stats.maxUnstructuredLength > UNSTRUCTURED_BLOCK_THRESHOLD) {
-        page.report(
-          `Found a ${stats.maxUnstructuredLength}-character block of text with no internal heading or paragraph structure. Break large unstructured blocks into headed sections and paragraphs. Read more: ${REF}`,
-          {
-            severity: Severity.warning,
-            element: root?.querySelectorAll('div')[stats.unstructuredIndex],
-          },
-        );
+      const root =
+        page.document.querySelector('main') ??
+        page.document.querySelector('body');
+      // The shared check decides the message; the hint points the report at the
+      // root for the "no structure" finding, or at the oversized `<div>` for the
+      // block finding, which the two `stats` branches tell apart.
+      const noStructure =
+        stats.headingCount === 0 && stats.paragraphCount === 0;
+      for (const { message, severity } of contentExtractionFindings(stats)) {
+        page.report(message, {
+          severity: severity === 'error' ? Severity.error : Severity.warning,
+          element: noStructure
+            ? root
+            : root?.querySelectorAll('div')[stats.unstructuredIndex],
+        });
       }
     });
   },

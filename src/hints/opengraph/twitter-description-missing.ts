@@ -1,5 +1,5 @@
-import { Severity } from '@hint/utils-types';
 import { defineOgHint } from '../../lib/opengraph/define.js';
+import { twitterDescriptionMissing } from '../../lib/opengraph/checks.js';
 
 /**
  * Open Graph rule `twitter-description-missing` from https://www.opengraph.to/articles/missing-twitter-description:
@@ -11,10 +11,5 @@ export default defineOgHint({
   description: 'Requires a twitter:description meta tag.',
   slug: 'missing-twitter-description',
   add: '<meta name="twitter:description" content="A short summary of the page">',
-  severity: Severity.warning,
-  check(ctx) {
-    return ctx.meta('twitter:description') === null
-      ? 'The page has no twitter:description meta tag; X falls back to og:description or the meta description.'
-      : null;
-  },
+  run: twitterDescriptionMissing,
 });

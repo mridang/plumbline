@@ -1,5 +1,5 @@
-import { Severity } from '@hint/utils-types';
 import { defineOgHint } from '../../lib/opengraph/define.js';
+import { ogImageTooSmall } from '../../lib/opengraph/checks.js';
 
 /**
  * Open Graph rule `opengraph-image-too-small` from https://www.opengraph.to/articles/og-image-too-small:
@@ -11,14 +11,6 @@ export default defineOgHint({
   description: 'Flags an og:image below the minimum size of social platforms.',
   slug: 'og-image-too-small',
   image: true,
-  severity: Severity.error,
-  async check(ctx) {
-    const image = await ctx.image();
-    const info = image?.info;
-    // The article's per-platform minimums: Facebook 200x200, X 300x157, WhatsApp ~300x200, Slack ~400x200, Discord 256x256 (Telegram has none).
-    // LinkedIn's listed 1200x628 equals its recommendation, not a hard minimum, so it is left out. Meeting every other minimum means at least 400x256.
-    return info && (info.width < 400 || info.height < 256)
-      ? `The og:image is ${info.width}x${info.height} pixels, below the minimum of one or more social platforms (at least 400x256 is needed); use 1200x630.`
-      : null;
-  },
+  fetchImage: true,
+  run: ogImageTooSmall,
 });

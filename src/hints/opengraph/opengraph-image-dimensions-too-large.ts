@@ -1,6 +1,6 @@
-import { Severity } from '@hint/utils-types';
 import { Category } from '../../core/define-hint.js';
 import { defineOgHint } from '../../lib/opengraph/define.js';
+import { ogImageDimensionsTooLarge } from '../../lib/opengraph/checks.js';
 
 /**
  * Open Graph rule `opengraph-image-dimensions-too-large` from https://www.opengraph.to/articles/og-image-dimensions-too-large:
@@ -12,13 +12,7 @@ export default defineOgHint({
   description: 'Flags an og:image over 4096 pixels on a side.',
   slug: 'og-image-dimensions-too-large',
   image: true,
-  severity: Severity.warning,
+  fetchImage: true,
   category: Category.performance,
-  async check(ctx) {
-    const image = await ctx.image();
-    const info = image?.info;
-    return info && (info.width > 4096 || info.height > 4096)
-      ? `The og:image is ${info.width}x${info.height} pixels; images over 4096 pixels on a side may be rejected by platforms (use 1200x630).`
-      : null;
-  },
+  run: ogImageDimensionsTooLarge,
 });

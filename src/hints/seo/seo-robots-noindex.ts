@@ -1,15 +1,20 @@
-import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage } from '../../core/page.js';
 import { headerSnippet } from '../../core/http.js';
 import { findRobotsSource } from '../../lib/seo/read.js';
+import { robotsNoindex, SEO_ROBOTS_NOINDEX_REF } from '../../lib/seo/checks.js';
+import { toSeverity } from './to-severity.js';
 
-const REF = 'https://www.opengraph.to/articles/robots-noindex';
+const REF = SEO_ROBOTS_NOINDEX_REF;
 
 /**
  * Warns when the robots meta tag contains noindex.
  *
  * noindex keeps the page out of search results, often by mistake after staging. Source: opengraph.to "Page Is Set to noindex" (warning).
+ *
+ * The predicate, message and severity live in `src/lib/seo/checks.ts`; this
+ * hint re-derives the source (meta element or `X-Robots-Tag` header) only to
+ * point the finding at the right element or header snippet.
  */
 
 export default defineHint({
@@ -21,22 +26,24 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      const source = findRobotsSource(page.document, page.headers, 'noindex');
-      if (source) {
-        page.report(
-          `The robots meta tag contains "noindex", so search engines will not index this page. Remove it if that is unintended. Read more: ${REF}`,
-          'element' in source
-            ? { severity: Severity.warning, element: source.element }
-            : {
-                severity: Severity.warning,
-                codeSnippet: headerSnippet(
-                  source.header.name,
-                  source.header.value,
-                ),
-                codeLanguage: 'http',
-              },
-        );
+      const [found] = robotsNoindex(page.document, page.headers);
+      if (!found) {
+        return;
       }
+      // Re-derive where the directive was found to point the report at it.
+      const source = findRobotsSource(page.document, page.headers, 'noindex');
+      page.report(
+        found.message,
+        source && 'element' in source
+          ? { severity: toSeverity(found.severity), element: source.element }
+          : {
+              severity: toSeverity(found.severity),
+              codeSnippet: source
+                ? headerSnippet(source.header.name, source.header.value)
+                : '',
+              codeLanguage: 'http',
+            },
+      );
     });
   },
 });
