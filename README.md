@@ -17,9 +17,8 @@ The package is not published yet, so install it from a local build into a scratc
 ```bash
 cd ~/Code/mridang/webhint-hints
 devbox run -- npm run build
-devbox run -- npm run build --prefix formatter
-devbox run -- npm pack --pack-destination "$(mktemp -d)"
-devbox run -- npm pack ./formatter --pack-destination "$(mktemp -d)"
+devbox run -- npm pack ./packages/hints --pack-destination "$(mktemp -d)"
+devbox run -- npm pack ./packages/formatter --pack-destination "$(mktemp -d)"
 ```
 
 `npm pack` prints the path of the tarball. Then, in an empty scratch folder:
@@ -55,7 +54,7 @@ npx hint https://example.com/
 
 ## Report formatter
 
-The stock `html` report only has webhint's eight categories, never shows a hint's description and links every hint to `webhint.io` pages that do not exist for these hints. The companion package `@mridang/webhint-formatter-extra` (in [`formatter/`](formatter)) writes a better report. The root package and the formatter are built separately, so the root `build` script stays identical to the other libraries: run `npm run build --prefix formatter` for the formatter. Install it next to `hint` and list it in `.hintrc`:
+The stock `html` report only has webhint's eight categories, never shows a hint's description and links every hint to `webhint.io` pages that do not exist for these hints. The companion package `@mridang/webhint-formatter-extra` (in [`packages/formatter/`](packages/formatter)) writes a better report. This repository is an npm-workspaces monorepo, so the root `npm run build` builds every workspace, the formatter included. Install it next to `hint` and list it in `.hintrc`:
 
 ```json
 {

@@ -20,6 +20,8 @@ Do not run `npm install` unless you have been told to. Use Node built-ins and th
 
 ## Layout
 
+This repository is an npm-workspaces monorepo. The hints package lives in `packages/hints/`, with the companion `@mridang/webhint-formatter-extra` in `packages/formatter/` and `lighthouse-plugin-webhint-extra` in `packages/lighthouse/`. The paths below are relative to `packages/hints/`. Commands run from the repository root through devbox and operate over every workspace.
+
 - `src/core/` shared helpers: `defineHint`, `groups`, `http` (header helpers), `page` (`onPage`, `onSite`). Do not edit these; add your own helper file instead.
 - `src/lib/` pure logic with no webhint types (parsers, validators, scoring). Put anything non-trivial here so it can be tested without a scan.
 - `src/hints/<set>/<id>.ts` one hint per file, default export of `defineHint(...)`.
