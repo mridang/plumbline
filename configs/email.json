@@ -4,6 +4,7 @@
   },
   "parsers": ["html"],
   "hints": {
+    "@mridang/webhint-hint-extra/bimi": "default",
     "@mridang/webhint-hint-extra/mail-caa": "default",
     "@mridang/webhint-hint-extra/mail-cert-hostname": "default",
     "@mridang/webhint-hint-extra/mail-cert-pubkey": "default",
@@ -30,6 +31,8 @@
     "@mridang/webhint-hint-extra/mail-tls-renegotiation-client": "default",
     "@mridang/webhint-hint-extra/mail-tls-renegotiation-secure": "default",
     "@mridang/webhint-hint-extra/mail-tls-version": "default",
-    "@mridang/webhint-hint-extra/mail-tls-zero-rtt": "default"
+    "@mridang/webhint-hint-extra/mail-tls-zero-rtt": "default",
+    "@mridang/webhint-hint-extra/mta-sts": "default",
+    "@mridang/webhint-hint-extra/tls-rpt": "default"
   }
 }

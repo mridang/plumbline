@@ -1,0 +1,12 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": ["html"],
+  "hints": {
+    "@mridang/webhint-hint-extra/manifest-icons": "default",
+    "@mridang/webhint-hint-extra/manifest-linked": "default",
+    "@mridang/webhint-hint-extra/manifest-valid": "default",
+    "@mridang/webhint-hint-extra/theme-color-meta": "default"
+  }
+}

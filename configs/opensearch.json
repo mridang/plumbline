@@ -1,0 +1,10 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": ["html"],
+  "hints": {
+    "@mridang/webhint-hint-extra/opensearch-discovery": "default",
+    "@mridang/webhint-hint-extra/opensearch-valid": "default"
+  }
+}

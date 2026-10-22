@@ -18,6 +18,12 @@ import { technicalChecks } from './technical.js';
 import { geoChecks } from './geo.js';
 import { privacyChecks } from './privacy.js';
 import { agentChecks } from './agent.js';
+import { i18nChecks } from './i18n.js';
+import { richresultsChecks } from './richresults.js';
+import { feedsChecks } from './feeds.js';
+import { pwaChecks } from './pwa.js';
+import { secplusChecks } from './secplus.js';
+import { headersxChecks } from './headersx.js';
 
 /** Every check across every set, in set order. */
 export const checks: readonly AuditCheck[] = [
@@ -28,6 +34,12 @@ export const checks: readonly AuditCheck[] = [
   ...geoChecks,
   ...privacyChecks,
   ...agentChecks,
+  ...i18nChecks,
+  ...richresultsChecks,
+  ...feedsChecks,
+  ...pwaChecks,
+  ...secplusChecks,
+  ...headersxChecks,
 ];
 
 /** Checks indexed by id, for the per-audit wrapper modules. */

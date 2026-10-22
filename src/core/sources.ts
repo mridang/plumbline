@@ -71,4 +71,52 @@ export const SOURCES: readonly Source[] = [
     url: 'https://github.com/mridang/webhint-hints',
     licence: 'Apache-2.0',
   },
+  {
+    id: 'w3c',
+    name: 'W3C specifications and community group reports',
+    url: 'https://www.w3.org/',
+    licence: 'W3C Document License',
+  },
+  {
+    id: 'iab',
+    name: 'IAB Tech Lab ads.txt, app-ads.txt and sellers.json',
+    url: 'https://iabtechlab.com/ads-txt/',
+    licence: 'unlicensed site content',
+  },
+  {
+    id: 'indieweb',
+    name: 'IndieWeb (humans.txt, microformats, rel=me)',
+    url: 'https://humanstxt.org/',
+    licence: 'unlicensed site content',
+  },
+  {
+    id: 'apple',
+    name: 'Apple Developer Documentation',
+    url: 'https://developer.apple.com/documentation/',
+    licence: 'unlicensed site content',
+  },
+  {
+    id: 'google',
+    name: 'Google developer documentation (Search Central, rich results, CSP Evaluator, Digital Asset Links)',
+    url: 'https://developers.google.com/',
+    licence: 'unlicensed site content',
+  },
+  {
+    id: 'ietf',
+    name: 'IETF RFCs and the RSS 2.0 specification',
+    url: 'https://www.rfc-editor.org/',
+    licence: 'IETF Trust (RFC text)',
+  },
+  {
+    id: 'oembed',
+    name: 'oEmbed specification',
+    url: 'https://oembed.com/',
+    licence: 'unlicensed site content',
+  },
+  {
+    id: 'opensearch',
+    name: 'OpenSearch 1.1 specification',
+    url: 'https://github.com/dewitt/opensearch',
+    licence: 'unlicensed specification text',
+  },
 ];

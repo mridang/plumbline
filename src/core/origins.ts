@@ -2628,4 +2628,859 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       licence: 'CC-BY-SA-2.5',
     },
   ],
+  // wellknown set.
+  'ads-txt': [
+    {
+      source: 'iab',
+      upstreamId: 'ads.txt 1.1',
+      title: 'Authorized Digital Sellers (ads.txt)',
+      url: 'https://iabtechlab.com/ads-txt/',
+      docsUrl:
+        'https://iabtechlab.com/wp-content/uploads/2022/04/Ads.txt-1.1.pdf',
+      summary:
+        'Validates /ads.txt as a line-based list of authorised sellers: data records of domain, publisher id and DIRECT or RESELLER, plus the CONTACT, SUBDOMAIN, OWNERDOMAIN and MANAGERDOMAIN variables.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'app-ads-txt': [
+    {
+      source: 'iab',
+      upstreamId: 'app-ads.txt 1.0',
+      title: 'Authorized Sellers for Apps (app-ads.txt)',
+      url: 'https://iabtechlab.com/ads-txt/',
+      docsUrl:
+        'https://iabtechlab.com/wp-content/uploads/2020/05/app-ads.txt-v1.0-final-.pdf',
+      summary:
+        'Validates /app-ads.txt, the mobile-app and CTV addendum to ads.txt, against the same record and variable grammar.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'sellers-json': [
+    {
+      source: 'iab',
+      upstreamId: 'sellers.json 1.0',
+      title: 'sellers.json',
+      url: 'https://iabtechlab.com/sellers-json/',
+      docsUrl:
+        'https://iabtechlab.com/wp-content/uploads/2019/07/Sellers.json_Final.pdf',
+      summary:
+        'Validates /sellers.json as JSON with a version and a sellers array; each seller needs a seller_id and a PUBLISHER, INTERMEDIARY or BOTH seller_type, with name and domain unless confidential.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'humans-txt': [
+    {
+      source: 'indieweb',
+      upstreamId: 'humans.txt',
+      title: 'We are people, not machines (humans.txt)',
+      url: 'https://humanstxt.org/',
+      docsUrl: 'https://humanstxt.org/Standard.html',
+      summary:
+        'Checks that /humans.txt exists at the web root and is served as plain text; informational only.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'change-password': [
+    {
+      source: 'w3c',
+      upstreamId: 'well-known-change-password',
+      title: 'A Well-Known URL for Changing Passwords',
+      url: 'https://w3c.github.io/webappsec-change-password-url/',
+      docsUrl: 'https://w3c.github.io/webappsec-change-password-url/',
+      summary:
+        'Checks that /.well-known/change-password resolves (a 200 or a redirect to a password-change page) rather than returning a client or server error.',
+      licence: 'W3C Document License',
+    },
+  ],
+  'apple-app-site-association': [
+    {
+      source: 'apple',
+      upstreamId: 'apple-app-site-association',
+      title: 'Supporting associated domains',
+      url: 'https://developer.apple.com/documentation/xcode/supporting-associated-domains',
+      docsUrl:
+        'https://developer.apple.com/documentation/xcode/supporting-associated-domains',
+      summary:
+        'Validates the apple-app-site-association file (application/json, no .json extension) and its applinks, webcredentials and appclips services.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'assetlinks-json': [
+    {
+      source: 'google',
+      upstreamId: 'digital-asset-links-v1',
+      title: 'Digital Asset Links',
+      url: 'https://developers.google.com/digital-asset-links/v1/getting-started',
+      docsUrl:
+        'https://developers.google.com/digital-asset-links/v1/statements',
+      summary:
+        'Validates /.well-known/assetlinks.json as an array of statements, each with a relation array and an android_app or web target.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'gpc-json': [
+    {
+      source: 'w3c',
+      upstreamId: 'gpc-spec-well-known',
+      title: 'Global Privacy Control (GPC)',
+      url: 'https://privacycg.github.io/gpc-spec/',
+      docsUrl: 'https://privacycg.github.io/gpc-spec/#the-well-known-resource',
+      summary:
+        'Validates /.well-known/gpc.json as an object with a boolean gpc field and an ISO 8601 lastUpdate date.',
+      licence: 'W3C Document License',
+    },
+  ],
+  // i18n set.
+  'hreflang-return': [
+    {
+      source: 'google',
+      upstreamId: 'hreflang return tags',
+      title: 'hreflang return tags',
+      url: 'https://developers.google.com/search/docs/specialty/international/localized-versions',
+      docsUrl:
+        'https://developers.google.com/search/docs/specialty/international/localized-versions',
+      summary:
+        'Checks that each hreflang alternate uses a fully-qualified URL so reciprocal return links resolve.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'hreflang-x-default': [
+    {
+      source: 'google',
+      upstreamId: 'hreflang x-default',
+      title: 'hreflang x-default',
+      url: 'https://developers.google.com/search/docs/specialty/international/localized-versions',
+      docsUrl:
+        'https://developers.google.com/search/docs/specialty/international/localized-versions',
+      summary: 'Checks that an hreflang set includes an x-default entry.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'hreflang-valid-codes': [
+    {
+      source: 'google',
+      upstreamId: 'hreflang language/region codes',
+      title: 'hreflang language/region codes',
+      url: 'https://developers.google.com/search/docs/specialty/international/localized-versions',
+      docsUrl:
+        'https://developers.google.com/search/docs/specialty/international/localized-versions',
+      summary:
+        'Checks that each hreflang value is x-default or a valid ISO 639-1 language with an optional ISO 3166-1 region.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'hreflang-self': [
+    {
+      source: 'google',
+      upstreamId: 'hreflang self-reference',
+      title: 'hreflang self-reference',
+      url: 'https://developers.google.com/search/docs/specialty/international/localized-versions',
+      docsUrl:
+        'https://developers.google.com/search/docs/specialty/international/localized-versions',
+      summary: 'Checks that an hreflang set references the page itself.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'hreflang-duplicate': [
+    {
+      source: 'google',
+      upstreamId: 'hreflang duplicates',
+      title: 'hreflang duplicates',
+      url: 'https://developers.google.com/search/docs/specialty/international/localized-versions',
+      docsUrl:
+        'https://developers.google.com/search/docs/specialty/international/localized-versions',
+      summary:
+        'Checks that no hreflang value is declared on more than one alternate.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'alternate-media': [
+    {
+      source: 'mdn',
+      upstreamId: 'rel=alternate media',
+      title: 'rel=alternate media',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/rel',
+      docsUrl:
+        'https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/rel',
+      summary:
+        'Checks that a rel="alternate" media link has a non-empty media query and an absolute href.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'pagination-rel': [
+    {
+      source: 'mdn',
+      upstreamId: 'rel=prev and rel=next',
+      title: 'rel=prev and rel=next',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/rel',
+      docsUrl:
+        'https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/rel',
+      summary:
+        'Checks that rel="prev"/rel="next" links use well-formed absolute URLs.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  // emailpolicy set.
+  'mta-sts': [
+    {
+      source: 'ietf',
+      upstreamId: 'RFC 8461',
+      title: 'SMTP MTA Strict Transport Security (MTA-STS)',
+      url: 'https://www.rfc-editor.org/rfc/rfc8461',
+      docsUrl: 'https://www.rfc-editor.org/rfc/rfc8461',
+      summary:
+        'Checks the `_mta-sts` TXT record and the HTTPS policy file that tell sending servers mail must use authenticated TLS.',
+      licence: 'IETF Trust (RFC text)',
+    },
+  ],
+  'tls-rpt': [
+    {
+      source: 'ietf',
+      upstreamId: 'RFC 8460',
+      title: 'SMTP TLS Reporting (TLS-RPT)',
+      url: 'https://www.rfc-editor.org/rfc/rfc8460',
+      docsUrl: 'https://www.rfc-editor.org/rfc/rfc8460',
+      summary:
+        'Checks the `_smtp._tls` TXT record that asks sending servers to report TLS delivery failures.',
+      licence: 'IETF Trust (RFC text)',
+    },
+  ],
+  bimi: [
+    {
+      source: 'ietf',
+      upstreamId: 'BIMI',
+      title: 'Brand Indicators for Message Identification (BIMI)',
+      url: 'https://bimigroup.org',
+      docsUrl:
+        'https://datatracker.ietf.org/doc/draft-brand-indicators-for-message-identification/',
+      summary:
+        'Checks the `default._bimi` TXT record that points mail clients at an HTTPS SVG logo and its optional verification certificate.',
+      licence: 'unlicensed site content, IETF draft',
+    },
+  ],
+  // richresults set.
+  'richresults-recipe': [
+    {
+      source: 'google',
+      upstreamId: 'Recipe rich results',
+      title: 'Google rich results: Recipe',
+      url: 'https://developers.google.com/search/docs/appearance/structured-data/recipe',
+      docsUrl:
+        'https://developers.google.com/search/docs/appearance/structured-data/recipe',
+      summary:
+        "Validates Recipe JSON-LD against Google's required and recommended rich-results properties.",
+      licence: 'unlicensed site content',
+    },
+  ],
+  'richresults-product': [
+    {
+      source: 'google',
+      upstreamId: 'Product rich results',
+      title: 'Google rich results: Product',
+      url: 'https://developers.google.com/search/docs/appearance/structured-data/product-snippet',
+      docsUrl:
+        'https://developers.google.com/search/docs/appearance/structured-data/product-snippet',
+      summary:
+        "Validates Product JSON-LD against Google's required and recommended rich-results properties.",
+      licence: 'unlicensed site content',
+    },
+  ],
+  'richresults-article': [
+    {
+      source: 'google',
+      upstreamId: 'Article/NewsArticle/BlogPosting rich results',
+      title: 'Google rich results: Article/NewsArticle/BlogPosting',
+      url: 'https://developers.google.com/search/docs/appearance/structured-data/article',
+      docsUrl:
+        'https://developers.google.com/search/docs/appearance/structured-data/article',
+      summary:
+        "Validates Article/NewsArticle/BlogPosting JSON-LD against Google's required and recommended rich-results properties.",
+      licence: 'unlicensed site content',
+    },
+  ],
+  'richresults-breadcrumb': [
+    {
+      source: 'google',
+      upstreamId: 'BreadcrumbList rich results',
+      title: 'Google rich results: BreadcrumbList',
+      url: 'https://developers.google.com/search/docs/appearance/structured-data/breadcrumb',
+      docsUrl:
+        'https://developers.google.com/search/docs/appearance/structured-data/breadcrumb',
+      summary:
+        "Validates BreadcrumbList JSON-LD against Google's required and recommended rich-results properties.",
+      licence: 'unlicensed site content',
+    },
+  ],
+  'richresults-event': [
+    {
+      source: 'google',
+      upstreamId: 'Event rich results',
+      title: 'Google rich results: Event',
+      url: 'https://developers.google.com/search/docs/appearance/structured-data/event',
+      docsUrl:
+        'https://developers.google.com/search/docs/appearance/structured-data/event',
+      summary:
+        "Validates Event JSON-LD against Google's required and recommended rich-results properties.",
+      licence: 'unlicensed site content',
+    },
+  ],
+  'richresults-video': [
+    {
+      source: 'google',
+      upstreamId: 'VideoObject rich results',
+      title: 'Google rich results: VideoObject',
+      url: 'https://developers.google.com/search/docs/appearance/structured-data/video',
+      docsUrl:
+        'https://developers.google.com/search/docs/appearance/structured-data/video',
+      summary:
+        "Validates VideoObject JSON-LD against Google's required and recommended rich-results properties.",
+      licence: 'unlicensed site content',
+    },
+  ],
+  'richresults-jobposting': [
+    {
+      source: 'google',
+      upstreamId: 'JobPosting rich results',
+      title: 'Google rich results: JobPosting',
+      url: 'https://developers.google.com/search/docs/appearance/structured-data/job-posting',
+      docsUrl:
+        'https://developers.google.com/search/docs/appearance/structured-data/job-posting',
+      summary:
+        "Validates JobPosting JSON-LD against Google's required and recommended rich-results properties.",
+      licence: 'unlicensed site content',
+    },
+  ],
+  'richresults-localbusiness': [
+    {
+      source: 'google',
+      upstreamId: 'LocalBusiness rich results',
+      title: 'Google rich results: LocalBusiness',
+      url: 'https://developers.google.com/search/docs/appearance/structured-data/local-business',
+      docsUrl:
+        'https://developers.google.com/search/docs/appearance/structured-data/local-business',
+      summary:
+        "Validates LocalBusiness JSON-LD against Google's required and recommended rich-results properties.",
+      licence: 'unlicensed site content',
+    },
+  ],
+  'richresults-review': [
+    {
+      source: 'google',
+      upstreamId: 'Review/AggregateRating rich results',
+      title: 'Google rich results: Review/AggregateRating',
+      url: 'https://developers.google.com/search/docs/appearance/structured-data/review-snippet',
+      docsUrl:
+        'https://developers.google.com/search/docs/appearance/structured-data/review-snippet',
+      summary:
+        "Validates Review/AggregateRating JSON-LD against Google's required and recommended rich-results properties.",
+      licence: 'unlicensed site content',
+    },
+  ],
+  'richresults-website-searchaction': [
+    {
+      source: 'google',
+      upstreamId: 'WebSite SearchAction rich results',
+      title: 'Google rich results: WebSite SearchAction',
+      url: 'https://developers.google.com/search/docs/appearance/structured-data/sitelinks-searchbox',
+      docsUrl:
+        'https://developers.google.com/search/docs/appearance/structured-data/sitelinks-searchbox',
+      summary:
+        "Validates WebSite SearchAction JSON-LD against Google's required and recommended rich-results properties.",
+      licence: 'unlicensed site content',
+    },
+  ],
+  // feeds set.
+  'feed-discovery': [
+    {
+      source: 'ietf',
+      upstreamId: 'RSS Autodiscovery',
+      title: 'RSS/Atom feed autodiscovery',
+      url: 'https://www.rssboard.org/rss-autodiscovery',
+      docsUrl: 'https://www.rfc-editor.org/rfc/rfc4287',
+      summary:
+        'Checks that a feed is advertised with <link rel="alternate" type="application/rss+xml"> or "application/atom+xml" and an absolute href.',
+      licence: 'RSS Advisory Board, IETF',
+    },
+  ],
+  'feed-valid': [
+    {
+      source: 'ietf',
+      upstreamId: 'RSS 2.0 / RFC 4287',
+      title: 'RSS 2.0 and Atom 1.0 well-formedness',
+      url: 'https://www.rssboard.org/rss-specification',
+      docsUrl: 'https://www.rfc-editor.org/rfc/rfc4287',
+      summary:
+        'Fetches each discovered feed and checks it is a well-formed RSS 2.0 (<rss>/<channel> with title, link, description) or Atom 1.0 (<feed> with id, title, updated) document.',
+      licence: 'RSS Advisory Board, IETF',
+    },
+  ],
+  'oembed-discovery': [
+    {
+      source: 'oembed',
+      upstreamId: 'oEmbed Discovery',
+      title: 'oEmbed endpoint autodiscovery',
+      url: 'https://oembed.com/#section4',
+      docsUrl: 'https://oembed.com',
+      summary:
+        'Checks that an oEmbed endpoint is advertised with <link rel="alternate" type="application/json+oembed"> or "text/xml+oembed" and an href.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'opensearch-discovery': [
+    {
+      source: 'opensearch',
+      upstreamId: 'OpenSearch Autodiscovery',
+      title: 'OpenSearch description autodiscovery',
+      url: 'https://github.com/dewitt/opensearch/blob/master/opensearch-1-1-draft-6.md#autodiscovery',
+      docsUrl: 'https://github.com/dewitt/opensearch',
+      summary:
+        'Checks that an OpenSearch description is advertised with <link rel="search" type="application/opensearchdescription+xml">.',
+      licence: 'unlicensed specification text',
+    },
+  ],
+  'opensearch-valid': [
+    {
+      source: 'opensearch',
+      upstreamId: 'OpenSearch Description Document',
+      title: 'OpenSearch description well-formedness',
+      url: 'https://github.com/dewitt/opensearch/blob/master/opensearch-1-1-draft-6.md',
+      docsUrl: 'https://github.com/dewitt/opensearch',
+      summary:
+        'Fetches the discovered OpenSearch description and checks it is a well-formed OpenSearchDescription with a ShortName (<=16 chars) and a Url template.',
+      licence: 'unlicensed specification text',
+    },
+  ],
+  // pwa set.
+  'manifest-linked': [
+    {
+      source: 'w3c',
+      upstreamId: 'manifest link',
+      title: 'Linking a Web App Manifest',
+      url: 'https://www.w3.org/TR/appmanifest/',
+      docsUrl: 'https://web.dev/articles/add-manifest',
+      summary:
+        'A page links its Web App Manifest with <link rel="manifest">; the href should be absolute so it resolves on every route.',
+      licence: 'W3C Software and Document License',
+    },
+  ],
+  'manifest-valid': [
+    {
+      source: 'w3c',
+      upstreamId: 'Web App Manifest members',
+      title: 'Web App Manifest',
+      url: 'https://www.w3.org/TR/appmanifest/',
+      docsUrl: 'https://web.dev/articles/add-manifest',
+      summary:
+        'The fetched manifest must be valid JSON of the correct media type and carry the members the browser install criteria need.',
+      licence: 'W3C Software and Document License',
+    },
+  ],
+  'manifest-icons': [
+    {
+      source: 'w3c',
+      upstreamId: 'icons member',
+      title: 'The icons member',
+      url: 'https://www.w3.org/TR/appmanifest/#icons-member',
+      docsUrl: 'https://web.dev/articles/add-manifest#icons',
+      summary:
+        'The install criteria need a 192x192 and a 512x512 PNG icon declared in the manifest icons member.',
+      licence: 'W3C Software and Document License',
+    },
+  ],
+  'theme-color-meta': [
+    {
+      source: 'w3c',
+      upstreamId: 'theme-color',
+      title: 'Theming the browser UI',
+      url: 'https://www.w3.org/TR/appmanifest/',
+      docsUrl: 'https://web.dev/articles/add-manifest#theme-color',
+      summary:
+        'A <meta name="theme-color"> themes the browser UI as the page loads, complementing the manifest theme_color.',
+      licence: 'W3C Software and Document License',
+    },
+  ],
+  // exposure set.
+  'exposed-git': [
+    {
+      source: 'owasp',
+      upstreamId: 'WSTG-CONF-04',
+      title: 'Exposed .git directory',
+      url: 'https://owasp.org/www-project-web-security-testing-guide/',
+      docsUrl:
+        'https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/04-Review_Old_Backup_and_Unreferenced_Files_for_Sensitive_Information',
+      summary:
+        'Probes a specific path and reports an error only when the response body confirms the sensitive artifact, so a single-page-app catch-all 200 is not flagged.',
+      licence: 'CC-BY-SA-4.0',
+    },
+  ],
+  'exposed-env': [
+    {
+      source: 'owasp',
+      upstreamId: 'WSTG-CONF-04',
+      title: 'Exposed .env file',
+      url: 'https://owasp.org/www-project-web-security-testing-guide/',
+      docsUrl:
+        'https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/04-Review_Old_Backup_and_Unreferenced_Files_for_Sensitive_Information',
+      summary:
+        'Probes a specific path and reports an error only when the response body confirms the sensitive artifact, so a single-page-app catch-all 200 is not flagged.',
+      licence: 'CC-BY-SA-4.0',
+    },
+  ],
+  'exposed-svn': [
+    {
+      source: 'owasp',
+      upstreamId: 'WSTG-CONF-04',
+      title: 'Exposed .svn directory',
+      url: 'https://owasp.org/www-project-web-security-testing-guide/',
+      docsUrl:
+        'https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/04-Review_Old_Backup_and_Unreferenced_Files_for_Sensitive_Information',
+      summary:
+        'Probes a specific path and reports an error only when the response body confirms the sensitive artifact, so a single-page-app catch-all 200 is not flagged.',
+      licence: 'CC-BY-SA-4.0',
+    },
+  ],
+  'exposed-ds-store': [
+    {
+      source: 'owasp',
+      upstreamId: 'WSTG-CONF-04',
+      title: 'Exposed .DS_Store file',
+      url: 'https://owasp.org/www-project-web-security-testing-guide/',
+      docsUrl:
+        'https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/04-Review_Old_Backup_and_Unreferenced_Files_for_Sensitive_Information',
+      summary:
+        'Probes a specific path and reports an error only when the response body confirms the sensitive artifact, so a single-page-app catch-all 200 is not flagged.',
+      licence: 'CC-BY-SA-4.0',
+    },
+  ],
+  'exposed-directory-listing': [
+    {
+      source: 'owasp',
+      upstreamId: 'WSTG-CONF-04',
+      title: 'Exposed directory listing',
+      url: 'https://owasp.org/www-project-web-security-testing-guide/',
+      docsUrl:
+        'https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/04-Review_Old_Backup_and_Unreferenced_Files_for_Sensitive_Information',
+      summary:
+        'Probes a specific path and reports an error only when the response body confirms the sensitive artifact, so a single-page-app catch-all 200 is not flagged.',
+      licence: 'CC-BY-SA-4.0',
+    },
+  ],
+  'exposed-backup-files': [
+    {
+      source: 'owasp',
+      upstreamId: 'WSTG-CONF-04',
+      title: 'Exposed backup files',
+      url: 'https://owasp.org/www-project-web-security-testing-guide/',
+      docsUrl:
+        'https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/04-Review_Old_Backup_and_Unreferenced_Files_for_Sensitive_Information',
+      summary:
+        'Probes a specific path and reports an error only when the response body confirms the sensitive artifact, so a single-page-app catch-all 200 is not flagged.',
+      licence: 'CC-BY-SA-4.0',
+    },
+  ],
+  'exposed-source-map': [
+    {
+      source: 'owasp',
+      upstreamId: 'WSTG-CONF-04',
+      title: 'Exposed JavaScript source map',
+      url: 'https://owasp.org/www-project-web-security-testing-guide/',
+      docsUrl:
+        'https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/04-Review_Old_Backup_and_Unreferenced_Files_for_Sensitive_Information',
+      summary:
+        'Probes a specific path and reports an error only when the response body confirms the sensitive artifact, so a single-page-app catch-all 200 is not flagged.',
+      licence: 'CC-BY-SA-4.0',
+    },
+  ],
+  'exposed-server-status': [
+    {
+      source: 'owasp',
+      upstreamId: 'WSTG-CONF-05',
+      title: 'Exposed server-status page',
+      url: 'https://owasp.org/www-project-web-security-testing-guide/',
+      docsUrl:
+        'https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/05-Enumerate_Infrastructure_and_Application_Admin_Interfaces',
+      summary:
+        'Probes a specific path and reports an error only when the response body confirms the sensitive artifact, so a single-page-app catch-all 200 is not flagged.',
+      licence: 'CC-BY-SA-4.0',
+    },
+  ],
+  'exposed-crossdomain': [
+    {
+      source: 'owasp',
+      upstreamId: 'WSTG-CONF-08',
+      title: 'Overly permissive crossdomain.xml',
+      url: 'https://owasp.org/www-project-web-security-testing-guide/',
+      docsUrl:
+        'https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/08-Test_RIA_Cross_Domain_Policy',
+      summary:
+        'Probes a specific path and reports an error only when the response body confirms the sensitive artifact, so a single-page-app catch-all 200 is not flagged.',
+      licence: 'CC-BY-SA-4.0',
+    },
+  ],
+  // secplus set.
+  tabnabbing: [
+    {
+      source: 'owasp',
+      upstreamId: 'Reverse Tabnabbing',
+      title: 'Reverse Tabnabbing',
+      url: 'https://owasp.org/www-community/attacks/Reverse_Tabnabbing',
+      docsUrl:
+        'https://developer.mozilla.org/docs/Web/HTML/Reference/Attributes/rel/noopener',
+      summary:
+        'Flags a cross-origin target="_blank" link without rel="noopener" or rel="noreferrer", which lets the opened page redirect the original tab.',
+      licence: 'CC-BY-SA',
+    },
+  ],
+  'csp-strength': [
+    {
+      source: 'google',
+      upstreamId: 'CSP Evaluator',
+      title: 'CSP Evaluator',
+      url: 'https://csp-evaluator.withgoogle.com',
+      docsUrl: 'https://web.dev/articles/strict-csp',
+      summary:
+        "Evaluates CSP depth: 'unsafe-inline' without a nonce or hash, 'unsafe-eval', missing object-src 'none' and base-uri, broad allowlists (*, https:), and reliance on an allowlist instead of 'strict-dynamic'.",
+      licence: 'unlicensed site content',
+    },
+  ],
+  'cookie-prefixes': [
+    {
+      source: 'owasp',
+      upstreamId: 'Cookie prefixes',
+      title: 'Cookie prefixes (__Host- / __Secure-)',
+      url: 'https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-rfc6265bis',
+      docsUrl:
+        'https://developer.mozilla.org/docs/Web/HTTP/Reference/Headers/Set-Cookie#cookie_prefixes',
+      summary:
+        'Checks that a __Host- cookie is Secure, has Path=/ and no Domain, and that a __Secure- cookie is Secure, as the browser enforces for the prefix.',
+      licence: 'IETF',
+    },
+  ],
+  'http-methods': [
+    {
+      source: 'owasp',
+      upstreamId: 'Test HTTP Methods',
+      title: 'Test HTTP Methods (WSTG-CONF-06)',
+      url: 'https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/06-Test_HTTP_Methods',
+      docsUrl: '',
+      summary:
+        'Sends OPTIONS to the root and flags TRACE/TRACK (Cross-Site Tracing) and unsafe write methods (PUT, DELETE, PATCH, CONNECT).',
+      licence: 'CC-BY-SA',
+    },
+  ],
+  'form-action-secure': [
+    {
+      source: 'owasp',
+      upstreamId: 'Insecure form submission',
+      title: 'Insecure form submission (mixed form)',
+      url: 'https://developer.mozilla.org/docs/Web/Security/Insecure_passwords#insecure_forms',
+      docsUrl: '',
+      summary:
+        'Flags a form on an HTTPS page whose action resolves to an http:// URL, which submits data in clear text.',
+      licence: 'CC-BY-SA',
+    },
+  ],
+  // headersx set.
+  'attribution-reporting': [
+    {
+      source: 'mdn',
+      upstreamId: 'Attribution-Reporting-Register-Source',
+      title: 'Attribution-Reporting-Register-Source',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Attribution-Reporting-Register-Source',
+      docsUrl: '',
+      summary:
+        'Reports participation in the Attribution Reporting API and validates the registration headers.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'observe-browsing-topics': [
+    {
+      source: 'mdn',
+      upstreamId: 'Observe-Browsing-Topics',
+      title: 'Observe-Browsing-Topics',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Observe-Browsing-Topics',
+      docsUrl: '',
+      summary:
+        'Reports Topics API participation and validates the opt-in boolean.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'set-login': [
+    {
+      source: 'mdn',
+      upstreamId: 'Set-Login',
+      title: 'Set-Login',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Login',
+      docsUrl: '',
+      summary:
+        'Validates the FedCM Set-Login login-status header when present.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'content-digest': [
+    {
+      source: 'mdn',
+      upstreamId: 'Content-Digest',
+      title: 'Content-Digest',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Digest',
+      docsUrl: '',
+      summary:
+        'Validates the Content-Digest integrity dictionary (RFC 9530) when present.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'repr-digest': [
+    {
+      source: 'mdn',
+      upstreamId: 'Repr-Digest',
+      title: 'Repr-Digest',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Repr-Digest',
+      docsUrl: '',
+      summary:
+        'Validates the Repr-Digest integrity dictionary (RFC 9530) when present.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'speculation-rules': [
+    {
+      source: 'mdn',
+      upstreamId: 'Speculation-Rules',
+      title: 'Speculation-Rules',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Speculation-Rules',
+      docsUrl: '',
+      summary:
+        'Validates that the Speculation-Rules header lists quoted ruleset URLs.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'supports-loading-mode': [
+    {
+      source: 'mdn',
+      upstreamId: 'Supports-Loading-Mode',
+      title: 'Supports-Loading-Mode',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Supports-Loading-Mode',
+      docsUrl: '',
+      summary: 'Validates the Supports-Loading-Mode tokens when present.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'use-as-dictionary': [
+    {
+      source: 'mdn',
+      upstreamId: 'Use-As-Dictionary',
+      title: 'Use-As-Dictionary',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Use-As-Dictionary',
+      docsUrl: '',
+      summary:
+        'Validates the Use-As-Dictionary compression-dictionary header when present.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'service-worker-allowed': [
+    {
+      source: 'mdn',
+      upstreamId: 'Service-Worker-Allowed',
+      title: 'Service-Worker-Allowed',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Service-Worker-Allowed',
+      docsUrl: '',
+      summary:
+        'Validates that the Service-Worker-Allowed scope is a path or absolute URL.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'accept-post': [
+    {
+      source: 'mdn',
+      upstreamId: 'Accept-Post',
+      title: 'Accept-Post',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Accept-Post',
+      docsUrl: '',
+      summary: 'Validates the Accept-Post media-type list when present.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  'accept-patch': [
+    {
+      source: 'mdn',
+      upstreamId: 'Accept-Patch',
+      title: 'Accept-Patch',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Accept-Patch',
+      docsUrl: '',
+      summary: 'Validates the Accept-Patch media-type list when present.',
+      licence: 'CC-BY-SA-2.5',
+    },
+  ],
+  // discovery set.
+  'rel-me': [
+    {
+      source: 'indieweb',
+      upstreamId: 'rel-me',
+      title: 'rel=me',
+      url: 'https://microformats.org/wiki/rel-me',
+      docsUrl: 'https://indieweb.org/rel-me',
+      summary:
+        'Reports rel=me identity links and warns when one has no target.',
+      licence: 'CC0-1.0',
+    },
+  ],
+  webmention: [
+    {
+      source: 'w3c',
+      upstreamId: 'Webmention',
+      title: 'Webmention',
+      url: 'https://www.w3.org/TR/webmention/',
+      docsUrl: 'https://indieweb.org/Webmention',
+      summary:
+        'Reports a Webmention endpoint and warns when it is not an absolute URL.',
+      licence: 'W3C-20150513',
+    },
+  ],
+  pingback: [
+    {
+      source: 'original',
+      upstreamId: 'Pingback 1.0',
+      title: 'Pingback',
+      url: 'https://www.hixie.ch/specs/pingback/pingback',
+      docsUrl: 'https://indieweb.org/pingback',
+      summary:
+        'Flags a Pingback endpoint as a legacy spam/amplification risk when present.',
+      licence: 'unlicensed spec',
+    },
+  ],
+  webfinger: [
+    {
+      source: 'ietf',
+      upstreamId: 'RFC 7033',
+      title: 'WebFinger',
+      url: 'https://www.rfc-editor.org/rfc/rfc7033',
+      docsUrl: 'https://webfinger.net/',
+      summary:
+        'Probes /.well-known/webfinger and reports its format when present.',
+      licence: 'IETF-Trust',
+    },
+  ],
+  nodeinfo: [
+    {
+      source: 'original',
+      upstreamId: 'NodeInfo',
+      title: 'NodeInfo',
+      url: 'https://nodeinfo.diaspora.software/protocol.html',
+      docsUrl: 'https://github.com/jhass/nodeinfo',
+      summary:
+        'Validates the /.well-known/nodeinfo links document when present.',
+      licence: 'CC0-1.0',
+    },
+  ],
+  'host-meta': [
+    {
+      source: 'ietf',
+      upstreamId: 'RFC 6415',
+      title: 'host-meta',
+      url: 'https://www.rfc-editor.org/rfc/rfc6415',
+      docsUrl: '',
+      summary:
+        'Validates the /.well-known/host-meta XRD/JRD document when present.',
+      licence: 'IETF-Trust',
+    },
+  ],
 };

@@ -1,0 +1,15 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": ["html"],
+  "hints": {
+    "@mridang/webhint-hint-extra/change-password": "default",
+    "@mridang/webhint-hint-extra/gpc-json": "default",
+    "@mridang/webhint-hint-extra/manifest-icons": "default",
+    "@mridang/webhint-hint-extra/manifest-linked": "default",
+    "@mridang/webhint-hint-extra/manifest-valid": "default",
+    "@mridang/webhint-hint-extra/theme-color-meta": "default",
+    "@mridang/webhint-hint-extra/webmention": "default"
+  }
+}

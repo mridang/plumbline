@@ -1,0 +1,9 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": ["html"],
+  "hints": {
+    "@mridang/webhint-hint-extra/apple-app-site-association": "default"
+  }
+}

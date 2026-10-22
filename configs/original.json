@@ -4,6 +4,8 @@
   },
   "parsers": ["html"],
   "hints": {
+    "@mridang/webhint-hint-extra/nodeinfo": "default",
+    "@mridang/webhint-hint-extra/pingback": "default",
     "@mridang/webhint-hint-extra/privacy-geolocation": "default"
   }
 }

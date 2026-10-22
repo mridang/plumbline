@@ -4,6 +4,9 @@
   },
   "parsers": ["html"],
   "hints": {
+    "@mridang/webhint-hint-extra/feed-discovery": "default",
+    "@mridang/webhint-hint-extra/feed-valid": "default",
+    "@mridang/webhint-hint-extra/oembed-discovery": "default",
     "@mridang/webhint-hint-extra/opengraph-description-could-be-longer": "default",
     "@mridang/webhint-hint-extra/opengraph-description-is-url": "default",
     "@mridang/webhint-hint-extra/opengraph-description-keyword-stuffing": "default",
@@ -28,12 +31,17 @@
     "@mridang/webhint-hint-extra/opengraph-title-too-short": "default",
     "@mridang/webhint-hint-extra/opengraph-type-missing": "default",
     "@mridang/webhint-hint-extra/opengraph-url-missing": "default",
+    "@mridang/webhint-hint-extra/opensearch-discovery": "default",
+    "@mridang/webhint-hint-extra/opensearch-valid": "default",
+    "@mridang/webhint-hint-extra/pingback": "default",
+    "@mridang/webhint-hint-extra/rel-me": "default",
     "@mridang/webhint-hint-extra/technical-twitter-card-type": "default",
     "@mridang/webhint-hint-extra/twitter-card-missing": "default",
     "@mridang/webhint-hint-extra/twitter-card-not-large": "default",
     "@mridang/webhint-hint-extra/twitter-description-missing": "default",
     "@mridang/webhint-hint-extra/twitter-image-missing": "default",
     "@mridang/webhint-hint-extra/twitter-site-missing": "default",
-    "@mridang/webhint-hint-extra/twitter-title-missing": "default"
+    "@mridang/webhint-hint-extra/twitter-title-missing": "default",
+    "@mridang/webhint-hint-extra/webmention": "default"
   }
 }

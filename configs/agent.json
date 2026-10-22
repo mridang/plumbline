@@ -33,8 +33,11 @@
     "@mridang/webhint-hint-extra/geo-organization-schema": "default",
     "@mridang/webhint-hint-extra/geo-speakable-schema": "default",
     "@mridang/webhint-hint-extra/geo-structured-data-invalid": "default",
+    "@mridang/webhint-hint-extra/host-meta": "default",
     "@mridang/webhint-hint-extra/llms-full-txt": "default",
     "@mridang/webhint-hint-extra/llms-txt": "default",
-    "@mridang/webhint-hint-extra/robots-txt": "default"
+    "@mridang/webhint-hint-extra/nodeinfo": "default",
+    "@mridang/webhint-hint-extra/robots-txt": "default",
+    "@mridang/webhint-hint-extra/webfinger": "default"
   }
 }

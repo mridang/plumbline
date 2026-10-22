@@ -6,6 +6,7 @@
   "hints": {
     "@mridang/webhint-hint-extra/agent-ard": "default",
     "@mridang/webhint-hint-extra/agent-dns-aid": "default",
+    "@mridang/webhint-hint-extra/bimi": "default",
     "@mridang/webhint-hint-extra/caa": "default",
     "@mridang/webhint-hint-extra/dane-exists": "default",
     "@mridang/webhint-hint-extra/dane-rollover": "default",
@@ -28,9 +29,11 @@
     "@mridang/webhint-hint-extra/mail-ns-rpki-valid": "default",
     "@mridang/webhint-hint-extra/mail-rpki": "default",
     "@mridang/webhint-hint-extra/mail-spf": "default",
+    "@mridang/webhint-hint-extra/mta-sts": "default",
     "@mridang/webhint-hint-extra/rpki-ns-exists": "default",
     "@mridang/webhint-hint-extra/rpki-ns-valid": "default",
     "@mridang/webhint-hint-extra/rpki-web-exists": "default",
-    "@mridang/webhint-hint-extra/rpki-web-valid": "default"
+    "@mridang/webhint-hint-extra/rpki-web-valid": "default",
+    "@mridang/webhint-hint-extra/tls-rpt": "default"
   }
 }

@@ -1,0 +1,10 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": ["html"],
+  "hints": {
+    "@mridang/webhint-hint-extra/humans-txt": "default",
+    "@mridang/webhint-hint-extra/rel-me": "default"
+  }
+}

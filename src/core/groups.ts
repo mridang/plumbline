@@ -19,6 +19,14 @@ export const SOURCE_GROUPS = [
   'llmscout',
   'mdn',
   'original',
+  'w3c',
+  'iab',
+  'indieweb',
+  'apple',
+  'google',
+  'ietf',
+  'oembed',
+  'opensearch',
 ] as const;
 
 /** What a check is about, regardless of where it came from. */
@@ -31,6 +39,7 @@ const TOPIC_GROUPS = [
   'social',
   'email',
   'agent',
+  'pwa',
 ] as const;
 
 export const GROUPS = [...SOURCE_GROUPS, ...TOPIC_GROUPS] as const;
