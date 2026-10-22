@@ -1,10 +1,14 @@
 {
-  "name": "@mridang/webhint-hint-extra",
+  "name": "@mridang/webhint-hints-monorepo",
   "version": "0.0.0",
   "type": "module",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "prepack": "tsc",
-    "build": "tsc",
+    "build": "tsc --build",
+    "prepack": "tsc --build",
     "test": "jest --verbose --config=jest.config.mjs",
     "test:watch": "npm run test -- --watch",
     "test:debug": "jest --verbose --config=jest.config.mjs --detectOpenHandles",
@@ -13,59 +17,34 @@
     "lint": "npx eslint .",
     "lint:fix": "npx eslint . --fix"
   },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "keywords": [
-    "webhint",
-    "webhint-hint",
-    "security-headers",
-    "open-graph",
-    "seo",
-    "llms-txt",
-    "robots-txt",
-    "agent-readiness"
-  ],
   "author": {
     "name": "Mridang Agarwalla",
     "email": "mridang.agarwalla@gmail.com",
     "url": "https://github.com/mridang"
   },
-  "files": [
-    "dist",
-    "configs"
-  ],
   "license": "Apache-2.0",
-  "description": "Extra webhint hints: security headers, Open Graph and SEO, agent readiness, privacy, DNS, TLS and well-known file validators",
-  "private": false,
-  "engines": {
-    "node": ">=22.0.0"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mridang/webhint-hints.git"
   },
   "homepage": "https://github.com/mridang/webhint-hints",
   "bugs": "https://github.com/mridang/webhint-hints/issues",
-  "peerDependencies": {
-    "hint": "^7.1.0"
+  "engines": {
+    "node": ">=22.0.0"
   },
   "devDependencies": {
     "@eslint/compat": "^2.1.1",
-    "@hint/parser-html": "^3.1.4",
-    "@hint/utils-dom": "^2.2.4",
-    "@hint/utils-types": "^1.2.1",
     "@jest/globals": "^30.5.2",
     "@mridang/eslint-defaults": "^1.7.0",
     "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^11.0.1",
     "@semantic-release/github": "^12.0.10",
-    "@semantic-release/npm": "^13.2.0",
     "@semantic-release/release-notes-generator": "^14.1.1",
     "@tsconfig/node22": "^22.0.6",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.20.5",
     "eslint": "^9.39.5",
-    "hint": "^7.1.13",
     "jest": "^30.5.2",
     "jest-junit": "^16.0.0",
     "knip": "^6.42.1",
@@ -73,8 +52,5 @@
     "semantic-release": "^25.0.9",
     "ts-jest": "^29.4.15",
     "typescript": "^5.9.3"
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }

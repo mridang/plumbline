@@ -1,0 +1,62 @@
+{
+  "name": "@mridang/webhint-hint-extra",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "prepack": "tsc",
+    "build": "tsc"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./dist/*": "./dist/*"
+  },
+  "keywords": [
+    "webhint",
+    "webhint-hint",
+    "security-headers",
+    "open-graph",
+    "seo",
+    "llms-txt",
+    "robots-txt",
+    "agent-readiness"
+  ],
+  "author": {
+    "name": "Mridang Agarwalla",
+    "email": "mridang.agarwalla@gmail.com",
+    "url": "https://github.com/mridang"
+  },
+  "files": [
+    "dist",
+    "configs"
+  ],
+  "license": "Apache-2.0",
+  "description": "Extra webhint hints: security headers, Open Graph and SEO, agent readiness, privacy, DNS, TLS and well-known file validators",
+  "private": false,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mridang/webhint-hints.git",
+    "directory": "packages/hints"
+  },
+  "homepage": "https://github.com/mridang/webhint-hints",
+  "bugs": "https://github.com/mridang/webhint-hints/issues",
+  "peerDependencies": {
+    "hint": "^7.1.0"
+  },
+  "devDependencies": {
+    "@hint/parser-html": "^3.1.4",
+    "@hint/utils-dom": "^2.2.4",
+    "@hint/utils-types": "^1.2.1",
+    "hint": "^7.1.13"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

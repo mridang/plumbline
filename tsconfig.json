@@ -9,10 +9,12 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "esModuleInterop": true,
-    "outDir": "dist",
-    "typeRoots": ["./node_modules/@types", "./types"],
     "declaration": true
   },
-  "include": ["src/**/*", "types/**/*"],
-  "exclude": ["node_modules", "**/*.spec.ts", "dist", "test"]
+  "files": [],
+  "references": [
+    { "path": "packages/hints" },
+    { "path": "packages/formatter" },
+    { "path": "packages/lighthouse" }
+  ]
 }
