@@ -7,5 +7,11 @@ export default {
       // stop knip reporting them as unused.
       entry: ['src/audits/*.ts'],
     },
+    'packages/docker': {
+      // webhint resolves the puppeteer connector and the HTML parser from
+      // node_modules by name (`'puppeteer'`, `'html'`) at scan time, not
+      // through a static import, so knip cannot see that they are used.
+      ignoreDependencies: ['@hint/connector-puppeteer', '@hint/parser-html'],
+    },
   },
 };

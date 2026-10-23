@@ -1,0 +1,17 @@
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+# Build-info sits beside each tsconfig (not in dist/). If copied in, a clean
+# `tsc --build` would trust it, skip emitting, and leave no compiled output.
+*.tsbuildinfo
+**/*.tsbuildinfo
+.devbox/
+.git/
+.github/
+.idea/
+.vscode/
+.out/
+hint-report/
+*.swp
+.DS_Store

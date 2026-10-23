@@ -64,6 +64,54 @@ The stock `html` report only has webhint's eight categories, never shows a hint'
 
 It writes one self-contained HTML file, `hint-report/<site>.html`, that works in light and dark mode and on a phone. Hints are sectioned by the section stamped on them (see [Sections](#sections)), and stock hints by their webhint category. Each hint shows its description, a reference link, its origins, its source groups and tagged sections as badges, and its findings with code snippets and further reading. Sections without findings show as passed, and the source buttons (`observatory`, `owasp` and so on) filter the report. When the `agent-score` hint ran, its score is shown as a summary card at the top.
 
+## Docker
+
+The same checks run from a Docker image (built from [`packages/docker/`](packages/docker)) so a project in any language can use them from its end-to-end tests without a Node toolchain. The image is a small HTTP server that scans a URL with a real Chromium and returns the findings as JSON. It is published as `mridang/webhint-hints` and is multi-arch (`linux/amd64` and `linux/arm64`), released in lockstep with the npm packages.
+
+```sh
+docker run --rm -p 8080:8080 mridang/webhint-hints
+```
+
+It has three endpoints: `GET /healthz` (a readiness probe, handy as a Testcontainers wait strategy), `GET /hints` (the catalogue of every shipped hint with its id, category and groups), and `POST /scan`, which takes `{ "url": "https://example.com/" }` and answers with a report:
+
+```sh
+curl -s localhost:8080/scan -d '{"url":"https://example.com/"}'
+```
+
+```json
+{
+  "url": "https://example.com/",
+  "scannedAt": "2026-10-23T12:00:00.000Z",
+  "scannerVersion": "1.2.3",
+  "summary": {
+    "error": 2,
+    "warning": 5,
+    "hint": 1,
+    "information": 0,
+    "total": 8
+  },
+  "findings": [
+    {
+      "hintId": "extra/csp",
+      "category": "security",
+      "groups": ["owasp", "security-headers"],
+      "severity": "error",
+      "message": "…",
+      "resource": "https://example.com/",
+      "location": { "line": 12, "column": 3 },
+      "codeSnippet": "…",
+      "documentation": [{ "link": "https://…", "text": "…" }]
+    }
+  ]
+}
+```
+
+Pass `"hints": ["csp", "hsts"]` to run only some hints (bare ids, no `extra/` prefix); every hint runs by default. To keep a proper saveable report, mount a directory and start the image with `OUTPUT_DIR` set (or pass `"out"` in the request body): the scan then also writes `<site>.json` and the HTML report `<site>.html` there.
+
+```sh
+docker run --rm -p 8080:8080 -e OUTPUT_DIR=/reports -v "$PWD/reports:/reports" mridang/webhint-hints
+```
+
 ## Use
 
 Hints are listed in `.hintrc` as `@mridang/webhint-hint-extra/<id>`. Use `default` as the severity so each hint keeps the level its rule defines:

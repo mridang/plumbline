@@ -30,6 +30,21 @@ export default {
         publishCmd: 'npm publish --workspaces --access public',
       },
     ],
+    [
+      '@mridang/semantic-release-oci',
+      {
+        dockerRegistry: 'docker.io',
+        dockerProject: 'mridang',
+        dockerImage: 'webhint-hints',
+        dockerTags: ['latest', '{{major}}', '{{version}}'],
+        dockerTimeout: 3600000,
+        dockerBake: {
+          file: 'docker-bake.hcl',
+          group: 'release',
+          imageTarget: 'image',
+        },
+      },
+    ],
     '@semantic-release/github',
     [
       '@semantic-release/git',

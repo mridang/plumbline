@@ -15,6 +15,7 @@
   "references": [
     { "path": "packages/hints" },
     { "path": "packages/formatter" },
-    { "path": "packages/lighthouse" }
+    { "path": "packages/lighthouse" },
+    { "path": "packages/docker" }
   ]
 }
