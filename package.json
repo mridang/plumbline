@@ -1,5 +1,5 @@
 {
-  "name": "@mridang/webhint-hints-monorepo",
+  "name": "@mridang/webhint-hints",
   "version": "0.0.0",
   "type": "module",
   "private": true,
