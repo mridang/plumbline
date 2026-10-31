@@ -9,7 +9,22 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "plumbline": "dist/cli.js"
+    "plumbline": "./bin/run.js"
+  },
+  "oclif": {
+    "bin": "plumbline",
+    "dirname": "plumbline",
+    "description": "Audit a website with every plumbline check: security headers, TLS, DNS and email, privacy, SEO and AI-agent readiness.",
+    "commands": {
+      "strategy": "explicit",
+      "target": "./dist/commands.js",
+      "identifier": "COMMANDS"
+    },
+    "topicSeparator": " ",
+    "plugins": [
+      "@oclif/plugin-help",
+      "@oclif/plugin-not-found"
+    ]
   },
   "keywords": [
     "webhint",
@@ -27,7 +42,9 @@
     "url": "https://github.com/mridang"
   },
   "files": [
-    "dist"
+    "bin",
+    "dist",
+    "oclif.manifest.json"
   ],
   "license": "Apache-2.0",
   "description": "A command-line scanner that runs every webhint-hints check (security headers, TLS, DNS, email, SEO, agent readiness) against a site from real Node",
@@ -38,6 +55,9 @@
     "@hint/utils-types": "^1.2.0",
     "@mridang/webhint-formatter-extra": "*",
     "@mridang/webhint-hint-extra": "*",
+    "@oclif/core": "^5.1.10",
+    "@oclif/plugin-help": "^7.0.6",
+    "@oclif/plugin-not-found": "^4.0.7",
     "hint": "^7.1.0"
   },
   "engines": {

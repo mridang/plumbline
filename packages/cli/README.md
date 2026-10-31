@@ -37,6 +37,18 @@ plumbline checks --format json
 
 Each check has an id (what `--only` and `--skip` take), a name, a description and its groups. The same list, with each check's section and source, is the [hints table](../hints/README.md#hints). Groups name the source a check came from (`observatory`, `owasp`, `webbkoll`, `internetnl`, `mdn`, …) and its topic (`security-headers`, `tls`, `dns`, `privacy`, `seo`, `social`, `email`, `agent`, `pwa`).
 
+## Help
+
+The CLI is built on [oclif](https://oclif.io), so every command documents itself, and a mistyped command suggests the one you meant:
+
+```sh
+plumbline --help
+plumbline scan --help
+plumbline --version
+```
+
+List options take commas or repeats (`--only csp,hsts` or `--only csp --only hsts`), before or after the site.
+
 ## Exit status
 
 | Status | Meaning                                                         |
@@ -56,7 +68,7 @@ npx @mridang/plumbline scan https://staging.example.com/ --group security-header
 
 ## With an agent
 
-The [plumbline agent skill](../../skills/plumbline/SKILL.md) teaches a coding agent to run this CLI, read the findings and explain the fixes:
+The [plumbline agent skill](../skills/README.md) teaches a coding agent to run this CLI, read the findings and explain the fixes:
 
 ```sh
 npx skills add mridang/webhint-hints
@@ -83,7 +95,7 @@ Commands run from the repository root through devbox. The CLI imports the compil
 devbox run -- npm run build
 devbox run -- npx jest --coverage=false packages/cli
 devbox run -- npx eslint packages/cli
-devbox run -- node packages/cli/dist/cli.js scan example.com   # the local build
+devbox run -- node packages/cli/bin/run.js scan example.com   # the local build
 ```
 
 ## Licence

@@ -8,5 +8,5 @@ export { scan, hintCatalogue, allHintIds, hintConfig } from './scan.js';
 export type { ScanOptions, ScanResult, HintMeta } from './scan.js';
 export { buildReport, saveReport } from './report.js';
 export type { Report, Finding, Summary, SavedReport } from './report.js';
-export { main } from './main.js';
-export type { Io, Dependencies } from './main.js';
+export { COMMANDS } from './commands.js';
+export type { Io, Dependencies } from './run.js';

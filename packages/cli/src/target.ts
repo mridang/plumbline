@@ -1,4 +1,4 @@
-import { UsageError } from './args.js';
+import { UsageError } from './options.js';
 
 /**
  * Turns what was typed after `scan` into the absolute URL webhint scans. A

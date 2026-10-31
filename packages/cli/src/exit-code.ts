@@ -1,4 +1,4 @@
-import type { FailOn } from './args.js';
+import type { FailOn } from './options.js';
 
 /** The statuses `plumbline` exits with. */
 export const EXIT = {

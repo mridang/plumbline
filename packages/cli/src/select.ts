@@ -1,4 +1,4 @@
-import { UsageError } from './args.js';
+import { UsageError } from './options.js';
 import type { HintMeta } from './scan.js';
 
 /** Which hints a scan should run, as given on the command line. */

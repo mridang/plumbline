@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { UsageError } from '../src/args.js';
+import { UsageError } from '../src/options.js';
 import { normalizeTarget } from '../src/target.js';
 
 describe('normalizeTarget', () => {

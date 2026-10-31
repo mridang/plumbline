@@ -1,13 +1,16 @@
+/**
+ * @packageDocumentation
+ *
+ * What the `plumbline` commands do once their arguments are parsed: list the
+ * checks, or scan a site and print what it found. Each returns the exit status
+ * instead of exiting, and takes where to write and what to scan with, so the
+ * oclif commands stay thin and this can be tested without a browser.
+ */
+
 import path from 'node:path';
-import {
-  parseCommand,
-  UsageError,
-  type ChecksCommand,
-  type ScanCommand,
-} from './args.js';
+import type { ChecksCommand, ScanCommand } from './options.js';
 import { findBrowser } from './browser.js';
 import { EXIT, exitCodeFor } from './exit-code.js';
-import { HELP } from './help.js';
 import {
   formatChecks,
   formatFindings,
@@ -46,7 +49,7 @@ export interface Dependencies {
 }
 
 /** Prints the catalogue, narrowed to the requested groups. */
-function runChecks(
+export function runChecks(
   command: ChecksCommand,
   io: Io,
   catalogue: readonly HintMeta[],
@@ -64,7 +67,7 @@ function runChecks(
  * Scans the target with the selected hints, prints the findings in the chosen
  * format and returns the exit status `--fail-on` calls for.
  */
-async function runScan(
+export async function runScan(
   command: ScanCommand,
   io: Io,
   catalogue: readonly HintMeta[],
@@ -114,47 +117,14 @@ async function runScan(
   return exitCodeFor(report.findings, command.failOn);
 }
 
-/**
- * Runs the CLI: parses the arguments, does what they ask and returns the exit
- * status. Nothing here calls `process.exit`, so it can be driven by tests.
- *
- * @param argv The arguments after the program name.
- * @param io Where output goes.
- * @param dependencies Replacements for the scan, catalogue and version.
- * @returns The process exit status (see `EXIT`).
- */
-export async function main(
-  argv: readonly string[],
-  io: Io,
+/** The real dependencies, with any replacements a caller gives. */
+export function resolveDependencies(
   dependencies: Dependencies = {},
-): Promise<number> {
-  const deps: Required<Dependencies> = {
+): Required<Dependencies> {
+  return {
     scan: dependencies.scan ?? realScan,
     catalogue: dependencies.catalogue ?? hintCatalogue,
     version: dependencies.version ?? packageVersion(),
     findBrowser: dependencies.findBrowser ?? (() => findBrowser()),
   };
-  try {
-    const command = parseCommand(argv);
-    switch (command.kind) {
-      case 'help':
-        io.stdout(HELP);
-        return EXIT.ok;
-      case 'version':
-        io.stdout(`${deps.version}\n`);
-        return EXIT.ok;
-      case 'checks':
-        return runChecks(command, io, deps.catalogue());
-      case 'scan':
-        return await runScan(command, io, deps.catalogue(), deps);
-    }
-  } catch (error) {
-    if (error instanceof UsageError) {
-      io.stderr(
-        `plumbline: ${error.message}\nRun "plumbline --help" for usage.\n`,
-      );
-      return EXIT.usage;
-    }
-    throw error;
-  }
 }
