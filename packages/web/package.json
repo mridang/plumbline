@@ -49,7 +49,7 @@
     "@types/react-dom": "^19",
     "cypress": "^16.2.0",
     "hint": "^7.1.13",
-    "next": "16.4.2",
+    "next": "16.4.3",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "tailwindcss": "^4",
