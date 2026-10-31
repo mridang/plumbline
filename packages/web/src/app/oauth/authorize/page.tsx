@@ -19,6 +19,7 @@ import {
 import { getDatabase } from '@/domain/db/client';
 import { appOriginFromHeaders } from '@/lib/core/origin';
 
+import { approvalGate } from '@/app/oauth/authorize/app-gate';
 import { ConsentCard } from '@/app/oauth/authorize/consent-card';
 
 /** The tab title of the approval screen. */
@@ -55,7 +56,7 @@ function ReturnToApp({
       <a
         href={href}
         rel="noreferrer"
-        className="focus-ring rounded-control text-brand underline underline-offset-4 hover:text-ink"
+        className="focus-ring rounded-control text-accent underline underline-offset-4 hover:text-ink"
       >
         Return to the app
       </a>
@@ -135,6 +136,13 @@ export default async function AuthorizePage({
   if (!user) {
     redirect(`/auth/login?returnTo=${encodeURIComponent(here)}`);
   }
+  // Whatever else this app needs before an approval (see `app-gate.tsx`) is
+  // asked for first, coming straight back here once it is done.
+  const gate = approvalGate(user, here);
+  if (gate) {
+    return gate;
+  }
+
   const { client, redirectUri, scope } = check.request;
 
   return (

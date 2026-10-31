@@ -67,3 +67,9 @@ describe('GET /api/users/self', () => {
     expect((await read()).status).toBe(401);
   });
 });
+
+describe('PATCH /api/users/self', () => {
+  it('is not offered: there is nothing to change, so Next answers 405', () => {
+    expect(createUserSelf(resolver).handlers().PATCH).toBeUndefined();
+  });
+});

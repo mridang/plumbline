@@ -3,7 +3,8 @@
 /* ==========================================================================
  * 1. This app's tokens: they differ per app (so do its own styles, section 4).
  *    The shared shell reads these roles: paper, ink, on-ink, surface, brand,
- *    accent, highlight, on-highlight, and the font-sans / font-display faces.
+ *    accent, highlight, on-highlight, success, and the font-sans / font-display
+ *    faces.
  * ======================================================================== */
 
 @theme {
@@ -29,6 +30,8 @@
   --color-warned: #a16207;
   --color-passed: #15803d;
   --color-skipped: #57534e;
+  /* A tick or other sign that something is allowed or went well. */
+  --color-success: var(--color-passed);
 }
 
 @theme inline {
