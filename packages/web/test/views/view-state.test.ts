@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
+import { REQUEST_ARGUMENTS } from '@/views/app';
 import type { ToolOutcome } from '@/views/payload';
 import {
   INITIAL_VIEW_STATE,
@@ -14,6 +15,9 @@ import {
 
 type Data = { readonly n: number };
 
+/** The arguments that name a request, best first. */
+const [FIRST = '', SECOND = ''] = REQUEST_ARGUMENTS;
+
 /** Run a list of actions from the initial state. */
 function run(...actions: readonly ViewAction<Data>[]): ViewState<Data> {
   return actions.reduce<ViewState<Data>>(
@@ -25,31 +29,21 @@ function run(...actions: readonly ViewAction<Data>[]): ViewState<Data> {
 const DATA: ToolOutcome<Data> = { kind: 'data', data: { n: 1 } };
 const ERROR: ToolOutcome<Data> = {
   kind: 'message',
-  text: 'example.com has not been scanned yet.',
+  text: 'Nothing found.',
   isError: true,
 };
 
 describe('describeRequest', () => {
-  it('names the domain the tool was asked for', () => {
-    expect(describeRequest({ domain: ' example.com ' })).toBe('example.com');
-  });
-
-  it('names the search the tool was asked for', () => {
-    expect(describeRequest({ query: 'tls' })).toBe('tls');
-  });
-
-  it('prefers the domain to the search', () => {
-    expect(describeRequest({ domain: 'a.com', query: 'tls' })).toBe('a.com');
-  });
-
-  it('falls back to the search when the domain is blank', () => {
-    expect(describeRequest({ domain: '  ', query: 'tls' })).toBe('tls');
+  it('names what the tool was asked for, from the first argument given', () => {
+    expect(describeRequest({ [FIRST]: ' one ' })).toBe('one');
+    expect(describeRequest({ [SECOND]: 'two' })).toBe('two');
+    expect(describeRequest({ [FIRST]: 'one', [SECOND]: 'two' })).toBe('one');
+    expect(describeRequest({ [FIRST]: '  ', [SECOND]: 'two' })).toBe('two');
   });
 
   it('says nothing when the arguments do not', () => {
     expect(describeRequest(undefined)).toBeUndefined();
-    expect(describeRequest({ domain: '  ', other: 3 })).toBeUndefined();
-    expect(describeRequest({ name: 'Pasta' })).toBeUndefined();
+    expect(describeRequest({ [FIRST]: '  ', other: 3 })).toBeUndefined();
   });
 });
 
@@ -73,17 +67,14 @@ describe('reduceViewState', () => {
 
   it('remembers what was asked for while waiting', () => {
     expect(
-      run(
-        { type: 'connected' },
-        { type: 'input', args: { domain: 'example.com' } },
-      ),
-    ).toEqual({ phase: 'waiting', request: 'example.com' });
+      run({ type: 'connected' }, { type: 'input', args: { [FIRST]: 'one' } }),
+    ).toEqual({ phase: 'waiting', request: 'one' });
   });
 
   it('never lets late input overwrite data', () => {
     const ready = run(
       { type: 'result', outcome: DATA },
-      { type: 'input', args: { domain: 'x.com' } },
+      { type: 'input', args: { [FIRST]: 'x' } },
     );
     expect(ready.phase).toBe('ready');
   });
@@ -92,7 +83,7 @@ describe('reduceViewState', () => {
     expect(run({ type: 'result', outcome: ERROR })).toEqual({
       phase: 'failed',
       reason: 'error',
-      message: 'example.com has not been scanned yet.',
+      message: 'Nothing found.',
     });
   });
 

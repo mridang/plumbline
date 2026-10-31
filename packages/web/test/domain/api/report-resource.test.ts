@@ -207,6 +207,49 @@ describe('parseReportInput', () => {
     ]);
   });
 
+  it('keeps the further reading of a finding, as plain http(s) links only', () => {
+    const linked = {
+      ...finding,
+      links: [
+        { url: 'https://fix.test/', text: 'How to fix it' },
+        { url: 'https://bare.test/' },
+        { url: 'javascript:alert(1)', text: 'x' },
+        'not a link',
+      ],
+    };
+    const parsed = parseReportInput(
+      body({
+        outcomes: [{ id: 'accept-ch', status: 'failed', findings: [linked] }],
+      }),
+      HOST,
+    );
+    expect(parsed.ok && parsed.value.outcomes[0]?.findings[0]?.links).toEqual([
+      { url: 'https://fix.test/', text: 'How to fix it' },
+      { url: 'https://bare.test/', text: 'https://bare.test/' },
+    ]);
+  });
+
+  it('keeps at most five links of a finding, and none when there are none', () => {
+    const many = {
+      ...finding,
+      links: Array.from({ length: 8 }, (_, i) => ({
+        url: `https://a.test/${i}`,
+        text: `${i}`,
+      })),
+    };
+    const parsed = parseReportInput(
+      body({
+        outcomes: [
+          { id: 'accept-ch', status: 'failed', findings: [many, finding] },
+        ],
+      }),
+      HOST,
+    );
+    const findings = parsed.ok ? parsed.value.outcomes[0]?.findings : [];
+    expect(findings?.[0]?.links).toHaveLength(5);
+    expect(findings?.[1]).not.toHaveProperty('links');
+  });
+
   it('cuts a long message short', () => {
     const long = { ...finding, message: 'x'.repeat(3000) };
     const parsed = parseReportInput(

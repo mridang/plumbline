@@ -164,7 +164,7 @@ export class GoogleOAuthClient {
   }
 
   /**
-   * Give a token back to Google, ending plumbline's access on Google's side
+   * Give a token back to Google, ending chowdown's access on Google's side
    * (revoking a refresh token revokes the access tokens minted from it). The
    * endpoint answers with an empty body, so this is a direct fetch rather than
    * a JSON-decoding {@link JsonClient} call.

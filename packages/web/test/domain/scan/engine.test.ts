@@ -137,6 +137,53 @@ describe('findingOf', () => {
     ).toEqual({ resource: 'r', message: 'm', level: 'error' });
   });
 
+  it('keeps the further reading a hint gives, but not its own reference', () => {
+    expect(
+      findingOf(
+        'r',
+        'm',
+        {
+          severity: Severity.error,
+          documentation: [
+            { link: 'https://rule.test/', text: 'The rule' },
+            { link: 'https://fix.test/', text: 'How to fix it' },
+            { link: 'https://bare.test/', text: '' },
+          ],
+        },
+        'https://rule.test/',
+      )?.links,
+    ).toEqual([
+      { url: 'https://fix.test/', text: 'How to fix it' },
+      { url: 'https://bare.test/', text: 'https://bare.test/' },
+    ]);
+  });
+
+  it('drops links that are not plain http(s), and keeps at most five', () => {
+    const finding = findingOf('r', 'm', {
+      severity: Severity.error,
+      documentation: [
+        { link: 'javascript:alert(1)', text: 'x' },
+        ...Array.from({ length: 8 }, (_, i) => ({
+          link: `https://a.test/${i}`,
+          text: `${i}`,
+        })),
+      ],
+    });
+    expect(finding?.links?.map((link) => link.text)).toEqual([
+      '0',
+      '1',
+      '2',
+      '3',
+      '4',
+    ]);
+  });
+
+  it('leaves out the links when there are none', () => {
+    expect(
+      findingOf('r', 'm', { severity: Severity.error }),
+    ).not.toHaveProperty('links');
+  });
+
   it('cuts a long snippet off at 2000 characters', () => {
     const finding = findingOf('r', 'm', {
       severity: Severity.error,

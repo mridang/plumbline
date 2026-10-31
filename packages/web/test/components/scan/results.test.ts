@@ -17,6 +17,8 @@ function hint(
     section,
     sectionTitle: section.toUpperCase(),
     sectionOrder: order,
+    groups: [],
+    origins: [],
     status,
     findings: [],
   };

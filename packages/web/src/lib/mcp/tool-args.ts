@@ -7,6 +7,8 @@
  * and answers with a plain, safe value instead of throwing.
  */
 
+import { ARGUMENT_ALIASES, LISTS_OF_TEXT } from '@/domain/mcp/app';
+
 /** The most results a tool returns unless asked for fewer. */
 const DEFAULT_LIMIT = 12;
 
@@ -56,34 +58,6 @@ export function offsetArg(value: unknown): number {
   const n = numberArg(value);
   return n === undefined ? 0 : Math.max(Math.floor(n), 0);
 }
-
-/**
- * Older or looser spellings of a tool's arguments, and the canonical name each
- * one stands for. The catalogue lists only the canonical names (so a model sees
- * one way to say each thing, and the input schemas stay closed), but a
- * connector that cached an earlier catalogue, or a model that carries an
- * argument over from a similar tool, must not start failing: its spelling is
- * renamed before the arguments are checked.
- */
-const ARGUMENT_ALIASES: Readonly<
-  Record<string, Readonly<Record<string, string>>>
-> = {
-  get_domain: { host: 'domain', url: 'domain' },
-  get_report: { host: 'domain', url: 'domain' },
-  list_reports: { host: 'domain', url: 'domain' },
-  scan_domain: { host: 'domain', url: 'domain' },
-  add_domain: { host: 'domain', url: 'domain' },
-  remove_domain: { host: 'domain', url: 'domain' },
-  configure_checks: { host: 'domain', url: 'domain', checks: 'enable' },
-};
-
-/**
- * Arguments that are declared as a list of text but that models often send as
- * one piece of text ("csp-header"). That text is wrapped into a one-item list.
- */
-const LISTS_OF_TEXT: Readonly<Record<string, readonly string[]>> = {
-  configure_checks: ['enable', 'disable'],
-};
 
 /**
  * The arguments of a call to `tool`, with the harmless slips of

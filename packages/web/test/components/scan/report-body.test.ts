@@ -17,6 +17,8 @@ const hint = (
   section: 'security',
   sectionTitle: 'Security',
   sectionOrder: 1,
+  groups: [],
+  origins: [],
   status,
   findings: [],
   ...extra,

@@ -139,11 +139,10 @@ plumbline is also an MCP server at `/mcp`, for ChatGPT, Claude and other assista
 ```bash
 devbox run -- npm run build
 devbox run -- npm run dev --workspace packages/web
-devbox run -- npm run preview --workspace packages/web
 devbox run -- npm run deploy --workspace packages/web
 ```
 
-`dev` serves the app with Next.js; `preview` builds the Worker and serves it with Wrangler in the Workers runtime, which is what production runs. Both read `SCAN_SECRET` (any long random string) from `packages/web/.env`; in production it is a Worker secret (`wrangler secret put SCAN_SECRET`). `deploy` publishes it to `plumbline.apps.mrida.ng`, and the `Deploy to Cloudflare Workers` workflow does the same on every push to `master`, with the repository's `CLOUDFLARE_API_TOKEN` secret and `CLOUDFLARE_ACCOUNT_ID` variable.
+`dev` serves the app with Next.js, and reads `SCAN_SECRET` (any long random string) from `packages/web/.env`; in production it is a Worker secret (`wrangler secret put SCAN_SECRET`). `deploy` publishes it to `plumbline.apps.mrida.ng`, and the `Deploy to Cloudflare Workers` workflow does the same on every push to `master`, with the repository's `CLOUDFLARE_API_TOKEN` secret and `CLOUDFLARE_ACCOUNT_ID` variable. The Worker runs with the `global_fetch_strictly_public` flag, so a scan can only reach the public internet and never Cloudflare-internal or private addresses.
 
 ## Use
 

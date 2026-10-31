@@ -1,5 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
+import { findCheck } from '@/domain/checks/catalogue';
+
 import type { Domain } from '@/domain/db/domains';
 import type { Report, ReportSummary } from '@/domain/db/reports';
 import {
@@ -166,6 +168,13 @@ describe('reportData', () => {
     ).toHaveLength(400);
   });
 
+  it('says who usually fixes each problem and where its rule comes from', () => {
+    const csp = findCheck('csp');
+    const problem = reportData(DOMAIN, REPORT).problems[0];
+    expect(problem?.fixer).toBe(csp?.fixer);
+    expect(problem?.reference).toBe(csp?.reference);
+  });
+
   it('leaves out an outcome it cannot read, or of a check that no longer exists', () => {
     const odd: Report = {
       ...REPORT,
@@ -200,6 +209,27 @@ describe('reportText', () => {
 
   it('writes evidence on one line', () => {
     expect(text).toContain('  Content-Security-Policy: none');
+  });
+
+  it('says who usually fixes each problem, and links its rule', () => {
+    const csp = findCheck('csp');
+    expect(text).toContain(`Usually fixed in: ${csp?.fixer ?? ''}.`);
+    expect(text).toContain(`Rule: ${csp?.reference ?? ''}`);
+  });
+
+  it('leaves out the fix lines of a problem without them', () => {
+    const data = reportData(DOMAIN, REPORT);
+    const bare = reportText({
+      ...data,
+      problems: data.problems.map((p) => ({
+        id: p.id,
+        name: p.name,
+        status: p.status,
+        findings: p.findings,
+      })),
+    });
+    expect(bare).not.toContain('Usually fixed in');
+    expect(bare).not.toContain('Rule:');
   });
 
   it('ends with the link to the domain on plumbline', () => {

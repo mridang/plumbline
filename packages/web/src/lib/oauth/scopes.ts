@@ -1,17 +1,15 @@
 /**
  * @packageDocumentation
  *
- * The scopes an assistant can hold on a user's domains, and which MCP calls
- * need which. Two scopes keep consent simple and let a connector be read-only:
- * `checks:read` (list domains, their checks and their reports) and
- * `checks:write` (add and remove domains, and choose their checks). Write
- * implies read.
+ * The scopes an assistant can hold on a user's data, and which MCP calls need
+ * which. Two scopes keep consent simple and let a connector be read-only: one
+ * that only reads and one that also changes things. Write implies read. Their
+ * names, and which tools only read, are this app's own (`domain/mcp/app.ts`).
  */
 
-/** May see domains, their checks and their reports. */
-export const SCOPE_READ = 'checks:read';
-/** May add and remove domains and choose their checks (implies read). */
-export const SCOPE_WRITE = 'checks:write';
+import { READ_ONLY_TOOLS, SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+
+export { SCOPE_READ, SCOPE_WRITE };
 
 /**
  * The OpenID Connect scope that asks for a refresh token. Every grant here gets
@@ -33,19 +31,6 @@ export type Scope = (typeof SUPPORTED_SCOPES)[number];
 export function isSupportedScope(scope: string): scope is Scope {
   return (SUPPORTED_SCOPES as readonly string[]).includes(scope);
 }
-
-/**
- * Tools that only read. Anything not listed here is treated as a write, so a
- * newly added tool is protected by default until someone classifies it.
- */
-const READ_ONLY_TOOLS: ReadonlySet<string> = new Set([
-  'list_checks',
-  'list_domains',
-  'get_domain',
-  'get_report',
-  'list_reports',
-  'scan_domain',
-]);
 
 /**
  * Turn a request's space-separated `scope` into the scopes to grant. No scope

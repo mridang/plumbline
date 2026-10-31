@@ -32,6 +32,10 @@ export interface ReportProblem {
   readonly name: string;
   readonly status: 'failed' | 'warned';
   readonly findings: readonly ReportFinding[];
+  /** Who usually makes the fix (the web server, the DNS zone, …). */
+  readonly fixer?: string;
+  /** Where the rule comes from. */
+  readonly reference?: string;
 }
 
 /**

@@ -11,7 +11,6 @@
     "build:views": "npm run build:catalogue && node scripts/build-views.mjs",
     "build": "npm run build:views && next build",
     "start": "next start",
-    "preview": "opennextjs-cloudflare build && wrangler dev",
     "migrate": "wrangler d1 migrations apply DB --local",
     "cf-typegen": "wrangler types && prettier --write worker-configuration.d.ts",
     "deploy": "wrangler d1 migrations apply DB --remote && opennextjs-cloudflare build && wrangler deploy",

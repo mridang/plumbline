@@ -523,7 +523,7 @@ export function McpIcon({
 
 /**
  * The HTML5 shield, in its own colours, standing for the web app itself. Use
- * it only on the entry that installs plumbline as an app (a progressive web
+ * it only on the entry that installs chowdown as an app (a progressive web
  * app).
  */
 export function Html5Icon({

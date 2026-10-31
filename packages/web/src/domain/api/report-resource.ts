@@ -31,6 +31,12 @@ const LEVELS: readonly FindingLevel[] = [
   'information',
 ];
 
+/** A page a finding points to for more on the problem or its fix. */
+export interface StoredLink {
+  readonly url: string;
+  readonly text: string;
+}
+
 /** One thing a check found, as stored and sent. */
 export interface StoredFinding {
   readonly resource: string;
@@ -40,6 +46,7 @@ export interface StoredFinding {
   readonly language?: string;
   readonly line?: number;
   readonly column?: number;
+  readonly links?: readonly StoredLink[];
 }
 
 /** One check's outcome, as stored. */
@@ -77,6 +84,26 @@ function textOf(value: unknown): string | undefined {
   return typeof value === 'string' ? value.slice(0, MAX_TEXT) : undefined;
 }
 
+/** The most further-reading links kept for one finding. */
+const MAX_LINKS = 5;
+
+/** A finding's further-reading links: plain http(s) ones only, at most {@link MAX_LINKS}. */
+function linksOf(value: unknown): StoredLink[] {
+  return (Array.isArray(value) ? (value as unknown[]) : [])
+    .flatMap((raw) => {
+      if (typeof raw !== 'object' || raw === null) {
+        return [];
+      }
+      const record = raw as Readonly<Record<string, unknown>>;
+      const url = textOf(record['url']);
+      const text = textOf(record['text']);
+      return url !== undefined && /^https?:\/\//.test(url)
+        ? [{ url, text: text || url }]
+        : [];
+    })
+    .slice(0, MAX_LINKS);
+}
+
 /** A whole number field, or undefined. */
 function positionOf(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0
@@ -104,6 +131,7 @@ function findingOf(raw: unknown): StoredFinding | undefined {
   const language = textOf(record['language']);
   const line = positionOf(record['line']);
   const column = positionOf(record['column']);
+  const links = linksOf(record['links']);
   return {
     resource,
     message,
@@ -112,6 +140,7 @@ function findingOf(raw: unknown): StoredFinding | undefined {
     ...(language !== undefined ? { language } : {}),
     ...(line !== undefined ? { line } : {}),
     ...(column !== undefined ? { column } : {}),
+    ...(links.length > 0 ? { links } : {}),
   };
 }
 

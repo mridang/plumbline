@@ -15,6 +15,8 @@ function info(id: string): HintInfo {
     section: 's',
     sectionTitle: 'S',
     sectionOrder: 1,
+    groups: [],
+    origins: [],
   };
 }
 

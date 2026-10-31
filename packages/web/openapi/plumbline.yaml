@@ -580,7 +580,14 @@ components:
     Check:
       type: object
       required:
-        [id, name, description, groups, section, section_title, section_order]
+        - id
+        - name
+        - description
+        - groups
+        - section
+        - section_title
+        - section_order
+        - origins
       properties:
         id:
           type: string
@@ -603,6 +610,28 @@ components:
         reference:
           type: string
           format: uri
+        fixer:
+          description: Who usually makes the fix, such as the web server's configuration or the DNS zone.
+          type: string
+        origins:
+          description: The upstream checks this one was taken from; empty for a check written for plumbline.
+          type: array
+          items:
+            type: object
+            required: [source, title, url, summary]
+            properties:
+              source:
+                type: string
+              title:
+                type: string
+              url:
+                type: string
+                format: uri
+              docs_url:
+                type: string
+                format: uri
+              summary:
+                type: string
     CheckPage:
       allOf:
         - $ref: '#/components/schemas/PageLinks'
@@ -698,6 +727,19 @@ components:
           type: integer
         column:
           type: integer
+        links:
+          description: Further reading for this finding, besides the check's own reference.
+          type: array
+          maxItems: 5
+          items:
+            type: object
+            required: [url, text]
+            properties:
+              url:
+                type: string
+                format: uri
+              text:
+                type: string
     Outcome:
       type: object
       required: [id, status, findings]

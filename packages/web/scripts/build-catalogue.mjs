@@ -6,8 +6,9 @@
  * code is far too big for the Worker, which on the Free plan has 3 MB for the
  * whole bundle and 10 ms of CPU a request. So the Worker never imports the
  * hints package. Instead this script loads it once, in Node, and keeps what a
- * hint says about itself (its id, name, description, groups, report section
- * and reference), which is all the server needs.
+ * hint says about itself (its id, name, description, groups, report section,
+ * reference and where it came from) and who usually makes its fix, which is all
+ * the server needs.
  *
  * Run via `devbox run -- npm run build:catalogue` (invoked before the Next
  * build, the tests, the type check and the linter). It reads the built hints
@@ -19,6 +20,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import extraHints from '@mridang/webhint-hint-extra';
+import { CATEGORIES } from '@mridang/webhint-hint-extra/dist/core/taxonomy.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = resolve(root, 'dist');
@@ -28,10 +30,25 @@ function text(docs, key, fallback) {
   return typeof docs[key] === 'string' ? docs[key] : fallback;
 }
 
+/** Who usually makes the fix for a check in each report section. */
+const FIXERS = new Map(CATEGORIES.map((c) => [c.id, c.whoFixesIt]));
+
+/** The upstream checks a hint came from, in the API's own spelling. */
+function originsOf(docs) {
+  return (Array.isArray(docs.origins) ? docs.origins : []).map((origin) => ({
+    source: origin.source,
+    title: origin.title || origin.upstreamId,
+    url: origin.url,
+    ...(origin.docsUrl ? { docs_url: origin.docsUrl } : {}),
+    summary: origin.summary,
+  }));
+}
+
 const checks = Object.keys(extraHints)
   .sort()
   .map((id) => {
     const docs = extraHints[id]?.meta?.docs ?? {};
+    const fixer = FIXERS.get(docs.section);
     return {
       id,
       name: text(docs, 'name', id),
@@ -44,6 +61,8 @@ const checks = Object.keys(extraHints)
           ? docs.sectionOrder
           : Number.MAX_SAFE_INTEGER,
       ...(typeof docs.url === 'string' ? { reference: docs.url } : {}),
+      ...(fixer ? { fixer } : {}),
+      origins: originsOf(docs),
     };
   });
 

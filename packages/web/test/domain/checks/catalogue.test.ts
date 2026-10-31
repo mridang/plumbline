@@ -37,6 +37,26 @@ describe('CHECKS', () => {
       ),
     ).toEqual([]);
   });
+
+  it('says who usually fixes every check', () => {
+    expect(CHECKS.filter((check) => !check.fixer)).toEqual([]);
+  });
+
+  it('gives every origin a source, a title, an address and a summary', () => {
+    expect(
+      CHECKS.flatMap((check) => check.origins).filter(
+        (origin) =>
+          origin.source === '' ||
+          origin.title === '' ||
+          !/^https?:\/\//.test(origin.url) ||
+          origin.summary === '',
+      ),
+    ).toEqual([]);
+  });
+
+  it('keeps the upstream origins of the checks taken from elsewhere', () => {
+    expect(CHECKS.some((check) => check.origins.length > 0)).toBe(true);
+  });
 });
 
 describe('GROUPS', () => {

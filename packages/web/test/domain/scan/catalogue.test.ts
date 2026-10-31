@@ -18,9 +18,22 @@ describe('entryOf', () => {
           name: 'Content Security Policy',
           description: 'Checks the policy.',
           url: 'https://example.org/csp',
-          section: 'security',
-          sectionTitle: 'Security',
+          section: 'site-protection',
+          sectionTitle: 'Site protection',
           sectionOrder: 2,
+          groups: ['observatory', 7],
+          origins: [
+            {
+              source: 'observatory',
+              upstreamId: 'csp',
+              title: '',
+              url: 'https://upstream.test/csp',
+              docsUrl: 'https://upstream.test/docs',
+              summary: 'Checks the CSP.',
+            },
+            { source: 'broken' },
+            'not an origin',
+          ],
         }),
       ).info,
     ).toEqual({
@@ -28,9 +41,20 @@ describe('entryOf', () => {
       name: 'Content Security Policy',
       description: 'Checks the policy.',
       reference: 'https://example.org/csp',
-      section: 'security',
-      sectionTitle: 'Security',
+      section: 'site-protection',
+      sectionTitle: 'Site protection',
       sectionOrder: 2,
+      groups: ['observatory'],
+      fixer: 'web server or application config (response headers)',
+      origins: [
+        {
+          source: 'observatory',
+          title: 'csp',
+          url: 'https://upstream.test/csp',
+          docsUrl: 'https://upstream.test/docs',
+          summary: 'Checks the CSP.',
+        },
+      ],
     });
   });
 
@@ -42,6 +66,8 @@ describe('entryOf', () => {
       section: 'other',
       sectionTitle: 'Other',
       sectionOrder: Number.MAX_SAFE_INTEGER,
+      groups: [],
+      origins: [],
     });
   });
 });
@@ -60,6 +86,7 @@ describe('catalogue', () => {
     entries.forEach(({ info }) => {
       expect(info.name).not.toBe(info.id);
       expect(info.section).not.toBe('other');
+      expect(info.fixer).toBeTruthy();
     });
   });
 });

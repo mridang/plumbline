@@ -1,7 +1,7 @@
 /**
  * @packageDocumentation
  *
- * Shared stylesheet for the plumbline MCP Apps Views (report + domain list). One
+ * Shared stylesheet for the MCP Apps Views. One
  * cohesive design system so every surface in the chat client looks like the
  * same product. Structure (background, text, borders, font) follows the host's
  * theme variables, applied by the hook from the host context; the brand colours
@@ -17,6 +17,7 @@ import {
   ON_ACCENT,
   type ThemePalette,
 } from '@/views/palette';
+import { APP_STYLES } from '@/views/app';
 
 /** The custom properties that differ between the light and dark themes. */
 function themeVariables(palette: ThemePalette): string {
@@ -134,29 +135,11 @@ button { font: inherit; }
   color: var(--text); background: var(--surface); border:1px solid var(--border); border-radius: var(--radius-sm); }
 .filter::placeholder { color: var(--muted); }
 
-/* Text only assistive technology reads (the arrival announcement). */
+/* Text only assistive technology reads. */
 .sr-only { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden;
   clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0; }
 
-/* --- report --- */
-.tally { margin-top:14px; display:flex; flex-wrap:wrap; gap:6px; padding:0; list-style-type:""; }
-.tally li { padding:4px 10px; border-radius:999px; font-size:.75rem; font-weight:650; white-space:nowrap;
-  background: var(--surface-2); color: var(--text); }
-.tally .failed, .status.failed { background: color-mix(in srgb, #b91c1c 14%, transparent); color: var(--color-text-danger, #b91c1c); }
-.tally .warned, .status.warned { background: color-mix(in srgb, #a16207 16%, transparent); color: var(--color-text-warning, #a16207); }
-.tally .passed { background: color-mix(in srgb, #15803d 14%, transparent); color: var(--color-text-success, #15803d); }
-.problems { margin:16px 0 0; padding:0; list-style-type:""; }
-.problem { border-top:1px solid var(--border); padding:10px 0; }
-.problem summary { display:flex; align-items:center; gap:9px; min-height:32px; cursor:pointer; font-weight:620; }
-.status { flex:none; padding:2px 8px; border-radius:999px; font-size:.625rem; font-weight:700;
-  letter-spacing:.05em; text-transform:uppercase; }
-.findings { margin:8px 0 0; padding:0 0 0 4px; list-style-type:""; display:grid; gap:8px; }
-.finding p { margin:0; line-height:1.5; overflow-wrap:anywhere; }
-.finding .where { color: var(--muted); font-size:.75rem; overflow-wrap:anywhere; }
-.finding pre { margin:4px 0 0; padding:8px 10px; border-radius: var(--radius-sm); background: var(--surface-2);
-  font-size:.75rem; white-space:pre-wrap; overflow-wrap:anywhere; max-height:10rem; overflow:auto; }
-.tile .sub { display:block; margin-top:2px; font-size:.75rem; font-weight:500; color: var(--muted); }
-
+${APP_STYLES}
 /* People who ask their device for less motion get none. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

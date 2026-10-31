@@ -2,7 +2,8 @@
  * @packageDocumentation
  *
  * The checks plumbline knows about, as the server sees them: what each one is
- * called, what it looks at, and which groups it belongs to. The list is
+ * called, what it looks at, which groups it belongs to, who usually fixes what
+ * it finds and where it came from. The list is
  * generated from the hints package at build time (`scripts/build-catalogue.mjs`)
  * because the checks' own code only ever runs in the browser and is far too big
  * for the Worker. A check added to the hints package shows up here on the next
@@ -10,6 +11,19 @@
  */
 
 import { checks as GENERATED } from '../../../dist/catalogue';
+
+/** An upstream check, test or article a check was taken from. */
+export interface CheckOrigin {
+  /** The source group, such as `observatory`. */
+  readonly source: string;
+  readonly title: string;
+  /** The code or page of the upstream check. */
+  readonly url: string;
+  /** A documentation page for it, when there is one. */
+  readonly docs_url?: string;
+  /** What the upstream check looks at, in a sentence or two. */
+  readonly summary: string;
+}
 
 /** What the server knows about one check. */
 export interface Check {
@@ -27,6 +41,10 @@ export interface Check {
   readonly section_order: number;
   /** Where the rule comes from, when the check links it. */
   readonly reference?: string;
+  /** Who usually makes the fix (the web server, the DNS zone, …), from its section. */
+  readonly fixer?: string;
+  /** The upstream checks it was taken from; empty for one written for plumbline. */
+  readonly origins: readonly CheckOrigin[];
 }
 
 /** Every check, sorted by id. */

@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
+import { APP_STYLES } from '@/views/app';
 import { DARK_PALETTE, LIGHT_PALETTE } from '@/views/palette';
 import { STYLES } from '@/views/styles';
 
@@ -85,29 +86,6 @@ describe('lists', () => {
   });
 });
 
-describe('the report', () => {
-  it.each(['failed', 'warned', 'passed'])(
-    'gives the %s count its own colour, with a fallback for hosts that send none',
-    (status) => {
-      expect(STYLES).toMatch(
-        new RegExp(
-          `\\.tally \\.${status}[^{]*\\{[^}]*var\\(--color-text-\\w+, #`,
-        ),
-      );
-    },
-  );
-
-  it('colours a failed and a warned status like its count', () => {
-    expect(STYLES).toContain('.tally .failed, .status.failed');
-    expect(STYLES).toContain('.tally .warned, .status.warned');
-  });
-
-  it('wraps long evidence instead of widening the frame', () => {
-    expect(declaration('.finding p', 'overflow-wrap')).toBe('anywhere');
-    expect(declaration('.finding .where', 'overflow-wrap')).toBe('anywhere');
-  });
-});
-
 describe('the themes', () => {
   it('writes the light palette into the page', () => {
     expect(STYLES).toContain(`--accent: ${LIGHT_PALETTE.accent};`);
@@ -115,5 +93,11 @@ describe('the themes', () => {
 
   it('writes the dark palette into the page', () => {
     expect(STYLES).toContain(`--accent: ${DARK_PALETTE.accent};`);
+  });
+});
+
+describe('the app’s own rules', () => {
+  it('are part of the stylesheet', () => {
+    expect(STYLES).toContain(APP_STYLES);
   });
 });

@@ -2,112 +2,53 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   NO_DATA_MESSAGE,
-  isDomainListData,
-  isReportData,
+  everyEntry,
+  isRecord,
+  isString,
   readOutcome,
   textOf,
 } from '@/views/payload';
 
-/** A report payload the server would send. */
-const CARD = {
-  host: 'example.com',
-  url: 'https://example.com/',
-  created_at: '2026-10-01T00:00:00.000Z',
-  link: 'https://plumbline.apps.mrida.ng/domains/d1',
-  passed: 3,
-  warned: 1,
-  failed: 1,
-  skipped: 0,
-  problems: [
-    {
-      id: 'csp-header',
-      name: 'Content-Security-Policy is set',
-      status: 'failed',
-      findings: [{ message: 'No CSP.', resource: 'https://example.com/' }],
-    },
-  ],
-};
+/** The data a View in these tests draws: a list of names. */
+interface Names {
+  readonly names: readonly string[];
+}
 
-/** A domain list payload the server would send. */
-const LIST = {
-  total_checks: 300,
-  link: 'https://plumbline.apps.mrida.ng/domains',
-  domains: [
-    {
-      id: 'd1',
-      host: 'example.com',
-      checks: 300,
-      latest: {
-        passed: 1,
-        warned: 0,
-        failed: 0,
-        skipped: 0,
-        created_at: '2026-10-01T00:00:00.000Z',
-      },
-    },
-  ],
-};
+/** Whether the value has the shape of {@link Names}. */
+function isNames(value: unknown): value is Names {
+  return isRecord(value) && everyEntry(value['names'], isString);
+}
 
-describe('isReportData', () => {
-  it('accepts what the server sends', () => {
-    expect(isReportData(CARD)).toBe(true);
-  });
+const NAMES: Names = { names: ['one', 'two'] };
 
-  it('accepts a report with nothing wrong', () => {
-    expect(isReportData({ ...CARD, problems: [] })).toBe(true);
-  });
-
-  it.each([
-    ['no problems list', { ...CARD, problems: undefined }],
-    ['a host that is not text', { ...CARD, host: 7 }],
-    ['a negative count', { ...CARD, failed: -1 }],
-    ['a count that is not whole', { ...CARD, passed: 1.5 }],
-    ['a missing count', { ...CARD, skipped: undefined }],
-    [
-      'a problem that passed',
-      { ...CARD, problems: [{ ...CARD.problems[0], status: 'passed' }] },
-    ],
-    [
-      'a finding without a resource',
-      {
-        ...CARD,
-        problems: [{ ...CARD.problems[0], findings: [{ message: 'x' }] }],
-      },
-    ],
-    ['null', null],
-    ['text', 'text'],
-  ])('refuses %s', (_label, value) => {
-    expect(isReportData(value)).toBe(false);
+describe('isRecord', () => {
+  it('accepts objects and arrays, and nothing else', () => {
+    expect(isRecord({})).toBe(true);
+    expect(isRecord([])).toBe(true);
+    expect(isRecord(null)).toBe(false);
+    expect(isRecord('text')).toBe(false);
+    expect(isRecord(undefined)).toBe(false);
   });
 });
 
-describe('isDomainListData', () => {
-  it('accepts a list, empty or not', () => {
-    expect(isDomainListData(LIST)).toBe(true);
-    expect(isDomainListData({ ...LIST, domains: [] })).toBe(true);
+describe('isString', () => {
+  it('accepts strings only', () => {
+    expect(isString('')).toBe(true);
+    expect(isString(1)).toBe(false);
+    expect(isString(null)).toBe(false);
+  });
+});
+
+describe('everyEntry', () => {
+  it('accepts an array whose every entry passes, empty or not', () => {
+    expect(everyEntry(['a', 'b'], isString)).toBe(true);
+    expect(everyEntry([], isString)).toBe(true);
   });
 
-  it('accepts a domain that has not been scanned', () => {
-    expect(
-      isDomainListData({
-        ...LIST,
-        domains: [{ id: 'd1', host: 'example.com', checks: 3 }],
-      }),
-    ).toBe(true);
-  });
-
-  it.each([
-    ['an entry without a host', { ...LIST, domains: [{ id: '1', checks: 1 }] }],
-    [
-      'an entry whose latest scan has no counts',
-      { ...LIST, domains: [{ id: '1', host: 'a.com', checks: 1, latest: {} }] },
-    ],
-    ['domains that are not a list', { ...LIST, domains: 'many' }],
-    ['no link', { ...LIST, link: undefined }],
-    ['no total', { ...LIST, total_checks: undefined }],
-    ['undefined', undefined],
-  ])('refuses %s', (_label, value) => {
-    expect(isDomainListData(value)).toBe(false);
+  it('refuses an array with one entry that fails, and anything not an array', () => {
+    expect(everyEntry(['a', 1], isString)).toBe(false);
+    expect(everyEntry('ab', isString)).toBe(false);
+    expect(everyEntry(undefined, isString)).toBe(false);
   });
 });
 
@@ -133,8 +74,8 @@ describe('textOf', () => {
 describe('readOutcome', () => {
   it('returns the data when the result carries it', () => {
     expect(
-      readOutcome({ structuredContent: CARD, content: [] }, isReportData),
-    ).toEqual({ kind: 'data', data: CARD });
+      readOutcome({ structuredContent: NAMES, content: [] }, isNames),
+    ).toEqual({ kind: 'data', data: NAMES });
   });
 
   it('turns an error result into its message, not a loading state', () => {
@@ -142,15 +83,13 @@ describe('readOutcome', () => {
       readOutcome(
         {
           isError: true,
-          content: [
-            { type: 'text', text: 'example.com has not been scanned yet.' },
-          ],
+          content: [{ type: 'text', text: 'Nothing found for "soup".' }],
         },
-        isReportData,
+        isNames,
       ),
     ).toEqual({
       kind: 'message',
-      text: 'example.com has not been scanned yet.',
+      text: 'Nothing found for "soup".',
       isError: true,
     });
   });
@@ -158,8 +97,8 @@ describe('readOutcome', () => {
   it('does not trust data in a result that is flagged as an error', () => {
     expect(
       readOutcome(
-        { isError: true, structuredContent: CARD, content: [] },
-        isReportData,
+        { isError: true, structuredContent: NAMES, content: [] },
+        isNames,
       ),
     ).toMatchObject({ kind: 'message', isError: true });
   });
@@ -168,14 +107,14 @@ describe('readOutcome', () => {
     expect(
       readOutcome(
         { content: [{ type: 'text', text: 'Nothing saved yet.' }] },
-        isDomainListData,
+        isNames,
       ),
     ).toEqual({ kind: 'message', text: 'Nothing saved yet.', isError: false });
   });
 
   it('treats data of the wrong shape as a message too', () => {
     expect(
-      readOutcome({ structuredContent: { domains: 5 } }, isDomainListData),
+      readOutcome({ structuredContent: { names: 5 } }, isNames),
     ).toMatchObject({ kind: 'message', text: NO_DATA_MESSAGE });
   });
 });

@@ -48,6 +48,14 @@ export interface Finding {
   /** Where in the resource, when the hint knows. */
   readonly line?: number;
   readonly column?: number;
+  /** Further reading the hint gave for this finding, besides its own reference. */
+  readonly links?: readonly FindingLink[];
+}
+
+/** A page a finding points to for more on the problem or its fix. */
+export interface FindingLink {
+  readonly url: string;
+  readonly text: string;
 }
 
 /** What became of one hint. */
@@ -137,11 +145,33 @@ function levelOf(severity: Severity | undefined): FindingLevel | null {
 /** The longest snippet kept; a whole `<head>` helps nobody. */
 const MAX_SNIPPET = 2000;
 
-/** A report call turned into a finding, or null for an `off` one. */
+/** The most further-reading links kept for one finding. */
+const MAX_LINKS = 5;
+
+/**
+ * The further-reading links of a report, as plain http(s) links. The hint's own
+ * reference is left out: every finding of the hint carries it (see the hints
+ * package's `defineHint`) and the page shows it once for the hint.
+ */
+function linksOf(
+  documentation: ReportOptions['documentation'],
+  reference: string | undefined,
+): FindingLink[] {
+  return (documentation ?? [])
+    .filter((doc) => /^https?:\/\//.test(doc.link) && doc.link !== reference)
+    .slice(0, MAX_LINKS)
+    .map((doc) => ({ url: doc.link, text: doc.text || doc.link }));
+}
+
+/**
+ * A report call turned into a finding, or null for an `off` one. `reference`
+ * is the hint's own reference, which is not repeated in the finding's links.
+ */
 export function findingOf(
   resource: string,
   message: string,
   options: Partial<ReportOptions>,
+  reference?: string,
 ): Finding | null {
   const level = levelOf(options.severity);
   if (level === null) {
@@ -163,6 +193,7 @@ export function findingOf(
     location && location.line >= 0
       ? { line: location.line + 1, column: location.column + 1 }
       : {};
+  const links = linksOf(options.documentation, reference);
   return {
     resource,
     message,
@@ -170,6 +201,7 @@ export function findingOf(
     ...(snippet ? { snippet: snippet.slice(0, MAX_SNIPPET) } : {}),
     ...(language ? { language } : {}),
     ...placed,
+    ...(links.length > 0 ? { links } : {}),
   };
 }
 
@@ -238,7 +270,12 @@ function contextFor(
       message: string,
       options: Partial<ReportOptions> = {},
     ): void {
-      const finding = findingOf(resource, message, options);
+      const finding = findingOf(
+        resource,
+        message,
+        options,
+        running.entry.info.reference,
+      );
       if (finding) {
         running.findings.push(finding);
       }

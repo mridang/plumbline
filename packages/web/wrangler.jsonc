@@ -4,16 +4,18 @@
   "main": "src/worker.ts",
   "account_id": "779037e608ab1102679ef8b1bd499d49",
   "compatibility_date": "2026-05-01",
-  // `global_fetch_strictly_public` keeps a scan from reaching anything but the
-  // public internet: someone typing an internal name cannot make the Worker
-  // fetch Cloudflare-internal or private addresses.
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Cloudflare auto-routes the Worker to the colo closest to D1
+  // (avoids the worst-case ~70 ms hop). Free on all plans.
+  "placement": { "mode": "smart" },
   // Wrangler's own usage telemetry for this project (anonymous CLI usage; the
   // setting overrides each developer's personal preference).
   "send_metrics": true,
-  // Workers Observability, everything on at 100%: the app's own log lines, the
-  // automatic per-request invocation logs, distributed traces, and real-time
-  // Issues. Query strings are stripped from the URLs in logs and traces.
+  // Workers Observability, everything on at 100% (the volume is tiny and the data
+  // is what debugging needs): the app's own log lines, the automatic per-request
+  // invocation logs, distributed traces, and real-time Issues. Query strings are
+  // stripped from the URLs in logs and traces, because they can carry search
+  // text, addresses and sign-in codes.
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1,

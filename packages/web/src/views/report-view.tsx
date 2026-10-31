@@ -13,7 +13,7 @@ import type { ReactElement } from 'react';
 
 import type { ReportData, ReportProblem } from '@/domain/mcp/ui-types';
 import { safeHttpUrl } from '@/views/follow-up';
-import { isReportData } from '@/views/payload';
+import { isReportData } from '@/views/guards';
 import { Announcer, LoadingCard, MessageCard } from '@/views/status-panels';
 import { STYLES } from '@/views/styles';
 import { useWidgetData } from '@/views/use-widget-data';
@@ -38,7 +38,12 @@ function when(timestamp: string): string {
 /** One check that failed or warned, folded until opened. */
 function Problem({
   problem,
-}: Readonly<{ problem: ReportProblem }>): ReactElement {
+  onOpenLink,
+}: Readonly<{
+  problem: ReportProblem;
+  onOpenLink: ((url: string) => void) | undefined;
+}>): ReactElement {
+  const rule = safeHttpUrl(problem.reference);
   return (
     <li className="problem">
       <details>
@@ -55,6 +60,24 @@ function Problem({
             </li>
           ))}
         </ul>
+        {problem.fixer || (rule && onOpenLink) ? (
+          <div className="fix">
+            {problem.fixer ? (
+              <p>
+                <b>Usually fixed in:</b> {problem.fixer}.
+              </p>
+            ) : null}
+            {rule && onOpenLink ? (
+              <button
+                type="button"
+                className="link"
+                onClick={() => onOpenLink(rule)}
+              >
+                Read the rule
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </details>
     </li>
   );
@@ -89,7 +112,11 @@ export function ReportCard({
         {data.problems.length > 0 ? (
           <ul className="problems">
             {data.problems.map((problem) => (
-              <Problem key={problem.id} problem={problem} />
+              <Problem
+                key={problem.id}
+                problem={problem}
+                onOpenLink={onOpenLink}
+              />
             ))}
           </ul>
         ) : (

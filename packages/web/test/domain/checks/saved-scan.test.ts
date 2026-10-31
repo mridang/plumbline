@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import type { ReportResource } from '@/domain/api/report-resource';
-import { findCheck } from '@/domain/checks/catalogue';
+import { CHECKS, findCheck } from '@/domain/checks/catalogue';
 import { savedScan } from '@/domain/checks/saved-scan';
 
 const REPORT: ReportResource = {
@@ -64,8 +64,29 @@ describe('savedScan', () => {
       section: check?.section,
       sectionTitle: check?.section_title,
       sectionOrder: check?.section_order,
+      groups: check?.groups,
+      fixer: check?.fixer,
+      origins: expect.any(Array),
       status: 'failed',
       findings: REPORT.outcomes[0]?.findings,
+    });
+  });
+
+  it('carries where a check came from, with its docs in the page’s spelling', () => {
+    const check = CHECKS.find((c) => c.origins.some((o) => o.docs_url));
+    const origin = check?.origins.find((o) => o.docs_url);
+    const shown = savedScan({
+      ...REPORT,
+      outcomes: [
+        { id: check?.id ?? '', name: '', status: 'passed', findings: [] },
+      ],
+    }).hints[0];
+    expect(shown?.origins).toContainEqual({
+      source: origin?.source,
+      title: origin?.title,
+      url: origin?.url,
+      docsUrl: origin?.docs_url,
+      summary: origin?.summary,
     });
   });
 
@@ -77,6 +98,8 @@ describe('savedScan', () => {
       section: 'other',
       sectionTitle: 'Other',
       sectionOrder: Number.MAX_SAFE_INTEGER,
+      groups: [],
+      origins: [],
       status: 'skipped',
       reason: 'Needs a server',
       findings: [],

@@ -53,6 +53,14 @@ function screen(state: ViewState<ReportData>): string {
   return html(<ReportScreen state={state} onOpenLink={undefined} />);
 }
 
+/** The first problem of {@link REPORT}. */
+const FIRST = REPORT.problems[0] ?? {
+  id: '',
+  name: '',
+  status: 'failed' as const,
+  findings: [],
+};
+
 describe('ReportCard', () => {
   it('names the domain as the heading', () => {
     expect(card()).toContain('<h1 class="title">example.com</h1>');
@@ -91,6 +99,44 @@ describe('ReportCard', () => {
     expect(card()).toContain(
       '<pre>Content-Security-Policy: default-src self</pre>',
     );
+  });
+
+  it('says who usually fixes a problem', () => {
+    const out = card({
+      ...REPORT,
+      problems: [{ ...FIRST, fixer: 'web server config' }],
+    });
+    expect(out).toContain('Usually fixed in:</b> web server config.');
+  });
+
+  it('offers the rule when the host can open links', () => {
+    const out = card({
+      ...REPORT,
+      problems: [{ ...FIRST, reference: 'https://rule.test/csp' }],
+    });
+    expect(out).toContain('Read the rule');
+  });
+
+  it('offers no rule when the host cannot open links, or it is not a web address', () => {
+    expect(
+      card(
+        {
+          ...REPORT,
+          problems: [{ ...FIRST, reference: 'https://rule.test/' }],
+        },
+        false,
+      ),
+    ).not.toContain('Read the rule');
+    expect(
+      card({
+        ...REPORT,
+        problems: [{ ...FIRST, reference: 'javascript:alert(1)' }],
+      }),
+    ).not.toContain('Read the rule');
+  });
+
+  it('draws no fix panel for a problem with nothing to say', () => {
+    expect(card()).not.toContain('class="fix"');
   });
 
   it('draws no evidence block for a finding without any', () => {

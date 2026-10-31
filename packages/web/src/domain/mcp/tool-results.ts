@@ -73,16 +73,23 @@ export function reportData(
     (status) =>
       outcomes
         .filter((o) => o.status === status)
-        .map((o) => ({
-          id: o.id,
-          name: o.name,
-          status,
-          findings: o.findings.slice(0, FINDINGS_SHOWN).map((f) => ({
-            message: f.message,
-            resource: f.resource,
-            ...(f.snippet ? { snippet: f.snippet.slice(0, SNIPPET_MAX) } : {}),
-          })),
-        })),
+        .map((o) => {
+          const check = findCheck(o.id);
+          return {
+            id: o.id,
+            name: o.name,
+            status,
+            findings: o.findings.slice(0, FINDINGS_SHOWN).map((f) => ({
+              message: f.message,
+              resource: f.resource,
+              ...(f.snippet
+                ? { snippet: f.snippet.slice(0, SNIPPET_MAX) }
+                : {}),
+            })),
+            ...(check?.fixer ? { fixer: check.fixer } : {}),
+            ...(check?.reference ? { reference: check.reference } : {}),
+          };
+        }),
   );
   return {
     host: domain.host,
@@ -111,6 +118,12 @@ export function reportText(data: Readonly<ReportData>): string {
       if (finding.snippet) {
         lines.push(`  ${finding.snippet.replace(/\s+/g, ' ')}`);
       }
+    }
+    if (problem.fixer) {
+      lines.push(`Usually fixed in: ${problem.fixer}.`);
+    }
+    if (problem.reference) {
+      lines.push(`Rule: ${problem.reference}`);
     }
   }
   if (data.problems.length === 0) {

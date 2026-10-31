@@ -5,6 +5,7 @@ import { useState, type ReactElement } from 'react';
 import { cn } from '@/components/ui/cn';
 import type { HintOutcome } from '@/domain/scan/engine';
 
+import { HintRow } from './hint-row';
 import {
   countByStatus,
   sectionsOf,
@@ -28,14 +29,6 @@ export interface Scan {
   /** When a saved report was made (RFC 3339); absent for a scan run here. */
   readonly savedAt?: string;
 }
-
-/** The colour of each outcome's badge. */
-const BADGE: Readonly<Record<Status, string>> = {
-  failed: 'bg-failed text-white',
-  warned: 'bg-warned text-white',
-  passed: 'bg-passed text-white',
-  skipped: 'bg-skipped/15 text-skipped',
-};
 
 /** The colour of each outcome's count. */
 const COUNT: Readonly<Record<Status, string>> = {
@@ -154,69 +147,5 @@ export function ScanResults({ scan }: Readonly<{ scan: Scan }>): ReactElement {
         ))
       )}
     </section>
-  );
-}
-
-/** One check: its outcome and name, and on opening what it found. */
-function HintRow({ hint }: Readonly<{ hint: HintOutcome }>): ReactElement {
-  return (
-    <details className="group">
-      <summary className="focus-ring-flush flex items-start gap-3 px-4 py-3 hover:bg-ink/3">
-        <span
-          className={cn(
-            'mt-0.5 inline-flex w-20 shrink-0 justify-center rounded-full px-2 py-0.5 text-xs font-semibold',
-            BADGE[hint.status],
-          )}
-        >
-          {STATUS_LABELS[hint.status]}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="font-medium">{hint.name}</span>
-          {hint.findings.length > 0 ? (
-            <span className="ml-2 text-sm text-subtle">
-              {hint.findings.length}{' '}
-              {hint.findings.length === 1 ? 'finding' : 'findings'}
-            </span>
-          ) : null}
-        </span>
-      </summary>
-      <div className="space-y-3 px-4 pb-4 pl-27 text-sm">
-        <p className="text-muted">{hint.description}</p>
-        {hint.reason ? <p className="text-skipped">{hint.reason}</p> : null}
-        {hint.findings.length > 0 ? (
-          <ul className="space-y-3">
-            {hint.findings.map((finding, index) => (
-              <li key={index}>
-                <p>
-                  <span className="font-semibold capitalize">
-                    {finding.level}:
-                  </span>{' '}
-                  {finding.message}
-                </p>
-                <p className="mt-0.5 text-xs break-all text-subtle">
-                  {finding.resource}
-                  {finding.line ? `:${finding.line}` : ''}
-                </p>
-                {finding.snippet ? (
-                  <pre className="mt-2 overflow-x-auto rounded-control bg-ink/5 p-3 font-mono text-xs whitespace-pre-wrap">
-                    {finding.snippet}
-                  </pre>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        {hint.reference ? (
-          <p>
-            <a
-              href={hint.reference}
-              className="focus-ring text-accent underline"
-            >
-              Where this rule comes from
-            </a>
-          </p>
-        ) : null}
-      </div>
-    </details>
   );
 }

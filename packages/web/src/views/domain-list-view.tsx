@@ -17,8 +17,9 @@ import type {
   DomainListItem,
   ReportData,
 } from '@/domain/mcp/ui-types';
-import { openReportPrompt, safeHttpUrl } from '@/views/follow-up';
-import { isDomainListData, isReportData } from '@/views/payload';
+import { safeHttpUrl } from '@/views/follow-up';
+import { openReportPrompt } from '@/views/open-report';
+import { isDomainListData, isReportData } from '@/views/guards';
 import { ReportCard } from '@/views/report-view';
 import { Announcer, LoadingCard, MessageCard } from '@/views/status-panels';
 import { STYLES } from '@/views/styles';

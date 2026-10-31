@@ -5,12 +5,11 @@
  * `CallToolResult`; the View wants either the typed `structuredContent` it
  * knows how to draw, or, when the call failed or carried no data, the message
  * text so it can say what happened instead of waiting forever. These helpers do
- * that narrowing without casts: the payload is untrusted input (the host and
+ * that narrowing without casts (the guards for this app's own data are in
+ * `guards.ts`): the payload is untrusted input (the host and
  * the model both sit between the server and the View), so it is checked before
  * it is used.
  */
-
-import type { DomainListData, ReportData } from '@/domain/mcp/ui-types';
 
 /** The parts of a `CallToolResult` a View reads. */
 export interface ToolResultLike {
@@ -32,7 +31,9 @@ export type ToolOutcome<T> =
     };
 
 /** Whether the value is a non-null object, so its keys can be read safely. */
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+export function isRecord(
+  value: unknown,
+): value is Readonly<Record<string, unknown>> {
   return typeof value === 'object' && value !== null;
 }
 
@@ -51,7 +52,7 @@ export function textOf(content: readonly unknown[] | undefined): string {
 }
 
 /** Whether the value is an array whose every entry satisfies `check`. */
-function everyEntry(
+export function everyEntry(
   value: unknown,
   check: (entry: unknown) => boolean,
 ): value is readonly unknown[] {
@@ -59,69 +60,8 @@ function everyEntry(
 }
 
 /** Whether the value is a string. */
-function isString(value: unknown): value is string {
+export function isString(value: unknown): value is string {
   return typeof value === 'string';
-}
-
-/** Whether the value is a whole number of at least zero. */
-function isCount(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0;
-}
-
-/** Whether the value carries the four counts of a report. */
-function isTally(value: unknown): boolean {
-  return (
-    isRecord(value) &&
-    isCount(value['passed']) &&
-    isCount(value['warned']) &&
-    isCount(value['failed']) &&
-    isCount(value['skipped'])
-  );
-}
-
-/** Whether the value has the shape of the report's `structuredContent`. */
-export function isReportData(value: unknown): value is ReportData {
-  return (
-    isRecord(value) &&
-    isTally(value) &&
-    isString(value['host']) &&
-    isString(value['url']) &&
-    isString(value['created_at']) &&
-    isString(value['link']) &&
-    everyEntry(
-      value['problems'],
-      (entry) =>
-        isRecord(entry) &&
-        isString(entry['id']) &&
-        isString(entry['name']) &&
-        (entry['status'] === 'failed' || entry['status'] === 'warned') &&
-        everyEntry(
-          entry['findings'],
-          (finding) =>
-            isRecord(finding) &&
-            isString(finding['message']) &&
-            isString(finding['resource']),
-        ),
-    )
-  );
-}
-
-/** Whether the value has the shape of the domain list's `structuredContent`. */
-export function isDomainListData(value: unknown): value is DomainListData {
-  return (
-    isRecord(value) &&
-    isCount(value['total_checks']) &&
-    isString(value['link']) &&
-    everyEntry(
-      value['domains'],
-      (entry) =>
-        isRecord(entry) &&
-        isString(entry['id']) &&
-        isString(entry['host']) &&
-        isCount(entry['checks']) &&
-        (entry['latest'] === undefined || isTally(entry['latest'])),
-    )
-  );
 }
 
 /** The message shown when a result has neither usable data nor any text. */
@@ -131,7 +71,7 @@ export const NO_DATA_MESSAGE =
 /**
  * Interpret a tool result for a View. A failed call (`isError`) or a result
  * without data the View recognises becomes a message built from the result's
- * text, so the person sees what the server said ("No domain example.com…") rather
+ * text, so the person sees what the server said ("Nothing found…") rather
  * than a placeholder that never resolves.
  *
  * @param result - The `CallToolResult` (or a lookalike) the host delivered.

@@ -3,7 +3,7 @@
  *
  * A saved report put back into the shape the scan results view draws: each
  * stored outcome joined with what the list of checks says about its check
- * (name, description, section, reference). A check that has since been
+ * (name, description, section, reference, who fixes it, where it came from). A check that has since been
  * removed from the hints package is still shown, under its id.
  */
 
@@ -34,6 +34,15 @@ export function savedScan(report: Readonly<ReportResource>): SavedScan {
       section: check?.section ?? 'other',
       sectionTitle: check?.section_title ?? 'Other',
       sectionOrder: check?.section_order ?? Number.MAX_SAFE_INTEGER,
+      groups: check?.groups ?? [],
+      ...(check?.fixer ? { fixer: check.fixer } : {}),
+      origins: (check?.origins ?? []).map((origin) => ({
+        source: origin.source,
+        title: origin.title,
+        url: origin.url,
+        ...(origin.docs_url ? { docsUrl: origin.docs_url } : {}),
+        summary: origin.summary,
+      })),
       status: outcome.status,
       ...(outcome.reason !== undefined ? { reason: outcome.reason } : {}),
       findings: outcome.findings,

@@ -20,6 +20,8 @@ const hint = (
   section: 'security',
   sectionTitle: 'Security',
   sectionOrder: 1,
+  groups: [],
+  origins: [],
   status,
   findings: [],
   ...extra,
@@ -140,49 +142,5 @@ describe('ScanResults', () => {
       />,
     );
     expect(out).toContain('2 findings');
-  });
-
-  it('shows a finding’s place and evidence', () => {
-    const out = html(
-      <ScanResults
-        scan={scanOf([
-          hint('a', 'warned', {
-            findings: [
-              {
-                resource: 'https://example.com/',
-                message: 'No HSTS',
-                level: 'warning',
-                line: 3,
-                snippet: 'Strict-Transport-Security: max-age=0',
-              },
-            ],
-          }),
-        ])}
-      />,
-    );
-    expect(out).toContain('https://example.com/:3');
-    expect(out).toContain('Strict-Transport-Security: max-age=0</pre>');
-  });
-
-  it('says why a check was skipped', () => {
-    expect(
-      html(
-        <ScanResults
-          scan={scanOf([hint('a', 'skipped', { reason: 'Needs a server' })])}
-        />,
-      ),
-    ).toContain('Needs a server');
-  });
-
-  it('links to where a rule comes from', () => {
-    expect(
-      html(
-        <ScanResults
-          scan={scanOf([
-            hint('a', 'passed', { reference: 'https://example.org/rule' }),
-          ])}
-        />,
-      ),
-    ).toContain('href="https://example.org/rule"');
   });
 });
