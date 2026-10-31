@@ -29,10 +29,14 @@ describe('the brand', () => {
 });
 
 describe('what crawlers may read', () => {
-  it('is the scan page, which may be indexed', () => {
+  it('is the scan page and the legal pages, which may be indexed', () => {
     expect(INDEX_BY_DEFAULT).toBe(true);
-    expect(CRAWLABLE_PATHS).toEqual(['/$']);
-    expect(SITEMAP_PAGES).toEqual([{ path: '/' }]);
+    expect(CRAWLABLE_PATHS).toEqual(['/$', '/privacy', '/terms']);
+    expect(SITEMAP_PAGES).toEqual([
+      { path: '/' },
+      { path: '/privacy', lastModified: '2026-11-01' },
+      { path: '/terms', lastModified: '2026-11-01' },
+    ]);
   });
 
   it('keeps them out of the signed-in pages, the API, sign-in, OAuth and MCP', () => {

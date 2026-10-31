@@ -59,6 +59,8 @@ export const FOOTER_COLUMNS: readonly Readonly<{
       { label: 'Report an issue', href: `${SOURCE_URL}/issues` },
       { label: 'Security policy', href: '/security-policy.txt' },
       { label: 'For AI crawlers', href: '/llms.txt' },
+      { label: 'Privacy', href: '/privacy' },
+      { label: 'Terms', href: '/terms' },
     ],
   },
 ];
