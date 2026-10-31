@@ -1,7 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { createScanFetches, createScansCollection } from '@/domain/api/scans';
+import type { CooldownDeps } from '@/domain/scan/cooldown';
 import { issueScanId } from '@/domain/scan/token';
+import type { RateLimitStore } from '@/lib/rate-limit';
 
 const SECRET = 'test-secret';
 
@@ -14,8 +16,22 @@ function post(path: string, body: unknown, type = 'application/json'): Request {
   });
 }
 
+/** Cooldown counters held in a map, at a fixed time. */
+function cooldown(): () => CooldownDeps {
+  const counters = new Map<string, number>();
+  const store: RateLimitStore = {
+    async hit(key, now) {
+      const count = (counters.get(key) ?? 0) + 1;
+      counters.set(key, count);
+      return { count, windowStart: now };
+    },
+    async purge() {},
+  };
+  return () => ({ store: () => store, now: () => 1000, random: () => 0.5 });
+}
+
 describe('POST /api/scans', () => {
-  const { POST } = createScansCollection(() => SECRET).handlers();
+  const { POST } = createScansCollection(() => SECRET, cooldown()).handlers();
 
   it('starts a scan: 201, its id and where it lives', async () => {
     const response = await POST(
@@ -59,9 +75,56 @@ describe('POST /api/scans', () => {
     });
   });
 
+  it('scans the canonical form of the address', async () => {
+    const { POST: fresh } = createScansCollection(
+      () => SECRET,
+      cooldown(),
+    ).handlers();
+    const response = await fresh(
+      post('/api/scans', { url: 'example.com.//a?utm_source=x&b=1' }),
+    );
+    expect(((await response.json()) as { url: string }).url).toBe(
+      'https://example.com/a?b=1',
+    );
+  });
+
+  it('refuses a second scan of a page within five minutes, with 429 and Retry-After', async () => {
+    const { POST: once } = createScansCollection(
+      () => SECRET,
+      cooldown(),
+    ).handlers();
+    await once(post('/api/scans', { url: 'example.com/page' }));
+    const again = await once(
+      post('/api/scans', { url: 'https://EXAMPLE.com/page#x' }),
+    );
+    expect(again.status).toBe(429);
+    expect(again.headers.get('retry-after')).toBe('300');
+    expect(again.headers.get('content-type')).toBe('application/problem+json');
+    expect(await again.json()).toMatchObject({
+      type: '/problems/rate-limited',
+    });
+  });
+
+  it('does not count a scan that could not be signed', async () => {
+    const make = cooldown();
+    const { POST: unsigned } = createScansCollection(
+      () => undefined,
+      make,
+    ).handlers();
+    await unsigned(post('/api/scans', { url: 'example.com' }));
+    const { POST: signed } = createScansCollection(
+      () => SECRET,
+      make,
+    ).handlers();
+    expect(
+      (await signed(post('/api/scans', { url: 'example.com' }))).status,
+    ).toBe(201);
+  });
+
   it('answers 503 when the server has no secret to sign with', async () => {
     const { POST: unsigned } = createScansCollection(
       () => undefined,
+      cooldown(),
     ).handlers();
     const response = await unsigned(post('/api/scans', { url: 'example.com' }));
     expect(response.status).toBe(503);

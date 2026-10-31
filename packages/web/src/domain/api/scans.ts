@@ -9,8 +9,10 @@
  *                                        → 200, the target's body, with its
  *                                          status and headers in Upstream-*
  *
- * Starting a scan checks the address and signs an id for it (see
- * `domain/scan/token.ts`); nothing is stored. Each fetch must name a live scan
+ * Starting a scan checks the address, puts it in its canonical form, makes
+ * sure the page was not scanned in the last five minutes (see
+ * `domain/scan/cooldown.ts`; 429 with `Retry-After` when it was) and signs an
+ * id for it (see `domain/scan/token.ts`); nothing else is stored. Each fetch must name a live scan
  * id, so the Worker only fetches for scans it started, and only until they end.
  */
 
@@ -25,6 +27,12 @@ import { getEnv } from '@/lib/core/runtime';
 import type { RouteContext } from '@/lib/core/api/route-context';
 
 import { readTarget } from '@/domain/scan/target';
+import {
+  claimScan,
+  cooldownMessage,
+  liveCooldownDeps,
+  type CooldownDeps,
+} from '@/domain/scan/cooldown';
 import { issueScanId, readScanId, type ScanClaim } from '@/domain/scan/token';
 import {
   forward,
@@ -70,6 +78,7 @@ function secretOf(source: SecretSource): string {
 /** The scans collection: `POST /api/scans` starts one. */
 export function createScansCollection(
   secret: SecretSource = secretFromEnv,
+  cooldown: () => CooldownDeps = liveCooldownDeps,
 ): ApiController {
   return new ApiController().on<URL, { id: string; claim: ScanClaim }>({
     method: 'POST',
@@ -95,7 +104,17 @@ export function createScansCollection(
       }
       return target.url;
     },
-    handle: (url) => issueScanId(url.href, secretOf(secret)),
+    handle: async (url) => {
+      const key = secretOf(secret);
+      const decision = await claimScan(url.href, cooldown());
+      if (!decision.allowed) {
+        throw problems.rateLimited(
+          cooldownMessage(url.href, decision.retryAfterSeconds),
+          decision.retryAfterSeconds,
+        );
+      }
+      return issueScanId(url.href, key);
+    },
     encode: ({ id, claim }) =>
       created<ScanResource>(
         { id, url: claim.url, expires_at: claim.expiresAt.toISOString() },

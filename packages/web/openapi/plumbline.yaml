@@ -10,7 +10,7 @@ info:
 
     Scanning and the list of checks are public. Keeping domains, choosing their checks, saving reports and the account need a sign-in with Google (`/auth/login`), which sets the `plumbline_session` cookie; those routes declare `session` security, answer `401` without a live session, and `403` for a request that changes something from another site. Every query is scoped to the signed-in person, so another person's domain is `404`.
 
-    Requests are rate limited by the platform (`RL_SCAN` for starting scans and `RL_FETCH` for their fetches, per address; `RL_API` for the rest of `/api`), and a blocked request is answered with `429` and `Retry-After`.
+    Requests are rate limited by the platform (`RL_SCAN` for starting scans and `RL_FETCH` for their fetches, per address; `RL_API` for the rest of `/api`), and a blocked request is answered with `429` and `Retry-After`. On top of that one page (its canonical URL) can be scanned once every five minutes, by anyone; a second scan within that time is `429` with `Retry-After` set to the seconds left.
 
     `/csp/reports` sits outside `/api` and follows the browser Reporting API; it is documented here for completeness.
   license:
@@ -33,7 +33,7 @@ paths:
       tags:
         - scans
       summary: Start a scan of a website.
-      description: Checks the address and signs a scan id for it, good for ten minutes. Nothing is stored and there is nothing to read back; the id is for the scan's fetches.
+      description: Checks the address, puts it in its canonical form (lowercase host without a trailing dot, no default port, fragment or repeated slashes, no `utm_*` or click-id parameters, the rest of the query sorted by name) and signs a scan id for it, good for ten minutes. A page can be scanned once every five minutes; a second scan within that time is refused with `429`. Nothing else is stored and there is nothing to read back; the id is for the scan's fetches.
       security: []
       requestBody:
         required: true

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { readTarget } from '@/domain/scan/target';
+import { canonicalUrl, readTarget } from '@/domain/scan/target';
 
 /** The URL a valid input becomes. */
 const urlOf = (input: string): string | undefined => {
@@ -14,6 +14,21 @@ const reasonOf = (input: string): string | undefined => {
   return target.ok ? undefined : target.reason;
 };
 
+describe('canonicalUrl', () => {
+  it('gives the same address for the same page written two ways', () => {
+    expect(
+      canonicalUrl(new URL('https://EXAMPLE.com.:443//a?z=1&utm_x=2&a=3#f'))
+        .href,
+    ).toBe(canonicalUrl(new URL('https://example.com/a?a=3&z=1')).href);
+  });
+
+  it('keeps a value it cannot decode as it was written', () => {
+    expect(canonicalUrl(new URL('https://example.com/?%E0=1')).href).toBe(
+      'https://example.com/?%E0=1',
+    );
+  });
+});
+
 describe('readTarget', () => {
   it.each([
     ['example.com', 'https://example.com/'],
@@ -22,6 +37,18 @@ describe('readTarget', () => {
     ['https://example.com/a?b=1', 'https://example.com/a?b=1'],
     ['http://example.com', 'http://example.com/'],
     ['https://example.com/#top', 'https://example.com/'],
+    ['example.com.', 'https://example.com/'],
+    ['https://example.com:443/', 'https://example.com/'],
+    ['example.com//a///b', 'https://example.com/a/b'],
+    ['example.com/a/../b', 'https://example.com/b'],
+    [
+      'example.com/?utm_source=x&b=2&gclid=y&a=1',
+      'https://example.com/?a=1&b=2',
+    ],
+    ['example.com/?UTM_Medium=x&fbclid=1', 'https://example.com/'],
+    ['example.com/?q=a+b&p=%20', 'https://example.com/?p=%20&q=a+b'],
+    ['example.com/?b=2&b=1', 'https://example.com/?b=2&b=1'],
+    ['example.com/?', 'https://example.com/'],
   ])('reads %s as %s', (input, expected) => {
     expect(urlOf(input)).toBe(expected);
   });
@@ -36,6 +63,7 @@ describe('readTarget', () => {
     ['10.0.0.1', 'Enter a domain name, not an IP address.'],
     ['http://[::1]/', 'Enter a domain name, not an IP address.'],
     ['localhost', 'Only public domains can be scanned.'],
+    ['localhost.', 'Only public domains can be scanned.'],
     ['intranet', 'Only public domains can be scanned.'],
     ['printer.local', 'Only public domains can be scanned.'],
     ['app.localhost', 'Only public domains can be scanned.'],
