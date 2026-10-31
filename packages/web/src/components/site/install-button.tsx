@@ -18,7 +18,7 @@ export function InstallButton(): ReactElement {
       {install ? (
         <button
           type="button"
-          className={buttonClass({ variant: 'outline' })}
+          className={buttonClass({ variant: 'outline', size: 'sm' })}
           onClick={() => void install()}
         >
           Install app

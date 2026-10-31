@@ -1,60 +1,92 @@
 # webhint-hints
 
-Extra [webhint](https://webhint.io) hints for sites and the APIs next to them. They cover what the stock hints leave out: security headers, Open Graph and SEO, agent readiness, privacy, DNS, TLS, email and the well-known files (`robots.txt`, `security.txt`, `llms.txt`, `ai.txt`).
+About 270 checks for a website and the services around it: security headers, TLS and certificates, DNS, email authentication, Open Graph and SEO, privacy, agent readiness, and the well-known files (`robots.txt`, `security.txt`, `llms.txt`, `ai.txt`). Every check is ported from a public reference, such as Mozilla Observatory, OWASP, Webbkoll, internet.nl, MDN and isitagentready, with its original rules, thresholds and wording kept (see [References](#references)).
 
-267 hints in total. Every check is ported from a public reference, listed under [References](#references), with the original rules, thresholds and wording kept.
+The checks are [webhint](https://webhint.io) hints, and everything else in this repository is a way to run them.
 
-## Install
+| Package                                                            | What                                                             |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| [`@mridang/webhint-hint-extra`](packages/hints/README.md)          | The hints, the group presets and the full list of checks         |
+| [`@mridang/webhint-formatter-extra`](packages/formatter/README.md) | An HTML report for webhint, sectioned and filterable             |
+| [`lighthouse-plugin-webhint-extra`](packages/lighthouse/README.md) | A Lighthouse plugin with the checks Lighthouse can run           |
+| [`@mridang/plumbline`](packages/cli/README.md)                     | The `plumbline` CLI, which runs every check                      |
+| [`@mridang/webhint-docker-extra`](packages/docker/README.md)       | A scan server, shipped only as the `mridang/webhint-hints` image |
+| [`@mridang/webhint-web-extra`](packages/web/README.md)             | The plumbline website, on Cloudflare Workers (private)           |
 
-```bash
-npm install --save-dev hint @mridang/webhint-hint-extra
+## How to use it
+
+The npm packages and the Docker image are released together; until the first release, [build the packages from this repository](packages/hints/README.md#before-the-first-release) or [build the image](packages/docker/README.md#build-the-image).
+
+### On the website
+
+Go to [plumbline.apps.mrida.ng](https://plumbline.apps.mrida.ng) and type a domain. The checks run in your browser, through the site's Worker, so nothing needs installing. Sign in with Google to keep a list of domains, choose which checks run for each, and keep their reports. A browser cannot open raw connections, so the TLS, mail and socket checks show as skipped there; the CLI runs them. See [`packages/web`](packages/web/README.md).
+
+### From the command line
+
+```sh
+npx @mridang/plumbline scan example.com
+npx @mridang/plumbline scan example.com --group tls,email --fail-on warning
+npx @mridang/plumbline checks --group owasp
 ```
 
-## Try it
+It runs every check from Node with a real Chrome, exits 1 when a finding is at or above `--fail-on` so it can gate a CI job, and prints text, JSON or the HTML report. A Chrome-family browser must be installed. See [`packages/cli`](packages/cli/README.md).
 
-The package is not published yet, so install it from a local build into a scratch folder and scan a site. Nothing is added to the site you scan:
+### With a coding agent
 
-```bash
-cd ~/Code/mridang/webhint-hints
-devbox run -- npm run build
-devbox run -- npm pack ./packages/hints --pack-destination "$(mktemp -d)"
-devbox run -- npm pack ./packages/formatter --pack-destination "$(mktemp -d)"
+The [plumbline skill](skills/plumbline/SKILL.md) teaches an agent (Claude Code, GitHub Copilot and others that read the Agent Skills format) to audit a site with the CLI, read the findings and explain the fixes. Install it with:
+
+```sh
+npx skills add mridang/webhint-hints
 ```
 
-`npm pack` prints the path of the tarball. Then, in an empty scratch folder:
+Or copy or symlink its folder into your agent's skills folder:
 
-```bash
-npm init -y
-npm install hint @hint/connector-puppeteer @hint/parser-html /path/to/mridang-webhint-hint-extra-0.0.0.tgz
+```sh
+# Claude Code (all projects)
+ln -s "$PWD/skills/plumbline" ~/.claude/skills/plumbline
+
+# GitHub Copilot (this repository)
+mkdir -p .github/skills && cp -R skills/plumbline .github/skills/
 ```
 
-Create `.hintrc` with the groups you want (a Chrome or Chromium install is needed for the `puppeteer` connector):
+The skill runs `npx @mridang/plumbline`, so the agent needs Node 22 and a Chrome-family browser.
+
+### From an assistant (MCP)
+
+Add `https://plumbline.apps.mrida.ng/mcp` as a connector in ChatGPT, Claude or any MCP client, sign in with Google when asked, and approve. The assistant can then list the checks, keep your domains, choose their checks and read their reports. See [Connecting an assistant](packages/web/README.md#connecting-an-assistant-mcp).
+
+### In webhint
+
+```sh
+npm install --save-dev hint @hint/connector-puppeteer @hint/parser-html @mridang/webhint-hint-extra
+```
+
+Extend the group presets you want in `.hintrc`, or list single hints as `@mridang/webhint-hint-extra/<id>`:
 
 ```json
 {
-  "formatters": ["stylish", "html"],
+  "formatters": ["stylish"],
   "extends": [
     "./node_modules/@mridang/webhint-hint-extra/configs/observatory.json",
-    "./node_modules/@mridang/webhint-hint-extra/configs/owasp.json",
-    "./node_modules/@mridang/webhint-hint-extra/configs/opengraph.json",
-    "./node_modules/@mridang/webhint-hint-extra/configs/agent-ready.json",
-    "./node_modules/@mridang/webhint-hint-extra/configs/webbkoll.json",
-    "./node_modules/@mridang/webhint-hint-extra/configs/internetnl.json",
-    "./node_modules/@mridang/webhint-hint-extra/configs/files.json",
-    "./node_modules/@mridang/webhint-hint-extra/configs/llmscout.json"
-  ]
+    "./node_modules/@mridang/webhint-hint-extra/configs/email.json"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-extra/hsts": ["default", { "profile": "owasp" }]
+  }
 }
 ```
 
-Run it. The `html` formatter writes `hint-report/<site>.html`, which you can open in a browser:
-
-```bash
+```sh
 npx hint https://example.com/
 ```
 
-## Report formatter
+The groups, the sections, the hint options and the table of every hint are in [`packages/hints`](packages/hints/README.md).
 
-The stock `html` report only has webhint's eight categories, never shows a hint's description and links every hint to `webhint.io` pages that do not exist for these hints. The companion package `@mridang/webhint-formatter-extra` (in [`packages/formatter/`](packages/formatter)) writes a better report. This repository is an npm-workspaces monorepo, so the root `npm run build` builds every workspace, the formatter included. Install it next to `hint` and list it in `.hintrc`:
+### The report formatter
+
+```sh
+npm install --save-dev @mridang/webhint-formatter-extra
+```
 
 ```json
 {
@@ -62,417 +94,40 @@ The stock `html` report only has webhint's eight categories, never shows a hint'
 }
 ```
 
-It writes one self-contained HTML file, `hint-report/<site>.html`, that works in light and dark mode and on a phone. Hints are sectioned by the section stamped on them (see [Sections](#sections)), and stock hints by their webhint category. Each hint shows its description, a reference link, its origins, its source groups and tagged sections as badges, and its findings with code snippets and further reading. Sections without findings show as passed, and the source buttons (`observatory`, `owasp` and so on) filter the report. When the `agent-score` hint ran, its score is shown as a summary card at the top.
+webhint then writes `hint-report/<site>.html`, one self-contained page with the findings grouped by section, each hint's description and sources, and a filter by source. See [`packages/formatter`](packages/formatter/README.md).
 
-## CLI
-
-[`packages/cli/`](packages/cli) is `plumbline`, published as `@mridang/plumbline`: a command-line scanner that runs every check against a site from real Node with a real Chrome, so the TLS, DNS, mail and socket checks the browser-run [web app](#web) skips all run.
+### In Lighthouse
 
 ```sh
-npx @mridang/plumbline scan example.com
-npx @mridang/plumbline scan example.com --format json --group tls,email --fail-on warning
-npx @mridang/plumbline checks --group owasp
+npm install --save-dev lighthouse lighthouse-plugin-webhint-extra
+npx lighthouse https://example.com/ --plugins=lighthouse-plugin-webhint-extra
 ```
 
-`scan` prints the findings grouped by check (`--format text`), as a JSON array of `{ hint, severity, message, resource, codeSnippet }` (`--format json`), or writes the HTML report and the JSON report to a directory (`--format html --out <dir>`). `--only`, `--skip` and `--group` narrow the checks, and the exit status is 1 when a finding is at or above `--fail-on` (`error` by default, or `warning` or `none`), so it can gate a CI job. `checks` lists every check's id, name, groups and description. A Chrome-family browser must be installed; see [`packages/cli/README.md`](packages/cli/README.md).
+The plugin adds a "Webhint extra" category with the 143 checks whose data Lighthouse already gathers (headers, Open Graph, SEO, structured data, privacy). See [`packages/lighthouse`](packages/lighthouse/README.md).
 
-An agent skill that teaches a coding agent to audit a site with it is in [`skills/plumbline/`](skills/plumbline/SKILL.md).
-
-## Docker
-
-The same checks run from a Docker image (built from [`packages/docker/`](packages/docker), sharing its scan with the CLI) so a project in any language can use them from its end-to-end tests without a Node toolchain. The image is a small HTTP server that scans a URL with a real Chromium and returns the findings as JSON. It is published as `mridang/webhint-hints` and is multi-arch (`linux/amd64` and `linux/arm64`), released in lockstep with the npm packages.
+### With Docker
 
 ```sh
 docker run --rm -p 8080:8080 mridang/webhint-hints
-```
-
-It has three endpoints: `GET /healthz` (a readiness probe, handy as a Testcontainers wait strategy), `GET /hints` (the catalogue of every shipped hint with its id, category and groups), and `POST /scan`, which takes `{ "url": "https://example.com/" }` and answers with a report:
-
-```sh
 curl -s localhost:8080/scan -d '{"url":"https://example.com/"}'
 ```
 
-```json
-{
-  "url": "https://example.com/",
-  "scannedAt": "2026-10-23T12:00:00.000Z",
-  "scannerVersion": "1.2.3",
-  "summary": {
-    "error": 2,
-    "warning": 5,
-    "hint": 1,
-    "information": 0,
-    "total": 8
-  },
-  "findings": [
-    {
-      "hintId": "extra/csp",
-      "category": "security",
-      "groups": ["owasp", "security-headers"],
-      "severity": "error",
-      "message": "…",
-      "resource": "https://example.com/",
-      "location": { "line": 12, "column": 3 },
-      "codeSnippet": "…",
-      "documentation": [{ "link": "https://…", "text": "…" }]
-    }
-  ]
-}
-```
-
-Pass `"hints": ["csp", "hsts"]` to run only some hints (bare ids, no `extra/` prefix); every hint runs by default. To keep a proper saveable report, mount a directory and start the image with `OUTPUT_DIR` set (or pass `"out"` in the request body): the scan then also writes `<site>.json` and the HTML report `<site>.html` there.
-
-```sh
-docker run --rm -p 8080:8080 -e OUTPUT_DIR=/reports -v "$PWD/reports:/reports" mridang/webhint-hints
-```
-
-## Web
-
-[`packages/web/`](packages/web) is plumbline, a web app where anyone can type a domain and see every check's outcome, and where a person who signs in with Google keeps a list of domains, chooses which checks run for each, and keeps each domain's reports. It is a Next.js app on Cloudflare Workers (OpenNext, Tailwind), built the same way as the sibling apps, and it fits the Workers Free plan because the checks run in the visitor's browser, not in the Worker.
-
-The page asks the Worker to start a scan (`POST /api/scans`), which checks the address and signs a scan id with `SCAN_SECRET`. A few Web Workers then load the hints package, which swaps Node's socket, TLS, process and file modules for browser stand-ins through the `#net`-style conditional imports in its `package.json`, and run the real hint classes one at a time against the page, parsed with webhint's own DOM. A browser may not read another site's headers or body, so every request a check makes goes through the Worker (`POST /api/scans/{id}/fetches`), one hop per call: each call is one outbound request and next to no CPU. A hint that needs a raw connection, a program, a certificate parser or script in the page is listed as skipped; the Docker image runs them. The API is described in [`packages/web/openapi/plumbline.yaml`](packages/web/openapi/plumbline.yaml).
-
-Signed-in people keep their domains in D1 (`/api/domains`, `/api/domains/{id}` for the chosen checks, `/api/domains/{id}/reports` for the reports). A scan of a kept domain runs the checks chosen for it in the browser, as above, and the browser saves the outcome as a report; nothing is scanned on a schedule. The server knows the checks only from a list generated from the hints package at build time (`scripts/build-catalogue.mjs`), so the hint code never enters the Worker.
-
-plumbline is also an MCP server at `/mcp`, for ChatGPT, Claude and other assistants, signed in through its own OAuth 2.1 authorization server (`/oauth/*`, `/.well-known/oauth-*`) and approved per assistant on `/connect`. Its tools list the checks and the domains, read reports (drawn as MCP Apps views, `src/views/`), add and remove domains and choose their checks; `scan_domain` says how to run a scan, since the checks never run on the server. It is listed for the MCP registry in [`packages/web/server.json`](packages/web/server.json).
-
-```bash
-devbox run -- npm run build
-devbox run -- npm run dev --workspace packages/web
-devbox run -- npm run deploy --workspace packages/web
-```
-
-`dev` serves the app with Next.js, and reads `SCAN_SECRET` (any long random string) from `packages/web/.env`; in production it is a Worker secret (`wrangler secret put SCAN_SECRET`). `deploy` publishes it to `plumbline.apps.mrida.ng`, and the `Deploy to Cloudflare Workers` workflow does the same on every push to `master`, with the repository's `CLOUDFLARE_API_TOKEN` secret and `CLOUDFLARE_ACCOUNT_ID` variable. The Worker runs with the `global_fetch_strictly_public` flag, so a scan can only reach the public internet and never Cloudflare-internal or private addresses.
-
-## Use
-
-Hints are listed in `.hintrc` as `@mridang/webhint-hint-extra/<id>`. Use `default` as the severity so each hint keeps the level its rule defines:
-
-```json
-{
-  "connector": { "name": "puppeteer" },
-  "formatters": ["stylish"],
-  "hints": {
-    "@mridang/webhint-hint-extra/csp": "default",
-    "@mridang/webhint-hint-extra/hsts": ["default", { "profile": "owasp" }]
-  }
-}
-```
-
-### Groups
-
-A hint can belong to several groups, so a whole source or a whole topic can be switched on at once. Each group is a ready-made preset in `configs/<group>.json`; extend one or several as shown above.
-
-| Kind   | Groups                                                                                                                                                                                                          |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Source | `observatory`, `owasp`, `owasp-wstg`, `opengraph`, `agent-ready`, `webbkoll`, `internetnl`, `files`, `llmscout`, `original`, `mdn`, `iab`, `google`, `w3c`, `ietf`, `indieweb`, `apple`, `oembed`, `opensearch` |
-| Topic  | `security-headers`, `tls`, `dns`, `privacy`, `seo`, `social`, `email`, `agent`                                                                                                                                  |
-
-The source groups keep the original grouping of each reference, so a source can be enabled or disabled as a whole.
-
-### Sections
-
-Every hint is sorted into one section, which is also the sidebar of the report. A hint can carry tags for other sections it touches. The sections were proposed by two teams of reviewers, one arguing from what a site owner wants and one from protocols and layers, and settled by a judge; where a placement was a close call, who usually has to make the fix decided it.
-
-| Section                 | Hints | What it holds                                                                                                                                                                                                                                               | Usually fixed by                                                        |
-| ----------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| LLMs and AI             | 34    | Everything that tells bots and AI systems what they may read and how to use you: robots.txt, llms.txt, ai.txt, AI crawler rules, Content Signals, agent discovery, auth and payment protocols, Web Bot Auth, markdown negotiation and answer-engine markup. | site content, files at the web root and /.well-known, web server config |
-| Search and page quality | 42    | Be found and understood by search engines: titles, descriptions, headings, lang, canonical, robots meta, JSON-LD, alt text, image weight, redirect chains.                                                                                                  | site content and templates                                              |
-| Link previews and icons | 43    | How the site looks when shared or bookmarked: Open Graph, Twitter/X cards and favicons.                                                                                                                                                                     | site content and templates (the HTML head)                              |
-| HTTPS and certificates  | 20    | Visitors reach the real site over a trusted encrypted connection: TLS versions, ciphers, certificates, mail-server STARTTLS, compression risk.                                                                                                              | web server or CDN TLS config                                            |
-| Site protection         | 66    | Make the site hard to attack from a browser: CSP, framing, cross-origin policies, CORS, cookie flags, HSTS-adjacent header rules, deprecated headers, private-page caching, security.txt.                                                                   | web server or application config (response headers)                     |
-| Visitor privacy         | 13    | What the site reveals about its visitors: cookies, third-party requests, localStorage, geolocation, referrer and DNS-prefetch leakage, third-party report endpoints.                                                                                        | site content, scripts and header config                                 |
-| Email security          | 30    | Mail sent as your domain is trusted and cannot be spoofed: SPF, DKIM, DMARC, STARTTLS, and DNSSEC, DANE, IPv6 and RPKI of the mail servers.                                                                                                                 | mail admin / mail DNS records                                           |
-| DNS and network         | 15    | The domain, name servers and web server are reachable and tamper-resistant: DNSSEC, IPv6, RPKI, DANE and CAA.                                                                                                                                               | DNS zone, registrar, hosting/network provider                           |
-| Progressive Web App     | 4     | The page is installable and themed as an app: a linked, valid Web App Manifest with install-ready icons and a theme colour.                                                                                                                                 | the web app manifest and service worker                                 |
-
-### Where the hints come from
-
-Each hint records its origins (the upstream check, a link to it, a summary and the licence) in its metadata, and the full list of references with their licences is in `src/core/sources.ts` (and in the References table below). Hints written for this package, with no upstream, are in the `original` group.
-
-### Hints
-
-| Hint                                     | What it checks                                                                                                                    | Section                                                        | Groups                                                                          |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `accept-ch`                              | Checks the Accept-CH token list and notes that each client hint adds to fingerprinting.                                           | Visitor privacy (also Site protection)                         | `mdn`, `security-headers`, `privacy`                                            |
-| `accept-patch`                           | Validates the Accept-Patch media-type list advertising PATCH body formats when present.                                           | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `accept-post`                            | Validates the Accept-Post media-type list advertising POST body formats when present.                                             | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `ads-txt`                                | Checks that /ads.txt follows the IAB Tech Lab ads.txt 1.1 spec.                                                                   | Search and page quality                                        | `iab`, `seo`                                                                    |
-| `age`                                    | Checks that the Age header is a non-negative number of seconds.                                                                   | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `agent-a2a-agent-card`                   | Requires an A2A agent card at /.well-known/agent-card.json.                                                                       | LLMs and AI                                                    | `agent-ready`, `agent`                                                          |
-| `agent-acp`                              | Reports whether /.well-known/acp.json is published.                                                                               | LLMs and AI                                                    | `agent-ready`, `agent`                                                          |
-| `agent-ai-bot-rules`                     | Requires robots.txt rules naming known AI crawlers.                                                                               | LLMs and AI (also Visitor privacy)                             | `agent-ready`, `privacy`, `agent`                                               |
-| `agent-api-catalog`                      | Requires an RFC 9727 linkset at /.well-known/api-catalog.                                                                         | LLMs and AI                                                    | `agent-ready`, `agent`                                                          |
-| `agent-ard`                              | Requires a valid AI catalog at /.well-known/ard.json.                                                                             | LLMs and AI                                                    | `agent-ready`, `dns`, `agent`                                                   |
-| `agent-auth-md`                          | Requires /auth.md with agent registration instructions.                                                                           | LLMs and AI                                                    | `agent-ready`, `agent`                                                          |
-| `agent-content-signals`                  | Requires a Content-Signal directive in robots.txt.                                                                                | LLMs and AI (also Visitor privacy)                             | `agent-ready`, `privacy`, `agent`                                               |
-| `agent-dns-aid`                          | Requires SVCB or HTTPS records under _agents of the host (DNS-AID).                                                               | LLMs and AI (also DNS and network)                             | `agent-ready`, `dns`, `agent`                                                   |
-| `agent-link-headers`                     | Requires a Link header with an agent-useful relation such as api-catalog or service-desc.                                         | LLMs and AI                                                    | `agent-ready`, `agent`                                                          |
-| `agent-markdown-negotiation`             | Requires text/markdown when the home page is requested with Accept: text/markdown.                                                | LLMs and AI                                                    | `agent-ready`, `agent`                                                          |
-| `agent-mcp-server-card`                  | Requires an MCP server card with serverInfo and a transport endpoint.                                                             | LLMs and AI                                                    | `agent-ready`, `agent`                                                          |
-| `agent-mpp`                              | Reports whether /openapi.json advertises x-payment-info (MPP).                                                                    | LLMs and AI                                                    | `agent-ready`, `agent`                                                          |
-| `agent-oauth-discovery`                  | Requires OIDC or RFC 8414 authorization server metadata with a valid issuer.                                                      | LLMs and AI                                                    | `agent-ready`, `agent`                                                          |
-| `agent-oauth-protected-resource`         | Requires /.well-known/oauth-protected-resource with a resource on this site.                                                      | LLMs and AI                                                    | `agent-ready`, `agent`                                                          |
-| `agent-poppy`                            | Requires a valid /.well-known/poppy.json.                                                                                         | LLMs and AI                                                    | `agent-ready`, `agent`                                                          |
-| `agent-robots-txt`                       | Requires a text/plain /robots.txt with at least one User-agent directive.                                                         | LLMs and AI (also Search and page quality)                     | `agent-ready`, `agent`                                                          |
-| `agent-score`                            | Reports the overall agent readiness score and level.                                                                              | LLMs and AI                                                    | `agent-ready`, `agent`                                                          |
-| `agent-sitemap`                          | Requires a valid XML sitemap listed in robots.txt or at /sitemap.xml.                                                             | LLMs and AI (also Search and page quality)                     | `agent-ready`, `agent`                                                          |
-| `agent-skills`                           | Requires an agent skills index with name, type, description, url and digest per skill.                                            | LLMs and AI                                                    | `agent-ready`, `agent`                                                          |
-| `agent-ucp`                              | Reports whether /.well-known/ucp is published.                                                                                    | LLMs and AI                                                    | `agent-ready`, `agent`                                                          |
-| `agent-web-bot-auth`                     | Requires a key directory at /.well-known/http-message-signatures-directory.                                                       | LLMs and AI (also Site protection)                             | `agent-ready`, `security-headers`, `agent`                                      |
-| `agent-webmcp`                           | Requires the page to expose WebMCP tools (modelContext or toolname forms).                                                        | LLMs and AI                                                    | `agent-ready`, `agent`                                                          |
-| `agent-x402`                             | Reports whether an endpoint answers 402 Payment Required (x402).                                                                  | LLMs and AI                                                    | `agent-ready`, `agent`                                                          |
-| `ai-txt`                                 | Checks that /ai.txt is valid in the aitxt.ing or Spawning format.                                                                 | LLMs and AI                                                    | `files`, `agent`                                                                |
-| `alt-svc`                                | Reports the advertised alternative services and flags a malformed Alt-Svc value.                                                  | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `alternate-media`                        | Reports a malformed <link rel="alternate" media="…">.                                                                             | Search and page quality                                        | `mdn`, `seo`                                                                    |
-| `app-ads-txt`                            | Checks that /app-ads.txt follows the IAB Tech Lab app-ads.txt spec.                                                               | Search and page quality                                        | `iab`, `seo`                                                                    |
-| `apple-app-site-association`             | Checks that the apple-app-site-association file follows Apple associated-domains rules.                                           | Site protection                                                | `apple`, `security-headers`                                                     |
-| `assetlinks-json`                        | Checks that /.well-known/assetlinks.json follows the Digital Asset Links schema.                                                  | Site protection                                                | `google`, `security-headers`                                                    |
-| `attribution-reporting`                  | Reports participation in the Attribution Reporting API and validates the registration headers.                                    | Visitor privacy                                                | `mdn`, `privacy`                                                                |
-| `bimi`                                   | Requires the site mail domain, when it publishes BIMI, to use an HTTPS SVG logo and HTTPS certificate URL.                        | Email security                                                 | `ietf`, `dns`, `email`                                                          |
-| `caa`                                    | Requires the domain to publish syntactically valid CAA records that include an issue property.                                    | DNS and network (also HTTPS and certificates)                  | `internetnl`, `tls`, `dns`                                                      |
-| `cache-control`                          | Requires Cache-Control: no-store, max-age=0 on private applications (opt-in with the enforce option).                             | Site protection (also Visitor privacy)                         | `owasp`, `security-headers`                                                     |
-| `cert-hostname`                          | Requires the host name of the website to match a name on its HTTPS certificate.                                                   | HTTPS and certificates                                         | `internetnl`, `security-headers`, `tls`                                         |
-| `cert-pubkey`                            | Requires every certificate in the HTTPS chain to use a secure public key type and size.                                           | HTTPS and certificates                                         | `internetnl`, `security-headers`, `tls`                                         |
-| `cert-signature`                         | Requires every certificate in the HTTPS chain to be signed with a secure algorithm and hash function.                             | HTTPS and certificates                                         | `internetnl`, `security-headers`, `tls`                                         |
-| `cert-trust`                             | Requires the HTTPS certificate to chain to a trusted root, with all intermediates sent.                                           | HTTPS and certificates                                         | `internetnl`, `security-headers`, `tls`                                         |
-| `change-password`                        | Checks that /.well-known/change-password resolves to a password-change page.                                                      | Site protection                                                | `w3c`, `security-headers`                                                       |
-| `clear-site-data`                        | Requires the logout response to send Clear-Site-Data for cache, cookies and storage.                                              | Site protection                                                | `owasp`, `security-headers`                                                     |
-| `coep`                                   | Checks that Cross-Origin-Embedder-Policy requires embedded resources to opt in.                                                   | Site protection                                                | `observatory`, `owasp`, `security-headers`                                      |
-| `content-digest`                         | Validates the Content-Digest header as an RFC 9530 digest dictionary when present.                                                | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `cookie-prefixes`                        | Checks that __Host- and __Secure- cookies meet their prefix requirements.                                                         | Site protection (also Visitor privacy)                         | `owasp`, `security-headers`                                                     |
-| `cookies`                                | Checks that cookies use Secure, HttpOnly for sessions and SameSite.                                                               | Site protection (also Visitor privacy)                         | `observatory`, `security-headers`, `privacy`                                    |
-| `coop`                                   | Checks that Cross-Origin-Opener-Policy isolates the page from windows it did not open.                                            | Site protection                                                | `observatory`, `owasp`, `security-headers`                                      |
-| `corp`                                   | Checks that Cross-Origin-Resource-Policy limits who may load the page as a resource.                                              | Site protection                                                | `observatory`, `owasp`, `security-headers`                                      |
-| `cors`                                   | Checks that Access-Control-Allow-Origin does not let any site make credentialed requests.                                         | Site protection                                                | `observatory`, `security-headers`                                               |
-| `cors-allow-credentials`                 | Reports credentialed CORS access, especially when combined with a wildcard origin.                                                | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `cors-allow-headers`                     | Reports a wildcard Access-Control-Allow-Headers, which allows every request header.                                               | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `cors-allow-methods`                     | Reports a wildcard or unrecognised method in the Access-Control-Allow-Methods header.                                             | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `cors-expose-headers`                    | Reports a wildcard or sensitive header in the Access-Control-Expose-Headers header.                                               | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `cors-max-age`                           | Reports a malformed or excessively long Access-Control-Max-Age preflight cache.                                                   | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `critical-ch`                            | Checks that every hint in Critical-CH is also advertised in Accept-CH.                                                            | Visitor privacy (also Site protection)                         | `mdn`, `security-headers`, `privacy`                                            |
-| `csp`                                    | Checks that a Content Security Policy is set and does not allow unsafe sources.                                                   | Site protection                                                | `observatory`, `owasp`, `webbkoll`, `internetnl`, `security-headers`            |
-| `csp-reporting`                          | Reports CSP, report-only and NEL report endpoints that point to a third-party domain.                                             | Visitor privacy (also Site protection)                         | `webbkoll`, `security-headers`, `privacy`                                       |
-| `csp-strength`                           | Evaluates CSP depth for unsafe-inline, unsafe-eval, object-src, base-uri and broad allowlists.                                    | Site protection                                                | `google`, `security-headers`                                                    |
-| `dane-exists`                            | Checks that the website domain publishes a signed TLSA record for DANE.                                                           | DNS and network (also HTTPS and certificates)                  | `internetnl`, `tls`, `dns`                                                      |
-| `dane-rollover`                          | Checks that the website domain publishes at least two TLSA records so DANE survives a certificate rollover.                       | DNS and network (also HTTPS and certificates)                  | `internetnl`, `tls`, `dns`                                                      |
-| `dane-valid`                             | Requires the DANE TLSA record of the website domain to match the web certificate.                                                 | DNS and network (also HTTPS and certificates)                  | `internetnl`, `tls`, `dns`                                                      |
-| `dnssec-exists`                          | Requires the domain of the site to be DNSSEC signed.                                                                              | DNS and network                                                | `internetnl`, `dns`                                                             |
-| `dnssec-valid`                           | Requires the DNSSEC signature of the domain to be valid.                                                                          | DNS and network                                                | `internetnl`, `dns`                                                             |
-| `etag`                                   | Reports an ETag that looks like a filesystem inode and so leaks server internals.                                                 | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `expect-ct`                              | Reports the deprecated Expect-CT header when it is sent.                                                                          | Site protection                                                | `owasp`, `security-headers`                                                     |
-| `expires`                                | Checks that Expires is a valid HTTP-date and notes when Cache-Control max-age supersedes it.                                      | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `exposed-backup-files`                   | Reports when common backup files are served, leaking source or config.                                                            | Site protection                                                | `owasp`                                                                         |
-| `exposed-crossdomain`                    | Reports when /crossdomain.xml allows access from any domain ("*").                                                                | Site protection                                                | `owasp`                                                                         |
-| `exposed-directory-listing`              | Reports when a common directory returns an automatic index of its files.                                                          | Site protection                                                | `owasp`                                                                         |
-| `exposed-ds-store`                       | Reports when /.DS_Store is served, leaking directory contents.                                                                    | Site protection                                                | `owasp`                                                                         |
-| `exposed-env`                            | Reports when /.env is served with KEY=VALUE content, leaking secrets.                                                             | Site protection                                                | `owasp`                                                                         |
-| `exposed-git`                            | Reports when /.git/HEAD or /.git/config is served, exposing the repository.                                                       | Site protection                                                | `owasp`                                                                         |
-| `exposed-server-status`                  | Reports when Apache /server-status or /server-info is publicly readable.                                                          | Site protection                                                | `owasp`                                                                         |
-| `exposed-source-map`                     | Reports when a referenced script has a reachable, valid .js.map source map.                                                       | Site protection                                                | `owasp`                                                                         |
-| `exposed-svn`                            | Reports when /.svn/entries or /.svn/wc.db is served, exposing the repository.                                                     | Site protection                                                | `owasp`                                                                         |
-| `feature-policy`                         | Reports the deprecated Feature-Policy header when it is sent.                                                                     | Site protection                                                | `owasp`, `security-headers`                                                     |
-| `feed-discovery`                         | Checks for an RSS/Atom feed <link rel="alternate"> with an absolute href.                                                         | Link previews and icons (also Search and page quality)         | `ietf`, `social`                                                                |
-| `feed-valid`                             | Fetches each discovered RSS/Atom feed and checks it is well-formed.                                                               | Link previews and icons                                        | `ietf`, `social`                                                                |
-| `form-action-secure`                     | Checks that forms on an HTTPS page do not submit to an http:// action.                                                            | Site protection (also HTTPS and certificates)                  | `owasp`, `security-headers`                                                     |
-| `geo-content-extraction`                 | Reports pages whose content lacks heading and paragraph structure.                                                                | LLMs and AI (also Search and page quality)                     | `llmscout`, `seo`, `agent`                                                      |
-| `geo-faq-schema`                         | Reports pages without FAQPage JSON-LD.                                                                                            | LLMs and AI (also Search and page quality)                     | `llmscout`, `seo`, `agent`                                                      |
-| `geo-organization-schema`                | Reports pages without Organization or Person JSON-LD that links profiles with sameAs.                                             | LLMs and AI (also Search and page quality)                     | `llmscout`, `seo`, `agent`                                                      |
-| `geo-speakable-schema`                   | Reports pages without Speakable JSON-LD.                                                                                          | LLMs and AI (also Search and page quality)                     | `llmscout`, `seo`, `agent`                                                      |
-| `geo-structured-data-invalid`            | Reports JSON-LD blocks that are not valid JSON.                                                                                   | Search and page quality (also LLMs and AI)                     | `llmscout`, `seo`, `agent`                                                      |
-| `gpc-json`                               | Checks that /.well-known/gpc.json follows the Global Privacy Control spec.                                                        | Visitor privacy                                                | `w3c`, `privacy`                                                                |
-| `host-meta`                              | Validates the /.well-known/host-meta XRD/JRD document when present (RFC 6415).                                                    | LLMs and AI                                                    | `ietf`, `agent`                                                                 |
-| `hreflang-duplicate`                     | Reports hreflang values declared on more than one alternate.                                                                      | Search and page quality                                        | `google`, `seo`                                                                 |
-| `hreflang-return`                        | Flags hreflang alternates that use a non-absolute URL.                                                                            | Search and page quality                                        | `google`, `seo`                                                                 |
-| `hreflang-self`                          | Reports an hreflang set that does not reference the page itself.                                                                  | Search and page quality                                        | `google`, `seo`                                                                 |
-| `hreflang-valid-codes`                   | Reports hreflang values that are not valid language/region codes.                                                                 | Search and page quality                                        | `google`, `seo`                                                                 |
-| `hreflang-x-default`                     | Reports an hreflang set that has no x-default entry.                                                                              | Search and page quality                                        | `google`, `seo`                                                                 |
-| `hsts`                                   | Checks the Strict-Transport-Security header: HTTPS only, max-age and subdomain coverage.                                          | HTTPS and certificates (also Site protection)                  | `observatory`, `owasp`, `webbkoll`, `internetnl`, `security-headers`            |
-| `http-methods`                           | Probes OPTIONS on the root and flags TRACE (XST) and unsafe write methods.                                                        | Site protection                                                | `owasp`, `security-headers`                                                     |
-| `https-available`                        | Requires the website to be reachable over HTTPS, with a completed TLS handshake on the HTTPS port.                                | HTTPS and certificates                                         | `internetnl`, `security-headers`, `tls`                                         |
-| `humans-txt`                             | Checks that /humans.txt is present and served as plain text (humanstxt.org).                                                      | Search and page quality                                        | `indieweb`, `seo`                                                               |
-| `icons-favicon-32-missing`               | Reports sites without a 32x32 PNG favicon link.                                                                                   | Link previews and icons (also Search and page quality)         | `opengraph`, `seo`                                                              |
-| `icons-favicon-ico-or-png-missing`       | Warns when there is no .ico or .png favicon (Google Search does not support SVG favicons).                                        | Link previews and icons (also Search and page quality)         | `opengraph`, `seo`                                                              |
-| `icons-favicon-missing`                  | Reports sites that declare no favicon and serve no /favicon.ico.                                                                  | Link previews and icons (also Search and page quality)         | `opengraph`, `seo`                                                              |
-| `icons-favicon-svg-missing`              | Reports sites without an SVG favicon link.                                                                                        | Link previews and icons (also Search and page quality)         | `opengraph`, `seo`                                                              |
-| `integrity-policy`                       | Checks that Integrity-Policy declares a non-empty blocked-destinations list.                                                      | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `integrity-policy-report-only`           | Checks that Integrity-Policy-Report-Only declares a non-empty blocked-destinations list.                                          | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `internetnl-http-compression`            | Reports when the web server compresses the root document (BREACH risk).                                                           | Site protection (also HTTPS and certificates)                  | `internetnl`, `security-headers`                                                |
-| `ipv6-ns-aaaa`                           | Requires at least two name servers of the domain to have an IPv6 address.                                                         | DNS and network                                                | `internetnl`, `dns`                                                             |
-| `ipv6-ns-reach`                          | Requires every name server with an IPv6 address to be reachable over IPv6.                                                        | DNS and network                                                | `internetnl`, `dns`                                                             |
-| `ipv6-same-content`                      | Requires the website over IPv6 to offer the same ports, headers and content as over IPv4.                                         | DNS and network                                                | `internetnl`, `dns`                                                             |
-| `ipv6-web-aaaa`                          | Requires the web server to have at least one IPv6 address.                                                                        | DNS and network                                                | `internetnl`, `dns`                                                             |
-| `ipv6-web-reach`                         | Requires every IPv6 address of the web server to be reachable over IPv6.                                                          | DNS and network                                                | `internetnl`, `dns`                                                             |
-| `last-modified`                          | Checks that the Last-Modified header is a valid HTTP-date.                                                                        | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `llms-full-txt`                          | Checks that /llms-full.txt is non-empty markdown that parses.                                                                     | LLMs and AI                                                    | `files`, `agent`                                                                |
-| `llms-txt`                               | Checks that /llms.txt follows the llmstxt.org format.                                                                             | LLMs and AI                                                    | `files`, `agent`                                                                |
-| `mail-caa`                               | Requires the mail servers (MX) of the site domain to be covered by syntactically valid CAA records with an issue property.        | Email security (also DNS and network, HTTPS and certificates)  | `internetnl`, `tls`, `dns`, `email`                                             |
-| `mail-cert-hostname`                     | Checks that the host names of the mail servers (MX) match a name on their certificates.                                           | Email security (also HTTPS and certificates)                   | `internetnl`, `tls`, `email`                                                    |
-| `mail-cert-pubkey`                       | Requires every certificate in the chain of the mail servers (MX) to use a secure public key type and size.                        | Email security (also HTTPS and certificates)                   | `internetnl`, `tls`, `email`                                                    |
-| `mail-cert-signature`                    | Requires every certificate in the chain of the mail servers (MX) to be signed with a secure algorithm and hash function.          | Email security (also HTTPS and certificates)                   | `internetnl`, `tls`, `email`                                                    |
-| `mail-cert-trust`                        | Checks that the certificates of the mail servers (MX) chain to a trusted root, with all intermediates sent.                       | Email security (also HTTPS and certificates)                   | `internetnl`, `tls`, `email`                                                    |
-| `mail-dane`                              | Requires the mail servers (MX) of the site domain to publish DNSSEC-signed TLSA records that match their certificates.            | Email security (also DNS and network)                          | `internetnl`, `tls`, `dns`, `email`                                             |
-| `mail-dane-rollover`                     | Checks that the mail servers (MX) of the site domain publish at least two TLSA records so DANE survives a certificate rollover.   | Email security (also DNS and network)                          | `internetnl`, `tls`, `dns`, `email`                                             |
-| `mail-dkim`                              | Requires the DKIM selectors given in the options to have valid key records under the site domain.                                 | Email security                                                 | `internetnl`, `dns`, `email`                                                    |
-| `mail-dmarc`                             | Requires the site domain to publish a valid DMARC record with a policy other than none and valid report addresses.                | Email security                                                 | `internetnl`, `dns`, `email`                                                    |
-| `mail-dnssec`                            | Requires the site domain and the domains of its mail servers (MX) to be DNSSEC signed with a valid signature.                     | Email security (also DNS and network)                          | `internetnl`, `dns`, `email`                                                    |
-| `mail-ipv6`                              | Requires the mail servers (MX) of the site domain to have IPv6 addresses that are reachable on port 25.                           | Email security (also DNS and network)                          | `internetnl`, `dns`, `email`                                                    |
-| `mail-ns-rpki-exists`                    | Requires an RPKI Route Origin Authorisation to be published for every IP address of the name servers of the mail servers (MX).    | Email security (also DNS and network)                          | `internetnl`, `dns`, `email`                                                    |
-| `mail-ns-rpki-valid`                     | Requires the route announcements of the IP addresses of the name servers of the mail servers (MX) to be RPKI valid.               | Email security (also DNS and network)                          | `internetnl`, `dns`, `email`                                                    |
-| `mail-rpki`                              | Requires the routes of the IP addresses of the mail servers (MX) to be covered by valid RPKI Route Origin Authorisations.         | Email security (also DNS and network)                          | `internetnl`, `dns`, `email`                                                    |
-| `mail-spf`                               | Requires the site domain to have a valid SPF record within the 10 lookup limit that ends in -all or ~all.                         | Email security                                                 | `internetnl`, `dns`, `email`                                                    |
-| `mail-starttls`                          | Requires the mail servers (MX) of the site domain to offer STARTTLS, negotiate TLS 1.2 or 1.3 and present a valid certificate.    | Email security (also HTTPS and certificates)                   | `internetnl`, `tls`, `email`                                                    |
-| `mail-tls-cipher-order`                  | Requires the mail servers (MX) of the site domain to enforce their own preference for the most secure cipher suites.              | Email security (also HTTPS and certificates)                   | `internetnl`, `tls`, `email`                                                    |
-| `mail-tls-ciphers`                       | Requires the mail servers (MX) of the site domain to accept only secure (good or sufficient) cipher suites over STARTTLS.         | Email security (also HTTPS and certificates)                   | `internetnl`, `tls`, `email`                                                    |
-| `mail-tls-compression`                   | Requires the mail servers (MX) of the site domain not to support TLS compression.                                                 | Email security (also HTTPS and certificates)                   | `internetnl`, `tls`, `email`                                                    |
-| `mail-tls-ems`                           | Requires the mail servers (MX) of the site domain to support the TLS 1.2 Extended Master Secret (RFC 7627).                       | Email security (also HTTPS and certificates)                   | `internetnl`, `tls`, `email`                                                    |
-| `mail-tls-kex-hash`                      | Requires the mail servers (MX) not to sign the TLS key exchange with weak hash functions (SHA-1, SHA-224).                        | Email security (also HTTPS and certificates)                   | `internetnl`, `tls`, `email`                                                    |
-| `mail-tls-kex-params`                    | Requires the ephemeral Diffie-Hellman parameters (DH size, EC curves) of the mail servers (MX) to be secure.                      | Email security (also HTTPS and certificates)                   | `internetnl`, `tls`, `email`                                                    |
-| `mail-tls-ocsp-stapling`                 | Checks that the mail servers (MX) staple an OCSP response when their certificate has an OCSP pointer.                             | Email security (also HTTPS and certificates)                   | `internetnl`, `tls`, `email`                                                    |
-| `mail-tls-renegotiation-client`          | Checks that the mail servers (MX) of the site domain do not allow unlimited client-initiated renegotiation.                       | Email security (also HTTPS and certificates)                   | `internetnl`, `tls`, `email`                                                    |
-| `mail-tls-renegotiation-secure`          | Requires the mail servers (MX) of the site domain to support secure renegotiation (RFC 5746).                                     | Email security (also HTTPS and certificates)                   | `internetnl`, `tls`, `email`                                                    |
-| `mail-tls-version`                       | Requires the mail servers (MX) of the site domain to accept only secure TLS versions (TLS 1.3 and TLS 1.2) over STARTTLS.         | Email security (also HTTPS and certificates)                   | `internetnl`, `tls`, `email`                                                    |
-| `mail-tls-zero-rtt`                      | Requires the mail servers (MX) of the site domain not to accept TLS 1.3 0-RTT early data.                                         | Email security (also HTTPS and certificates)                   | `internetnl`, `tls`, `email`                                                    |
-| `manifest-icons`                         | Checks the manifest declares a 192x192 and a 512x512 PNG icon.                                                                    | Progressive Web App (also Link previews and icons)             | `w3c`, `pwa`                                                                    |
-| `manifest-linked`                        | Requires a <link rel="manifest"> with an absolute href.                                                                           | Progressive Web App (also Link previews and icons)             | `w3c`, `pwa`                                                                    |
-| `manifest-valid`                         | Fetches the Web App Manifest and validates it against the W3C spec.                                                               | Progressive Web App                                            | `w3c`, `pwa`                                                                    |
-| `mta-sts`                                | Requires the site mail domain to publish a valid MTA-STS TXT record and a matching HTTPS policy file.                             | Email security                                                 | `ietf`, `dns`, `email`                                                          |
-| `nel`                                    | Checks that the NEL header is valid JSON with a max_age and a report_to group.                                                    | Site protection (also Visitor privacy)                         | `mdn`, `security-headers`                                                       |
-| `no-vary-search`                         | Checks that No-Vary-Search uses the recognised key-order, params or except keys.                                                  | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `nodeinfo`                               | Validates the /.well-known/nodeinfo links document when present (Fediverse NodeInfo).                                             | LLMs and AI                                                    | `original`, `agent`                                                             |
-| `observe-browsing-topics`                | Reports Topics API participation and validates the Observe-Browsing-Topics header.                                                | Visitor privacy                                                | `mdn`, `privacy`                                                                |
-| `oembed-discovery`                       | Checks for an oEmbed <link rel="alternate" type="application/json+oembed"> with an href.                                          | Link previews and icons                                        | `oembed`, `social`                                                              |
-| `opengraph-description-could-be-longer`  | Flags an og:description of 50 to 70 characters.                                                                                   | Link previews and icons                                        | `opengraph`, `seo`, `social`                                                    |
-| `opengraph-description-is-url`           | Flags an og:description that starts with a URL.                                                                                   | Link previews and icons                                        | `opengraph`, `seo`, `social`                                                    |
-| `opengraph-description-keyword-stuffing` | Flags an og:description that repeats the same word excessively.                                                                   | Link previews and icons                                        | `opengraph`, `seo`, `social`                                                    |
-| `opengraph-description-missing`          | Requires an og:description meta tag.                                                                                              | Link previews and icons (also Search and page quality)         | `opengraph`, `seo`, `social`                                                    |
-| `opengraph-description-same-as-title`    | Flags an og:description identical to the og:title.                                                                                | Link previews and icons                                        | `opengraph`, `seo`, `social`                                                    |
-| `opengraph-description-slightly-long`    | Flags an og:description of 161 to 200 characters.                                                                                 | Link previews and icons                                        | `opengraph`, `seo`, `social`                                                    |
-| `opengraph-description-too-long`         | Flags an og:description of more than 160 characters.                                                                              | Link previews and icons                                        | `opengraph`, `seo`, `social`                                                    |
-| `opengraph-description-too-short`        | Flags an og:description shorter than 50 characters.                                                                               | Link previews and icons                                        | `opengraph`, `seo`, `social`                                                    |
-| `opengraph-image-alt-missing`            | Requires og:image:alt next to og:image.                                                                                           | Link previews and icons (also Search and page quality)         | `opengraph`, `seo`, `social`                                                    |
-| `opengraph-image-broken`                 | Requires the og:image URL to return an image.                                                                                     | Link previews and icons                                        | `opengraph`, `social`                                                           |
-| `opengraph-image-dimensions-missing`     | Requires og:image:width and og:image:height next to og:image.                                                                     | Link previews and icons                                        | `opengraph`, `social`                                                           |
-| `opengraph-image-dimensions-too-large`   | Flags an og:image over 4096 pixels on a side.                                                                                     | Link previews and icons                                        | `opengraph`, `social`                                                           |
-| `opengraph-image-missing`                | Requires an og:image meta tag.                                                                                                    | Link previews and icons                                        | `opengraph`, `social`                                                           |
-| `opengraph-image-non-optimal-size`       | Flags an og:image that is not 1200x630 pixels (1.91:1).                                                                           | Link previews and icons                                        | `opengraph`, `social`                                                           |
-| `opengraph-image-not-https`              | Requires the og:image URL to use HTTPS.                                                                                           | Link previews and icons                                        | `opengraph`, `social`                                                           |
-| `opengraph-image-too-large`              | Flags an og:image over WhatsApp's 500 KB limit.                                                                                   | Link previews and icons                                        | `opengraph`, `social`                                                           |
-| `opengraph-image-too-small`              | Flags an og:image below the minimum size of social platforms.                                                                     | Link previews and icons                                        | `opengraph`, `social`                                                           |
-| `opengraph-locale-missing`               | Requires an og:locale meta tag.                                                                                                   | Link previews and icons                                        | `opengraph`, `social`                                                           |
-| `opengraph-site-name-missing`            | Requires an og:site_name meta tag.                                                                                                | Link previews and icons                                        | `opengraph`, `social`                                                           |
-| `opengraph-title-missing`                | Requires an og:title meta tag.                                                                                                    | Link previews and icons (also Search and page quality)         | `opengraph`, `seo`, `social`                                                    |
-| `opengraph-title-too-long`               | Requires og:title to be 60 characters or fewer.                                                                                   | Link previews and icons                                        | `opengraph`, `seo`, `social`                                                    |
-| `opengraph-title-too-short`              | Flags an og:title shorter than 15 characters.                                                                                     | Link previews and icons                                        | `opengraph`, `seo`, `social`                                                    |
-| `opengraph-type-missing`                 | Requires an og:type meta tag.                                                                                                     | Link previews and icons                                        | `opengraph`, `social`                                                           |
-| `opengraph-url-missing`                  | Requires an og:url meta tag.                                                                                                      | Link previews and icons                                        | `opengraph`, `seo`, `social`                                                    |
-| `opensearch-discovery`                   | Checks for an OpenSearch <link rel="search" type="application/opensearchdescription+xml">.                                        | Link previews and icons (also Search and page quality)         | `opensearch`, `social`                                                          |
-| `opensearch-valid`                       | Fetches the discovered OpenSearch description and checks it is well-formed.                                                       | Link previews and icons (also Search and page quality)         | `opensearch`, `social`                                                          |
-| `origin-agent-cluster`                   | Recommends Origin-Agent-Cluster: ?1 and reports any other value of the header.                                                    | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `pagination-rel`                         | Reports rel=prev/rel=next links with a missing or non-absolute URL.                                                               | Search and page quality                                        | `mdn`, `seo`                                                                    |
-| `permissions-policy`                     | Requires the Permissions-Policy header to disable the browser features listed by OWASP.                                           | Site protection                                                | `owasp`, `security-headers`                                                     |
-| `pingback`                               | Flags a Pingback endpoint as a legacy spam/amplification risk when present.                                                       | Link previews and icons (also Site protection)                 | `original`, `social`                                                            |
-| `privacy-cookies`                        | Counts first-party and third-party cookies set by responses and by script.                                                        | Visitor privacy                                                | `webbkoll`, `privacy`                                                           |
-| `privacy-geolocation`                    | Finds inline and loaded scripts that use the Geolocation API.                                                                     | Visitor privacy                                                | `original`, `privacy`                                                           |
-| `privacy-insecure-first-party`           | Finds requests to the page’s own domain that use http although the page uses https.                                               | HTTPS and certificates (also Visitor privacy)                  | `webbkoll`, `security-headers`, `privacy`                                       |
-| `privacy-local-storage`                  | Reports data the page stores in localStorage.                                                                                     | Visitor privacy                                                | `webbkoll`, `privacy`                                                           |
-| `privacy-mixed-content`                  | Finds insecure subresources loaded by a page served over https.                                                                   | HTTPS and certificates (also Visitor privacy, Site protection) | `webbkoll`, `security-headers`, `privacy`                                       |
-| `privacy-third-party-requests`           | Lists requests to hosts outside the page’s registrable domain, by host and type.                                                  | Visitor privacy                                                | `webbkoll`, `privacy`                                                           |
-| `public-key-pins`                        | Reports the deprecated Public-Key-Pins header when it is sent.                                                                    | Site protection                                                | `owasp`, `security-headers`                                                     |
-| `redirection`                            | Checks that http:// redirects to https:// on the same host before any other redirect.                                             | HTTPS and certificates (also Site protection)                  | `observatory`, `internetnl`, `security-headers`                                 |
-| `referrer-policy`                        | Checks that a Referrer-Policy is set and does not leak the full URL to other sites.                                               | Visitor privacy (also Site protection)                         | `observatory`, `owasp`, `webbkoll`, `internetnl`, `security-headers`, `privacy` |
-| `rel-me`                                 | Reports rel=me identity links and warns when one has no target (IndieWeb).                                                        | Link previews and icons                                        | `indieweb`, `social`                                                            |
-| `reporting-endpoints`                    | Checks that Reporting-Endpoints maps endpoint names to quoted absolute https URLs.                                                | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `repr-digest`                            | Validates the Repr-Digest header as an RFC 9530 digest dictionary when present.                                                   | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `retry-after`                            | Checks that Retry-After is a valid delay on a 429 or 503 response.                                                                | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `richresults-article`                    | Validates Article/NewsArticle/BlogPosting JSON-LD against Google rich-results recommended properties.                             | Search and page quality (also LLMs and AI)                     | `google`, `seo`                                                                 |
-| `richresults-breadcrumb`                 | Validates BreadcrumbList JSON-LD (itemListElement with position and item/name) against Google rich-results rules.                 | Search and page quality (also LLMs and AI)                     | `google`, `seo`                                                                 |
-| `richresults-event`                      | Validates Event JSON-LD (name, startDate, location) against Google rich-results rules.                                            | Search and page quality (also LLMs and AI)                     | `google`, `seo`                                                                 |
-| `richresults-jobposting`                 | Validates JobPosting JSON-LD (title, description, datePosted, hiringOrganization, jobLocation) against Google rich-results rules. | Search and page quality (also LLMs and AI)                     | `google`, `seo`                                                                 |
-| `richresults-localbusiness`              | Validates LocalBusiness JSON-LD (name, address) against Google rich-results required and recommended properties.                  | Search and page quality (also LLMs and AI)                     | `google`, `seo`                                                                 |
-| `richresults-product`                    | Validates Product JSON-LD (name, image, offers, review, aggregateRating) against Google rich-results rules.                       | Search and page quality (also LLMs and AI)                     | `google`, `seo`                                                                 |
-| `richresults-recipe`                     | Validates Recipe JSON-LD against Google rich-results required and recommended properties.                                         | Search and page quality (also LLMs and AI)                     | `google`, `seo`                                                                 |
-| `richresults-review`                     | Validates Review/AggregateRating JSON-LD (itemReviewed, reviewRating with ratingValue) against Google rich-results rules.         | Search and page quality (also LLMs and AI)                     | `google`, `seo`                                                                 |
-| `richresults-video`                      | Validates VideoObject JSON-LD (name, thumbnailUrl, uploadDate) against Google rich-results rules.                                 | Search and page quality (also LLMs and AI)                     | `google`, `seo`                                                                 |
-| `richresults-website-searchaction`       | Validates WebSite SearchAction JSON-LD (target and query-input) for the sitelinks search box.                                     | Search and page quality (also LLMs and AI)                     | `google`, `seo`                                                                 |
-| `robots-txt`                             | Checks that robots.txt follows RFC 9309, including Content-Signal lines.                                                          | LLMs and AI (also Search and page quality)                     | `files`, `seo`, `agent`                                                         |
-| `rpki-ns-exists`                         | Requires an RPKI ROA to be published for every IP address of the name servers.                                                    | DNS and network                                                | `internetnl`, `dns`                                                             |
-| `rpki-ns-valid`                          | Requires the route announcements of the name server IP addresses to be RPKI valid.                                                | DNS and network                                                | `internetnl`, `dns`                                                             |
-| `rpki-web-exists`                        | Requires an RPKI ROA to be published for every IP address of the web server.                                                      | DNS and network                                                | `internetnl`, `dns`                                                             |
-| `rpki-web-valid`                         | Requires the route announcements of the web server IP addresses to be RPKI valid.                                                 | DNS and network                                                | `internetnl`, `dns`                                                             |
-| `security-txt`                           | Checks that /.well-known/security.txt follows RFC 9116.                                                                           | Site protection                                                | `internetnl`, `files`, `security-headers`                                       |
-| `sellers-json`                           | Checks that /sellers.json follows the IAB Tech Lab sellers.json 1.0 spec.                                                         | Search and page quality                                        | `iab`, `seo`                                                                    |
-| `seo-canonical-mismatch`                 | Reports a canonical URL that differs from the page URL.                                                                           | Search and page quality                                        | `opengraph`, `seo`                                                              |
-| `seo-canonical-missing`                  | Reports pages without <link rel="canonical">.                                                                                     | Search and page quality                                        | `opengraph`, `seo`                                                              |
-| `seo-h1-missing`                         | Warns when the page has no <h1> heading.                                                                                          | Search and page quality                                        | `opengraph`, `seo`                                                              |
-| `seo-h1-multiple`                        | Reports pages with more than one <h1>.                                                                                            | Search and page quality                                        | `opengraph`, `seo`                                                              |
-| `seo-html-lang-missing`                  | Warns when <html> has no lang attribute.                                                                                          | Search and page quality                                        | `opengraph`, `seo`                                                              |
-| `seo-meta-description-missing`           | Requires a <meta name="description"> tag.                                                                                         | Search and page quality                                        | `opengraph`, `seo`                                                              |
-| `seo-meta-description-too-long`          | Reports a meta description longer than 160 characters.                                                                            | Search and page quality                                        | `opengraph`, `seo`                                                              |
-| `seo-meta-description-too-short`         | Reports a meta description shorter than 50 characters.                                                                            | Search and page quality                                        | `opengraph`, `seo`                                                              |
-| `seo-robots-nofollow`                    | Reports when the robots meta tag contains nofollow.                                                                               | Search and page quality                                        | `opengraph`, `seo`                                                              |
-| `seo-robots-noindex`                     | Warns when the robots meta tag contains noindex.                                                                                  | Search and page quality (also LLMs and AI)                     | `opengraph`, `seo`                                                              |
-| `seo-structured-data-missing`            | Reports pages without a JSON-LD block.                                                                                            | Search and page quality (also LLMs and AI)                     | `opengraph`, `seo`                                                              |
-| `seo-title-missing`                      | Requires a non-empty <title> element in the head.                                                                                 | Search and page quality                                        | `opengraph`, `seo`                                                              |
-| `seo-title-too-long`                     | Warns when the <title> is longer than 70 characters.                                                                              | Search and page quality                                        | `opengraph`, `seo`                                                              |
-| `seo-title-too-short`                    | Reports a <title> shorter than 10 characters.                                                                                     | Search and page quality                                        | `opengraph`, `seo`                                                              |
-| `server-banner`                          | Reports when the Server header discloses a software version or operating system.                                                  | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `server-timing`                          | Reports the Server-Timing header, which can expose backend metric names and timings.                                              | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `service-worker-allowed`                 | Validates that the Service-Worker-Allowed header is a path or absolute URL when present.                                          | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `set-login`                              | Validates that the FedCM Set-Login header is logged-in or logged-out when present.                                                | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `sourcemap`                              | Reports the SourceMap or X-SourceMap header, which exposes source maps to every client.                                           | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `speculation-rules`                      | Validates that the Speculation-Rules header lists quoted ruleset URLs when present.                                               | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `supports-loading-mode`                  | Validates the Supports-Loading-Mode tokens (credentialed-prerender, fenced-frame) when present.                                   | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `tabnabbing`                             | Checks that cross-origin target="_blank" links set rel="noopener".                                                                | Site protection                                                | `owasp`, `security-headers`                                                     |
-| `technical-canonical-invalid`            | Requires the canonical link href to be a valid URL, absolute or relative.                                                         | Search and page quality                                        | `llmscout`, `seo`                                                               |
-| `technical-heading-hierarchy`            | Warns when a heading jumps down more than one level, such as an h2 followed by an h4.                                             | Search and page quality                                        | `llmscout`, `seo`                                                               |
-| `technical-image-alt-coverage`           | Checks that img elements carry an alt attribute (warns from 80% coverage, errors below).                                          | Search and page quality (also LLMs and AI)                     | `llmscout`, `seo`                                                               |
-| `technical-image-weight`                 | Warns when an image is over 200 KB and errors when it is over 500 KB.                                                             | Search and page quality                                        | `llmscout`, `seo`                                                               |
-| `technical-redirect-chain`               | Warns about long redirect chains and chains ending in an error.                                                                   | Search and page quality (also HTTPS and certificates)          | `llmscout`, `seo`                                                               |
-| `technical-robots-meta-advanced`         | Warns when the robots meta tag lacks max-snippet, max-image-preview or max-video-preview.                                         | Search and page quality (also LLMs and AI)                     | `llmscout`, `seo`                                                               |
-| `technical-twitter-card-type`            | Requires twitter:card to be summary, summary_large_image, app or player.                                                          | Link previews and icons (also Search and page quality)         | `llmscout`, `seo`, `social`                                                     |
-| `theme-color-meta`                       | Recommends a <meta name="theme-color"> on the page.                                                                               | Progressive Web App                                            | `w3c`, `pwa`                                                                    |
-| `timing-allow-origin`                    | Reports Timing-Allow-Origin: * and malformed origins in the timing-exposure list.                                                 | Visitor privacy (also Site protection)                         | `mdn`, `security-headers`, `privacy`                                            |
-| `tls-cipher-order`                       | Requires the HTTPS server to enforce its own preference for the most secure cipher suites.                                        | HTTPS and certificates                                         | `internetnl`, `security-headers`, `tls`                                         |
-| `tls-ciphers`                            | Requires the HTTPS server to accept only secure (good or sufficient) cipher suites.                                               | HTTPS and certificates                                         | `internetnl`, `security-headers`, `tls`                                         |
-| `tls-compression`                        | Requires the HTTPS server not to support TLS compression.                                                                         | HTTPS and certificates                                         | `internetnl`, `security-headers`, `tls`                                         |
-| `tls-ems`                                | Requires the HTTPS server to support the TLS 1.2 Extended Master Secret (RFC 7627).                                               | HTTPS and certificates                                         | `internetnl`, `security-headers`, `tls`                                         |
-| `tls-kex-hash`                           | Requires the HTTPS server not to sign the TLS key exchange with weak hash functions (SHA-1, SHA-224).                             | HTTPS and certificates                                         | `internetnl`, `security-headers`, `tls`                                         |
-| `tls-kex-params`                         | Requires the ephemeral Diffie-Hellman parameters of the HTTPS server (DH size, EC curves) to be secure.                           | HTTPS and certificates                                         | `internetnl`, `security-headers`, `tls`                                         |
-| `tls-ocsp-stapling`                      | Checks that the HTTPS server staples an OCSP response when its certificate has an OCSP pointer.                                   | HTTPS and certificates                                         | `internetnl`, `security-headers`, `tls`                                         |
-| `tls-renegotiation-client`               | Checks that the HTTPS server does not allow unlimited client-initiated renegotiation.                                             | HTTPS and certificates                                         | `internetnl`, `security-headers`, `tls`                                         |
-| `tls-renegotiation-secure`               | Requires the HTTPS server to support secure renegotiation (RFC 5746).                                                             | HTTPS and certificates                                         | `internetnl`, `security-headers`, `tls`                                         |
-| `tls-rpt`                                | Requires the site mail domain to publish a valid TLS-RPT record with a report destination.                                        | Email security                                                 | `ietf`, `dns`, `email`                                                          |
-| `tls-version`                            | Requires the HTTPS server to accept only secure TLS versions (TLS 1.3 and TLS 1.2).                                               | HTTPS and certificates                                         | `internetnl`, `security-headers`, `tls`                                         |
-| `tls-zero-rtt`                           | Requires the HTTPS server not to accept TLS 1.3 0-RTT early data.                                                                 | HTTPS and certificates                                         | `internetnl`, `security-headers`, `tls`                                         |
-| `twitter-card-missing`                   | Requires a twitter:card meta tag.                                                                                                 | Link previews and icons                                        | `opengraph`, `social`                                                           |
-| `twitter-card-not-large`                 | Suggests summary_large_image instead of summary.                                                                                  | Link previews and icons                                        | `opengraph`, `social`                                                           |
-| `twitter-description-missing`            | Requires a twitter:description meta tag.                                                                                          | Link previews and icons                                        | `opengraph`, `social`                                                           |
-| `twitter-image-missing`                  | Requires a twitter:image meta tag.                                                                                                | Link previews and icons                                        | `opengraph`, `social`                                                           |
-| `twitter-site-missing`                   | Requires a twitter:site meta tag.                                                                                                 | Link previews and icons                                        | `opengraph`, `social`                                                           |
-| `twitter-title-missing`                  | Requires a twitter:title meta tag.                                                                                                | Link previews and icons                                        | `opengraph`, `social`                                                           |
-| `use-as-dictionary`                      | Validates the Use-As-Dictionary compression-dictionary header, requiring a match pattern, when present.                           | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `vary`                                   | Reports Vary: * and a wildcard mixed with named headers, which defeat shared caching.                                             | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `via`                                    | Reports when the Via header names the proxy or gateway software in front of the site.                                             | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `webfinger`                              | Probes /.well-known/webfinger and reports its format when present (RFC 7033).                                                     | LLMs and AI                                                    | `ietf`, `agent`                                                                 |
-| `webmention`                             | Reports a Webmention endpoint and warns when it is not an absolute URL (W3C Webmention).                                          | Link previews and icons                                        | `w3c`, `social`                                                                 |
-| `x-dns-prefetch-control`                 | Requires the X-DNS-Prefetch-Control header to be set to off.                                                                      | Visitor privacy (also Site protection)                         | `owasp`, `security-headers`, `privacy`                                          |
-| `x-frame-options`                        | Checks that the page cannot be framed by other sites, with X-Frame-Options or CSP frame-ancestors.                                | Site protection                                                | `observatory`, `owasp`, `webbkoll`, `internetnl`, `security-headers`            |
-| `x-permitted-cross-domain-policies`      | Requires the X-Permitted-Cross-Domain-Policies header to be set to none.                                                          | Site protection                                                | `owasp`, `security-headers`                                                     |
-| `x-powered-by`                           | Reports the X-Powered-By header, which reveals the technology stack to no benefit.                                                | Site protection                                                | `mdn`, `security-headers`                                                       |
-| `x-xss-protection`                       | Reports the deprecated X-XSS-Protection header when it is sent.                                                                   | Site protection                                                | `owasp`, `webbkoll`, `security-headers`                                         |
+A small HTTP server that scans a URL with a real Chromium and answers with the findings as JSON, for end-to-end tests in any language. See [`packages/docker`](packages/docker/README.md).
 
 ## Development
 
-Every command runs through devbox:
+This is an npm-workspaces monorepo. Every command runs through devbox, from the repository root, and operates over every workspace:
 
-```bash
-devbox run -- npm test
-devbox run -- npm run lint
-devbox run -- npm run build
+```sh
+devbox run -- npm run build                                  # compile every workspace to dist/
+devbox run -- npm test                                       # every test, the web app's included
+devbox run -- npx jest --coverage=false packages/cli         # one package's tests
+devbox run -- npx tsc --noEmit -p tsconfig.jest.json         # type check sources and tests
+devbox run -- npm run lint                                   # eslint
+devbox run -- npx prettier --write <paths>                   # format
 ```
 
-`AGENTS.md` explains how a hint is written and tested.
+[`AGENTS.md`](AGENTS.md) explains how a hint is written, registered and tested, and the standing rule for HTTP header coverage.
 
 ## References
 
@@ -491,7 +146,7 @@ Each hint links to the rule it comes from. The sources, with their licences:
 | [Content Signals](https://contentsignals.org)                                                                               | `Content-Signal` in `robots.txt`                                                                                                            | Open specification                  |
 | [Is it agent ready](https://isitagentready.com)                                                                             | The 22 agent-readiness checks and the score structure                                                                                       | Site behaviour                      |
 | [Webbkoll](https://codeberg.org/dataskydd.net/webbkoll)                                                                     | Privacy checks: third-party requests, cookies, local storage, geolocation, mixed content, reporting endpoints                               | MIT                                 |
-| [MDN HTTP headers reference](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers)                           | The full set of non-deprecated HTTP response headers (see the standing rule in AGENTS.md)                                                   | CC-BY-SA-2.5                        |
+| [MDN HTTP headers reference](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers)                           | The full set of non-deprecated HTTP response headers (see the standing rule in [AGENTS.md](AGENTS.md))                                      | CC-BY-SA-2.5                        |
 | [LLMScout](https://github.com/RudrenduPaul/LLMScout)                                                                        | Technical SEO and generative-engine checks: heading hierarchy, image alt and weight, redirect chain, FAQ, Speakable and Organization schema | MIT                                 |
 | [Internet.nl](https://github.com/internetstandards/Internet.nl)                                                             | IPv6, DNSSEC, DANE, RPKI, CAA, TLS, certificate and email checks                                                                            | Apache-2.0 (code), CC-BY-4.0 (docs) |
 

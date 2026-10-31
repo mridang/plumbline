@@ -125,7 +125,12 @@ export function ScanStatus({
 }
 
 /** The box to type a domain into, and what the scan found. */
-export function Scanner(): ReactElement {
+export function Scanner({
+  className = 'mt-10',
+}: Readonly<{
+  /** The space above it, where it sits on the page. */
+  className?: string;
+}> = {}): ReactElement {
   const { state, run } = useScan();
   const input = useRef<HTMLInputElement>(null);
   const started = useRef(false);
@@ -160,7 +165,7 @@ export function Scanner(): ReactElement {
 
   const running = isRunning(state);
   return (
-    <div className="mt-10">
+    <div className={className}>
       <form
         onSubmit={onSubmit}
         className="flex flex-col gap-3 sm:flex-row"

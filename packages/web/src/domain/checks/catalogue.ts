@@ -10,7 +10,10 @@
  * build with no change.
  */
 
-import { checks as GENERATED } from '../../../dist/catalogue';
+import {
+  checks as GENERATED,
+  sections as GENERATED_SECTIONS,
+} from '../../../dist/catalogue';
 
 /** An upstream check, test or article a check was taken from. */
 export interface CheckOrigin {
@@ -46,6 +49,21 @@ export interface Check {
   /** The upstream checks it was taken from; empty for one written for plumbline. */
   readonly origins: readonly CheckOrigin[];
 }
+
+/** A report section: an area the checks are sorted into. */
+export interface Section {
+  readonly id: string;
+  readonly title: string;
+  /** One line on what the section holds. */
+  readonly description: string;
+  /** Who usually makes the fixes in it. */
+  readonly fixer: string;
+  /** Where it comes in a report. */
+  readonly order: number;
+}
+
+/** Every section, in report order. */
+export const SECTIONS: readonly Section[] = GENERATED_SECTIONS;
 
 /** Every check, sorted by id. */
 export const CHECKS: readonly Check[] = GENERATED;
@@ -129,4 +147,13 @@ export function expandSelection(names: readonly string[]): Selection {
     }
   }
   return { ids: [...ids], unknown };
+}
+
+/** How many checks each section holds, by section id. */
+export function checksPerSection(): ReadonlyMap<string, number> {
+  const counts = new Map<string, number>();
+  for (const check of CHECKS) {
+    counts.set(check.section, (counts.get(check.section) ?? 0) + 1);
+  }
+  return counts;
 }

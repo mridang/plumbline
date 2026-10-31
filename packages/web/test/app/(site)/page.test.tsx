@@ -1,26 +1,34 @@
 import { describe, expect, it } from '@jest/globals';
 
 import Home from '@/app/(site)/page';
-import { BRAND_TAGLINE } from '@/app/_brand';
-import { SKILL_INSTALL } from '@/app/(site)/_components/agent-skill';
+import { SKILL_INSTALL } from '@/components/landing/ways-in';
+import { CHECKS, SECTIONS } from '@/domain/checks/catalogue';
 import { html } from '../../components/render';
 
 describe('Home', () => {
   const out = html(<Home />);
 
-  it('carries the tagline', () => {
-    expect(out).toContain(BRAND_TAGLINE);
-  });
-
   it('offers the scanner', () => {
     expect(out).toContain('role="search"');
   });
 
-  it('points to the domains, for keeping them', () => {
-    expect(out).toMatch(/href="\/domains"[^>]*>Sign in<\/a>/);
+  it('counts every check', () => {
+    expect(out).toContain(`${CHECKS.length} checks`);
+  });
+
+  it('shows every section that has checks', () => {
+    for (const section of SECTIONS.filter((s) =>
+      CHECKS.some((check) => check.section === s.id),
+    )) {
+      expect(out).toContain(section.title.replace('&', '&amp;'));
+    }
   });
 
   it('shows how to install the agent skill', () => {
     expect(out).toContain(SKILL_INSTALL);
+  });
+
+  it('ends with the call to keep domains', () => {
+    expect(out).toContain('Start keeping domains');
   });
 });

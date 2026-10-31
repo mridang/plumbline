@@ -3,12 +3,14 @@ import { describe, expect, it } from '@jest/globals';
 import {
   applyChoice,
   CHECKS,
+  checksPerSection,
   checksInGroup,
   enabledChecks,
   expandSelection,
   findCheck,
   GROUPS,
   isCheckId,
+  SECTIONS,
 } from '@/domain/checks/catalogue';
 
 const ALL = CHECKS.map((check) => check.id);
@@ -56,6 +58,33 @@ describe('CHECKS', () => {
 
   it('keeps the upstream origins of the checks taken from elsewhere', () => {
     expect(CHECKS.some((check) => check.origins.length > 0)).toBe(true);
+  });
+});
+
+describe('SECTIONS', () => {
+  it('lists the sections in report order, each described and with who fixes it', () => {
+    expect(SECTIONS.map((s) => s.order)).toEqual(SECTIONS.map((_, i) => i));
+    expect(
+      SECTIONS.filter(
+        (s) => s.title === '' || s.description === '' || !s.fixer,
+      ),
+    ).toEqual([]);
+  });
+
+  it('holds the section of every check', () => {
+    const ids = new Set(SECTIONS.map((s) => s.id));
+    expect(CHECKS.filter((check) => !ids.has(check.section))).toEqual([]);
+  });
+});
+
+describe('checksPerSection', () => {
+  it('counts every check once, under its section', () => {
+    const counts = checksPerSection();
+    expect([...counts.values()].reduce((a, b) => a + b, 0)).toBe(CHECKS.length);
+    const first = CHECKS[0];
+    expect(counts.get(first?.section ?? '')).toBe(
+      CHECKS.filter((check) => check.section === first?.section).length,
+    );
   });
 });
 

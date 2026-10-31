@@ -17,6 +17,13 @@
   --color-highlight: #4338ca;
   --color-on-highlight: #fff;
 
+  /* The deep band behind the hero, the closing call and the footer, and the
+   * indigo glow and the light text drawn on it. */
+  --color-night: #0b0a1f;
+  --color-night-raised: #16143a;
+  --color-glow: #6366f1;
+  --color-on-night: #f4f4ff;
+
   /* What each outcome is drawn in. Each keeps 4.5:1 on white as text. */
   --color-failed: #b91c1c;
   --color-warned: #a16207;

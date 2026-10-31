@@ -49,7 +49,11 @@ describe('what crawlers may read', () => {
 });
 
 describe('what the installed app offers', () => {
-  it('has no screenshots, share target or shortcuts', () => {
-    expect(MANIFEST_EXTRAS).toEqual({});
+  it('offers shortcuts to scan a site and to the domains, and nothing else', () => {
+    expect(Object.keys(MANIFEST_EXTRAS)).toEqual(['shortcuts']);
+    expect(MANIFEST_EXTRAS.shortcuts?.map((s) => s.url)).toEqual([
+      '/?source=pwa-shortcut#scan',
+      '/domains?source=pwa-shortcut',
+    ]);
   });
 });

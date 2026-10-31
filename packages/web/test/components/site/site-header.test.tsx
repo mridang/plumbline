@@ -26,6 +26,16 @@ describe('SiteHeader', () => {
     );
   });
 
+  it('points to the home page’s checks and developer sections', () => {
+    const out = html(<SiteHeader user={null} />);
+    expect(out).toContain('href="/#checks"');
+    expect(out).toContain('href="/#developers"');
+  });
+
+  it('stays in view while the page scrolls', () => {
+    expect(html(<SiteHeader user={null} />)).toContain('sticky top-0');
+  });
+
   it('offers no install button until the browser offers one', () => {
     expect(html(<SiteHeader user={null} />)).not.toContain('Install app');
   });
@@ -36,6 +46,10 @@ describe('SiteHeader signed out', () => {
 
   it('offers to sign in, on the sign-in page', () => {
     expect(out).toContain('href="/login">Sign in</a>');
+  });
+
+  it('offers a scan, as the main action', () => {
+    expect(out).toMatch(/href="\/#scan"[^>]*>Scan a site<\/a>/);
   });
 
   it('shows no account links', () => {
@@ -52,6 +66,10 @@ describe('SiteHeader signed in', () => {
 
   it('links to connecting an assistant', () => {
     expect(out).toContain('href="/connect">Connect AI</a>');
+  });
+
+  it('does not offer the scan button, which is for visitors', () => {
+    expect(out).not.toContain('Scan a site');
   });
 
   it('offers a way to sign out', () => {

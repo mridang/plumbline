@@ -87,11 +87,35 @@ export const MANIFEST_CATEGORIES: readonly string[] = [
   'utilities',
 ];
 
-/** What else the installed app offers: nothing beyond the page. */
+/**
+ * What else the installed app offers: two shortcuts on its icon, to scan a
+ * site and to the kept domains. No screenshots or share target.
+ */
 export const MANIFEST_EXTRAS: Pick<
   MetadataRoute.Manifest,
   'screenshots' | 'share_target' | 'shortcuts'
-> = {};
+> = {
+  shortcuts: [
+    {
+      name: 'Scan a site',
+      short_name: 'Scan',
+      description: 'Check a page against every rule.',
+      url: '/?source=pwa-shortcut#scan',
+      icons: [
+        { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      ],
+    },
+    {
+      name: 'Your domains',
+      short_name: 'Domains',
+      description: 'Your kept domains, their checks and reports.',
+      url: '/domains?source=pwa-shortcut',
+      icons: [
+        { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      ],
+    },
+  ],
+};
 
 /** The not-found page's explanation. */
 export const NOT_FOUND_NOTE =
