@@ -64,9 +64,23 @@ The stock `html` report only has webhint's eight categories, never shows a hint'
 
 It writes one self-contained HTML file, `hint-report/<site>.html`, that works in light and dark mode and on a phone. Hints are sectioned by the section stamped on them (see [Sections](#sections)), and stock hints by their webhint category. Each hint shows its description, a reference link, its origins, its source groups and tagged sections as badges, and its findings with code snippets and further reading. Sections without findings show as passed, and the source buttons (`observatory`, `owasp` and so on) filter the report. When the `agent-score` hint ran, its score is shown as a summary card at the top.
 
+## CLI
+
+[`packages/cli/`](packages/cli) is `plumbline`, published as `@mridang/plumbline`: a command-line scanner that runs every check against a site from real Node with a real Chrome, so the TLS, DNS, mail and socket checks the browser-run [web app](#web) skips all run.
+
+```sh
+npx @mridang/plumbline scan example.com
+npx @mridang/plumbline scan example.com --format json --group tls,email --fail-on warning
+npx @mridang/plumbline checks --group owasp
+```
+
+`scan` prints the findings grouped by check (`--format text`), as a JSON array of `{ hint, severity, message, resource, codeSnippet }` (`--format json`), or writes the HTML report and the JSON report to a directory (`--format html --out <dir>`). `--only`, `--skip` and `--group` narrow the checks, and the exit status is 1 when a finding is at or above `--fail-on` (`error` by default, or `warning` or `none`), so it can gate a CI job. `checks` lists every check's id, name, groups and description. A Chrome-family browser must be installed; see [`packages/cli/README.md`](packages/cli/README.md).
+
+An agent skill that teaches a coding agent to audit a site with it is in [`skills/plumbline/`](skills/plumbline/SKILL.md).
+
 ## Docker
 
-The same checks run from a Docker image (built from [`packages/docker/`](packages/docker)) so a project in any language can use them from its end-to-end tests without a Node toolchain. The image is a small HTTP server that scans a URL with a real Chromium and returns the findings as JSON. It is published as `mridang/webhint-hints` and is multi-arch (`linux/amd64` and `linux/arm64`), released in lockstep with the npm packages.
+The same checks run from a Docker image (built from [`packages/docker/`](packages/docker), sharing its scan with the CLI) so a project in any language can use them from its end-to-end tests without a Node toolchain. The image is a small HTTP server that scans a URL with a real Chromium and returns the findings as JSON. It is published as `mridang/webhint-hints` and is multi-arch (`linux/amd64` and `linux/arm64`), released in lockstep with the npm packages.
 
 ```sh
 docker run --rm -p 8080:8080 mridang/webhint-hints
@@ -114,9 +128,13 @@ docker run --rm -p 8080:8080 -e OUTPUT_DIR=/reports -v "$PWD/reports:/reports" m
 
 ## Web
 
-[`packages/web/`](packages/web) is plumbline, a one-page web app where anyone can type a domain and see every check's outcome. It is a Next.js app on Cloudflare Workers (OpenNext, Tailwind), built the same way as the sibling apps, and it fits the Workers Free plan because the checks run in the visitor's browser, not in the Worker.
+[`packages/web/`](packages/web) is plumbline, a web app where anyone can type a domain and see every check's outcome, and where a person who signs in with Google keeps a list of domains, chooses which checks run for each, and keeps each domain's reports. It is a Next.js app on Cloudflare Workers (OpenNext, Tailwind), built the same way as the sibling apps, and it fits the Workers Free plan because the checks run in the visitor's browser, not in the Worker.
 
 The page asks the Worker to start a scan (`POST /api/scans`), which checks the address and signs a scan id with `SCAN_SECRET`. A few Web Workers then load the hints package, which swaps Node's socket, TLS, process and file modules for browser stand-ins through the `#net`-style conditional imports in its `package.json`, and run the real hint classes one at a time against the page, parsed with webhint's own DOM. A browser may not read another site's headers or body, so every request a check makes goes through the Worker (`POST /api/scans/{id}/fetches`), one hop per call: each call is one outbound request and next to no CPU. A hint that needs a raw connection, a program, a certificate parser or script in the page is listed as skipped; the Docker image runs them. The API is described in [`packages/web/openapi/plumbline.yaml`](packages/web/openapi/plumbline.yaml).
+
+Signed-in people keep their domains in D1 (`/api/domains`, `/api/domains/{id}` for the chosen checks, `/api/domains/{id}/reports` for the reports). A scan of a kept domain runs the checks chosen for it in the browser, as above, and the browser saves the outcome as a report; nothing is scanned on a schedule. The server knows the checks only from a list generated from the hints package at build time (`scripts/build-catalogue.mjs`), so the hint code never enters the Worker.
+
+plumbline is also an MCP server at `/mcp`, for ChatGPT, Claude and other assistants, signed in through its own OAuth 2.1 authorization server (`/oauth/*`, `/.well-known/oauth-*`) and approved per assistant on `/connect`. Its tools list the checks and the domains, read reports (drawn as MCP Apps views, `src/views/`), add and remove domains and choose their checks; `scan_domain` says how to run a scan, since the checks never run on the server. It is listed for the MCP registry in [`packages/web/server.json`](packages/web/server.json).
 
 ```bash
 devbox run -- npm run build

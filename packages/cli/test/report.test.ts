@@ -106,11 +106,21 @@ describe('buildReport', () => {
       { link: 'https://mdn', text: 'MDN' },
     ]);
   });
+
+  it('stamps the scanner version it is given', () => {
+    const report = buildReport('https://example.com/', resultOf([]), '1.2.3');
+    expect(report.scannerVersion).toBe('1.2.3');
+  });
+
+  it('stamps dev when no version is given', () => {
+    const report = buildReport('https://example.com/', resultOf([]));
+    expect(report.scannerVersion).toBe('dev');
+  });
 });
 
 describe('saveReport', () => {
   it('writes a .json and a matching .html side by side', async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), 'webhint-docker-'));
+    const dir = await mkdtemp(path.join(tmpdir(), 'plumbline-report-'));
     try {
       const result = resultOf([problem()]);
       const report = buildReport('https://example.com/', result);

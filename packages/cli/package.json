@@ -1,0 +1,56 @@
+{
+  "name": "@mridang/plumbline",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "prepack": "tsc",
+    "build": "tsc"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "plumbline": "dist/cli.js"
+  },
+  "keywords": [
+    "webhint",
+    "cli",
+    "security-headers",
+    "tls",
+    "dns",
+    "seo",
+    "agent-readiness",
+    "audit"
+  ],
+  "author": {
+    "name": "Mridang Agarwalla",
+    "email": "mridang.agarwalla@gmail.com",
+    "url": "https://github.com/mridang"
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "Apache-2.0",
+  "description": "A command-line scanner that runs every webhint-hints check (security headers, TLS, DNS, email, SEO, agent readiness) against a site from real Node",
+  "private": false,
+  "dependencies": {
+    "@hint/connector-puppeteer": "^2.5.0",
+    "@hint/parser-html": "^3.1.0",
+    "@hint/utils-types": "^1.2.0",
+    "@mridang/webhint-formatter-extra": "*",
+    "@mridang/webhint-hint-extra": "*",
+    "hint": "^7.1.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mridang/webhint-hints.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/mridang/webhint-hints/tree/master/packages/cli",
+  "bugs": "https://github.com/mridang/webhint-hints/issues",
+  "publishConfig": {
+    "access": "public"
+  }
+}

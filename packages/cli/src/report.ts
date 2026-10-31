@@ -5,9 +5,6 @@ import { Severity, type Problem } from '@hint/utils-types';
 import ExtraFormatter from '@mridang/webhint-formatter-extra';
 import { hintCtors, type HintMeta, type ScanResult } from './scan.js';
 
-/** The release version of the scanner, stamped into the image at build time. */
-const SCANNER_VERSION = process.env.SCANNER_VERSION ?? 'dev';
-
 /** One finding in the JSON report, flattened from a webhint `Problem`. */
 export interface Finding {
   hintId: string;
@@ -30,7 +27,10 @@ export interface Summary {
   total: number;
 }
 
-/** The JSON envelope returned by `/scan` and written to a mounted directory. */
+/**
+ * The JSON envelope the Docker server returns from `/scan`, and that a saved
+ * report (the Docker image's mounted directory, `plumbline scan --out`) holds.
+ */
 export interface Report {
   url: string;
   scannedAt: string;
@@ -65,15 +65,27 @@ function toFinding(problem: Problem, hints: HintMeta[]): Finding {
   };
 }
 
-/** Builds the JSON report envelope from a scan result. */
-export function buildReport(url: string, result: ScanResult): Report {
+/**
+ * Builds the JSON report envelope from a scan result.
+ *
+ * @param url The scanned URL.
+ * @param result What the scan found.
+ * @param scannerVersion The version stamped on the report: the Docker image
+ *   passes the release tag it was built with, the CLI its package version.
+ * @returns The report envelope.
+ */
+export function buildReport(
+  url: string,
+  result: ScanResult,
+  scannerVersion = 'dev',
+): Report {
   const findings = result.problems.map((p) => toFinding(p, result.hints));
   const count = (name: string): number =>
     findings.filter((f) => f.severity === name).length;
   return {
     url,
     scannedAt: new Date().toISOString(),
-    scannerVersion: SCANNER_VERSION,
+    scannerVersion,
     summary: {
       error: count('error'),
       warning: count('warning'),
@@ -111,7 +123,8 @@ export interface SavedReport {
 
 /**
  * Writes the JSON report and the HTML report into a directory, so a scan run
- * with a host directory mounted into the container leaves both behind.
+ * with a host directory mounted into the container, or a CLI scan with
+ * `--format html`, leaves both behind.
  *
  * @param url The scanned URL.
  * @param report The JSON report to write.

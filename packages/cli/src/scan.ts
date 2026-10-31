@@ -1,6 +1,12 @@
-import { createAnalyzer } from 'hint';
+import { createRequire } from 'node:module';
+import { Analyzer, Configuration } from 'hint';
 import type { Problem } from '@hint/utils-types';
 import extraHints from '@mridang/webhint-hint-extra';
+
+// The connector and the parser are CommonJS packages with a default export.
+const require = createRequire(import.meta.url);
+const { default: PuppeteerConnector } = require('@hint/connector-puppeteer');
+const { default: HTMLParser } = require('@hint/parser-html');
 
 /**
  * A webhint hint class as the hints package exports it: a constructor with a
@@ -26,7 +32,10 @@ export function hintCtors(ids: readonly string[]): HintCtor[] {
     .filter((ctor): ctor is HintCtor => !!ctor);
 }
 
-/** A hint's catalogue entry, used by the report and the `/hints` endpoint. */
+/**
+ * A hint's catalogue entry, used by the report, the Docker server's `/hints`
+ * endpoint and `plumbline checks`.
+ */
 export interface HintMeta {
   id: string;
   name: string;
@@ -55,18 +64,16 @@ export function hintCatalogue(): HintMeta[] {
 }
 
 /**
- * The `hints` section of a webhint config for the given ids. Webhint resolves
- * a multi-hint package's hints from node_modules by the package-qualified key
- * `<package>/<id>` (what `.hintrc` uses); the `extra/` short prefix only works
- * when the hint classes are handed to the analyzer directly.
+ * The `hints` section of a webhint config for the given ids. The hint classes
+ * are handed to the analyzer directly (see `scan`), so webhint matches each
+ * config key against the class's own `meta.id`, which is `extra/<id>`.
  *
  * @param ids Bare hint ids (no `extra/` prefix).
- * @returns A map of package-qualified hint key to the `'default'` severity.
+ * @returns A map of `extra/<id>` to the `'default'` severity, so every hint
+ *   keeps the level its rule defines.
  */
 export function hintConfig(ids: readonly string[]): Record<string, string> {
-  return Object.fromEntries(
-    ids.map((id) => [`@mridang/webhint-hint-extra/${id}`, 'default']),
-  );
+  return Object.fromEntries(ids.map((id) => [`extra/${id}`, 'default']));
 }
 
 /** Options for a scan; every field is optional and has a sensible default. */
@@ -89,9 +96,15 @@ export interface ScanResult {
  * Runs a real webhint scan of a live URL with the given hints (every hint by
  * default) using the puppeteer connector, and returns the problems it found.
  *
- * Resources (the `extra/*` hints, the puppeteer connector, the HTML parser)
- * are resolved from `node_modules` the normal webhint way, so the Docker image
- * only has to install this package's dependencies.
+ * The scan runs in real Node, so the checks that open sockets, TLS
+ * connections or mail sessions work, unlike in the browser-run web app.
+ *
+ * The connector, the HTML parser and the hint classes are handed to the
+ * analyzer directly instead of being looked up by name. Webhint's own lookup
+ * searches the working directory and the global install with `require`, which
+ * misses packages installed by `npx` in its cache and cannot load the hints
+ * package (an ES module) at all under Jest; handing the classes over avoids
+ * both, the same way the hints package's own tests build their analyzer.
  *
  * @param url The absolute URL to scan.
  * @param options Which hints to run and how to launch the browser.
@@ -105,11 +118,7 @@ export async function scan(
     options.hints && options.hints.length > 0
       ? options.hints.filter((id) => id in hintMap)
       : allHintIds;
-  const hints = hintConfig(ids);
-  // The puppeteer connector's `headless`/`puppeteerOptions` and the hint
-  // severity map are not in webhint's broad config types, so the assembled
-  // config is cast once to the type `createAnalyzer` accepts.
-  const config = {
+  const configuration = Configuration.fromConfig({
     connector: {
       name: 'puppeteer',
       options: {
@@ -130,12 +139,24 @@ export async function scan(
       },
     },
     formatters: [],
-    hints,
+    hints: hintConfig(ids),
     parsers: ['html'],
-  };
-  const analyzer = createAnalyzer(
-    config as unknown as Parameters<typeof createAnalyzer>[0],
-  );
+  } as unknown as Parameters<typeof Configuration.fromConfig>[0]);
+  // The constructor is marked private, but it is the only way to hand the
+  // analyzer resources that webhint has not looked up itself; this is what
+  // `createAnalyzer` does after its lookup, with the same resource shape.
+  const analyzer = Reflect.construct(Analyzer, [
+    configuration,
+    {
+      connector: PuppeteerConnector,
+      formatters: [],
+      hints: hintCtors(ids),
+      incompatible: [],
+      missing: [],
+      parsers: [HTMLParser],
+    },
+    [],
+  ]) as Analyzer;
   const [result] = await analyzer.analyze(url);
   return { problems: result?.problems ?? [], hints: ids.map(metaOf) };
 }

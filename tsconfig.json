@@ -16,6 +16,7 @@
     { "path": "packages/hints" },
     { "path": "packages/formatter" },
     { "path": "packages/lighthouse" },
+    { "path": "packages/cli" },
     { "path": "packages/docker" }
   ]
 }

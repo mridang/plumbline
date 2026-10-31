@@ -4,13 +4,17 @@ import {
   type Server,
   type ServerResponse,
 } from 'node:http';
-import { buildReport, saveReport } from './report.js';
 import {
+  buildReport,
   hintCatalogue,
+  saveReport,
   scan as defaultScan,
   type ScanOptions,
   type ScanResult,
-} from './scan.js';
+} from '@mridang/plumbline';
+
+/** The release version of the scanner, stamped into the image at build time. */
+const SCANNER_VERSION = process.env.SCANNER_VERSION ?? 'dev';
 
 /** The JSON body `/scan` accepts. */
 interface ScanRequest {
@@ -92,7 +96,7 @@ async function handleScan(
       hints,
       executablePath: process.env.CHROMIUM_PATH,
     });
-    const report = buildReport(body.url, result);
+    const report = buildReport(body.url, result, SCANNER_VERSION);
     const saved = out
       ? await saveReport(body.url, report, result, out)
       : undefined;
