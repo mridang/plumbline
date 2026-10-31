@@ -1,0 +1,14 @@
+{
+  "name": "plumbline",
+  "owner": {
+    "name": "Mridang Agarwalla",
+    "email": "mridang.agarwalla@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "plumbline",
+      "source": "./packages/skills",
+      "description": "Audit a website's security headers, TLS, DNS and email, privacy, SEO and AI-agent readiness with the plumbline CLI."
+    }
+  ]
+}

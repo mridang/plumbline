@@ -31,7 +31,7 @@ export const FOOTER_COLUMNS: readonly Readonly<{
       { label: 'Command line', href: `${SOURCE_URL}/tree/master/packages/cli` },
       {
         label: 'Agent skill',
-        href: `${SOURCE_URL}/blob/master/skills/plumbline/SKILL.md`,
+        href: `${SOURCE_URL}/tree/master/packages/skills`,
       },
       {
         label: 'webhint hints',

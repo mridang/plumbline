@@ -10,6 +10,7 @@ The checks are [webhint](https://webhint.io) hints, and everything else in this 
 | [`@mridang/webhint-formatter-extra`](packages/formatter/README.md) | An HTML report for webhint, sectioned and filterable             |
 | [`lighthouse-plugin-webhint-extra`](packages/lighthouse/README.md) | A Lighthouse plugin with the checks Lighthouse can run           |
 | [`@mridang/plumbline`](packages/cli/README.md)                     | The `plumbline` CLI, which runs every check                      |
+| [`@mridang/plumbline-skills`](packages/skills/README.md)           | The agent skill and the Claude Code plugin that run the CLI      |
 | [`@mridang/webhint-docker-extra`](packages/docker/README.md)       | A scan server, shipped only as the `mridang/webhint-hints` image |
 | [`@mridang/webhint-web-extra`](packages/web/README.md)             | The plumbline website, on Cloudflare Workers (private)           |
 
@@ -33,23 +34,20 @@ It runs every check from Node with a real Chrome, exits 1 when a finding is at o
 
 ### With a coding agent
 
-The [plumbline skill](skills/plumbline/SKILL.md) teaches an agent (Claude Code, GitHub Copilot and others that read the Agent Skills format) to audit a site with the CLI, read the findings and explain the fixes. Install it with:
+The [skills package](packages/skills/README.md) teaches an agent (Claude Code, Codex, Cursor, GitHub Copilot and others that read the Agent Skills format) to audit a site with the CLI, read the findings and explain the fixes. Install the skill with:
 
 ```sh
 npx skills add mridang/webhint-hints
 ```
 
-Or copy or symlink its folder into your agent's skills folder:
+In Claude Code it is also a plugin, with an `/plumbline:audit <url>` command that runs the scan for you:
 
-```sh
-# Claude Code (all projects)
-ln -s "$PWD/skills/plumbline" ~/.claude/skills/plumbline
-
-# GitHub Copilot (this repository)
-mkdir -p .github/skills && cp -R skills/plumbline .github/skills/
+```text
+/plugin marketplace add mridang/webhint-hints
+/plugin install plumbline@plumbline
 ```
 
-The skill runs `npx @mridang/plumbline`, so the agent needs Node 22 and a Chrome-family browser.
+The skill runs `npx @mridang/plumbline`, so the agent needs Node 22 and a Chrome-family browser. See [`packages/skills`](packages/skills/README.md) for copying the skill by hand.
 
 ### From an assistant (MCP)
 
