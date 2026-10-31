@@ -1,4 +1,4 @@
-import { isIPv6 } from 'node:net';
+import { isIPv6 } from '#net';
 
 /**
  * A parser for SPF records, ported from Internet.nl's `spf_parser.py`, which

@@ -1,9 +1,5 @@
-import {
-  HintScope,
-  type HintContext,
-  type HintMetadata,
-  type IHintConstructor,
-} from 'hint';
+import type { HintContext, HintMetadata, IHintConstructor } from 'hint';
+import { HintScope } from '#hint';
 import { Category } from '@hint/utils-types';
 import type { Group } from './groups.js';
 import { ORIGINS, type Origin } from './origins.js';

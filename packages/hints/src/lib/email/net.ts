@@ -1,5 +1,5 @@
-import { connect as netConnect } from 'node:net';
-import type { ConnectionOptions } from 'node:tls';
+import { connect as netConnect } from '#net';
+import type { ConnectionOptions } from '#tls';
 import { probeStarttls, type ConnectFn, type StarttlsProbe } from './smtp.js';
 
 /**

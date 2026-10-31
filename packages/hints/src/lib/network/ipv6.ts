@@ -3,9 +3,9 @@
  * and web server addresses, reachability and whether the site looks the same
  * over IPv6 and IPv4.
  */
-import { connect as netConnect } from 'node:net';
-import { request as httpRequest } from 'node:http';
-import { request as httpsRequest } from 'node:https';
+import { connect as netConnect } from '#net';
+import { request as httpRequest } from '#http';
+import { request as httpsRequest } from '#https';
 import {
   findNameservers,
   ipv4Addresses,

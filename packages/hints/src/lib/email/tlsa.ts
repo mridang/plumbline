@@ -1,4 +1,4 @@
-import { X509Certificate, createHash } from 'node:crypto';
+import { X509Certificate, createHash } from '#crypto';
 
 /** DNS record type number of a TLSA record. */
 export const TLSA = 52;

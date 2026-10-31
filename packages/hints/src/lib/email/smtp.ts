@@ -1,5 +1,5 @@
-import { isIP, type Socket } from 'node:net';
-import * as tls from 'node:tls';
+import { isIP, type Socket } from '#net';
+import * as tls from '#tls';
 
 /** Opens a TCP connection; replaced in tests to reach a local server. */
 export type ConnectFn = (host: string, port: number, family?: 4 | 6) => Socket;

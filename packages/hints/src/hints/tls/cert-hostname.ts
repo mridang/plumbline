@@ -1,4 +1,4 @@
-import { checkServerIdentity } from 'node:tls';
+import { checkServerIdentity } from '#tls';
 import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { fetchCertificate } from '../../lib/tls/client.js';

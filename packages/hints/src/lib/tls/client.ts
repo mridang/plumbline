@@ -11,8 +11,8 @@ import tls, {
   type ConnectionOptions,
   type DetailedPeerCertificate,
   type PeerCertificate,
-} from 'node:tls';
-import { connect as netConnect, isIP, type Socket } from 'node:net';
+} from '#tls';
+import { connect as netConnect, isIP, type Socket } from '#net';
 import { negotiateStarttls } from '../email/smtp.js';
 import { TLS_VERSIONS, type TlsVersion } from './constants.js';
 import type { CipherInfo, EphemeralKey } from './evaluate.js';

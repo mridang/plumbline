@@ -1,5 +1,5 @@
-import { request as httpRequest } from 'node:http';
-import { request as httpsRequest } from 'node:https';
+import { request as httpRequest } from '#http';
+import { request as httpsRequest } from '#https';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onSite } from '../../core/page.js';
 import type { HintDefinition } from '../../core/define-hint.js';

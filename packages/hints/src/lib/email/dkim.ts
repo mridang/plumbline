@@ -1,4 +1,4 @@
-import { createPublicKey } from 'node:crypto';
+import { createPublicKey } from '#crypto';
 
 /**
  * A validator for DKIM key records (RFC 6376 section 3.6.1), the TXT record
