@@ -35,8 +35,16 @@ describe('what crawlers may read', () => {
     expect(SITEMAP_PAGES).toEqual([{ path: '/' }]);
   });
 
-  it('keeps them out of the API', () => {
-    expect(PRIVATE_PATHS).toEqual(['/api/']);
+  it('keeps them out of the signed-in pages, the API, sign-in, OAuth and MCP', () => {
+    expect(PRIVATE_PATHS).toEqual([
+      '/domains',
+      '/connect',
+      '/login',
+      '/api/',
+      '/auth/',
+      '/oauth/',
+      '/mcp',
+    ]);
   });
 });
 

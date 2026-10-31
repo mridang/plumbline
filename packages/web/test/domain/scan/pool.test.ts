@@ -112,6 +112,50 @@ describe('runScan', () => {
     expect(outcomes).toEqual([]);
   });
 
+  describe('with only some hints chosen', () => {
+    /** Scan with `only`, and what started and ran. */
+    async function scanOnly(only: readonly string[]): Promise<{
+      started: readonly string[];
+      ran: readonly string[];
+    }> {
+      const hints = ['a', 'b', 'c'].map(info);
+      let started: readonly string[] = [];
+      const ran: string[] = [];
+      await runScan(
+        'example.com',
+        {
+          onStart: (start) => {
+            started = start.hints.map((hint) => hint.id);
+          },
+          onOutcome: (outcome) => ran.push(outcome.id),
+        },
+        {
+          transport: server,
+          workers: 1,
+          spawn: () => new FakeWorker(healthy(hints)),
+          only,
+        },
+      );
+      return { started, ran };
+    }
+
+    it('starts with only the chosen hints', async () => {
+      expect((await scanOnly(['c', 'a'])).started).toEqual(['a', 'c']);
+    });
+
+    it('runs only the chosen hints', async () => {
+      expect([...(await scanOnly(['c', 'a'])).ran].sort()).toEqual(['a', 'c']);
+    });
+
+    it('ignores a chosen id the scan does not have', async () => {
+      expect((await scanOnly(['b', 'nope'])).ran).toEqual(['b']);
+    });
+
+    it('runs nothing when nothing is chosen', async () => {
+      expect((await scanOnly([])).ran).toEqual([]);
+    });
+  });
+
   it('carries on without a spare worker that could not load the page', async () => {
     const hints = ['a', 'b'].map(info);
     let spawned = 0;

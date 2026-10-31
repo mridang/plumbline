@@ -1,0 +1,32 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.mridang/plumbline",
+  "title": "plumbline",
+  "description": "Keep an eye on your domains: security headers, TLS, DNS, email, privacy, SEO and agent readiness.",
+  "version": "0.1.0",
+  "websiteUrl": "https://plumbline.apps.mrida.ng",
+  "repository": {
+    "url": "https://github.com/mridang/webhint-hints",
+    "source": "github",
+    "id": "1428916084",
+    "subfolder": "packages/web"
+  },
+  "icons": [
+    {
+      "src": "https://plumbline.apps.mrida.ng/icons/icon-192.png",
+      "mimeType": "image/png",
+      "sizes": ["192x192"]
+    },
+    {
+      "src": "https://plumbline.apps.mrida.ng/icons/icon-512.png",
+      "mimeType": "image/png",
+      "sizes": ["512x512"]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://plumbline.apps.mrida.ng/mcp"
+    }
+  ]
+}

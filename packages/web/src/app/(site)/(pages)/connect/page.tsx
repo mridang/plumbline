@@ -1,0 +1,140 @@
+import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import type { ReactElement } from 'react';
+
+import { getCurrentUser } from '@/lib/core/auth/current-user';
+import { mcpUrl } from '@/domain/connected-apps';
+import { appOriginFromHeaders } from '@/lib/core/origin';
+import { Card } from '@/components/ui/card';
+import { CopyField } from '@/components/ui/copy-field';
+import { Container, Heading } from '@/components/ui/layout';
+import { NumberBadge } from '@/components/ui/number-badge';
+import { PageHeader } from '@/components/ui/page-header';
+
+import { ConnectedApps } from '@/app/(site)/(pages)/connect/_components/connected-apps';
+
+/** The tab title and description of the Check with AI page. */
+export const metadata: Metadata = {
+  title: 'Check with AI',
+  description:
+    'Connect ChatGPT, Claude or any assistant that supports MCP to your domains and their reports.',
+};
+
+/** Where to add the address, for each assistant, in the order a person does it. */
+const ASSISTANTS: readonly Readonly<{
+  name: string;
+  steps: readonly string[];
+}>[] = [
+  {
+    name: 'ChatGPT',
+    steps: [
+      'Open Settings, then Connectors, and choose to add a custom connector.',
+      'Paste the address above and name it plumbline.',
+      'Sign in with Google when asked, then approve access.',
+    ],
+  },
+  {
+    name: 'Claude',
+    steps: [
+      'Open Settings, then Connectors, and choose Add custom connector.',
+      'Paste the address above.',
+      'Connect, sign in with Google, and approve access.',
+    ],
+  },
+  {
+    name: 'Any other assistant',
+    steps: [
+      'Find where it lets you add an MCP server or connector.',
+      'Paste the address above.',
+      'Sign in with Google when asked, then approve access.',
+    ],
+  },
+];
+
+/** What each level of access lets an assistant do (the wording of the approval screen). */
+const ACCESS = [
+  {
+    title: 'Read',
+    body: 'See your domains, the checks chosen for them and their reports, and the list of checks.',
+  },
+  {
+    title: 'Write',
+    body: 'Add and remove domains, and choose which checks run for each.',
+  },
+] as const;
+
+/**
+ * "Check with AI": how to connect an assistant, what it is allowed to do,
+ * which assistants are connected (with a way to disconnect them). Only for
+ * signed-in people; anyone else is sent to sign in and brought straight back
+ * here. The addresses use the origin the page is served from, so they are
+ * right in every environment.
+ */
+export default async function ConnectPage(): Promise<ReactElement> {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect(`/auth/login?returnTo=${encodeURIComponent('/connect')}`);
+  }
+  const origin = appOriginFromHeaders(await headers());
+
+  return (
+    <>
+      <PageHeader
+        roomy
+        eyebrow="Assistants"
+        title="Check with AI"
+        intro="plumbline speaks MCP, the open standard assistants use to reach your tools. Add this address once and ask about your domains, their checks and their reports in plain words."
+      >
+        <div className="mt-8 max-w-2xl">
+          <p className="mb-2 text-sm font-semibold">MCP server address</p>
+          <CopyField value={mcpUrl(origin)} label="MCP server address" />
+        </div>
+      </PageHeader>
+
+      <Container className="py-12">
+        <h2 className="sr-only">Add it to your assistant</h2>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {ASSISTANTS.map((a) => (
+            <Card as="section" key={a.name} padding="lg">
+              <Heading as="h3" variant="h3">
+                {a.name}
+              </Heading>
+              <ol className="mt-5 flex flex-col gap-4">
+                {a.steps.map((step, i) => (
+                  <li key={step} className="flex items-start gap-4">
+                    <NumberBadge value={i + 1} />
+                    <p className="pt-0.5 leading-relaxed">{step}</p>
+                  </li>
+                ))}
+              </ol>
+            </Card>
+          ))}
+        </div>
+      </Container>
+
+      <Container className="grid grid-cols-1 gap-12 pb-4 md:grid-cols-2 md:gap-10">
+        <section>
+          <Heading variant="h3">What you are allowing</Heading>
+          <dl className="mt-5 divide-y divide-line border-y border-line">
+            {ACCESS.map(({ title, body }) => (
+              <div key={title} className="py-4">
+                <dt className="font-semibold">{title}</dt>
+                <dd className="mt-1 text-muted">{body}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-4 text-sm text-subtle">
+            You approve each assistant&apos;s access when it connects, and you
+            can disconnect any of them from the list at any time.
+          </p>
+        </section>
+
+        <section>
+          <Heading variant="h3">Connected apps</Heading>
+          <ConnectedApps />
+        </section>
+      </Container>
+    </>
+  );
+}

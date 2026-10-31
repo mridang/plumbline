@@ -1,14 +1,15 @@
+import Link from 'next/link';
 import type { ReactElement } from 'react';
 
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 
 import { BRAND_TAGLINE } from '@/app/_brand';
-import { Scanner } from './_components/scanner';
+import { Scanner } from '@/components/scan/scanner';
 
 /**
- * The one page: a box to type a domain into, and the checks it comes back
- * with. The checks run in the visitor's browser (see `domain/scan`), so this
- * page is the same for everyone and can be cached.
+ * The front page: a box to type a domain into, and the checks it comes back
+ * with. The checks run in the visitor's browser (see `domain/scan`), and
+ * nothing about the scan is stored.
  */
 export default function Home(): ReactElement {
   return (
@@ -21,7 +22,11 @@ export default function Home(): ReactElement {
         Type a domain and get every check this project ships: security headers,
         TLS, DNS and email, privacy, SEO, social cards and agent readiness. The
         checks run in your browser, so the few that need raw connections or
-        script in the page are marked as skipped.
+        script in the page are marked as skipped.{' '}
+        <Link href="/domains" className="focus-ring text-accent underline">
+          Sign in
+        </Link>{' '}
+        to keep your domains, choose their checks and save their reports.
       </p>
       <Scanner />
     </Container>

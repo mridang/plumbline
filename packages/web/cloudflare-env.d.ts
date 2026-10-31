@@ -5,11 +5,12 @@
 // declared here.
 
 interface CloudflareEnv extends Cloudflare.Env {
-  /**
-   * No database is bound: nothing is stored. The shared runtime
-   * (`lib/core/runtime.ts`) reads one, and `isDatabaseBound()` reports false.
-   */
-  DB: D1Database;
+  /** OAuth web client id for signing in with Google. */
+  GOOGLE_OAUTH_CLIENT_ID: string;
+  /** OAuth web client secret (server-side only). */
+  GOOGLE_OAUTH_CLIENT_SECRET: string;
+  /** Secret that signs the session cookie. Required: with none, signing in is refused. */
+  SESSION_SECRET: string;
   /** Secret that signs scan tokens. Required: with none, scans are refused. */
   SCAN_SECRET: string;
   /**

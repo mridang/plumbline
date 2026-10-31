@@ -42,6 +42,8 @@ export interface ScanOptions {
   readonly transport?: typeof fetch;
   readonly spawn?: () => ScanWorker;
   readonly workers?: number;
+  /** Run only the hints with these ids (every hint when left out). */
+  readonly only?: readonly string[];
 }
 
 /** A real scan worker. */
@@ -74,8 +76,8 @@ function nextMessage(worker: ScanWorker): Promise<FromWorker> {
 }
 
 /**
- * Scan `input` (a domain or a URL): start the scan, run every hint in the
- * workers and report each outcome as it comes. Resolves once every hint has
+ * Scan `input` (a domain or a URL): start the scan, run every hint (or the
+ * ones `only` names) in the workers and report each outcome as it comes. Resolves once every hint has
  * run; rejects with a `ProblemError` when the scan cannot start or the page
  * does not answer.
  */
@@ -86,6 +88,7 @@ export async function runScan(
     transport = (url, init) => fetch(url, init),
     spawn = spawnWorker,
     workers = WORKERS,
+    only,
   }: ScanOptions = {},
 ): Promise<void> {
   const scan = await startScan(input, transport);
@@ -99,8 +102,12 @@ export async function runScan(
         first.type === 'unreachable' ? first.detail : 'The scan stopped.',
       );
     }
-    callbacks.onStart(first);
-    const queue = first.hints.map((hint) => hint.id);
+    const chosen = only === undefined ? undefined : new Set(only);
+    const hints = chosen
+      ? first.hints.filter((hint) => chosen.has(hint.id))
+      : first.hints;
+    callbacks.onStart({ ...first, hints });
+    const queue = hints.map((hint) => hint.id);
     let left = queue.length;
     await new Promise<void>((resolve) => {
       if (left === 0) {

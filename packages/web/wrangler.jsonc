@@ -38,6 +38,15 @@
     "binding": "ASSETS",
     "directory": ".open-next/assets",
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "plumbline-db",
+      // Create with `wrangler d1 create <database_name>` and paste the id here.
+      "database_id": "568b8510-43c7-46cf-b765-a0ca32cbc037",
+      "migrations_dir": "migrations",
+    },
+  ],
   // The release id, so cached pages are keyed to the release that made them.
   "version_metadata": {
     "binding": "CF_VERSION_METADATA",
@@ -49,6 +58,36 @@
   // account-wide and shared by every Worker that uses the same number, hence
   // the distinctive 75xx range.
   "ratelimits": [
+    // sign-in and approval flows: slow human actions
+    {
+      "name": "RL_AUTH",
+      "namespace_id": "7509",
+      "simple": { "limit": 30, "period": 60 },
+    },
+    // the token endpoint: assistants share egress addresses, so this is a flood guard only
+    {
+      "name": "RL_TOKEN",
+      "namespace_id": "7510",
+      "simple": { "limit": 600, "period": 60 },
+    },
+    // client registration (the durable per-hour limit is in D1)
+    {
+      "name": "RL_REGISTER",
+      "namespace_id": "7511",
+      "simple": { "limit": 10, "period": 60 },
+    },
+    // MCP requests, per bearer token
+    {
+      "name": "RL_MCP",
+      "namespace_id": "7512",
+      "simple": { "limit": 300, "period": 60 },
+    },
+    // MCP requests with no bearer token: probing only
+    {
+      "name": "RL_MCP_ANONYMOUS",
+      "namespace_id": "7513",
+      "simple": { "limit": 60, "period": 60 },
+    },
     // pictures, per person (the app serves none, but the shared code counts them)
     {
       "name": "RL_COVER",
@@ -98,6 +137,16 @@
       "simple": { "limit": 600, "period": 60 },
     },
   ],
+  // Worker secrets (set via `wrangler secret put`), not plaintext vars. A deploy
+  // fails if one is missing, and only these names are typed and loaded from .env.
+  "secrets": {
+    "required": [
+      "GOOGLE_OAUTH_CLIENT_ID",
+      "GOOGLE_OAUTH_CLIENT_SECRET",
+      "SESSION_SECRET",
+      "SCAN_SECRET",
+    ],
+  },
   // Uploads source maps with the Worker so stack traces in logs and traces
   // point at the original source.
   "upload_source_maps": true,

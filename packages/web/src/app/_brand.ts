@@ -59,7 +59,15 @@ export const INDEX_BY_DEFAULT = true;
 export const CRAWLABLE_PATHS: readonly string[] = ['/$'];
 
 /** What crawlers are kept out of: the API. */
-export const PRIVATE_PATHS: readonly string[] = ['/api/'];
+export const PRIVATE_PATHS: readonly string[] = [
+  '/domains',
+  '/connect',
+  '/login',
+  '/api/',
+  '/auth/',
+  '/oauth/',
+  '/mcp',
+];
 
 /** The pages listed in the sitemap. */
 export const SITEMAP_PAGES: readonly Readonly<{
