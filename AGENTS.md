@@ -20,7 +20,7 @@ Do not run `npm install` unless you have been told to. Use Node built-ins and th
 
 ## Layout
 
-This repository is an npm-workspaces monorepo. The hints package lives in `packages/hints/`, with the companion `@mridang/webhint-formatter-extra` in `packages/formatter/`, `lighthouse-plugin-webhint-extra` in `packages/lighthouse/`, and the Docker scan server `@mridang/webhint-docker-extra` in `packages/docker/` (a private, unpublished package shipped only as the `mridang/webhint-hints` image). The paths below are relative to `packages/hints/`. Commands run from the repository root through devbox and operate over every workspace.
+This repository is an npm-workspaces monorepo. The hints package lives in `packages/hints/`, with the companion `@mridang/webhint-formatter-extra` in `packages/formatter/`, `lighthouse-plugin-webhint-extra` in `packages/lighthouse/`, and the Docker scan server `@mridang/webhint-docker-extra` in `packages/docker/` (a private, unpublished package shipped only as the `mridang/webhint-hints` image), and the web app `@mridang/webhint-web-extra` in `packages/web/` (plumbline, a private Next.js app deployed to Cloudflare Workers; see below). The paths below are relative to `packages/hints/`. Commands run from the repository root through devbox and operate over every workspace.
 
 - `src/core/` shared helpers: `defineHint`, `groups`, `http` (header helpers), `page` (`onPage`, `onSite`). Do not edit these; add your own helper file instead.
 - `src/lib/` pure logic with no webhint types (parsers, validators, scoring). Put anything non-trivial here so it can be tested without a scan.
@@ -55,6 +55,12 @@ Webhint's report shows more than the message, so fill in what applies. `defineHi
 - Test each hint with `runHint(hint, routes)` from `test/helpers/run-hint.ts`. It starts a local server, runs one real scan with only that hint switched on and returns the problems. Cover the passing case, each failing case and each warning.
 - Tests never touch the internet. Hints that resolve DNS, query DNS-over-HTTPS, open TLS connections or call third-party APIs take their client as an injectable dependency with a real default, and tests pass a fake or point at a local server.
 - Every rule has a test that fails without it.
+
+## Web app
+
+`packages/web/` is plumbline, a Next.js app on Cloudflare Workers laid out like the sibling apps (chowdown, broadsheet): their shared shell (`src/lib/core/`, `src/components/`, `src/app/` metadata, error and crawler files, the config files) is copied byte-identical, and the per-app values are in `src/app/_brand.ts`, `src/utils/site.ts`, `src/lib/core/http/site.ts` and `extras.ts`. It has its own `eslint.config.mjs`, `jest.config.mjs` and `tsconfig.json`, as the siblings do; the root `lint` and `test` scripts run them after their own. Every package it uses is a devDependency, because OpenNext bundles them into the Worker and the Docker image must not carry them.
+
+The checks run in the visitor's browser (`src/domain/scan/`: `pool.ts` on the page, `worker.ts` in Web Workers, `engine.ts` running one hint at a time), and every fetch goes through the Worker (`src/domain/api/scans.ts`, `src/domain/scan/forward.ts`), so a scan stays inside the Workers Free plan's per-request limits. The hints package runs in a browser because it imports Node's socket, TLS, process, crypto and file modules through conditional imports (`#net`, `#tls`, …, see `imports` in its `package.json`): Node gets `src/node/`, browsers get `src/browser/`, whose stand-ins refuse and note it (`browser/refusals.ts`) so the engine shows the hint as skipped. A new hint that uses one of those Node modules must import it through its `#` name; a new hint that only works with a browser and swallows the refusal goes in `BROWSER_ONLY` in the engine.
 
 ## Commits
 

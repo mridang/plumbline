@@ -1,0 +1,104 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "plumbline",
+  "main": "src/worker.ts",
+  "account_id": "779037e608ab1102679ef8b1bd499d49",
+  "compatibility_date": "2026-05-01",
+  // `global_fetch_strictly_public` keeps a scan from reaching anything but the
+  // public internet: someone typing an internal name cannot make the Worker
+  // fetch Cloudflare-internal or private addresses.
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Wrangler's own usage telemetry for this project (anonymous CLI usage; the
+  // setting overrides each developer's personal preference).
+  "send_metrics": true,
+  // Workers Observability, everything on at 100%: the app's own log lines, the
+  // automatic per-request invocation logs, distributed traces, and real-time
+  // Issues. Query strings are stripped from the URLs in logs and traces.
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "redact_query_string": true,
+    "issues": { "enabled": true },
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+    },
+  },
+  // Custom domain — the workers.dev subdomain is disabled so the canonical URL
+  // is the one we control. The apps.mrida.ng zone must be attached to this
+  // Cloudflare account for the custom_domain bind to succeed.
+  "workers_dev": false,
+  "routes": [{ "pattern": "plumbline.apps.mrida.ng", "custom_domain": true }],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".open-next/assets",
+  },
+  // The release id, so cached pages are keyed to the release that made them.
+  "version_metadata": {
+    "binding": "CF_VERSION_METADATA",
+  },
+  // Cloudflare Workers Rate Limiting: checked in the Worker before the app
+  // (src/lib/core/http/edge-limits.ts and extras.ts say which request counts
+  // against which binding). Limits are per Cloudflare location and eventually
+  // consistent: a cost guard, not an accounting system. namespace_id is
+  // account-wide and shared by every Worker that uses the same number, hence
+  // the distinctive 75xx range.
+  "ratelimits": [
+    // pictures, per person (the app serves none, but the shared code counts them)
+    {
+      "name": "RL_COVER",
+      "namespace_id": "7501",
+      "simple": { "limit": 600, "period": 60 },
+    },
+    // the rest of the API, per person
+    {
+      "name": "RL_API",
+      "namespace_id": "7502",
+      "simple": { "limit": 120, "period": 60 },
+    },
+    // crawler files, per address
+    {
+      "name": "RL_DISCOVERY",
+      "namespace_id": "7503",
+      "simple": { "limit": 120, "period": 60 },
+    },
+    // browser reports (what the CSP blocked), per address
+    {
+      "name": "RL_REPORTS",
+      "namespace_id": "7504",
+      "simple": { "limit": 60, "period": 60 },
+    },
+    // pages, per address
+    {
+      "name": "RL_SITE",
+      "namespace_id": "7505",
+      "simple": { "limit": 300, "period": 60 },
+    },
+    // everything, per address
+    {
+      "name": "RL_ADDRESS",
+      "namespace_id": "7506",
+      "simple": { "limit": 900, "period": 60 },
+    },
+    // scans started, per address: each one fans out into hundreds of fetches
+    {
+      "name": "RL_SCAN",
+      "namespace_id": "7507",
+      "simple": { "limit": 5, "period": 60 },
+    },
+    // fetches made for a scan, per address: one scan makes a few hundred
+    {
+      "name": "RL_FETCH",
+      "namespace_id": "7508",
+      "simple": { "limit": 600, "period": 60 },
+    },
+  ],
+  // Uploads source maps with the Worker so stack traces in logs and traces
+  // point at the original source.
+  "upload_source_maps": true,
+}

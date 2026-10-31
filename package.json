@@ -9,13 +9,13 @@
   "scripts": {
     "build": "tsc --build",
     "prepack": "tsc --build",
-    "test": "tsc --build && jest --verbose --config=jest.config.mjs",
+    "test": "tsc --build && jest --verbose --config=jest.config.mjs && npm test --workspace packages/web",
     "test:watch": "npm run test -- --watch",
     "test:debug": "tsc --build && jest --verbose --config=jest.config.mjs --detectOpenHandles",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "npx eslint .",
-    "lint:fix": "npx eslint . --fix"
+    "lint": "npx eslint . && npm run lint --workspace packages/web",
+    "lint:fix": "npx eslint . --fix && npm run lint:fix --workspace packages/web"
   },
   "author": {
     "name": "Mridang Agarwalla",

@@ -1,0 +1,58 @@
+{
+  "name": "@mridang/webhint-web-extra",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3737",
+    "typecheck": "tsc --noEmit",
+    "build": "next build",
+    "start": "next start",
+    "preview": "opennextjs-cloudflare build && wrangler dev",
+    "cf-typegen": "wrangler types && prettier --write worker-configuration.d.ts",
+    "deploy": "opennextjs-cloudflare build && wrangler deploy",
+    "test": "jest --verbose --config=jest.config.mjs",
+    "test:watch": "npm run test -- --watch",
+    "test:debug": "jest --verbose --config=jest.config.mjs --detectOpenHandles",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "npx eslint .",
+    "lint:fix": "npx eslint . --fix",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run --browser chrome"
+  },
+  "author": {
+    "name": "Mridang Agarwalla",
+    "email": "mridang.agarwalla@gmail.com",
+    "url": "https://github.com/mridang"
+  },
+  "license": "Apache-2.0",
+  "description": "plumbline: a web page that runs the webhint-hints checks against a domain in the visitor's browser, through a Cloudflare Worker, and lists what passed and failed",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mridang/webhint-hints.git",
+    "directory": "packages/web"
+  },
+  "homepage": "https://github.com/mridang/webhint-hints/tree/master/packages/web",
+  "bugs": "https://github.com/mridang/webhint-hints/issues",
+  "devDependencies": {
+    "@hint/utils-dom": "^2.2.4",
+    "@hint/utils-types": "^1.2.1",
+    "@mridang/webhint-hint-extra": "*",
+    "@opennextjs/cloudflare": "^1.20.12",
+    "@tailwindcss/postcss": "^4",
+    "@tsconfig/node24": "^24.0.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "cypress": "^16.2.0",
+    "hint": "^7.1.13",
+    "next": "16.4.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tailwindcss": "^4",
+    "wrangler": "^4.151.1"
+  }
+}

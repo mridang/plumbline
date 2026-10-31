@@ -1,0 +1,14 @@
+# plumbline
+
+> plumbline checks a website against more than 250 rules: security headers, TLS, DNS and email, privacy, SEO, social cards and agent readiness. Type a domain and the checks run in the browser.
+
+plumbline is a web app at https://plumbline.apps.mrida.ng. It has one public page, and nothing about a scanned site is stored.
+
+## Public pages
+
+- [Scan page](https://plumbline.apps.mrida.ng/): type a domain and see every check's outcome. A domain in the `domain` query parameter starts a scan straight away.
+
+## Optional
+
+- [Security contact](https://plumbline.apps.mrida.ng/.well-known/security.txt): how to report a vulnerability.
+- [Security policy](https://plumbline.apps.mrida.ng/security-policy.txt): what to expect when you do.

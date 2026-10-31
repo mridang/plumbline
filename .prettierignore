@@ -29,3 +29,7 @@ node_modules
 *.gif
 *.svg
 
+
+# The web app's public files, as its siblings leave them (its own
+# .prettierignore says /public, which only applies when run from there).
+packages/web/public

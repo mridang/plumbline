@@ -112,6 +112,21 @@ Pass `"hints": ["csp", "hsts"]` to run only some hints (bare ids, no `extra/` pr
 docker run --rm -p 8080:8080 -e OUTPUT_DIR=/reports -v "$PWD/reports:/reports" mridang/webhint-hints
 ```
 
+## Web
+
+[`packages/web/`](packages/web) is plumbline, a one-page web app where anyone can type a domain and see every check's outcome. It is a Next.js app on Cloudflare Workers (OpenNext, Tailwind), built the same way as the sibling apps, and it fits the Workers Free plan because the checks run in the visitor's browser, not in the Worker.
+
+The page asks the Worker to start a scan (`POST /api/scans`), which checks the address and signs a scan id with `SCAN_SECRET`. A few Web Workers then load the hints package, which swaps Node's socket, TLS, process and file modules for browser stand-ins through the `#net`-style conditional imports in its `package.json`, and run the real hint classes one at a time against the page, parsed with webhint's own DOM. A browser may not read another site's headers or body, so every request a check makes goes through the Worker (`POST /api/scans/{id}/fetches`), one hop per call: each call is one outbound request and next to no CPU. A hint that needs a raw connection, a program, a certificate parser or script in the page is listed as skipped; the Docker image runs them. The API is described in [`packages/web/openapi/plumbline.yaml`](packages/web/openapi/plumbline.yaml).
+
+```bash
+devbox run -- npm run build
+devbox run -- npm run dev --workspace packages/web
+devbox run -- npm run preview --workspace packages/web
+devbox run -- npm run deploy --workspace packages/web
+```
+
+`dev` serves the app with Next.js; `preview` builds the Worker and serves it with Wrangler in the Workers runtime, which is what production runs. Both read `SCAN_SECRET` (any long random string) from `packages/web/.env`; in production it is a Worker secret (`wrangler secret put SCAN_SECRET`). `deploy` publishes it to `plumbline.apps.mrida.ng`, and the `Deploy to Cloudflare Workers` workflow does the same on every push to `master`, with the repository's `CLOUDFLARE_API_TOKEN` secret and `CLOUDFLARE_ACCOUNT_ID` variable.
+
 ## Use
 
 Hints are listed in `.hintrc` as `@mridang/webhint-hint-extra/<id>`. Use `default` as the severity so each hint keeps the level its rule defines:

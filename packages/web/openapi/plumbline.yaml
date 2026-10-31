@@ -1,0 +1,255 @@
+openapi: 3.1.0
+info:
+  title: plumbline API
+  version: 0.0.1
+  summary: Start a scan, and fetch on its behalf, for checks that run in the browser.
+  description: |
+    The REST contract under `/api` follows the [Zalando RESTful API Guidelines](https://opensource.zalando.com/restful-api-guidelines/) with the deviations in the `api-design` skill: JSON properties are snake_case, timestamps are RFC 3339, and every error is `application/problem+json`.
+
+    The checks run in the visitor's browser. A browser may not read another site's headers or body, so the page starts a scan here, which checks the address and signs a scan id, and then asks for each fetch the checks make through that scan. Nothing is stored: the id carries the address and when the scan ends, signed so it cannot be made up.
+
+    Every route is public: there is no sign-in. Requests are rate limited per address by the platform (`RL_SCAN` for starting scans, `RL_FETCH` for their fetches, `RL_API` for the rest of `/api`), and a blocked request is answered with `429` and `Retry-After`.
+
+    `/csp/reports` sits outside `/api` and follows the browser Reporting API; it is documented here for completeness.
+  license:
+    name: Apache-2.0
+    identifier: Apache-2.0
+servers:
+  - url: /
+security: []
+tags:
+  - name: scans
+  - name: reports
+    description: Browser reports, outside the REST contract.
+paths:
+  /api/scans:
+    post:
+      operationId: createScan
+      tags:
+        - scans
+      summary: Start a scan of a website.
+      description: Checks the address and signs a scan id for it, good for ten minutes. Nothing is stored and there is nothing to read back; the id is for the scan's fetches.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScanRequest'
+      responses:
+        '201':
+          description: The scan has started.
+          headers:
+            Location:
+              description: The scan, `/api/scans/{id}`.
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Scan'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/NotConfigured'
+  /api/scans/{id}/fetches:
+    post:
+      operationId: createScanFetch
+      tags:
+        - scans
+      summary: Fetch a resource on a scan's behalf.
+      description: Fetches one public `http(s)` address with `GET` or `HEAD` and answers with its body as it came (at most 5 MiB), with its status, address and headers in `Upstream-*` headers. Redirects are not followed, so each hop is one call. Only the request headers listed under `headers` are passed on.
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The id `POST /api/scans` answered with.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchRequest'
+      responses:
+        '200':
+          description: What the target answered.
+          headers:
+            Upstream-Status:
+              description: The target's HTTP status.
+              schema:
+                type: integer
+            Upstream-Url:
+              description: The address that was fetched.
+              schema:
+                type: string
+                format: uri
+            Upstream-Headers:
+              description: The target's headers as percent-encoded JSON `[name, value]` pairs, lower-case names, each `Set-Cookie` on its own.
+              schema:
+                type: string
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: No such scan, or it has ended.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '502':
+          description: The target did not answer.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          $ref: '#/components/responses/NotConfigured'
+  /csp/reports:
+    post:
+      operationId: createCspReports
+      tags:
+        - reports
+      summary: Take in what the Content Security Policy blocked.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/reports+json:
+            schema: {}
+          application/csp-report:
+            schema: {}
+      responses:
+        '204':
+          description: Received.
+        '400':
+          description: The body is not JSON.
+        '413':
+          description: The body is over 16 KiB.
+        '429':
+          description: Too many reports from this address.
+components:
+  schemas:
+    ScanRequest:
+      type: object
+      required:
+        - url
+      additionalProperties: false
+      properties:
+        url:
+          type: string
+          maxLength: 2048
+          description: A domain (`example.com`) or an absolute http(s) URL. A missing scheme means `https`. IP addresses, `localhost` and private names are refused.
+          examples:
+            - example.com
+    Scan:
+      type: object
+      required:
+        - id
+        - url
+        - expires_at
+      properties:
+        id:
+          type: string
+          description: The scan's id, for its fetches.
+        url:
+          type: string
+          format: uri
+          description: The address being scanned.
+        expires_at:
+          type: string
+          format: date-time
+          description: When the scan's fetches stop being accepted.
+    FetchRequest:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          format: uri
+          description: A public http(s) address.
+        method:
+          type: string
+          enum:
+            - GET
+            - HEAD
+          default: GET
+        headers:
+          type: object
+          description: Request headers. Only `accept`, `accept-language`, `access-control-request-headers`, `access-control-request-method`, `if-modified-since`, `if-none-match`, `origin` and `range` are passed on.
+          additionalProperties:
+            type: string
+    Problem:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+  responses:
+    BadRequest:
+      description: The body is not a JSON object, or a field is missing or not valid; `errors` names each.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    PayloadTooLarge:
+      description: The body is over 4 KiB.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    UnsupportedMediaType:
+      description: The body is not `application/json`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    TooManyRequests:
+      description: Too many requests from this address; wait for `Retry-After` seconds.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotConfigured:
+      description: The server has no secret to sign scans with.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'

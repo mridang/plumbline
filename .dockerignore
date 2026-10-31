@@ -15,3 +15,8 @@ dist/
 hint-report/
 *.swp
 .DS_Store
+# The web app's build output (Next.js, OpenNext, Wrangler); the image does not
+# serve the web app.
+**/.next/
+**/.open-next/
+**/.wrangler/

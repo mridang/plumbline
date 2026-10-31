@@ -21,13 +21,24 @@ export default {
     'json',
     'node',
   ],
-  testPathIgnorePatterns: ['/node_modules/', '/frontend/', '/dist/'],
+  // The web app has its own Jest config (its `@/` alias and JSX), and the
+  // root `test` script runs it after this one.
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/frontend/',
+    '/dist/',
+    '/packages/web/',
+  ],
   resetModules: false,
   globalSetup: './packages/hints/test/setup.ts',
   globalTeardown: './packages/hints/test/teardown.ts',
   collectCoverage: true,
   coverageDirectory: './.out',
-  collectCoverageFrom: ['packages/*/src/**/*.{ts,tsx,js,jsx}', '!**/*.d.ts'],
+  collectCoverageFrom: [
+    'packages/*/src/**/*.{ts,tsx,js,jsx}',
+    '!packages/web/**',
+    '!**/*.d.ts',
+  ],
   coverageReporters: ['lcov', 'text'],
   coveragePathIgnorePatterns: ['/dist/', '/node_modules/'],
   testTimeout: 60000,
