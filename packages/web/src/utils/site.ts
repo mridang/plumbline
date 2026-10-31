@@ -18,9 +18,8 @@ export const SITE_DESCRIPTION =
   'Type a domain and see how it does on more than 250 checks: security ' +
   'headers, TLS, DNS and email, privacy, SEO, social cards and agent readiness.';
 
-/** Where the source lives, linked from the header and footer. */
+/** Where the source code lives. */
 export const SOURCE_URL = 'https://github.com/mridang/webhint-hints';
-
 /** Where people write to about their data or these terms. */
 export const CONTACT_EMAIL = 'mridang.agarwalla@gmail.com';
 /** The day the privacy policy last changed, for the page and the sitemap. */
