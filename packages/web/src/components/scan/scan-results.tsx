@@ -15,6 +15,7 @@ import {
   type Filter,
   type Status,
 } from './results';
+import { countOf, formatRating } from '@/lib/intl';
 
 /** A scan under way or done, or a saved one: where the page ended up, and what has run. */
 export interface Scan {
@@ -43,12 +44,12 @@ const COUNT: Readonly<Record<Status, string>> = {
 export function progressLine(scan: Readonly<Scan>): string {
   if (scan.savedAt !== undefined) {
     // Written out the same on the server and in the browser, whatever the time zone.
-    return `${scan.total} checks · scanned ${scan.savedAt.slice(0, 16).replace('T', ' ')} UTC`;
+    return `${countOf(scan.total, 'check')} · scanned ${scan.savedAt.slice(0, 16).replace('T', ' ')} UTC`;
   }
   const status = scan.status === undefined ? '' : `HTTP ${scan.status} · `;
   return scan.finishedAt === undefined
     ? `${status}${scan.hints.length} of ${scan.total} checks done…`
-    : `${status}${scan.total} checks in ${((scan.finishedAt - scan.startedAt) / 1000).toFixed(1)} s`;
+    : `${status}${countOf(scan.total, 'check')} in ${formatRating((scan.finishedAt - scan.startedAt) / 1000)} s`;
 }
 
 /** The summary, the filter and the list of checks. */

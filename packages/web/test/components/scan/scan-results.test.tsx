@@ -52,14 +52,14 @@ describe('progressLine', () => {
 
   it('says how long a finished scan took', () => {
     expect(progressLine(scanOf([hint('a', 'passed')]))).toBe(
-      'HTTP 200 · 1 checks in 2.5 s',
+      'HTTP 200 · 1 check in 2.5 s',
     );
   });
 
   it('leaves out the status when it is not known', () => {
     expect(
       progressLine(scanOf([hint('a', 'passed')], { status: undefined })),
-    ).toBe('1 checks in 2.5 s');
+    ).toBe('1 check in 2.5 s');
   });
 
   it('dates a saved report in UTC, to the minute', () => {
@@ -67,7 +67,7 @@ describe('progressLine', () => {
       progressLine(
         scanOf([hint('a', 'passed')], { savedAt: '2026-10-01T08:15:42.000Z' }),
       ),
-    ).toBe('1 checks · scanned 2026-10-01 08:15 UTC');
+    ).toBe('1 check · scanned 2026-10-01 08:15 UTC');
   });
 });
 

@@ -7,6 +7,7 @@
  */
 
 import type { HintOutcome } from '@/domain/scan/engine';
+import { compareText } from '@/lib/intl';
 
 /** An outcome, as the engine names it. */
 export type Status = HintOutcome['status'];
@@ -75,14 +76,14 @@ export function sectionsOf(
     groups.set(hint.section, group);
   }
   return [...groups.entries()]
-    .sort(([, a], [, b]) => a.order - b.order || a.title.localeCompare(b.title))
+    .sort(([, a], [, b]) => a.order - b.order || compareText(a.title, b.title))
     .map(([id, group]) => ({
       id,
       title: group.title,
       hints: [...group.hints].sort(
         (a, b) =>
           STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status) ||
-          a.name.localeCompare(b.name),
+          compareText(a.name, b.name),
       ),
     }));
 }

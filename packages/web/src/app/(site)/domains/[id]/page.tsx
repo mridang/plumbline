@@ -18,6 +18,7 @@ import { getCurrentUser } from '@/lib/core/auth/current-user';
 import { CheckForm, type CheckSection } from './_components/check-form';
 import { RemoveDomainButton } from './_components/remove-domain-button';
 import { RunChecks } from './_components/run-checks';
+import { compareText } from '@/lib/intl';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,7 +45,7 @@ function sections(): CheckSection[] {
     bySection.set(check.section, group);
   }
   return [...bySection.entries()]
-    .sort(([, a], [, b]) => a.order - b.order || a.title.localeCompare(b.title))
+    .sort(([, a], [, b]) => a.order - b.order || compareText(a.title, b.title))
     .map(([id, group]) => ({ id, title: group.title, checks: group.checks }));
 }
 
