@@ -5,8 +5,9 @@
  * The checks themselves run in the visitor's browser, and only there: their
  * code is far too big for the Worker, which on the Free plan has 3 MB for the
  * whole bundle and 10 ms of CPU a request. So the Worker never imports the
- * hints package. Instead this script loads it once, in Node, and keeps what a
- * hint says about itself (its id, name, description, groups, report section,
+ * hints package, apart from the few pure rule files the server-side page
+ * checks use (`src/domain/suite/checks.ts`). Instead this script loads it
+ * once, in Node, and keeps what a hint says about itself (its id, name, description, groups, report section,
  * reference and where it came from) and who usually makes its fix, which is all
  * the server needs.
  *

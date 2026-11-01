@@ -109,6 +109,20 @@ export async function findDomainByHost(
   return row ? domainOf(row) : undefined;
 }
 
+/** The person's domains that were found in the repository `owner/name`. */
+export async function listDomainsOfRepo(
+  db: Database,
+  userId: number,
+  repo: string,
+): Promise<Domain[]> {
+  const rows = await db
+    .select()
+    .from(domains)
+    .where(and(eq(domains.user_id, userId), eq(domains.repo, repo)))
+    .orderBy(asc(domains.host));
+  return rows.map(domainOf);
+}
+
 /**
  * Add a domain for the person, or return the one they already have for that
  * host (`created` says which). A new domain runs every check.

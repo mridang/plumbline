@@ -221,3 +221,30 @@ export const githubRepos = sqliteTable(
     index('idx_github_repos_user').on(table.user_id, table.full_name),
   ],
 );
+
+/**
+ * One server-side run of the checks on a host, started by a deployment.
+ * `findings` is a JSON array of `{ id, severity, message }`.
+ */
+export const suiteRuns = sqliteTable(
+  'suite_runs',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    user_id: integer('user_id').notNull(),
+    host: text('host').notNull(),
+    repo: text('repo'),
+    sha: text('sha'),
+    status: integer('status').notNull(),
+    ran_at: text('ran_at').notNull(),
+    findings: text('findings').notNull(),
+  },
+  (table) => [
+    index('idx_suite_runs_host').on(table.user_id, table.host, table.id),
+  ],
+);
+
+/** The id GitHub gave a webhook delivery, kept so a retried delivery is not handled twice. */
+export const webhookDeliveries = sqliteTable('webhook_deliveries', {
+  delivery_id: text('delivery_id').primaryKey(),
+  received_at: text('received_at').notNull(),
+});

@@ -9,6 +9,7 @@ import {
 
 import { POST } from '@/app/api/github/webhook/route';
 import { createDatabase } from '@/domain/db/client';
+import { addDomain } from '@/domain/db/domains';
 import {
   listInstallations,
   listRepos,
@@ -46,6 +47,7 @@ const deliver = (
   event: string,
   payload: unknown,
   signature?: string | null,
+  deliveryId?: string,
 ) => {
   const body = JSON.stringify(payload);
   const sig = signature === undefined ? signed(body) : signature;
@@ -54,6 +56,7 @@ const deliver = (
       method: 'POST',
       headers: {
         'x-github-event': event,
+        ...(deliveryId ? { 'x-github-delivery': deliveryId } : {}),
         ...(sig ? { 'x-hub-signature-256': sig } : {}),
       },
       body,
@@ -132,5 +135,62 @@ describe('POST /api/github/webhook', () => {
     await deliver('installation_repositories', { installation: { id: 999 } });
     await settleBackground();
     expect(requested).toEqual([]);
+  });
+
+  describe('deployment_status', () => {
+    const deployment = (state = 'success', environment = 'Production') => ({
+      installation: { id: 5 },
+      deployment_status: { state, environment },
+      deployment: { sha: 'abc' },
+      repository: { full_name: 'acme/site' },
+    });
+
+    /** Answers the site with a page, and returns the addresses asked for. */
+    const siteAnswers = () =>
+      fakeGitHub({
+        'https://site.test/': () =>
+          new Response('<html></html>', {
+            headers: { 'content-type': 'text/html' },
+          }),
+      });
+
+    beforeEach(async () => {
+      await addDomain(createDatabase(made.d1), 7, 'site.test', 'acme/site');
+    });
+
+    it("fetches the repository's site after a successful deployment", async () => {
+      const requested = siteAnswers();
+      const res = await deliver('deployment_status', deployment());
+      expect(res.status).toBe(202);
+      await settleBackground();
+      expect(requested).toEqual(['GET https://site.test/']);
+    });
+
+    it('does not fetch for a deployment that has not succeeded or is a preview', async () => {
+      const requested = siteAnswers();
+      await deliver('deployment_status', deployment('pending'));
+      await deliver('deployment_status', deployment('success', 'Preview'));
+      await settleBackground();
+      expect(requested).toEqual([]);
+    });
+
+    it('handles a delivery GitHub sends again only once', async () => {
+      const requested = siteAnswers();
+      await deliver('deployment_status', deployment(), undefined, 'abc-1');
+      await settleBackground();
+      await deliver('deployment_status', deployment(), undefined, 'abc-1');
+      await settleBackground();
+      expect(requested).toHaveLength(1);
+    });
+
+    it('ignores an installation nobody has linked', async () => {
+      const requested = siteAnswers();
+      await deliver('deployment_status', {
+        ...deployment(),
+        installation: { id: 999 },
+      });
+      await settleBackground();
+      expect(requested).toEqual([]);
+    });
   });
 });

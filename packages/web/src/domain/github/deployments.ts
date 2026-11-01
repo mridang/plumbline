@@ -10,6 +10,7 @@
  */
 
 import { parseHost } from '@/domain/api/domain-resource';
+import type { DeploymentStatus } from '@/domain/suite/deploy';
 
 /** The Wrangler configuration file names. */
 const WRANGLER_FILE = /(^|\/)wrangler\.(jsonc|json|toml)$/;
@@ -181,7 +182,7 @@ export async function deploymentHosts(repo: RepoFiles): Promise<string[]> {
 }
 
 /** The parts of a webhook delivery the app reads. */
-export interface Delivery {
+export interface Delivery extends DeploymentStatus {
   readonly action?: string;
   readonly installation?: { readonly id?: number };
   readonly commits?: readonly {

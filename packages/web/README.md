@@ -44,15 +44,15 @@ How the accounts are tied together: a person signs in with Google, then connects
 
 A repository counts as a deployed web application when a Wrangler configuration (`wrangler.jsonc`, `wrangler.json` or `wrangler.toml`, at the root or in a subfolder) names the domains it is served on in its top-level `routes` or `route` (custom domains and route patterns; wildcard routes and `workers.dev` addresses are skipped), or when the repository's website field names the live site. Each host found becomes a domain of the owner, tagged with its repository, up to the limit of fifty domains. A repository that uses another host, such as Vercel or Netlify, is not recognised yet.
 
-The checks themselves run in the person's browser, as everywhere else in the app, so they are started from the domain's page and not on a schedule.
+The checks themselves run in the person's browser, as everywhere else in the app, so they are started from the domain's page and not on a schedule. The one exception is a deployment: when GitHub reports a successful deployment of a repository (a `deployment_status` event, not a preview environment), the Worker fetches each site found in that repository (up to five) and runs the page checks that fit in a Worker: the content, mobile and speed checks of the Roctify set (sixteen checks, see `src/domain/suite/`). It makes one request per site and reads the page in one pass with Cloudflare's `HTMLRewriter`, which keeps it inside the Free plan's 10 ms of CPU per request (waiting for the site does not count). Each run is stored (`suite_runs`, the latest twenty per site) and compared with the previous one, so what the deployment broke or fixed is known. A delivery that GitHub sends again is recognised by its id and handled once, and a site checked in the last minute is skipped. The checks that need a real DOM, a socket or DNS (TLS, DNS, most of the structure checks) still run only in the browser.
 
 Create a GitHub App (Settings, Developer settings, GitHub Apps) with:
 
 - **Callback URL:** `http://localhost:3737/api/github/callback` for development and `https://plumbline.apps.mrida.ng/api/github/callback` in production
 - **Setup URL:** the same address, with **Redirect on update** ticked, and **Request user authorization (OAuth) during installation** ticked
 - **Webhook URL:** `https://plumbline.apps.mrida.ng/api/github/webhook`, with a webhook secret
-- **Permissions:** Repository permissions, Contents: read-only (Metadata is read-only by default)
-- **Subscribe to events:** Push (only pushes that touch a Wrangler file are acted on), and the installation events are always sent
+- **Permissions:** Repository permissions, Contents: read-only and Deployments: read-only (Metadata is read-only by default)
+- **Subscribe to events:** Push (only pushes that touch a Wrangler file are acted on) and Deployment status (a successful deployment runs the server-side checks), and the installation events are always sent
 
 Then set, in `packages/web/.env` locally and as Worker secrets in production:
 

@@ -3,16 +3,20 @@
  * secret before anything is read. An installation that was removed is
  * forgotten; a change to an installation's repositories, or a push to a
  * Wrangler configuration, reads the installation again so the deployed hosts
- * stay right. Anything else is acknowledged and ignored.
+ * stay right. A successful deployment runs the server-side checks on the
+ * repository's sites (once per delivery, GitHub retries are recognised by
+ * their id). Anything else is acknowledged and ignored.
  */
 
 import { NextResponse } from 'next/server';
 
 import { getDatabase } from '@/domain/db/client';
 import { ownerOfInstallation, removeInstallation } from '@/domain/db/github';
+import { claimDelivery } from '@/domain/db/suite';
 import { touchesWrangler, type Delivery } from '@/domain/github/deployments';
 import { githubConfig, syncAsApp } from '@/domain/github/service';
 import { verifySignature } from '@/domain/github/webhook';
+import { checkDeployment, liveDeployment } from '@/domain/suite/deploy';
 import { runInBackground } from '@/lib/core/runtime';
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -39,6 +43,17 @@ export async function POST(request: Request): Promise<NextResponse> {
   const db = getDatabase();
   if (event === 'installation' && delivery.action === 'deleted') {
     await removeInstallation(db, installationId);
+  } else if (event === 'deployment_status') {
+    const deployed = liveDeployment(delivery);
+    const owner = await ownerOfInstallation(db, installationId);
+    const deliveryId = request.headers.get('x-github-delivery');
+    if (
+      deployed &&
+      owner !== undefined &&
+      (deliveryId === null || (await claimDelivery(db, deliveryId)))
+    ) {
+      runInBackground(checkDeployment(db, owner, deployed));
+    }
   } else if (
     event === 'installation_repositories' ||
     (event === 'push' && touchesWrangler(delivery))
