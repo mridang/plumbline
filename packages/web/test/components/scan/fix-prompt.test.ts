@@ -63,7 +63,7 @@ describe('fixPrompt', () => {
     expect(prompt).toContain(
       '# Fix the problems Plumbline found on https://example.com/',
     );
-    expect(prompt).toContain('found 1 checks that need attention');
+    expect(prompt).toContain('found 1 check needing attention');
     expect(prompt).toContain('## Site protection');
     expect(prompt).toContain('### 1. Check a (failed)');
     expect(prompt).toContain('- No HSTS header (https://example.com/)');

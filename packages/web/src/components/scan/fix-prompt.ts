@@ -13,6 +13,7 @@ import type { Finding, HintOutcome } from '@/domain/scan/engine';
 
 import { placeOf } from './hint-row';
 import { sectionsOf } from './results';
+import { countOf } from '@/lib/intl';
 
 /** The most findings written out for one check; the rest are counted. */
 export const MAX_FINDINGS = 8;
@@ -98,7 +99,7 @@ export function fixPrompt(
   const lines = [
     `# Fix the problems Plumbline found on ${scan.finalUrl}`,
     '',
-    `Plumbline scanned ${scan.finalUrl}, which is served by ${project}, and found ${problems.length} checks that need attention. For each one below, find where the project produces the problem, make the smallest change that fixes it and leave unrelated code alone. Some fixes are headers, redirects or files served from the site root; make them wherever the project sets them (server or framework config, middleware, templates or the static assets).`,
+    `Plumbline scanned ${scan.finalUrl}, which is served by ${project}, and found ${countOf(problems.length, 'check')} needing attention. For each one below, find where the project produces the problem, make the smallest change that fixes it and leave unrelated code alone. Some fixes are headers, redirects or files served from the site root; make them wherever the project sets them (server or framework config, middleware, templates or the static assets).`,
     '',
   ];
   let number = 0;

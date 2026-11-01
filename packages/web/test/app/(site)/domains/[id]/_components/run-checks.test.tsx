@@ -14,6 +14,10 @@ describe('RunChecks', () => {
     );
   });
 
+  it('says "check" for one', () => {
+    expect(render(['csp'])).toMatch(/<button[^>]*>Run 1 check<\/button>/);
+  });
+
   it('can be pressed while there are checks to run', () => {
     expect(render(['csp'])).not.toMatch(/<button[^>]*disabled=""/);
   });

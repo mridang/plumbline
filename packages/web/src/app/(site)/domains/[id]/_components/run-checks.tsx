@@ -8,6 +8,7 @@ import { saveReport } from '@/components/scan/report-body';
 import { ScanResults, type Scan } from '@/components/scan/scan-results';
 import { ScanStatus, isRunning, useScan } from '@/components/scan/scanner';
 import { Button } from '@/components/ui/button';
+import { countOf } from '@/lib/intl';
 
 /** Whether the finished scan has been saved yet. */
 type Saving =
@@ -64,7 +65,7 @@ export function RunChecks({
             void run(host);
           }}
         >
-          {running ? 'Running…' : `Run ${checks.length} checks`}
+          {running ? 'Running…' : `Run ${countOf(checks.length, 'check')}`}
         </Button>
         <p aria-live="polite" className="text-sm text-muted">
           {saving.kind === 'saving' ? 'Saving the report…' : null}

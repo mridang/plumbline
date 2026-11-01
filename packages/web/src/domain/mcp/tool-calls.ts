@@ -72,6 +72,7 @@ import {
   type ToolResult,
 } from '@/domain/mcp/tool-results';
 import { SITE_URL } from '@/utils/site';
+import { countOf } from '@/lib/intl';
 
 /** The arguments of a call, once checked. */
 type Args = Readonly<Record<string, unknown>>;
@@ -149,7 +150,7 @@ function listChecks(args: Args): ToolResult {
     ...(group === '' && query === '' && offset === 0
       ? [`Groups: ${GROUPS.join(', ')}.`, '']
       : []),
-    `${pool.length} checks${group ? ` in ${group}` : ''}${query ? ` matching "${query}"` : ''}; showing ${page.length} from ${offset}.`,
+    `${countOf(pool.length, 'check')}${group ? ` in ${group}` : ''}${query ? ` matching "${query}"` : ''}; showing ${page.length} from ${offset}.`,
     ...page.map(
       (check) =>
         `- ${check.id}: ${check.name} [${check.groups.join(', ')}] ${check.description}`,
@@ -250,7 +251,7 @@ async function listReportsTool(
     reports.length === 0
       ? `${domain.host} has no saved reports yet.`
       : [
-          `${reports.length} reports for ${domain.host}, newest first:`,
+          `${countOf(reports.length, 'report')} for ${domain.host}, newest first:`,
           ...reports.map(
             (report) =>
               `- ${report.id} (${report.created_at}): ${tallyLine(report)}`,

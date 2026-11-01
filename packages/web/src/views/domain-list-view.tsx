@@ -25,6 +25,7 @@ import { Announcer, LoadingCard, MessageCard } from '@/views/status-panels';
 import { STYLES } from '@/views/styles';
 import { useWidgetData, type WidgetBridge } from '@/views/use-widget-data';
 import type { ViewState } from '@/views/view-state';
+import { countOf } from '@/lib/intl';
 
 /** How a domain's newest scan went, in a few words. */
 export function latestLine(item: Readonly<DomainListItem>): string {
@@ -159,7 +160,7 @@ export function DomainListScreen({
       <Announcer
         message={
           state.phase === 'ready'
-            ? `${state.data.domains.length} domains loaded`
+            ? `${countOf(state.data.domains.length, 'domain')} loaded`
             : ''
         }
       />

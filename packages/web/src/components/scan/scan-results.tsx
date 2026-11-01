@@ -48,7 +48,7 @@ export function progressLine(scan: Readonly<Scan>): string {
   }
   const status = scan.status === undefined ? '' : `HTTP ${scan.status} · `;
   return scan.finishedAt === undefined
-    ? `${status}${scan.hints.length} of ${scan.total} checks done…`
+    ? `${status}${scan.hints.length} of ${countOf(scan.total, 'check')} done…`
     : `${status}${countOf(scan.total, 'check')} in ${formatRating((scan.finishedAt - scan.startedAt) / 1000)} s`;
 }
 

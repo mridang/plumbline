@@ -183,6 +183,15 @@ describe('DomainListScreen', () => {
     expect(out).toContain('Back');
   });
 
+  it('announces one domain in the singular', () => {
+    expect(
+      screen({
+        phase: 'ready',
+        data: { ...LIST, domains: LIST.domains.slice(0, 1) },
+      }),
+    ).toContain('1 domain loaded');
+  });
+
   it('announces how many domains loaded', () => {
     expect(screen({ phase: 'ready', data: LIST })).toContain(
       '2 domains loaded',
