@@ -17,7 +17,7 @@ const ADA: User = {
 
 describe('SiteHeader', () => {
   it('shows the logo', () => {
-    expect(html(<SiteHeader user={null} />)).toContain('plumbline</a>');
+    expect(html(<SiteHeader user={null} />)).toContain('Plumbline</a>');
   });
 
   it('links to the source', () => {

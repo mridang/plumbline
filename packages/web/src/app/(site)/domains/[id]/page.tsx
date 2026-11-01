@@ -142,7 +142,7 @@ export default async function DomainPage({
           <Heading variant="h3">Checks</Heading>
           <p className="mt-2 max-w-2xl text-muted">
             Choose which checks run for {domain.host}. With every check on,
-            checks added to plumbline later run too.
+            checks added to Plumbline later run too.
           </p>
           <div className="mt-6">
             <CheckForm

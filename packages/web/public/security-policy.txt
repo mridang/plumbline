@@ -1,4 +1,4 @@
-plumbline security policy
+Plumbline security policy
 
 Report a vulnerability in https://plumbline.apps.mrida.ng by email to
 mridang.agarwalla@gmail.com. Please include what you found, the address or

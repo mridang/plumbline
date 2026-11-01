@@ -1,4 +1,4 @@
-# plumbline
+# Plumbline
 
 The website at [plumbline.apps.mrida.ng](https://plumbline.apps.mrida.ng): type a domain and see the outcome of every [webhint-hints](../hints/README.md) check, run in your own browser. Sign in with Google to keep a list of domains, choose which checks run for each, and keep each domain's reports. Built as a Next.js app on Cloudflare Workers (OpenNext), laid out like the sibling apps chowdown and broadsheet.
 
@@ -69,12 +69,12 @@ GitHub cannot reach `localhost`, so to try webhooks locally forward them with a 
 
 ## Connecting an assistant (MCP)
 
-plumbline is an MCP server at `https://plumbline.apps.mrida.ng/mcp`, protected with OAuth 2.1 as the [MCP authorization spec](https://modelcontextprotocol.io/specification/latest/basic/authorization) describes. Add that URL as a connector in ChatGPT, Claude or any MCP client, sign in with Google when asked, and approve the assistant on `/connect`. There is no secret to copy.
+Plumbline is an MCP server at `https://plumbline.apps.mrida.ng/mcp`, protected with OAuth 2.1 as the [MCP authorization spec](https://modelcontextprotocol.io/specification/latest/basic/authorization) describes. Add that URL as a connector in ChatGPT, Claude or any MCP client, sign in with Google when asked, and approve the assistant on `/connect`. There is no secret to copy.
 
-plumbline is listed for the [MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.mridang/plumbline`; the listing is [`server.json`](server.json).
+Plumbline is listed for the [MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.mridang/plumbline`; the listing is [`server.json`](server.json).
 
 - **Scopes:** `checks:read` (list checks, domains and reports) and `checks:write` (add and remove domains, choose their checks).
-- **Tools:** `list_checks`, `list_domains`, `get_domain`, `list_reports`, `get_report` (drawn as an MCP Apps view), `add_domain`, `remove_domain`, `configure_checks` and `scan_domain`. The checks never run on the server, so `scan_domain` says how to run a scan (the plumbline page, or the CLI command) instead of starting one.
+- **Tools:** `list_checks`, `list_domains`, `get_domain`, `list_reports`, `get_report` (drawn as an MCP Apps view), `add_domain`, `remove_domain`, `configure_checks` and `scan_domain`. The checks never run on the server, so `scan_domain` says how to run a scan (the Plumbline page, or the CLI command) instead of starting one.
 - **Discovery:** `/.well-known/oauth-protected-resource/mcp` (RFC 9728) and `/.well-known/oauth-authorization-server` (RFC 8414).
 - **Client registration:** Client ID Metadata Documents and dynamic registration (`/oauth/register`, RFC 7591). Public clients only, PKCE `S256` required.
 - **Disconnect:** the connected apps in the account, or `POST /oauth/revoke`.
@@ -110,7 +110,7 @@ Two layers, cheapest first. A refused request answers `429` with `Retry-After`.
    | `RL_SITE`          | pages, per address                                            | 300        |
    | `RL_DISCOVERY`     | `/.well-known/*` and other discovery files                    | 120        |
    | `RL_REPORTS`       | `/csp/reports`                                                | 60         |
-   | `RL_COVER`         | `/img`, kept from the siblings (plumbline has no image proxy) | 600        |
+   | `RL_COVER`         | `/img`, kept from the siblings (Plumbline has no image proxy) | 600        |
    | `RL_AUTH`          | sign-in and OAuth approval flows, per address                 | 30         |
    | `RL_TOKEN`         | `/oauth/token`, per address                                   | 600        |
    | `RL_REGISTER`      | `/oauth/register`, per address                                | 10         |

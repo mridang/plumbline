@@ -53,8 +53,8 @@ describe('ConnectPage', () => {
     expect(await page()).toContain('>https://plumbline.test/mcp</code>');
   });
 
-  it('tells the assistant to name the server plumbline', async () => {
-    expect(await page()).toContain('name it plumbline');
+  it('tells the assistant to name the server Plumbline', async () => {
+    expect(await page()).toContain('name it Plumbline');
   });
 
   it('says what an assistant may read and change', async () => {

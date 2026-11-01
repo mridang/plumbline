@@ -27,6 +27,6 @@ export function isHostName(value: string): boolean {
  */
 export function openReportPrompt(host: string): string | undefined {
   return isHostName(host)
-    ? `Show the latest plumbline report for ${host}`
+    ? `Show the latest Plumbline report for ${host}`
     : undefined;
 }

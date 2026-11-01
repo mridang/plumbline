@@ -20,7 +20,7 @@ import {
 export const metadata: Metadata = pageMetadata({
   title: 'Privacy',
   description:
-    'What plumbline stores, what it asks Google for, and what a scan sends where.',
+    'What Plumbline stores, what it asks Google for, and what a scan sends where.',
   path: '/privacy',
   index: true,
 });
@@ -39,7 +39,7 @@ export default function PrivacyPage(): ReactElement {
         updated={PRIVACY_LAST_UPDATED}
       >
         <p>
-          plumbline checks websites: their security headers, TLS, DNS and email
+          Plumbline checks websites: their security headers, TLS, DNS and email
           set-up, privacy, SEO and agent readiness. You can use it without an
           account. This policy explains what it accesses and keeps.
         </p>
@@ -49,7 +49,7 @@ export default function PrivacyPage(): ReactElement {
             <LegalItem>
               Only if you sign in: your Google account’s basic identity (name,
               email, profile picture). Signing in asks for nothing else, and
-              plumbline has no access to your Gmail, Drive or any other Google
+              Plumbline has no access to your Gmail, Drive or any other Google
               data.
             </LegalItem>
           </ul>
@@ -82,8 +82,8 @@ export default function PrivacyPage(): ReactElement {
         <LegalSection title="Scanning a site">
           <p>
             The checks run in your browser. Every request they make to the site
-            you are checking goes through plumbline’s server, so that site sees
-            a request from plumbline rather than from your browser. A scan you
+            you are checking goes through Plumbline’s server, so that site sees
+            a request from Plumbline rather than from your browser. A scan you
             run without saving it is not stored: its results stay in your
             browser and are gone when you leave the page.
           </p>
@@ -91,7 +91,7 @@ export default function PrivacyPage(): ReactElement {
 
         <LegalSection title="Connected assistants">
           <p>
-            If you connect an AI assistant to plumbline, you approve it on a
+            If you connect an AI assistant to Plumbline, you approve it on a
             consent screen first, and choose whether it may only read your
             domains and reports or change them as well. What an assistant does
             with them once you have allowed it is governed by that assistant’s
@@ -115,7 +115,7 @@ export default function PrivacyPage(): ReactElement {
               No advertising or analytics cookies, and no trackers.
             </LegalItem>
             <LegalItem>
-              Cloudflare, which hosts plumbline, records each request (the
+              Cloudflare, which hosts Plumbline, records each request (the
               address it came from, the page asked for, the time and the result)
               in logs that we use to keep the service running and secure. They
               are kept for a short time and are not used to profile you.
@@ -126,7 +126,7 @@ export default function PrivacyPage(): ReactElement {
         <LegalSection title="What we don’t do">
           <p>
             We don’t sell or share your data, show ads, or use anything you keep
-            in plumbline to train any model.
+            in Plumbline to train any model.
           </p>
         </LegalSection>
 
@@ -135,7 +135,7 @@ export default function PrivacyPage(): ReactElement {
             Removing a domain deletes it and all of its reports. To delete your
             account and everything above with it, email us from the address you
             sign in with and we will do it. To also withdraw Google’s
-            permission, remove plumbline at{' '}
+            permission, remove Plumbline at{' '}
             <LegalLink href="https://myaccount.google.com/permissions">
               your Google account permissions
             </LegalLink>

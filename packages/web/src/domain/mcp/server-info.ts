@@ -45,7 +45,7 @@ const SERVER_ICONS = [
 
 /** The name, version and look this server reports about itself. */
 export const SERVER_INFO = {
-  name: SITE_NAME,
+  name: SITE_NAME.toLowerCase(),
   title: SITE_NAME,
   version: SERVER_VERSION,
   description: SITE_DESCRIPTION,
@@ -78,8 +78,8 @@ export const CAPABILITIES = {
  * a host may put all of it in the model's context, so a test caps its length.
  */
 export const INSTRUCTIONS =
-  "plumbline keeps the user's domains and checks each one against a few hundred rules for security headers, TLS, DNS, mail, privacy, SEO, social cards and AI-agent readiness. " +
+  "Plumbline keeps the user's domains and checks each one against a few hundred rules for security headers, TLS, DNS, mail, privacy, SEO, social cards and AI-agent readiness. " +
   'A tool that takes a domain accepts its host name (example.com) or any URL on it. ' +
-  'The checks run in a web browser or with the plumbline CLI, never on this server: scan_domain gives the link that runs them and saves a report, and the CLI command for a full scan; get_report and list_reports read what was saved. ' +
+  'The checks run in a web browser or with the Plumbline CLI, never on this server: scan_domain gives the link that runs them and saves a report, and the CLI command for a full scan; get_report and list_reports read what was saved. ' +
   'list_checks shows every check with its id and groups; configure_checks switches checks on or off for one domain by id or by group (tls, owasp, seo, …). ' +
   'Use add_domain and remove_domain only when the user asks to keep or stop keeping a domain.';

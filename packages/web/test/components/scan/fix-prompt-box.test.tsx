@@ -37,7 +37,7 @@ describe('FixPromptBox', () => {
     );
     expect(out).toContain('Fix these with your coding assistant');
     expect(out).toContain('readOnly');
-    expect(out).toContain('Fix the problems plumbline found on https://e.com/');
+    expect(out).toContain('Fix the problems Plumbline found on https://e.com/');
     expect(out).toContain('mridang/site');
     expect(out).toContain('Copy the prompt');
   });

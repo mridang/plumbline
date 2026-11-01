@@ -64,7 +64,7 @@ export default async function GitHubPage({
       <PageHeader
         eyebrow="GitHub"
         title="Your repositories"
-        intro="Install the GitHub app and plumbline finds the repositories that are deployed web applications, adds the sites they serve to your domains, and keeps them up to date as the repositories change."
+        intro="Install the GitHub app and Plumbline finds the repositories that are deployed web applications, adds the sites they serve to your domains, and keeps them up to date as the repositories change."
       />
       <Container className="space-y-12 pb-16">
         {error && ERRORS[error] ? (
@@ -110,7 +110,7 @@ export default async function GitHubPage({
               <>
                 <p className="mt-2 max-w-2xl text-muted">
                   Connecting proves the GitHub account is yours and ties it to{' '}
-                  {user.email}. plumbline asks only to read repository contents
+                  {user.email}. Plumbline asks only to read repository contents
                   and metadata, and keeps no GitHub sign-in token.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3">

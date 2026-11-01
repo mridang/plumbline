@@ -42,7 +42,7 @@ export const READ_ONLY_TOOLS: ReadonlySet<string> = new Set([
 ]);
 
 /** The name of the protected resource, in its RFC 9728 metadata. */
-export const RESOURCE_NAME = 'plumbline domains';
+export const RESOURCE_NAME = 'Plumbline domains';
 
 /**
  * Older or looser spellings of a tool's arguments, and the canonical name each

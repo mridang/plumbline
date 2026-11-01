@@ -165,21 +165,21 @@ describe('DomainListScreen', () => {
     );
   });
 
-  it('offers to manage the domains in plumbline when the host can open links', () => {
+  it('offers to manage the domains in Plumbline when the host can open links', () => {
     expect(
       screen({ phase: 'ready', data: LIST }, { onOpenLink: noop }),
-    ).toContain('Manage domains in plumbline');
+    ).toContain('Manage domains in Plumbline');
   });
 
   it('offers no link when the host cannot open one', () => {
     expect(screen({ phase: 'ready', data: LIST })).not.toContain(
-      'Manage domains in plumbline',
+      'Manage domains in Plumbline',
     );
   });
 
   it('shows a report fetched in place, with a way back', () => {
     const out = screen({ phase: 'ready', data: LIST }, { detail: REPORT });
-    expect(out).toContain('plumbline report');
+    expect(out).toContain('Plumbline report');
     expect(out).toContain('Back');
   });
 
@@ -200,7 +200,7 @@ describe('openReport', () => {
     const host = bridge({ followUp: true });
     await openReport(SCANNED, host);
     expect(host.sendFollowUp).toHaveBeenCalledWith(
-      'Show the latest plumbline report for example.com',
+      'Show the latest Plumbline report for example.com',
     );
   });
 

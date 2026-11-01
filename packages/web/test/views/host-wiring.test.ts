@@ -247,7 +247,7 @@ describe('sendFollowUpMessage', () => {
       await sendFollowUpMessage(
         app,
         undefined,
-        'Show the latest plumbline report for example.com',
+        'Show the latest Plumbline report for example.com',
       ),
     ).toBe(true);
     expect(received).toEqual([
@@ -256,7 +256,7 @@ describe('sendFollowUpMessage', () => {
         content: [
           {
             type: 'text',
-            text: 'Show the latest plumbline report for example.com',
+            text: 'Show the latest Plumbline report for example.com',
           },
         ],
       },

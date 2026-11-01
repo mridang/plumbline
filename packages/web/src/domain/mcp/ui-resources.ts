@@ -159,7 +159,7 @@ export const OPENAI_WIDGET_DOMAIN = SITE_URL;
 
 /** What ChatGPT tells the model when a view appears, so it does not repeat the content. */
 const WIDGET_DESCRIPTION =
-  'A plumbline view is now showing on screen. Do not repeat its contents; invite the person to look at it or ask for changes.';
+  'A Plumbline view is now showing on screen. Do not repeat its contents; invite the person to look at it or ask for changes.';
 
 /** The metadata a view's resource carries (on both its listing and its contents). */
 export interface ViewResourceMeta {
@@ -243,7 +243,7 @@ export const APP_RESOURCES: readonly AppResource[] = [
   entryFor(
     {
       name: 'Report',
-      description: 'A plumbline report: how a domain did on its checks.',
+      description: 'A Plumbline report: how a domain did on its checks.',
       html: reportHtml,
     },
     REPORT_RESOURCE_URI,
@@ -251,7 +251,7 @@ export const APP_RESOURCES: readonly AppResource[] = [
   entryFor(
     {
       name: 'Domain list',
-      description: 'The domains plumbline keeps an eye on.',
+      description: 'The domains Plumbline keeps an eye on.',
       html: domainListHtml,
     },
     DOMAIN_LIST_RESOURCE_URI,

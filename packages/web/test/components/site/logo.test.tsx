@@ -17,6 +17,6 @@ describe('Logo', () => {
     const out = html(<Logo />);
     expect(out).toMatch(/^<a href="\/"/);
     expect(out).toContain('<svg');
-    expect(out).toContain('plumbline</a>');
+    expect(out).toContain('Plumbline</a>');
   });
 });
