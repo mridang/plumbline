@@ -5,7 +5,7 @@ description: Audit a website's security headers, TLS, DNS, email authentication,
 
 # Audit a website with plumbline
 
-plumbline runs every webhint-hints check (about 270, ported from Mozilla
+plumbline runs every plumbline check (about 270, ported from Mozilla
 Observatory, OWASP, Webbkoll, internet.nl, MDN and others) against a site and
 reports what is wrong, with the evidence. It runs in real Node with a real
 Chrome, so the checks that open TLS connections, talk to mail servers and

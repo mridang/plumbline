@@ -14,7 +14,7 @@ The agent ends up running the CLI, so it needs Node 22 or later and a Chrome-fam
 With the [`skills`](https://www.npmjs.com/package/skills) installer, which finds the skill in this repository and puts it where your agent reads skills:
 
 ```sh
-npx skills add mridang/webhint-hints
+npx skills add mridang/plumbline
 ```
 
 Or copy or link the folder yourself:
@@ -37,7 +37,7 @@ In Claude Cowork or claude.ai, upload the `plumbline` folder (zipped) as a custo
 The repository is a plugin marketplace (`.claude-plugin/marketplace.json` at its root), and this package is its one plugin. In Claude Code:
 
 ```text
-/plugin marketplace add mridang/webhint-hints
+/plugin marketplace add mridang/plumbline
 /plugin install plumbline@plumbline
 ```
 

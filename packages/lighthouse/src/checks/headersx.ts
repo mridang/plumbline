@@ -14,40 +14,40 @@
  * presence signal even when valid, so they are `informative`: their findings
  * are listed but never scored.
  */
-import type { HintDefinition } from '@mridang/webhint-hint-extra/dist/core/define-hint.js';
-import { firstHeader } from '@mridang/webhint-hint-extra/dist/lib/headers/http-headers.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import { firstHeader } from '@mridang/webhint-hint-plumbline/dist/lib/headers/http-headers.js';
 import {
   attributionReportingFindings,
   observeBrowsingTopicsFindings,
-} from '@mridang/webhint-hint-extra/dist/lib/headersx/privacy-apis.js';
-import { setLoginFindings } from '@mridang/webhint-hint-extra/dist/lib/headersx/fedcm.js';
-import { digestFindings } from '@mridang/webhint-hint-extra/dist/lib/headersx/digest.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/headersx/privacy-apis.js';
+import { setLoginFindings } from '@mridang/webhint-hint-plumbline/dist/lib/headersx/fedcm.js';
+import { digestFindings } from '@mridang/webhint-hint-plumbline/dist/lib/headersx/digest.js';
 import {
   speculationRulesFindings,
   supportsLoadingModeFindings,
-} from '@mridang/webhint-hint-extra/dist/lib/headersx/speculation.js';
-import { compressionDictionaryFindings } from '@mridang/webhint-hint-extra/dist/lib/headersx/compression.js';
-import { serviceWorkerAllowedFindings } from '@mridang/webhint-hint-extra/dist/lib/headersx/service-worker.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/headersx/speculation.js';
+import { compressionDictionaryFindings } from '@mridang/webhint-hint-plumbline/dist/lib/headersx/compression.js';
+import { serviceWorkerAllowedFindings } from '@mridang/webhint-hint-plumbline/dist/lib/headersx/service-worker.js';
 import {
   acceptPatchFindings,
   acceptPostFindings,
-} from '@mridang/webhint-hint-extra/dist/lib/headersx/accept-method.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/headersx/accept-method.js';
 import { mainResponse } from '../network.js';
 import { hintDocs } from '../meta.js';
 import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata.
-import attributionReportingHint from '@mridang/webhint-hint-extra/dist/hints/headersx/attribution-reporting.js';
-import observeBrowsingTopicsHint from '@mridang/webhint-hint-extra/dist/hints/headersx/observe-browsing-topics.js';
-import setLoginHint from '@mridang/webhint-hint-extra/dist/hints/headersx/set-login.js';
-import contentDigestHint from '@mridang/webhint-hint-extra/dist/hints/headersx/content-digest.js';
-import reprDigestHint from '@mridang/webhint-hint-extra/dist/hints/headersx/repr-digest.js';
-import speculationRulesHint from '@mridang/webhint-hint-extra/dist/hints/headersx/speculation-rules.js';
-import supportsLoadingModeHint from '@mridang/webhint-hint-extra/dist/hints/headersx/supports-loading-mode.js';
-import useAsDictionaryHint from '@mridang/webhint-hint-extra/dist/hints/headersx/use-as-dictionary.js';
-import serviceWorkerAllowedHint from '@mridang/webhint-hint-extra/dist/hints/headersx/service-worker-allowed.js';
-import acceptPostHint from '@mridang/webhint-hint-extra/dist/hints/headersx/accept-post.js';
-import acceptPatchHint from '@mridang/webhint-hint-extra/dist/hints/headersx/accept-patch.js';
+import attributionReportingHint from '@mridang/webhint-hint-plumbline/dist/hints/headersx/attribution-reporting.js';
+import observeBrowsingTopicsHint from '@mridang/webhint-hint-plumbline/dist/hints/headersx/observe-browsing-topics.js';
+import setLoginHint from '@mridang/webhint-hint-plumbline/dist/hints/headersx/set-login.js';
+import contentDigestHint from '@mridang/webhint-hint-plumbline/dist/hints/headersx/content-digest.js';
+import reprDigestHint from '@mridang/webhint-hint-plumbline/dist/hints/headersx/repr-digest.js';
+import speculationRulesHint from '@mridang/webhint-hint-plumbline/dist/hints/headersx/speculation-rules.js';
+import supportsLoadingModeHint from '@mridang/webhint-hint-plumbline/dist/hints/headersx/supports-loading-mode.js';
+import useAsDictionaryHint from '@mridang/webhint-hint-plumbline/dist/hints/headersx/use-as-dictionary.js';
+import serviceWorkerAllowedHint from '@mridang/webhint-hint-plumbline/dist/hints/headersx/service-worker-allowed.js';
+import acceptPostHint from '@mridang/webhint-hint-plumbline/dist/hints/headersx/accept-post.js';
+import acceptPatchHint from '@mridang/webhint-hint-plumbline/dist/hints/headersx/accept-patch.js';
 
 /** The artifact set these checks read: the devtools log and the URL set. */
 const HEADER_ARTIFACTS = ['DevtoolsLog', 'URL'] as const;

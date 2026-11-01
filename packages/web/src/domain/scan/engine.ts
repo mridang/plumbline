@@ -29,7 +29,7 @@ import { Severity } from '@hint/utils-types';
 import {
   takeRefusals,
   type Refusal,
-} from '@mridang/webhint-hint-extra/dist/browser/refusals.js';
+} from '@mridang/webhint-hint-plumbline/dist/browser/refusals.js';
 
 import type { CatalogueEntry, HintInfo } from './catalogue';
 

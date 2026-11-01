@@ -24,8 +24,8 @@
  * with several `<script>` tags. A real parser removes that whole class of bug.
  */
 import { createHTMLDocument } from '@hint/utils-dom';
-import type { JsonLdDocument } from '@mridang/webhint-hint-extra/dist/lib/geo/json-ld.js';
-import type { ContentDocument } from '@mridang/webhint-hint-extra/dist/lib/geo/content.js';
+import type { JsonLdDocument } from '@mridang/webhint-hint-plumbline/dist/lib/geo/json-ld.js';
+import type { ContentDocument } from '@mridang/webhint-hint-plumbline/dist/lib/geo/content.js';
 
 /**
  * Parses the served HTML into a real document that satisfies both the

@@ -1,4 +1,4 @@
-// Docker Bake configuration for the webhint-hints scan server image.
+// Docker Bake configuration for the plumbline scan server image.
 //
 // Usage:
 //   docker buildx bake               # builds both linux/amd64 + linux/arm64 to an OCI tarball
@@ -19,7 +19,7 @@ variable "TAG" {
 }
 
 variable "IMAGE_NAME" {
-  default = "webhint-hints"
+  default = "plumbline"
 }
 
 function "image" {
@@ -63,7 +63,7 @@ target "multi" {
   target    = "runtime"
   platforms = ["linux/amd64", "linux/arm64"]
   tags      = [image(TAG)]
-  output    = ["type=oci,dest=./dist/webhint-hints-multi.tar"]
+  output    = ["type=oci,dest=./dist/plumbline-multi.tar"]
 }
 
 target "push" {

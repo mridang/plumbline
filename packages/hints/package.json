@@ -1,5 +1,5 @@
 {
-  "name": "@mridang/webhint-hint-extra",
+  "name": "@mridang/webhint-hint-plumbline",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
@@ -99,11 +99,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mridang/webhint-hints.git",
+    "url": "git+https://github.com/mridang/plumbline.git",
     "directory": "packages/hints"
   },
-  "homepage": "https://github.com/mridang/webhint-hints",
-  "bugs": "https://github.com/mridang/webhint-hints/issues",
+  "homepage": "https://github.com/mridang/plumbline",
+  "bugs": "https://github.com/mridang/plumbline/issues",
   "peerDependencies": {
     "hint": "^7.1.0"
   },

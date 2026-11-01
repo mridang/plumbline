@@ -1,6 +1,6 @@
-# @mridang/webhint-formatter-extra
+# @mridang/webhint-formatter-plumbline
 
-A [webhint](https://webhint.io) formatter that writes one self-contained HTML report for the [webhint-hints](../hints/README.md) checks.
+A [webhint](https://webhint.io) formatter that writes one self-contained HTML report for the [plumbline](../hints/README.md) checks.
 
 The stock `html` report only knows webhint's eight categories, never shows a hint's description, and links every hint to `webhint.io` pages that do not exist for these hints. This one sorts hints into the sections stamped on them (see [Sections](../hints/README.md#sections)), and stock hints into their webhint category. Each hint shows its description, a reference link, its origins, its source groups and tagged sections as badges, and its findings with code snippets and further reading. Sections without findings show as passed, and buttons for the sources that occur (`observatory`, `owasp` and so on) filter the report. When the `agent-score` hint ran, its score is shown as a summary card at the top.
 
@@ -9,7 +9,7 @@ The report is a single HTML file with its styles and a little inline JavaScript,
 ## Install
 
 ```sh
-npm install --save-dev hint @mridang/webhint-formatter-extra
+npm install --save-dev hint @mridang/webhint-formatter-plumbline
 ```
 
 It needs `hint` 7.1 or later as a peer dependency, and Node 22 or later.
@@ -20,9 +20,9 @@ List it in `.hintrc`, next to or instead of the stock formatters:
 
 ```json
 {
-  "formatters": ["stylish", "@mridang/webhint-formatter-extra"],
+  "formatters": ["stylish", "@mridang/webhint-formatter-plumbline"],
   "extends": [
-    "./node_modules/@mridang/webhint-hint-extra/configs/observatory.json"
+    "./node_modules/@mridang/webhint-hint-plumbline/configs/observatory.json"
   ]
 }
 ```

@@ -21,8 +21,8 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import extraHints from '@mridang/webhint-hint-extra';
-import { CATEGORIES } from '@mridang/webhint-hint-extra/dist/core/taxonomy.js';
+import extraHints from '@mridang/webhint-hint-plumbline';
+import { CATEGORIES } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = resolve(root, 'dist');

@@ -10,8 +10,8 @@ import type { AuditCheck } from '../../src/checks/types.js';
 import {
   hreflangReturn,
   hreflangValidCodes,
-} from '@mridang/webhint-hint-extra/dist/lib/i18n/checks.js';
-import type { DocumentLike } from '@mridang/webhint-hint-extra/dist/lib/i18n/read.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/i18n/checks.js';
+import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/i18n/read.js';
 
 const require = createRequire(import.meta.url);
 const { createHTMLDocument } = require('@hint/utils-dom');

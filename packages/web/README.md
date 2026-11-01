@@ -1,8 +1,8 @@
 # Plumbline
 
-The website at [plumbline.apps.mrida.ng](https://plumbline.apps.mrida.ng): type a domain and see the outcome of every [webhint-hints](../hints/README.md) check, run in your own browser. Sign in with Google to keep a list of domains, choose which checks run for each, and keep each domain's reports. Built as a Next.js app on Cloudflare Workers (OpenNext), laid out like the sibling apps chowdown and broadsheet.
+The website at [plumbline.apps.mrida.ng](https://plumbline.apps.mrida.ng): type a domain and see the outcome of every [plumbline](../hints/README.md) check, run in your own browser. Sign in with Google to keep a list of domains, choose which checks run for each, and keep each domain's reports. Built as a Next.js app on Cloudflare Workers (OpenNext), laid out like the sibling apps chowdown and broadsheet.
 
-The package, `@mridang/webhint-web-extra`, is private: it is never published, only deployed.
+The package, `@mridang/plumbline-web`, is private: it is never published, only deployed.
 
 The checks run in the visitor's browser, not in the Worker, which is how the app fits the Workers Free plan. The page asks the Worker to start a scan (`POST /api/scans`), which checks the address and signs a scan id with `SCAN_SECRET`. A few Web Workers then load the hints package and run the real hint classes one at a time against the page, parsed with webhint's own DOM. A browser may not read another site's headers or body, so every request a check makes goes through the Worker (`POST /api/scans/{id}/fetches`), one outbound request per call. A check that needs a raw connection, a program, a certificate parser or script in the page is listed as skipped; the [CLI](../cli/README.md) and the [Docker image](../docker/README.md) run them. The Worker runs with the `global_fetch_strictly_public` flag, so a scan only reaches the public internet.
 

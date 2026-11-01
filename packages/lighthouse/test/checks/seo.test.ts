@@ -12,8 +12,8 @@ import {
   h1Multiple,
   structuredDataMissing,
   titleMissing,
-} from '@mridang/webhint-hint-extra/dist/lib/seo/checks.js';
-import type { DocumentLike } from '@mridang/webhint-hint-extra/dist/lib/seo/read.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/seo/checks.js';
+import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/seo/read.js';
 
 const require = createRequire(import.meta.url);
 const { createHTMLDocument } = require('@hint/utils-dom');

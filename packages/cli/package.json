@@ -47,14 +47,14 @@
     "oclif.manifest.json"
   ],
   "license": "Apache-2.0",
-  "description": "A command-line scanner that runs every webhint-hints check (security headers, TLS, DNS, email, SEO, agent readiness) against a site from real Node",
+  "description": "A command-line scanner that runs every plumbline check (security headers, TLS, DNS, email, SEO, agent readiness) against a site from real Node",
   "private": false,
   "dependencies": {
     "@hint/connector-puppeteer": "^2.5.0",
     "@hint/parser-html": "^3.1.0",
     "@hint/utils-types": "^1.2.0",
-    "@mridang/webhint-formatter-extra": "*",
-    "@mridang/webhint-hint-extra": "*",
+    "@mridang/webhint-formatter-plumbline": "*",
+    "@mridang/webhint-hint-plumbline": "*",
     "@oclif/core": "^5.1.10",
     "@oclif/plugin-help": "^7.0.6",
     "@oclif/plugin-not-found": "^4.0.7",
@@ -65,11 +65,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mridang/webhint-hints.git",
+    "url": "git+https://github.com/mridang/plumbline.git",
     "directory": "packages/cli"
   },
-  "homepage": "https://github.com/mridang/webhint-hints/tree/master/packages/cli",
-  "bugs": "https://github.com/mridang/webhint-hints/issues",
+  "homepage": "https://github.com/mridang/plumbline/tree/master/packages/cli",
+  "bugs": "https://github.com/mridang/plumbline/issues",
   "publishConfig": {
     "access": "public"
   }

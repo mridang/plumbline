@@ -1,5 +1,5 @@
 /**
- * `@mridang/plumbline` is a command-line scanner for the `webhint-hints`
+ * `@mridang/plumbline` is a command-line scanner for the `plumbline`
  * checks (the `plumbline` executable). Its scan and report logic is exported
  * too, so the Docker scan server and other programs run exactly the same
  * scan the CLI does.

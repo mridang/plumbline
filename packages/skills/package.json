@@ -25,11 +25,11 @@
   "private": false,
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mridang/webhint-hints.git",
+    "url": "git+https://github.com/mridang/plumbline.git",
     "directory": "packages/skills"
   },
-  "homepage": "https://github.com/mridang/webhint-hints/tree/master/packages/skills",
-  "bugs": "https://github.com/mridang/webhint-hints/issues",
+  "homepage": "https://github.com/mridang/plumbline/tree/master/packages/skills",
+  "bugs": "https://github.com/mridang/plumbline/issues",
   "publishConfig": {
     "access": "public"
   }

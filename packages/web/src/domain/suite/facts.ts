@@ -13,7 +13,7 @@
  * stay in the visitor's browser.
  */
 
-import { DEPRECATED_TAGS } from '@mridang/webhint-hint-extra/dist/lib/seo/content.js';
+import { DEPRECATED_TAGS } from '@mridang/webhint-hint-plumbline/dist/lib/seo/content.js';
 
 /** An image and what the image checks ask about it. */
 export interface ImageFact {

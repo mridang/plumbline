@@ -1,5 +1,5 @@
 /**
- * The webhint formatter `@mridang/webhint-formatter-extra`. It writes one
+ * The webhint formatter `@mridang/webhint-formatter-plumbline`. It writes one
  * self-contained HTML report that groups hints into the sections stamped on
  * their metadata, shows descriptions, references and origins, and filters by
  * source group.

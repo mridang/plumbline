@@ -1,5 +1,5 @@
 {
-  "name": "@mridang/webhint-web-extra",
+  "name": "@mridang/plumbline-web",
   "version": "0.1.0",
   "type": "module",
   "private": true,
@@ -33,23 +33,23 @@
     "url": "https://github.com/mridang"
   },
   "license": "Apache-2.0",
-  "description": "plumbline: a web page that runs the webhint-hints checks against a domain in the visitor's browser, through a Cloudflare Worker, and lists what passed and failed",
+  "description": "plumbline: a web page that runs the plumbline checks against a domain in the visitor's browser, through a Cloudflare Worker, and lists what passed and failed",
   "engines": {
     "node": ">=22.0.0"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mridang/webhint-hints.git",
+    "url": "git+https://github.com/mridang/plumbline.git",
     "directory": "packages/web"
   },
-  "homepage": "https://github.com/mridang/webhint-hints/tree/master/packages/web",
-  "bugs": "https://github.com/mridang/webhint-hints/issues",
+  "homepage": "https://github.com/mridang/plumbline/tree/master/packages/web",
+  "bugs": "https://github.com/mridang/plumbline/issues",
   "devDependencies": {
     "@hint/utils-dom": "^2.2.4",
     "@hint/utils-types": "^1.2.1",
     "@modelcontextprotocol/core": "^2.4.0",
     "@modelcontextprotocol/ext-apps": "^2.0.4",
-    "@mridang/webhint-hint-extra": "*",
+    "@mridang/webhint-hint-plumbline": "*",
     "@opennextjs/cloudflare": "^1.20.12",
     "@tailwindcss/postcss": "^4",
     "@tsconfig/node24": "^24.0.5",

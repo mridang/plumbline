@@ -4,6 +4,6 @@
   },
   "parsers": ["html"],
   "hints": {
-    "@mridang/webhint-hint-extra/apple-app-site-association": "default"
+    "@mridang/webhint-hint-plumbline/apple-app-site-association": "default"
   }
 }

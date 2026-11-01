@@ -1,5 +1,5 @@
 {
-  "name": "@mridang/webhint-docker-extra",
+  "name": "@mridang/plumbline-docker",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -18,7 +18,7 @@
     "url": "https://github.com/mridang"
   },
   "license": "Apache-2.0",
-  "description": "An HTTP server that runs the webhint-hints checks against a URL and returns the findings as JSON, shipped as a Docker image",
+  "description": "An HTTP server that runs the plumbline checks against a URL and returns the findings as JSON, shipped as a Docker image",
   "dependencies": {
     "@mridang/plumbline": "*"
   },
@@ -30,9 +30,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mridang/webhint-hints.git",
+    "url": "git+https://github.com/mridang/plumbline.git",
     "directory": "packages/docker"
   },
-  "homepage": "https://github.com/mridang/webhint-hints/tree/master/packages/docker",
-  "bugs": "https://github.com/mridang/webhint-hints/issues"
+  "homepage": "https://github.com/mridang/plumbline/tree/master/packages/docker",
+  "bugs": "https://github.com/mridang/plumbline/issues"
 }

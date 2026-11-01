@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module';
 import { Analyzer, Configuration } from 'hint';
 import type { Problem } from '@hint/utils-types';
-import extraHints from '@mridang/webhint-hint-extra';
+import extraHints from '@mridang/webhint-hint-plumbline';
 
 // The connector and the parser are CommonJS packages with a default export.
 const require = createRequire(import.meta.url);

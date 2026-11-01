@@ -25,7 +25,7 @@ export const probeContentEncoding: EncodingProbe = (url) =>
         method: 'GET',
         headers: {
           'accept-encoding': ACCEPT_ENCODING,
-          'user-agent': 'webhint-hints',
+          'user-agent': 'plumbline',
         },
         timeout: 10_000,
       },

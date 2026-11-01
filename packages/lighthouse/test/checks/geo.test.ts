@@ -7,15 +7,15 @@ import type { AuditCheck } from '../../src/checks/types.js';
 import {
   readJsonLd,
   type JsonLdDocument,
-} from '@mridang/webhint-hint-extra/dist/lib/geo/json-ld.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/geo/json-ld.js';
 import {
   measureContent,
   type ContentDocument,
-} from '@mridang/webhint-hint-extra/dist/lib/geo/content.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/geo/content.js';
 import {
   contentExtractionFindings,
   structuredDataInvalidFindings,
-} from '@mridang/webhint-hint-extra/dist/lib/geo/checks.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/geo/checks.js';
 
 // The same DOM parser webhint feeds its hints: the equivalence tests build the
 // "webhint side" of each check with it, exactly as the hint does.

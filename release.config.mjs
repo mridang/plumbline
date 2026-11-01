@@ -35,7 +35,7 @@ export default {
       {
         dockerRegistry: 'docker.io',
         dockerProject: 'mridang',
-        dockerImage: 'webhint-hints',
+        dockerImage: 'plumbline',
         dockerTags: ['latest', '{{major}}', '{{version}}'],
         dockerTimeout: 3600000,
         dockerBake: {

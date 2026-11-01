@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { FormatterOptions } from 'hint';
 import { Severity, type Problem } from '@hint/utils-types';
-import ExtraFormatter from '@mridang/webhint-formatter-extra';
+import ExtraFormatter from '@mridang/webhint-formatter-plumbline';
 import { hintCtors, type HintMeta, type ScanResult } from './scan.js';
 
 /** One finding in the JSON report, flattened from a webhint `Problem`. */

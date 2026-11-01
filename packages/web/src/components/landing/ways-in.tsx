@@ -4,7 +4,7 @@ import { Container, Eyebrow } from '@/components/ui/layout';
 import { SITE_URL, SOURCE_URL } from '@/utils/site';
 
 /** The command that installs the plumbline skill into a coding agent. */
-export const SKILL_INSTALL = 'npx skills add mridang/webhint-hints';
+export const SKILL_INSTALL = 'npx skills add mridang/plumbline';
 
 /** The command that runs every check from a terminal. */
 export const CLI_SCAN = 'npx @mridang/plumbline scan example.com';
@@ -55,7 +55,7 @@ export const WAYS_IN: readonly WayIn[] = [
     title: 'webhint',
     tag: 'Hints',
     body: 'Add the checks to an existing webhint setup as extra hints, grouped by source (Observatory, OWASP, internet.nl and more), with a report formatter that shows the fixes.',
-    snippet: 'npm install --save-dev hint @mridang/webhint-hint-extra',
+    snippet: 'npm install --save-dev hint @mridang/webhint-hint-plumbline',
     href: `${SOURCE_URL}/tree/master/packages/hints`,
     more: 'Hints and groups',
   },
@@ -64,7 +64,7 @@ export const WAYS_IN: readonly WayIn[] = [
     tag: 'Plugin',
     body: 'Run the checks as a Lighthouse plugin, next to performance and accessibility, in the reports your team already reads.',
     snippet:
-      'npx lighthouse https://example.com --plugins=lighthouse-plugin-webhint-extra',
+      'npx lighthouse https://example.com --plugins=@mridang/lighthouse-plugin-plumbline',
     href: `${SOURCE_URL}/tree/master/packages/lighthouse`,
     more: 'Plugin setup',
   },
@@ -72,7 +72,7 @@ export const WAYS_IN: readonly WayIn[] = [
     title: 'Docker',
     tag: 'Image',
     body: 'A small HTTP server with Chromium that scans a URL and answers with JSON, for end-to-end tests in any language. Multi-arch, released with the packages.',
-    snippet: 'docker run --rm -p 8080:8080 mridang/webhint-hints',
+    snippet: 'docker run --rm -p 8080:8080 mridang/plumbline',
     href: `${SOURCE_URL}/tree/master/packages/docker`,
     more: 'Image and API',
   },

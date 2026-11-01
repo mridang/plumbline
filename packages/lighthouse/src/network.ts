@@ -8,7 +8,7 @@
 import { NetworkRecords } from 'lighthouse';
 import type * as LH from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
-import type { HeaderBag } from '@mridang/webhint-hint-extra/dist/lib/headers/http-headers.js';
+import type { HeaderBag } from '@mridang/webhint-hint-plumbline/dist/lib/headers/http-headers.js';
 import { findMainDocument, headerBagFromRecord } from './adapt.js';
 
 /** The artifacts a header audit requires: the devtools log and the URL set. */

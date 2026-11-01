@@ -1,18 +1,18 @@
-# webhint-hints
+# plumbline
 
 About 280 checks for a website and the services around it: security headers, TLS and certificates, DNS, email authentication, Open Graph and SEO, privacy, agent readiness, and the well-known files (`robots.txt`, `security.txt`, `llms.txt`, `ai.txt`). Every check is ported from a public reference, such as Mozilla Observatory, OWASP, Webbkoll, internet.nl, MDN, isitagentready and Roctify, with its original rules, thresholds and wording kept (see [References](#references)).
 
 The checks are [webhint](https://webhint.io) hints, and everything else in this repository is a way to run them.
 
-| Package                                                            | What                                                             |
-| ------------------------------------------------------------------ | ---------------------------------------------------------------- |
-| [`@mridang/webhint-hint-extra`](packages/hints/README.md)          | The hints, the group presets and the full list of checks         |
-| [`@mridang/webhint-formatter-extra`](packages/formatter/README.md) | An HTML report for webhint, sectioned and filterable             |
-| [`lighthouse-plugin-webhint-extra`](packages/lighthouse/README.md) | A Lighthouse plugin with the checks Lighthouse can run           |
-| [`@mridang/plumbline`](packages/cli/README.md)                     | The `plumbline` CLI, which runs every check                      |
-| [`@mridang/plumbline-skills`](packages/skills/README.md)           | The agent skill and the Claude Code plugin that run the CLI      |
-| [`@mridang/webhint-docker-extra`](packages/docker/README.md)       | A scan server, shipped only as the `mridang/webhint-hints` image |
-| [`@mridang/webhint-web-extra`](packages/web/README.md)             | The plumbline website, on Cloudflare Workers (private)           |
+| Package                                                                 | What                                                         |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [`@mridang/webhint-hint-plumbline`](packages/hints/README.md)           | The hints, the group presets and the full list of checks     |
+| [`@mridang/webhint-formatter-plumbline`](packages/formatter/README.md)  | An HTML report for webhint, sectioned and filterable         |
+| [`@mridang/lighthouse-plugin-plumbline`](packages/lighthouse/README.md) | A Lighthouse plugin with the checks Lighthouse can run       |
+| [`@mridang/plumbline`](packages/cli/README.md)                          | The `plumbline` CLI, which runs every check                  |
+| [`@mridang/plumbline-skills`](packages/skills/README.md)                | The agent skill and the Claude Code plugin that run the CLI  |
+| [`@mridang/plumbline-docker`](packages/docker/README.md)                | A scan server, shipped only as the `mridang/plumbline` image |
+| [`@mridang/plumbline-web`](packages/web/README.md)                      | The plumbline website, on Cloudflare Workers (private)       |
 
 ## How to use it
 
@@ -37,13 +37,13 @@ It runs every check from Node with a real Chrome, exits 1 when a finding is at o
 The [skills package](packages/skills/README.md) teaches an agent (Claude Code, Codex, Cursor, GitHub Copilot and others that read the Agent Skills format) to audit a site with the CLI, read the findings and explain the fixes. Install the skill with:
 
 ```sh
-npx skills add mridang/webhint-hints
+npx skills add mridang/plumbline
 ```
 
 In Claude Code it is also a plugin, with an `/plumbline:audit <url>` command that runs the scan for you:
 
 ```text
-/plugin marketplace add mridang/webhint-hints
+/plugin marketplace add mridang/plumbline
 /plugin install plumbline@plumbline
 ```
 
@@ -56,20 +56,20 @@ Add `https://plumbline.apps.mrida.ng/mcp` as a connector in ChatGPT, Claude or a
 ### In webhint
 
 ```sh
-npm install --save-dev hint @hint/connector-puppeteer @hint/parser-html @mridang/webhint-hint-extra
+npm install --save-dev hint @hint/connector-puppeteer @hint/parser-html @mridang/webhint-hint-plumbline
 ```
 
-Extend the group presets you want in `.hintrc`, or list single hints as `@mridang/webhint-hint-extra/<id>`:
+Extend the group presets you want in `.hintrc`, or list single hints as `@mridang/webhint-hint-plumbline/<id>`:
 
 ```json
 {
   "formatters": ["stylish"],
   "extends": [
-    "./node_modules/@mridang/webhint-hint-extra/configs/observatory.json",
-    "./node_modules/@mridang/webhint-hint-extra/configs/email.json"
+    "./node_modules/@mridang/webhint-hint-plumbline/configs/observatory.json",
+    "./node_modules/@mridang/webhint-hint-plumbline/configs/email.json"
   ],
   "hints": {
-    "@mridang/webhint-hint-extra/hsts": ["default", { "profile": "owasp" }]
+    "@mridang/webhint-hint-plumbline/hsts": ["default", { "profile": "owasp" }]
   }
 }
 ```
@@ -83,12 +83,12 @@ The groups, the sections, the hint options and the table of every hint are in [`
 ### The report formatter
 
 ```sh
-npm install --save-dev @mridang/webhint-formatter-extra
+npm install --save-dev @mridang/webhint-formatter-plumbline
 ```
 
 ```json
 {
-  "formatters": ["@mridang/webhint-formatter-extra"]
+  "formatters": ["@mridang/webhint-formatter-plumbline"]
 }
 ```
 
@@ -97,8 +97,8 @@ webhint then writes `hint-report/<site>.html`, one self-contained page with the 
 ### In Lighthouse
 
 ```sh
-npm install --save-dev lighthouse lighthouse-plugin-webhint-extra
-npx lighthouse https://example.com/ --plugins=lighthouse-plugin-webhint-extra
+npm install --save-dev lighthouse @mridang/lighthouse-plugin-plumbline
+npx lighthouse https://example.com/ --plugins=@mridang/lighthouse-plugin-plumbline
 ```
 
 The plugin adds a "Webhint extra" category with the 143 checks whose data Lighthouse already gathers (headers, Open Graph, SEO, structured data, privacy). See [`packages/lighthouse`](packages/lighthouse/README.md).
@@ -106,7 +106,7 @@ The plugin adds a "Webhint extra" category with the 143 checks whose data Lighth
 ### With Docker
 
 ```sh
-docker run --rm -p 8080:8080 mridang/webhint-hints
+docker run --rm -p 8080:8080 mridang/plumbline
 curl -s localhost:8080/scan -d '{"url":"https://example.com/"}'
 ```
 
@@ -356,7 +356,7 @@ Every check records the public reference it was ported from (its origins, in `pa
 | `mta-sts`                                | Email security          | [IETF RFCs and the RSS 2.0 specification](https://www.rfc-editor.org/)                                                                                                                                                                                                                                                                                 |
 | `nel`                                    | Site protection         | [MDN HTTP headers reference](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers)                                                                                                                                                                                                                                                      |
 | `no-vary-search`                         | Site protection         | [MDN HTTP headers reference](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers)                                                                                                                                                                                                                                                      |
-| `nodeinfo`                               | LLMs and AI             | [Written for this package](https://github.com/mridang/webhint-hints)                                                                                                                                                                                                                                                                                   |
+| `nodeinfo`                               | LLMs and AI             | [Written for this package](https://github.com/mridang/plumbline)                                                                                                                                                                                                                                                                                       |
 | `observe-browsing-topics`                | Visitor privacy         | [MDN HTTP headers reference](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers)                                                                                                                                                                                                                                                      |
 | `oembed-discovery`                       | Link previews and icons | [oEmbed specification](https://oembed.com/)                                                                                                                                                                                                                                                                                                            |
 | `opengraph-description-could-be-longer`  | Link previews and icons | [OpenGraph.to articles](https://www.opengraph.to/articles)                                                                                                                                                                                                                                                                                             |
@@ -388,7 +388,7 @@ Every check records the public reference it was ported from (its origins, in `pa
 | `origin-agent-cluster`                   | Site protection         | [MDN HTTP headers reference](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers)                                                                                                                                                                                                                                                      |
 | `pagination-rel`                         | Search and page quality | [MDN HTTP headers reference](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers)                                                                                                                                                                                                                                                      |
 | `permissions-policy`                     | Site protection         | [OWASP Secure Headers Project validator](https://github.com/OWASP/secure-headers-project)                                                                                                                                                                                                                                                              |
-| `pingback`                               | Link previews and icons | [Written for this package](https://github.com/mridang/webhint-hints)                                                                                                                                                                                                                                                                                   |
+| `pingback`                               | Link previews and icons | [Written for this package](https://github.com/mridang/plumbline)                                                                                                                                                                                                                                                                                       |
 | `privacy-cookies`                        | Visitor privacy         | [Webbkoll](https://codeberg.org/dataskydd.net/webbkoll)                                                                                                                                                                                                                                                                                                |
 | `privacy-geolocation`                    | Visitor privacy         | This repository                                                                                                                                                                                                                                                                                                                                        |
 | `privacy-insecure-first-party`           | HTTPS and certificates  | [Webbkoll](https://codeberg.org/dataskydd.net/webbkoll)                                                                                                                                                                                                                                                                                                |

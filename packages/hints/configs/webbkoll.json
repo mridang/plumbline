@@ -4,16 +4,16 @@
   },
   "parsers": ["html"],
   "hints": {
-    "@mridang/webhint-hint-extra/csp": "default",
-    "@mridang/webhint-hint-extra/csp-reporting": "default",
-    "@mridang/webhint-hint-extra/hsts": "default",
-    "@mridang/webhint-hint-extra/privacy-cookies": "default",
-    "@mridang/webhint-hint-extra/privacy-insecure-first-party": "default",
-    "@mridang/webhint-hint-extra/privacy-local-storage": "default",
-    "@mridang/webhint-hint-extra/privacy-mixed-content": "default",
-    "@mridang/webhint-hint-extra/privacy-third-party-requests": "default",
-    "@mridang/webhint-hint-extra/referrer-policy": "default",
-    "@mridang/webhint-hint-extra/x-frame-options": "default",
-    "@mridang/webhint-hint-extra/x-xss-protection": "default"
+    "@mridang/webhint-hint-plumbline/csp": "default",
+    "@mridang/webhint-hint-plumbline/csp-reporting": "default",
+    "@mridang/webhint-hint-plumbline/hsts": "default",
+    "@mridang/webhint-hint-plumbline/privacy-cookies": "default",
+    "@mridang/webhint-hint-plumbline/privacy-insecure-first-party": "default",
+    "@mridang/webhint-hint-plumbline/privacy-local-storage": "default",
+    "@mridang/webhint-hint-plumbline/privacy-mixed-content": "default",
+    "@mridang/webhint-hint-plumbline/privacy-third-party-requests": "default",
+    "@mridang/webhint-hint-plumbline/referrer-policy": "default",
+    "@mridang/webhint-hint-plumbline/x-frame-options": "default",
+    "@mridang/webhint-hint-plumbline/x-xss-protection": "default"
   }
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import type { HintContext } from 'hint';
 import { Severity } from '@hint/utils-types';
-import { refuse } from '@mridang/webhint-hint-extra/dist/browser/refusals.js';
+import { refuse } from '@mridang/webhint-hint-plumbline/dist/browser/refusals.js';
 
 import { entryOf, type CatalogueEntry } from '@/domain/scan/catalogue';
 import {

@@ -8,7 +8,7 @@
     "url": "https://github.com/mridang"
   },
   "homepage": "https://plumbline.apps.mrida.ng",
-  "repository": "https://github.com/mridang/webhint-hints",
+  "repository": "https://github.com/mridang/plumbline",
   "license": "Apache-2.0",
   "keywords": ["security-headers", "tls", "dns", "seo", "audit", "webhint"]
 }

@@ -4,16 +4,16 @@
   },
   "parsers": ["html"],
   "hints": {
-    "@mridang/webhint-hint-extra/coep": "default",
-    "@mridang/webhint-hint-extra/cookies": "default",
-    "@mridang/webhint-hint-extra/coop": "default",
-    "@mridang/webhint-hint-extra/corp": "default",
-    "@mridang/webhint-hint-extra/cors": "default",
-    "@mridang/webhint-hint-extra/csp": "default",
-    "@mridang/webhint-hint-extra/hsts": "default",
-    "@mridang/webhint-hint-extra/redirection": "default",
-    "@mridang/webhint-hint-extra/referrer-policy": "default",
-    "@mridang/webhint-hint-extra/x-content-type-options": "default",
-    "@mridang/webhint-hint-extra/x-frame-options": "default"
+    "@mridang/webhint-hint-plumbline/coep": "default",
+    "@mridang/webhint-hint-plumbline/cookies": "default",
+    "@mridang/webhint-hint-plumbline/coop": "default",
+    "@mridang/webhint-hint-plumbline/corp": "default",
+    "@mridang/webhint-hint-plumbline/cors": "default",
+    "@mridang/webhint-hint-plumbline/csp": "default",
+    "@mridang/webhint-hint-plumbline/hsts": "default",
+    "@mridang/webhint-hint-plumbline/redirection": "default",
+    "@mridang/webhint-hint-plumbline/referrer-policy": "default",
+    "@mridang/webhint-hint-plumbline/x-content-type-options": "default",
+    "@mridang/webhint-hint-plumbline/x-frame-options": "default"
   }
 }

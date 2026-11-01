@@ -64,7 +64,7 @@ export const httpGetByIp: WebGetFn = (host, ip, port, https) =>
         port,
         path: '/',
         method: 'GET',
-        headers: { host, 'user-agent': 'webhint-hints', accept: '*/*' },
+        headers: { host, 'user-agent': 'plumbline', accept: '*/*' },
         servername: host,
         timeout: CONNECT_TIMEOUT_MS * 2,
       },

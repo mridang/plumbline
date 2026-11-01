@@ -4,7 +4,7 @@
   },
   "parsers": ["html"],
   "hints": {
-    "@mridang/webhint-hint-extra/humans-txt": "default",
-    "@mridang/webhint-hint-extra/rel-me": "default"
+    "@mridang/webhint-hint-plumbline/humans-txt": "default",
+    "@mridang/webhint-hint-plumbline/rel-me": "default"
   }
 }

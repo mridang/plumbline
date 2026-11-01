@@ -28,7 +28,7 @@ describe('site identity', () => {
   });
 
   it('points to the source on GitHub', () => {
-    expect(SOURCE_URL).toBe('https://github.com/mridang/webhint-hints');
+    expect(SOURCE_URL).toBe('https://github.com/mridang/plumbline');
   });
 
   it('gives a contact address for data and terms questions', () => {

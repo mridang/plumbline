@@ -33,8 +33,8 @@
  * opengraph-image-not-https, opengraph-image-dimensions-missing and
  * opengraph-image-alt-missing — are included.)
  */
-import type { HintDefinition } from '@mridang/webhint-hint-extra/dist/core/define-hint.js';
-import type { Finding } from '@mridang/webhint-hint-extra/dist/lib/headers/finding.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import {
   ogDescriptionCouldBeLonger,
   ogDescriptionIsUrl,
@@ -61,7 +61,7 @@ import {
   twitterImageMissing,
   twitterSiteMissing,
   twitterTitleMissing,
-} from '@mridang/webhint-hint-extra/dist/lib/opengraph/checks.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/opengraph/checks.js';
 import { ogMetaReader } from '../adapt-opengraph.js';
 import { hintDocs } from '../meta.js';
 import type { AuditCheck } from './types.js';
@@ -69,31 +69,31 @@ import type { AuditCheck } from './types.js';
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); their rule logic is the shared
 // `src/lib/opengraph/checks.ts` function each check calls below.
-import ogDescriptionCouldBeLongerHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-description-could-be-longer.js';
-import ogDescriptionIsUrlHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-description-is-url.js';
-import ogDescriptionKeywordStuffingHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-description-keyword-stuffing.js';
-import ogDescriptionMissingHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-description-missing.js';
-import ogDescriptionSameAsTitleHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-description-same-as-title.js';
-import ogDescriptionSlightlyLongHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-description-slightly-long.js';
-import ogDescriptionTooLongHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-description-too-long.js';
-import ogDescriptionTooShortHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-description-too-short.js';
-import ogImageAltMissingHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-image-alt-missing.js';
-import ogImageDimensionsMissingHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-image-dimensions-missing.js';
-import ogImageMissingHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-image-missing.js';
-import ogImageNotHttpsHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-image-not-https.js';
-import ogLocaleMissingHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-locale-missing.js';
-import ogSiteNameMissingHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-site-name-missing.js';
-import ogTitleMissingHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-title-missing.js';
-import ogTitleTooLongHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-title-too-long.js';
-import ogTitleTooShortHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-title-too-short.js';
-import ogTypeMissingHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-type-missing.js';
-import ogUrlMissingHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/opengraph-url-missing.js';
-import twitterCardMissingHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/twitter-card-missing.js';
-import twitterCardNotLargeHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/twitter-card-not-large.js';
-import twitterDescriptionMissingHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/twitter-description-missing.js';
-import twitterImageMissingHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/twitter-image-missing.js';
-import twitterSiteMissingHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/twitter-site-missing.js';
-import twitterTitleMissingHint from '@mridang/webhint-hint-extra/dist/hints/opengraph/twitter-title-missing.js';
+import ogDescriptionCouldBeLongerHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-description-could-be-longer.js';
+import ogDescriptionIsUrlHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-description-is-url.js';
+import ogDescriptionKeywordStuffingHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-description-keyword-stuffing.js';
+import ogDescriptionMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-description-missing.js';
+import ogDescriptionSameAsTitleHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-description-same-as-title.js';
+import ogDescriptionSlightlyLongHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-description-slightly-long.js';
+import ogDescriptionTooLongHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-description-too-long.js';
+import ogDescriptionTooShortHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-description-too-short.js';
+import ogImageAltMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-image-alt-missing.js';
+import ogImageDimensionsMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-image-dimensions-missing.js';
+import ogImageMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-image-missing.js';
+import ogImageNotHttpsHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-image-not-https.js';
+import ogLocaleMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-locale-missing.js';
+import ogSiteNameMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-site-name-missing.js';
+import ogTitleMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-title-missing.js';
+import ogTitleTooLongHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-title-too-long.js';
+import ogTitleTooShortHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-title-too-short.js';
+import ogTypeMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-type-missing.js';
+import ogUrlMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/opengraph-url-missing.js';
+import twitterCardMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/twitter-card-missing.js';
+import twitterCardNotLargeHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/twitter-card-not-large.js';
+import twitterDescriptionMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/twitter-description-missing.js';
+import twitterImageMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/twitter-image-missing.js';
+import twitterSiteMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/twitter-site-missing.js';
+import twitterTitleMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/twitter-title-missing.js';
 
 /** The only artifact the Open Graph checks read. */
 const META_ARTIFACTS = ['MetaElements'] as const;

@@ -23,22 +23,22 @@
 import { createRequire } from 'node:module';
 import type * as LH from 'lighthouse';
 import type { HTMLDocument } from '@hint/utils-dom';
-import type { HintDefinition } from '@mridang/webhint-hint-extra/dist/core/define-hint.js';
-import type { DocumentLike } from '@mridang/webhint-hint-extra/dist/lib/pwa/read.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/pwa/read.js';
 // The single-source PWA rules: predicate + message + severity. Both this check
 // and the webhint hints call these, so neither restates the wording.
 import {
   manifestLinked,
   themeColorMeta,
-} from '@mridang/webhint-hint-extra/dist/lib/pwa/checks.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/pwa/checks.js';
 import { hintDocs } from '../meta.js';
 import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); their check logic is reused through the
 // `src/lib/pwa/**` rule functions above, not through these modules.
-import manifestLinkedHint from '@mridang/webhint-hint-extra/dist/hints/pwa/manifest-linked.js';
-import themeColorMetaHint from '@mridang/webhint-hint-extra/dist/hints/pwa/theme-color-meta.js';
+import manifestLinkedHint from '@mridang/webhint-hint-plumbline/dist/hints/pwa/manifest-linked.js';
+import themeColorMetaHint from '@mridang/webhint-hint-plumbline/dist/hints/pwa/theme-color-meta.js';
 
 // `@hint/utils-dom` ships as CommonJS, so it is loaded through `createRequire`
 // (the pattern the other adapters use) rather than a named ESM import.

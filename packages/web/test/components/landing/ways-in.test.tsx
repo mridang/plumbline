@@ -11,7 +11,7 @@ import { html } from '../render';
 
 describe('WAYS_IN', () => {
   it('installs the skill from this repository', () => {
-    expect(SKILL_INSTALL).toBe('npx skills add mridang/webhint-hints');
+    expect(SKILL_INSTALL).toBe('npx skills add mridang/plumbline');
   });
 
   it('runs the CLI from npm', () => {

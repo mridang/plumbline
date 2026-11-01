@@ -22,7 +22,7 @@ describe('SiteHeader', () => {
 
   it('links to the source', () => {
     expect(html(<SiteHeader user={null} />)).toContain(
-      'href="https://github.com/mridang/webhint-hints"',
+      'href="https://github.com/mridang/plumbline"',
     );
   });
 

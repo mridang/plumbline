@@ -19,7 +19,7 @@ export const SITE_DESCRIPTION =
   'headers, TLS, DNS and email, privacy, SEO, social cards and agent readiness.';
 
 /** Where the source code lives. */
-export const SOURCE_URL = 'https://github.com/mridang/webhint-hints';
+export const SOURCE_URL = 'https://github.com/mridang/plumbline';
 /** Where people write to about their data or these terms. */
 export const CONTACT_EMAIL = 'mridang.agarwalla@gmail.com';
 /** The day the privacy policy last changed, for the page and the sitemap. */

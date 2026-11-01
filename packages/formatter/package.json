@@ -1,5 +1,5 @@
 {
-  "name": "@mridang/webhint-formatter-extra",
+  "name": "@mridang/webhint-formatter-plumbline",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
@@ -28,11 +28,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mridang/webhint-hints.git",
+    "url": "git+https://github.com/mridang/plumbline.git",
     "directory": "packages/formatter"
   },
-  "homepage": "https://github.com/mridang/webhint-hints/tree/master/packages/formatter",
-  "bugs": "https://github.com/mridang/webhint-hints/issues",
+  "homepage": "https://github.com/mridang/plumbline/tree/master/packages/formatter",
+  "bugs": "https://github.com/mridang/plumbline/issues",
   "peerDependencies": {
     "hint": "^7.1.0"
   },

@@ -1,7 +1,7 @@
 import { GROUPS, type Group } from './core/groups.js';
 
 /** The name webhint knows this package by, used as the prefix of hint ids. */
-export const PACKAGE_NAME = '@mridang/webhint-hint-extra';
+export const PACKAGE_NAME = '@mridang/webhint-hint-plumbline';
 
 /**
  * A webhint configuration that switches on every hint of one group. Webhint

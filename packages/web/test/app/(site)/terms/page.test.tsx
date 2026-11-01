@@ -43,7 +43,7 @@ describe('TermsPage', () => {
 
   it('links the source in a new tab', () => {
     expect(out).toMatch(
-      /<a [^>]*href="https:\/\/github\.com\/mridang\/webhint-hints"[^>]*target="_blank"[^>]*>GitHub<\/a>/,
+      /<a [^>]*href="https:\/\/github\.com\/mridang\/plumbline"[^>]*target="_blank"[^>]*>GitHub<\/a>/,
     );
   });
 

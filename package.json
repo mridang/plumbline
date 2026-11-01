@@ -1,5 +1,5 @@
 {
-  "name": "@mridang/webhint-hints",
+  "name": "@mridang/plumbline-workspace",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -25,10 +25,10 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mridang/webhint-hints.git"
+    "url": "git+https://github.com/mridang/plumbline.git"
   },
-  "homepage": "https://github.com/mridang/webhint-hints",
-  "bugs": "https://github.com/mridang/webhint-hints/issues",
+  "homepage": "https://github.com/mridang/plumbline",
+  "bugs": "https://github.com/mridang/plumbline/issues",
   "engines": {
     "node": ">=22.0.0"
   },

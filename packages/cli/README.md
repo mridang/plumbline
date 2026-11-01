@@ -1,6 +1,6 @@
 # @mridang/plumbline
 
-`plumbline` audits a website with every [webhint-hints](../hints/README.md) check: security headers, TLS, DNS, email, Open Graph and SEO, privacy, agent readiness and the well-known files. It runs the checks in real Node with a real Chrome, so the checks that open TLS connections, talk to mail servers or resolve DNS all run. The same checks run in a browser at [plumbline.apps.mrida.ng](https://plumbline.apps.mrida.ng), where those are skipped.
+`plumbline` audits a website with every [plumbline](../hints/README.md) check: security headers, TLS, DNS, email, Open Graph and SEO, privacy, agent readiness and the well-known files. It runs the checks in real Node with a real Chrome, so the checks that open TLS connections, talk to mail servers or resolve DNS all run. The same checks run in a browser at [plumbline.apps.mrida.ng](https://plumbline.apps.mrida.ng), where those are skipped.
 
 ## Install
 
@@ -21,7 +21,7 @@ plumbline scan example.com --skip tls-version
 plumbline scan example.com --format html --out reports
 ```
 
-A bare domain is scanned over HTTPS. The text report lists each check with findings, most serious first, with every finding's severity, message and evidence. `--format json` prints an array of `{ hint, severity, message, resource, codeSnippet }` on stdout (progress goes to stderr, so it can be piped). `--format html` writes `<site>.html`, the report from `@mridang/webhint-formatter-extra`, and `<site>.json` into `--out` (default `hint-report`).
+A bare domain is scanned over HTTPS. The text report lists each check with findings, most serious first, with every finding's severity, message and evidence. `--format json` prints an array of `{ hint, severity, message, resource, codeSnippet }` on stdout (progress goes to stderr, so it can be piped). `--format html` writes `<site>.html`, the report from `@mridang/webhint-formatter-plumbline`, and `<site>.json` into `--out` (default `hint-report`).
 
 Severities are webhint's: `error` for a failed rule, `warning` for advice and `hint` for information. `--fail-on` sets the lowest one that fails the run: `error` (the default), `warning` or `none`.
 
@@ -71,7 +71,7 @@ npx @mridang/plumbline scan https://staging.example.com/ --group security-header
 The [plumbline agent skill](../skills/README.md) teaches a coding agent to run this CLI, read the findings and explain the fixes:
 
 ```sh
-npx skills add mridang/webhint-hints
+npx skills add mridang/plumbline
 ```
 
 ## Use it from code

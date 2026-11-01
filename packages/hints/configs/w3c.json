@@ -4,12 +4,12 @@
   },
   "parsers": ["html"],
   "hints": {
-    "@mridang/webhint-hint-extra/change-password": "default",
-    "@mridang/webhint-hint-extra/gpc-json": "default",
-    "@mridang/webhint-hint-extra/manifest-icons": "default",
-    "@mridang/webhint-hint-extra/manifest-linked": "default",
-    "@mridang/webhint-hint-extra/manifest-valid": "default",
-    "@mridang/webhint-hint-extra/theme-color-meta": "default",
-    "@mridang/webhint-hint-extra/webmention": "default"
+    "@mridang/webhint-hint-plumbline/change-password": "default",
+    "@mridang/webhint-hint-plumbline/gpc-json": "default",
+    "@mridang/webhint-hint-plumbline/manifest-icons": "default",
+    "@mridang/webhint-hint-plumbline/manifest-linked": "default",
+    "@mridang/webhint-hint-plumbline/manifest-valid": "default",
+    "@mridang/webhint-hint-plumbline/theme-color-meta": "default",
+    "@mridang/webhint-hint-plumbline/webmention": "default"
   }
 }

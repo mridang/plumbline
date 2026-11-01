@@ -68,7 +68,7 @@ export const SOURCES: readonly Source[] = [
   {
     id: 'original',
     name: 'Written for this package',
-    url: 'https://github.com/mridang/webhint-hints',
+    url: 'https://github.com/mridang/plumbline',
     licence: 'Apache-2.0',
   },
   {

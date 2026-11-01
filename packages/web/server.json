@@ -6,7 +6,7 @@
   "version": "0.1.0",
   "websiteUrl": "https://plumbline.apps.mrida.ng",
   "repository": {
-    "url": "https://github.com/mridang/webhint-hints",
+    "url": "https://github.com/mridang/plumbline",
     "source": "github",
     "id": "1428916084",
     "subfolder": "packages/web"

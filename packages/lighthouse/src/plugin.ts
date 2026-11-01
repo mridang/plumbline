@@ -1,8 +1,8 @@
 /**
- * `lighthouse-plugin-webhint-extra` — a Lighthouse plugin whose audits are
- * generated from a declarative table (`checks/`) and reuse the webhint-hints
+ * `@mridang/lighthouse-plugin-plumbline` — a Lighthouse plugin whose audits are
+ * generated from a declarative table (`checks/`) and reuse the plumbline
  * check logic (the pure functions in the parent package's `src/lib/**`, consumed
- * as the compiled `@mridang/webhint-hint-extra/dist/lib/**`). Each audit produces the same findings
+ * as the compiled `@mridang/webhint-hint-plumbline/dist/lib/**`). Each audit produces the same findings
  * its webhint hint would for the subset of checks whose data Lighthouse already
  * gathers.
  *
@@ -18,15 +18,15 @@
  *                 eight sections in `src/core/taxonomy.ts` are the single source
  *                 of grouping. Lighthouse prefixes each group id with the plugin
  *                 name, so `site-protection` becomes
- *                 `lighthouse-plugin-webhint-extra-site-protection`.
+ *                 `@mridang/lighthouse-plugin-plumbline-site-protection`.
  *   - `auditRefs` one per check, grouped by its section, weighted 1 for a scored
  *                 check and 0 for an informative one.
  */
 import { checks } from './checks/index.js';
-import { CATEGORIES } from '@mridang/webhint-hint-extra/dist/core/taxonomy.js';
+import { CATEGORIES } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 
 /** The published package name Lighthouse resolves audit module paths against. */
-const PACKAGE = 'lighthouse-plugin-webhint-extra';
+const PACKAGE = '@mridang/lighthouse-plugin-plumbline';
 
 /**
  * One audit per check, referenced by the compiled path of its wrapper module.
@@ -67,7 +67,7 @@ const auditRefs = checks.map((check) => ({
 const category = {
   title: 'Webhint extra',
   description:
-    'Extra audits that reuse the webhint-hints check logic for the checks Lighthouse can run from its own artifacts.',
+    'Extra audits that reuse the plumbline check logic for the checks Lighthouse can run from its own artifacts.',
   auditRefs,
 };
 

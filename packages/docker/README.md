@@ -1,13 +1,13 @@
-# @mridang/webhint-docker-extra
+# @mridang/plumbline-docker
 
-An HTTP server that scans a URL with every [webhint-hints](../hints/README.md) check, with a real Chromium, and answers with the findings as JSON. It lets a project in any language run the checks from its end-to-end tests without a Node toolchain.
+An HTTP server that scans a URL with every [plumbline](../hints/README.md) check, with a real Chromium, and answers with the findings as JSON. It lets a project in any language run the checks from its end-to-end tests without a Node toolchain.
 
-The package is private and never published to npm. It is shipped only as the Docker image `mridang/webhint-hints`, multi-arch (`linux/amd64` and `linux/arm64`) and released in lockstep with the npm packages. The scan itself is the one in [`@mridang/plumbline`](../cli/README.md), so it runs every check, TLS, DNS and mail included.
+The package is private and never published to npm. It is shipped only as the Docker image `mridang/plumbline`, multi-arch (`linux/amd64` and `linux/arm64`) and released in lockstep with the npm packages. The scan itself is the one in [`@mridang/plumbline`](../cli/README.md), so it runs every check, TLS, DNS and mail included.
 
 ## Run
 
 ```sh
-docker run --rm -p 8080:8080 mridang/webhint-hints
+docker run --rm -p 8080:8080 mridang/plumbline
 ```
 
 | Endpoint       | What                                                                             |
@@ -50,10 +50,10 @@ curl -s localhost:8080/scan -d '{"url":"https://example.com/"}'
 
 Pass `"hints": ["csp", "hsts"]` to run only some hints (bare ids, no `extra/` prefix); every hint runs by default. A body that is not JSON, or a `url` that is not http(s), is answered with `400`; a scan that fails with `500` and the reason in `detail`.
 
-To keep a report, mount a directory and start the image with `OUTPUT_DIR` set (or pass `"out"` in the request body). The scan then also writes `<site>.json` and the HTML report `<site>.html` from [`@mridang/webhint-formatter-extra`](../formatter/README.md) there, and the answer says where under `saved`:
+To keep a report, mount a directory and start the image with `OUTPUT_DIR` set (or pass `"out"` in the request body). The scan then also writes `<site>.json` and the HTML report `<site>.html` from [`@mridang/webhint-formatter-plumbline`](../formatter/README.md) there, and the answer says where under `saved`:
 
 ```sh
-docker run --rm -p 8080:8080 -e OUTPUT_DIR=/reports -v "$PWD/reports:/reports" mridang/webhint-hints
+docker run --rm -p 8080:8080 -e OUTPUT_DIR=/reports -v "$PWD/reports:/reports" mridang/plumbline
 ```
 
 | Variable        | Default             | What                                     |
@@ -68,9 +68,9 @@ docker run --rm -p 8080:8080 -e OUTPUT_DIR=/reports -v "$PWD/reports:/reports" m
 The `Dockerfile` and `docker-bake.hcl` are at the repository root:
 
 ```sh
-docker buildx bake local    # native arch, loaded into the local daemon as webhint-hints:local
-docker buildx bake          # linux/amd64 and linux/arm64 to dist/webhint-hints-multi.tar
-docker run --rm -p 8080:8080 webhint-hints:local
+docker buildx bake local    # native arch, loaded into the local daemon as plumbline:local
+docker buildx bake          # linux/amd64 and linux/arm64 to dist/plumbline-multi.tar
+docker run --rm -p 8080:8080 plumbline:local
 ```
 
 Releases run `docker buildx bake release`, driven by semantic-release, which pushes the multi-arch image with the version tags.

@@ -15,9 +15,9 @@ import { NetworkRecords } from 'lighthouse';
 import type * as LH from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type { Artifacts } from 'lighthouse/types/artifacts.js';
-import type { RequestRecord } from '@mridang/webhint-hint-extra/dist/lib/privacy/requests.js';
-import type { CookieRecord } from '@mridang/webhint-hint-extra/dist/lib/privacy/cookies.js';
-import { cookiesFromHeaders } from '@mridang/webhint-hint-extra/dist/lib/privacy/cookies.js';
+import type { RequestRecord } from '@mridang/webhint-hint-plumbline/dist/lib/privacy/requests.js';
+import type { CookieRecord } from '@mridang/webhint-hint-plumbline/dist/lib/privacy/cookies.js';
+import { cookiesFromHeaders } from '@mridang/webhint-hint-plumbline/dist/lib/privacy/cookies.js';
 import { findMainDocument, headerBagFromRecord } from './adapt.js';
 
 type NetworkRequest = Artifacts.NetworkRequest;

@@ -4,7 +4,7 @@
  * The page checks the server can run on its own: the Roctify content, mobile
  * and speed rules, which only need the facts read from the page (`facts.ts`)
  * and the response. Each runs the same pure function the hint of that id runs
- * in the browser scan (`@mridang/webhint-hint-extra/dist/lib`), so the two
+ * in the browser scan (`@mridang/webhint-hint-plumbline/dist/lib`), so the two
  * agree. Those files import nothing else, which keeps the hints package's own
  * code (far over the Worker's size limit) out of the bundle.
  */
@@ -22,20 +22,20 @@ import {
   topKeywords,
   visibleText,
   wordsOf,
-} from '@mridang/webhint-hint-extra/dist/lib/seo/content.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/seo/content.js';
 import {
   appleTouchIconFindings,
   responsiveImageFindings,
   viewportFindings,
-} from '@mridang/webhint-hint-extra/dist/lib/seo/mobile.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/seo/mobile.js';
 import {
   assetFindings,
   htmlSizeFindings,
   imageFormatFindings,
   lazyLoadingFindings,
   responseTimeFindings,
-} from '@mridang/webhint-hint-extra/dist/lib/technical/speed.js';
-import type { Finding } from '@mridang/webhint-hint-extra/dist/lib/headers/finding.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/technical/speed.js';
+import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 
 import { anchorTexts, imageUrls, type PageFacts } from '@/domain/suite/facts';
 

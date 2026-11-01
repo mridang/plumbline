@@ -1,6 +1,6 @@
 /**
  * Adapters that turn Lighthouse artifacts into the small structural shapes the
- * webhint-hints `src/lib/seo/**` readers expect, so the Lighthouse SEO audits
+ * plumbline `src/lib/seo/**` readers expect, so the Lighthouse SEO audits
  * run the exact same functions the webhint hints run and therefore produce the
  * same findings. Nothing here re-implements a check: each adapter only reshapes
  * artifact data into the tiny `DocumentLike` / `HttpHeaders` the readers walk.
@@ -33,11 +33,11 @@
  */
 import { createRequire } from 'node:module';
 import type { HTMLDocument } from '@hint/utils-dom';
-// The library's readers consume the compiled JavaScript under `@mridang/webhint-hint-extra/dist/**`
+// The library's readers consume the compiled JavaScript under `@mridang/webhint-hint-plumbline/dist/**`
 // (the root build runs before this package builds), exactly as `adapt.ts` and
 // the header checks do, which keeps this package's `rootDir` at `src`.
-import type { DocumentLike } from '@mridang/webhint-hint-extra/dist/lib/seo/read.js';
-import type { HeaderBag } from '@mridang/webhint-hint-extra/dist/lib/headers/http-headers.js';
+import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/seo/read.js';
+import type { HeaderBag } from '@mridang/webhint-hint-plumbline/dist/lib/headers/http-headers.js';
 import type { MetaElementArtifact } from './adapt.js';
 
 // `@hint/utils-dom` ships as CommonJS, so it is loaded through `createRequire`

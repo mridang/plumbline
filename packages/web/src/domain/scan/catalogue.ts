@@ -9,8 +9,8 @@
  */
 
 import type { HintContext } from 'hint';
-import extraHints from '@mridang/webhint-hint-extra';
-import { CATEGORIES } from '@mridang/webhint-hint-extra/dist/core/taxonomy.js';
+import extraHints from '@mridang/webhint-hint-plumbline';
+import { CATEGORIES } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 
 /** A hint class as the hints package exports it. */
 export interface HintClass {

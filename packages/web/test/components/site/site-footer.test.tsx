@@ -30,7 +30,7 @@ describe('SiteFooter', () => {
   it('points to each way to run the checks', () => {
     for (const pkg of ['cli', 'hints', 'lighthouse', 'docker']) {
       expect(out).toContain(
-        `href="https://github.com/mridang/webhint-hints/tree/master/packages/${pkg}"`,
+        `href="https://github.com/mridang/plumbline/tree/master/packages/${pkg}"`,
       );
     }
   });

@@ -3,8 +3,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from '@jest/globals';
 import type * as LH from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
-import { CATEGORIES } from '@mridang/webhint-hint-extra/dist/core/taxonomy.js';
-import type { Finding } from '@mridang/webhint-hint-extra/dist/lib/headers/finding.js';
+import { CATEGORIES } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
+import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import {
   ogDescriptionCouldBeLonger,
   ogDescriptionIsUrl,
@@ -31,7 +31,7 @@ import {
   twitterImageMissing,
   twitterSiteMissing,
   twitterTitleMissing,
-} from '@mridang/webhint-hint-extra/dist/lib/opengraph/checks.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/opengraph/checks.js';
 import { ogMetaReader } from '../../src/adapt-opengraph.js';
 import { opengraphChecks } from '../../src/checks/opengraph.js';
 import type { AuditCheck } from '../../src/checks/types.js';
@@ -71,7 +71,7 @@ async function run(
   id: string,
   metas: readonly Meta[],
 ): Promise<
-  | readonly import('@mridang/webhint-hint-extra/dist/lib/headers/finding.js').Finding[]
+  | readonly import('@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js').Finding[]
   | null
 > {
   return check(id).run(artifacts(metas), context());

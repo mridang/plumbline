@@ -9,11 +9,11 @@ import {
   firstSkippedLevel,
   headingLevels,
   type TechDocumentLike,
-} from '@mridang/webhint-hint-extra/dist/lib/technical/read.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/technical/read.js';
 import {
   headingHierarchyFindings,
   imageAltCoverageFindings,
-} from '@mridang/webhint-hint-extra/dist/lib/technical/checks.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/technical/checks.js';
 
 // The same DOM parser webhint feeds its hints: the equivalence tests build the
 // "webhint side" of each check with it, exactly as the hint does.

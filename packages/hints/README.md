@@ -1,4 +1,4 @@
-# @mridang/webhint-hint-extra
+# @mridang/webhint-hint-plumbline
 
 Extra [webhint](https://webhint.io) hints for sites and the APIs next to them. They cover what the stock hints leave out: security headers, Open Graph and SEO, agent readiness, privacy, DNS, TLS, email and the well-known files (`robots.txt`, `security.txt`, `llms.txt`, `ai.txt`).
 
@@ -7,7 +7,7 @@ Extra [webhint](https://webhint.io) hints for sites and the APIs next to them. T
 ## Install
 
 ```sh
-npm install --save-dev hint @hint/connector-puppeteer @hint/parser-html @mridang/webhint-hint-extra
+npm install --save-dev hint @hint/connector-puppeteer @hint/parser-html @mridang/webhint-hint-plumbline
 ```
 
 Node 22 or later is needed, and a Chrome or Chromium install for the `puppeteer` connector.
@@ -20,9 +20,9 @@ Each group is a ready-made preset in `configs/<group>.json` (see [Groups](#group
 {
   "formatters": ["stylish"],
   "extends": [
-    "./node_modules/@mridang/webhint-hint-extra/configs/observatory.json",
-    "./node_modules/@mridang/webhint-hint-extra/configs/owasp.json",
-    "./node_modules/@mridang/webhint-hint-extra/configs/email.json"
+    "./node_modules/@mridang/webhint-hint-plumbline/configs/observatory.json",
+    "./node_modules/@mridang/webhint-hint-plumbline/configs/owasp.json",
+    "./node_modules/@mridang/webhint-hint-plumbline/configs/email.json"
   ]
 }
 ```
@@ -33,7 +33,7 @@ Every preset names the `puppeteer` connector and the `html` parser, which a proj
 npx hint https://example.com/
 ```
 
-Single hints are listed as `@mridang/webhint-hint-extra/<id>`, with the ids from the [Hints](#hints) table. Use `default` as the severity so each hint keeps the level its rule defines (`error` for a failed rule, `warning` for advice, `hint` for information):
+Single hints are listed as `@mridang/webhint-hint-plumbline/<id>`, with the ids from the [Hints](#hints) table. Use `default` as the severity so each hint keeps the level its rule defines (`error` for a failed rule, `warning` for advice, `hint` for information):
 
 ```json
 {
@@ -41,8 +41,8 @@ Single hints are listed as `@mridang/webhint-hint-extra/<id>`, with the ids from
   "parsers": ["html"],
   "formatters": ["stylish"],
   "hints": {
-    "@mridang/webhint-hint-extra/csp": "default",
-    "@mridang/webhint-hint-extra/hsts": ["default", { "profile": "owasp" }]
+    "@mridang/webhint-hint-plumbline/csp": "default",
+    "@mridang/webhint-hint-plumbline/hsts": ["default", { "profile": "owasp" }]
   }
 }
 ```
@@ -55,7 +55,7 @@ A few hints take options:
 | `cache-control`                                                             | `enforce` (boolean)  | Off by default. When `true`, requires `Cache-Control: no-store, max-age=0`, as private applications should. |
 | `clear-site-data`                                                           | `logoutUrl` (string) | Off by default. When set, fetches that URL and checks it answers with `Clear-Site-Data`.                    |
 
-For a report that groups the findings by section and shows each hint's description and sources, add [`@mridang/webhint-formatter-extra`](../formatter/README.md). To run every hint without writing a `.hintrc`, use the [`plumbline` CLI](../cli/README.md).
+For a report that groups the findings by section and shows each hint's description and sources, add [`@mridang/webhint-formatter-plumbline`](../formatter/README.md). To run every hint without writing a `.hintrc`, use the [`plumbline` CLI](../cli/README.md).
 
 ### Before the first release
 
@@ -66,7 +66,7 @@ devbox run -- npm run build
 devbox run -- npm pack ./packages/hints --pack-destination "$(mktemp -d)"
 ```
 
-`npm pack` prints the path of the tarball; install it with `npm install hint @hint/connector-puppeteer @hint/parser-html /path/to/mridang-webhint-hint-extra-0.0.0.tgz`.
+`npm pack` prints the path of the tarball; install it with `npm install hint @hint/connector-puppeteer @hint/parser-html /path/to/mridang-webhint-hint-plumbline-0.0.0.tgz`.
 
 ## In the browser
 
