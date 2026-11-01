@@ -39,7 +39,7 @@ function failing(response: PageResponse, facts: PageFacts): string[] {
 }
 
 describe('runChecks', () => {
-  it('runs the fifteen content, mobile and speed checks once each', () => {
+  it('runs the sixteen content, mobile and speed checks once each', () => {
     const ids = runChecks(page, good).map((check) => check.id);
     expect(new Set(ids).size).toBe(16);
   });
