@@ -25,10 +25,13 @@ export function RunChecks({
   domainId,
   host,
   checks,
+  repository,
 }: Readonly<{
   domainId: string;
   host: string;
   checks: readonly string[];
+  /** `owner/name` of the repository that serves the domain, when known. */
+  repository?: string;
 }>): ReactElement {
   const router = useRouter();
   const [saving, setSaving] = useState<Saving>({ kind: 'idle' });
@@ -74,7 +77,9 @@ export function RunChecks({
         </p>
       ) : null}
       <ScanStatus state={state} />
-      {state.kind === 'scanning' ? <ScanResults scan={state.scan} /> : null}
+      {state.kind === 'scanning' ? (
+        <ScanResults scan={state.scan} repository={repository} />
+      ) : null}
     </div>
   );
 }

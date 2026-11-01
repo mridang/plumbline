@@ -5,6 +5,7 @@ import { useState, type ReactElement } from 'react';
 import { cn } from '@/components/ui/cn';
 import type { HintOutcome } from '@/domain/scan/engine';
 
+import { FixPromptBox } from './fix-prompt-box';
 import { HintRow } from './hint-row';
 import {
   countByStatus,
@@ -51,7 +52,14 @@ export function progressLine(scan: Readonly<Scan>): string {
 }
 
 /** The summary, the filter and the list of checks. */
-export function ScanResults({ scan }: Readonly<{ scan: Scan }>): ReactElement {
+export function ScanResults({
+  scan,
+  repository,
+}: Readonly<{
+  scan: Scan;
+  /** `owner/name` of the project that serves the site, when known. */
+  repository?: string;
+}>): ReactElement {
   const counts = countByStatus(scan.hints);
   const [filter, setFilter] = useState<Filter>(
     counts.failed + counts.warned > 0 ? 'problems' : 'all',
@@ -146,6 +154,9 @@ export function ScanResults({ scan }: Readonly<{ scan: Scan }>): ReactElement {
           </section>
         ))
       )}
+      {scan.finishedAt !== undefined || scan.savedAt !== undefined ? (
+        <FixPromptBox scan={scan} repository={repository} />
+      ) : null}
     </section>
   );
 }
