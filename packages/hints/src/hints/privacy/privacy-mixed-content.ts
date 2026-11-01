@@ -17,7 +17,7 @@ export default defineHint({
   description:
     'Finds insecure subresources loaded by a page served over https.',
   category: Category.security,
-  groups: ['webbkoll', 'privacy', 'security-headers'],
+  groups: ['webbkoll', 'privacy', 'security-headers', 'roctify'],
   reference:
     'https://developer.mozilla.org/en-US/docs/Web/Security/Mixed_content',
   setup(context) {

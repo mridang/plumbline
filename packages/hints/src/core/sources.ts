@@ -119,4 +119,10 @@ export const SOURCES: readonly Source[] = [
     url: 'https://github.com/dewitt/opensearch',
     licence: 'unlicensed specification text',
   },
+  {
+    id: 'roctify',
+    name: 'Roctify SEO checker',
+    url: 'https://roctify.com/tools/seo-checker',
+    licence: 'unlicensed site content',
+  },
 ];

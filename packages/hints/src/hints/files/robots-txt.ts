@@ -13,7 +13,7 @@ export default defineHint({
   description:
     'Checks that robots.txt follows RFC 9309, including Content-Signal lines.',
   category: Category.development,
-  groups: ['files', 'seo', 'agent'],
+  groups: ['files', 'seo', 'agent', 'roctify'],
   reference: 'https://www.rfc-editor.org/rfc/rfc9309',
   setup(context) {
     onSite(context, async (site) => {

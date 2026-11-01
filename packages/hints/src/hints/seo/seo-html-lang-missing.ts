@@ -22,7 +22,7 @@ export default defineHint({
   name: 'Html element has a lang',
   description: 'Warns when <html> has no lang attribute.',
   category: Category.accessibility,
-  groups: ['opengraph', 'seo'],
+  groups: ['opengraph', 'seo', 'roctify'],
   reference: REF,
   setup(context) {
     onPage(context, (page) => {

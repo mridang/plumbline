@@ -13,6 +13,7 @@
     "@mridang/webhint-hint-extra/hsts": "default",
     "@mridang/webhint-hint-extra/redirection": "default",
     "@mridang/webhint-hint-extra/referrer-policy": "default",
+    "@mridang/webhint-hint-extra/x-content-type-options": "default",
     "@mridang/webhint-hint-extra/x-frame-options": "default"
   }
 }

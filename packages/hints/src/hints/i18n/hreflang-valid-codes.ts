@@ -25,7 +25,7 @@ export default defineHint({
   description:
     'Reports hreflang values that are not valid language/region codes.',
   category: Category.development,
-  groups: ['google', 'seo'],
+  groups: ['google', 'seo', 'roctify'],
   reference: REF,
   setup(context) {
     onPage(context, (page) => {

@@ -83,6 +83,7 @@
     "@mridang/webhint-hint-extra/use-as-dictionary": "default",
     "@mridang/webhint-hint-extra/vary": "default",
     "@mridang/webhint-hint-extra/via": "default",
+    "@mridang/webhint-hint-extra/x-content-type-options": "default",
     "@mridang/webhint-hint-extra/x-dns-prefetch-control": "default",
     "@mridang/webhint-hint-extra/x-frame-options": "default",
     "@mridang/webhint-hint-extra/x-permitted-cross-domain-policies": "default",

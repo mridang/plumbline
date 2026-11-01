@@ -13,7 +13,7 @@ export default defineHint({
   description:
     'Warns when a heading jumps down more than one level, such as an h2 followed by an h4.',
   category: Category.development,
-  groups: ['llmscout', 'seo'],
+  groups: ['llmscout', 'seo', 'roctify'],
   reference: 'https://github.com/RudrenduPaul/LLMScout',
   setup(context) {
     onPage(context, (page) => {

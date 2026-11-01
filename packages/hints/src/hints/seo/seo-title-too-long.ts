@@ -19,7 +19,7 @@ export default defineHint({
   name: 'Title is not too long',
   description: 'Warns when the <title> is longer than 70 characters.',
   category: Category.development,
-  groups: ['opengraph', 'seo'],
+  groups: ['opengraph', 'seo', 'roctify'],
   reference: REF,
   setup(context) {
     onPage(context, (page) => {

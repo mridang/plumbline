@@ -11,6 +11,6 @@ export default defineOgHint({
   description: 'Requires an og:title meta tag.',
   slug: 'missing-og-title',
   add: '<meta property="og:title" content="Your page title">',
-  extraGroups: ['seo'],
+  extraGroups: ['seo', 'roctify'],
   run: ogTitleMissing,
 });

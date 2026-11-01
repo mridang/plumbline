@@ -28,8 +28,12 @@ describe('tlsHints', () => {
   });
 
   it('puts every hint in the internetnl, tls and security-headers groups', () => {
+    const base = ['internetnl', 'tls', 'security-headers'];
     for (const hint of tlsHints) {
-      expect(hint.groups).toEqual(['internetnl', 'tls', 'security-headers']);
+      // Roctify's HTTPS check is also this hint.
+      expect(hint.groups).toEqual(
+        hint.id === 'https-available' ? [...base, 'roctify'] : base,
+      );
     }
   });
 });

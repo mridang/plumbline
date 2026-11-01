@@ -22,7 +22,7 @@ export default defineHint({
   name: 'Page is not noindex',
   description: 'Warns when the robots meta tag contains noindex.',
   category: Category.development,
-  groups: ['opengraph', 'seo'],
+  groups: ['opengraph', 'seo', 'roctify'],
   reference: REF,
   setup(context) {
     onPage(context, (page) => {

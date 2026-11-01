@@ -22,7 +22,7 @@ export default defineHint({
   name: 'Page has JSON-LD structured data',
   description: 'Reports pages without a JSON-LD block.',
   category: Category.development,
-  groups: ['opengraph', 'seo'],
+  groups: ['opengraph', 'seo', 'roctify'],
   reference: REF,
   setup(context) {
     onPage(context, (page) => {

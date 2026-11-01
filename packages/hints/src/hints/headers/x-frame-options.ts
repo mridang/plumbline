@@ -31,6 +31,7 @@ export default defineHint({
     'webbkoll',
     'internetnl',
     'security-headers',
+    'roctify',
   ],
   reference:
     'https://developer.mozilla.org/docs/Web/Security/Attacks/Clickjacking',

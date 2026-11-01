@@ -10,4 +10,5 @@ export default agentHint({
   description:
     'Requires a valid XML sitemap listed in robots.txt or at /sitemap.xml.',
   reference: 'https://www.sitemaps.org/protocol.html',
+  extraGroups: ['roctify', 'seo'],
 });

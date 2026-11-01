@@ -22,7 +22,7 @@ export default defineHint({
   name: 'Title is not too short',
   description: 'Reports a <title> shorter than 10 characters.',
   category: Category.development,
-  groups: ['opengraph', 'seo'],
+  groups: ['opengraph', 'seo', 'roctify'],
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
