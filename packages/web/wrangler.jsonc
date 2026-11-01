@@ -40,9 +40,10 @@
     "binding": "ASSETS",
     "directory": ".open-next/assets",
   },
-  // Re-checks the sites found through GitHub that have not been checked for a
-  // day, a few at a time (src/domain/suite/scheduled.ts).
-  "triggers": { "crons": ["*/30 * * * *"] },
+  // The daily re-check (src/domain/suite/scheduled.ts) needs a cron trigger,
+  // `"triggers": { "crons": ["*/30 * * * *"] }`. The Workers Free plan allows
+  // five per account and this account has used them, so it is left off; the
+  // handler stays and runs once the trigger is added back.
   "d1_databases": [
     {
       "binding": "DB",
