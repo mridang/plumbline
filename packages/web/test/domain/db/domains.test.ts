@@ -31,6 +31,7 @@ const row = (checks: string | null) => ({
   user_id: 1,
   host: 'example.com',
   checks,
+  repo: null,
   created_at: '2026-01-01T00:00:00.000Z',
   updated_at: '2026-01-01T00:00:00.000Z',
 });
@@ -179,5 +180,25 @@ describe('deleteDomain', () => {
     const { domain } = await addDomain(db, 1, 'example.com');
     expect(await deleteDomain(db, 2, domain.id)).toBe(false);
     expect(await getDomain(db, 1, domain.id)).toBeDefined();
+  });
+});
+
+describe('addDomain with a repository', () => {
+  it('records the repository a domain was found in', async () => {
+    const { db } = empty();
+    const { domain } = await addDomain(db, 1, 'site.example.com', 'o/site');
+    expect(domain.repo).toBe('o/site');
+  });
+
+  it('gives a domain added by hand the repository that serves it, but keeps one it has', async () => {
+    const { db } = empty();
+    await addDomain(db, 1, 'site.example.com');
+    const tagged = await addDomain(db, 1, 'site.example.com', 'o/site');
+    expect(tagged).toMatchObject({
+      created: false,
+      domain: { repo: 'o/site' },
+    });
+    const again = await addDomain(db, 1, 'site.example.com', 'o/other');
+    expect(again.domain.repo).toBe('o/site');
   });
 });

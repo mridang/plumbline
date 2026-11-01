@@ -66,6 +66,7 @@ export default async function DomainsPage(): Promise<ReactElement> {
                   </Link>
                   <p className="mt-1 text-sm text-subtle">
                     {checks} of {CHECKS.length} checks
+                    {domain.repo ? ` · ${domain.repo}` : ''}
                   </p>
                   <p className="mt-3 text-sm">
                     {latest ? (

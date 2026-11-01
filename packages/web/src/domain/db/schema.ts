@@ -51,6 +51,8 @@ export const domains = sqliteTable(
     user_id: integer('user_id').notNull(),
     host: text('host').notNull(),
     checks: text('checks'),
+    /** `owner/name` of the repository the domain was found in; null when added by hand. */
+    repo: text('repo'),
     created_at: text('created_at').notNull(),
     updated_at: text('updated_at').notNull(),
   },
@@ -175,5 +177,47 @@ export const oauthTokens = sqliteTable(
   (table) => [
     index('idx_oauth_tokens_grant').on(table.grant_id),
     index('idx_oauth_tokens_expires').on(table.expires_at),
+  ],
+);
+
+/**
+ * The GitHub account a signed-in person connected. `github_id` is GitHub's
+ * stable user id, unique, so one GitHub account is linked to one person.
+ */
+export const githubLinks = sqliteTable('github_links', {
+  user_id: integer('user_id').primaryKey(),
+  github_id: integer('github_id').notNull().unique(),
+  login: text('login').notNull(),
+  created_at: text('created_at').notNull(),
+  updated_at: text('updated_at').notNull(),
+});
+
+/** An installation of the GitHub App, owned by the person who linked it. */
+export const githubInstallations = sqliteTable(
+  'github_installations',
+  {
+    installation_id: integer('installation_id').primaryKey(),
+    user_id: integer('user_id').notNull(),
+    account_login: text('account_login').notNull(),
+    created_at: text('created_at').notNull(),
+    updated_at: text('updated_at').notNull(),
+  },
+  (table) => [index('idx_github_installations_user').on(table.user_id)],
+);
+
+/** A repository of an installation, with the hosts it is deployed on (a JSON array). */
+export const githubRepos = sqliteTable(
+  'github_repos',
+  {
+    installation_id: integer('installation_id').notNull(),
+    full_name: text('full_name').notNull(),
+    user_id: integer('user_id').notNull(),
+    default_branch: text('default_branch').notNull(),
+    hosts: text('hosts').notNull(),
+    analysed_at: text('analysed_at').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.installation_id, table.full_name] }),
+    index('idx_github_repos_user').on(table.user_id, table.full_name),
   ],
 );

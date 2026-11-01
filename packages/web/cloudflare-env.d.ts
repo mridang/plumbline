@@ -18,4 +18,15 @@ interface CloudflareEnv extends Cloudflare.Env {
    * from the request when unset (local dev).
    */
   APP_URL?: string;
+  /**
+   * The GitHub App: its numeric id, its URL name, its OAuth client id and
+   * secret, its private key (PKCS#1 or PKCS#8 PEM) and the secret GitHub signs
+   * webhooks with. All optional; GitHub integration is off until all are set.
+   */
+  GITHUB_APP_ID?: string;
+  GITHUB_APP_SLUG?: string;
+  GITHUB_CLIENT_ID?: string;
+  GITHUB_CLIENT_SECRET?: string;
+  GITHUB_PRIVATE_KEY?: string;
+  GITHUB_WEBHOOK_SECRET?: string;
 }

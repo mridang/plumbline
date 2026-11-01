@@ -36,6 +36,37 @@ SCAN_SECRET=        # openssl rand -base64 32; signs scan ids
 
 There is no dev login and no fallback secret: when a sign-in setting is missing, `/auth/login` answers 503 naming what is missing. `APP_URL` is optional (the public origin, when it can't be read from the request), and `MCP_ALLOWED_ORIGINS` (comma-separated exact origins) lets a browser-based MCP client call `/mcp`.
 
+## GitHub app
+
+The `/github` page finds the repositories of a person that are deployed web applications and adds the sites they serve to their domains, so their checks can be run. It is off until the GitHub App's settings are set, and nothing else on the site depends on it.
+
+How the accounts are tied together: a person signs in with Google, then connects GitHub from the `/github` page. GitHub's OAuth flow proves who the GitHub user is, and the app links that GitHub user id to the Google account that is signed in (one GitHub account to one person, and an installation to the person who linked it). The GitHub sign-in token is used for three reads (who they are, and which installations of the app they can reach) and is then dropped; only the ids and names are kept. The app reads repositories as itself, with short-lived installation tokens.
+
+A repository counts as a deployed web application when a Wrangler configuration (`wrangler.jsonc`, `wrangler.json` or `wrangler.toml`, at the root or in a subfolder) names the domains it is served on in its top-level `routes` or `route` (custom domains and route patterns; wildcard routes and `workers.dev` addresses are skipped), or when the repository's website field names the live site. Each host found becomes a domain of the owner, tagged with its repository, up to the limit of fifty domains. A repository that uses another host, such as Vercel or Netlify, is not recognised yet.
+
+The checks themselves run in the person's browser, as everywhere else in the app, so they are started from the domain's page and not on a schedule.
+
+Create a GitHub App (Settings, Developer settings, GitHub Apps) with:
+
+- **Callback URL:** `http://localhost:3737/api/github/callback` for development and `https://plumbline.apps.mrida.ng/api/github/callback` in production
+- **Setup URL:** the same address, with **Redirect on update** ticked, and **Request user authorization (OAuth) during installation** ticked
+- **Webhook URL:** `https://plumbline.apps.mrida.ng/api/github/webhook`, with a webhook secret
+- **Permissions:** Repository permissions, Contents: read-only (Metadata is read-only by default)
+- **Subscribe to events:** Push (only pushes that touch a Wrangler file are acted on), and the installation events are always sent
+
+Then set, in `packages/web/.env` locally and as Worker secrets in production:
+
+```sh
+GITHUB_APP_ID=
+GITHUB_APP_SLUG=          # the app's name in github.com/apps/<slug>
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+GITHUB_PRIVATE_KEY=       # the downloaded .pem; newlines may be written \n or &
+GITHUB_WEBHOOK_SECRET=
+```
+
+GitHub cannot reach `localhost`, so to try webhooks locally forward them with a tunnel; the connect and install flow itself works against `http://localhost:3737`.
+
 ## Connecting an assistant (MCP)
 
 plumbline is an MCP server at `https://plumbline.apps.mrida.ng/mcp`, protected with OAuth 2.1 as the [MCP authorization spec](https://modelcontextprotocol.io/specification/latest/basic/authorization) describes. Add that URL as a connector in ChatGPT, Claude or any MCP client, sign in with Google when asked, and approve the assistant on `/connect`. There is no secret to copy.

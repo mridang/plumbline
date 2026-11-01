@@ -16,6 +16,7 @@ const domain: Domain = {
   user_id: 1,
   host: 'example.com',
   checks: ['accept-ch', 'gone-check'],
+  repo: null,
   created_at: '2026-01-01T00:00:00.000Z',
   updated_at: '2026-01-02T00:00:00.000Z',
 };

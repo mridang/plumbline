@@ -12,6 +12,7 @@ import { CHECKS } from '@/domain/checks/catalogue';
 import { createDatabase, type Database } from '@/domain/db/client';
 import { addDomain, setDomainChecks } from '@/domain/db/domains';
 import { saveReport } from '@/domain/db/reports';
+import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 import {
   installCloudflareContext,
   sqliteD1,
@@ -46,7 +47,7 @@ let restore: () => void;
 
 beforeEach(() => {
   state.user = { id: 1 };
-  const { d1 } = sqliteD1('0001_init.sql');
+  const { d1 } = sqliteD1(...APP_MIGRATIONS);
   db = createDatabase(d1);
   restore = installCloudflareContext(d1);
 });

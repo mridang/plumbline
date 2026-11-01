@@ -30,6 +30,7 @@ import { APP_RESOURCES } from '@/domain/mcp/ui-resources';
 import { TOOLS } from '@/domain/mcp/tool-definitions';
 import { SCOPE_READ, SCOPE_WRITE, scopeForTool } from '@/lib/oauth';
 import { addDomain } from '@/domain/db/domains';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
 /** The address of a view the server serves. */
@@ -263,7 +264,7 @@ describe('the tool catalogue', () => {
   });
 
   it('is fully served: no advertised tool is unknown to the dispatcher', async () => {
-    const { db } = sqliteDatabase('0001_init.sql');
+    const { db } = sqliteDatabase(...APP_MIGRATIONS);
     // Empty arguments may well be refused as invalid; what must never happen is
     // that the dispatcher does not know the tool.
     const isUnknown = async (name: string): Promise<boolean> => {
@@ -806,7 +807,7 @@ describe('every reply parses with the SDK’s own schema for its method', () => 
   it.each(TOOLS.map((tool) => [tool.name] as const))(
     'a call of %s, with a domain, with no arguments or with one it does not take',
     async (name) => {
-      const { db } = sqliteDatabase('0001_init.sql');
+      const { db } = sqliteDatabase(...APP_MIGRATIONS);
       await addDomain(db, someone.id, 'example.com');
       const run = (args: Record<string, unknown>) =>
         callToolOrExplain(someone, { name, arguments: args }, () => db);

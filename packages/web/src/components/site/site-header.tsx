@@ -51,6 +51,9 @@ export function SiteHeader({
               <Link href="/domains" className={LINK}>
                 Domains
               </Link>
+              <Link href="/github" className={`${LINK} hidden sm:inline`}>
+                GitHub
+              </Link>
               <Link href="/connect" className={`${LINK} hidden sm:inline`}>
                 Connect AI
               </Link>

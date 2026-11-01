@@ -98,7 +98,12 @@ export default async function DomainPage({
         }
       >
         <div className="mt-8">
-          <RunChecks domainId={domain.id} host={domain.host} checks={enabled} />
+          <RunChecks
+            domainId={domain.id}
+            host={domain.host}
+            checks={enabled}
+            repository={domain.repo ?? undefined}
+          />
         </div>
       </PageHeader>
 
@@ -126,7 +131,10 @@ export default async function DomainPage({
             </ul>
           )}
           {shown ? (
-            <ScanResults scan={savedScan(reportResource(shown))} />
+            <ScanResults
+              scan={savedScan(reportResource(shown))}
+              repository={domain.repo ?? undefined}
+            />
           ) : null}
         </section>
 

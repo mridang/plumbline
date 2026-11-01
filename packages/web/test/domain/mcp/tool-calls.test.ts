@@ -16,6 +16,7 @@ import {
 } from '@/domain/mcp/tool-calls';
 import { domainLink, type ToolResult } from '@/domain/mcp/tool-results';
 import { BackendFailure, InvalidToolArguments, UnknownTool } from '@/lib/mcp';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
 const USER = { id: 1 } as User;
@@ -25,7 +26,7 @@ const TLS = checksInGroup('tls').length;
 
 /** A fresh database, and a way to call a tool against it. */
 function setup() {
-  const { db, raw } = sqliteDatabase('0001_init.sql');
+  const { db, raw } = sqliteDatabase(...APP_MIGRATIONS);
   const call = (
     name: string,
     args?: unknown,

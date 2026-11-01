@@ -21,6 +21,8 @@ export interface Domain {
   readonly host: string;
   /** The ids of the checks chosen for the domain, or null for every check. */
   readonly checks: readonly string[] | null;
+  /** `owner/name` of the repository the domain was found in; null when added by hand. */
+  readonly repo: string | null;
   readonly created_at: string;
   readonly updated_at: string;
 }
@@ -115,6 +117,7 @@ export async function addDomain(
   db: Database,
   userId: number,
   host: string,
+  repo: string | null = null,
 ): Promise<{ readonly domain: Domain; readonly created: boolean }> {
   const timestamp = now();
   const [row] = await db
@@ -124,6 +127,7 @@ export async function addDomain(
       user_id: userId,
       host,
       checks: null,
+      repo,
       created_at: timestamp,
       updated_at: timestamp,
     })
@@ -135,6 +139,15 @@ export async function addDomain(
   const existing = await findDomainByHost(db, userId, host);
   if (!existing) {
     throw new Error('Saving the domain returned no row');
+  }
+  // A domain added by hand that a repository turns out to serve learns its repository.
+  if (repo !== null && existing.repo === null) {
+    const [tagged] = await db
+      .update(domains)
+      .set({ repo, updated_at: timestamp })
+      .where(and(eq(domains.user_id, userId), eq(domains.id, existing.id)))
+      .returning();
+    return { domain: tagged ? domainOf(tagged) : existing, created: false };
   }
   return { domain: existing, created: false };
 }

@@ -13,6 +13,7 @@ const DOMAIN: Domain = {
   user_id: 1,
   host: 'example.com',
   checks: null,
+  repo: null,
   created_at: '2026-09-01T00:00:00.000Z',
   updated_at: '2026-09-01T00:00:00.000Z',
 };
