@@ -35,7 +35,7 @@
   "license": "Apache-2.0",
   "description": "plumbline: a web page that runs the plumbline checks against a domain in the visitor's browser, through a Cloudflare Worker, and lists what passed and failed",
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=24.0.0"
   },
   "repository": {
     "type": "git",
