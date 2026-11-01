@@ -9,8 +9,10 @@ import { htmlAt } from '../../../../components/render';
 
 describe('postTo', () => {
   it('posts to the path and resolves when GitHub endpoint answers ok', async () => {
-    const transport = jest.fn(async () => new Response(null, { status: 204 }));
-    await postTo('/api/github/sync', transport as unknown as typeof fetch);
+    const transport = jest.fn<typeof fetch>(
+      async () => new Response(null, { status: 204 }),
+    );
+    await postTo('/api/github/sync', transport);
     expect(transport).toHaveBeenCalledWith('/api/github/sync', {
       method: 'POST',
     });
