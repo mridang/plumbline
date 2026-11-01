@@ -6,7 +6,7 @@ import { ThemeScript } from '@/components/site/theme-script';
 
 import { BODY_CLASS, HTML_ATTRIBUTES, HTML_CLASS } from '@/app/_fonts';
 import { siteMetadata, siteViewport } from '@/app/_metadata';
-import '@/app/globals.css';
+import './globals.css';
 
 /** What every page says about itself unless it says otherwise (see `_metadata.ts`). */
 export const metadata: Metadata = siteMetadata();

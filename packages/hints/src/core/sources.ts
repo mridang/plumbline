@@ -97,7 +97,7 @@ export const SOURCES: readonly Source[] = [
   },
   {
     id: 'google',
-    name: 'Google developer documentation (Search Central, rich results, CSP Evaluator, Digital Asset Links)',
+    name: 'Google developer documentation (Search Central, rich results, CSP Evaluator, Digital Asset Links, OAuth app requirements)',
     url: 'https://developers.google.com/',
     licence: 'unlicensed site content',
   },

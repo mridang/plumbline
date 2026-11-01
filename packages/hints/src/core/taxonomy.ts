@@ -58,7 +58,7 @@ export const CATEGORIES: readonly TaxonomyCategory[] = [
     id: 'visitor-privacy',
     title: 'Visitor privacy',
     description:
-      'What the site reveals about its visitors: cookies, third-party requests, localStorage, geolocation, referrer and DNS-prefetch leakage, third-party report endpoints.',
+      'What the site reveals about its visitors: cookies, third-party requests, localStorage, geolocation, referrer and DNS-prefetch leakage, third-party report endpoints, and the privacy policy and terms it links.',
     whoFixesIt: 'site content, scripts and header config',
   },
   {
@@ -225,6 +225,7 @@ export const PLACEMENT: Readonly<Record<string, Placement>> = {
     category: 'https-tls',
     tags: ['visitor-privacy', 'site-protection'],
   },
+  'privacy-policy-link-missing': { category: 'visitor-privacy', tags: [] },
   'privacy-third-party-requests': { category: 'visitor-privacy', tags: [] },
   'public-key-pins': { category: 'site-protection', tags: [] },
   redirection: { category: 'https-tls', tags: ['site-protection'] },
@@ -259,6 +260,7 @@ export const PLACEMENT: Readonly<Record<string, Placement>> = {
     category: 'social-previews',
     tags: ['search'],
   },
+  'terms-of-service-link-missing': { category: 'visitor-privacy', tags: [] },
   'tls-cipher-order': { category: 'https-tls', tags: [] },
   'tls-ciphers': { category: 'https-tls', tags: [] },
   'tls-compression': { category: 'https-tls', tags: [] },

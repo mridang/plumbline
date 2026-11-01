@@ -8,6 +8,7 @@ import {
   stringArg,
   stringListArg,
 } from '@/lib/mcp';
+import { ARGUMENT_ALIASES, LISTS_OF_TEXT } from '@/domain/mcp/app';
 
 describe('stringArg', () => {
   it('trims a string and gives empty for anything else', () => {
@@ -70,72 +71,97 @@ describe('offsetArg', () => {
   });
 });
 
+/** Every older spelling this app accepts: the tool, the alias and the name it stands for. */
+const ALIASES = Object.entries(ARGUMENT_ALIASES).flatMap(([tool, names]) =>
+  Object.entries(names).map(([alias, canonical]) => [tool, alias, canonical]),
+);
+
+/** Every argument this app accepts as one piece of text for a list: the tool and the argument. */
+const LISTS = Object.entries(LISTS_OF_TEXT).flatMap(([tool, names]) =>
+  names.map((name) => [tool, name]),
+);
+
+/** One of the aliases, for the tests that need just one. */
+const [[TOOL = '', ALIAS = '', CANONICAL = ''] = []] = ALIASES;
+
+/** One of the list arguments, for the tests that need just one. */
+const [[LIST_TOOL = '', LIST = ''] = []] = LISTS;
+
+/** What an argument sent as `value` under its canonical name ends up as. */
+function settled(tool: string, name: string, value: string): unknown {
+  return LISTS_OF_TEXT[tool]?.includes(name) ? [value] : value;
+}
+
 describe('canonicalArguments', () => {
-  it.each([
-    ['get_domain', { host: 'example.com' }, { domain: 'example.com' }],
-    [
-      'get_report',
-      { url: 'https://example.com/' },
-      { domain: 'https://example.com/' },
-    ],
-    ['list_reports', { host: 'example.com' }, { domain: 'example.com' }],
-    ['scan_domain', { host: 'example.com' }, { domain: 'example.com' }],
-    ['add_domain', { url: 'example.com' }, { domain: 'example.com' }],
-    ['remove_domain', { url: 'example.com' }, { domain: 'example.com' }],
-    ['configure_checks', { checks: ['tls'] }, { enable: ['tls'] }],
-  ])(
-    'renames the other spelling of an argument of %s',
-    (tool, args, expected) => {
-      expect(canonicalArguments(tool, args)).toEqual(expected);
+  it('has an older spelling and a list of text to check', () => {
+    expect(ALIASES).not.toHaveLength(0);
+    expect(LISTS).not.toHaveLength(0);
+  });
+
+  it.each(ALIASES)(
+    'renames the older spelling of an argument of %s (%s)',
+    (tool, alias, canonical) => {
+      expect(canonicalArguments(tool, { [alias]: 'x' })).toEqual({
+        [canonical]: settled(tool, canonical, 'x'),
+      });
     },
   );
 
   it('keeps every other argument as it is', () => {
     expect(
-      canonicalArguments('get_report', { host: 'example.com', report: 'r1' }),
-    ).toEqual({ domain: 'example.com', report: 'r1' });
-  });
-
-  it('leaves both spellings alone when both are given, so the check can refuse the other one', () => {
-    expect(
-      canonicalArguments('get_domain', { host: 'a.com', domain: 'b.com' }),
-    ).toEqual({ host: 'a.com', domain: 'b.com' });
-  });
-
-  it('does not rename an argument of a tool that has no other spelling', () => {
-    expect(canonicalArguments('list_checks', { host: 'x' })).toEqual({
-      host: 'x',
-    });
-    expect(canonicalArguments('constructor', { host: 'x' })).toEqual({
-      host: 'x',
+      canonicalArguments(TOOL, { [ALIAS]: 'x', limit: 3, other_argument: 'y' }),
+    ).toEqual({
+      [CANONICAL]: settled(TOOL, CANONICAL, 'x'),
+      limit: 3,
+      other_argument: 'y',
     });
   });
 
-  it('turns a check given as one piece of text into a list of one', () => {
+  it('leaves both spellings alone when both are given, so the check can refuse the older one', () => {
     expect(
-      canonicalArguments('configure_checks', { enable: 'tls', disable: 'seo' }),
-    ).toEqual({ enable: ['tls'], disable: ['seo'] });
+      canonicalArguments(TOOL, { [ALIAS]: 'a', [CANONICAL]: ['b'] }),
+    ).toEqual({ [ALIAS]: 'a', [CANONICAL]: ['b'] });
   });
+
+  it('does not rename an argument of a tool that never had the older spelling', () => {
+    expect(canonicalArguments('not_a_known_tool', { [ALIAS]: 'x' })).toEqual({
+      [ALIAS]: 'x',
+    });
+    expect(canonicalArguments('constructor', { [ALIAS]: 'x' })).toEqual({
+      [ALIAS]: 'x',
+    });
+  });
+
+  it.each(LISTS)(
+    'turns %s %s given as one piece of text into a list of one',
+    (tool, name) => {
+      expect(canonicalArguments(tool, { [name]: 'one thing' })).toEqual({
+        [name]: ['one thing'],
+      });
+    },
+  );
 
   it('leaves a list, and any other value, for the check to judge', () => {
-    expect(canonicalArguments('configure_checks', { enable: ['a'] })).toEqual({
-      enable: ['a'],
+    expect(canonicalArguments(LIST_TOOL, { [LIST]: ['a'] })).toEqual({
+      [LIST]: ['a'],
     });
-    expect(canonicalArguments('configure_checks', { enable: 5 })).toEqual({
-      enable: 5,
+    expect(canonicalArguments(LIST_TOOL, { [LIST]: 5 })).toEqual({
+      [LIST]: 5,
     });
-    expect(canonicalArguments('list_checks', { limit: '5' })).toEqual({
+    expect(canonicalArguments(LIST_TOOL, { limit: '5' })).toEqual({
       limit: '5',
     });
   });
 
   it('carries a key called __proto__ as an ordinary property', () => {
-    const args = JSON.parse('{"__proto__": 1, "host": "x"}') as Record<
+    const args = JSON.parse(`{"__proto__": 1, "${ALIAS}": "x"}`) as Record<
       string,
       unknown
     >;
-    const result = canonicalArguments('get_domain', args);
-    expect(Object.keys(result).toSorted()).toEqual(['__proto__', 'domain']);
+    const result = canonicalArguments(TOOL, args);
+    expect(Object.keys(result).toSorted()).toEqual(
+      ['__proto__', CANONICAL].toSorted(),
+    );
     expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
   });
 });

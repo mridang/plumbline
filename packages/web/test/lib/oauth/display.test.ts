@@ -11,6 +11,7 @@ import {
   describeScopes,
   sanitiseDisplayName,
 } from '@/lib/oauth';
+import { SCOPE_READ, SCOPE_TEXT, SCOPE_WRITE } from '@/domain/mcp/app';
 
 describe('sanitiseDisplayName', () => {
   it('keeps an ordinary name', () => {
@@ -244,9 +245,9 @@ describe('describeRedirect', () => {
 
 describe('describeScopes', () => {
   it('puts each scope in plain words and shows an unknown one as it is', () => {
-    expect(describeScopes(['checks:read', 'checks:write', 'other'])).toEqual([
-      'See your domains, the checks chosen for them and their reports',
-      'Add and remove domains, and choose which checks run',
+    expect(describeScopes([SCOPE_READ, SCOPE_WRITE, 'other'])).toEqual([
+      SCOPE_TEXT[SCOPE_READ],
+      SCOPE_TEXT[SCOPE_WRITE],
       'other',
     ]);
   });

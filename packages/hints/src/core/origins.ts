@@ -1442,6 +1442,18 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       licence: 'unlicensed site content',
     },
   ],
+  'privacy-policy-link-missing': [
+    {
+      source: 'google',
+      upstreamId: 'App Homepage',
+      title: 'Google OAuth: App Homepage requirements',
+      url: 'https://support.google.com/cloud/answer/13807376',
+      docsUrl: 'https://support.google.com/cloud/answer/15549049',
+      summary:
+        'Every production app must have a home page that includes an easily accessible link to its privacy policy.',
+      licence: 'unlicensed site content',
+    },
+  ],
   'privacy-third-party-requests': [
     {
       source: 'webbkoll',
@@ -2016,6 +2028,18 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'https://github.com/RudrenduPaul/LLMScout/blob/main/docs/concepts.md',
       summary: 'Validates twitter:card is a known type.',
       licence: 'MIT',
+    },
+  ],
+  'terms-of-service-link-missing': [
+    {
+      source: 'google',
+      upstreamId: 'Manage OAuth App Branding',
+      title: 'Google OAuth: App Branding (App domain links)',
+      url: 'https://support.google.com/cloud/answer/15549049',
+      docsUrl: 'https://support.google.com/cloud/answer/13807376',
+      summary:
+        'The home page, privacy policy and terms of service links are required for every external production app.',
+      licence: 'unlicensed site content',
     },
   ],
   'tls-cipher-order': [

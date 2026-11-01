@@ -35,6 +35,11 @@ describe('SiteFooter', () => {
     }
   });
 
+  it('links the privacy policy and the terms', () => {
+    expect(out).toContain('href="/privacy"');
+    expect(out).toContain('href="/terms"');
+  });
+
   it('links only pages anyone can open, or documentation', () => {
     const hrefs = FOOTER_COLUMNS.flatMap((column) =>
       column.links.map((link) => link.href),

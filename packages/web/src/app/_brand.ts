@@ -13,10 +13,12 @@
 import type { MetadataRoute } from 'next';
 
 import {
+  PRIVACY_LAST_UPDATED,
   SITE_DESCRIPTION,
   SITE_NAME,
   SITE_TITLE,
   SITE_URL,
+  TERMS_LAST_UPDATED,
 } from '@/utils/site';
 
 /** The name shown in titles, the header and the installed app. */
@@ -56,7 +58,7 @@ export const COLOR_SCHEME = 'only light';
 export const INDEX_BY_DEFAULT = true;
 
 /** What crawlers may read: the scan page. */
-export const CRAWLABLE_PATHS: readonly string[] = ['/$'];
+export const CRAWLABLE_PATHS: readonly string[] = ['/$', '/privacy', '/terms'];
 
 /** What crawlers are kept out of: the API. */
 export const PRIVATE_PATHS: readonly string[] = [
@@ -73,7 +75,11 @@ export const PRIVATE_PATHS: readonly string[] = [
 export const SITEMAP_PAGES: readonly Readonly<{
   path: string;
   lastModified?: string;
-}>[] = [{ path: '/' }];
+}>[] = [
+  { path: '/' },
+  { path: '/privacy', lastModified: PRIVACY_LAST_UPDATED },
+  { path: '/terms', lastModified: TERMS_LAST_UPDATED },
+];
 
 /** The installed app's name. */
 export const MANIFEST_NAME = `${BRAND_NAME}: website checks`;

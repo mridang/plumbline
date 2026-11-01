@@ -18,8 +18,10 @@
     "@mridang/webhint-hint-extra/privacy-insecure-first-party": "default",
     "@mridang/webhint-hint-extra/privacy-local-storage": "default",
     "@mridang/webhint-hint-extra/privacy-mixed-content": "default",
+    "@mridang/webhint-hint-extra/privacy-policy-link-missing": "default",
     "@mridang/webhint-hint-extra/privacy-third-party-requests": "default",
     "@mridang/webhint-hint-extra/referrer-policy": "default",
+    "@mridang/webhint-hint-extra/terms-of-service-link-missing": "default",
     "@mridang/webhint-hint-extra/timing-allow-origin": "default",
     "@mridang/webhint-hint-extra/x-dns-prefetch-control": "default"
   }

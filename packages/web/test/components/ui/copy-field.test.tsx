@@ -5,12 +5,12 @@ import { html } from '../render';
 
 describe('CopyField', () => {
   const out = html(
-    <CopyField value="https://plumbline.test/mcp" label="MCP server address" />,
+    <CopyField value="https://app.test/mcp" label="MCP server address" />,
   );
 
   it('shows the value, named for assistive technology', () => {
     expect(out).toMatch(
-      /<code[^>]*aria-label="MCP server address"[^>]*>https:\/\/plumbline\.test\/mcp<\/code>/,
+      /<code[^>]*aria-label="MCP server address"[^>]*>https:\/\/app\.test\/mcp<\/code>/,
     );
   });
 

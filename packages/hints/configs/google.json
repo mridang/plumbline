@@ -11,6 +11,7 @@
     "@mridang/webhint-hint-extra/hreflang-self": "default",
     "@mridang/webhint-hint-extra/hreflang-valid-codes": "default",
     "@mridang/webhint-hint-extra/hreflang-x-default": "default",
+    "@mridang/webhint-hint-extra/privacy-policy-link-missing": "default",
     "@mridang/webhint-hint-extra/richresults-article": "default",
     "@mridang/webhint-hint-extra/richresults-breadcrumb": "default",
     "@mridang/webhint-hint-extra/richresults-event": "default",
@@ -20,6 +21,7 @@
     "@mridang/webhint-hint-extra/richresults-recipe": "default",
     "@mridang/webhint-hint-extra/richresults-review": "default",
     "@mridang/webhint-hint-extra/richresults-video": "default",
-    "@mridang/webhint-hint-extra/richresults-website-searchaction": "default"
+    "@mridang/webhint-hint-extra/richresults-website-searchaction": "default",
+    "@mridang/webhint-hint-extra/terms-of-service-link-missing": "default"
   }
 }
