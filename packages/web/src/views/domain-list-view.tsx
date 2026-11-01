@@ -139,7 +139,7 @@ export function DomainListScreen({
                   className="link"
                   onClick={() => onOpenLink(link)}
                 >
-                  Manage domains in plumbline
+                  Manage domains in Plumbline
                 </button>
               </div>
             ) : null}

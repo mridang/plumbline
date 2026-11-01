@@ -19,7 +19,7 @@ import {
 export const metadata: Metadata = pageMetadata({
   title: 'Terms',
   description:
-    'The terms for using plumbline: scan only sites you may test, and take the results as advice.',
+    'The terms for using Plumbline: scan only sites you may test, and take the results as advice.',
   path: '/terms',
   index: true,
 });
@@ -37,12 +37,12 @@ export default function TermsPage(): ReactElement {
         updated={TERMS_LAST_UPDATED}
       >
         <p>
-          plumbline is a free service that checks websites against public
+          Plumbline is a free service that checks websites against public
           references. By using it you agree to these terms. If you don’t, please
           don’t use it.
         </p>
 
-        <LegalSection title="Using plumbline">
+        <LegalSection title="Using Plumbline">
           <ul className="space-y-2">
             <LegalItem>
               Scan sites you own or are allowed to test. A scan reads public
@@ -50,14 +50,14 @@ export default function TermsPage(): ReactElement {
               may still not want it.
             </LegalItem>
             <LegalItem>
-              Don’t use plumbline to attack, overload or get around the
-              protections of any site, or to get around plumbline’s own limits.
+              Don’t use Plumbline to attack, overload or get around the
+              protections of any site, or to get around Plumbline’s own limits.
               A page can be scanned at most once every five minutes, and the
               server limits how often anyone can call it.
             </LegalItem>
             <LegalItem>
               Keep your Google account secure: you are responsible for what is
-              done with your plumbline account and the assistants you connect to
+              done with your Plumbline account and the assistants you connect to
               it.
             </LegalItem>
           </ul>
@@ -74,7 +74,7 @@ export default function TermsPage(): ReactElement {
 
         <LegalSection title="The service">
           <p>
-            plumbline is provided as it is, without warranty of any kind. It may
+            Plumbline is provided as it is, without warranty of any kind. It may
             change, be unavailable or stop at any time, and as far as the law
             allows we are not liable for any loss from using it. We may remove
             an account that breaks these terms.
@@ -83,7 +83,7 @@ export default function TermsPage(): ReactElement {
 
         <LegalSection title="Open source">
           <p>
-            plumbline’s code is open source under the Apache 2.0 licence, and is
+            Plumbline’s code is open source under the Apache 2.0 licence, and is
             on <LegalLink href={SOURCE_URL}>GitHub</LegalLink>. That licence,
             not these terms, covers the code.
           </p>
@@ -91,7 +91,7 @@ export default function TermsPage(): ReactElement {
 
         <LegalSection title="Your data">
           <p>
-            What plumbline keeps, and how to delete it, is in the{' '}
+            What Plumbline keeps, and how to delete it, is in the{' '}
             <LegalLink href="/privacy">privacy policy</LegalLink>.
           </p>
         </LegalSection>

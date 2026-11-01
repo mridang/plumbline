@@ -14,8 +14,8 @@ import {
 
 describe('the brand', () => {
   it('is named and placed as the site says', () => {
-    expect(BRAND_NAME).toBe('plumbline');
-    expect(BRAND_SHORT_NAME).toBe('plumbline');
+    expect(BRAND_NAME).toBe('Plumbline');
+    expect(BRAND_SHORT_NAME).toBe('Plumbline');
     expect(BRAND_URL).toBe('https://plumbline.apps.mrida.ng');
   });
 

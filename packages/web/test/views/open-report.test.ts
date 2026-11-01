@@ -31,7 +31,7 @@ describe('isHostName', () => {
 describe('openReportPrompt', () => {
   it('asks the assistant for the newest report of the host, as a fixed phrase', () => {
     expect(openReportPrompt('example.com')).toBe(
-      'Show the latest plumbline report for example.com',
+      'Show the latest Plumbline report for example.com',
     );
   });
 

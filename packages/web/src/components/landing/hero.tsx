@@ -49,7 +49,7 @@ export function Hero({
             </span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-on-night/75">
-            plumbline checks security headers, TLS, DNS and email, privacy, SEO,
+            Plumbline checks security headers, TLS, DNS and email, privacy, SEO,
             social cards and AI-agent readiness against the rules of the public
             references, and shows the evidence and the fix for every failure.
           </p>

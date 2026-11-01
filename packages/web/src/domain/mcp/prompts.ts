@@ -72,7 +72,7 @@ const PROMPTS: readonly Prompt[] = [
       ],
     },
     text: (args) =>
-      `Look at the newest plumbline report for ${given(args, 'domain') ?? ''} with get_report. ` +
+      `Look at the newest Plumbline report for ${given(args, 'domain') ?? ''} with get_report. ` +
       'Explain what failed and warned, grouped by what it is about, say which to fix first and why, ' +
       'and show the header, record or markup to change for each. If there is no report yet, use scan_domain to tell me how to run one.',
   },
@@ -85,7 +85,7 @@ const PROMPTS: readonly Prompt[] = [
       arguments: [],
     },
     text: () =>
-      'List my plumbline domains with list_domains and tell me in a few lines how each one is doing, worst first.',
+      'List my Plumbline domains with list_domains and tell me in a few lines how each one is doing, worst first.',
   },
   {
     definition: {
@@ -112,7 +112,7 @@ const PROMPTS: readonly Prompt[] = [
     text: (args) => {
       const focus = given(args, 'focus');
       return (
-        `Help me choose which plumbline checks run for ${given(args, 'domain') ?? ''}. ` +
+        `Help me choose which Plumbline checks run for ${given(args, 'domain') ?? ''}. ` +
         'Use list_checks to see the groups, ' +
         (focus
           ? `keep the ones about ${focus}, `

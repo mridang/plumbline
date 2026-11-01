@@ -1,8 +1,8 @@
-# plumbline
+# Plumbline
 
-> plumbline checks a website against more than 250 rules: security headers, TLS, DNS and email, privacy, SEO, social cards and agent readiness. Type a domain and the checks run in the browser.
+> Plumbline checks a website against more than 250 rules: security headers, TLS, DNS and email, privacy, SEO, social cards and agent readiness. Type a domain and the checks run in the browser.
 
-plumbline is a web app at https://plumbline.apps.mrida.ng. Scanning needs no account and stores nothing; a person who signs in with Google can keep domains, choose their checks and keep their reports. It is also an MCP server at https://plumbline.apps.mrida.ng/mcp.
+Plumbline is a web app at https://plumbline.apps.mrida.ng. Scanning needs no account and stores nothing; a person who signs in with Google can keep domains, choose their checks and keep their reports. It is also an MCP server at https://plumbline.apps.mrida.ng/mcp.
 
 ## Public pages
 

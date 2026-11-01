@@ -35,7 +35,7 @@ describe('SERVER_INFO', () => {
   it('names the server, describes it and points to its website', () => {
     expect(SERVER_INFO).toMatchObject({
       name: 'plumbline',
-      title: 'plumbline',
+      title: 'Plumbline',
       version: SERVER_VERSION,
       websiteUrl: 'https://plumbline.apps.mrida.ng',
     });

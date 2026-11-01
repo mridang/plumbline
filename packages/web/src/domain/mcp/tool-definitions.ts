@@ -174,7 +174,7 @@ const TOOL_DEFINITIONS = [
   {
     name: 'list_checks',
     description:
-      'Lists the checks plumbline can run, with their ids, names, groups and what each looks at, 50 at a time in id order. Narrow it to one group (a source such as owasp or a topic such as tls) or to checks whose id, name or description contains some text. Without arguments it starts with the list of groups.',
+      'Lists the checks Plumbline can run, with their ids, names, groups and what each looks at, 50 at a time in id order. Narrow it to one group (a source such as owasp or a topic such as tls) or to checks whose id, name or description contains some text. Without arguments it starts with the list of groups.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -260,7 +260,7 @@ const TOOL_DEFINITIONS = [
   {
     name: 'scan_domain',
     description:
-      "Says how to scan one of the user's domains: the plumbline page that runs its checks in the browser and saves a report, and the CLI command that runs every check (TLS and mail included) on the user's own machine. The checks never run on the server, so this starts nothing by itself.",
+      "Says how to scan one of the user's domains: the Plumbline page that runs its checks in the browser and saves a report, and the CLI command that runs every check (TLS and mail included) on the user's own machine. The checks never run on the server, so this starts nothing by itself.",
     inputSchema: {
       type: 'object',
       additionalProperties: false,

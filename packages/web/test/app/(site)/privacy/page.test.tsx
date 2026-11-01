@@ -36,7 +36,7 @@ describe('PrivacyPage', () => {
   });
 
   it('says a scan’s requests go through the server and unsaved scans are not kept', () => {
-    expect(out).toContain('goes through plumbline’s server');
+    expect(out).toContain('goes through Plumbline’s server');
     expect(out).toContain('A scan you run without saving it is not stored');
   });
 
@@ -56,7 +56,7 @@ describe('PrivacyPage', () => {
 
   it('mentions Cloudflare’s request logs', () => {
     expect(out).toContain(
-      'Cloudflare, which hosts plumbline, records each request',
+      'Cloudflare, which hosts Plumbline, records each request',
     );
   });
 
@@ -78,7 +78,7 @@ describe('PrivacyPage', () => {
   });
 
   it('links back home', () => {
-    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>.*Back to plumbline<\/a>/);
+    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>.*Back to Plumbline<\/a>/);
   });
 });
 
@@ -91,6 +91,6 @@ describe('the privacy page’s metadata', () => {
   it('has its own social card', () => {
     expect(metadata.openGraph?.url).toBe('/privacy');
     expect(metadata.title).toBe('Privacy');
-    expect(metadata.twitter?.title).toBe('Privacy · plumbline');
+    expect(metadata.twitter?.title).toBe('Privacy · Plumbline');
   });
 });

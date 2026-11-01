@@ -129,7 +129,7 @@ export function reportText(data: Readonly<ReportData>): string {
   if (data.problems.length === 0) {
     lines.push('Nothing failed or warned.');
   }
-  lines.push(`\nOpen it on plumbline: ${data.link}`);
+  lines.push(`\nOpen it on Plumbline: ${data.link}`);
   return lines.join('\n');
 }
 

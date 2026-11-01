@@ -61,7 +61,7 @@ describe('fixPrompt', () => {
       scan(hint('a', 'failed', { findings: [finding('No HSTS header')] })),
     );
     expect(prompt).toContain(
-      '# Fix the problems plumbline found on https://example.com/',
+      '# Fix the problems Plumbline found on https://example.com/',
     );
     expect(prompt).toContain('found 1 checks that need attention');
     expect(prompt).toContain('## Site protection');

@@ -38,7 +38,7 @@ export const WAYS_IN: readonly WayIn[] = [
   {
     title: 'Coding agents',
     tag: 'Skill',
-    body: 'Install the plumbline skill in Claude Code, Cursor, Codex or any agent that reads skills, then ask it to audit your site: it runs the CLI and explains every fix. In Claude Code it is also a plugin with an audit command.',
+    body: 'Install the Plumbline skill in Claude Code, Cursor, Codex or any agent that reads skills, then ask it to audit your site: it runs the CLI and explains every fix. In Claude Code it is also a plugin with an audit command.',
     snippet: SKILL_INSTALL,
     href: `${SOURCE_URL}/tree/master/packages/skills`,
     more: 'Skills and plugin',

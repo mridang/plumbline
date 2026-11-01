@@ -7,7 +7,7 @@
  */
 
 /** The name of the site, as it appears in titles and structured data. */
-export const SITE_NAME = 'plumbline';
+export const SITE_NAME = 'Plumbline';
 /** The site's public address, with no trailing slash. */
 export const SITE_URL = 'https://plumbline.apps.mrida.ng';
 

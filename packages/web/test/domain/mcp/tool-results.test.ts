@@ -81,7 +81,7 @@ describe('errorResult', () => {
 });
 
 describe('domainLink', () => {
-  it('links the domain’s page on plumbline', () => {
+  it('links the domain’s page on Plumbline', () => {
     expect(domainLink(DOMAIN)).toBe(
       `https://plumbline.apps.mrida.ng/domains/${DOMAIN.id}`,
     );
@@ -89,7 +89,7 @@ describe('domainLink', () => {
 });
 
 describe('DOMAINS_LINK', () => {
-  it('links the list of domains on plumbline', () => {
+  it('links the list of domains on Plumbline', () => {
     expect(DOMAINS_LINK).toBe('https://plumbline.apps.mrida.ng/domains');
   });
 });
@@ -233,8 +233,8 @@ describe('reportText', () => {
     expect(bare).not.toContain('Rule:');
   });
 
-  it('ends with the link to the domain on plumbline', () => {
-    expect(text.endsWith(`Open it on plumbline: ${domainLink(DOMAIN)}`)).toBe(
+  it('ends with the link to the domain on Plumbline', () => {
+    expect(text.endsWith(`Open it on Plumbline: ${domainLink(DOMAIN)}`)).toBe(
       true,
     );
   });

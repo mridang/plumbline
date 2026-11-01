@@ -17,7 +17,7 @@ describe('TermsPage', () => {
 
   it('has a section for each part of the terms', () => {
     for (const heading of [
-      'Using plumbline',
+      'Using Plumbline',
       'The results',
       'The service',
       'Open source',
@@ -52,7 +52,7 @@ describe('TermsPage', () => {
   });
 
   it('links back home', () => {
-    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>.*Back to plumbline<\/a>/);
+    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>.*Back to Plumbline<\/a>/);
   });
 });
 
@@ -65,6 +65,6 @@ describe('the terms page’s metadata', () => {
   it('has its own social card', () => {
     expect(metadata.openGraph?.url).toBe('/terms');
     expect(metadata.title).toBe('Terms');
-    expect(metadata.twitter?.title).toBe('Terms · plumbline');
+    expect(metadata.twitter?.title).toBe('Terms · Plumbline');
   });
 });

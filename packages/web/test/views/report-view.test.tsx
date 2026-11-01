@@ -164,17 +164,17 @@ describe('ReportCard', () => {
     );
   });
 
-  it('offers to open the domain in plumbline when the host can open links', () => {
-    expect(card()).toContain('Open in plumbline');
+  it('offers to open the domain in Plumbline when the host can open links', () => {
+    expect(card()).toContain('Open in Plumbline');
   });
 
   it('offers no link when the host cannot open one', () => {
-    expect(card(REPORT, false)).not.toContain('Open in plumbline');
+    expect(card(REPORT, false)).not.toContain('Open in Plumbline');
   });
 
   it('offers no link that is not a web address', () => {
     expect(card({ ...REPORT, link: 'javascript:alert(1)' })).not.toContain(
-      'Open in plumbline',
+      'Open in Plumbline',
     );
   });
 

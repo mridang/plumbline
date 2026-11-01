@@ -30,7 +30,7 @@ const ASSISTANTS: readonly Readonly<{
     name: 'ChatGPT',
     steps: [
       'Open Settings, then Connectors, and choose to add a custom connector.',
-      'Paste the address above and name it plumbline.',
+      'Paste the address above and name it Plumbline.',
       'Sign in with Google when asked, then approve access.',
     ],
   },
@@ -84,7 +84,7 @@ export default async function ConnectPage(): Promise<ReactElement> {
         roomy
         eyebrow="Assistants"
         title="Check with AI"
-        intro="plumbline speaks MCP, the open standard assistants use to reach your tools. Add this address once and ask about your domains, their checks and their reports in plain words."
+        intro="Plumbline speaks MCP, the open standard assistants use to reach your tools. Add this address once and ask about your domains, their checks and their reports in plain words."
       >
         <div className="mt-8 max-w-2xl">
           <p className="mb-2 text-sm font-semibold">MCP server address</p>

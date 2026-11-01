@@ -97,7 +97,7 @@ export function ReportCard({
       <article className="card">
         <div className="eyebrow">
           <span className="dot" aria-hidden="true" />
-          plumbline report
+          Plumbline report
         </div>
         <h1 className="title">{data.host}</h1>
         <div className="meta">
@@ -129,7 +129,7 @@ export function ReportCard({
               className="btn"
               onClick={() => onOpenLink(link)}
             >
-              Open in plumbline
+              Open in Plumbline
             </button>
           </div>
         ) : null}
