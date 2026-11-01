@@ -26,12 +26,30 @@ describe('runSuite', () => {
     );
     expect(run.status).toBe(200);
     expect(run.checks).toHaveLength(16);
+    expect(run.hash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('does not read a page again when it hashes to the previous run', async () => {
+    const twice = await inWorkerd<{ first: SuiteRun; second: SuiteRun }>(
+      resolve('test/helpers/suite-entry.ts'),
+      'runTwice',
+    );
+    try {
+      const { first, second } = await twice.run(
+        '<html><body>same</body></html>',
+      );
+      expect(first.checks).toHaveLength(16);
+      expect(second.checks).toBeNull();
+      expect(second.hash).toBe(first.hash);
+    } finally {
+      await twice.dispose();
+    }
   });
 
   it('reports what the page lacks', async () => {
     const run = await worker.run('<html><body><p>short</p></body></html>');
     const missing = (id: string) =>
-      run.checks.find((check) => check.id === id)?.findings.length;
+      run.checks?.find((check) => check.id === id)?.findings.length;
     expect(missing('seo-viewport')).toBe(1);
     expect(missing('seo-content-length')).toBe(1);
   });

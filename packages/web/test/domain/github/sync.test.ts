@@ -94,7 +94,12 @@ describe('syncInstallation', () => {
         ['o/site2', ['two.example.com']],
       ],
     );
-    expect((await listDomains(db, 7)).map((d) => [d.host, d.repo])).toEqual([
+    // Domains created in the same millisecond have no fixed order.
+    expect(
+      (await listDomains(db, 7))
+        .map((d) => [d.host, d.repo])
+        .toSorted(([a], [b]) => String(a).localeCompare(String(b))),
+    ).toEqual([
       ['site.example.com', 'o/site'],
       ['two.example.com', 'o/site2'],
     ]);

@@ -5,10 +5,21 @@
  * deliveries already handled. Every read is scoped by the owner.
  */
 
-import { and, desc, eq, lt, notInArray } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  isNotNull,
+  isNull,
+  lt,
+  max,
+  notInArray,
+  or,
+} from 'drizzle-orm';
 
 import type { Database } from '@/domain/db/client';
-import { suiteRuns, webhookDeliveries } from '@/domain/db/schema';
+import { domains, suiteRuns, webhookDeliveries } from '@/domain/db/schema';
 import type { StoredFinding } from '@/domain/suite/diff';
 
 /** How many runs are kept for each host. */
@@ -24,6 +35,7 @@ export interface StoredRun {
   readonly repo: string | null;
   readonly sha: string | null;
   readonly status: number;
+  readonly hash: string | null;
   readonly ran_at: string;
   readonly findings: readonly StoredFinding[];
 }
@@ -47,6 +59,7 @@ export async function recordRun(
     repo: string | null;
     sha: string | null;
     status: number;
+    hash: string;
     findings: readonly StoredFinding[];
   }>,
   timestamp = new Date().toISOString(),
@@ -57,6 +70,7 @@ export async function recordRun(
     repo: run.repo,
     sha: run.sha,
     status: run.status,
+    hash: run.hash,
     ran_at: timestamp,
     findings: JSON.stringify(run.findings),
   });
@@ -97,6 +111,7 @@ export async function latestRuns(
     repo: row.repo,
     sha: row.sha,
     status: row.status,
+    hash: row.hash,
     ran_at: row.ran_at,
     findings: findingsIn(row.findings),
   }));
@@ -125,4 +140,50 @@ export async function claimDelivery(
     .onConflictDoNothing()
     .returning({ id: webhookDeliveries.delivery_id });
   return claimed.length > 0;
+}
+
+/** A site found through GitHub, with the person it belongs to. */
+export interface DueSite {
+  readonly user_id: number;
+  readonly host: string;
+  readonly repo: string | null;
+}
+
+/**
+ * The sites found through GitHub (those with a repository) that were last
+ * checked before `cutoff` or never, the longest-waiting first.
+ */
+export async function dueSites(
+  db: Database,
+  cutoff: string,
+  limit: number,
+): Promise<DueSite[]> {
+  const last = db
+    .select({
+      user_id: suiteRuns.user_id,
+      host: suiteRuns.host,
+      ran_at: max(suiteRuns.ran_at).as('last_ran_at'),
+    })
+    .from(suiteRuns)
+    .groupBy(suiteRuns.user_id, suiteRuns.host)
+    .as('last');
+  return db
+    .select({
+      user_id: domains.user_id,
+      host: domains.host,
+      repo: domains.repo,
+    })
+    .from(domains)
+    .leftJoin(
+      last,
+      and(eq(last.user_id, domains.user_id), eq(last.host, domains.host)),
+    )
+    .where(
+      and(
+        isNotNull(domains.repo),
+        or(isNull(last.ran_at), lt(last.ran_at, cutoff)),
+      ),
+    )
+    .orderBy(asc(last.ran_at), asc(domains.host), asc(domains.user_id))
+    .limit(limit);
 }

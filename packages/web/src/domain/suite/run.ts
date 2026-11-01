@@ -17,15 +17,35 @@ const TIMEOUT_MS = 15_000;
 export interface SuiteRun {
   url: string;
   status: number;
-  checks: CheckResult[];
+  /** SHA-256 of the status and body that were read. */
+  hash: string;
+  /** What the checks found; null when the page is the same as the one the run was told about. */
+  checks: CheckResult[] | null;
+}
+
+/** The SHA-256 of `text` as hex, computed natively by the runtime. */
+export async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(text),
+  );
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 /** The part of `fetch` a run uses, so tests can pass their own. */
 export type Fetcher = (url: string, init: RequestInit) => Promise<Response>;
 
-/** Fetches `url` and runs the server-side checks; throws when the site cannot be reached. */
+/**
+ * Fetches `url` and runs the server-side checks; throws when the site cannot
+ * be reached. When the response hashes to `previousHash` nothing is read or
+ * checked (`checks` is null): hashing is native and cheap, reading the page is
+ * not.
+ */
 export async function runSuite(
   url: string,
+  previousHash: string | null = null,
   fetcher: Fetcher = fetch,
 ): Promise<SuiteRun> {
   const started = Date.now();
@@ -36,6 +56,15 @@ export async function runSuite(
   });
   const responseMs = Date.now() - started;
   const html = await response.text();
+  const hash = await sha256Hex(`${response.status}\n${html}`);
+  if (hash === previousHash) {
+    return {
+      url: response.url || url,
+      status: response.status,
+      hash,
+      checks: null,
+    };
+  }
   const page = {
     url: response.url || url,
     status: response.status,
@@ -46,6 +75,7 @@ export async function runSuite(
   return {
     url: page.url,
     status: page.status,
+    hash,
     checks: runChecks(page, await extractFacts(html)),
   };
 }

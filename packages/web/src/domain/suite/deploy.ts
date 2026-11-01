@@ -62,7 +62,62 @@ export interface SiteOutcome {
   readonly host: string;
   /** Why nothing was checked, when that is so. */
   readonly skipped?: 'recent' | 'unreachable';
+  /** True when the page was the same as at the previous run, so it was not read again. */
+  readonly unchanged?: boolean;
   readonly changes?: Changes;
+}
+
+/** What the runs can be given in place of the real thing, for tests. */
+export interface Deps {
+  readonly run?: (
+    url: string,
+    previousHash: string | null,
+  ) => Promise<SuiteRun>;
+  readonly now?: () => Date;
+}
+
+/**
+ * Check one site and store the run. A page that has not changed since the
+ * previous run is not read again: the new run keeps the previous findings.
+ */
+export async function checkSite(
+  db: Database,
+  userId: number,
+  site: Readonly<{ host: string; repo: string | null; sha: string | null }>,
+  deps: Deps = {},
+): Promise<SiteOutcome> {
+  const run = deps.run ?? ((url, hash) => runSuite(url, hash));
+  const now = deps.now ?? (() => new Date());
+  const [previous] = await latestRuns(db, userId, site.host, 1);
+  let result: SuiteRun;
+  try {
+    result = await run(`https://${site.host}/`, previous?.hash ?? null);
+  } catch (error) {
+    console.error('suite run failed', site.host, error);
+    return { host: site.host, skipped: 'unreachable' };
+  }
+  const unchanged = result.checks === null && previous !== undefined;
+  const findings = result.checks
+    ? findingsOf(result.checks)
+    : (previous?.findings ?? []);
+  await recordRun(
+    db,
+    {
+      userId,
+      host: site.host,
+      repo: site.repo,
+      sha: site.sha,
+      status: result.status,
+      hash: result.hash,
+      findings,
+    },
+    now().toISOString(),
+  );
+  return {
+    host: site.host,
+    unchanged,
+    changes: diffFindings(previous?.findings ?? [], findings),
+  };
 }
 
 /** Check each site of the repository and store what was found. */
@@ -70,12 +125,8 @@ export async function checkDeployment(
   db: Database,
   userId: number,
   deployed: Readonly<{ repo: string; sha: string | null }>,
-  deps: Readonly<{
-    run?: (url: string) => Promise<SuiteRun>;
-    now?: () => Date;
-  }> = {},
+  deps: Deps = {},
 ): Promise<SiteOutcome[]> {
-  const run = deps.run ?? ((url: string) => runSuite(url));
   const now = deps.now ?? (() => new Date());
   const sites = (await listDomainsOfRepo(db, userId, deployed.repo)).slice(
     0,
@@ -91,31 +142,14 @@ export async function checkDeployment(
       outcomes.push({ host: site.host, skipped: 'recent' });
       continue;
     }
-    let result: SuiteRun;
-    try {
-      result = await run(`https://${site.host}/`);
-    } catch (error) {
-      console.error('suite run failed', site.host, error);
-      outcomes.push({ host: site.host, skipped: 'unreachable' });
-      continue;
-    }
-    const findings = findingsOf(result.checks);
-    await recordRun(
-      db,
-      {
+    outcomes.push(
+      await checkSite(
+        db,
         userId,
-        host: site.host,
-        repo: deployed.repo,
-        sha: deployed.sha,
-        status: result.status,
-        findings,
-      },
-      now().toISOString(),
+        { host: site.host, repo: deployed.repo, sha: deployed.sha },
+        deps,
+      ),
     );
-    outcomes.push({
-      host: site.host,
-      changes: diffFindings(previous?.findings ?? [], findings),
-    });
   }
   return outcomes;
 }

@@ -235,6 +235,8 @@ export const suiteRuns = sqliteTable(
     repo: text('repo'),
     sha: text('sha'),
     status: integer('status').notNull(),
+    /** SHA-256 of the response the run read; null for a run from before it was kept. */
+    hash: text('hash'),
     ran_at: text('ran_at').notNull(),
     findings: text('findings').notNull(),
   },

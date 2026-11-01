@@ -7,6 +7,7 @@ import {
   DEBOUNCE_MS,
   MAX_SITES,
   checkDeployment,
+  checkSite,
   liveDeployment,
 } from '@/domain/suite/deploy';
 import type { SuiteRun } from '@/domain/suite/run';
@@ -20,6 +21,7 @@ const deployed = { repo: 'acme/site', sha: 'abc123' };
 const finding = (...messages: string[]): SuiteRun => ({
   url: 'https://x.test/',
   status: 200,
+  hash: messages.join('|'),
   checks: messages.map((message, i) => ({
     id: `check-${i}`,
     findings: [{ severity: 'warning', message }],
@@ -110,6 +112,7 @@ describe('checkDeployment', () => {
         repo: 'acme/site',
         sha: 'old',
         status: 200,
+        hash: 'old',
         findings: [
           { id: 'check-0', severity: 'warning', message: 'old problem' },
         ],
@@ -182,5 +185,48 @@ describe('checkDeployment', () => {
       run: async () => finding(),
     });
     expect(outcomes.map((o) => o.host)).toEqual(['a.test']);
+  });
+});
+
+describe('checkSite', () => {
+  it('keeps the previous findings when the page has not changed', async () => {
+    const db = await setup('a.test');
+    const site = { host: 'a.test', repo: 'acme/site', sha: null };
+    await checkSite(db, 1, site, { run: async () => finding('slow') });
+    const seen: (string | null)[] = [];
+    const outcome = await checkSite(db, 1, site, {
+      run: async (_url, hash) => {
+        seen.push(hash);
+        return {
+          url: 'https://a.test/',
+          status: 200,
+          hash: 'slow',
+          checks: null,
+        };
+      },
+    });
+    expect(seen).toEqual(['slow']);
+    expect(outcome).toMatchObject({ unchanged: true });
+    expect(outcome.changes).toEqual({ added: [], fixed: [] });
+    const [latest] = await latestRuns(db, 1, 'a.test', 1);
+    expect(latest?.findings.map((f) => f.message)).toEqual(['slow']);
+  });
+
+  it('reads the page when it has no earlier run to compare with', async () => {
+    const db = await setup('a.test');
+    const outcome = await checkSite(
+      db,
+      1,
+      { host: 'a.test', repo: null, sha: null },
+      {
+        run: async () => ({
+          url: 'https://a.test/',
+          status: 200,
+          hash: 'h',
+          checks: null,
+        }),
+      },
+    );
+    expect(outcome.unchanged).toBe(false);
   });
 });

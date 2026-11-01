@@ -40,6 +40,9 @@
     "binding": "ASSETS",
     "directory": ".open-next/assets",
   },
+  // Re-checks the sites found through GitHub that have not been checked for a
+  // day, a few at a time (src/domain/suite/scheduled.ts).
+  "triggers": { "crons": ["*/30 * * * *"] },
   "d1_databases": [
     {
       "binding": "DB",
