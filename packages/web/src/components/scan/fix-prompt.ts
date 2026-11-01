@@ -104,7 +104,7 @@ export function fixPrompt(
   let number = 0;
   for (const section of sectionsOf(scan.hints, 'problems')) {
     lines.push(`## ${section.title}`, '');
-    const ordered = [...section.hints].sort(
+    const ordered = section.hints.toSorted(
       (a, b) => Number(b.status === 'failed') - Number(a.status === 'failed'),
     );
     for (const hint of ordered) {

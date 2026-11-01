@@ -225,3 +225,73 @@ body {
 input::placeholder {
   color: var(--color-subtle);
 }
+
+/*
+ * Modal dialogs fade (and the side drawer slides, the centred box grows a
+ * little) in and out. A `<dialog>` is `display: none` while closed and leaves
+ * the page the instant it closes, which a transition cannot play across.
+ * Opening is a keyframe animation, which needs no help from the browser. Closing
+ * is a transition with `allow-discrete` on `display` and `overlay`, which keeps
+ * the dialog on screen (and in the top layer) until the fade-out has finished;
+ * a browser without it just closes at once. (`@starting-style` could do the
+ * opening too, but the stylesheet linter cannot yet parse it, and a keyframe
+ * animation also works in older browsers.) Only for people who have not asked
+ * for less motion; for the rest nothing here applies and the dialog, whose own
+ * classes already give it a half-ink backdrop, simply appears and disappears.
+ * The backdrop colour is repeated here because it has to be where a transition
+ * ends, which a utility class cannot be.
+ */
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: var(--dialog-from);
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    background-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  dialog[data-variant] {
+    --dialog-from: none;
+    opacity: 0;
+    transform: var(--dialog-from);
+    transition:
+      opacity 200ms ease-out,
+      transform 200ms ease-out,
+      overlay 200ms allow-discrete,
+      display 200ms allow-discrete;
+  }
+
+  dialog[data-variant='drawer'] {
+    --dialog-from: translateX(-1.5rem);
+  }
+
+  dialog[data-variant='center'] {
+    --dialog-from: scale(0.97);
+  }
+
+  dialog[data-variant][open] {
+    opacity: 1;
+    transform: none;
+    animation: dialog-in 200ms ease-out;
+  }
+
+  dialog[data-variant]::backdrop {
+    background-color: transparent;
+    transition:
+      background-color 200ms ease-out,
+      overlay 200ms allow-discrete,
+      display 200ms allow-discrete;
+  }
+
+  @supports (background-color: color-mix(in srgb, red, blue)) {
+    dialog[data-variant][open]::backdrop {
+      background-color: color-mix(in srgb, var(--color-ink) 50%, transparent);
+      animation: backdrop-in 200ms ease-out;
+    }
+  }
+}

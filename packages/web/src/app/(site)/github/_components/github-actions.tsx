@@ -5,6 +5,7 @@ import { useState, type ReactElement } from 'react';
 
 import { ensureOk, problemText } from '@/components/api/problem-message';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 /** Post to a GitHub endpoint of this site. */
 export async function postTo(
@@ -26,15 +27,14 @@ function ActionButton({
   label: string;
   busyLabel: string;
   failure: string;
+  /** What to tell the person before going ahead; leave out to act at once. */
   confirm?: string;
 }>): ReactElement {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  const [asking, setAsking] = useState(false);
   const run = async (): Promise<void> => {
-    if (confirm && !window.confirm(confirm)) {
-      return;
-    }
     setBusy(true);
     setProblem(null);
     try {
@@ -48,9 +48,23 @@ function ActionButton({
   };
   return (
     <div>
-      <Button variant="outline" disabled={busy} onClick={() => void run()}>
+      <Button
+        variant="outline"
+        disabled={busy}
+        onClick={() => (confirm ? setAsking(true) : void run())}
+      >
         {busy ? busyLabel : label}
       </Button>
+      {confirm ? (
+        <ConfirmDialog
+          open={asking}
+          onOpenChange={setAsking}
+          title={`${label}?`}
+          description={confirm}
+          confirmLabel={label}
+          onConfirm={() => void run()}
+        />
+      ) : null}
       {problem ? (
         <p role="alert" className="mt-2 text-failed">
           {problem}
@@ -80,7 +94,7 @@ export function DisconnectButton(): ReactElement {
       label="Disconnect GitHub"
       busyLabel="Disconnecting…"
       failure="GitHub could not be disconnected."
-      confirm="Disconnect GitHub? Your domains and reports stay."
+      confirm="Your domains and reports stay."
     />
   );
 }

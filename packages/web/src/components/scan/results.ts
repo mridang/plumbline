@@ -80,7 +80,7 @@ export function sectionsOf(
     .map(([id, group]) => ({
       id,
       title: group.title,
-      hints: [...group.hints].sort(
+      hints: group.hints.toSorted(
         (a, b) =>
           STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status) ||
           compareText(a.name, b.name),

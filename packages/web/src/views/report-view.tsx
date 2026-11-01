@@ -18,6 +18,7 @@ import { Announcer, LoadingCard, MessageCard } from '@/views/status-panels';
 import { STYLES } from '@/views/styles';
 import { useWidgetData } from '@/views/use-widget-data';
 import type { ViewState } from '@/views/view-state';
+import { formatTimestamp } from '@/lib/intl';
 
 /** A count with its noun, such as "1 failed" or "12 passed". */
 function counted(count: number, word: string): string {
@@ -29,10 +30,7 @@ function when(timestamp: string): string {
   const date = new Date(timestamp);
   return Number.isNaN(date.getTime())
     ? timestamp
-    : date.toLocaleString(undefined, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      });
+    : `${formatTimestamp(date)} UTC`;
 }
 
 /** One check that failed or warned, folded until opened. */

@@ -5,6 +5,7 @@ import { useState, type ReactElement } from 'react';
 
 import { ensureOk, problemText } from '@/components/api/problem-message';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 /** Remove a domain (`DELETE /api/domains/{id}`). */
 export async function removeDomain(
@@ -24,12 +25,10 @@ export function RemoveDomainButton({
 }: Readonly<{ domainId: string; host: string }>): ReactElement {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [asking, setAsking] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
-  const onClick = async (): Promise<void> => {
-    if (!window.confirm(`Remove ${host} and all of its reports?`)) {
-      return;
-    }
+  const remove = async (): Promise<void> => {
     setBusy(true);
     try {
       await removeDomain(domainId);
@@ -42,9 +41,17 @@ export function RemoveDomainButton({
 
   return (
     <div>
-      <Button variant="outline" disabled={busy} onClick={() => void onClick()}>
+      <Button variant="outline" disabled={busy} onClick={() => setAsking(true)}>
         {busy ? 'Removing…' : 'Remove domain'}
       </Button>
+      <ConfirmDialog
+        open={asking}
+        onOpenChange={setAsking}
+        title={`Remove ${host}?`}
+        description="The domain and all of its reports will be removed."
+        confirmLabel="Remove domain"
+        onConfirm={() => void remove()}
+      />
       {problem ? (
         <p role="alert" className="mt-2 text-failed">
           {problem}
