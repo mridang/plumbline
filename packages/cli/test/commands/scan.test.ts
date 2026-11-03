@@ -84,6 +84,12 @@ describe('plumbline scan', () => {
     expect(result.calls).toEqual([]);
   });
 
+  it('leaves the exit code of the test process alone on a usage error', async () => {
+    const before = process.exitCode;
+    await run(['scan']);
+    expect(process.exitCode).toBe(before);
+  });
+
   it('refuses a scan with nothing to scan, with the usage status', async () => {
     const result = await run(['scan']);
     expect(result.code).toBe(EXIT.usage);

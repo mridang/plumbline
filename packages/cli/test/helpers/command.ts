@@ -49,6 +49,8 @@ export async function runCommand(
     }
   }
   let code = 0;
+  // oclif sets `process.exitCode` on a failed run, which Jest would exit with.
+  const exitCode = process.exitCode;
   try {
     await Under.run(argv, ROOT);
   } catch (error) {
@@ -60,6 +62,8 @@ export async function runCommand(
     if (exit !== 1 && exit !== 3 && error instanceof Error) {
       err.push(error.message);
     }
+  } finally {
+    process.exitCode = exitCode;
   }
   return { code, stdout: out.join(''), stderr: err.join('') };
 }
