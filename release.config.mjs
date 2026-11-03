@@ -1,25 +1,24 @@
-import { globSync, readFileSync } from 'fs';
+import { readFileSync } from 'fs';
 
 const packageJson = JSON.parse(
   readFileSync(new URL('./package.json', import.meta.url), 'utf-8'),
 );
 
-const workspacePackageJsons = (packageJson.workspaces ?? [])
-  .flatMap((pattern) => globSync(`${pattern}/package.json`))
-  .sort();
+const packages = ['cli', 'formatter', 'hints', 'lighthouse', 'skills'];
 
 export default {
   plugins: [
     '@semantic-release/commit-analyzer',
     '@semantic-release/release-notes-generator',
-    [
-      '@semantic-release/exec',
+    ...packages.map((name) => [
+      '@semantic-release/npm',
       {
-        prepareCmd:
-          'npm version ${nextRelease.version} --workspaces --no-git-tag-version --allow-same-version',
-        publishCmd: 'npm publish --workspaces --access public',
+        npmPublish: true,
+        pkgRoot: `packages/${name}`,
+        tarballDir: '.',
+        access: 'public',
       },
-    ],
+    ]),
     [
       '@mridang/semantic-release-oci',
       {
@@ -35,11 +34,19 @@ export default {
         },
       },
     ],
-    '@semantic-release/github',
+    [
+      '@semantic-release/github',
+      {
+        assets: [{ path: '*.tgz', label: 'Package' }],
+      },
+    ],
     [
       '@semantic-release/git',
       {
-        assets: [...workspacePackageJsons, 'package-lock.json'],
+        assets: [
+          ...packages.map((name) => `packages/${name}/package.json`),
+          'package-lock.json',
+        ],
         message:
           'chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}',
       },
