@@ -72,13 +72,9 @@ Thumbs.db
 
 # Github Keys
 *.pem
-# ...but the TLS test fixtures are throwaway certificates, committed on purpose
-# (see packages/hints/test/fixtures/tls/README.md).
-!packages/hints/test/fixtures/tls/*.pem
 
-# The web app's build output. Its own .gitignore covers git; Prettier and
-# ESLint at the root read only this one.
-.next/
+# Cloudflare / Next.js build output
 .open-next/
 .wrangler/
+.dev.vars
 next-env.d.ts
