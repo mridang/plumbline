@@ -15,6 +15,6 @@ protect nothing: never use them anywhere else.
   - `ed25519`: Ed25519 key (`-newkey ed25519`).
   - `rsa3072-noocsp`: RSA 3072 with `san-ok-noocsp.cnf` (no OCSP pointer).
   - `rsa3072-othername`: RSA 3072 with `san-other.cnf` (SAN `other.example.test` only, so the host name does not match).
-- `dh2048.pem`: `openssl dhparam -dsaparam -out dh2048.pem 2048`, used to make a test server offer DHE.
+- `dh2048.pem`: `openssl genpkey -genparam -algorithm DH -pkeyopt group:ffdhe2048 -out dh2048.pem`, used to make a test server offer DHE.
 - `ca-rsa.pem` / `ca-rsa.key`: self-signed RSA 2048 test CA (`CN=Webhint Test RSA CA`), made like `ca.pem` with `-newkey rsa:2048`.
 - `rsa-signed.pem` / `rsa-signed.key`: an EC P-256 leaf signed by `ca-rsa.pem` with SHA-256, so its signature algorithm is `sha256WithRSAEncryption`.
