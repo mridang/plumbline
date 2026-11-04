@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { notApplicable, productFromFindings } from '../src/result.js';
-import type { Finding } from '../../dist/lib/headers/finding.js';
+import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 
 const error: Finding = { severity: 'error', message: 'boom' };
 const warning: Finding = { severity: 'warning', message: 'careful' };
