@@ -126,7 +126,7 @@ Notifications use Web Push with VAPID, as in marshall. The public key and subjec
 
 ## Moving to the Workers Paid plan
 
-Every number that depends on the Cloudflare plan is in `src/domain/suite/limits.ts`: how many sites one deployment checks, how many a cron trigger re-checks, and how many are checked at the same time. The Free plan's values are the default. To move to Paid, upgrade the account, set `WORKERS_PLAN=paid` (a Worker secret, or in `.env` locally), add the cron trigger shown in `wrangler.jsonc`, and deploy. Nothing else changes.
+Every number that depends on the Cloudflare plan is in `src/domain/suite/limits.ts`: how many sites one deployment checks, how many a cron trigger re-checks, and how many are checked at the same time. The Free plan's values are the default. This account is on Paid: `WORKERS_PLAN` is `paid` in the `vars` of `wrangler.jsonc` and the cron trigger fires every ten minutes. To go back to Free, set it to `free` and use `*/30 * * * *` (the Free plan allows five cron triggers per account).
 
 ## Connecting an assistant (MCP)
 

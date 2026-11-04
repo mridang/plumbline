@@ -40,12 +40,11 @@
     "binding": "ASSETS",
     "directory": ".open-next/assets",
   },
-  // The daily re-check (src/domain/suite/scheduled.ts) needs a cron trigger,
-  // `"triggers": { "crons": ["*/30 * * * *"] }`. The Workers Free plan allows
-  // five per account and this account has used them, so it is left off; the
-  // handler stays and runs once the trigger is added back. On the Paid plan,
-  // set WORKERS_PLAN=paid (src/domain/suite/limits.ts) and use
-  // `"*/10 * * * *"`: each trigger then re-checks more sites.
+  // The re-check (src/domain/suite/scheduled.ts) of the sites found through
+  // GitHub that have not been checked for a day. The account is on the Workers
+  // Paid plan (WORKERS_PLAN below, src/domain/suite/limits.ts), so each trigger
+  // takes a bigger batch and it fires every ten minutes.
+  "triggers": { "crons": ["*/10 * * * *"] },
   "d1_databases": [
     {
       "binding": "DB",
@@ -153,6 +152,8 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["UserHub"] }],
   "vars": {
+    // The Cloudflare plan: sets the limits of the server-side checks.
+    "WORKERS_PLAN": "paid",
     // Web Push (VAPID). The public key is what browsers subscribe with; the
     // subject is the contact address push services may write to.
     "VAPID_PUBLIC_KEY": "BJdkLBZFH5nzIA-EaaNWM9jOnEeRYZ4YNYtGXis1WJFe4_HpDFWzVNipsIRv5GPKqvZPvRuxjX67fwsCzdcK-OY",

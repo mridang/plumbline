@@ -31,6 +31,4 @@ interface CloudflareEnv extends Cloudflare.Env {
   GITHUB_WEBHOOK_SECRET?: string;
   /** The VAPID private key notifications are signed with; without it they are off. */
   VAPID_PRIVATE_KEY?: string;
-  /** The Cloudflare plan, `free` (the default) or `paid`; sets the limits of the server-side checks. */
-  WORKERS_PLAN?: string;
 }
