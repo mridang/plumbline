@@ -8,6 +8,21 @@ const require = createRequire(import.meta.url);
 const { default: PuppeteerConnector } = require('@hint/connector-puppeteer');
 const { default: HTMLParser } = require('@hint/parser-html');
 
+// The connector still calls `page.removeListener`, which newer Puppeteer
+// renamed to `off` (a page is an event emitter whose `off` does the same).
+// Patch the copy the connector itself loads, whichever version that is. Its
+// `detached` and `ignoreHTTPSErrors` options also changed in newer
+// Puppeteer, so leave them unset.
+const puppeteer = createRequire(require.resolve('@hint/connector-puppeteer'))(
+  'puppeteer-core',
+);
+if (
+  puppeteer.Page &&
+  typeof puppeteer.Page.prototype.removeListener !== 'function'
+) {
+  puppeteer.Page.prototype.removeListener = puppeteer.Page.prototype.off;
+}
+
 /**
  * A webhint hint class as the hints package exports it: a constructor with a
  * static `meta` whose `docs` carries the extra fields this project stamps on.

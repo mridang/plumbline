@@ -1,7 +1,18 @@
 import { describe, expect, it } from '@jest/globals';
+import { createRequire } from 'node:module';
 import { findBrowser } from '../src/browser.js';
 import { allHintIds, hintCatalogue, hintConfig, scan } from '../src/scan.js';
 import { serve } from './helpers/serve.js';
+
+describe('the Puppeteer page shim', () => {
+  it('keeps page.removeListener, which the connector calls and newer Puppeteer renamed to off', () => {
+    const require = createRequire(import.meta.url);
+    const { Page } = createRequire(
+      require.resolve('@hint/connector-puppeteer'),
+    )('puppeteer-core');
+    expect(typeof Page.prototype.removeListener).toBe('function');
+  });
+});
 
 describe('allHintIds', () => {
   it('lists the shipped hints', () => {

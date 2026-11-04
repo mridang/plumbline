@@ -54,5 +54,29 @@
     "semantic-release": "^25.0.9",
     "ts-jest": "^29.4.15",
     "typescript": "^6.0.3"
+  },
+  "overrides": {
+    "@hint/connector-puppeteer": {
+      "puppeteer-core": "^25.16.0"
+    },
+    "cacache": {
+      "glob": "^14.0.2",
+      "tar": "^7.5.21"
+    },
+    "@mapbox/node-pre-gyp": {
+      "tar": "^7.5.21"
+    },
+    "update-notifier": {
+      "got": "^11.8.5"
+    },
+    "@hint/hint-image-optimization-cloudinary": {
+      "image-size": "^2.0.3"
+    },
+    "filelist": {
+      "minimatch": "^11.0.1"
+    },
+    "@hint/hint-apple-touch-icons": {
+      "image-size": "^2.0.3"
+    }
   }
 }

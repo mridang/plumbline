@@ -38,10 +38,10 @@
   "homepage": "https://github.com/mridang/plumbline/tree/master/packages/lighthouse",
   "bugs": "https://github.com/mridang/plumbline/issues",
   "peerDependencies": {
-    "lighthouse": "^12.0.0"
+    "lighthouse": "^12.0.0 || ^13.0.0"
   },
   "devDependencies": {
-    "lighthouse": "^12.0.0"
+    "lighthouse": "^13.6.0"
   },
   "publishConfig": {
     "access": "public"
