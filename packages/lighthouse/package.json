@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "prepack": "tsc",
-    "build": "tsc"
+    "prepack": "tsc --build",
+    "build": "tsc --build"
   },
   "main": "dist/plugin.js",
   "types": "dist/plugin.d.ts",
