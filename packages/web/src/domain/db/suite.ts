@@ -13,13 +13,19 @@ import {
   isNotNull,
   isNull,
   lt,
+  lte,
   max,
   notInArray,
   or,
 } from 'drizzle-orm';
 
 import type { Database } from '@/domain/db/client';
-import { domains, suiteRuns, webhookDeliveries } from '@/domain/db/schema';
+import {
+  domains,
+  suiteIssues,
+  suiteRuns,
+  webhookDeliveries,
+} from '@/domain/db/schema';
 import type { StoredFinding } from '@/domain/suite/diff';
 
 /** How many runs are kept for each host. */
@@ -36,6 +42,8 @@ export interface StoredRun {
   readonly sha: string | null;
   readonly status: number;
   readonly hash: string | null;
+  /** Fingerprint of the rules the run applied. */
+  readonly rules: string | null;
   readonly ran_at: string;
   readonly findings: readonly StoredFinding[];
 }
@@ -60,6 +68,8 @@ export async function recordRun(
     sha: string | null;
     status: number;
     hash: string;
+    /** Fingerprint of the rules the run applied. */
+    rules?: string | null;
     findings: readonly StoredFinding[];
   }>,
   timestamp = new Date().toISOString(),
@@ -71,6 +81,7 @@ export async function recordRun(
     sha: run.sha,
     status: run.status,
     hash: run.hash,
+    rules: run.rules ?? null,
     ran_at: timestamp,
     findings: JSON.stringify(run.findings),
   });
@@ -112,6 +123,7 @@ export async function latestRuns(
     sha: row.sha,
     status: row.status,
     hash: row.hash,
+    rules: row.rules,
     ran_at: row.ran_at,
     findings: findingsIn(row.findings),
   }));
@@ -186,4 +198,143 @@ export async function dueSites(
     )
     .orderBy(asc(last.ran_at), asc(domains.host), asc(domains.user_id))
     .limit(limit);
+}
+
+/** What became of an issue: open, closed by the app because the problems were fixed, or closed by a person. */
+export type IssueState = 'open' | 'fixed' | 'dismissed' | 'opening';
+
+/** The issue that reports a host's problems, when one was opened. */
+export interface StoredIssue {
+  readonly number: number;
+  readonly state: IssueState;
+  /** A fingerprint of the problems it last reported. */
+  readonly signature: string;
+}
+
+/** The issue that reports the problems of a host of a repository, if any. */
+export async function issueOf(
+  db: Database,
+  repo: string,
+  host: string,
+): Promise<StoredIssue | undefined> {
+  const [row] = await db
+    .select()
+    .from(suiteIssues)
+    .where(and(eq(suiteIssues.repo, repo), eq(suiteIssues.host, host)));
+  return row && toIssue(row);
+}
+
+/** The issue of a repository with this number, with the host it is about. */
+export async function issueNumbered(
+  db: Database,
+  repo: string,
+  number: number,
+): Promise<(StoredIssue & { host: string }) | undefined> {
+  const [row] = await db
+    .select()
+    .from(suiteIssues)
+    .where(and(eq(suiteIssues.repo, repo), eq(suiteIssues.number, number)));
+  return row && { ...toIssue(row), host: row.host };
+}
+
+/** A stored row as an issue; a state it does not know counts as open. */
+function toIssue(row: typeof suiteIssues.$inferSelect): StoredIssue {
+  const state =
+    row.state === 'fixed' ||
+    row.state === 'dismissed' ||
+    row.state === 'opening'
+      ? row.state
+      : 'open';
+  return { number: row.number, state, signature: row.signature };
+}
+
+/** Remember the issue that reports a host's problems, replacing an earlier one. */
+export async function saveIssue(
+  db: Database,
+  repo: string,
+  host: string,
+  issue: StoredIssue,
+): Promise<void> {
+  const values = {
+    number: issue.number,
+    state: issue.state,
+    signature: issue.signature,
+  };
+  await db
+    .insert(suiteIssues)
+    .values({ repo, host, ...values })
+    .onConflictDoUpdate({
+      target: [suiteIssues.repo, suiteIssues.host],
+      set: values,
+    });
+}
+
+/** Forget the issue of a repository with this number (it was deleted). */
+export async function forgetIssue(
+  db: Database,
+  repo: string,
+  number: number,
+): Promise<void> {
+  await db
+    .delete(suiteIssues)
+    .where(and(eq(suiteIssues.repo, repo), eq(suiteIssues.number, number)));
+}
+
+/** How long a claim to open an issue holds, in milliseconds, before a delivery that died is forgotten. */
+export const CLAIM_MS = 2 * 60 * 1000;
+
+/**
+ * Claims the right to open the issue of a host of a repository. True for the
+ * one delivery that gets it; false when the host already has an issue, or
+ * another delivery is opening it. A claim as old as {@link CLAIM_MS} or older
+ * was left by a delivery that never finished and is taken over.
+ */
+export async function claimNewIssue(
+  db: Database,
+  repo: string,
+  host: string,
+  now = new Date(),
+): Promise<boolean> {
+  await db
+    .delete(suiteIssues)
+    .where(
+      and(
+        eq(suiteIssues.repo, repo),
+        eq(suiteIssues.host, host),
+        eq(suiteIssues.state, 'opening'),
+        lte(
+          suiteIssues.signature,
+          new Date(now.getTime() - CLAIM_MS).toISOString(),
+        ),
+      ),
+    );
+  const claimed = await db
+    .insert(suiteIssues)
+    .values({
+      repo,
+      host,
+      number: 0,
+      state: 'opening',
+      signature: now.toISOString(),
+    })
+    .onConflictDoNothing()
+    .returning({ number: suiteIssues.number });
+  return claimed.length > 0;
+}
+
+/** Gives up a claim to open an issue (opening it failed). */
+export async function releaseIssueClaim(
+  db: Database,
+  repo: string,
+  host: string,
+): Promise<void> {
+  await db
+    .delete(suiteIssues)
+    .where(
+      and(
+        eq(suiteIssues.repo, repo),
+        eq(suiteIssues.host, host),
+        eq(suiteIssues.state, 'opening'),
+      ),
+    );
 }

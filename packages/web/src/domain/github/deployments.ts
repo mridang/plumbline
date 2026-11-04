@@ -185,6 +185,14 @@ export async function deploymentHosts(repo: RepoFiles): Promise<string[]> {
 export interface Delivery extends DeploymentStatus {
   readonly action?: string;
   readonly installation?: { readonly id?: number };
+  /** The branch a push went to, as `refs/heads/main`. */
+  readonly ref?: string;
+  /** The commit a push left the branch at. */
+  readonly after?: string;
+  /** The issue an `issues` delivery is about. */
+  readonly issue?: { readonly number?: number };
+  /** Who did it. */
+  readonly sender?: { readonly login?: string };
   readonly commits?: readonly {
     readonly added?: readonly string[];
     readonly modified?: readonly string[];
@@ -201,4 +209,24 @@ export function touchesWrangler(delivery: Readonly<Delivery>): boolean {
       ...(commit.removed ?? []),
     ].some(isWranglerPath),
   );
+}
+
+/** The configuration file names, in the root of a repository. */
+const CONFIG_FILE = /^plumbline\.(yaml|yml|json)$/;
+
+/** Whether a push changed the repository's `plumbline` configuration, which changes the rules. */
+export function touchesConfig(delivery: Readonly<Delivery>): boolean {
+  return (delivery.commits ?? []).some((commit) =>
+    [
+      ...(commit.added ?? []),
+      ...(commit.modified ?? []),
+      ...(commit.removed ?? []),
+    ].some((path) => CONFIG_FILE.test(path)),
+  );
+}
+
+/** Whether a push went to the repository's default branch. */
+export function isDefaultBranchPush(delivery: Readonly<Delivery>): boolean {
+  const branch = delivery.repository?.default_branch;
+  return branch !== undefined && delivery.ref === `refs/heads/${branch}`;
 }

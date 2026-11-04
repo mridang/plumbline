@@ -1,11 +1,14 @@
 /**
  * GitHub's deliveries for the app. Every one is checked against the shared
  * secret before anything is read. An installation that was removed is
- * forgotten; a change to an installation's repositories, or a push to a
- * Wrangler configuration, reads the installation again so the deployed hosts
- * stay right. A successful deployment runs the server-side checks on the
- * repository's sites (once per delivery, GitHub retries are recognised by
- * their id). Anything else is acknowledged and ignored.
+ * forgotten; a change to an installation's repositories or permissions, or a
+ * push to a Wrangler configuration, reads the installation again so the
+ * deployed hosts stay right. A push of `plumbline.yaml` to the default branch
+ * checks the live site again under the new rules, and an issue a person
+ * closes, reopens or deletes is noted so the app treats it accordingly. A successful deployment runs the server-side checks, once per
+ * delivery (GitHub retries are recognised by their id): on the repository's
+ * sites when it is the live site, and on the deployment's own address when it
+ * is a preview. Anything else is acknowledged and ignored.
  */
 
 import { NextResponse } from 'next/server';
@@ -13,11 +16,40 @@ import { NextResponse } from 'next/server';
 import { getDatabase } from '@/domain/db/client';
 import { ownerOfInstallation, removeInstallation } from '@/domain/db/github';
 import { claimDelivery } from '@/domain/db/suite';
-import { touchesWrangler, type Delivery } from '@/domain/github/deployments';
+import {
+  isDefaultBranchPush,
+  touchesConfig,
+  touchesWrangler,
+  type Delivery,
+} from '@/domain/github/deployments';
 import { githubConfig, syncAsApp } from '@/domain/github/service';
 import { verifySignature } from '@/domain/github/webhook';
-import { checkDeployment, liveDeployment } from '@/domain/suite/deploy';
+import { classifyDeployment } from '@/domain/suite/deploy';
+import { handleDeployment } from '@/domain/suite/github-run';
+import { handleIssueEvent } from '@/domain/suite/issue-events';
 import { runInBackground } from '@/lib/core/runtime';
+
+/**
+ * Whether a delivery means the installation's repositories or what the app may
+ * do changed, so the hosts it serves must be read again: repositories added or
+ * removed, permissions accepted, a suspension lifted, a Wrangler file pushed.
+ */
+function rereadsInstallation(
+  event: string | null,
+  delivery: Readonly<Delivery>,
+): boolean {
+  if (event === 'installation_repositories') {
+    return true;
+  }
+  if (event === 'installation') {
+    return (
+      delivery.action === 'new_permissions_accepted' ||
+      delivery.action === 'unsuspend' ||
+      delivery.action === 'created'
+    );
+  }
+  return event === 'push' && touchesWrangler(delivery);
+}
 
 export async function POST(request: Request): Promise<NextResponse> {
   const config = githubConfig();
@@ -44,7 +76,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (event === 'installation' && delivery.action === 'deleted') {
     await removeInstallation(db, installationId);
   } else if (event === 'deployment_status') {
-    const deployed = liveDeployment(delivery);
+    const deployed = classifyDeployment(delivery);
     const owner = await ownerOfInstallation(db, installationId);
     const deliveryId = request.headers.get('x-github-delivery');
     if (
@@ -52,15 +84,42 @@ export async function POST(request: Request): Promise<NextResponse> {
       owner !== undefined &&
       (deliveryId === null || (await claimDelivery(db, deliveryId)))
     ) {
-      runInBackground(checkDeployment(db, owner, deployed));
+      runInBackground(
+        handleDeployment(db, config, installationId, owner, deployed),
+      );
     }
-  } else if (
-    event === 'installation_repositories' ||
-    (event === 'push' && touchesWrangler(delivery))
-  ) {
+  } else if (event === 'issues') {
+    await handleIssueEvent(db, config.slug, delivery);
+  } else {
     const owner = await ownerOfInstallation(db, installationId);
     if (owner !== undefined) {
-      runInBackground(syncAsApp(db, config, owner, installationId));
+      if (rereadsInstallation(event, delivery)) {
+        runInBackground(syncAsApp(db, config, owner, installationId));
+      }
+      // New rules apply to the live site as soon as they are on the default branch.
+      const repo = delivery.repository?.full_name;
+      if (
+        event === 'push' &&
+        repo &&
+        touchesConfig(delivery) &&
+        isDefaultBranchPush(delivery)
+      ) {
+        runInBackground(
+          handleDeployment(
+            db,
+            config,
+            installationId,
+            owner,
+            {
+              environment: 'production',
+              repo,
+              sha: delivery.after ?? null,
+              url: null,
+            },
+            { force: true },
+          ),
+        );
+      }
     }
   }
   return new NextResponse(null, { status: 202 });

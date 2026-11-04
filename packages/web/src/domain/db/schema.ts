@@ -237,12 +237,31 @@ export const suiteRuns = sqliteTable(
     status: integer('status').notNull(),
     /** SHA-256 of the response the run read; null for a run from before it was kept. */
     hash: text('hash'),
+    /** Fingerprint of the rules the run applied; null for a run from before it was kept. */
+    rules: text('rules'),
     ran_at: text('ran_at').notNull(),
     findings: text('findings').notNull(),
   },
   (table) => [
     index('idx_suite_runs_host').on(table.user_id, table.host, table.id),
   ],
+);
+
+/**
+ * The GitHub issue that reports the problems of one host of one repository.
+ * `state` is 'open', 'fixed' (the app closed it) or 'dismissed' (a person
+ * closed it); `signature` fingerprints the problems it last reported.
+ */
+export const suiteIssues = sqliteTable(
+  'suite_issues',
+  {
+    repo: text('repo').notNull(),
+    host: text('host').notNull(),
+    number: integer('number').notNull(),
+    state: text('state').notNull(),
+    signature: text('signature').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.repo, table.host] })],
 );
 
 /** The id GitHub gave a webhook delivery, kept so a retried delivery is not handled twice. */

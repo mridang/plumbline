@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 
 import { resolve } from 'node:path';
 
-import type { SuiteRun } from '@/domain/suite/run';
+import { runSuite, type SuiteRun } from '@/domain/suite/run';
 
 import { inWorkerd } from '../../helpers/workerd';
 
@@ -52,5 +52,20 @@ describe('runSuite', () => {
       run.checks?.find((check) => check.id === id)?.findings.length;
     expect(missing('seo-viewport')).toBe(1);
     expect(missing('seo-content-length')).toBe(1);
+  });
+});
+
+describe('runSuite, where it will go', () => {
+  /** A response that says it ended up at `address`. */
+  const endingAt = (address: string): Response => {
+    const response = new Response('<html></html>');
+    Object.defineProperty(response, 'url', { value: address });
+    return response;
+  };
+
+  it('refuses a page whose redirects ended on a plain http address', async () => {
+    await expect(
+      runSuite('https://x.test/', null, async () => endingAt('http://x.test/')),
+    ).rejects.toThrow('redirected to http://x.test/, which is not https');
   });
 });

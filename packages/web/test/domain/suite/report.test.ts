@@ -1,0 +1,275 @@
+import { describe, expect, it } from '@jest/globals';
+
+import { findCheck } from '@/domain/checks/catalogue';
+import type { StoredFinding } from '@/domain/suite/diff';
+import {
+  MAX_LISTED,
+  MAX_PROBLEMS,
+  MAX_PROBLEM_LENGTH,
+  MAX_TEXT,
+  breakdown,
+  checkRunOutput,
+  conclusionOf,
+  countsOf,
+  issueMarker,
+  issueText,
+  reportedFindings,
+  safeText,
+} from '@/domain/suite/report';
+
+const found = (
+  severity: StoredFinding['severity'],
+  message = 'm',
+  id = 'seo-viewport',
+): StoredFinding => ({ id, severity, message });
+
+describe('countsOf and conclusionOf', () => {
+  it('counts each severity', () => {
+    expect(
+      countsOf([
+        found('error'),
+        found('hint'),
+        found('hint'),
+        found('warning'),
+      ]),
+    ).toEqual({ errors: 1, warnings: 1, hints: 2 });
+  });
+
+  it('fails on an error, is neutral on a warning, and passes otherwise', () => {
+    expect(conclusionOf([found('warning'), found('error')])).toBe('failure');
+    expect(conclusionOf([found('warning'), found('hint')])).toBe('neutral');
+    expect(conclusionOf([found('hint')])).toBe('success');
+    expect(conclusionOf([])).toBe('success');
+  });
+});
+
+describe('reportedFindings', () => {
+  const all = [found('error', 'e'), found('warning', 'w'), found('hint', 'h')];
+
+  it('keeps the errors at the level error', () => {
+    expect(reportedFindings(all, 'error').map((f) => f.message)).toEqual(['e']);
+  });
+
+  it('keeps errors and warnings at the level warning', () => {
+    expect(reportedFindings(all, 'warning').map((f) => f.message)).toEqual([
+      'e',
+      'w',
+    ]);
+  });
+
+  it('keeps nothing when issues are off', () => {
+    expect(reportedFindings(all, 'off')).toEqual([]);
+  });
+});
+
+describe('breakdown', () => {
+  it('groups by rule under the rule name, with the worst rules first', () => {
+    const text = breakdown([
+      found('warning', 'w1', 'seo-links'),
+      found('error', 'e1', 'seo-viewport'),
+      found('hint', 'h1', 'seo-links'),
+    ]);
+    const viewport = findCheck('seo-viewport')?.name ?? '';
+    const links = findCheck('seo-links')?.name ?? '';
+    expect(viewport).not.toBe('');
+    expect(text.indexOf(viewport)).toBeGreaterThanOrEqual(0);
+    expect(text.indexOf(viewport)).toBeLessThan(text.indexOf(links));
+    expect(text).toContain('(`seo-viewport`)');
+    expect(text.indexOf('**warning**: w1')).toBeLessThan(
+      text.indexOf('**hint**: h1'),
+    );
+  });
+
+  it('links to the reference of a rule that has one', () => {
+    const reference = findCheck('seo-viewport')?.reference;
+    expect(reference).toBeDefined();
+    expect(breakdown([found('error')])).toContain(`](${reference})`);
+  });
+
+  it('uses the id for a rule it does not know', () => {
+    expect(breakdown([found('error', 'm', 'mystery')])).toContain(
+      '#### mystery (`mystery`)',
+    );
+  });
+
+  it('writes out no more than the limit and counts the rest', () => {
+    const many = Array.from({ length: MAX_LISTED + 5 }, (_, i) =>
+      found('warning', `problem ${i}`),
+    );
+    const text = breakdown(many);
+    expect(text).toContain(`problem ${MAX_LISTED - 1}`);
+    expect(text).not.toContain(`problem ${MAX_LISTED}\n`);
+    expect(text).toContain('...and 5 more.');
+  });
+});
+
+describe('checkRunOutput', () => {
+  const base = {
+    url: 'https://pr-3.site.test/',
+    source: 'plumbline.yaml',
+    browserOnly: [],
+    problems: [],
+  };
+
+  it('says nothing was found when it was not', () => {
+    const out = checkRunOutput({ ...base, findings: [] });
+    expect(out.title).toBe('No problems found on pr-3.site.test');
+    expect(out.summary).toContain('Checked https://pr-3.site.test/');
+  });
+
+  it('counts what was found in the title and lists it in the summary', () => {
+    const out = checkRunOutput({
+      ...base,
+      findings: [found('error', 'no viewport'), found('hint', 'fyi')],
+    });
+    expect(out.title).toBe('1 error, 0 warnings and 1 hint on pr-3.site.test');
+    expect(out.summary).toContain('**error**: no viewport');
+  });
+
+  it('names the file the rules came from, or says there is none', () => {
+    expect(checkRunOutput({ ...base, findings: [] }).summary).toContain(
+      'Rules from `plumbline.yaml`.',
+    );
+    expect(
+      checkRunOutput({ ...base, source: null, findings: [] }).summary,
+    ).toContain('`plumbline:recommended` rules were used');
+  });
+
+  it('explains the rules that only run in the browser scan', () => {
+    const summary = checkRunOutput({
+      ...base,
+      browserOnly: ['dnssec-valid', 'mail-spf'],
+      findings: [],
+    }).summary;
+    expect(summary).toContain(
+      '2 rules you turned on only run in the browser scan',
+    );
+    expect(summary).toContain('`dnssec-valid`, `mail-spf`');
+  });
+
+  it('lists the problems in the configuration', () => {
+    const summary = checkRunOutput({
+      ...base,
+      problems: ['Unknown rule "x" in plumbline.yaml.'],
+      findings: [],
+    }).summary;
+    expect(summary).toContain('Problems in the configuration:');
+    expect(summary).toContain('- Unknown rule "x" in plumbline.yaml.');
+  });
+});
+
+describe('issueText', () => {
+  const report = {
+    url: 'https://site.test/',
+    sha: 'abcdef123456',
+    level: 'error' as const,
+    source: null,
+    browserOnly: [],
+    problems: [],
+    findings: [found('error', 'e'), found('warning', 'w')],
+  };
+
+  it('counts only the findings that open an issue', () => {
+    expect(issueText(report).title).toBe('Plumbline: 1 problem on site.test');
+    expect(issueText({ ...report, level: 'warning' }).title).toBe(
+      'Plumbline: 2 problems on site.test',
+    );
+  });
+
+  it('starts with the marker of the site and names the commit', () => {
+    const { body } = issueText(report);
+    expect(body.startsWith(issueMarker('site.test'))).toBe(true);
+    expect(body).toContain('at commit `abcdef1`');
+    expect(body).toContain('**error**: e');
+    expect(body).not.toContain('**warning**: w');
+  });
+
+  it('leaves the commit out when there is none', () => {
+    expect(issueText({ ...report, sha: null }).body).not.toContain('at commit');
+  });
+});
+
+describe('safeText', () => {
+  it('keeps ordinary text as it is', () => {
+    expect(safeText('Unknown rule "seo-nope" in plumbline.yaml.')).toBe(
+      'Unknown rule "seo-nope" in plumbline.yaml.',
+    );
+  });
+
+  it('cannot mention a user or a team, or refer to an issue', () => {
+    const text = safeText('@acme/team and @someone, see #12');
+    expect(text).not.toMatch(/@[a-z]/);
+    expect(text).not.toMatch(/#\d/);
+  });
+
+  it('cannot make a link, an image, a tag or a code span', () => {
+    const text = safeText(
+      '[login](https://evil.test) <img src=x> `code` http://x.test',
+    );
+    expect(text).not.toMatch(/[<>[\]`]/);
+    expect(text).not.toMatch(/https?:\/\//);
+  });
+
+  it('cannot start a new line or block', () => {
+    const text = safeText('a\n\n# heading\r\n- item\u0000');
+    expect(Array.from(text).filter((char) => char.charCodeAt(0) < 32)).toEqual(
+      [],
+    );
+  });
+
+  it('is no longer than a sentence', () => {
+    const text = safeText('x'.repeat(MAX_PROBLEM_LENGTH * 3));
+    expect(text).toHaveLength(MAX_PROBLEM_LENGTH + 3);
+    expect(text.endsWith('...')).toBe(true);
+  });
+});
+
+describe('what a hostile configuration can make the text hold', () => {
+  const base = {
+    url: 'https://pr-3.site.test/',
+    source: 'plumbline.yaml',
+    browserOnly: [],
+    findings: [],
+  };
+
+  it('is made safe line by line', () => {
+    const { summary } = checkRunOutput({
+      ...base,
+      problems: [
+        'Unknown rule "@acme/team [x](https://evil.test)" in plumbline.yaml.',
+      ],
+    });
+    expect(summary).not.toMatch(/@[a-z]/);
+    expect(summary).not.toContain('](https://');
+  });
+
+  it('is cut to a number of problems, and the rest counted', () => {
+    const { summary } = checkRunOutput({
+      ...base,
+      problems: Array.from(
+        { length: MAX_PROBLEMS + 5 },
+        (_, i) => `problem ${i}`,
+      ),
+    });
+    expect(summary).toContain(`problem ${MAX_PROBLEMS - 1}`);
+    expect(summary).not.toContain(`problem ${MAX_PROBLEMS}\n`);
+    expect(summary).toContain('...and 5 more.');
+  });
+
+  it('never goes past what GitHub accepts, in a summary or an issue', () => {
+    const findings = Array.from({ length: MAX_LISTED }, (_, i) =>
+      found('error', 'x'.repeat(5_000) + i),
+    );
+    const out = checkRunOutput({ ...base, findings, problems: [] });
+    expect(out.summary.length).toBeLessThanOrEqual(MAX_TEXT + 20);
+    const issue = issueText({
+      ...base,
+      findings,
+      problems: [],
+      sha: null,
+      level: 'error',
+    });
+    expect(issue.body.length).toBeLessThanOrEqual(MAX_TEXT + 20);
+    expect(issue.body.endsWith('...(cut short)')).toBe(true);
+  });
+});

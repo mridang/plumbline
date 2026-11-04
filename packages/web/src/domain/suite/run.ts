@@ -8,10 +8,17 @@
  */
 
 import { extractFacts } from '@/domain/suite/facts';
+import { readTextCapped } from '@/lib/capped-text';
 import { runChecks, type CheckResult } from '@/domain/suite/checks';
 
 /** How long to wait for the site, in milliseconds. */
 const TIMEOUT_MS = 15_000;
+
+/**
+ * The most of a page that is read. A bigger one is checked as far as it was
+ * read and counted as over the size limit of the page-size rule.
+ */
+export const MAX_PAGE_BYTES = 3 * 1024 * 1024;
 
 /** The outcome of one run. */
 export interface SuiteRun {
@@ -55,7 +62,15 @@ export async function runSuite(
     signal: AbortSignal.timeout(TIMEOUT_MS),
   });
   const responseMs = Date.now() - started;
-  const html = await response.text();
+  // A redirect may not take the check off https (the fetch itself already
+  // refuses private addresses at every hop).
+  if (response.url && !response.url.startsWith('https://')) {
+    throw new Error(`${url} redirected to ${response.url}, which is not https`);
+  }
+  const { text: html, truncated } = await readTextCapped(
+    response,
+    MAX_PAGE_BYTES,
+  );
   const hash = await sha256Hex(`${response.status}\n${html}`);
   if (hash === previousHash) {
     return {
@@ -70,7 +85,7 @@ export async function runSuite(
     status: response.status,
     responseMs,
     html,
-    bytes: new Blob([html]).size,
+    bytes: truncated ? MAX_PAGE_BYTES + 1 : new Blob([html]).size,
   };
   return {
     url: page.url,

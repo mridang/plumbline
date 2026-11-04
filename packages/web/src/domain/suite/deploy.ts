@@ -14,8 +14,15 @@
 import type { Database } from '@/domain/db/client';
 import { listDomainsOfRepo } from '@/domain/db/domains';
 import { latestRuns, recordRun } from '@/domain/db/suite';
-import { diffFindings, findingsOf, type Changes } from '@/domain/suite/diff';
+import {
+  diffFindings,
+  findingsOf,
+  type Changes,
+  type StoredFinding,
+} from '@/domain/suite/diff';
 import { runSuite, type SuiteRun } from '@/domain/suite/run';
+import { resolveRules } from '@/domain/suite/config';
+import { applyLevels, fingerprintOf, type Level } from '@/domain/suite/rules';
 
 /** Sites checked for one deployment. */
 export const MAX_SITES = 5;
@@ -23,48 +30,99 @@ export const MAX_SITES = 5;
 /** A site that was checked a moment ago is not checked again for this long, in milliseconds. */
 export const DEBOUNCE_MS = 60_000;
 
-/** The deployments that are not the live site. */
-const PREVIEW = /preview|staging|dev/i;
+/** Environment names that are a preview, a staging copy or a review app, not the live site. */
+const PREVIEW =
+  /preview|staging|review|dev|pull[-_ ]?request|(^|[-_ ])pr[-_ ]?\d/i;
 
 /** The parts of a `deployment_status` delivery the checks need. */
 export interface DeploymentStatus {
   readonly deployment_status?: {
     readonly state?: string;
     readonly environment?: string;
+    /** Where the deployed site can be reached. */
+    readonly environment_url?: string;
+    readonly target_url?: string;
   };
   readonly deployment?: {
     readonly sha?: string;
+    readonly ref?: string;
     readonly environment?: string;
+    /** GitHub's own flag for a deployment that is short-lived, as a preview of a branch is. */
+    readonly transient_environment?: boolean;
   };
-  readonly repository?: { readonly full_name?: string };
+  readonly repository?: {
+    readonly full_name?: string;
+    readonly default_branch?: string;
+  };
 }
 
-/** The repository and commit of a deployment worth checking; null for anything else. */
-export function liveDeployment(
+/** A successful deployment worth checking. */
+export interface Deployment {
+  /** The live site, or a preview of a branch or pull request. */
+  readonly environment: 'production' | 'preview';
+  readonly repo: string;
+  readonly sha: string | null;
+  /** The address the deployment says it can be reached at, when it says. */
+  readonly url: string | null;
+}
+
+/** The address a delivery names, when it is a plain https address. */
+function reachableAt(delivery: Readonly<DeploymentStatus>): string | null {
+  const status = delivery.deployment_status;
+  const given = status?.environment_url || status?.target_url;
+  if (!given) {
+    return null;
+  }
+  try {
+    const url = new URL(given);
+    return url.protocol === 'https:' ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * What a `deployment_status` delivery is: null unless it reports a success.
+ * It is a preview when GitHub marks the deployment as short-lived or the
+ * environment is named like one (Preview, Staging, a review app, a pull
+ * request), and the live site otherwise.
+ */
+export function classifyDeployment(
   delivery: Readonly<DeploymentStatus>,
-): { repo: string; sha: string | null } | null {
+): Deployment | null {
   const repo = delivery.repository?.full_name;
   if (delivery.deployment_status?.state !== 'success' || !repo) {
     return null;
   }
-  const environment =
+  const name =
     delivery.deployment_status.environment ??
     delivery.deployment?.environment ??
     '';
-  if (PREVIEW.test(environment)) {
-    return null;
-  }
-  return { repo, sha: delivery.deployment?.sha ?? null };
+  const preview =
+    delivery.deployment?.transient_environment === true || PREVIEW.test(name);
+  return {
+    environment: preview ? 'preview' : 'production',
+    repo,
+    sha: delivery.deployment?.sha ?? null,
+    url: reachableAt(delivery),
+  };
 }
+
+/** The levels of a site with no configuration. */
+const DEFAULT_LEVELS = resolveRules(null, 'production').levels;
 
 /** What a run of one site came to. */
 export interface SiteOutcome {
   readonly host: string;
   /** Why nothing was checked, when that is so. */
   readonly skipped?: 'recent' | 'unreachable';
-  /** True when the page was the same as at the previous run, so it was not read again. */
+  /** True when the page and the rules were the same as at the previous run, so it was not read again. */
   readonly unchanged?: boolean;
   readonly changes?: Changes;
+  /** What the site has wrong now, under the rules of the run. */
+  readonly findings?: readonly StoredFinding[];
+  /** The address that was checked. */
+  readonly url?: string;
 }
 
 /** What the runs can be given in place of the real thing, for tests. */
@@ -74,6 +132,10 @@ export interface Deps {
     previousHash: string | null,
   ) => Promise<SuiteRun>;
   readonly now?: () => Date;
+  /** The levels of the rules to apply; the recommended rules when not given. */
+  readonly levels?: ReadonlyMap<string, Level>;
+  /** Check even a site that was checked a moment ago (its rules changed). */
+  readonly force?: boolean;
 }
 
 /**
@@ -88,17 +150,24 @@ export async function checkSite(
 ): Promise<SiteOutcome> {
   const run = deps.run ?? ((url, hash) => runSuite(url, hash));
   const now = deps.now ?? (() => new Date());
+  const levels = deps.levels ?? DEFAULT_LEVELS;
+  const rules = await fingerprintOf(levels);
   const [previous] = await latestRuns(db, userId, site.host, 1);
+  const url = `https://${site.host}/`;
   let result: SuiteRun;
   try {
-    result = await run(`https://${site.host}/`, previous?.hash ?? null);
+    // A page that has not changed is only skipped when the rules have not either.
+    result = await run(
+      url,
+      previous?.rules === rules ? (previous.hash ?? null) : null,
+    );
   } catch (error) {
     console.error('suite run failed', site.host, error);
     return { host: site.host, skipped: 'unreachable' };
   }
   const unchanged = result.checks === null && previous !== undefined;
   const findings = result.checks
-    ? findingsOf(result.checks)
+    ? findingsOf(applyLevels(result.checks, levels))
     : (previous?.findings ?? []);
   await recordRun(
     db,
@@ -109,6 +178,7 @@ export async function checkSite(
       sha: site.sha,
       status: result.status,
       hash: result.hash,
+      rules,
       findings,
     },
     now().toISOString(),
@@ -117,6 +187,8 @@ export async function checkSite(
     host: site.host,
     unchanged,
     changes: diffFindings(previous?.findings ?? [], findings),
+    findings,
+    url,
   };
 }
 
@@ -132,24 +204,27 @@ export async function checkDeployment(
     0,
     MAX_SITES,
   );
-  const outcomes: SiteOutcome[] = [];
-  for (const site of sites) {
-    const [previous] = await latestRuns(db, userId, site.host, 1);
-    if (
-      previous &&
-      now().getTime() - Date.parse(previous.ran_at) < DEBOUNCE_MS
-    ) {
-      outcomes.push({ host: site.host, skipped: 'recent' });
-      continue;
-    }
-    outcomes.push(
-      await checkSite(
+  // The sites are checked together: most of a check is waiting for the site.
+  const outcomes = await Promise.all(
+    sites.map(async (site): Promise<SiteOutcome> => {
+      const [previous] = await latestRuns(db, userId, site.host, 1);
+      // The same commit again a moment later is the same deployment reported
+      // twice; a different commit is a new deployment, whenever it comes.
+      if (
+        !deps.force &&
+        previous &&
+        previous.sha === deployed.sha &&
+        now().getTime() - Date.parse(previous.ran_at) < DEBOUNCE_MS
+      ) {
+        return { host: site.host, skipped: 'recent' };
+      }
+      return checkSite(
         db,
         userId,
         { host: site.host, repo: deployed.repo, sha: deployed.sha },
         deps,
-      ),
-    );
-  }
+      );
+    }),
+  );
   return outcomes;
 }

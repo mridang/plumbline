@@ -8,6 +8,8 @@
 
 import { z } from 'zod';
 
+import { readTextCapped } from '@/lib/capped-text';
+
 /** The page size GitHub allows at most. */
 const PER_PAGE = 100;
 
@@ -26,6 +28,19 @@ export const RepoSchema = z.object({
 /** One repository of an installation. */
 export type Repo = z.infer<typeof RepoSchema>;
 
+const IssueSchema = z.object({ number: z.number(), state: z.string() });
+
+const PullSchema = z.object({
+  number: z.number(),
+  merged_at: z.string().nullish(),
+});
+
+/** A pull request that contains a commit. */
+export type PullRef = z.infer<typeof PullSchema>;
+
+/** An issue as GitHub reports it back. */
+export type IssueRef = z.infer<typeof IssueSchema>;
+
 const TreeSchema = z.object({
   tree: z.array(z.object({ path: z.string(), type: z.string() })),
 });
@@ -38,6 +53,14 @@ export class GitHubError extends Error {
   ) {
     super(message);
     this.name = 'GitHubError';
+  }
+}
+
+/** A file is longer than the most the caller would read. */
+export class TooLargeError extends Error {
+  constructor(readonly path: string) {
+    super(`${path} is longer than the limit`);
+    this.name = 'TooLargeError';
   }
 }
 
@@ -56,14 +79,21 @@ export class GitHubApi {
     this.#fetch = (input, init) => fetcher(input, init);
   }
 
-  async #send(path: string, accept: string): Promise<Response> {
+  async #send(
+    path: string,
+    accept: string,
+    write?: { method: 'POST' | 'PATCH'; body: unknown },
+  ): Promise<Response> {
     const response = await this.#fetch(`https://api.github.com${path}`, {
+      method: write?.method ?? 'GET',
       headers: {
         Authorization: `Bearer ${this.token}`,
         Accept: accept,
         'X-GitHub-Api-Version': '2022-11-28',
         'User-Agent': 'plumbline',
+        ...(write ? { 'Content-Type': 'application/json' } : {}),
       },
+      ...(write ? { body: JSON.stringify(write.body) } : {}),
     });
     if (!response.ok) {
       throw new GitHubError(
@@ -80,10 +110,31 @@ export class GitHubApi {
     return schema.parse(await response.json());
   }
 
-  /** A file's text. */
-  async text(path: string): Promise<string> {
+  /** What GitHub answers to a POST or PATCH of `body`, checked against `schema`. */
+  async write<T>(
+    method: 'POST' | 'PATCH',
+    path: string,
+    body: unknown,
+    schema: z.ZodType<T>,
+  ): Promise<T> {
+    const response = await this.#send(path, 'application/vnd.github+json', {
+      method,
+      body,
+    });
+    return schema.parse(await response.json());
+  }
+
+  /** A file's text; a file longer than `maxBytes` (when given) is refused with a {@link TooLargeError}. */
+  async text(path: string, maxBytes?: number): Promise<string> {
     const response = await this.#send(path, 'application/vnd.github.raw+json');
-    return response.text();
+    if (maxBytes === undefined) {
+      return response.text();
+    }
+    const { text, truncated } = await readTextCapped(response, maxBytes);
+    if (truncated) {
+      throw new TooLargeError(path);
+    }
+    return text;
   }
 
   /**
@@ -130,11 +181,88 @@ export class GitHubApi {
     return tree.tree.filter((e) => e.type === 'blob').map((e) => e.path);
   }
 
-  /** One file of a repository, as text. */
-  file(fullName: string, path: string, branch: string): Promise<string> {
+  /** Opens an issue. */
+  openIssue(
+    fullName: string,
+    issue: Readonly<{ title: string; body: string; labels?: string[] }>,
+  ): Promise<IssueRef> {
+    return this.write('POST', `/repos/${fullName}/issues`, issue, IssueSchema);
+  }
+
+  /** Changes an issue: its text, or whether it is open. */
+  editIssue(
+    fullName: string,
+    number: number,
+    change: Readonly<{
+      title?: string;
+      body?: string;
+      state?: 'open' | 'closed';
+      state_reason?: 'completed' | 'reopened';
+    }>,
+  ): Promise<IssueRef> {
+    return this.write(
+      'PATCH',
+      `/repos/${fullName}/issues/${number}`,
+      change,
+      IssueSchema,
+    );
+  }
+
+  /** Adds a comment to an issue. */
+  async commentOnIssue(
+    fullName: string,
+    number: number,
+    body: string,
+  ): Promise<void> {
+    await this.write(
+      'POST',
+      `/repos/${fullName}/issues/${number}/comments`,
+      { body },
+      z.object({ id: z.number() }),
+    );
+  }
+
+  /** The pull requests that contain a commit, the merged ones first. */
+  async pullRequestsOf(fullName: string, sha: string): Promise<PullRef[]> {
+    const pulls = await this.json(
+      `/repos/${fullName}/commits/${encodeURIComponent(sha)}/pulls`,
+      z.array(PullSchema),
+    );
+    return pulls.toSorted(
+      (a, b) => Number(Boolean(b.merged_at)) - Number(Boolean(a.merged_at)),
+    );
+  }
+
+  /** Reports a finished check on a commit, which shows on the pull requests that contain it. */
+  async createCheckRun(
+    fullName: string,
+    run: Readonly<{
+      name: string;
+      head_sha: string;
+      conclusion: 'success' | 'failure' | 'neutral';
+      details_url?: string;
+      output: { title: string; summary: string };
+    }>,
+  ): Promise<void> {
+    await this.write(
+      'POST',
+      `/repos/${fullName}/check-runs`,
+      { ...run, status: 'completed' },
+      z.object({ id: z.number() }),
+    );
+  }
+
+  /** One file of a repository, as text, at most `maxBytes` long when that is given. */
+  file(
+    fullName: string,
+    path: string,
+    branch: string,
+    maxBytes?: number,
+  ): Promise<string> {
     const encoded = path.split('/').map(encodeURIComponent).join('/');
     return this.text(
       `/repos/${fullName}/contents/${encoded}?ref=${encodeURIComponent(branch)}`,
+      maxBytes,
     );
   }
 }

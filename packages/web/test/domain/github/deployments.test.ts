@@ -4,8 +4,10 @@ import {
   deploymentHosts,
   homepageHost,
   hostOfPattern,
+  isDefaultBranchPush,
   isWranglerPath,
   stripJsonComments,
+  touchesConfig,
   touchesWrangler,
   wranglerHosts,
 } from '@/domain/github/deployments';
@@ -198,5 +200,57 @@ describe('touchesWrangler', () => {
       false,
     );
     expect(touchesWrangler({})).toBe(false);
+  });
+});
+
+describe('touchesConfig', () => {
+  const pushOf = (...modified: string[]) => ({ commits: [{ modified }] });
+
+  it.each(['plumbline.yaml', 'plumbline.yml', 'plumbline.json'])(
+    'sees a change to %s',
+    (file) => expect(touchesConfig(pushOf('src/a.ts', file))).toBe(true),
+  );
+
+  it('sees a file added or removed', () => {
+    expect(touchesConfig({ commits: [{ added: ['plumbline.yaml'] }] })).toBe(
+      true,
+    );
+    expect(touchesConfig({ commits: [{ removed: ['plumbline.yml'] }] })).toBe(
+      true,
+    );
+  });
+
+  it.each([
+    'docs/plumbline.yaml',
+    'plumbline.toml',
+    'plumbline.yaml.bak',
+    '.plumbline.yaml',
+    'package.json',
+  ])('does not take %s for the configuration', (file) =>
+    expect(touchesConfig(pushOf(file))).toBe(false),
+  );
+
+  it('sees nothing in a push with no commits', () => {
+    expect(touchesConfig({})).toBe(false);
+  });
+});
+
+describe('isDefaultBranchPush', () => {
+  const push = (ref?: string, branch?: string) => ({
+    ref,
+    repository: { default_branch: branch },
+  });
+
+  it('accepts a push to the default branch', () => {
+    expect(isDefaultBranchPush(push('refs/heads/main', 'main'))).toBe(true);
+    expect(isDefaultBranchPush(push('refs/heads/master', 'master'))).toBe(true);
+  });
+
+  it('refuses a push to another branch, a tag, or one that does not say', () => {
+    expect(isDefaultBranchPush(push('refs/heads/feature', 'main'))).toBe(false);
+    expect(isDefaultBranchPush(push('refs/tags/main', 'main'))).toBe(false);
+    expect(isDefaultBranchPush(push('refs/heads/main'))).toBe(false);
+    expect(isDefaultBranchPush(push(undefined, 'main'))).toBe(false);
+    expect(isDefaultBranchPush({})).toBe(false);
   });
 });
