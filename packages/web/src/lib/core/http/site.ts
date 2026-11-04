@@ -31,12 +31,13 @@ export const CACHED_QUERY_PARAMS: ReadonlySet<string> = new Set(['domain']);
 export const EDGE_TTL_SECONDS = 1800;
 
 /**
- * The files other sites and browsers fetch on purpose (the icons and the
- * plain-text files at the root), which any site may load and which are not
+ * The files other sites and browsers fetch on purpose (the icons, the
+ * plain-text files at the root, and a repository's badge, which is embedded in
+ * READMEs and other sites' pages), which any site may load and which are not
  * marked noindex.
  */
 export const OPEN_FILES =
-  /^\/(icon\.svg|favicon\.ico|robots\.txt|sitemap\.xml|\.well-known\/.*)$/;
+  /^\/(icon\.svg|favicon\.ico|robots\.txt|sitemap\.xml|\.well-known\/.*|badge\/[^/]+\/[^/]+\/[0-9a-f]+\.svg)$/;
 
 /** The small files that rarely change, and for which a stale copy is harmless. */
 export const RARELY_CHANGING: ReadonlySet<string> = new Set([

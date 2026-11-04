@@ -34,16 +34,21 @@ describe('site settings', () => {
     '/robots.txt',
     '/sitemap.xml',
     '/.well-known/security.txt',
+    '/badge/acme/site/0123456789abcdef0123.svg',
   ])('opens %s to other sites', (path) => {
     expect(OPEN_FILES.test(path)).toBe(true);
   });
 
-  it.each(['/', '/api/scans', '/csp/reports'])(
-    'keeps %s to this site',
-    (path) => {
-      expect(OPEN_FILES.test(path)).toBe(false);
-    },
-  );
+  it.each([
+    '/',
+    '/api/scans',
+    '/csp/reports',
+    '/badge/acme/site/0123.png',
+    '/badge/acme/0123.svg',
+    '/r/abc/json',
+  ])('keeps %s to this site', (path) => {
+    expect(OPEN_FILES.test(path)).toBe(false);
+  });
 
   it('lets the icons be cached for a day', () => {
     expect([...RARELY_CHANGING].sort()).toEqual(['/favicon.ico', '/icon.svg']);
