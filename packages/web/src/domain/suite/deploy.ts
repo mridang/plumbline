@@ -125,6 +125,9 @@ export interface SiteOutcome {
   readonly url?: string;
 }
 
+/** A run as stored, as {@link latestRuns} returns it. */
+type StoredRun = Awaited<ReturnType<typeof latestRuns>>[number];
+
 /** What the runs can be given in place of the real thing, for tests. */
 export interface Deps {
   readonly run?: (
@@ -147,12 +150,17 @@ export async function checkSite(
   userId: number,
   site: Readonly<{ host: string; repo: string | null; sha: string | null }>,
   deps: Deps = {},
+  last?: StoredRun | null,
 ): Promise<SiteOutcome> {
   const run = deps.run ?? ((url, hash) => runSuite(url, hash));
   const now = deps.now ?? (() => new Date());
   const levels = deps.levels ?? DEFAULT_LEVELS;
   const rules = await fingerprintOf(levels);
-  const [previous] = await latestRuns(db, userId, site.host, 1);
+  // The caller may have read the previous run already; read it only if not.
+  const previous =
+    last === undefined
+      ? (await latestRuns(db, userId, site.host, 1))[0]
+      : (last ?? undefined);
   const url = `https://${site.host}/`;
   let result: SuiteRun;
   try {
@@ -207,7 +215,7 @@ export async function checkDeployment(
   // The sites are checked together: most of a check is waiting for the site.
   const outcomes = await Promise.all(
     sites.map(async (site): Promise<SiteOutcome> => {
-      const [previous] = await latestRuns(db, userId, site.host, 1);
+      const previous = (await latestRuns(db, userId, site.host, 1))[0];
       // The same commit again a moment later is the same deployment reported
       // twice; a different commit is a new deployment, whenever it comes.
       if (
@@ -223,6 +231,7 @@ export async function checkDeployment(
         userId,
         { host: site.host, repo: deployed.repo, sha: deployed.sha },
         deps,
+        previous ?? null,
       );
     }),
   );

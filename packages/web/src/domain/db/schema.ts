@@ -10,6 +10,7 @@
  * in sync when adding a migration (it matches the live D1 exactly).
  */
 
+import { sql } from 'drizzle-orm';
 import {
   index,
   integer,
@@ -53,12 +54,21 @@ export const domains = sqliteTable(
     checks: text('checks'),
     /** `owner/name` of the repository the domain was found in; null when added by hand. */
     repo: text('repo'),
+    /** When the domain was last checked on the server; the empty string when never. */
+    checked_at: text('checked_at').notNull().default(''),
     created_at: text('created_at').notNull(),
     updated_at: text('updated_at').notNull(),
   },
   (table) => [
     uniqueIndex('sqlite_autoindex_domains_2').on(table.user_id, table.host),
-    index('idx_domains_user').on(table.user_id, table.created_at),
+    index('idx_domains_user_created').on(
+      table.user_id,
+      table.created_at,
+      table.id,
+    ),
+    index('idx_domains_due')
+      .on(table.checked_at)
+      .where(sql`${table.repo} IS NOT NULL`),
   ],
 );
 
@@ -82,7 +92,11 @@ export const reports = sqliteTable(
     created_at: text('created_at').notNull(),
   },
   (table) => [
-    index('idx_reports_domain').on(table.domain_id, table.created_at),
+    index('idx_reports_domain_page').on(
+      table.domain_id,
+      sql`${table.created_at} DESC`,
+      sql`${table.id} DESC`,
+    ),
   ],
 );
 
@@ -265,7 +279,11 @@ export const suiteIssues = sqliteTable(
 );
 
 /** The id GitHub gave a webhook delivery, kept so a retried delivery is not handled twice. */
-export const webhookDeliveries = sqliteTable('webhook_deliveries', {
-  delivery_id: text('delivery_id').primaryKey(),
-  received_at: text('received_at').notNull(),
-});
+export const webhookDeliveries = sqliteTable(
+  'webhook_deliveries',
+  {
+    delivery_id: text('delivery_id').primaryKey(),
+    received_at: text('received_at').notNull(),
+  },
+  (table) => [index('idx_webhook_deliveries_received').on(table.received_at)],
+);

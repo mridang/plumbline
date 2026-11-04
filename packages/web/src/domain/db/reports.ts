@@ -7,7 +7,7 @@
  * kept; saving another removes the oldest. Every query is scoped by the owner.
  */
 
-import { and, desc, eq, lt, notInArray, or } from 'drizzle-orm';
+import { and, desc, eq, lt, or } from 'drizzle-orm';
 
 import type { Database } from '@/domain/db/client';
 import { reports } from '@/domain/db/schema';
@@ -99,15 +99,31 @@ export async function saveReport(
     created_at: new Date().toISOString(),
   };
   await db.insert(reports).values(row);
-  const kept = db
-    .select({ id: reports.id })
+  // The oldest report to keep, found through the index (one row read); only
+  // what is older than it is deleted, so nothing else is read or sorted.
+  const [oldestKept] = await db
+    .select({ id: reports.id, created_at: reports.created_at })
     .from(reports)
     .where(eq(reports.domain_id, domainId))
     .orderBy(desc(reports.created_at), desc(reports.id))
-    .limit(KEEP_REPORTS);
-  await db
-    .delete(reports)
-    .where(and(eq(reports.domain_id, domainId), notInArray(reports.id, kept)));
+    .limit(1)
+    .offset(KEEP_REPORTS - 1);
+  if (oldestKept) {
+    await db
+      .delete(reports)
+      .where(
+        and(
+          eq(reports.domain_id, domainId),
+          or(
+            lt(reports.created_at, oldestKept.created_at),
+            and(
+              eq(reports.created_at, oldestKept.created_at),
+              lt(reports.id, oldestKept.id),
+            ),
+          ),
+        ),
+      );
+  }
   return { ...summaryOf(row), outcomes: input.outcomes };
 }
 

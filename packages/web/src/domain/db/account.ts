@@ -42,7 +42,17 @@ export async function deleteAccountData(
       ),
     db.delete(oauthCodes).where(eq(oauthCodes.user_id, userId)),
     db.delete(oauthGrants).where(eq(oauthGrants.user_id, userId)),
-    db.delete(reports).where(eq(reports.user_id, userId)),
+    db
+      .delete(reports)
+      .where(
+        inArray(
+          reports.domain_id,
+          db
+            .select({ id: domains.id })
+            .from(domains)
+            .where(eq(domains.user_id, userId)),
+        ),
+      ),
     db.delete(domains).where(eq(domains.user_id, userId)),
     db.delete(users).where(eq(users.id, userId)),
   ]);

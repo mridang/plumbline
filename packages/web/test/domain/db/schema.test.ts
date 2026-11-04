@@ -86,4 +86,36 @@ describe('the schema file and the migrations', () => {
       );
     },
   );
+
+  // The queries that run often must be answered from an index: no table scan
+  // and no temporary sort. A scan here would read every row on every call.
+  it.each([
+    [
+      'a domain’s reports, newest first',
+      "SELECT id FROM reports WHERE domain_id = 'd' ORDER BY created_at DESC, id DESC LIMIT 20",
+    ],
+    [
+      'the reports to prune',
+      "DELETE FROM reports WHERE domain_id = 'd' AND (created_at < 'c' OR (created_at = 'c' AND id < 'i'))",
+    ],
+    [
+      'a person’s domains in order',
+      'SELECT id FROM domains WHERE user_id = 1 ORDER BY created_at, id',
+    ],
+    [
+      'the sites that are due for a check',
+      "SELECT id FROM domains WHERE repo IS NOT NULL AND checked_at < 'x' ORDER BY checked_at LIMIT 10",
+    ],
+    [
+      'the purge of old webhook deliveries',
+      "DELETE FROM webhook_deliveries WHERE received_at < 'x'",
+    ],
+  ])('answers %s from an index', (_name, sql) => {
+    const plan = raw
+      .prepare(`EXPLAIN QUERY PLAN ${sql}`)
+      .all()
+      .map((row) => String(row['detail']));
+    expect(plan.join('\n')).toMatch(/USING (COVERING )?INDEX/);
+    expect(plan.join('\n')).not.toMatch(/SCAN|TEMP B-TREE/);
+  });
 });

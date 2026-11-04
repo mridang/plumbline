@@ -5,19 +5,7 @@
  * deliveries already handled. Every read is scoped by the owner.
  */
 
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  isNotNull,
-  isNull,
-  lt,
-  lte,
-  max,
-  notInArray,
-  or,
-} from 'drizzle-orm';
+import { and, asc, desc, eq, isNotNull, lt, lte } from 'drizzle-orm';
 
 import type { Database } from '@/domain/db/client';
 import {
@@ -85,22 +73,33 @@ export async function recordRun(
     ran_at: timestamp,
     findings: JSON.stringify(run.findings),
   });
-  const kept = await db
+  // So the scheduled re-check can find the sites that are due without reading
+  // every stored run.
+  await db
+    .update(domains)
+    .set({ checked_at: timestamp })
+    .where(and(eq(domains.user_id, run.userId), eq(domains.host, run.host)));
+  // Runs are numbered in the order they were made, so the first run beyond
+  // the ones kept is found by counting from the newest, and everything up to
+  // it goes: one short walk down the index, not every run of the host.
+  const [oldest] = await db
     .select({ id: suiteRuns.id })
     .from(suiteRuns)
     .where(and(eq(suiteRuns.user_id, run.userId), eq(suiteRuns.host, run.host)))
     .orderBy(desc(suiteRuns.id))
-    .limit(RUNS_KEPT);
-  await db.delete(suiteRuns).where(
-    and(
-      eq(suiteRuns.user_id, run.userId),
-      eq(suiteRuns.host, run.host),
-      notInArray(
-        suiteRuns.id,
-        kept.map((row) => row.id),
-      ),
-    ),
-  );
+    .limit(1)
+    .offset(RUNS_KEPT);
+  if (oldest) {
+    await db
+      .delete(suiteRuns)
+      .where(
+        and(
+          eq(suiteRuns.user_id, run.userId),
+          eq(suiteRuns.host, run.host),
+          lte(suiteRuns.id, oldest.id),
+        ),
+      );
+  }
 }
 
 /** The latest runs of the person's host, newest first. */
@@ -163,22 +162,15 @@ export interface DueSite {
 
 /**
  * The sites found through GitHub (those with a repository) that were last
- * checked before `cutoff` or never, the longest-waiting first.
+ * checked before `cutoff` or never, the longest-waiting first. It reads the
+ * few rows it returns: each domain keeps the time of its last check, in an
+ * index of just these sites.
  */
 export async function dueSites(
   db: Database,
   cutoff: string,
   limit: number,
 ): Promise<DueSite[]> {
-  const last = db
-    .select({
-      user_id: suiteRuns.user_id,
-      host: suiteRuns.host,
-      ran_at: max(suiteRuns.ran_at).as('last_ran_at'),
-    })
-    .from(suiteRuns)
-    .groupBy(suiteRuns.user_id, suiteRuns.host)
-    .as('last');
   return db
     .select({
       user_id: domains.user_id,
@@ -186,17 +178,8 @@ export async function dueSites(
       repo: domains.repo,
     })
     .from(domains)
-    .leftJoin(
-      last,
-      and(eq(last.user_id, domains.user_id), eq(last.host, domains.host)),
-    )
-    .where(
-      and(
-        isNotNull(domains.repo),
-        or(isNull(last.ran_at), lt(last.ran_at, cutoff)),
-      ),
-    )
-    .orderBy(asc(last.ran_at), asc(domains.host), asc(domains.user_id))
+    .where(and(isNotNull(domains.repo), lt(domains.checked_at, cutoff)))
+    .orderBy(asc(domains.checked_at), asc(domains.host), asc(domains.user_id))
     .limit(limit);
 }
 

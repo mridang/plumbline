@@ -152,7 +152,8 @@ describe('checkDeployment', () => {
         return finding('slow');
       },
     });
-    expect(urls).toEqual(['https://a.test/', 'https://b.test/']);
+    // The sites are checked together, so which request comes first is not fixed.
+    expect(urls.toSorted()).toEqual(['https://a.test/', 'https://b.test/']);
     expect(outcomes.map((o) => o.host)).toEqual(['a.test', 'b.test']);
     const [stored] = await latestRuns(db, 1, 'a.test');
     expect(stored).toMatchObject({
