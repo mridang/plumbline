@@ -20,6 +20,8 @@ import {
   type Changes,
   type StoredFinding,
 } from '@/domain/suite/diff';
+import type { Live } from '@/domain/live/live';
+import { countsOf } from '@/domain/suite/report';
 import { runSuite, type SuiteRun } from '@/domain/suite/run';
 import { resolveRules } from '@/domain/suite/config';
 import { FREE_LIMITS, inBatches, type Limits } from '@/domain/suite/limits';
@@ -138,6 +140,8 @@ export interface Deps {
   readonly now?: () => Date;
   /** The levels of the rules to apply; the recommended rules when not given. */
   readonly levels?: ReadonlyMap<string, Level>;
+  /** Told as checks begin and end, for the live dashboard and notifications. */
+  readonly live?: Live;
   /** What the Cloudflare plan allows; the Free plan's when not given. */
   readonly limits?: Limits;
   /** Check even a site that was checked a moment ago (its rules changed). */
@@ -165,6 +169,9 @@ export async function checkSite(
       ? (await latestRuns(db, userId, site.host, 1))[0]
       : (last ?? undefined);
   const url = `https://${site.host}/`;
+  const where = { host: site.host, repo: site.repo };
+  const before = previous ? countsOf(previous.findings) : null;
+  await deps.live?.started(userId, where, now().toISOString());
   let result: SuiteRun;
   try {
     // A page that has not changed is only skipped when the rules have not either.
@@ -174,6 +181,11 @@ export async function checkSite(
     );
   } catch (error) {
     console.error('suite run failed', site.host, error);
+    await deps.live?.finished(userId, where, {
+      before,
+      after: null,
+      at: now().toISOString(),
+    });
     return { host: site.host, skipped: 'unreachable' };
   }
   const unchanged = result.checks === null && previous !== undefined;
@@ -194,6 +206,11 @@ export async function checkSite(
     },
     now().toISOString(),
   );
+  await deps.live?.finished(userId, where, {
+    before,
+    after: countsOf(findings),
+    at: now().toISOString(),
+  });
   return {
     host: site.host,
     unchanged,

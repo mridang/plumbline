@@ -12,6 +12,7 @@
 
 import { createDatabase, type Database } from '@/domain/db/client';
 import { dueSites } from '@/domain/db/suite';
+import { createLive } from '@/domain/live/live';
 import { FREE_LIMITS, inBatches, readLimits } from '@/domain/suite/limits';
 import { checkSite, type Deps, type SiteOutcome } from '@/domain/suite/deploy';
 
@@ -49,7 +50,8 @@ export const scheduled: ExportedHandlerScheduledHandler<CloudflareEnv> = (
   env,
   ctx,
 ) => {
+  const db = createDatabase(env.DB);
   ctx.waitUntil(
-    checkDueSites(createDatabase(env.DB), { limits: readLimits(env) }),
+    checkDueSites(db, { limits: readLimits(env), live: createLive(db, env) }),
   );
 };

@@ -56,6 +56,14 @@ export const domains = sqliteTable(
     repo: text('repo'),
     /** When the domain was last checked on the server; the empty string when never. */
     checked_at: text('checked_at').notNull().default(''),
+    /** When the check that is running now began; null when none is. */
+    checking_since: text('checking_since'),
+    /** What the last check found; null before the first. */
+    errors: integer('errors'),
+    warnings: integer('warnings'),
+    hints: integer('hints'),
+    /** Whether the last check could reach the site (1) or not (0). */
+    reachable: integer('reachable').notNull().default(1),
     created_at: text('created_at').notNull(),
     updated_at: text('updated_at').notNull(),
   },
@@ -259,6 +267,32 @@ export const suiteRuns = sqliteTable(
   (table) => [
     index('idx_suite_runs_host').on(table.user_id, table.host, table.id),
   ],
+);
+
+/** What happened to a person's sites, in order, for the live dashboard to replay. */
+export const liveEvents = sqliteTable(
+  'live_events',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    user_id: integer('user_id').notNull(),
+    payload: text('payload').notNull(),
+    created_at: text('created_at').notNull(),
+  },
+  (table) => [index('idx_live_events_user').on(table.user_id, table.id)],
+);
+
+/** A browser or device a person turned notifications on for. */
+export const pushSubscriptions = sqliteTable(
+  'push_subscriptions',
+  {
+    endpoint: text('endpoint').primaryKey(),
+    user_id: integer('user_id').notNull(),
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    created_at: text('created_at').notNull(),
+    last_sent_at: text('last_sent_at'),
+  },
+  (table) => [index('idx_push_subscriptions_user').on(table.user_id)],
 );
 
 /**

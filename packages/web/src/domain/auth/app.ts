@@ -22,7 +22,7 @@ export const STATE_COOKIE = 'plumbline_oauth_state';
 export const RETURN_COOKIE = 'plumbline_return_to';
 
 /** Where someone lands after signing in, unless they came from somewhere specific. */
-export const LANDING_PATH = '/domains';
+export const LANDING_PATH = '/dashboard';
 
 /** Where someone lands when signing in failed, with a fixed flag rather than any detail. */
 export const SIGN_IN_FAILED_PATH = '/login?error=auth';

@@ -424,3 +424,60 @@ describe('checkSite', () => {
     expect(outcome.unchanged).toBe(false);
   });
 });
+
+describe('checkSite, telling the live dashboard', () => {
+  /** A `Live` that writes down what it was told. */
+  const recorder = () => {
+    const told: unknown[] = [];
+    return {
+      told,
+      live: {
+        started: async (_user: number, site: { host: string }) => {
+          told.push(['started', site.host]);
+        },
+        finished: async (
+          _user: number,
+          site: { host: string },
+          change: { before: unknown; after: unknown },
+        ) => {
+          told.push(['finished', site.host, change.before, change.after]);
+        },
+      },
+    };
+  };
+  const site = { host: 'a.test', repo: 'acme/site', sha: 'abc' };
+
+  it('says a check began, then what it found against the check before', async () => {
+    const db = await setup('a.test');
+    await checkSite(db, 1, site, { run: async () => finding('one') });
+    const { told, live } = recorder();
+    await checkSite(db, 1, site, {
+      run: async () => finding('one', 'two'),
+      live,
+    });
+    expect(told).toEqual([
+      ['started', 'a.test'],
+      [
+        'finished',
+        'a.test',
+        { errors: 0, warnings: 1, hints: 0 },
+        { errors: 0, warnings: 2, hints: 0 },
+      ],
+    ]);
+  });
+
+  it('says a site did not answer', async () => {
+    const db = await setup('a.test');
+    const { told, live } = recorder();
+    await checkSite(db, 1, site, {
+      run: async () => {
+        throw new Error('down');
+      },
+      live,
+    });
+    expect(told).toEqual([
+      ['started', 'a.test'],
+      ['finished', 'a.test', null, null],
+    ]);
+  });
+});

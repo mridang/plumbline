@@ -18,8 +18,8 @@ describe('the app’s sign-in settings', () => {
     expect(RETURN_COOKIE).toBe('plumbline_return_to');
   });
 
-  it('lands on the domain list after signing in, and on the sign-in page with a fixed flag when it fails', () => {
-    expect(LANDING_PATH).toBe('/domains');
+  it('lands on the dashboard after signing in, and on the sign-in page with a fixed flag when it fails', () => {
+    expect(LANDING_PATH).toBe('/dashboard');
     expect(SIGN_IN_FAILED_PATH).toBe('/login?error=auth');
   });
 

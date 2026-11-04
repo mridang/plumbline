@@ -10,6 +10,9 @@
 
 import { scheduled } from '@/domain/suite/scheduled';
 
+/** The Durable Object that streams a person's live updates (see `lib/cloudflare/user-hub.ts`). */
+export { UserHub } from '@/lib/cloudflare/user-hub';
+
 /** The handlers this app adds to the Worker, besides `fetch`. */
 const extraHandlers: Partial<ExportedHandler<CloudflareEnv>> = { scheduled };
 

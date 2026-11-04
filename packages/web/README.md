@@ -101,6 +101,12 @@ GITHUB_WEBHOOK_SECRET=
 
 GitHub cannot reach `localhost`, so to try webhooks locally forward them with a tunnel; the connect and install flow itself works against `http://localhost:3737`.
 
+## The live dashboard and notifications
+
+`/dashboard` shows every repository and site of the signed-in person and how each stands, and updates as checks run, with no refreshing. A per-person Durable Object (`UserHub`, `src/lib/cloudflare/user-hub.ts`) holds the open server-sent-event streams and replays what a reconnecting browser missed from the `live_events` table; the same pattern as marshall's `RepoHub`. A check tells the dashboard when it begins and ends (`src/domain/live/live.ts`).
+
+Notifications use Web Push with VAPID, as in marshall. The public key and subject are `vars` in `wrangler.jsonc`; the private key is a secret, `VAPID_PRIVATE_KEY` in `packages/web/.env` locally and `wrangler secret put VAPID_PRIVATE_KEY` in production. Without it notifications are simply off. A person is told when a site starts to fail, is fixed, stops answering, or has a different number of problems after a check (`src/domain/live/changes.ts`), and turns them on per device on the dashboard.
+
 ## Moving to the Workers Paid plan
 
 Every number that depends on the Cloudflare plan is in `src/domain/suite/limits.ts`: how many sites one deployment checks, how many a cron trigger re-checks, and how many are checked at the same time. The Free plan's values are the default. To move to Paid, upgrade the account, set `WORKERS_PLAN=paid` (a Worker secret, or in `.env` locally), add the cron trigger shown in `wrangler.jsonc`, and deploy. Nothing else changes.

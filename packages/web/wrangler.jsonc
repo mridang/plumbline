@@ -145,8 +145,23 @@
       "simple": { "limit": 600, "period": 60 },
     },
   ],
+  // One object per person holds the open server-sent-event streams of the
+  // dashboards they have open and replays missed events from the log in D1; it
+  // stores nothing itself (src/lib/cloudflare/user-hub.ts).
+  "durable_objects": {
+    "bindings": [{ "name": "USER_HUB", "class_name": "UserHub" }],
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["UserHub"] }],
+  "vars": {
+    // Web Push (VAPID). The public key is what browsers subscribe with; the
+    // subject is the contact address push services may write to.
+    "VAPID_PUBLIC_KEY": "BJdkLBZFH5nzIA-EaaNWM9jOnEeRYZ4YNYtGXis1WJFe4_HpDFWzVNipsIRv5GPKqvZPvRuxjX67fwsCzdcK-OY",
+    "VAPID_SUBJECT": "mailto:mridang.agarwalla@gmail.com",
+  },
   // Worker secrets (set via `wrangler secret put`), not plaintext vars. A deploy
   // fails if one is missing, and only these names are typed and loaded from .env.
+  // VAPID_PRIVATE_KEY is a secret too but optional (without it notifications are
+  // simply off), so it is not listed here.
   "secrets": {
     "required": [
       "GOOGLE_OAUTH_CLIENT_ID",

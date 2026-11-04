@@ -12,6 +12,8 @@ import { eq, inArray } from 'drizzle-orm';
 import type { Database } from '@/domain/db/client';
 import {
   domains,
+  liveEvents,
+  pushSubscriptions,
   oauthCodes,
   oauthGrants,
   oauthTokens,
@@ -53,6 +55,8 @@ export async function deleteAccountData(
             .where(eq(domains.user_id, userId)),
         ),
       ),
+    db.delete(liveEvents).where(eq(liveEvents.user_id, userId)),
+    db.delete(pushSubscriptions).where(eq(pushSubscriptions.user_id, userId)),
     db.delete(domains).where(eq(domains.user_id, userId)),
     db.delete(users).where(eq(users.id, userId)),
   ]);

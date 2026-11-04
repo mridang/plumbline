@@ -52,8 +52,21 @@ function checksOf(text: string | null): readonly string[] | null {
 }
 
 /** A row as the rest of the app sees it. */
-export function domainOf(row: Readonly<Omit<DomainRow, 'checked_at'>>): Domain {
-  // Named one by one: the time of the last server check is the scheduler's
+export function domainOf(
+  row: Readonly<
+    Pick<
+      DomainRow,
+      | 'id'
+      | 'user_id'
+      | 'host'
+      | 'checks'
+      | 'repo'
+      | 'created_at'
+      | 'updated_at'
+    >
+  >,
+): Domain {
+  // Named one by one: what the last server check found is the dashboard's
   // business and is not part of a domain as the app and the API show it.
   return {
     id: row.id,

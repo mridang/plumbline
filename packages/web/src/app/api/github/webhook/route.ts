@@ -27,6 +27,7 @@ import { verifySignature } from '@/domain/github/webhook';
 import { classifyDeployment } from '@/domain/suite/deploy';
 import { handleDeployment } from '@/domain/suite/github-run';
 import { handleIssueEvent } from '@/domain/suite/issue-events';
+import { createLive } from '@/domain/live/live';
 import { readLimits } from '@/domain/suite/limits';
 import { getEnv, runInBackground } from '@/lib/core/runtime';
 
@@ -88,6 +89,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       runInBackground(
         handleDeployment(db, config, installationId, owner, deployed, {
           limits: readLimits(getEnv()),
+          live: createLive(db, getEnv()),
         }),
       );
     }
@@ -119,7 +121,11 @@ export async function POST(request: Request): Promise<NextResponse> {
               sha: delivery.after ?? null,
               url: null,
             },
-            { force: true, limits: readLimits(getEnv()) },
+            {
+              force: true,
+              limits: readLimits(getEnv()),
+              live: createLive(db, getEnv()),
+            },
           ),
         );
       }

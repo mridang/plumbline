@@ -39,6 +39,16 @@ function seeded() {
         "INSERT INTO oauth_codes (code_hash, client_id, user_id, redirect_uri, code_challenge, scope, resource, expires_at) VALUES (?, 'c1', ?, 'https://a/cb', 'x', 'checks:read', 'r', 0)",
       )
       .run(`k${uid}`, uid);
+    raw
+      .prepare(
+        "INSERT INTO push_subscriptions (endpoint, user_id, p256dh, auth, created_at) VALUES (?, ?, 'p', 'a', 'now')",
+      )
+      .run(`https://push.test/${uid}`, uid);
+    raw
+      .prepare(
+        "INSERT INTO live_events (id, user_id, payload, created_at) VALUES (?, ?, '{}', 'now')",
+      )
+      .run(uid, uid);
   }
   return made;
 }
@@ -62,6 +72,8 @@ const TABLES = [
   ['oauth_grants', 'id', ['g2']],
   ['oauth_tokens', 'token_hash', ['t2']],
   ['oauth_codes', 'code_hash', ['k2']],
+  ['push_subscriptions', 'endpoint', ['https://push.test/2']],
+  ['live_events', 'id', ['2']],
 ] as const;
 
 describe('deleteAccountData', () => {

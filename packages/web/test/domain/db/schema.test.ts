@@ -107,6 +107,14 @@ describe('the schema file and the migrations', () => {
       "SELECT id FROM domains WHERE repo IS NOT NULL AND checked_at < 'x' ORDER BY checked_at LIMIT 10",
     ],
     [
+      'the events a reconnecting dashboard missed',
+      'SELECT id, payload FROM live_events WHERE user_id = 1 AND id > 5 ORDER BY id LIMIT 10',
+    ],
+    [
+      'the subscriptions of one person',
+      'SELECT endpoint FROM push_subscriptions WHERE user_id = 1',
+    ],
+    [
       'the purge of old webhook deliveries',
       "DELETE FROM webhook_deliveries WHERE received_at < 'x'",
     ],

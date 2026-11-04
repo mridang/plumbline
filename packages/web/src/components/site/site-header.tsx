@@ -48,6 +48,9 @@ export function SiteHeader({
           <InstallButton />
           {user ? (
             <>
+              <Link href="/dashboard" className={LINK}>
+                Dashboard
+              </Link>
               <Link href="/domains" className={LINK}>
                 Domains
               </Link>
