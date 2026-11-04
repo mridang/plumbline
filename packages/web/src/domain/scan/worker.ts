@@ -16,7 +16,8 @@ import { catalogue, type CatalogueEntry } from './catalogue';
 import { loadPage, runHint, type FetchContent, type Page } from './engine';
 import type { FromWorker, ToWorker } from './messages';
 import { fetchResource } from './network';
-import { relayFetch, relayFor, RelayError } from './relay';
+import { relayFetch, relayFor, RelayError, type Relay } from './relay';
+import { sharedRelay } from './shared-relay';
 
 /** The worker's own scope, as far as it is used. */
 interface WorkerScope {
@@ -37,8 +38,7 @@ let page: Page | undefined;
 let fetchContent: FetchContent | undefined;
 
 /** A `fetchContent` that makes each distinct request once. */
-function cachedFetchContent(scanId: string): FetchContent {
-  const relay = relayFor(scanId, localFetch);
+function cachedFetchContent(relay: Relay): FetchContent {
   const cache = new Map<string, Promise<NetworkData>>();
   return (url, headers = {}) => {
     const href = new URL(url).href;
@@ -54,8 +54,11 @@ function cachedFetchContent(scanId: string): FetchContent {
 
 /** Load the page, and say so. */
 async function load(scanId: string, url: string): Promise<void> {
-  globalThis.fetch = relayFetch(relayFor(scanId, localFetch), localFetch);
-  fetchContent = cachedFetchContent(scanId);
+  // One relay for the `fetch` the checks call and for `fetchContent`, so the
+  // target is asked once for an address however a check asks for it.
+  const relay = sharedRelay(relayFor(scanId, localFetch));
+  globalThis.fetch = relayFetch(relay, localFetch);
+  fetchContent = cachedFetchContent(relay);
   try {
     page = await loadPage(new URL(url), fetchContent);
   } catch (error) {
