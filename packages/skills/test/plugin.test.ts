@@ -56,9 +56,9 @@ describe('the Claude Code plugin', () => {
   const plugin = json(PACKAGE, '.claude-plugin', 'plugin.json');
   const pkg = json(PACKAGE, 'package.json');
 
-  it('is named plumbline and versioned with the package', () => {
+  it('is named plumbline and leaves its version to the package release', () => {
     expect(plugin['name']).toBe('plumbline');
-    expect(plugin['version']).toBe(pkg['version']);
+    expect(plugin).not.toHaveProperty('version');
   });
 
   it('ships its manifest, commands and skills in the npm package', () => {
