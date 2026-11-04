@@ -27,7 +27,8 @@ import { verifySignature } from '@/domain/github/webhook';
 import { classifyDeployment } from '@/domain/suite/deploy';
 import { handleDeployment } from '@/domain/suite/github-run';
 import { handleIssueEvent } from '@/domain/suite/issue-events';
-import { runInBackground } from '@/lib/core/runtime';
+import { readLimits } from '@/domain/suite/limits';
+import { getEnv, runInBackground } from '@/lib/core/runtime';
 
 /**
  * Whether a delivery means the installation's repositories or what the app may
@@ -85,7 +86,9 @@ export async function POST(request: Request): Promise<NextResponse> {
       (deliveryId === null || (await claimDelivery(db, deliveryId)))
     ) {
       runInBackground(
-        handleDeployment(db, config, installationId, owner, deployed),
+        handleDeployment(db, config, installationId, owner, deployed, {
+          limits: readLimits(getEnv()),
+        }),
       );
     }
   } else if (event === 'issues') {
@@ -116,7 +119,7 @@ export async function POST(request: Request): Promise<NextResponse> {
               sha: delivery.after ?? null,
               url: null,
             },
-            { force: true },
+            { force: true, limits: readLimits(getEnv()) },
           ),
         );
       }

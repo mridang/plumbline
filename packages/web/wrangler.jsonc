@@ -43,7 +43,9 @@
   // The daily re-check (src/domain/suite/scheduled.ts) needs a cron trigger,
   // `"triggers": { "crons": ["*/30 * * * *"] }`. The Workers Free plan allows
   // five per account and this account has used them, so it is left off; the
-  // handler stays and runs once the trigger is added back.
+  // handler stays and runs once the trigger is added back. On the Paid plan,
+  // set WORKERS_PLAN=paid (src/domain/suite/limits.ts) and use
+  // `"*/10 * * * *"`: each trigger then re-checks more sites.
   "d1_databases": [
     {
       "binding": "DB",

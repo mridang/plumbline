@@ -10,6 +10,7 @@ import {
   checkSite,
   classifyDeployment,
 } from '@/domain/suite/deploy';
+import { PAID_LIMITS } from '@/domain/suite/limits';
 import type { SuiteRun } from '@/domain/suite/run';
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
@@ -237,6 +238,16 @@ describe('checkDeployment', () => {
       run: async () => finding(),
     });
     expect(outcomes).toHaveLength(MAX_SITES);
+  });
+
+  it('checks more sites in one delivery on the Paid plan', async () => {
+    const hosts = Array.from({ length: MAX_SITES + 2 }, (_, i) => `h${i}.test`);
+    const db = await setup(...hosts);
+    const outcomes = await checkDeployment(db, 1, deployed, {
+      run: async () => finding(),
+      limits: PAID_LIMITS,
+    });
+    expect(outcomes).toHaveLength(MAX_SITES + 2);
   });
 
   it("checks only the person's sites found in that repository", async () => {

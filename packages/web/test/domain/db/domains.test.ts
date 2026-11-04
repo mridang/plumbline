@@ -43,7 +43,9 @@ describe('domainOf', () => {
 
   it('does not show when the site was last checked', () => {
     expect(
-      domainOf({ ...row(null), checked_at: '2026-01-01' }),
+      domainOf({ ...row(null), checked_at: '2026-01-01' } as ReturnType<
+        typeof row
+      >),
     ).not.toHaveProperty('checked_at');
   });
 

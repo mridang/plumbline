@@ -29,4 +29,6 @@ interface CloudflareEnv extends Cloudflare.Env {
   GITHUB_CLIENT_SECRET?: string;
   GITHUB_PRIVATE_KEY?: string;
   GITHUB_WEBHOOK_SECRET?: string;
+  /** The Cloudflare plan, `free` (the default) or `paid`; sets the limits of the server-side checks. */
+  WORKERS_PLAN?: string;
 }

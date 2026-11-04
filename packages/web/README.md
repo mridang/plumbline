@@ -101,6 +101,10 @@ GITHUB_WEBHOOK_SECRET=
 
 GitHub cannot reach `localhost`, so to try webhooks locally forward them with a tunnel; the connect and install flow itself works against `http://localhost:3737`.
 
+## Moving to the Workers Paid plan
+
+Every number that depends on the Cloudflare plan is in `src/domain/suite/limits.ts`: how many sites one deployment checks, how many a cron trigger re-checks, and how many are checked at the same time. The Free plan's values are the default. To move to Paid, upgrade the account, set `WORKERS_PLAN=paid` (a Worker secret, or in `.env` locally), add the cron trigger shown in `wrangler.jsonc`, and deploy. Nothing else changes.
+
 ## Connecting an assistant (MCP)
 
 Plumbline is an MCP server at `https://plumbline.apps.mrida.ng/mcp`, protected with OAuth 2.1 as the [MCP authorization spec](https://modelcontextprotocol.io/specification/latest/basic/authorization) describes. Add that URL as a connector in ChatGPT, Claude or any MCP client, sign in with Google when asked, and approve the assistant on `/connect`. There is no secret to copy.

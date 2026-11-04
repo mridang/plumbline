@@ -22,10 +22,11 @@ import {
 } from '@/domain/suite/diff';
 import { runSuite, type SuiteRun } from '@/domain/suite/run';
 import { resolveRules } from '@/domain/suite/config';
+import { FREE_LIMITS, inBatches, type Limits } from '@/domain/suite/limits';
 import { applyLevels, fingerprintOf, type Level } from '@/domain/suite/rules';
 
-/** Sites checked for one deployment. */
-export const MAX_SITES = 5;
+/** Sites checked for one deployment on the Free plan. */
+export const MAX_SITES = FREE_LIMITS.maxSites;
 
 /** A site that was checked a moment ago is not checked again for this long, in milliseconds. */
 export const DEBOUNCE_MS = 60_000;
@@ -137,6 +138,8 @@ export interface Deps {
   readonly now?: () => Date;
   /** The levels of the rules to apply; the recommended rules when not given. */
   readonly levels?: ReadonlyMap<string, Level>;
+  /** What the Cloudflare plan allows; the Free plan's when not given. */
+  readonly limits?: Limits;
   /** Check even a site that was checked a moment ago (its rules changed). */
   readonly force?: boolean;
 }
@@ -208,13 +211,16 @@ export async function checkDeployment(
   deps: Deps = {},
 ): Promise<SiteOutcome[]> {
   const now = deps.now ?? (() => new Date());
+  const limits = deps.limits ?? FREE_LIMITS;
   const sites = (await listDomainsOfRepo(db, userId, deployed.repo)).slice(
     0,
-    MAX_SITES,
+    limits.maxSites,
   );
   // The sites are checked together: most of a check is waiting for the site.
-  const outcomes = await Promise.all(
-    sites.map(async (site): Promise<SiteOutcome> => {
+  const outcomes = await inBatches(
+    sites,
+    limits.concurrency,
+    async (site): Promise<SiteOutcome> => {
       const previous = (await latestRuns(db, userId, site.host, 1))[0];
       // The same commit again a moment later is the same deployment reported
       // twice; a different commit is a new deployment, whenever it comes.
@@ -233,7 +239,7 @@ export async function checkDeployment(
         deps,
         previous ?? null,
       );
-    }),
+    },
   );
   return outcomes;
 }

@@ -12,10 +12,11 @@
 
 import { createDatabase, type Database } from '@/domain/db/client';
 import { dueSites } from '@/domain/db/suite';
+import { FREE_LIMITS, inBatches, readLimits } from '@/domain/suite/limits';
 import { checkSite, type Deps, type SiteOutcome } from '@/domain/suite/deploy';
 
-/** Sites checked by one trigger. */
-export const SCHEDULED_BATCH = 3;
+/** Sites checked by one trigger on the Free plan. */
+export const SCHEDULED_BATCH = FREE_LIMITS.scheduledBatch;
 
 /** A site is due again after this long, in milliseconds. */
 export const RECHECK_AFTER_MS = 24 * 60 * 60 * 1000;
@@ -26,23 +27,20 @@ export async function checkDueSites(
   deps: Deps = {},
 ): Promise<SiteOutcome[]> {
   const now = deps.now ?? (() => new Date());
+  const limits = deps.limits ?? FREE_LIMITS;
   const due = await dueSites(
     db,
     new Date(now().getTime() - RECHECK_AFTER_MS).toISOString(),
-    SCHEDULED_BATCH,
+    limits.scheduledBatch,
   );
-  const outcomes: SiteOutcome[] = [];
-  for (const site of due) {
-    outcomes.push(
-      await checkSite(
-        db,
-        site.user_id,
-        { host: site.host, repo: site.repo, sha: null },
-        deps,
-      ),
-    );
-  }
-  return outcomes;
+  return inBatches(due, limits.concurrency, (site) =>
+    checkSite(
+      db,
+      site.user_id,
+      { host: site.host, repo: site.repo, sha: null },
+      deps,
+    ),
+  );
 }
 
 /** The Worker's `scheduled` handler. */
@@ -51,5 +49,7 @@ export const scheduled: ExportedHandlerScheduledHandler<CloudflareEnv> = (
   env,
   ctx,
 ) => {
-  ctx.waitUntil(checkDueSites(createDatabase(env.DB)));
+  ctx.waitUntil(
+    checkDueSites(createDatabase(env.DB), { limits: readLimits(env) }),
+  );
 };
