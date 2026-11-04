@@ -5,7 +5,7 @@ import { useState, type ReactElement } from 'react';
 
 import { ensureOk, problemText } from '@/components/api/problem-message';
 import { Button } from '@/components/ui/button';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDialog } from '@/components/site/confirm-dialog';
 
 /** Remove a domain (`DELETE /api/domains/{id}`). */
 export async function removeDomain(

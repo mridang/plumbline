@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDialog } from '@/components/site/confirm-dialog';
 import { html } from '../render';
 
 /** A confirmation, open or closed as told. */

@@ -5,7 +5,7 @@ import { useState, type ReactElement } from 'react';
 
 import { ensureOk, problemText } from '@/components/api/problem-message';
 import { Button } from '@/components/ui/button';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDialog } from '@/components/site/confirm-dialog';
 
 /** Post to a GitHub endpoint of this site. */
 export async function postTo(

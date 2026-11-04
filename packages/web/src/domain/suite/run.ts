@@ -8,7 +8,7 @@
  */
 
 import { extractFacts } from '@/domain/suite/facts';
-import { readTextCapped } from '@/lib/capped-text';
+import { readTextCapped } from '@/domain/suite/capped-text';
 import { runChecks, type CheckResult } from '@/domain/suite/checks';
 
 /** How long to wait for the site, in milliseconds. */

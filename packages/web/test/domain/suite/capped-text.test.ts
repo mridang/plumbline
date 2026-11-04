@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { readTextCapped } from '@/lib/capped-text';
+import { readTextCapped } from '@/domain/suite/capped-text';
 
 /** A response whose body arrives in the given pieces. */
 function inPieces(...pieces: string[]): Response {

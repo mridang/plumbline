@@ -8,7 +8,7 @@
 
 import { z } from 'zod';
 
-import { readTextCapped } from '@/lib/capped-text';
+import { readTextCapped } from '@/domain/suite/capped-text';
 
 /** The page size GitHub allows at most. */
 const PER_PAGE = 100;
