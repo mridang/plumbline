@@ -180,6 +180,12 @@ function rulesNote(
   return lines.join('\n');
 }
 
+/** The most findings the summary of a check lists; the full list is in its text and in the report. */
+export const SUMMARY_LISTED = 5;
+
+/** The most findings written into the machine-readable block of a check. */
+export const MAX_DATA = 100;
+
 /** What a run reports about one site, for the text below. */
 export interface RunReport {
   readonly url: string;
@@ -188,12 +194,53 @@ export interface RunReport {
   readonly source: string | null;
   readonly browserOnly: readonly string[];
   readonly problems: readonly string[];
+  /** Where the full report can be opened without signing in. */
+  readonly reportUrl?: string;
+  /** The same report as JSON. */
+  readonly dataUrl?: string;
 }
 
-/** The title and Markdown of the check run that reports a preview. */
+/**
+ * The findings as JSON for a tool (a coding agent reading a failed check), with
+ * the text of each finding as the site gave it, made safe to sit inside a code
+ * fence. Cut to {@link MAX_DATA} findings so it stays valid JSON.
+ */
+export function dataBlock(report: Readonly<RunReport>): string {
+  const counts = countsOf(report.findings);
+  const json = JSON.stringify(
+    {
+      version: 1,
+      url: report.url,
+      conclusion: conclusionOf(report.findings),
+      ...counts,
+      report: report.reportUrl ?? null,
+      json: report.dataUrl ?? null,
+      truncated: report.findings.length > MAX_DATA,
+      findings: report.findings.slice(0, MAX_DATA).map((found) => ({
+        id: found.id,
+        name: findCheck(found.id)?.name ?? found.id,
+        severity: found.severity,
+        message: found.message,
+        reference: findCheck(found.id)?.reference ?? null,
+      })),
+    },
+    null,
+    1,
+  ).replace(/`/g, '\\u0060');
+  return `\`\`\`json\n${json}\n\`\`\``;
+}
+
+/**
+ * The title, a short summary and the full text of the check run that reports a
+ * preview. The summary says what was found in a few lines and links to the
+ * report; the text has every finding by rule, then the same findings as JSON, so
+ * whoever reads the check (a person, or an agent with only the GitHub API) has
+ * everything without signing in anywhere.
+ */
 export function checkRunOutput(report: Readonly<RunReport>): {
   title: string;
   summary: string;
+  text: string;
 } {
   const host = new URL(report.url).host;
   const { errors, warnings, hints } = countsOf(report.findings);
@@ -202,11 +249,31 @@ export function checkRunOutput(report: Readonly<RunReport>): {
       ? `No problems found on ${host}`
       : `${amount(errors, 'error')}, ${amount(warnings, 'warning')} and ${amount(hints, 'hint')} on ${host}`;
   const parts = [`Checked ${report.url}`];
+  if (report.reportUrl) {
+    parts.push(`[Open the full report](${report.reportUrl})`);
+  }
   if (report.findings.length > 0) {
-    parts.push(breakdown(report.findings));
+    const worst = report.findings
+      .toSorted((a, b) => RANK[a.severity] - RANK[b.severity])
+      .slice(0, SUMMARY_LISTED);
+    const more = report.findings.length - worst.length;
+    parts.push(
+      [
+        ...worst.map((found) => `- **${found.severity}**: ${found.message}`),
+        ...(more > 0 ? [`- ...and ${more} more in the report.`] : []),
+      ].join('\n'),
+    );
   }
   parts.push(rulesNote(report.source, report.browserOnly, report.problems));
-  return { title, summary: withinLimit(parts.join('\n\n')) };
+  const text = [
+    report.findings.length > 0 ? breakdown(report.findings) : 'Nothing found.',
+    dataBlock(report),
+  ].join('\n\n');
+  return {
+    title,
+    summary: withinLimit(parts.join('\n\n')),
+    text: withinLimit(text),
+  };
 }
 
 /** The marker that ties an issue to a site, in the first line of its text. */

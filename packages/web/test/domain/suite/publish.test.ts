@@ -457,6 +457,27 @@ describe('publishCheckRun', () => {
     });
   });
 
+  it('opens the report from the check, and carries its id', async () => {
+    const { api, requests } = github();
+    await publishCheckRun(api, {
+      ...preview,
+      findings: [error],
+      reportUrl: 'https://plumbline.test/r/abc',
+      reportId: 'abc',
+    });
+    expect(requests[0]?.body).toMatchObject({
+      details_url: 'https://plumbline.test/r/abc',
+      external_id: 'abc',
+      output: { text: expect.stringContaining('```json') },
+    });
+  });
+
+  it('links the preview itself when there is no report', async () => {
+    const { api, requests } = github();
+    await publishCheckRun(api, { ...preview, findings: [error] });
+    expect(requests[0]?.body).not.toHaveProperty('external_id');
+  });
+
   it('carries the title and summary of the findings', async () => {
     const { api, requests } = github();
     await publishCheckRun(api, { ...preview, findings: [error] });

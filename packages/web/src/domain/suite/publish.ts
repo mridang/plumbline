@@ -262,6 +262,8 @@ export async function syncIssue(
 export interface PreviewReport extends RunReport {
   readonly repo: string;
   readonly sha: string;
+  /** The id of the stored report; the check's own id for it. */
+  readonly reportId?: string;
 }
 
 /** Reports a run of a preview as a finished check on the commit it was built from. */
@@ -273,7 +275,10 @@ export async function publishCheckRun(
     name: CHECK_NAME,
     head_sha: report.sha,
     conclusion: conclusionOf(report.findings),
-    details_url: report.url,
+    // "Details" opens the report, which needs no sign-in; the preview itself
+    // is linked in the report.
+    details_url: report.reportUrl ?? report.url,
+    ...(report.reportId ? { external_id: report.reportId } : {}),
     output: checkRunOutput(report),
   });
 }

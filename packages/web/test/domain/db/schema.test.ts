@@ -107,6 +107,14 @@ describe('the schema file and the migrations', () => {
       "SELECT id FROM domains WHERE repo IS NOT NULL AND checked_at < 'x' ORDER BY checked_at LIMIT 10",
     ],
     [
+      'the sites of one repository, for its badge',
+      "SELECT errors FROM domains WHERE repo = 'acme/site'",
+    ],
+    [
+      'the purge of old preview reports',
+      "DELETE FROM preview_reports WHERE created_at < 'x'",
+    ],
+    [
       'the events a reconnecting dashboard missed',
       'SELECT id, payload FROM live_events WHERE user_id = 1 AND id > 5 ORDER BY id LIMIT 10',
     ],

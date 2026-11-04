@@ -13,6 +13,7 @@
 import { parseHost } from '@/domain/api/domain-resource';
 import type { Database } from '@/domain/db/client';
 import { GitHubApi, GitHubError, TooLargeError } from '@/domain/github/api';
+import { savePreviewReport } from '@/domain/db/preview-reports';
 import { installationToken } from '@/domain/github/app-auth';
 import type { GitHubConfig } from '@/domain/github/config';
 import {
@@ -41,6 +42,8 @@ import { applyLevels } from '@/domain/suite/rules';
 /** What the work can be given in place of the real thing, for tests. */
 export interface RunDeps extends Deps {
   readonly fetcher?: typeof fetch;
+  /** The app's public origin, for the link in a check to its report; no report is kept without it. */
+  readonly appUrl?: string;
 }
 
 /** The longest configuration file that is read; a real one is a few lines. */
@@ -153,8 +156,35 @@ async function checkLive(
   }
 }
 
+/**
+ * Keeps what a preview's check found under a random id, and says where to read
+ * it. Nothing is kept, and the check links to the preview itself, when the
+ * app's origin is not known or the report cannot be stored.
+ */
+async function keepReport(
+  db: Database,
+  appUrl: string | undefined,
+  report: Parameters<typeof savePreviewReport>[1],
+): Promise<{ reportId?: string; reportUrl?: string; dataUrl?: string }> {
+  if (!appUrl) {
+    return {};
+  }
+  try {
+    const id = await savePreviewReport(db, report);
+    return {
+      reportId: id,
+      reportUrl: `${appUrl}/r/${id}`,
+      dataUrl: `${appUrl}/r/${id}/json`,
+    };
+  } catch (error) {
+    console.error('report not kept', report.repo, error);
+    return {};
+  }
+}
+
 /** Checks the preview at the address the deployment names and reports it on the commit. */
 async function checkPreview(
+  db: Database,
   api: GitHubApi | null,
   deployed: Readonly<Deployment>,
   rules: ResolvedRules,
@@ -176,12 +206,19 @@ async function checkPreview(
     return;
   }
   const findings = findingsOf(applyLevels(checks, rules.levels));
+  const stored = await keepReport(db, deps.appUrl, {
+    repo: deployed.repo,
+    sha,
+    url,
+    findings,
+  });
   try {
     await publishCheckRun(api, {
       repo: deployed.repo,
       sha,
       url,
       findings,
+      ...stored,
       source: rules.source,
       browserOnly: rules.browserOnly,
       problems: rules.problems,
@@ -231,6 +268,6 @@ export async function handleDeployment(
   if (deployed.environment === 'production') {
     await checkLive(db, api, userId, deployed, rules, deps);
   } else {
-    await checkPreview(api, deployed, rules, deps);
+    await checkPreview(db, api, deployed, rules, deps);
   }
 }

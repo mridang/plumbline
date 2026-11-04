@@ -29,6 +29,7 @@ import { handleDeployment } from '@/domain/suite/github-run';
 import { handleIssueEvent } from '@/domain/suite/issue-events';
 import { createLive } from '@/domain/live/live';
 import { readLimits } from '@/domain/suite/limits';
+import { appOrigin } from '@/lib/core/origin';
 import { getEnv, runInBackground } from '@/lib/core/runtime';
 
 /**
@@ -90,6 +91,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         handleDeployment(db, config, installationId, owner, deployed, {
           limits: readLimits(getEnv()),
           live: createLive(db, getEnv()),
+          appUrl: appOrigin(request),
         }),
       );
     }
@@ -125,6 +127,7 @@ export async function POST(request: Request): Promise<NextResponse> {
               force: true,
               limits: readLimits(getEnv()),
               live: createLive(db, getEnv()),
+              appUrl: appOrigin(request),
             },
           ),
         );

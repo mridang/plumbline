@@ -77,6 +77,9 @@ export const domains = sqliteTable(
     index('idx_domains_due')
       .on(table.checked_at)
       .where(sql`${table.repo} IS NOT NULL`),
+    index('idx_domains_repo')
+      .on(table.repo)
+      .where(sql`${table.repo} IS NOT NULL`),
   ],
 );
 
@@ -272,6 +275,26 @@ export const suiteRuns = sqliteTable(
   (table) => [
     index('idx_suite_runs_host').on(table.user_id, table.host, table.id),
   ],
+);
+
+/**
+ * What a check on a pull request found, kept under a random id so the check's
+ * link opens it, and an agent can read it as JSON, without signing in.
+ */
+export const previewReports = sqliteTable(
+  'preview_reports',
+  {
+    id: text('id').primaryKey(),
+    repo: text('repo').notNull(),
+    sha: text('sha').notNull(),
+    url: text('url').notNull(),
+    errors: integer('errors').notNull(),
+    warnings: integer('warnings').notNull(),
+    hints: integer('hints').notNull(),
+    findings: text('findings').notNull(),
+    created_at: text('created_at').notNull(),
+  },
+  (table) => [index('idx_preview_reports_created').on(table.created_at)],
 );
 
 /** What happened to a person's sites, in order, for the live dashboard to replay. */

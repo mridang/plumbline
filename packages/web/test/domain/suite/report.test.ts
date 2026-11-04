@@ -8,6 +8,9 @@ import {
   MAX_PROBLEM_LENGTH,
   MAX_TEXT,
   breakdown,
+  dataBlock,
+  MAX_DATA,
+  SUMMARY_LISTED,
   checkRunOutput,
   conclusionOf,
   countsOf,
@@ -155,6 +158,98 @@ describe('checkRunOutput', () => {
     }).summary;
     expect(summary).toContain('Problems in the configuration:');
     expect(summary).toContain('- Unknown rule "x" in plumbline.yaml.');
+  });
+});
+
+describe('checkRunOutput, short for people and complete for tools', () => {
+  const base = {
+    url: 'https://pr-3.site.test/',
+    source: null,
+    browserOnly: [],
+    problems: [],
+    reportUrl: 'https://plumbline.test/r/abc',
+    dataUrl: 'https://plumbline.test/r/abc/json',
+  };
+  const many = Array.from({ length: SUMMARY_LISTED + 4 }, (_, i) =>
+    found('warning', `problem ${i}`),
+  );
+
+  it('links the report in the summary', () => {
+    expect(checkRunOutput({ ...base, findings: [] }).summary).toContain(
+      '[Open the full report](https://plumbline.test/r/abc)',
+    );
+  });
+
+  it('lists only the worst few findings in the summary and counts the rest', () => {
+    const { summary } = checkRunOutput({
+      ...base,
+      findings: [...many, found('error', 'the worst')],
+    });
+    expect(summary).toContain('**error**: the worst');
+    expect(summary).toContain('...and 5 more in the report.');
+    expect(summary).not.toContain(`problem ${SUMMARY_LISTED + 3}`);
+  });
+
+  it('puts every finding in the text, with the data a tool can read', () => {
+    const { text } = checkRunOutput({ ...base, findings: many });
+    expect(text).toContain(`problem ${SUMMARY_LISTED + 3}`);
+    expect(text).toContain('```json');
+  });
+
+  it('says nothing was found in the text when it was not', () => {
+    expect(checkRunOutput({ ...base, findings: [] }).text).toContain(
+      'Nothing found.',
+    );
+  });
+});
+
+describe('dataBlock', () => {
+  const base = {
+    url: 'https://pr-3.site.test/',
+    source: null,
+    browserOnly: [],
+    problems: [],
+    reportUrl: 'https://plumbline.test/r/abc',
+    dataUrl: 'https://plumbline.test/r/abc/json',
+  };
+  const parse = (block: string): Record<string, unknown> =>
+    JSON.parse(block.replace(/^```json\n/, '').replace(/\n```$/, ''));
+
+  it('is JSON with the counts, the links and each finding with its rule name', () => {
+    const data = parse(
+      dataBlock({ ...base, findings: [found('error', 'no viewport')] }),
+    );
+    expect(data).toMatchObject({
+      version: 1,
+      conclusion: 'failure',
+      errors: 1,
+      report: 'https://plumbline.test/r/abc',
+      json: 'https://plumbline.test/r/abc/json',
+      truncated: false,
+      findings: [
+        { id: 'seo-viewport', severity: 'error', message: 'no viewport' },
+      ],
+    });
+  });
+
+  it('cannot be broken out of by a message that holds a code fence', () => {
+    const block = dataBlock({
+      ...base,
+      findings: [found('error', 'a ``` b')],
+    });
+    expect(block.slice(7, -4)).not.toContain('`');
+    expect(parse(block)['findings']).toMatchObject([{ message: 'a ``` b' }]);
+  });
+
+  it('stays valid JSON when there are more findings than it carries', () => {
+    const data = parse(
+      dataBlock({
+        ...base,
+        findings: Array.from({ length: MAX_DATA + 3 }, () => found('hint')),
+      }),
+    );
+    expect(data['truncated']).toBe(true);
+    expect(data['findings']).toHaveLength(MAX_DATA);
   });
 });
 

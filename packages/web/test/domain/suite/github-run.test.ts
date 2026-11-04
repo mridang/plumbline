@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import { createDatabase } from '@/domain/db/client';
 import { addDomain } from '@/domain/db/domains';
+import { getPreviewReport } from '@/domain/db/preview-reports';
 import { forgetIssue, issueOf, latestRuns } from '@/domain/db/suite';
 import { GitHubApi } from '@/domain/github/api';
 import { readGitHubConfig } from '@/domain/github/config';
@@ -471,6 +472,39 @@ describe('handleDeployment of a preview', () => {
         details_url: 'https://pr-3.site.test/',
       },
     });
+  });
+
+  it('keeps the report and links it from the check, so no sign-in is needed to read it', async () => {
+    const db = await setup();
+    const { fetcher, calls } = github();
+    await handleDeployment(db, config, 5, 7, preview, {
+      fetcher,
+      run: failing(),
+      appUrl: 'https://plumbline.test',
+    });
+    const check = calls.at(-1);
+    const link = String(check?.body['details_url']);
+    expect(link).toMatch(/^https:\/\/plumbline\.test\/r\/[0-9a-f-]{36}$/);
+    const id = link.split('/').pop()!;
+    expect(check?.body['external_id']).toBe(id);
+    expect(await getPreviewReport(db, id)).toMatchObject({
+      repo: 'acme/site',
+      sha: 'abc1234',
+      errors: 1,
+    });
+    expect(String((check?.body['output'] as { text: string }).text)).toContain(
+      `${link}/json`,
+    );
+  });
+
+  it('links the preview and keeps nothing when the app does not know its own address', async () => {
+    const db = await setup();
+    const { fetcher, calls } = github();
+    await handleDeployment(db, config, 5, 7, preview, {
+      fetcher,
+      run: failing(),
+    });
+    expect(calls.at(-1)?.body['details_url']).toBe('https://pr-3.site.test/');
   });
 
   it('keeps the registered sites and their stored runs out of it', async () => {

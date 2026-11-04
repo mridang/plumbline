@@ -241,7 +241,9 @@ export class GitHubApi {
       head_sha: string;
       conclusion: 'success' | 'failure' | 'neutral';
       details_url?: string;
-      output: { title: string; summary: string };
+      /** Our own id for the run (the report's), so it can be found from the check. */
+      external_id?: string;
+      output: { title: string; summary: string; text?: string };
     }>,
   ): Promise<void> {
     await this.write(
