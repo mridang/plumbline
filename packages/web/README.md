@@ -83,8 +83,25 @@ Create a GitHub App (Settings, Developer settings, GitHub Apps) with:
 - **Callback URL:** `http://localhost:3737/api/github/callback` for development and `https://plumbline.apps.mrida.ng/api/github/callback` in production
 - **Request user authorization (OAuth) during installation:** ticked. GitHub then disables the Setup URL and Redirect on update and sends people back to the callback URL, which is what the app wants (it needs the sign-in `code` only that flow supplies). Leave Enable Device Flow off.
 - **Webhook URL:** `https://plumbline.apps.mrida.ng/api/github/webhook`, with a webhook secret
-- **Permissions:** Repository permissions: Contents (read-only, for the repository's files and `plumbline.yaml`), Deployments (read-only), Issues (read and write, for the issue that tracks a site), Checks (read and write, for the check run on a preview), and Pull requests (read-only, to name the pull request that fixed a problem). Metadata is read-only by default.
+- **Permissions:** Repository permissions: Contents (read-only for the repository's files and `plumbline.yaml`; read and write only if you want `repository_dispatch` events, see below), Deployments (read-only), Issues (read and write, for the issue that tracks a site), Checks (read and write, for the check run on a preview), and Pull requests (read-only, to name the pull request that fixed a problem). Metadata is read-only by default.
 - **Subscribe to events:** Push (a push to a Wrangler file reads the installation again, and a push of `plumbline.yaml` to the default branch checks the live site again), Deployment status (a successful deployment runs the checks) and Issues (an issue a person closes, reopens or deletes is noted). The installation events are always sent: an installation that is removed is forgotten, and one that is created, gets new permissions accepted or is unsuspended is read again, as is one whose repositories change.
+
+### Hooking into the results
+
+A repository that sets `dispatch: true` in `plumbline.yaml` gets a `repository_dispatch` event after each run of its live site or a preview: `plumbline.checked` every time, and `plumbline.failed` as well when there are errors. A workflow listens for them:
+
+```yaml
+on:
+  repository_dispatch:
+    types: [plumbline.failed]
+jobs:
+  react:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "${{ github.event.client_payload.host }} has ${{ github.event.client_payload.errors }} errors"
+```
+
+The payload has `version`, `environment`, `url`, `host`, `sha`, `conclusion`, `errors`, `warnings`, `hints` and the first ten `findings` (`id`, `severity`, `message`). GitHub only accepts the event when the app has Contents set to read and write; without it the event is not sent and the failure is logged, and the issue and check run are unaffected.
 
 Changing the permissions of an installed app asks each owner to accept them, and until they do the app keeps the old ones. Without the Issues or Checks permission a deployment is still checked and stored, and the failure to report it is logged.
 

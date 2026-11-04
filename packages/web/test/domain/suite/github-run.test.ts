@@ -371,6 +371,55 @@ describe('handleDeployment of the live site', () => {
   });
 });
 
+describe('handleDeployment, telling the repository', () => {
+  const asks = { 'plumbline.yaml': 'dispatch: true\n' };
+
+  it('sends repository_dispatch events for the live site when the file asks for them', async () => {
+    const db = await setup();
+    const { fetcher, calls } = github(asks);
+    await handleDeployment(db, config, 5, 7, live, { fetcher, run: failing() });
+    const sent = calls.filter((c) => c.path.endsWith('/dispatches'));
+    expect(sent.map((c) => c.body['event_type'])).toEqual([
+      'plumbline.checked',
+      'plumbline.failed',
+    ]);
+    expect(sent[0]?.body['client_payload']).toMatchObject({
+      environment: 'production',
+      host: 'site.test',
+      errors: 1,
+    });
+  });
+
+  it('sends them for a preview too', async () => {
+    const db = await setup();
+    const { fetcher, calls } = github(asks);
+    await handleDeployment(db, config, 5, 7, preview, {
+      fetcher,
+      run: failing(),
+    });
+    const sent = calls.filter((c) => c.path.endsWith('/dispatches'));
+    expect(sent[0]?.body['client_payload']).toMatchObject({
+      environment: 'preview',
+      url: 'https://pr-3.site.test/',
+    });
+  });
+
+  it('sends nothing unless the file asks', async () => {
+    const db = await setup();
+    const { fetcher, calls } = github();
+    await handleDeployment(db, config, 5, 7, live, { fetcher, run: failing() });
+    expect(calls.some((c) => c.path.endsWith('/dispatches'))).toBe(false);
+  });
+
+  it('still reports the run when the repository will not take the event', async () => {
+    const db = await setup();
+    const { fetcher, calls } = github(asks, { '/dispatches': 403 });
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    await handleDeployment(db, config, 5, 7, live, { fetcher, run: failing() });
+    expect(calls.some((c) => c.path.endsWith('/issues'))).toBe(true);
+  });
+});
+
 describe('a forced check', () => {
   it('checks a site again a moment after the last check, which an ordinary check would not', async () => {
     const db = await setup();

@@ -252,6 +252,26 @@ export class GitHubApi {
     );
   }
 
+  /**
+   * Sends a `repository_dispatch` event, which starts the repository's
+   * workflows that listen for `eventType`. GitHub answers 204 with no body.
+   * It needs the app's Contents permission to be read and write.
+   */
+  async dispatchEvent(
+    fullName: string,
+    eventType: string,
+    clientPayload: Readonly<Record<string, unknown>>,
+  ): Promise<void> {
+    await this.#send(
+      `/repos/${fullName}/dispatches`,
+      'application/vnd.github+json',
+      {
+        method: 'POST',
+        body: { event_type: eventType, client_payload: clientPayload },
+      },
+    );
+  }
+
   /** One file of a repository, as text, at most `maxBytes` long when that is given. */
   file(
     fullName: string,

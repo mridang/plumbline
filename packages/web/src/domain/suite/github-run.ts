@@ -34,6 +34,7 @@ import {
   publishUnreachable,
   syncIssue,
 } from '@/domain/suite/publish';
+import { dispatchRun } from '@/domain/suite/dispatch';
 import { runSuite } from '@/domain/suite/run';
 import { applyLevels } from '@/domain/suite/rules';
 
@@ -140,6 +141,15 @@ async function checkLive(
     } catch (error) {
       console.error('issue sync failed', deployed.repo, outcome.host, error);
     }
+    if (rules.dispatch) {
+      await dispatchRun(api, {
+        repo: deployed.repo,
+        environment: 'production',
+        url: outcome.url,
+        sha: deployed.sha,
+        findings: outcome.findings ?? [],
+      });
+    }
   }
 }
 
@@ -165,18 +175,28 @@ async function checkPreview(
     );
     return;
   }
+  const findings = findingsOf(applyLevels(checks, rules.levels));
   try {
     await publishCheckRun(api, {
       repo: deployed.repo,
       sha,
       url,
-      findings: findingsOf(applyLevels(checks, rules.levels)),
+      findings,
       source: rules.source,
       browserOnly: rules.browserOnly,
       problems: rules.problems,
     });
   } catch (error) {
     console.error('check run failed', deployed.repo, error);
+  }
+  if (rules.dispatch) {
+    await dispatchRun(api, {
+      repo: deployed.repo,
+      environment: 'preview',
+      url,
+      sha,
+      findings,
+    });
   }
 }
 

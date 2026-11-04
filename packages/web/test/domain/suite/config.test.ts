@@ -135,6 +135,13 @@ describe('a configuration file', () => {
     expect(resolve('issues: warning\n').issues).toBe('warning');
     expect(resolve('issues: off\n').issues).toBe('off');
   });
+
+  it('sends no repository_dispatch event unless the file asks for it', () => {
+    expect(resolve('').dispatch).toBe(false);
+    expect(resolve('dispatch: true\n').dispatch).toBe(true);
+    expect(resolve('dispatch: false\n').dispatch).toBe(false);
+    expect(resolve('dispatch: yes please\n').dispatch).toBe(false);
+  });
 });
 
 describe('the changes for an environment', () => {

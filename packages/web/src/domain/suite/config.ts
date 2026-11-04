@@ -15,6 +15,7 @@
  *     rules:
  *       seo-http-status: warn
  * issues: error                       # which findings open an issue: error, warning or off
+ * dispatch: true                      # send a repository_dispatch event after each run
  * ```
  *
  * A file is never required: without one a site gets `plumbline:recommended`.
@@ -51,7 +52,7 @@ export type Environment = (typeof ENVIRONMENTS)[number];
 export type IssueLevel = 'error' | 'warning' | 'off';
 
 /** The keys a configuration file understands, so the others can be reported. */
-const TOP_KEYS = ['extends', 'rules', 'environments', 'issues'];
+const TOP_KEYS = ['extends', 'rules', 'environments', 'issues', 'dispatch'];
 const OVERLAY_KEYS = ['extends', 'rules'];
 
 const OverlaySchema = z.object({
@@ -61,6 +62,7 @@ const OverlaySchema = z.object({
 
 const ConfigSchema = OverlaySchema.extend({
   issues: z.enum(['error', 'warning', 'off']).optional(),
+  dispatch: z.boolean().optional(),
   environments: z.record(z.string(), OverlaySchema).optional(),
 });
 
@@ -77,6 +79,8 @@ export interface LoadedConfig extends Overlay {
   readonly path: string;
   readonly environments: Readonly<Partial<Record<Environment, Overlay>>>;
   readonly issues: IssueLevel;
+  /** Whether to send a `repository_dispatch` event after each run. */
+  readonly dispatch: boolean;
   /** Everything that could not be understood, one sentence each. */
   readonly problems: readonly string[];
 }
@@ -94,6 +98,7 @@ function empty(path: string, problems: readonly string[]): LoadedConfig {
     rules: {},
     environments: {},
     issues: 'error',
+    dispatch: false,
     problems,
   };
 }
@@ -172,6 +177,7 @@ export function parseConfig(text: string, path: string): LoadedConfig {
     rules: config.rules ?? {},
     environments,
     issues: config.issues ?? 'error',
+    dispatch: config.dispatch ?? false,
     problems,
   };
 }
@@ -205,6 +211,8 @@ export interface ResolvedRules {
   readonly levels: ReadonlyMap<string, Level>;
   /** Which findings open an issue. */
   readonly issues: IssueLevel;
+  /** Whether to send a `repository_dispatch` event after each run. */
+  readonly dispatch: boolean;
   /** Rules that are on but only run in the browser scan, as the server cannot run them. */
   readonly browserOnly: readonly string[];
   /** The mistakes in the configuration. */
@@ -268,6 +276,7 @@ export function resolveRules(
   return {
     levels,
     issues: loaded?.issues ?? 'error',
+    dispatch: loaded?.dispatch ?? false,
     browserOnly: [...levels.keys()]
       .filter((id) => !isServerRule(id))
       .toSorted(),
