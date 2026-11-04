@@ -10,8 +10,8 @@ import type { AuditCheck } from '../../src/checks/types.js';
 import {
   manifestLinked,
   themeColorMeta,
-} from '@mridang/webhint-hint-extra/dist/lib/pwa/checks.js';
-import type { DocumentLike } from '@mridang/webhint-hint-extra/dist/lib/pwa/read.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/pwa/checks.js';
+import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/pwa/read.js';
 
 const require = createRequire(import.meta.url);
 const { createHTMLDocument } = require('@hint/utils-dom');

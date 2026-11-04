@@ -1,5 +1,5 @@
 import { Category, defineHint } from '../../core/define-hint.js';
-import { HintScope } from 'hint';
+import { HintScope } from '#hint';
 import { getOpenSearchLinks } from '../../lib/feeds/read.js';
 import {
   validateOpenSearch,

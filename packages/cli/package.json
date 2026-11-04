@@ -1,0 +1,76 @@
+{
+  "name": "@mridang/plumbline",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "prepack": "tsc",
+    "build": "tsc"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "plumbline": "./bin/run.js"
+  },
+  "oclif": {
+    "bin": "plumbline",
+    "dirname": "plumbline",
+    "description": "Audit a website with every plumbline check: security headers, TLS, DNS and email, privacy, SEO and AI-agent readiness.",
+    "commands": {
+      "strategy": "explicit",
+      "target": "./dist/commands.js",
+      "identifier": "COMMANDS"
+    },
+    "topicSeparator": " ",
+    "plugins": [
+      "@oclif/plugin-help",
+      "@oclif/plugin-not-found"
+    ]
+  },
+  "keywords": [
+    "webhint",
+    "cli",
+    "security-headers",
+    "tls",
+    "dns",
+    "seo",
+    "agent-readiness",
+    "audit"
+  ],
+  "author": {
+    "name": "Mridang Agarwalla",
+    "email": "mridang.agarwalla@gmail.com",
+    "url": "https://github.com/mridang"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "oclif.manifest.json"
+  ],
+  "license": "Apache-2.0",
+  "description": "A command-line scanner that runs every plumbline check (security headers, TLS, DNS, email, SEO, agent readiness) against a site from real Node",
+  "private": false,
+  "dependencies": {
+    "@hint/connector-puppeteer": "^2.5.0",
+    "@hint/parser-html": "^3.1.0",
+    "@hint/utils-types": "^1.2.0",
+    "@mridang/webhint-formatter-plumbline": "*",
+    "@mridang/webhint-hint-plumbline": "*",
+    "@oclif/core": "^5.1.10",
+    "@oclif/plugin-help": "^7.0.6",
+    "@oclif/plugin-not-found": "^4.0.7",
+    "hint": "^7.1.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mridang/plumbline.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/mridang/plumbline/tree/master/packages/cli",
+  "bugs": "https://github.com/mridang/plumbline/issues",
+  "publishConfig": {
+    "access": "public"
+  }
+}

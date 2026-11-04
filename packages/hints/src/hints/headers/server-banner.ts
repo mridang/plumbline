@@ -16,7 +16,7 @@ export default defineHint({
   description:
     'Reports when the Server header discloses a software version or operating system.',
   category: Category.security,
-  groups: ['mdn', 'security-headers'],
+  groups: ['mdn', 'security-headers', 'roctify'],
   reference:
     'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Server',
   setup(context) {

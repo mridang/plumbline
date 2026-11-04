@@ -16,7 +16,7 @@
  */
 import type * as LH from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
-import type { Finding } from '@mridang/webhint-hint-extra/dist/lib/headers/finding.js';
+import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import type { ScoreMode } from '../result.js';
 
 /** One declarative audit: the whole table of these drives the plugin. */

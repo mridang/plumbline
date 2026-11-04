@@ -5,7 +5,7 @@
  * `../adapt-geo.ts`, which uses `@hint/utils-dom`'s `createHTMLDocument`), feeds
  * that document to the shared `src/lib/geo/**` logic function, and hands the
  * result to the shared predicate-and-message function in
- * `@mridang/webhint-hint-extra/dist/lib/geo/checks.js`. Those same `checks.js` functions back the
+ * `@mridang/webhint-hint-plumbline/dist/lib/geo/checks.js`. Those same `checks.js` functions back the
  * webhint hints, so the finding text is written once and a page yields the same
  * findings here as under the hint.
  *
@@ -22,9 +22,9 @@
  * section. Every check is graded (`numeric`).
  */
 import type * as LH from 'lighthouse';
-import type { HintDefinition } from '@mridang/webhint-hint-extra/dist/core/define-hint.js';
-import { readJsonLd } from '@mridang/webhint-hint-extra/dist/lib/geo/json-ld.js';
-import { measureContent } from '@mridang/webhint-hint-extra/dist/lib/geo/content.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import { readJsonLd } from '@mridang/webhint-hint-plumbline/dist/lib/geo/json-ld.js';
+import { measureContent } from '@mridang/webhint-hint-plumbline/dist/lib/geo/content.js';
 // The predicate-and-message functions shared with the webhint hints. Both
 // surfaces call these, so a rule's wording lives in exactly one place.
 import {
@@ -33,7 +33,7 @@ import {
   organizationSchemaFindings,
   speakableSchemaFindings,
   structuredDataInvalidFindings,
-} from '@mridang/webhint-hint-extra/dist/lib/geo/checks.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/geo/checks.js';
 import { geoDocument } from '../adapt-geo.js';
 import { hintDocs } from '../meta.js';
 import type { AuditCheck } from './types.js';
@@ -41,11 +41,11 @@ import type { AuditCheck } from './types.js';
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); their check logic is reused through the
 // `src/lib/geo/**` functions above, not through these modules.
-import contentExtractionHint from '@mridang/webhint-hint-extra/dist/hints/geo/geo-content-extraction.js';
-import faqSchemaHint from '@mridang/webhint-hint-extra/dist/hints/geo/geo-faq-schema.js';
-import organizationSchemaHint from '@mridang/webhint-hint-extra/dist/hints/geo/geo-organization-schema.js';
-import speakableSchemaHint from '@mridang/webhint-hint-extra/dist/hints/geo/geo-speakable-schema.js';
-import structuredDataInvalidHint from '@mridang/webhint-hint-extra/dist/hints/geo/geo-structured-data-invalid.js';
+import contentExtractionHint from '@mridang/webhint-hint-plumbline/dist/hints/geo/geo-content-extraction.js';
+import faqSchemaHint from '@mridang/webhint-hint-plumbline/dist/hints/geo/geo-faq-schema.js';
+import organizationSchemaHint from '@mridang/webhint-hint-plumbline/dist/hints/geo/geo-organization-schema.js';
+import speakableSchemaHint from '@mridang/webhint-hint-plumbline/dist/hints/geo/geo-speakable-schema.js';
+import structuredDataInvalidHint from '@mridang/webhint-hint-plumbline/dist/hints/geo/geo-structured-data-invalid.js';
 
 /** The page URL the document is parsed against (unused by these checks). */
 function pageUrl(artifacts: LH.Artifacts): string {

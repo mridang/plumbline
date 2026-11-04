@@ -7,8 +7,8 @@ import type { AuditCheck } from '../../src/checks/types.js';
 import {
   readJsonLd,
   type JsonLdDocument,
-} from '@mridang/webhint-hint-extra/dist/lib/geo/json-ld.js';
-import { recipeFindings } from '@mridang/webhint-hint-extra/dist/lib/richresults/checks.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/geo/json-ld.js';
+import { recipeFindings } from '@mridang/webhint-hint-plumbline/dist/lib/richresults/checks.js';
 
 // The same DOM parser webhint feeds its hints: the equivalence test builds the
 // "webhint side" of the check with it, exactly as the hint does.

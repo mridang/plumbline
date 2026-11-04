@@ -1,5 +1,5 @@
 {
-  "name": "lighthouse-plugin-webhint-extra",
+  "name": "@mridang/lighthouse-plugin-plumbline",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
@@ -21,22 +21,22 @@
     "dist"
   ],
   "license": "Apache-2.0",
-  "description": "A Lighthouse plugin that reuses the webhint-hints check logic for the audits whose data Lighthouse already gathers (security headers, Open Graph, SEO)",
+  "description": "A Lighthouse plugin that reuses the plumbline check logic for the audits whose data Lighthouse already gathers (security headers, Open Graph, SEO)",
   "private": false,
   "dependencies": {
     "@hint/utils-dom": "^2.2.4",
-    "@mridang/webhint-hint-extra": "*"
+    "@mridang/webhint-hint-plumbline": "*"
   },
   "engines": {
     "node": ">=22.0.0"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mridang/webhint-hints.git",
+    "url": "git+https://github.com/mridang/plumbline.git",
     "directory": "packages/lighthouse"
   },
-  "homepage": "https://github.com/mridang/webhint-hints/tree/master/packages/lighthouse",
-  "bugs": "https://github.com/mridang/webhint-hints/issues",
+  "homepage": "https://github.com/mridang/plumbline/tree/master/packages/lighthouse",
+  "bugs": "https://github.com/mridang/plumbline/issues",
   "peerDependencies": {
     "lighthouse": "^12.0.0"
   },

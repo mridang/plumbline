@@ -17,10 +17,10 @@
  * (`numeric`); the recommended-only Article check is `informative`.
  */
 import type * as LH from 'lighthouse';
-import type { HintDefinition } from '@mridang/webhint-hint-extra/dist/core/define-hint.js';
-import { readJsonLd } from '@mridang/webhint-hint-extra/dist/lib/geo/json-ld.js';
-import type { JsonLdBlocks } from '@mridang/webhint-hint-extra/dist/lib/geo/json-ld.js';
-import type { Finding } from '@mridang/webhint-hint-extra/dist/lib/headers/finding.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import { readJsonLd } from '@mridang/webhint-hint-plumbline/dist/lib/geo/json-ld.js';
+import type { JsonLdBlocks } from '@mridang/webhint-hint-plumbline/dist/lib/geo/json-ld.js';
+import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import {
   articleFindings,
   breadcrumbFindings,
@@ -32,7 +32,7 @@ import {
   reviewFindings,
   videoFindings,
   websiteSearchActionFindings,
-} from '@mridang/webhint-hint-extra/dist/lib/richresults/checks.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/richresults/checks.js';
 import { geoDocument } from '../adapt-geo.js';
 import { hintDocs } from '../meta.js';
 import type { AuditCheck } from './types.js';
@@ -41,16 +41,16 @@ import type { ScoreMode } from '../result.js';
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference); their check logic is reused through the shared
 // `src/lib/richresults/**` validators above, not through these modules.
-import recipeHint from '@mridang/webhint-hint-extra/dist/hints/richresults/richresults-recipe.js';
-import productHint from '@mridang/webhint-hint-extra/dist/hints/richresults/richresults-product.js';
-import articleHint from '@mridang/webhint-hint-extra/dist/hints/richresults/richresults-article.js';
-import breadcrumbHint from '@mridang/webhint-hint-extra/dist/hints/richresults/richresults-breadcrumb.js';
-import eventHint from '@mridang/webhint-hint-extra/dist/hints/richresults/richresults-event.js';
-import videoHint from '@mridang/webhint-hint-extra/dist/hints/richresults/richresults-video.js';
-import jobpostingHint from '@mridang/webhint-hint-extra/dist/hints/richresults/richresults-jobposting.js';
-import localbusinessHint from '@mridang/webhint-hint-extra/dist/hints/richresults/richresults-localbusiness.js';
-import reviewHint from '@mridang/webhint-hint-extra/dist/hints/richresults/richresults-review.js';
-import websiteSearchactionHint from '@mridang/webhint-hint-extra/dist/hints/richresults/richresults-website-searchaction.js';
+import recipeHint from '@mridang/webhint-hint-plumbline/dist/hints/richresults/richresults-recipe.js';
+import productHint from '@mridang/webhint-hint-plumbline/dist/hints/richresults/richresults-product.js';
+import articleHint from '@mridang/webhint-hint-plumbline/dist/hints/richresults/richresults-article.js';
+import breadcrumbHint from '@mridang/webhint-hint-plumbline/dist/hints/richresults/richresults-breadcrumb.js';
+import eventHint from '@mridang/webhint-hint-plumbline/dist/hints/richresults/richresults-event.js';
+import videoHint from '@mridang/webhint-hint-plumbline/dist/hints/richresults/richresults-video.js';
+import jobpostingHint from '@mridang/webhint-hint-plumbline/dist/hints/richresults/richresults-jobposting.js';
+import localbusinessHint from '@mridang/webhint-hint-plumbline/dist/hints/richresults/richresults-localbusiness.js';
+import reviewHint from '@mridang/webhint-hint-plumbline/dist/hints/richresults/richresults-review.js';
+import websiteSearchactionHint from '@mridang/webhint-hint-plumbline/dist/hints/richresults/richresults-website-searchaction.js';
 
 /** The page URL the document is parsed against (unused by these checks). */
 function pageUrl(artifacts: LH.Artifacts): string {

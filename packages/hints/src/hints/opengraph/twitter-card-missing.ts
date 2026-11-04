@@ -11,5 +11,6 @@ export default defineOgHint({
   description: 'Requires a twitter:card meta tag.',
   slug: 'missing-twitter-card',
   add: '<meta name="twitter:card" content="summary_large_image">',
+  extraGroups: ['roctify'],
   run: twitterCardMissing,
 });

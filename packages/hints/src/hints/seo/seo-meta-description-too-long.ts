@@ -22,7 +22,7 @@ export default defineHint({
   name: 'Meta description is not too long',
   description: 'Reports a meta description longer than 160 characters.',
   category: Category.development,
-  groups: ['opengraph', 'seo'],
+  groups: ['opengraph', 'seo', 'roctify'],
   reference: REF,
   setup(context) {
     onPage(context, (page) => {

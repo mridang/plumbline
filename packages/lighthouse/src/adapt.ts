@@ -1,11 +1,11 @@
 /**
  * Adapters that turn Lighthouse artifacts into the small structural shapes the
- * webhint-hints `src/lib/**` pure functions expect. Nothing here re-implements
+ * plumbline `src/lib/**` pure functions expect. Nothing here re-implements
  * a check: each adapter only reshapes data so the existing analysers can run
  * unchanged.
  *
  * The library lives in the parent package and is consumed as its already
- * compiled JavaScript under `@mridang/webhint-hint-extra/dist/**` (the root build runs before this
+ * compiled JavaScript under `@mridang/webhint-hint-plumbline/dist/**` (the root build runs before this
  * package's build, exactly as the formatter package consumes it). Importing the
  * compiled output keeps this package's own `rootDir` at `src`, so the audits
  * still emit to `dist/audits/*.js` as the plugin manifest references them.
@@ -18,12 +18,12 @@ import type { Artifacts } from 'lighthouse/types/artifacts.js';
 type NetworkRequest = Artifacts.NetworkRequest;
 
 // The header bag shape the header checks accept: values may repeat (an array).
-import type { HeaderBag } from '@mridang/webhint-hint-extra/dist/lib/headers/http-headers.js';
+import type { HeaderBag } from '@mridang/webhint-hint-plumbline/dist/lib/headers/http-headers.js';
 // `metaContents` reads the `content` of matching `<meta>` tags; reused so the
 // cross-origin audits read `<meta http-equiv>` exactly as the webhint hints do.
-import { metaContents } from '@mridang/webhint-hint-extra/dist/lib/headers/http-headers.js';
+import { metaContents } from '@mridang/webhint-hint-plumbline/dist/lib/headers/http-headers.js';
 // The structural DOM the Open Graph reader needs (querySelectorAll('meta')).
-import type { MetaDocument } from '@mridang/webhint-hint-extra/dist/lib/opengraph/meta.js';
+import type { MetaDocument } from '@mridang/webhint-hint-plumbline/dist/lib/opengraph/meta.js';
 
 /**
  * Lighthouse's `MetaElements` artifact entry: one `<meta>` tag, already parsed

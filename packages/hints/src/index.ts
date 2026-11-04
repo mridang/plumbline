@@ -5,7 +5,7 @@ const registry = buildRegistry(allHints);
 
 /**
  * A package with several hints exposes them as a map from the hint id to its
- * class, which is what webhint loads for `@mridang/webhint-hint-extra/<id>`.
+ * class, which is what webhint loads for `@mridang/webhint-hint-plumbline/<id>`.
  */
 export default registry.hints;
 

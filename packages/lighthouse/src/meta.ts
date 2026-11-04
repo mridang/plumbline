@@ -12,7 +12,7 @@
  * `HintMetadata` type, so they are read through the narrow structural type
  * {@link WebhintDocs} below.
  */
-import type { HintDefinition } from '@mridang/webhint-hint-extra/dist/core/define-hint.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 
 /** The subset of a hint's compiled `docs` this plugin borrows. */
 export interface WebhintDocs {

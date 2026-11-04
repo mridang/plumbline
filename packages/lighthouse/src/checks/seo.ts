@@ -38,8 +38,8 @@
  * cannot make, so only the declared `<link>`s are inspected here.
  */
 import type * as LH from 'lighthouse';
-import type { HintDefinition } from '@mridang/webhint-hint-extra/dist/core/define-hint.js';
-import type { DocumentLike } from '@mridang/webhint-hint-extra/dist/lib/seo/read.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/seo/read.js';
 // The single-source SEO/favicon rules: predicate + message + severity. Both
 // this check and the webhint hints call these, so neither restates the wording.
 import {
@@ -61,7 +61,7 @@ import {
   titleMissing,
   titleTooLong,
   titleTooShort,
-} from '@mridang/webhint-hint-extra/dist/lib/seo/checks.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/seo/checks.js';
 import { mainResponse } from '../network.js';
 import {
   httpHeadersFromBag,
@@ -74,24 +74,24 @@ import type { AuditCheck } from './types.js';
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); their check logic is reused through the
 // `src/lib/seo/**` rule functions above, not through these modules.
-import seoTitleMissingHint from '@mridang/webhint-hint-extra/dist/hints/seo/seo-title-missing.js';
-import seoTitleTooLongHint from '@mridang/webhint-hint-extra/dist/hints/seo/seo-title-too-long.js';
-import seoTitleTooShortHint from '@mridang/webhint-hint-extra/dist/hints/seo/seo-title-too-short.js';
-import seoMetaDescriptionMissingHint from '@mridang/webhint-hint-extra/dist/hints/seo/seo-meta-description-missing.js';
-import seoMetaDescriptionTooLongHint from '@mridang/webhint-hint-extra/dist/hints/seo/seo-meta-description-too-long.js';
-import seoMetaDescriptionTooShortHint from '@mridang/webhint-hint-extra/dist/hints/seo/seo-meta-description-too-short.js';
-import seoH1MissingHint from '@mridang/webhint-hint-extra/dist/hints/seo/seo-h1-missing.js';
-import seoH1MultipleHint from '@mridang/webhint-hint-extra/dist/hints/seo/seo-h1-multiple.js';
-import seoHtmlLangMissingHint from '@mridang/webhint-hint-extra/dist/hints/seo/seo-html-lang-missing.js';
-import seoRobotsNoindexHint from '@mridang/webhint-hint-extra/dist/hints/seo/seo-robots-noindex.js';
-import seoRobotsNofollowHint from '@mridang/webhint-hint-extra/dist/hints/seo/seo-robots-nofollow.js';
-import seoCanonicalMissingHint from '@mridang/webhint-hint-extra/dist/hints/seo/seo-canonical-missing.js';
-import seoCanonicalMismatchHint from '@mridang/webhint-hint-extra/dist/hints/seo/seo-canonical-mismatch.js';
-import seoStructuredDataMissingHint from '@mridang/webhint-hint-extra/dist/hints/seo/seo-structured-data-missing.js';
-import iconsFaviconMissingHint from '@mridang/webhint-hint-extra/dist/hints/seo/icons-favicon-missing.js';
-import iconsFaviconIcoOrPngMissingHint from '@mridang/webhint-hint-extra/dist/hints/seo/icons-favicon-ico-or-png-missing.js';
-import iconsFavicon32MissingHint from '@mridang/webhint-hint-extra/dist/hints/seo/icons-favicon-32-missing.js';
-import iconsFaviconSvgMissingHint from '@mridang/webhint-hint-extra/dist/hints/seo/icons-favicon-svg-missing.js';
+import seoTitleMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/seo-title-missing.js';
+import seoTitleTooLongHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/seo-title-too-long.js';
+import seoTitleTooShortHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/seo-title-too-short.js';
+import seoMetaDescriptionMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/seo-meta-description-missing.js';
+import seoMetaDescriptionTooLongHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/seo-meta-description-too-long.js';
+import seoMetaDescriptionTooShortHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/seo-meta-description-too-short.js';
+import seoH1MissingHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/seo-h1-missing.js';
+import seoH1MultipleHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/seo-h1-multiple.js';
+import seoHtmlLangMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/seo-html-lang-missing.js';
+import seoRobotsNoindexHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/seo-robots-noindex.js';
+import seoRobotsNofollowHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/seo-robots-nofollow.js';
+import seoCanonicalMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/seo-canonical-missing.js';
+import seoCanonicalMismatchHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/seo-canonical-mismatch.js';
+import seoStructuredDataMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/seo-structured-data-missing.js';
+import iconsFaviconMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/icons-favicon-missing.js';
+import iconsFaviconIcoOrPngMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/icons-favicon-ico-or-png-missing.js';
+import iconsFavicon32MissingHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/icons-favicon-32-missing.js';
+import iconsFaviconSvgMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/icons-favicon-svg-missing.js';
 
 /** The artifact sets the SEO checks read, named for the rule that reads them. */
 const HTML_ONLY = ['MainDocumentContent', 'URL'] as const;

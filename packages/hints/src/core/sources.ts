@@ -68,7 +68,7 @@ export const SOURCES: readonly Source[] = [
   {
     id: 'original',
     name: 'Written for this package',
-    url: 'https://github.com/mridang/webhint-hints',
+    url: 'https://github.com/mridang/plumbline',
     licence: 'Apache-2.0',
   },
   {
@@ -97,7 +97,7 @@ export const SOURCES: readonly Source[] = [
   },
   {
     id: 'google',
-    name: 'Google developer documentation (Search Central, rich results, CSP Evaluator, Digital Asset Links)',
+    name: 'Google developer documentation (Search Central, rich results, CSP Evaluator, Digital Asset Links, OAuth app requirements)',
     url: 'https://developers.google.com/',
     licence: 'unlicensed site content',
   },
@@ -118,5 +118,11 @@ export const SOURCES: readonly Source[] = [
     name: 'OpenSearch 1.1 specification',
     url: 'https://github.com/dewitt/opensearch',
     licence: 'unlicensed specification text',
+  },
+  {
+    id: 'roctify',
+    name: 'Roctify SEO checker',
+    url: 'https://roctify.com/tools/seo-checker',
+    licence: 'unlicensed site content',
   },
 ];

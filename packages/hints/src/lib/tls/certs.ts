@@ -3,8 +3,8 @@
  * names, public keys, signature algorithms and which certificates are
  * roots. Uses only Node's `crypto` and `tls`, plus the small DER reader.
  */
-import { rootCertificates } from 'node:tls';
-import { X509Certificate } from 'node:crypto';
+import { rootCertificates } from '#tls';
+import { X509Certificate } from '#crypto';
 import { signatureAlgorithmOid } from './der.js';
 import type { CertKey } from './evaluate.js';
 

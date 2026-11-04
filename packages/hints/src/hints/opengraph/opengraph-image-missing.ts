@@ -11,5 +11,6 @@ export default defineOgHint({
   description: 'Requires an og:image meta tag.',
   slug: 'missing-og-image',
   add: '<meta property="og:image" content="https://example.com/og-image.png">',
+  extraGroups: ['roctify'],
   run: ogImageMissing,
 });

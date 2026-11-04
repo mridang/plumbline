@@ -11,6 +11,6 @@ export default defineOgHint({
   description: 'Requires an og:description meta tag.',
   slug: 'missing-og-description',
   add: '<meta property="og:description" content="A 110 to 160 character summary of the page">',
-  extraGroups: ['seo'],
+  extraGroups: ['seo', 'roctify'],
   run: ogDescriptionMissing,
 });

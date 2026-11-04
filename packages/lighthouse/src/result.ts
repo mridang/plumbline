@@ -1,5 +1,5 @@
 /**
- * Turns the webhint-hints library's {@link Finding} list into a Lighthouse
+ * Turns the plumbline library's {@link Finding} list into a Lighthouse
  * audit product. The mapping is the only policy this plugin adds on top of the
  * reused checks. It depends on the check's {@link ScoreMode}:
  *
@@ -24,7 +24,7 @@
  */
 import { Audit } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
-import type { Finding } from '@mridang/webhint-hint-extra/dist/lib/headers/finding.js';
+import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 
 /**
  * How a check's findings become a score. Mirrors Lighthouse's own scoring

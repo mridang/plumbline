@@ -22,7 +22,7 @@ import type { MetaElementArtifact } from './adapt.js';
 import {
   metaValue,
   type MetaDocument,
-} from '@mridang/webhint-hint-extra/dist/lib/opengraph/meta.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/opengraph/meta.js';
 
 /**
  * Wraps the `MetaElements` artifact in the {@link MetaDocument} the Open Graph

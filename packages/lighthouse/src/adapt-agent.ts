@@ -16,7 +16,7 @@ import type AuditNS from 'lighthouse/types/audit.js';
 import type {
   AgentEnv,
   Probe,
-} from '@mridang/webhint-hint-extra/dist/lib/agent/types.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/agent/types.js';
 import { findMainDocument, headerBagFromRecord } from './adapt.js';
 
 /** The artifacts an agent check reads: the devtools log and the URL set. */

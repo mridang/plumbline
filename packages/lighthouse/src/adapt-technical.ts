@@ -23,7 +23,7 @@
 import { createHTMLDocument } from '@hint/utils-dom';
 import type { Artifacts } from 'lighthouse/types/artifacts.js';
 import type { MetaElementArtifact } from './adapt.js';
-import type { TechDocumentLike } from '@mridang/webhint-hint-extra/dist/lib/technical/read.js';
+import type { TechDocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/technical/read.js';
 
 type NetworkRequest = Artifacts.NetworkRequest;
 type LinkElement = Artifacts.LinkElement;

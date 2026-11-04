@@ -3,7 +3,7 @@ import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { Severity, type Problem } from '@hint/utils-types';
 import { createScanServer, type ScanFn } from '../src/server.js';
-import type { HintMeta } from '../src/scan.js';
+import type { HintMeta } from '@mridang/plumbline';
 
 const HINT: HintMeta = {
   id: 'csp-present',

@@ -1,4 +1,4 @@
-import { domainToASCII } from 'node:url';
+import { domainToASCII } from '#url';
 
 /**
  * A small, dependency free stand-in for the Public Suffix List.

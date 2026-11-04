@@ -1,5 +1,5 @@
 {
-  "extends": "@tsconfig/node22/tsconfig.json",
+  "extends": "@tsconfig/node24/tsconfig.json",
   "compilerOptions": {
     "composite": true,
     "preserveConstEnums": true,
@@ -14,7 +14,7 @@
     "rootDir": "src",
     "declaration": true
   },
-  "references": [{ "path": "../hints" }, { "path": "../formatter" }],
+  "references": [{ "path": "../cli" }],
   "include": ["src/**/*"],
   "exclude": ["node_modules", "**/*.spec.ts", "dist", "test"]
 }

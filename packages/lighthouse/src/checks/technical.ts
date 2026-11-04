@@ -26,8 +26,8 @@
  */
 import { NetworkRecords } from 'lighthouse';
 import type * as LH from 'lighthouse';
-import type { HintDefinition } from '@mridang/webhint-hint-extra/dist/core/define-hint.js';
-import { finding } from '@mridang/webhint-hint-extra/dist/lib/headers/finding.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import { finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import {
   altCoverage,
   canonicalHref,
@@ -37,7 +37,7 @@ import {
   redirectVerdict,
   robotsAdvanced,
   twitterCardType,
-} from '@mridang/webhint-hint-extra/dist/lib/technical/read.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/technical/read.js';
 // The predicate-and-message functions shared with the webhint hints. Both
 // surfaces call these, so a rule's wording lives in exactly one place.
 import {
@@ -47,7 +47,7 @@ import {
   imageWeightFinding,
   robotsMetaAdvancedFindings,
   twitterCardTypeFindings,
-} from '@mridang/webhint-hint-extra/dist/lib/technical/checks.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/technical/checks.js';
 import { findMainDocument } from '../adapt.js';
 import {
   htmlDocument,
@@ -63,13 +63,13 @@ import type { AuditCheck } from './types.js';
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); their check logic is reused through the
 // `src/lib/technical/read.ts` functions above, not through these modules.
-import canonicalInvalidHint from '@mridang/webhint-hint-extra/dist/hints/technical/technical-canonical-invalid.js';
-import headingHierarchyHint from '@mridang/webhint-hint-extra/dist/hints/technical/technical-heading-hierarchy.js';
-import imageAltCoverageHint from '@mridang/webhint-hint-extra/dist/hints/technical/technical-image-alt-coverage.js';
-import imageWeightHint from '@mridang/webhint-hint-extra/dist/hints/technical/technical-image-weight.js';
-import redirectChainHint from '@mridang/webhint-hint-extra/dist/hints/technical/technical-redirect-chain.js';
-import robotsMetaAdvancedHint from '@mridang/webhint-hint-extra/dist/hints/technical/technical-robots-meta-advanced.js';
-import twitterCardTypeHint from '@mridang/webhint-hint-extra/dist/hints/technical/technical-twitter-card-type.js';
+import canonicalInvalidHint from '@mridang/webhint-hint-plumbline/dist/hints/technical/technical-canonical-invalid.js';
+import headingHierarchyHint from '@mridang/webhint-hint-plumbline/dist/hints/technical/technical-heading-hierarchy.js';
+import imageAltCoverageHint from '@mridang/webhint-hint-plumbline/dist/hints/technical/technical-image-alt-coverage.js';
+import imageWeightHint from '@mridang/webhint-hint-plumbline/dist/hints/technical/technical-image-weight.js';
+import redirectChainHint from '@mridang/webhint-hint-plumbline/dist/hints/technical/technical-redirect-chain.js';
+import robotsMetaAdvancedHint from '@mridang/webhint-hint-plumbline/dist/hints/technical/technical-robots-meta-advanced.js';
+import twitterCardTypeHint from '@mridang/webhint-hint-plumbline/dist/hints/technical/technical-twitter-card-type.js';
 
 /**
  * Builds a check that borrows its metadata from a compiled webhint hint. The

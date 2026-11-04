@@ -18,7 +18,7 @@ export default defineHint({
   description:
     'Reports when the web server compresses the root document (BREACH risk).',
   category: Category.security,
-  groups: ['internetnl', 'security-headers'],
+  groups: ['internetnl', 'security-headers', 'roctify'],
   reference: 'https://internet.nl/',
   setup(context) {
     onSite(context, async (site) => {

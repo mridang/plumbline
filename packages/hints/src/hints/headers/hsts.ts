@@ -47,6 +47,7 @@ export default defineHint({
     'webbkoll',
     'internetnl',
     'security-headers',
+    'roctify',
   ],
   reference:
     'https://developer.mozilla.org/docs/Web/Security/Practical_implementation_guides/TLS#http_strict_transport_security_implementation',

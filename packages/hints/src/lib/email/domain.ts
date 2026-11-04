@@ -1,4 +1,4 @@
-import { isIP } from 'node:net';
+import { isIP } from '#net';
 
 /**
  * Second level labels under which registrations happen one level deeper, for

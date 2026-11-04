@@ -4,12 +4,12 @@
   },
   "parsers": ["html"],
   "hints": {
-    "@mridang/webhint-hint-extra/bimi": "default",
-    "@mridang/webhint-hint-extra/feed-discovery": "default",
-    "@mridang/webhint-hint-extra/feed-valid": "default",
-    "@mridang/webhint-hint-extra/host-meta": "default",
-    "@mridang/webhint-hint-extra/mta-sts": "default",
-    "@mridang/webhint-hint-extra/tls-rpt": "default",
-    "@mridang/webhint-hint-extra/webfinger": "default"
+    "@mridang/webhint-hint-plumbline/bimi": "default",
+    "@mridang/webhint-hint-plumbline/feed-discovery": "default",
+    "@mridang/webhint-hint-plumbline/feed-valid": "default",
+    "@mridang/webhint-hint-plumbline/host-meta": "default",
+    "@mridang/webhint-hint-plumbline/mta-sts": "default",
+    "@mridang/webhint-hint-plumbline/tls-rpt": "default",
+    "@mridang/webhint-hint-plumbline/webfinger": "default"
   }
 }

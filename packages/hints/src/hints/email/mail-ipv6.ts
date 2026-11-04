@@ -1,4 +1,4 @@
-import { isIPv6 } from 'node:net';
+import { isIPv6 } from '#net';
 import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { dns } from '../../core/dns.js';

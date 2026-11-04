@@ -4,8 +4,8 @@
   },
   "parsers": ["html"],
   "hints": {
-    "@mridang/webhint-hint-extra/ads-txt": "default",
-    "@mridang/webhint-hint-extra/app-ads-txt": "default",
-    "@mridang/webhint-hint-extra/sellers-json": "default"
+    "@mridang/webhint-hint-plumbline/ads-txt": "default",
+    "@mridang/webhint-hint-plumbline/app-ads-txt": "default",
+    "@mridang/webhint-hint-plumbline/sellers-json": "default"
   }
 }

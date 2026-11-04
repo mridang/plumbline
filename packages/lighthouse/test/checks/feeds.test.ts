@@ -11,8 +11,8 @@ import {
   feedDiscovery,
   oembedDiscovery,
   opensearchDiscovery,
-} from '@mridang/webhint-hint-extra/dist/lib/feeds/checks.js';
-import type { DocumentLike } from '@mridang/webhint-hint-extra/dist/lib/feeds/read.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/feeds/checks.js';
+import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/feeds/read.js';
 
 const require = createRequire(import.meta.url);
 const { createHTMLDocument } = require('@hint/utils-dom');

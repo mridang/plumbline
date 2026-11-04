@@ -238,6 +238,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Looks for Sitemap directives in robots.txt, or /sitemap.xml, that resolve to a valid XML sitemap.',
       licence: 'unlicensed site content',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'XML sitemap',
+      title: 'XML sitemap (Indexing)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that a valid XML sitemap exists.',
+      licence: 'unlicensed site content',
+    },
   ],
   'agent-skills': [
     {
@@ -718,6 +727,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Internet.nl subtest WebTlsHttpsHsts: Checks the Strict-Transport-Security header: HTTPS only, max-age and subdomain coverage.',
       licence: 'Apache-2.0',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'HSTS header',
+      title: 'HSTS header (Security)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the Strict-Transport-Security header is sent.',
+      licence: 'unlicensed site content',
+    },
   ],
   'icons-favicon-32-missing': [
     {
@@ -752,6 +770,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       summary: 'Notes that no favicon exists for browser tabs and bookmarks.',
       licence: 'unlicensed site content',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'Favicon',
+      title: 'Favicon (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the page declares a favicon.',
+      licence: 'unlicensed site content',
+    },
   ],
   'icons-favicon-svg-missing': [
     {
@@ -775,6 +802,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       summary:
         'Internet.nl subtest WebTlsHttpCompression: Reports when the web server compresses the root document (BREACH risk).',
       licence: 'Apache-2.0',
+    },
+    {
+      source: 'roctify',
+      upstreamId: 'Compression',
+      title: 'Compression (Performance)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that responses are compressed.',
+      licence: 'unlicensed site content',
     },
   ],
   'ipv6-ns-aaaa': [
@@ -1064,6 +1100,16 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Flags pages lacking an og:description summary for link previews.',
       licence: 'unlicensed site content',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'Open Graph tags',
+      title: 'Open Graph tags (Social media)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary:
+        'Checks that the page has the Open Graph tags used for link previews.',
+      licence: 'unlicensed site content',
+    },
   ],
   'opengraph-description-same-as-title': [
     {
@@ -1168,6 +1214,16 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Flags pages with no og:image, which get far less engagement when shared.',
       licence: 'unlicensed site content',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'Open Graph tags',
+      title: 'Open Graph tags (Social media)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary:
+        'Checks that the page has the Open Graph tags used for link previews.',
+      licence: 'unlicensed site content',
+    },
   ],
   'opengraph-image-non-optimal-size': [
     {
@@ -1250,6 +1306,16 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Flags pages with no og:title; scrapers then fall back to the page title or bare URL.',
       licence: 'unlicensed site content',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'Open Graph tags',
+      title: 'Open Graph tags (Social media)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary:
+        'Checks that the page has the Open Graph tags used for link previews.',
+      licence: 'unlicensed site content',
+    },
   ],
   'opengraph-title-too-long': [
     {
@@ -1296,6 +1362,16 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       docsUrl: '',
       summary:
         'Warns that og:url, the canonical address for the shared page, is absent.',
+      licence: 'unlicensed site content',
+    },
+    {
+      source: 'roctify',
+      upstreamId: 'Open Graph tags',
+      title: 'Open Graph tags (Social media)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary:
+        'Checks that the page has the Open Graph tags used for link previews.',
       licence: 'unlicensed site content',
     },
   ],
@@ -1356,6 +1432,27 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       summary: 'Reports insecure subresources loaded by an https page.',
       licence: 'MIT',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'Mixed content',
+      title: 'Mixed content (Security)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that an HTTPS page loads no HTTP resources.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'privacy-policy-link-missing': [
+    {
+      source: 'google',
+      upstreamId: 'App Homepage',
+      title: 'Google OAuth: App Homepage requirements',
+      url: 'https://support.google.com/cloud/answer/13807376',
+      docsUrl: 'https://support.google.com/cloud/answer/15549049',
+      summary:
+        'Every production app must have a home page that includes an easily accessible link to its privacy policy.',
+      licence: 'unlicensed site content',
+    },
   ],
   'privacy-third-party-requests': [
     {
@@ -1401,6 +1498,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       summary:
         'Internet.nl subtest WebTlsHttpsForced: Checks that http:// redirects to https:// on the same host before any other redirect.',
       licence: 'Apache-2.0',
+    },
+    {
+      source: 'roctify',
+      upstreamId: 'HTTP to HTTPS redirect',
+      title: 'HTTP to HTTPS redirect (Security)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that plain HTTP redirects to HTTPS.',
+      licence: 'unlicensed site content',
     },
   ],
   'referrer-policy': [
@@ -1456,6 +1562,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       summary:
         'Validates robots.txt syntax and directives per the Robots Exclusion Protocol.',
       licence: 'IETF',
+    },
+    {
+      source: 'roctify',
+      upstreamId: 'robots.txt',
+      title: 'robots.txt (Indexing)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that a valid robots.txt is served.',
+      licence: 'unlicensed site content',
     },
   ],
   'rpki-ns-exists': [
@@ -1539,6 +1654,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Notes the canonical URL points somewhere other than the page URL and asks whether that is intended.',
       licence: 'unlicensed site content',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'Canonical tag',
+      title: 'Canonical tag (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the page declares a canonical URL.',
+      licence: 'unlicensed site content',
+    },
   ],
   'seo-canonical-missing': [
     {
@@ -1551,6 +1675,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Notes that no canonical link is declared to prevent duplicate content.',
       licence: 'unlicensed site content',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'Canonical tag',
+      title: 'Canonical tag (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the page declares a canonical URL.',
+      licence: 'unlicensed site content',
+    },
   ],
   'seo-h1-missing': [
     {
@@ -1560,6 +1693,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       url: 'https://www.opengraph.to/articles/missing-h1',
       docsUrl: '',
       summary: 'Warns that the page has no h1 main heading.',
+      licence: 'unlicensed site content',
+    },
+    {
+      source: 'roctify',
+      upstreamId: 'H1 heading',
+      title: 'H1 heading (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the page has exactly one h1 heading.',
       licence: 'unlicensed site content',
     },
   ],
@@ -1574,6 +1716,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Notes that several h1 elements dilute the heading structure; one per page is advised.',
       licence: 'unlicensed site content',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'H1 heading',
+      title: 'H1 heading (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the page has exactly one h1 heading.',
+      licence: 'unlicensed site content',
+    },
   ],
   'seo-html-lang-missing': [
     {
@@ -1585,6 +1736,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       summary: 'Warns that the html element has no lang attribute.',
       licence: 'unlicensed site content',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'Language attribute',
+      title: 'Language attribute (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the html element declares a language.',
+      licence: 'unlicensed site content',
+    },
   ],
   'seo-meta-description-missing': [
     {
@@ -1594,6 +1754,16 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       url: 'https://www.opengraph.to/articles/missing-meta-description',
       docsUrl: '',
       summary: 'Flags a missing meta description used for search snippets.',
+      licence: 'unlicensed site content',
+    },
+    {
+      source: 'roctify',
+      upstreamId: 'Meta description',
+      title: 'Meta description (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary:
+        'Checks that the page has a meta description of a sensible length.',
       licence: 'unlicensed site content',
     },
   ],
@@ -1608,6 +1778,16 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Notes descriptions longer than the 150 to 160 characters search results usually show.',
       licence: 'unlicensed site content',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'Meta description',
+      title: 'Meta description (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary:
+        'Checks that the page has a meta description of a sensible length.',
+      licence: 'unlicensed site content',
+    },
   ],
   'seo-meta-description-too-short': [
     {
@@ -1618,6 +1798,16 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       docsUrl: '',
       summary:
         'Notes meta descriptions too brief to make a compelling snippet.',
+      licence: 'unlicensed site content',
+    },
+    {
+      source: 'roctify',
+      upstreamId: 'Meta description',
+      title: 'Meta description (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary:
+        'Checks that the page has a meta description of a sensible length.',
       licence: 'unlicensed site content',
     },
   ],
@@ -1644,6 +1834,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Warns that a robots meta noindex stops search engines indexing the page.',
       licence: 'unlicensed site content',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'Indexability',
+      title: 'Indexability (Indexing)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the page is not blocked from the index.',
+      licence: 'unlicensed site content',
+    },
   ],
   'seo-structured-data-missing': [
     {
@@ -1654,6 +1853,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       docsUrl: '',
       summary:
         'Notes that no JSON-LD structured data was found for rich results.',
+      licence: 'unlicensed site content',
+    },
+    {
+      source: 'roctify',
+      upstreamId: 'Structured data',
+      title: 'Structured data (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the page carries structured data.',
       licence: 'unlicensed site content',
     },
   ],
@@ -1668,6 +1876,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Flags a page with no HTML title element, the key on-page SEO element.',
       licence: 'unlicensed site content',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'Title tag',
+      title: 'Title tag (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the page has a title tag of a sensible length.',
+      licence: 'unlicensed site content',
+    },
   ],
   'seo-title-too-long': [
     {
@@ -1680,6 +1897,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Warns when the title exceeds what search results typically display (about 50 to 60 characters).',
       licence: 'unlicensed site content',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'Title tag',
+      title: 'Title tag (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the page has a title tag of a sensible length.',
+      licence: 'unlicensed site content',
+    },
   ],
   'seo-title-too-short': [
     {
@@ -1689,6 +1915,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       url: 'https://www.opengraph.to/articles/html-title-too-short',
       docsUrl: '',
       summary: 'Notes titles too short to carry useful keywords.',
+      licence: 'unlicensed site content',
+    },
+    {
+      source: 'roctify',
+      upstreamId: 'Title tag',
+      title: 'Title tag (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the page has a title tag of a sensible length.',
       licence: 'unlicensed site content',
     },
   ],
@@ -1715,6 +1950,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       summary: 'Warns on skipped heading levels.',
       licence: 'MIT',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'Heading structure',
+      title: 'Heading structure (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that heading levels follow on from each other.',
+      licence: 'unlicensed site content',
+    },
   ],
   'technical-image-alt-coverage': [
     {
@@ -1726,6 +1970,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'https://github.com/RudrenduPaul/LLMScout/blob/main/docs/concepts.md',
       summary: 'Measures the share of img elements with alt attributes.',
       licence: 'MIT',
+    },
+    {
+      source: 'roctify',
+      upstreamId: 'Image alt text',
+      title: 'Image alt text (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that images carry alt text.',
+      licence: 'unlicensed site content',
     },
   ],
   'technical-image-weight': [
@@ -1775,6 +2028,18 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'https://github.com/RudrenduPaul/LLMScout/blob/main/docs/concepts.md',
       summary: 'Validates twitter:card is a known type.',
       licence: 'MIT',
+    },
+  ],
+  'terms-of-service-link-missing': [
+    {
+      source: 'google',
+      upstreamId: 'Manage OAuth App Branding',
+      title: 'Google OAuth: App Branding (App domain links)',
+      url: 'https://support.google.com/cloud/answer/15549049',
+      docsUrl: 'https://support.google.com/cloud/answer/13807376',
+      summary:
+        'The home page, privacy policy and terms of service links are required for every external production app.',
+      licence: 'unlicensed site content',
     },
   ],
   'tls-cipher-order': [
@@ -1920,6 +2185,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Warns that twitter:card is absent so X/Twitter shows only a basic link.',
       licence: 'unlicensed site content',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'X (Twitter) card',
+      title: 'X (Twitter) card (Social media)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the page has an X card tag.',
+      licence: 'unlicensed site content',
+    },
   ],
   'twitter-card-not-large': [
     {
@@ -2030,6 +2304,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       summary:
         'Internet.nl subtest WebAppsecprivHttpXFrame: Checks that the page cannot be framed by other sites, with X-Frame-Options or CSP frame-ancestors.',
       licence: 'Apache-2.0',
+    },
+    {
+      source: 'roctify',
+      upstreamId: 'Clickjacking protection',
+      title: 'Clickjacking protection (Security)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that framing is restricted.',
+      licence: 'unlicensed site content',
     },
   ],
   'x-permitted-cross-domain-policies': [
@@ -2316,6 +2599,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Internet.nl subtest WebTlsHttpsExists: Checks that the website completes a TLS handshake on the HTTPS port.',
       licence: 'Apache-2.0',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'HTTPS',
+      title: 'HTTPS (Security)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the site is served over HTTPS.',
+      licence: 'unlicensed site content',
+    },
   ],
   'server-banner': [
     {
@@ -2327,6 +2619,16 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       summary:
         'Reports when the Server header discloses a software version or operating system.',
       licence: 'CC-BY-SA-2.5',
+    },
+    {
+      source: 'roctify',
+      upstreamId: 'Server signature',
+      title: 'Server signature (Security)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary:
+        'Checks that the Server header does not reveal the software version.',
+      licence: 'unlicensed site content',
     },
   ],
   'x-powered-by': [
@@ -2768,6 +3070,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
         'Checks that each hreflang value is x-default or a valid ISO 639-1 language with an optional ISO 3166-1 region.',
       licence: 'unlicensed site content',
     },
+    {
+      source: 'roctify',
+      upstreamId: 'Hreflang',
+      title: 'Hreflang (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks the hreflang alternates of the page.',
+      licence: 'unlicensed site content',
+    },
   ],
   'hreflang-self': [
     {
@@ -2778,6 +3089,15 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       docsUrl:
         'https://developers.google.com/search/docs/specialty/international/localized-versions',
       summary: 'Checks that an hreflang set references the page itself.',
+      licence: 'unlicensed site content',
+    },
+    {
+      source: 'roctify',
+      upstreamId: 'Hreflang',
+      title: 'Hreflang (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks the hreflang alternates of the page.',
       licence: 'unlicensed site content',
     },
   ],
@@ -3481,6 +3801,194 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       summary:
         'Validates the /.well-known/host-meta XRD/JRD document when present.',
       licence: 'IETF-Trust',
+    },
+  ],
+  'seo-content-length': [
+    {
+      source: 'roctify',
+      upstreamId: 'Content length',
+      title: 'Content length (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the page has enough text to be useful.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'seo-keywords-frequent': [
+    {
+      source: 'roctify',
+      upstreamId: 'Most frequent keywords',
+      title: 'Most frequent keywords (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Lists the words the page uses most.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'seo-keywords-in-title': [
+    {
+      source: 'roctify',
+      upstreamId: 'Keywords in title',
+      title: 'Keywords in title (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the main keywords of the page appear in its title.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'seo-url-friendly': [
+    {
+      source: 'roctify',
+      upstreamId: 'SEO friendly URL',
+      title: 'SEO friendly URL (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the URL is short, lower case and readable.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'seo-links': [
+    {
+      source: 'roctify',
+      upstreamId: 'Links',
+      title: 'Links (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary:
+        'Checks that the page links to other pages, including its own site.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'seo-link-anchor-text': [
+    {
+      source: 'roctify',
+      upstreamId: 'Link anchor text',
+      title: 'Link anchor text (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that links have descriptive text.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'seo-deprecated-html': [
+    {
+      source: 'roctify',
+      upstreamId: 'Deprecated HTML tags',
+      title: 'Deprecated HTML tags (On-page SEO)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the page avoids obsolete HTML elements.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'seo-http-status': [
+    {
+      source: 'roctify',
+      upstreamId: 'HTTP status',
+      title: 'HTTP status (Indexing)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the page answers with HTTP 200.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'x-content-type-options': [
+    {
+      source: 'roctify',
+      upstreamId: 'MIME sniffing protection',
+      title: 'MIME sniffing protection (Security)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that X-Content-Type-Options is nosniff.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'seo-viewport': [
+    {
+      source: 'roctify',
+      upstreamId: 'Mobile viewport',
+      title: 'Mobile viewport (Mobile)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that the page sets a mobile viewport.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'seo-responsive-images': [
+    {
+      source: 'roctify',
+      upstreamId: 'Responsive images',
+      title: 'Responsive images (Mobile)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that images adapt to the screen size.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'icons-apple-touch-icon-missing': [
+    {
+      source: 'roctify',
+      upstreamId: 'Apple touch icon',
+      title: 'Apple touch icon (Mobile)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that an Apple touch icon is declared.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'technical-response-time': [
+    {
+      source: 'roctify',
+      upstreamId: 'Server response time',
+      title: 'Server response time (Performance)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Times the first response from the server.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'technical-html-size': [
+    {
+      source: 'roctify',
+      upstreamId: 'HTML size',
+      title: 'HTML size (Performance)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks the weight of the HTML document.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'technical-asset-count': [
+    {
+      source: 'roctify',
+      upstreamId: 'Scripts and stylesheets',
+      title: 'Scripts and stylesheets (Performance)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Counts the scripts and stylesheets the page loads.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'technical-image-formats': [
+    {
+      source: 'roctify',
+      upstreamId: 'Modern image formats',
+      title: 'Modern image formats (Performance)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that images use formats such as WebP or AVIF.',
+      licence: 'unlicensed site content',
+    },
+  ],
+  'technical-lazy-loading': [
+    {
+      source: 'roctify',
+      upstreamId: 'Lazy loading',
+      title: 'Lazy loading (Performance)',
+      url: 'https://roctify.com/tools/seo-checker',
+      docsUrl: '',
+      summary: 'Checks that images below the fold load lazily.',
+      licence: 'unlicensed site content',
     },
   ],
 };

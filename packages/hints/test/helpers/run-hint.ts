@@ -59,7 +59,7 @@ function listen(routes: Routes): Promise<Server> {
 export async function runHint(
   hint: HintDefinition,
   routes: Routes = {},
-  options: { hintOptions?: unknown } = {},
+  options: { hintOptions?: unknown; path?: string } = {},
 ): Promise<Problem[]> {
   const server = await listen(routes);
   const { port } = server.address() as AddressInfo;
@@ -88,7 +88,9 @@ export async function runHint(
       },
       [],
     ]) as Analyzer;
-    const [result] = await analyzer.analyze(`http://127.0.0.1:${port}/`);
+    const [result] = await analyzer.analyze(
+      `http://127.0.0.1:${port}${options.path ?? '/'}`,
+    );
     return result.problems;
   } finally {
     await new Promise((resolve) => server.close(resolve));

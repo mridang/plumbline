@@ -17,6 +17,17 @@ import iconsFaviconMissing from './icons-favicon-missing.js';
 import iconsFaviconIcoOrPngMissing from './icons-favicon-ico-or-png-missing.js';
 import iconsFavicon32Missing from './icons-favicon-32-missing.js';
 import iconsFaviconSvgMissing from './icons-favicon-svg-missing.js';
+import seoContentLength from './seo-content-length.js';
+import seoKeywordsFrequent from './seo-keywords-frequent.js';
+import seoKeywordsInTitle from './seo-keywords-in-title.js';
+import seoUrlFriendly from './seo-url-friendly.js';
+import seoLinks from './seo-links.js';
+import seoLinkAnchorText from './seo-link-anchor-text.js';
+import seoDeprecatedHtml from './seo-deprecated-html.js';
+import seoHttpStatus from './seo-http-status.js';
+import seoViewport from './seo-viewport.js';
+import seoResponsiveImages from './seo-responsive-images.js';
+import iconsAppleTouchIconMissing from './icons-apple-touch-icon-missing.js';
 
 /** Hints of the `seo` set. */
 export const seoHints: readonly HintDefinition[] = [
@@ -38,4 +49,15 @@ export const seoHints: readonly HintDefinition[] = [
   iconsFaviconIcoOrPngMissing,
   iconsFavicon32Missing,
   iconsFaviconSvgMissing,
+  seoContentLength,
+  seoKeywordsFrequent,
+  seoKeywordsInTitle,
+  seoUrlFriendly,
+  seoLinks,
+  seoLinkAnchorText,
+  seoDeprecatedHtml,
+  seoHttpStatus,
+  seoViewport,
+  seoResponsiveImages,
+  iconsAppleTouchIconMissing,
 ];

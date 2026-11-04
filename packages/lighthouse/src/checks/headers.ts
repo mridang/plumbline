@@ -32,63 +32,63 @@
  */
 import type * as LH from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
-import type { HintDefinition } from '@mridang/webhint-hint-extra/dist/core/define-hint.js';
-import { finding } from '@mridang/webhint-hint-extra/dist/lib/headers/finding.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import { finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import {
   firstHeader,
   headerValues,
-} from '@mridang/webhint-hint-extra/dist/lib/headers/http-headers.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/headers/http-headers.js';
 import {
   analyzeCspFromHeaders,
   cspFindings,
-} from '@mridang/webhint-hint-extra/dist/lib/headers/csp.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/headers/csp.js';
 import {
   hstsFindings,
   hstsProtects,
-} from '@mridang/webhint-hint-extra/dist/lib/headers/hsts.js';
-import { frameOptionsFindings } from '@mridang/webhint-hint-extra/dist/lib/headers/frame-options.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/headers/hsts.js';
+import { frameOptionsFindings } from '@mridang/webhint-hint-plumbline/dist/lib/headers/frame-options.js';
 import {
   effectiveReferrerPolicy,
   referrerPolicyFindings,
-} from '@mridang/webhint-hint-extra/dist/lib/headers/referrer-policy.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/headers/referrer-policy.js';
 import {
   deprecatedHeaderFindings,
   exactHeaderFindings,
-} from '@mridang/webhint-hint-extra/dist/lib/headers/exact-header.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/headers/exact-header.js';
 import {
   crossOriginFindings,
   type CrossOriginPolicy,
-} from '@mridang/webhint-hint-extra/dist/lib/headers/cross-origin.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/headers/cross-origin.js';
 import {
   corsFindings,
   PROBE_ORIGIN,
-} from '@mridang/webhint-hint-extra/dist/lib/headers/cors.js';
-import { cookieFindings } from '@mridang/webhint-hint-extra/dist/lib/headers/cookies.js';
-import { permissionsPolicyFindings } from '@mridang/webhint-hint-extra/dist/lib/headers/permissions-policy.js';
-import { xssProtectionFindings } from '@mridang/webhint-hint-extra/dist/lib/headers/xss-protection.js';
-import { cacheControlFindings } from '@mridang/webhint-hint-extra/dist/lib/headers/cache-control.js';
-import { reportingFindings } from '@mridang/webhint-hint-extra/dist/lib/headers/reporting.js';
-import { registrableDomain } from '@mridang/webhint-hint-extra/dist/lib/headers/registrable-domain.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/headers/cors.js';
+import { cookieFindings } from '@mridang/webhint-hint-plumbline/dist/lib/headers/cookies.js';
+import { permissionsPolicyFindings } from '@mridang/webhint-hint-plumbline/dist/lib/headers/permissions-policy.js';
+import { xssProtectionFindings } from '@mridang/webhint-hint-plumbline/dist/lib/headers/xss-protection.js';
+import { cacheControlFindings } from '@mridang/webhint-hint-plumbline/dist/lib/headers/cache-control.js';
+import { reportingFindings } from '@mridang/webhint-hint-plumbline/dist/lib/headers/reporting.js';
+import { registrableDomain } from '@mridang/webhint-hint-plumbline/dist/lib/headers/registrable-domain.js';
 import {
   serverBannerFindings,
   serverTimingFindings,
   sourcemapFindings,
   viaFindings,
   xPoweredByFindings,
-} from '@mridang/webhint-hint-extra/dist/lib/headers/info-leak.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/headers/info-leak.js';
 import {
   corsAllowCredentialsFindings,
   corsAllowHeadersFindings,
   corsAllowMethodsFindings,
   corsExposeHeadersFindings,
   corsMaxAgeFindings,
-} from '@mridang/webhint-hint-extra/dist/lib/headers/cors-extra.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/headers/cors-extra.js';
 import {
   integrityPolicyFindings,
   nelFindings,
   originAgentClusterFindings,
   reportingEndpointsFindings,
-} from '@mridang/webhint-hint-extra/dist/lib/headers/reporting-extra.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/headers/reporting-extra.js';
 import {
   ageFindings,
   etagFindings,
@@ -96,14 +96,14 @@ import {
   lastModifiedFindings,
   noVarySearchFindings,
   varyFindings,
-} from '@mridang/webhint-hint-extra/dist/lib/headers/caching.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/headers/caching.js';
 import {
   acceptChFindings,
   altSvcFindings,
   criticalChFindings,
   retryAfterFindings,
   timingAllowOriginFindings,
-} from '@mridang/webhint-hint-extra/dist/lib/headers/client-hints.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/headers/client-hints.js';
 import { mainResponse } from '../network.js';
 import {
   cspMetaContents,
@@ -116,51 +116,51 @@ import type { AuditCheck } from './types.js';
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); their check logic is reused through the
 // `src/lib/headers/**` functions above, not through these modules.
-import cacheControlHint from '@mridang/webhint-hint-extra/dist/hints/headers/cache-control.js';
-import clearSiteDataHint from '@mridang/webhint-hint-extra/dist/hints/headers/clear-site-data.js';
-import coepHint from '@mridang/webhint-hint-extra/dist/hints/headers/coep.js';
-import cookiesHint from '@mridang/webhint-hint-extra/dist/hints/headers/cookies.js';
-import coopHint from '@mridang/webhint-hint-extra/dist/hints/headers/coop.js';
-import corpHint from '@mridang/webhint-hint-extra/dist/hints/headers/corp.js';
-import corsHint from '@mridang/webhint-hint-extra/dist/hints/headers/cors.js';
-import cspReportingHint from '@mridang/webhint-hint-extra/dist/hints/headers/csp-reporting.js';
-import cspHint from '@mridang/webhint-hint-extra/dist/hints/headers/csp.js';
-import expectCtHint from '@mridang/webhint-hint-extra/dist/hints/headers/expect-ct.js';
-import featurePolicyHint from '@mridang/webhint-hint-extra/dist/hints/headers/feature-policy.js';
-import hstsHint from '@mridang/webhint-hint-extra/dist/hints/headers/hsts.js';
-import permissionsPolicyHint from '@mridang/webhint-hint-extra/dist/hints/headers/permissions-policy.js';
-import publicKeyPinsHint from '@mridang/webhint-hint-extra/dist/hints/headers/public-key-pins.js';
-import referrerPolicyHint from '@mridang/webhint-hint-extra/dist/hints/headers/referrer-policy.js';
-import xDnsPrefetchControlHint from '@mridang/webhint-hint-extra/dist/hints/headers/x-dns-prefetch-control.js';
-import xFrameOptionsHint from '@mridang/webhint-hint-extra/dist/hints/headers/x-frame-options.js';
-import xPermittedCrossDomainPoliciesHint from '@mridang/webhint-hint-extra/dist/hints/headers/x-permitted-cross-domain-policies.js';
-import xXssProtectionHint from '@mridang/webhint-hint-extra/dist/hints/headers/x-xss-protection.js';
-import serverBannerHint from '@mridang/webhint-hint-extra/dist/hints/headers/server-banner.js';
-import xPoweredByHint from '@mridang/webhint-hint-extra/dist/hints/headers/x-powered-by.js';
-import serverTimingHint from '@mridang/webhint-hint-extra/dist/hints/headers/server-timing.js';
-import viaHint from '@mridang/webhint-hint-extra/dist/hints/headers/via.js';
-import sourcemapHint from '@mridang/webhint-hint-extra/dist/hints/headers/sourcemap.js';
-import corsAllowCredentialsHint from '@mridang/webhint-hint-extra/dist/hints/headers/cors-allow-credentials.js';
-import corsAllowMethodsHint from '@mridang/webhint-hint-extra/dist/hints/headers/cors-allow-methods.js';
-import corsAllowHeadersHint from '@mridang/webhint-hint-extra/dist/hints/headers/cors-allow-headers.js';
-import corsExposeHeadersHint from '@mridang/webhint-hint-extra/dist/hints/headers/cors-expose-headers.js';
-import corsMaxAgeHint from '@mridang/webhint-hint-extra/dist/hints/headers/cors-max-age.js';
-import reportingEndpointsHint from '@mridang/webhint-hint-extra/dist/hints/headers/reporting-endpoints.js';
-import nelHint from '@mridang/webhint-hint-extra/dist/hints/headers/nel.js';
-import originAgentClusterHint from '@mridang/webhint-hint-extra/dist/hints/headers/origin-agent-cluster.js';
-import integrityPolicyHint from '@mridang/webhint-hint-extra/dist/hints/headers/integrity-policy.js';
-import integrityPolicyReportOnlyHint from '@mridang/webhint-hint-extra/dist/hints/headers/integrity-policy-report-only.js';
-import etagHint from '@mridang/webhint-hint-extra/dist/hints/headers/etag.js';
-import lastModifiedHint from '@mridang/webhint-hint-extra/dist/hints/headers/last-modified.js';
-import expiresHint from '@mridang/webhint-hint-extra/dist/hints/headers/expires.js';
-import ageHint from '@mridang/webhint-hint-extra/dist/hints/headers/age.js';
-import varyHint from '@mridang/webhint-hint-extra/dist/hints/headers/vary.js';
-import noVarySearchHint from '@mridang/webhint-hint-extra/dist/hints/headers/no-vary-search.js';
-import acceptChHint from '@mridang/webhint-hint-extra/dist/hints/headers/accept-ch.js';
-import criticalChHint from '@mridang/webhint-hint-extra/dist/hints/headers/critical-ch.js';
-import timingAllowOriginHint from '@mridang/webhint-hint-extra/dist/hints/headers/timing-allow-origin.js';
-import altSvcHint from '@mridang/webhint-hint-extra/dist/hints/headers/alt-svc.js';
-import retryAfterHint from '@mridang/webhint-hint-extra/dist/hints/headers/retry-after.js';
+import cacheControlHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/cache-control.js';
+import clearSiteDataHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/clear-site-data.js';
+import coepHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/coep.js';
+import cookiesHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/cookies.js';
+import coopHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/coop.js';
+import corpHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/corp.js';
+import corsHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/cors.js';
+import cspReportingHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/csp-reporting.js';
+import cspHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/csp.js';
+import expectCtHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/expect-ct.js';
+import featurePolicyHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/feature-policy.js';
+import hstsHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/hsts.js';
+import permissionsPolicyHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/permissions-policy.js';
+import publicKeyPinsHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/public-key-pins.js';
+import referrerPolicyHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/referrer-policy.js';
+import xDnsPrefetchControlHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/x-dns-prefetch-control.js';
+import xFrameOptionsHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/x-frame-options.js';
+import xPermittedCrossDomainPoliciesHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/x-permitted-cross-domain-policies.js';
+import xXssProtectionHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/x-xss-protection.js';
+import serverBannerHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/server-banner.js';
+import xPoweredByHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/x-powered-by.js';
+import serverTimingHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/server-timing.js';
+import viaHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/via.js';
+import sourcemapHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/sourcemap.js';
+import corsAllowCredentialsHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/cors-allow-credentials.js';
+import corsAllowMethodsHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/cors-allow-methods.js';
+import corsAllowHeadersHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/cors-allow-headers.js';
+import corsExposeHeadersHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/cors-expose-headers.js';
+import corsMaxAgeHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/cors-max-age.js';
+import reportingEndpointsHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/reporting-endpoints.js';
+import nelHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/nel.js';
+import originAgentClusterHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/origin-agent-cluster.js';
+import integrityPolicyHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/integrity-policy.js';
+import integrityPolicyReportOnlyHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/integrity-policy-report-only.js';
+import etagHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/etag.js';
+import lastModifiedHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/last-modified.js';
+import expiresHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/expires.js';
+import ageHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/age.js';
+import varyHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/vary.js';
+import noVarySearchHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/no-vary-search.js';
+import acceptChHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/accept-ch.js';
+import criticalChHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/critical-ch.js';
+import timingAllowOriginHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/timing-allow-origin.js';
+import altSvcHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/alt-svc.js';
+import retryAfterHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/retry-after.js';
 
 /** The artifact set the header checks read (plus `MetaElements` where noted). */
 const HEADER_ARTIFACTS = ['DevtoolsLog', 'URL'] as const;

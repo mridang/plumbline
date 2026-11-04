@@ -22,7 +22,7 @@ export default defineHint({
   name: 'Canonical URL matches the page',
   description: 'Reports a canonical URL that differs from the page URL.',
   category: Category.development,
-  groups: ['opengraph', 'seo'],
+  groups: ['opengraph', 'seo', 'roctify'],
   reference: REF,
   setup(context) {
     onPage(context, (page) => {

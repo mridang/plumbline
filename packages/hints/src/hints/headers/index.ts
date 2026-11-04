@@ -45,6 +45,7 @@ import xFrameOptions from './x-frame-options.js';
 import xPermittedCrossDomainPolicies from './x-permitted-cross-domain-policies.js';
 import xPoweredBy from './x-powered-by.js';
 import xXssProtection from './x-xss-protection.js';
+import xContentTypeOptions from './x-content-type-options.js';
 
 /**
  * Security and response-header checks from Observatory, OWASP, Webbkoll and the
@@ -98,4 +99,5 @@ export const headersHints: readonly HintDefinition[] = [
   timingAllowOrigin,
   altSvc,
   retryAfter,
+  xContentTypeOptions,
 ];

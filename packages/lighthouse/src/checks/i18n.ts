@@ -28,8 +28,8 @@
 import { createRequire } from 'node:module';
 import type * as LH from 'lighthouse';
 import type { HTMLDocument } from '@hint/utils-dom';
-import type { HintDefinition } from '@mridang/webhint-hint-extra/dist/core/define-hint.js';
-import type { DocumentLike } from '@mridang/webhint-hint-extra/dist/lib/i18n/read.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/i18n/read.js';
 // The single-source i18n rules: predicate + message + severity. Both this check
 // and the webhint hints call these, so neither restates the wording.
 import {
@@ -40,20 +40,20 @@ import {
   hreflangValidCodes,
   hreflangXDefault,
   paginationRel,
-} from '@mridang/webhint-hint-extra/dist/lib/i18n/checks.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/i18n/checks.js';
 import { hintDocs } from '../meta.js';
 import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); their check logic is reused through the
 // `src/lib/i18n/**` rule functions above, not through these modules.
-import hreflangReturnHint from '@mridang/webhint-hint-extra/dist/hints/i18n/hreflang-return.js';
-import hreflangXDefaultHint from '@mridang/webhint-hint-extra/dist/hints/i18n/hreflang-x-default.js';
-import hreflangValidCodesHint from '@mridang/webhint-hint-extra/dist/hints/i18n/hreflang-valid-codes.js';
-import hreflangSelfHint from '@mridang/webhint-hint-extra/dist/hints/i18n/hreflang-self.js';
-import hreflangDuplicateHint from '@mridang/webhint-hint-extra/dist/hints/i18n/hreflang-duplicate.js';
-import alternateMediaHint from '@mridang/webhint-hint-extra/dist/hints/i18n/alternate-media.js';
-import paginationRelHint from '@mridang/webhint-hint-extra/dist/hints/i18n/pagination-rel.js';
+import hreflangReturnHint from '@mridang/webhint-hint-plumbline/dist/hints/i18n/hreflang-return.js';
+import hreflangXDefaultHint from '@mridang/webhint-hint-plumbline/dist/hints/i18n/hreflang-x-default.js';
+import hreflangValidCodesHint from '@mridang/webhint-hint-plumbline/dist/hints/i18n/hreflang-valid-codes.js';
+import hreflangSelfHint from '@mridang/webhint-hint-plumbline/dist/hints/i18n/hreflang-self.js';
+import hreflangDuplicateHint from '@mridang/webhint-hint-plumbline/dist/hints/i18n/hreflang-duplicate.js';
+import alternateMediaHint from '@mridang/webhint-hint-plumbline/dist/hints/i18n/alternate-media.js';
+import paginationRelHint from '@mridang/webhint-hint-plumbline/dist/hints/i18n/pagination-rel.js';
 
 // `@hint/utils-dom` ships as CommonJS, so it is loaded through `createRequire`
 // (the pattern the SEO adapter and the tests use) rather than a named ESM

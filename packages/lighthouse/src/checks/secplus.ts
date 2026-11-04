@@ -22,20 +22,20 @@
 import { createRequire } from 'node:module';
 import type * as LH from 'lighthouse';
 import type { HTMLDocument } from '@hint/utils-dom';
-import type { HintDefinition } from '@mridang/webhint-hint-extra/dist/core/define-hint.js';
-import { headerValues } from '@mridang/webhint-hint-extra/dist/lib/headers/http-headers.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import { headerValues } from '@mridang/webhint-hint-plumbline/dist/lib/headers/http-headers.js';
 // The single-source secplus rules: predicate + message + severity. Both this
 // check and the webhint hints call these, so neither restates the wording.
 import {
   tabnabbingFindings,
   type AnchorLike,
-} from '@mridang/webhint-hint-extra/dist/lib/secplus/tabnabbing.js';
-import { evaluateCspStrength } from '@mridang/webhint-hint-extra/dist/lib/secplus/csp-strength.js';
-import { cookiePrefixFindings } from '@mridang/webhint-hint-extra/dist/lib/secplus/cookie-prefixes.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/secplus/tabnabbing.js';
+import { evaluateCspStrength } from '@mridang/webhint-hint-plumbline/dist/lib/secplus/csp-strength.js';
+import { cookiePrefixFindings } from '@mridang/webhint-hint-plumbline/dist/lib/secplus/cookie-prefixes.js';
 import {
   formActionFindings,
   type FormLike,
-} from '@mridang/webhint-hint-extra/dist/lib/secplus/form-action.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/secplus/form-action.js';
 import { mainResponse } from '../network.js';
 import { cspMetaContents } from '../adapt.js';
 import { hintDocs } from '../meta.js';
@@ -44,10 +44,10 @@ import type { AuditCheck } from './types.js';
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); their check logic is reused through the
 // `src/lib/secplus/**` functions above, not through these modules.
-import tabnabbingHint from '@mridang/webhint-hint-extra/dist/hints/secplus/tabnabbing.js';
-import cspStrengthHint from '@mridang/webhint-hint-extra/dist/hints/secplus/csp-strength.js';
-import cookiePrefixesHint from '@mridang/webhint-hint-extra/dist/hints/secplus/cookie-prefixes.js';
-import formActionSecureHint from '@mridang/webhint-hint-extra/dist/hints/secplus/form-action-secure.js';
+import tabnabbingHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/tabnabbing.js';
+import cspStrengthHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/csp-strength.js';
+import cookiePrefixesHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/cookie-prefixes.js';
+import formActionSecureHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/form-action-secure.js';
 
 // `@hint/utils-dom` ships as CommonJS, so it is loaded through `createRequire`
 // (the pattern the parent package's tests and `adapt-seo.ts` use) rather than a

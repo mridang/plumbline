@@ -3,9 +3,9 @@
  * and web server addresses, reachability and whether the site looks the same
  * over IPv6 and IPv4.
  */
-import { connect as netConnect } from 'node:net';
-import { request as httpRequest } from 'node:http';
-import { request as httpsRequest } from 'node:https';
+import { connect as netConnect } from '#net';
+import { request as httpRequest } from '#http';
+import { request as httpsRequest } from '#https';
 import {
   findNameservers,
   ipv4Addresses,
@@ -64,7 +64,7 @@ export const httpGetByIp: WebGetFn = (host, ip, port, https) =>
         port,
         path: '/',
         method: 'GET',
-        headers: { host, 'user-agent': 'webhint-hints', accept: '*/*' },
+        headers: { host, 'user-agent': 'plumbline', accept: '*/*' },
         servername: host,
         timeout: CONNECT_TIMEOUT_MS * 2,
       },

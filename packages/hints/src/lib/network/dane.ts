@@ -5,8 +5,8 @@
  * delegates matching to `ldns-dane`; this module implements RFC 6698
  * matching with Node's crypto so no native tool is needed.
  */
-import { X509Certificate, createHash } from 'node:crypto';
-import { connect as tlsConnect } from 'node:tls';
+import { X509Certificate, createHash } from '#crypto';
+import { connect as tlsConnect } from '#tls';
 import { answersOfType, normalizeName, safeQuery, RR } from './dns-util.js';
 
 export interface Tlsa {

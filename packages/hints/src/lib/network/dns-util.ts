@@ -2,7 +2,7 @@
  * DNS helpers shared by the Internet.nl network hints: reading the scanned
  * host, finding name servers and resolving addresses through `dns.client`.
  */
-import { isIP } from 'node:net';
+import { isIP } from '#net';
 import {
   dns,
   type DnsRecord,

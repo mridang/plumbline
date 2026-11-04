@@ -1,0 +1,36 @@
+{
+  "name": "@mridang/plumbline-skills",
+  "version": "0.0.0",
+  "description": "Agent skills and a Claude Code plugin that audit a website with the plumbline CLI and explain how to fix what fails",
+  "type": "module",
+  "keywords": [
+    "agent-skills",
+    "claude-code",
+    "plugin",
+    "webhint",
+    "security-headers",
+    "audit"
+  ],
+  "author": {
+    "name": "Mridang Agarwalla",
+    "email": "mridang.agarwalla@gmail.com",
+    "url": "https://github.com/mridang"
+  },
+  "files": [
+    ".claude-plugin",
+    "commands",
+    "skills"
+  ],
+  "license": "Apache-2.0",
+  "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mridang/plumbline.git",
+    "directory": "packages/skills"
+  },
+  "homepage": "https://github.com/mridang/plumbline/tree/master/packages/skills",
+  "bugs": "https://github.com/mridang/plumbline/issues",
+  "publishConfig": {
+    "access": "public"
+  }
+}

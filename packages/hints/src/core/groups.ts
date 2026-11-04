@@ -27,6 +27,7 @@ export const SOURCE_GROUPS = [
   'ietf',
   'oembed',
   'opensearch',
+  'roctify',
 ] as const;
 
 /** What a check is about, regardless of where it came from. */

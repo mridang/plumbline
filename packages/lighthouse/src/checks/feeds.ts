@@ -24,22 +24,22 @@
 import { createRequire } from 'node:module';
 import type * as LH from 'lighthouse';
 import type { HTMLDocument } from '@hint/utils-dom';
-import type { HintDefinition } from '@mridang/webhint-hint-extra/dist/core/define-hint.js';
-import type { DocumentLike } from '@mridang/webhint-hint-extra/dist/lib/feeds/read.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/feeds/read.js';
 import {
   feedDiscovery,
   oembedDiscovery,
   opensearchDiscovery,
-} from '@mridang/webhint-hint-extra/dist/lib/feeds/checks.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/feeds/checks.js';
 import { hintDocs } from '../meta.js';
 import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); their check logic is reused through the
 // `src/lib/feeds/**` rule functions above, not through these modules.
-import feedDiscoveryHint from '@mridang/webhint-hint-extra/dist/hints/feeds/feed-discovery.js';
-import oembedDiscoveryHint from '@mridang/webhint-hint-extra/dist/hints/feeds/oembed-discovery.js';
-import opensearchDiscoveryHint from '@mridang/webhint-hint-extra/dist/hints/feeds/opensearch-discovery.js';
+import feedDiscoveryHint from '@mridang/webhint-hint-plumbline/dist/hints/feeds/feed-discovery.js';
+import oembedDiscoveryHint from '@mridang/webhint-hint-plumbline/dist/hints/feeds/oembed-discovery.js';
+import opensearchDiscoveryHint from '@mridang/webhint-hint-plumbline/dist/hints/feeds/opensearch-discovery.js';
 
 // `@hint/utils-dom` ships as CommonJS, so it is loaded through `createRequire`
 // (the pattern the SEO adapter uses) rather than a named ESM import.

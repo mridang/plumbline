@@ -1,0 +1,14 @@
+{
+  "name": "plumbline",
+  "version": "0.0.0",
+  "description": "Audit a website's security headers, TLS, DNS and email, privacy, SEO and AI-agent readiness with the plumbline CLI, and explain how to fix what fails.",
+  "author": {
+    "name": "Mridang Agarwalla",
+    "email": "mridang.agarwalla@gmail.com",
+    "url": "https://github.com/mridang"
+  },
+  "homepage": "https://plumbline.apps.mrida.ng",
+  "repository": "https://github.com/mridang/plumbline",
+  "license": "Apache-2.0",
+  "keywords": ["security-headers", "tls", "dns", "seo", "audit", "webhint"]
+}

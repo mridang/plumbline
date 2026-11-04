@@ -13,7 +13,7 @@ export default defineHint({
   description:
     'Checks that img elements carry an alt attribute (warns from 80% coverage, errors below).',
   category: Category.development,
-  groups: ['llmscout', 'seo'],
+  groups: ['llmscout', 'seo', 'roctify'],
   reference: 'https://github.com/RudrenduPaul/LLMScout',
   setup(context) {
     onPage(context, (page) => {

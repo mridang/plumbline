@@ -20,7 +20,7 @@ export default defineHint({
   name: 'Page has a title',
   description: 'Requires a non-empty <title> element in the head.',
   category: Category.development,
-  groups: ['opengraph', 'seo'],
+  groups: ['opengraph', 'seo', 'roctify'],
   reference: REF,
   setup(context) {
     onPage(context, (page) => {

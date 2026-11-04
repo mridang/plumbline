@@ -8,11 +8,11 @@
  * binary is missing. Tests inject a fake `openssl.exec` and check the
  * parsers against real `s_client` output.
  */
-import { spawn } from 'node:child_process';
-import { isIP } from 'node:net';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { spawn } from '#child_process';
+import { isIP } from '#net';
+import { mkdtemp, rm, writeFile } from '#fs/promises';
+import { tmpdir } from '#os';
+import { join } from '#path';
 import { SCAN_RENEGOTIATION_LIMIT } from './constants.js';
 import type { TlsTarget } from './client.js';
 

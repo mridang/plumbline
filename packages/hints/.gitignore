@@ -1,0 +1,3 @@
+# The TLS test fixtures are throwaway certificates, committed on purpose
+# (see test/fixtures/tls/README.md); the root ignores every *.pem.
+!test/fixtures/tls/*.pem

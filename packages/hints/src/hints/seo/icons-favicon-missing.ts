@@ -27,7 +27,7 @@ export default defineHint({
   description:
     'Reports sites that declare no favicon and serve no /favicon.ico.',
   category: Category.development,
-  groups: ['opengraph', 'seo'],
+  groups: ['opengraph', 'seo', 'roctify'],
   reference: REF,
   setup(context) {
     // The parsed document and the <head> the missing icon link belongs in,

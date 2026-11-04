@@ -16,7 +16,7 @@ export default defineHint({
   description:
     'Requires the website to be reachable over HTTPS, with a completed TLS handshake on the HTTPS port.',
   category: Category.security,
-  groups: ['internetnl', 'tls', 'security-headers'],
+  groups: ['internetnl', 'tls', 'security-headers', 'roctify'],
   reference:
     'https://github.com/internetstandards/Internet.nl/blob/main/documentation/tls.md',
   setup(context) {

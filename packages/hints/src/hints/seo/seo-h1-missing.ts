@@ -19,7 +19,7 @@ export default defineHint({
   name: 'Page has an h1',
   description: 'Warns when the page has no <h1> heading.',
   category: Category.development,
-  groups: ['opengraph', 'seo'],
+  groups: ['opengraph', 'seo', 'roctify'],
   reference: REF,
   setup(context) {
     onPage(context, (page) => {

@@ -19,7 +19,7 @@ export default defineHint({
   name: 'Page has a single h1',
   description: 'Reports pages with more than one <h1>.',
   category: Category.development,
-  groups: ['opengraph', 'seo'],
+  groups: ['opengraph', 'seo', 'roctify'],
   reference: REF,
   setup(context) {
     onPage(context, (page) => {

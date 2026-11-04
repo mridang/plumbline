@@ -22,7 +22,7 @@ export default defineHint({
   name: 'Page has a canonical URL',
   description: 'Reports pages without <link rel="canonical">.',
   category: Category.development,
-  groups: ['opengraph', 'seo'],
+  groups: ['opengraph', 'seo', 'roctify'],
   reference: REF,
   setup(context) {
     onPage(context, (page) => {

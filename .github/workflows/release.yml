@@ -37,10 +37,6 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      # The scan server image is built for both linux/amd64 and linux/arm64 by
-      # @mridang/semantic-release-oci (via docker buildx bake). The arm64 image
-      # is a real arm64 build, so an amd64 runner emulates it with QEMU, and a
-      # container-driver builder is needed to emit a multi-arch manifest.
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -52,7 +48,5 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         env:
-          # @mridang/semantic-release-oci performs `docker login` itself using
-          # these; no separate docker/login-action step is needed.
           DOCKER_REGISTRY_USER: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}

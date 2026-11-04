@@ -4,6 +4,6 @@
   },
   "parsers": ["html"],
   "hints": {
-    "@mridang/webhint-hint-extra/oembed-discovery": "default"
+    "@mridang/webhint-hint-plumbline/oembed-discovery": "default"
   }
 }

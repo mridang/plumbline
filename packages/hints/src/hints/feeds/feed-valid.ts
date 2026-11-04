@@ -1,5 +1,5 @@
 import { Category, defineHint } from '../../core/define-hint.js';
-import { HintScope } from 'hint';
+import { HintScope } from '#hint';
 import { getFeedLinks } from '../../lib/feeds/read.js';
 import { validateFeed, FEED_VALID_RSS_REF } from '../../lib/feeds/validate.js';
 import { validateLinkedDocuments } from './shared.js';

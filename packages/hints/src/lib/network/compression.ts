@@ -5,8 +5,8 @@
  * when it carries a non-empty `Content-Encoding` header. Compressed
  * responses make HTTPS vulnerable to BREACH-style attacks.
  */
-import { request as httpRequest } from 'node:http';
-import { request as httpsRequest } from 'node:https';
+import { request as httpRequest } from '#http';
+import { request as httpsRequest } from '#https';
 
 /** The encodings Internet.nl offers, so any server preference shows up. */
 export const ACCEPT_ENCODING =
@@ -25,7 +25,7 @@ export const probeContentEncoding: EncodingProbe = (url) =>
         method: 'GET',
         headers: {
           'accept-encoding': ACCEPT_ENCODING,
-          'user-agent': 'webhint-hints',
+          'user-agent': 'plumbline',
         },
         timeout: 10_000,
       },

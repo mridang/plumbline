@@ -22,7 +22,7 @@ export default defineHint({
   name: 'Meta description is not too short',
   description: 'Reports a meta description shorter than 50 characters.',
   category: Category.development,
-  groups: ['opengraph', 'seo'],
+  groups: ['opengraph', 'seo', 'roctify'],
   reference: REF,
   setup(context) {
     onPage(context, (page) => {

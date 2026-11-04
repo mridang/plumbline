@@ -1,0 +1,73 @@
+{
+  "name": "@mridang/plumbline-web",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3737",
+    "pretypecheck": "npm run build:views",
+    "typecheck": "tsc --noEmit",
+    "build:catalogue": "node scripts/build-catalogue.mjs",
+    "build:views": "npm run build:catalogue && node scripts/build-views.mjs",
+    "build": "npm run build:views && next build",
+    "start": "next start",
+    "migrate": "wrangler d1 migrations apply DB --local",
+    "cf-typegen": "wrangler types && prettier --write worker-configuration.d.ts",
+    "deploy": "wrangler d1 migrations apply DB --remote && opennextjs-cloudflare build && wrangler deploy",
+    "pretest": "npm run build:views",
+    "test": "jest --verbose --config=jest.config.mjs",
+    "test:watch": "npm run test -- --watch",
+    "test:debug": "jest --verbose --config=jest.config.mjs --detectOpenHandles",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prelint": "npm run build:views",
+    "lint": "npx eslint .",
+    "prelint:fix": "npm run build:views",
+    "lint:fix": "npx eslint . --fix",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run --browser chrome"
+  },
+  "author": {
+    "name": "Mridang Agarwalla",
+    "email": "mridang.agarwalla@gmail.com",
+    "url": "https://github.com/mridang"
+  },
+  "license": "Apache-2.0",
+  "description": "plumbline: a web page that runs the plumbline checks against a domain in the visitor's browser, through a Cloudflare Worker, and lists what passed and failed",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mridang/plumbline.git",
+    "directory": "packages/web"
+  },
+  "homepage": "https://github.com/mridang/plumbline/tree/master/packages/web",
+  "bugs": "https://github.com/mridang/plumbline/issues",
+  "devDependencies": {
+    "@hint/utils-dom": "^2.2.4",
+    "@hint/utils-types": "^1.2.1",
+    "@modelcontextprotocol/core": "^2.4.0",
+    "@modelcontextprotocol/ext-apps": "^2.0.4",
+    "@mridang/webhint-hint-plumbline": "*",
+    "@opennextjs/cloudflare": "^1.20.12",
+    "@tailwindcss/postcss": "^4",
+    "@tsconfig/node24": "^24.0.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "ajv": "^8.20.0",
+    "cypress": "^16.2.0",
+    "drizzle-orm": "^0.45.4",
+    "esbuild": "^0.28.2",
+    "eslint-plugin-drizzle": "^0.2.3",
+    "hint": "^7.1.13",
+    "jose": "^6.2.14",
+    "miniflare": "5.20261023.3-beta",
+    "next": "16.4.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tailwindcss": "^4",
+    "wrangler": "^4.151.1",
+    "zod": "^4.6.7"
+  }
+}

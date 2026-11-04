@@ -25,7 +25,7 @@ export default defineHint({
   description:
     'Checks that http:// redirects to https:// on the same host before any other redirect.',
   category: Category.security,
-  groups: ['observatory', 'internetnl', 'security-headers'],
+  groups: ['observatory', 'internetnl', 'security-headers', 'roctify'],
   reference:
     'https://developer.mozilla.org/docs/Web/Security/Practical_implementation_guides/TLS#http_redirection',
   setup(context) {

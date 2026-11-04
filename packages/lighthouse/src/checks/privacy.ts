@@ -32,14 +32,14 @@
  * `localStorage`/`sessionStorage` contents), which Lighthouse's static
  * artifacts do not provide. They stay gatherer/runtime-only.
  */
-import { finding } from '@mridang/webhint-hint-extra/dist/lib/headers/finding.js';
+import { finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import {
   describeCookie,
   summarizeCookies,
   type CookieRecord,
-} from '@mridang/webhint-hint-extra/dist/lib/privacy/cookies.js';
-import { classifyRequests } from '@mridang/webhint-hint-extra/dist/lib/privacy/requests.js';
-import type { HintDefinition } from '@mridang/webhint-hint-extra/dist/core/define-hint.js';
+} from '@mridang/webhint-hint-plumbline/dist/lib/privacy/cookies.js';
+import { classifyRequests } from '@mridang/webhint-hint-plumbline/dist/lib/privacy/requests.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import { privacyNetwork } from '../adapt-privacy.js';
 import { hintDocs } from '../meta.js';
 import type { AuditCheck } from './types.js';
@@ -47,10 +47,10 @@ import type { AuditCheck } from './types.js';
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); the check logic is reused through the
 // `src/lib/privacy/**` functions above, not through these modules.
-import privacyCookiesHint from '@mridang/webhint-hint-extra/dist/hints/privacy/privacy-cookies.js';
-import privacyInsecureFirstPartyHint from '@mridang/webhint-hint-extra/dist/hints/privacy/privacy-insecure-first-party.js';
-import privacyMixedContentHint from '@mridang/webhint-hint-extra/dist/hints/privacy/privacy-mixed-content.js';
-import privacyThirdPartyRequestsHint from '@mridang/webhint-hint-extra/dist/hints/privacy/privacy-third-party-requests.js';
+import privacyCookiesHint from '@mridang/webhint-hint-plumbline/dist/hints/privacy/privacy-cookies.js';
+import privacyInsecureFirstPartyHint from '@mridang/webhint-hint-plumbline/dist/hints/privacy/privacy-insecure-first-party.js';
+import privacyMixedContentHint from '@mridang/webhint-hint-plumbline/dist/hints/privacy/privacy-mixed-content.js';
+import privacyThirdPartyRequestsHint from '@mridang/webhint-hint-plumbline/dist/hints/privacy/privacy-third-party-requests.js';
 
 /** The artifact set every privacy check reads. */
 const PRIVACY_ARTIFACTS = ['DevtoolsLog', 'URL'] as const;
