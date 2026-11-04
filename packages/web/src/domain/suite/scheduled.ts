@@ -39,7 +39,7 @@ export async function checkDueSites(
       db,
       site.user_id,
       { host: site.host, repo: site.repo, sha: null },
-      deps,
+      { ...deps, useFreshness: true },
     ),
   );
 }

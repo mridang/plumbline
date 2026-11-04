@@ -22,6 +22,7 @@ import {
 } from '@/domain/suite/diff';
 import type { Live } from '@/domain/live/live';
 import { countsOf } from '@/domain/suite/report';
+import type { Validators } from '@/domain/suite/http-cache';
 import { runSuite, type SuiteRun } from '@/domain/suite/run';
 import { resolveRules } from '@/domain/suite/config';
 import { FREE_LIMITS, inBatches, type Limits } from '@/domain/suite/limits';
@@ -118,7 +119,7 @@ const DEFAULT_LEVELS = resolveRules(null, 'production').levels;
 export interface SiteOutcome {
   readonly host: string;
   /** Why nothing was checked, when that is so. */
-  readonly skipped?: 'recent' | 'unreachable';
+  readonly skipped?: 'recent' | 'unreachable' | 'fresh';
   /** True when the page and the rules were the same as at the previous run, so it was not read again. */
   readonly unchanged?: boolean;
   readonly changes?: Changes;
@@ -136,7 +137,13 @@ export interface Deps {
   readonly run?: (
     url: string,
     previousHash: string | null,
+    validators?: Validators | null,
   ) => Promise<SuiteRun>;
+  /**
+   * Leave alone a site whose page its owner said is still fresh (a scheduled
+   * re-check). A deployment is never skipped for this: the page just changed.
+   */
+  readonly useFreshness?: boolean;
   readonly now?: () => Date;
   /** The levels of the rules to apply; the recommended rules when not given. */
   readonly levels?: ReadonlyMap<string, Level>;
@@ -159,7 +166,9 @@ export async function checkSite(
   deps: Deps = {},
   last?: StoredRun | null,
 ): Promise<SiteOutcome> {
-  const run = deps.run ?? ((url, hash) => runSuite(url, hash));
+  const run =
+    deps.run ??
+    ((url, hash, validators) => runSuite(url, hash, fetch, validators));
   const now = deps.now ?? (() => new Date());
   const levels = deps.levels ?? DEFAULT_LEVELS;
   const rules = await fingerprintOf(levels);
@@ -169,6 +178,16 @@ export async function checkSite(
       ? (await latestRuns(db, userId, site.host, 1))[0]
       : (last ?? undefined);
   const url = `https://${site.host}/`;
+  // The previous run is only a basis for this one if the rules are the same.
+  const same = previous !== undefined && previous.rules === rules;
+  if (
+    deps.useFreshness &&
+    same &&
+    previous.fresh_until !== null &&
+    Date.parse(previous.fresh_until) > now().getTime()
+  ) {
+    return { host: site.host, skipped: 'fresh' };
+  }
   const where = { host: site.host, repo: site.repo };
   const before = previous ? countsOf(previous.findings) : null;
   await deps.live?.started(userId, where, now().toISOString());
@@ -177,7 +196,10 @@ export async function checkSite(
     // A page that has not changed is only skipped when the rules have not either.
     result = await run(
       url,
-      previous?.rules === rules ? (previous.hash ?? null) : null,
+      same ? (previous.hash ?? null) : null,
+      same && (previous.etag || previous.last_modified)
+        ? { etag: previous.etag, lastModified: previous.last_modified }
+        : null,
     );
   } catch (error) {
     console.error('suite run failed', site.host, error);
@@ -199,10 +221,15 @@ export async function checkSite(
       host: site.host,
       repo: site.repo,
       sha: site.sha,
-      status: result.status,
+      // A 304 says the page is the previous one, so its status is too.
+      status:
+        result.status === 304 && previous ? previous.status : result.status,
       hash: result.hash,
       rules,
       findings,
+      etag: result.validators?.etag ?? null,
+      lastModified: result.validators?.lastModified ?? null,
+      freshUntil: result.freshUntil ?? null,
     },
     now().toISOString(),
   );

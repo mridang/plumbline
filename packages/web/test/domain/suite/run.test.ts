@@ -68,4 +68,54 @@ describe('runSuite, where it will go', () => {
       runSuite('https://x.test/', null, async () => endingAt('http://x.test/')),
     ).rejects.toThrow('redirected to http://x.test/, which is not https');
   });
+
+  describe('asking the site whether the page changed', () => {
+    it('sends the validators back with the request', async () => {
+      const seen: Record<string, string>[] = [];
+      await runSuite(
+        'https://a.test/',
+        'h',
+        async (_url, init) => {
+          seen.push(init.headers as Record<string, string>);
+          return new Response(null, { status: 304 });
+        },
+        { etag: '"v1"', lastModified: 'Mon, 01 Jan 2026 00:00:00 GMT' },
+      );
+      expect(seen[0]).toMatchObject({
+        'if-none-match': '"v1"',
+        'if-modified-since': 'Mon, 01 Jan 2026 00:00:00 GMT',
+      });
+    });
+
+    it('reads nothing when the site answers 304, and keeps the hash', async () => {
+      const run = await runSuite(
+        'https://a.test/',
+        'previous-hash',
+        async () =>
+          new Response(null, {
+            status: 304,
+            headers: { etag: '"v2"', 'cache-control': 'max-age=60' },
+          }),
+        { etag: '"v1"', lastModified: null },
+      );
+      expect(run).toMatchObject({
+        status: 304,
+        hash: 'previous-hash',
+        checks: null,
+        validators: { etag: '"v2"' },
+      });
+      expect(run.freshUntil).not.toBeNull();
+    });
+
+    it('keeps the old validators when a 304 gives none', async () => {
+      const run = await runSuite(
+        'https://a.test/',
+        'h',
+        async () => new Response(null, { status: 304 }),
+        { etag: '"v1"', lastModified: null },
+      );
+      expect(run.validators).toEqual({ etag: '"v1"', lastModified: null });
+      expect(run.freshUntil).toBeNull();
+    });
+  });
 });

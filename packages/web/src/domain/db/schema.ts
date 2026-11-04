@@ -263,6 +263,11 @@ export const suiteRuns = sqliteTable(
     rules: text('rules'),
     ran_at: text('ran_at').notNull(),
     findings: text('findings').notNull(),
+    /** The page's validators, so the next run can ask whether it changed. */
+    etag: text('etag'),
+    last_modified: text('last_modified'),
+    /** Until when the site said the page is fresh; null when it did not. */
+    fresh_until: text('fresh_until'),
   },
   (table) => [
     index('idx_suite_runs_host').on(table.user_id, table.host, table.id),

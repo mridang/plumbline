@@ -481,3 +481,119 @@ describe('checkSite, telling the live dashboard', () => {
     ]);
   });
 });
+
+describe('checkSite, respecting what the site says about its page', () => {
+  const site = { host: 'a.test', repo: 'acme/site', sha: 'abc' };
+  const NOW = new Date('2026-01-01T00:00:00.000Z');
+  const withHeaders = (over: Partial<SuiteRun>): SuiteRun => ({
+    ...finding('one'),
+    validators: { etag: '"v1"', lastModified: null },
+    freshUntil: '2026-01-01T00:30:00.000Z',
+    ...over,
+  });
+
+  it('asks the site whether the page changed, with the validators of the previous run', async () => {
+    const db = await setup('a.test');
+    await checkSite(db, 1, site, {
+      run: async () => withHeaders({}),
+      now: () => NOW,
+    });
+    const asked: unknown[] = [];
+    await checkSite(db, 1, site, {
+      run: async (_url, _hash, validators) => {
+        asked.push(validators);
+        return withHeaders({});
+      },
+      now: () => NOW,
+    });
+    expect(asked).toEqual([{ etag: '"v1"', lastModified: null }]);
+  });
+
+  it('asks nothing of a site that has not given validators', async () => {
+    const db = await setup('a.test');
+    await checkSite(db, 1, site, { run: async () => finding('one') });
+    const asked: unknown[] = [];
+    await checkSite(db, 1, site, {
+      run: async (_url, _hash, validators) => {
+        asked.push(validators);
+        return finding('one');
+      },
+    });
+    expect(asked).toEqual([null]);
+  });
+
+  it('keeps the status of the previous run when the site answers 304', async () => {
+    const db = await setup('a.test');
+    await checkSite(db, 1, site, { run: async () => withHeaders({}) });
+    const outcome = await checkSite(db, 1, site, {
+      run: async (_url, hash) =>
+        withHeaders({ status: 304, hash: hash ?? '', checks: null }),
+    });
+    expect(outcome.unchanged).toBe(true);
+    expect((await latestRuns(db, 1, 'a.test', 1))[0]?.status).toBe(200);
+  });
+
+  it('leaves alone, on a scheduled check, a page its owner said is still fresh', async () => {
+    const db = await setup('a.test');
+    await checkSite(db, 1, site, {
+      run: async () => withHeaders({}),
+      now: () => NOW,
+    });
+    let fetched = 0;
+    const run = async () => {
+      fetched += 1;
+      return withHeaders({});
+    };
+    const later = new Date(NOW.getTime() + 10 * 60 * 1000);
+    const outcome = await checkSite(db, 1, site, {
+      run,
+      now: () => later,
+      useFreshness: true,
+    });
+    expect(outcome).toEqual({ host: 'a.test', skipped: 'fresh' });
+    expect(fetched).toBe(0);
+  });
+
+  it('checks again once the freshness has run out', async () => {
+    const db = await setup('a.test');
+    await checkSite(db, 1, site, {
+      run: async () => withHeaders({}),
+      now: () => NOW,
+    });
+    const later = new Date(NOW.getTime() + 31 * 60 * 1000);
+    const outcome = await checkSite(db, 1, site, {
+      run: async () => withHeaders({}),
+      now: () => later,
+      useFreshness: true,
+    });
+    expect(outcome.skipped).toBeUndefined();
+  });
+
+  it('never skips a deployment because the old page was fresh', async () => {
+    const db = await setup('a.test');
+    await checkSite(db, 1, site, {
+      run: async () => withHeaders({}),
+      now: () => NOW,
+    });
+    const outcome = await checkSite(db, 1, site, {
+      run: async () => withHeaders({}),
+      now: () => new Date(NOW.getTime() + 1000),
+    });
+    expect(outcome.skipped).toBeUndefined();
+  });
+
+  it('does not rely on the freshness of a run made under other rules', async () => {
+    const db = await setup('a.test');
+    await checkSite(db, 1, site, {
+      run: async () => withHeaders({}),
+      now: () => NOW,
+      levels: new Map([['seo-viewport', 'error']]),
+    });
+    const outcome = await checkSite(db, 1, site, {
+      run: async () => withHeaders({}),
+      now: () => new Date(NOW.getTime() + 1000),
+      useFreshness: true,
+    });
+    expect(outcome.skipped).toBeUndefined();
+  });
+});
