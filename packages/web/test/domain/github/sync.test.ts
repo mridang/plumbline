@@ -22,13 +22,17 @@ function githubWith(
   const fetcher = (async (input: unknown) => {
     const url = new URL(String(input));
     if (url.pathname === '/installation/repositories') {
+      const size = Number(url.searchParams.get('per_page') ?? 100);
+      const page = Number(url.searchParams.get('page') ?? 1);
       return Response.json({
-        repositories: Object.entries(repos).map(([full_name, r]) => ({
-          full_name,
-          default_branch: 'main',
-          homepage: r.homepage,
-          archived: r.archived,
-        })),
+        repositories: Object.entries(repos)
+          .slice((page - 1) * size, page * size)
+          .map(([full_name, r]) => ({
+            full_name,
+            default_branch: 'main',
+            homepage: r.homepage,
+            archived: r.archived,
+          })),
       });
     }
     const [, , owner, name, kind, ...rest] = url.pathname.split('/');
