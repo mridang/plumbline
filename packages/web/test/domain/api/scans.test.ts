@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   createScanFetches,
   createScanProbes,
+  createScanRun,
   createScansCollection,
 } from '@/domain/api/scans';
 import type { CooldownDeps } from '@/domain/scan/cooldown';
@@ -329,5 +330,116 @@ describe('POST /api/scans/{id}/probes', () => {
       routeFor(id),
     );
     expect(missing.status).toBe(503);
+  });
+});
+
+describe('POST /api/scans/{id}/run', () => {
+  const streaming = (seen: unknown[] = []) => ({
+    idFromName: (name: string) => name,
+    get: () => ({
+      fetch: async (request: Request) => {
+        seen.push(await request.json());
+        return new Response('{"type":"end"}\n', {
+          headers: { 'content-type': 'application/x-ndjson' },
+        });
+      },
+    }),
+  });
+
+  it('has the scanner run the scan’s address and streams its answer', async () => {
+    const seen: unknown[] = [];
+    const { POST } = createScanRun(
+      () => SECRET,
+      () => streaming(seen),
+      cooldown(),
+    ).handlers();
+    const { id } = await issueScanId('https://example.com/', SECRET);
+    const response = await POST(
+      new Request(`https://app.test/api/scans/${id}/run`, { method: 'POST' }),
+      routeFor(id),
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('application/x-ndjson');
+    expect(await response.text()).toBe('{"type":"end"}\n');
+    expect(seen).toEqual([{ url: 'https://example.com/' }]);
+  });
+
+  it('runs a scan’s checks once: 429 for a second run with the same id', async () => {
+    const seen: unknown[] = [];
+    const { POST } = createScanRun(
+      () => SECRET,
+      () => streaming(seen),
+      cooldown(),
+    ).handlers();
+    const { id } = await issueScanId('https://example.com/', SECRET);
+    const run = () =>
+      POST(
+        new Request(`https://app.test/api/scans/${id}/run`, {
+          method: 'POST',
+        }),
+        routeFor(id),
+      );
+    expect((await run()).status).toBe(200);
+    const again = await run();
+    expect(again.status).toBe(429);
+    expect(again.headers.get('content-type')).toBe('application/problem+json');
+    expect(seen).toHaveLength(1);
+  });
+
+  it('answers 404 for a scan id it did not sign, and runs nothing', async () => {
+    const seen: unknown[] = [];
+    const { POST } = createScanRun(
+      () => SECRET,
+      () => streaming(seen),
+      cooldown(),
+    ).handlers();
+    const response = await POST(
+      new Request('https://app.test/api/scans/forged.id/run', {
+        method: 'POST',
+      }),
+      routeFor('forged.id'),
+    );
+    expect(response.status).toBe(404);
+    expect(seen).toEqual([]);
+  });
+
+  it('answers 503 as a problem when there is no scanner, or it does not answer', async () => {
+    const { id } = await issueScanId('https://example.com/', SECRET);
+    const call = (namespace: ReturnType<typeof streaming> | undefined) =>
+      createScanRun(
+        () => SECRET,
+        () => namespace,
+        cooldown(),
+      )
+        .handlers()
+        .POST(
+          new Request(`https://app.test/api/scans/${id}/run`, {
+            method: 'POST',
+          }),
+          routeFor(id),
+        );
+    const none = await call(undefined);
+    expect(none.status).toBe(503);
+    expect(none.headers.get('content-type')).toBe('application/problem+json');
+    const down = await call({
+      idFromName: (name: string) => name,
+      get: () => ({
+        fetch: async () => new Response('no', { status: 503 }),
+      }),
+    });
+    expect(down.status).toBe(503);
+  });
+
+  it('answers 503 when the server has no secret', async () => {
+    const { POST } = createScanRun(
+      () => undefined,
+      () => streaming(),
+      cooldown(),
+    ).handlers();
+    const response = await POST(
+      new Request('https://app.test/api/scans/x.y/run', { method: 'POST' }),
+      routeFor('x.y'),
+    );
+    expect(response.status).toBe(503);
   });
 });

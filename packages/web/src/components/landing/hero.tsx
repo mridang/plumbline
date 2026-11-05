@@ -62,8 +62,7 @@ export function Hero({
         >
           <p className="text-sm font-semibold">Scan a page</p>
           <p className="mt-1 text-sm text-subtle">
-            Free, no sign-up. The checks run in your browser; a page can be
-            checked once every five minutes.
+            Free, no sign-up. A page can be checked once every five minutes.
           </p>
           <Scanner className="mt-5" />
         </div>

@@ -270,6 +270,61 @@
         }
       }
     },
+    "/api/scans/{id}/run": {
+      "post": {
+        "operationId": "createScanRun",
+        "tags": ["scans"],
+        "summary": "Run the checks of a scan on the server.",
+        "description": "Has the scanner container run every check on the scan's address and streams the result as newline-delimited JSON: a `ready` line with the final address, its status and the list of checks, a `done` line with the outcome of each check as it finishes, then `end`. When the page does not answer the stream is a single `unreachable` line with a `detail`, then `end`. A scan's id runs the checks once.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id `POST /api/scans` answered with.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The checks, one line of JSON each, as they finish.",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such scan, or it has ended.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "503": {
+            "description": "The scanner is not available.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/previews/{id}": {
       "get": {
         "operationId": "getPreview",

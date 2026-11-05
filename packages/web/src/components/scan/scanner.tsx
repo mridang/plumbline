@@ -10,7 +10,7 @@ import {
 
 import { Button } from '@/components/ui/button';
 import { problemText } from '@/components/api/problem-message';
-import { runScan } from '@/domain/scan/pool';
+import { runScan } from '@/domain/scan/session';
 
 import { ScanResults, type Scan } from './scan-results';
 

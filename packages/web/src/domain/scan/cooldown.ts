@@ -34,6 +34,13 @@ export const SCAN_COOLDOWN = {
   windowSeconds: 300,
 } as const satisfies RateLimit;
 
+/** A scan's ticket starts the checks once: each run uses the scanner container. */
+export const SCAN_RUN = {
+  name: 'scan-run',
+  limit: 1,
+  windowSeconds: 600,
+} as const satisfies RateLimit;
+
 /** The fraction of scans that also sweep away idle counters. */
 export const PURGE_PROBABILITY = 0.01;
 
@@ -102,4 +109,22 @@ export function cooldownMessage(
       ? `${seconds} s`
       : `${minutes} min${seconds === 0 ? '' : ` ${seconds} s`}`;
   return `${url} was checked less than ${SCAN_COOLDOWN.windowSeconds / 60} minutes ago. A page can be checked once every ${SCAN_COOLDOWN.windowSeconds / 60} minutes; try again in ${wait}.`;
+}
+
+/**
+ * Count a run of the checks for the scan `scanId`. The first run is allowed;
+ * another run with the same ticket is not, so one ticket cannot be used to
+ * keep the scanner busy. A store that cannot be reached lets the run through,
+ * as {@link claimScan} does.
+ */
+export async function claimRun(
+  scanId: string,
+  deps: CooldownDeps = liveCooldownDeps(),
+): Promise<RateDecision> {
+  try {
+    return await rateLimit(deps.store(), SCAN_RUN, scanId, deps.now());
+  } catch (error) {
+    logError({ event: 'scan.run.cooldown_failed', error: errorMessage(error) });
+    return { allowed: true, remaining: 0 };
+  }
 }

@@ -153,11 +153,15 @@
       // The TLS prober (probe/, one static C binary of about 1 MB on OpenSSL): started
       // when a scan needs a real TLS handshake, stopped after 15 s idle.
       { "name": "PROBE", "class_name": "ProbeContainer" },
+      // The scanner: every check of a scan runs in this container (Node, the
+      // hints package and the engine, no browser) and streams its results.
+      { "name": "SCANNER", "class_name": "ScannerContainer" },
     ],
   },
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["UserHub"] },
     { "tag": "v2", "new_sqlite_classes": ["ProbeContainer"] },
+    { "tag": "v3", "new_sqlite_classes": ["ScannerContainer"] },
   ],
   // The TLS prober's container. The deploy builds the image (probe/Dockerfile)
   // and registers it through Cloudflare's containers API, so the API token
@@ -168,6 +172,17 @@
       "image": "./probe/Dockerfile",
       // The smallest instance: 1/16 vCPU and 256 MiB are plenty for handshakes.
       "instance_type": "lite",
+      "max_instances": 3,
+    },
+    {
+      "class_name": "ScannerContainer",
+      // The repository's Dockerfile: wrangler builds its last stage, which is
+      // the scanner (the image without a browser). The build context is the
+      // repository, as the Dockerfile copies every workspace.
+      "image": "../../Dockerfile",
+      "image_build_context": "../..",
+      // 4 GiB: a scan keeps the hints package, the engine and a page in memory.
+      "instance_type": "standard-1",
       "max_instances": 3,
     },
   ],

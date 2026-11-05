@@ -1,10 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
+  claimRun,
   claimScan,
   cooldownMessage,
   PURGE_IDLE_SECONDS,
   SCAN_COOLDOWN,
+  SCAN_RUN,
   type CooldownDeps,
 } from '@/domain/scan/cooldown';
 import type { RateLimitStore } from '@/lib/rate-limit';
@@ -119,5 +121,35 @@ describe('cooldownMessage', () => {
     const message = cooldownMessage(PAGE, seconds);
     expect(message).toContain(`${PAGE} was checked less than 5 minutes ago.`);
     expect(message.endsWith(ending)).toBe(true);
+  });
+});
+
+describe('claimRun', () => {
+  it('runs the checks of a scan once, and refuses another run of the same scan', async () => {
+    const { store } = memoryStore();
+    expect(SCAN_RUN).toMatchObject({ limit: 1, windowSeconds: 600 });
+    expect(await claimRun('abc.def', deps(store))).toMatchObject({
+      allowed: true,
+    });
+    expect(await claimRun('abc.def', deps(store))).toMatchObject({
+      allowed: false,
+    });
+    expect(await claimRun('other.id', deps(store))).toMatchObject({
+      allowed: true,
+    });
+  });
+
+  it('lets the run through when the counters cannot be reached', async () => {
+    const broken: CooldownDeps = {
+      store: () => {
+        throw new Error('down');
+      },
+      now: () => 1000,
+      random: () => 0.5,
+    };
+    expect(await claimRun('abc.def', broken)).toEqual({
+      allowed: true,
+      remaining: 0,
+    });
   });
 });

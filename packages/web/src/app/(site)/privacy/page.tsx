@@ -81,11 +81,11 @@ export default function PrivacyPage(): ReactElement {
 
         <LegalSection title="Scanning a site">
           <p>
-            The checks run in your browser. Every request they make to the site
-            you are checking goes through Plumbline’s server, so that site sees
-            a request from Plumbline rather than from your browser. A scan you
-            run without saving it is not stored: its results stay in your
-            browser and are gone when you leave the page.
+            The checks run on Plumbline’s servers. Every request they make to
+            the site you are checking comes from Plumbline, so that site sees a
+            request from Plumbline rather than from your browser. A scan you run
+            without saving it is not stored: its results stay in your browser
+            and are gone when you leave the page.
           </p>
         </LegalSection>
 

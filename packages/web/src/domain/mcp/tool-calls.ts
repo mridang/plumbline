@@ -287,7 +287,7 @@ function scanDomainTool(domain: Readonly<Domain>): ToolResult {
   return textResult(
     [
       `The checks for ${domain.host} run outside this server.`,
-      `- In the browser: open ${domainLink(domain)} and press "Run checks". It runs the checks chosen for the domain and saves a report, which get_report then reads. The TLS and mail-server checks are skipped there.`,
+      `- In the browser: open ${domainLink(domain)} and press "Run checks". It runs the checks chosen for the domain and saves a report, which get_report then reads.`,
       `- On the user's machine: \`${CLI_COMMAND} ${domain.host}\` runs every check, TLS and mail included, and prints the findings (add \`--format json\` for machine-readable output).`,
     ].join('\n'),
   );

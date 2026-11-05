@@ -88,13 +88,7 @@ export default async function DomainPage({
         title={domain.host}
         intro={
           <>
-            {enabled.length} of {CHECKS.length} checks run for this domain. They
-            run in your browser, so the TLS and mail-server checks are skipped;
-            run{' '}
-            <code className="font-mono text-base">
-              npx @mridang/plumbline scan {domain.host}
-            </code>{' '}
-            for every check.
+            {enabled.length} of {CHECKS.length} checks run for this domain.
           </>
         }
       >

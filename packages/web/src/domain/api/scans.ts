@@ -5,6 +5,8 @@
  * it and fetches for it.
  *
  *   POST /api/scans {url}                → 201 + Location {id, url, expires_at}
+ *   POST /api/scans/{id}/run             → 200, a stream of the checks as the
+ *                                          scanner container finishes them
  *   POST /api/scans/{id}/fetches {url, method?, headers?}
  *                                        → 200, the target's body, with its
  *                                          status and headers in Upstream-*
@@ -28,6 +30,7 @@ import type { RouteContext } from '@/lib/core/api/route-context';
 
 import { readTarget } from '@/domain/scan/target';
 import {
+  claimRun,
   claimScan,
   cooldownMessage,
   liveCooldownDeps,
@@ -40,6 +43,11 @@ import {
   type ProbeNamespace,
   type ProbeRequest,
 } from '@/domain/scan/probe';
+import {
+  runOnServer,
+  ScannerError,
+  type ScannerNamespace,
+} from '@/domain/scan/run';
 import { issueScanId, readScanId, type ScanClaim } from '@/domain/scan/token';
 import {
   forward,
@@ -247,3 +255,66 @@ export function createScanProbes(
 }
 
 export const scanProbes = createScanProbes();
+
+/** A run's context: the scan, and the id it was named by (what its one run is counted against). */
+interface RunContext extends FetchContext {
+  readonly id: string;
+}
+
+/**
+ * A scan's run: `POST /api/scans/{id}/run` has the scanner container run every
+ * check on the scan's address and streams one line of JSON per check as it is
+ * done. A ticket runs the checks once; 429 for a second run, 503 when there is
+ * no scanner.
+ */
+export function createScanRun(
+  secret: SecretSource = secretFromEnv,
+  namespace: () => ScannerNamespace | undefined = () =>
+    getEnv().SCANNER as unknown as ScannerNamespace | undefined,
+  cooldown: () => CooldownDeps = liveCooldownDeps,
+): ApiController<RunContext> {
+  return new ApiController<RunContext>({
+    context: async (_request, route) => ({
+      scan: await scanOf(route, secret),
+      id: ((await route.params) ?? {})['id'] ?? '',
+    }),
+  }).on<AbortSignal, Response>({
+    method: 'POST',
+    decode: async (request) => request.signal,
+    handle: async (signal, context) => {
+      const { scan, id } = context as RunContext;
+      const target = namespace();
+      if (!target) {
+        throw notAvailable();
+      }
+      const decision = await claimRun(id, cooldown());
+      if (!decision.allowed) {
+        throw problems.rateLimited(
+          'This scan has already run its checks. Start a new scan.',
+          decision.retryAfterSeconds,
+        );
+      }
+      try {
+        return await runOnServer(target, scan.url, signal);
+      } catch (error) {
+        if (error instanceof ScannerError) {
+          throw notAvailable();
+        }
+        throw error;
+      }
+    },
+    encode: (response) => response,
+  });
+}
+
+/** The answer when the scanner container is missing or did not answer. */
+function notAvailable(): Response {
+  return problem(
+    503,
+    '/problems/not-available',
+    'Scans not available',
+    'The scanner is not available. Try again in a moment.',
+  );
+}
+
+export const scanRun = createScanRun();

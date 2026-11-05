@@ -15,8 +15,8 @@ export const STEPS: readonly Step[] = [
     body: 'Any public page. The address is cleaned up first, so the same page written two ways is scanned once.',
   },
   {
-    title: 'The checks run in your browser',
-    body: 'The real check code runs in your tab; the server only fetches what the checks ask for, and keeps nothing.',
+    title: 'The checks run on our server',
+    body: 'Every check runs on Plumbline’s servers, including TLS, DNS and mail, and the results appear here as each one finishes. Nothing about a scan is stored unless you save it.',
   },
   {
     title: 'Read what to fix',

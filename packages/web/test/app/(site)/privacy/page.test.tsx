@@ -35,8 +35,8 @@ describe('PrivacyPage', () => {
     expect(out).toContain('no access to your Gmail, Drive');
   });
 
-  it('says a scan’s requests go through the server and unsaved scans are not kept', () => {
-    expect(out).toContain('goes through Plumbline’s server');
+  it('says the checks run on the server and unsaved scans are not kept', () => {
+    expect(out).toContain('The checks run on Plumbline’s servers');
     expect(out).toContain('A scan you run without saving it is not stored');
   });
 
