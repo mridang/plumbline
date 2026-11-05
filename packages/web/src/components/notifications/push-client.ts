@@ -95,6 +95,18 @@ async function addressOf(subscription: BrowserSubscription): Promise<string> {
   return `/api/users/self/push/subscriptions/${await subscriptionId(subscription.endpoint)}`;
 }
 
+/** A subscription as the API takes it: its address and keys. */
+export function wireOf(subscription: BrowserSubscription): {
+  endpoint: unknown;
+  keys: unknown;
+} {
+  const { endpoint, keys } = subscription.toJSON() as {
+    endpoint: unknown;
+    keys: unknown;
+  };
+  return { endpoint, keys };
+}
+
 /** The browser's current subscription, if it has one. */
 export async function currentSubscription(
   host: PushHost,
@@ -142,7 +154,9 @@ export async function enablePush(host: PushHost): Promise<BrowserSubscription> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
-      body: JSON.stringify(subscription.toJSON()),
+      // Only what the API takes: a browser's own JSON also carries a
+      // camel-cased `expirationTime`.
+      body: JSON.stringify(wireOf(subscription)),
     }),
   );
   return subscription;

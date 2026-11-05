@@ -46,6 +46,13 @@ describe('parseProbeRequest', () => {
     ).toMatchObject({ ok: true, value: { starttls: 'smtp', port: 25 } });
   });
 
+  it('refuses a field it does not know', () => {
+    expect(parse({ host: 'example.com', port: 443, extra: 1 })).toEqual({
+      ok: false,
+      errors: ['extra: is not a field of a probe'],
+    });
+  });
+
   it('refuses an HTTPS probe of a host that is not the one scanned', () => {
     expect(parse({ host: 'other.example.org', port: 443 })).toMatchObject({
       ok: false,

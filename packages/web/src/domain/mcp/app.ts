@@ -35,6 +35,7 @@ export const READ_ONLY_TEXT = 'see domains and reports';
 export const READ_ONLY_TOOLS: ReadonlySet<string> = new Set([
   'list_checks',
   'list_domains',
+  'list_repositories',
   'get_domain',
   'get_report',
   'list_reports',

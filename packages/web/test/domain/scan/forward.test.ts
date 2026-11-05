@@ -170,4 +170,13 @@ describe('forward', () => {
     await expect(failure).rejects.toBeInstanceOf(UnreachableError);
     await expect(failure).rejects.toThrow('example.com did not answer.');
   });
+
+  it('refuses a field it does not know', () => {
+    expect(
+      parseForwardRequest({ url: 'https://example.com/', extra: 1 }),
+    ).toEqual({
+      ok: false,
+      errors: ['extra: is not a field of a fetch'],
+    });
+  });
 });

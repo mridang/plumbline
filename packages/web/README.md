@@ -143,25 +143,31 @@ Plumbline is an MCP server at `https://plumbline.apps.mrida.ng/mcp`, protected w
 Plumbline is listed for the [MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.mridang/plumbline`; the listing is [`server.json`](server.json).
 
 - **Scopes:** `checks:read` (list checks, domains and reports) and `checks:write` (add and remove domains, choose their checks).
-- **Tools:** `list_checks`, `list_domains`, `get_domain`, `list_reports`, `get_report` (drawn as an MCP Apps view), `add_domain`, `remove_domain`, `configure_checks` and `scan_domain`. The checks never run on the server, so `scan_domain` says how to run a scan (the Plumbline page, or the CLI command) instead of starting one.
+- **Tools:** `list_checks`, `list_domains`, `list_repositories` (what the dashboard shows: the person's own sites and those of the repositories they can see on GitHub), `get_domain`, `list_reports`, `get_report` (drawn as an MCP Apps view), `add_domain`, `remove_domain`, `configure_checks` and `scan_domain`. The checks never run on the server, so `scan_domain` says how to run a scan (the Plumbline page, or the CLI command) instead of starting one.
 - **Discovery:** `/.well-known/oauth-protected-resource/mcp` (RFC 9728) and `/.well-known/oauth-authorization-server` (RFC 8414).
 - **Client registration:** Client ID Metadata Documents and dynamic registration (`/oauth/register`, RFC 7591). Public clients only, PKCE `S256` required.
 - **Disconnect:** the connected apps in the account, or `POST /oauth/revoke`.
 
 ## REST API
 
-The app's data is a REST API under `/api`, designed to the [Zalando RESTful API guidelines](https://opensource.zalando.com/restful-api-guidelines/) (`snake_case` JSON, RFC 3339 timestamps, RFC 9457 problem details). The full contract is [`openapi/plumbline.yaml`](openapi/plumbline.yaml).
+The app's data is a REST API under `/api`, designed to the [Zalando RESTful API guidelines](https://opensource.zalando.com/restful-api-guidelines/) (`snake_case` JSON, RFC 3339 timestamps, RFC 9457 problem details). The full contract is [`openapi.json`](openapi.json).
 
-| Resource                                   | Methods                                |
-| ------------------------------------------ | -------------------------------------- |
-| `/api/scans`                               | create (start a scan)                  |
-| `/api/scans/{id}/fetches`                  | create (one fetch of a scan)           |
-| `/api/checks`                              | list                                   |
-| `/api/domains`, `/api/domains/{id}`        | list, create · read, patch, delete     |
-| `/api/domains/{id}/reports[/{report_id}]`  | list, create · read                    |
-| `/api/users/self`                          | read, delete                           |
-| `/api/users/self/connections[/{grant_id}]` | list · delete                          |
-| `/api/sessions`, `/api/sessions/self`      | delete (sign out everywhere, sign out) |
+| Resource                                            | Methods                                |
+| --------------------------------------------------- | -------------------------------------- |
+| `/api/scans`                                        | create (start a scan)                  |
+| `/api/scans/{id}/fetches`                           | create (one fetch of a scan)           |
+| `/api/scans/{id}/probes`                            | create (one TLS handshake of a scan)   |
+| `/api/previews/{id}`                                | read (public; what a PR check found)   |
+| `/api/checks`                                       | list                                   |
+| `/api/domains`, `/api/domains/{id}`                 | list, create · read, patch, delete     |
+| `/api/domains/{id}/reports[/{report_id}]`           | list, create · read                    |
+| `/api/users/self`                                   | read, delete                           |
+| `/api/users/self/connections[/{grant_id}]`          | list · delete                          |
+| `/api/users/self/github`                            | delete (forget the GitHub account)     |
+| `/api/users/self/push/subscriptions[/{id}[/tests]]` | create · delete · create (a test)      |
+| `/api/push/configuration`                           | read (the key to subscribe with)       |
+| `/api/github/syncs`                                 | create (read the installations again)  |
+| `/api/sessions`, `/api/sessions/self`               | delete (sign out everywhere, sign out) |
 
 Scanning and the checks are public. Everything else needs the `plumbline_session` cookie, answers `401` without it and `403` for a change sent from another site, and is scoped to the signed-in person. A scan of a kept domain runs the checks chosen for it in the browser, and the browser saves the outcome as a report; nothing is scanned on a schedule.
 
@@ -228,3 +234,18 @@ GitHub Actions (`deploy.yml`) builds the workspaces and deploys on pushes to `ma
 ## Licence
 
 Apache-2.0
+
+## Testing the contract with Schemathesis
+
+`openapi.json` describes the REST contract under `/api` and nothing else, and `test/openapi.test.ts` fails when it and the route files drift apart (every route has an operation and the other way round, every secured operation answers 401 without a session, every error is documented as `application/problem+json`). Every operation can be called by one ordinary signed-in account: there is no administrator role and nothing that needs one. To run the whole contract as that account:
+
+```bash
+# Sign in in a browser, copy the value of the plumbline_session cookie, then
+export PLUMBLINE_SESSION='<the cookie value>'
+schemathesis run openapi.json --url https://plumbline.apps.mrida.ng \
+  --header "Cookie: plumbline_session=$PLUMBLINE_SESSION" \
+  --header "Origin: https://plumbline.apps.mrida.ng" \
+  --exclude-operation-id createScan
+```
+
+`createScan` is left out because the same page can only be scanned once every five minutes, by anyone, and a fuzzer would be refused after the first call. Scans a person starts are signed ids; `createScanFetch` and `createScanProbe` need one, which `createScan` gives.

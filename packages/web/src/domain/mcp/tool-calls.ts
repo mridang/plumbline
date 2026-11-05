@@ -25,6 +25,7 @@ import {
   BackendFailure,
   type JsonSchema,
 } from '@/lib/mcp';
+import { overviewOf } from '@/domain/db/live';
 import { errorMessage, logError } from '@/utils/logging';
 import type { User } from '@/domain/db/users';
 import { getDatabase, type Database } from '@/domain/db/client';
@@ -179,6 +180,27 @@ async function listDomainsTool(
     }),
   );
   return domainListResult(rows, CHECKS.length);
+}
+
+/** `list_repositories`: what the person's dashboard shows, as text. */
+async function listRepositoriesTool(
+  db: Database,
+  user: Readonly<User>,
+): Promise<ToolResult> {
+  const repos = await overviewOf(db, user.id);
+  if (repos.length === 0) {
+    return textResult(
+      'No repositories yet. Add a domain with add_domain, or sign in with GitHub to see the sites of the repositories you have access to.',
+    );
+  }
+  const lines = repos.flatMap((repo) => [
+    `${repo.repo ?? 'Added by hand'}:`,
+    ...repo.sites.map(
+      (site) =>
+        `  ${site.host}: ${site.state} (${site.errors} errors, ${site.warnings} warnings, ${site.hints} hints)`,
+    ),
+  ]);
+  return textResult(lines.join('\n'));
 }
 
 /** `get_domain`: which checks run, which are off, and the newest scan. */
@@ -439,7 +461,12 @@ export async function callTool(
     return listChecks(args);
   }
   const run = DOMAIN_TOOLS[tool.name];
-  if (!run && tool.name !== 'list_domains' && tool.name !== 'add_domain') {
+  if (
+    !run &&
+    tool.name !== 'list_domains' &&
+    tool.name !== 'list_repositories' &&
+    tool.name !== 'add_domain'
+  ) {
     // Advertised but not implemented: a bug here, not something to tell the caller.
     throw new Error(`Tool ${tool.name} is listed but has no implementation.`);
   }
@@ -447,6 +474,9 @@ export async function callTool(
     const db = openDatabase();
     if (tool.name === 'list_domains') {
       return await listDomainsTool(db, user);
+    }
+    if (tool.name === 'list_repositories') {
+      return await listRepositoriesTool(db, user);
     }
     if (tool.name === 'add_domain' || !run) {
       return await addDomainTool(db, user, args);

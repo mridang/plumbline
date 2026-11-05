@@ -1,0 +1,2037 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "plumbline API",
+    "version": "0.0.1",
+    "summary": "Scan websites in the browser, and keep domains, their checks and their reports.",
+    "description": "The REST contract under `/api` follows the [Zalando RESTful API Guidelines](https://opensource.zalando.com/restful-api-guidelines/) with the deviations in the `api-design` skill: JSON properties are snake_case, timestamps are RFC 3339, and every error is `application/problem+json`.\n\nThe checks run in the visitor's browser. A browser may not read another site's headers or body, so the page starts a scan here, which checks the address and signs a scan id, and then asks for each fetch the checks make through that scan. Nothing is stored: the id carries the address and when the scan ends, signed so it cannot be made up.\n\nScanning and the list of checks are public. Keeping domains, choosing their checks, saving reports and the account need a sign-in with Google (`/auth/login`), which sets the `plumbline_session` cookie; those routes declare `session` security, answer `401` without a live session, and `403` for a request that changes something from another site. Every query is scoped to the signed-in person, so another person's domain is `404`.\n\nRequests are rate limited by the platform (`RL_SCAN` for starting scans and `RL_FETCH` for their fetches, per address; `RL_API` for the rest of `/api`), and a blocked request is answered with `429` and `Retry-After`. On top of that one page (its canonical URL) can be scanned once every five minutes, by anyone; a second scan within that time is `429` with `Retry-After` set to the seconds left.\n\nOnly the REST contract under `/api` is described here. What is not REST sits outside it and is not part of the contract: the browser sign-in and link flows (`/auth/*`), the OAuth server (`/oauth/*`, `/.well-known/*`), the MCP endpoint (`/mcp`), the live stream (`/events`), the GitHub webhook (`/webhooks/github`), the badge image (`/badge/*`), the report pages (`/r/{id}`), `/csp/reports` and `/health`.\n\nTesting the whole contract as an ordinary person: every operation here can be called by one signed-in account, with its session cookie. There is no administrator role and no operation that needs one, so a test account sees nothing it could not see in the app.",
+    "license": {
+      "name": "Apache-2.0",
+      "identifier": "Apache-2.0"
+    }
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "security": [],
+  "tags": [
+    {
+      "name": "scans"
+    },
+    {
+      "name": "checks"
+    },
+    {
+      "name": "domains"
+    },
+    {
+      "name": "account"
+    },
+    {
+      "name": "previews",
+      "description": "What the checks on pull requests found."
+    },
+    {
+      "name": "push",
+      "description": "Web Push notifications."
+    }
+  ],
+  "paths": {
+    "/api/scans": {
+      "post": {
+        "operationId": "createScan",
+        "tags": ["scans"],
+        "summary": "Start a scan of a website.",
+        "description": "Checks the address, puts it in its canonical form (lowercase host without a trailing dot, no default port, fragment or repeated slashes, no `utm_*` or click-id parameters, the rest of the query sorted by name) and signs a scan id for it, good for ten minutes. A page can be scanned once every five minutes; a second scan within that time is refused with `429`. Nothing else is stored and there is nothing to read back; the id is for the scan's fetches.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The scan has started.",
+            "headers": {
+              "Location": {
+                "description": "The scan, `/api/scans/{id}`.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Scan"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "503": {
+            "$ref": "#/components/responses/NotConfigured"
+          }
+        }
+      }
+    },
+    "/api/scans/{id}/fetches": {
+      "post": {
+        "operationId": "createScanFetch",
+        "tags": ["scans"],
+        "summary": "Fetch a resource on a scan's behalf.",
+        "description": "Fetches one public `http(s)` address with `GET` or `HEAD` and answers with its body as it came (at most 5 MiB), with its status, address and headers in `Upstream-*` headers. Redirects are not followed, so each hop is one call. Only the request headers listed under `headers` are passed on.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id `POST /api/scans` answered with.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FetchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "What the target answered.",
+            "headers": {
+              "Upstream-Status": {
+                "description": "The target's HTTP status.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "Upstream-Url": {
+                "description": "The address that was fetched.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              },
+              "Upstream-Headers": {
+                "description": "The target's headers as percent-encoded JSON `[name, value]` pairs, lower-case names, each `Set-Cookie` on its own.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "description": "No such scan, or it has ended.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "502": {
+            "description": "The target did not answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/NotConfigured"
+          }
+        }
+      }
+    },
+    "/api/scans/{id}/probes": {
+      "post": {
+        "operationId": "createScanProbe",
+        "tags": ["scans"],
+        "summary": "Make a TLS handshake on a scan's behalf.",
+        "description": "Has the prober container make one TLS handshake and answers with what it showed (version, cipher, ephemeral key, certificate chain, verification result, stapled OCSP response). HTTPS can only be probed on the host being scanned; SMTP with STARTTLS on port 25 can be probed on any public host. The container only connects to public addresses.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id `POST /api/scans` answered with.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProbeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "What the handshake showed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "description": "No such scan, or it has ended.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "502": {
+            "description": "The handshake failed (the server refused it, or did not answer).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/NotConfigured"
+          }
+        }
+      }
+    },
+    "/api/previews/{id}": {
+      "get": {
+        "operationId": "getPreview",
+        "tags": ["previews"],
+        "summary": "What a check on a pull request found.",
+        "description": "Public, so a tool that finds a failed check can read it without signing in; the random id in the address, which the check links to, is the only key. It is made once for a commit and never changes, so it is kept by its id, never by age.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The report.",
+            "headers": {
+              "Cache-Control": {
+                "description": "public, max-age=31536000, immutable",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preview"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/github/syncs": {
+      "post": {
+        "operationId": "createGithubSync",
+        "tags": ["account"],
+        "summary": "Read the person's GitHub installations again.",
+        "description": "Reads the installations of the app the person connected, so repositories added since, and changes to where they are deployed, show up.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What was found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GithubSync"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "503": {
+            "$ref": "#/components/responses/NotConfigured"
+          }
+        }
+      }
+    },
+    "/api/users/self/github": {
+      "delete": {
+        "operationId": "deleteGithub",
+        "tags": ["account"],
+        "summary": "Forget the connected GitHub account.",
+        "description": "Forgets the account, its installations and the repositories found. Domains already added stay, and the app stays installed on GitHub until it is uninstalled there.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Forgotten."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/push/configuration": {
+      "get": {
+        "operationId": "getPushConfiguration",
+        "tags": ["push"],
+        "summary": "The key a browser subscribes to Web Push with.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The VAPID public key.",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=3600",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["vapid_public_key"],
+                  "properties": {
+                    "vapid_public_key": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/users/self/push/subscriptions": {
+      "post": {
+        "operationId": "createPushSubscription",
+        "tags": ["push"],
+        "summary": "Turn notifications on for a browser.",
+        "description": "Registers the browser's Web Push subscription for the person. Registering the same endpoint again replaces its keys (browsers rotate them) and its owner (a device can change hands).",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushSubscription"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Already registered.",
+            "headers": {
+              "Location": {
+                "$ref": "#/components/headers/Location"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushSubscriptionId"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Registered.",
+            "headers": {
+              "Location": {
+                "$ref": "#/components/headers/Location"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushSubscriptionId"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/users/self/push/subscriptions/{id}": {
+      "delete": {
+        "operationId": "deletePushSubscription",
+        "tags": ["push"],
+        "summary": "Turn notifications off for a browser.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PushSubscriptionId"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Forgotten."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/users/self/push/subscriptions/{id}/tests": {
+      "post": {
+        "operationId": "createPushSubscriptionTest",
+        "tags": ["push"],
+        "summary": "Send a test notification to a browser.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PushSubscriptionId"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The push service took it."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "502": {
+            "description": "The push service refused the notification.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/NotConfigured"
+          }
+        }
+      }
+    },
+    "/api/checks": {
+      "get": {
+        "operationId": "listChecks",
+        "tags": ["checks"],
+        "summary": "List every check plumbline can run.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "group",
+            "in": "query",
+            "description": "Only the checks in this group (a source such as `owasp`, or a topic such as `tls`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of checks, sorted by id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/domains": {
+      "get": {
+        "operationId": "listDomains",
+        "tags": ["domains"],
+        "summary": "List the signed-in person's domains, oldest first.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of domains.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createDomain",
+        "tags": ["domains"],
+        "summary": "Add a domain, with every check on.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DomainRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The person already has this domain; it is returned unchanged, with its `Location`.",
+            "headers": {
+              "Location": {
+                "$ref": "#/components/headers/Location"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Domain"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Added.",
+            "headers": {
+              "Location": {
+                "$ref": "#/components/headers/Location"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Domain"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "The person already keeps the most domains allowed (50).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/domains/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/DomainId"
+        }
+      ],
+      "get": {
+        "operationId": "getDomain",
+        "tags": ["domains"],
+        "summary": "Read one domain and the checks that run for it.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The domain.",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Domain"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateDomain",
+        "tags": ["domains"],
+        "summary": "Choose which checks run for a domain.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "The domain's `ETag`; the change is refused with `412` when the domain changed since.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/merge-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DomainPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The domain as it now is.",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Domain"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "412": {
+            "description": "The domain changed since the `ETag` in `If-Match`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteDomain",
+        "tags": ["domains"],
+        "summary": "Remove a domain and its saved reports.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/domains/{id}/reports": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/DomainId"
+        }
+      ],
+      "get": {
+        "operationId": "listReports",
+        "tags": ["domains"],
+        "summary": "List a domain's saved reports, newest first, without their outcomes.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of reports.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createReport",
+        "tags": ["domains"],
+        "summary": "Save the outcome of a scan that has just run in the browser.",
+        "description": "Only the newest 20 reports of a domain are kept. The counts are worked out from the outcomes.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Saved.",
+            "headers": {
+              "Location": {
+                "$ref": "#/components/headers/Location"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Report"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "description": "The report is over 1 MiB.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/domains/{id}/reports/{report_id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/DomainId"
+        },
+        {
+          "name": "report_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getReport",
+        "tags": ["domains"],
+        "summary": "Read one saved report with every check's outcome.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The report.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Report"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/users/self": {
+      "get": {
+        "operationId": "getSelf",
+        "tags": ["account"],
+        "summary": "Read the signed-in person's account.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteSelf",
+        "tags": ["account"],
+        "summary": "Delete the account with its domains, reports and connected apps, and sign out.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/users/self/connections": {
+      "get": {
+        "operationId": "listConnections",
+        "tags": ["account"],
+        "summary": "List the assistants the person has connected over MCP.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of connected apps, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/users/self/connections/{grant_id}": {
+      "delete": {
+        "operationId": "deleteConnection",
+        "tags": ["account"],
+        "summary": "Disconnect an assistant, revoking its tokens at once.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "grant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Disconnected."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/sessions": {
+      "delete": {
+        "operationId": "deleteSessions",
+        "tags": ["account"],
+        "summary": "Sign out everywhere, on every device.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Every session has ended."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/sessions/self": {
+      "delete": {
+        "operationId": "deleteSession",
+        "tags": ["account"],
+        "summary": "Sign out in this browser.",
+        "security": [],
+        "responses": {
+          "204": {
+            "description": "Signed out (also when nobody was signed in)."
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ScanRequest": {
+        "type": "object",
+        "required": ["url"],
+        "additionalProperties": false,
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "A domain (`example.com`) or an absolute http(s) URL. A missing scheme means `https`. IP addresses, `localhost` and private names are refused.",
+            "examples": ["example.com"]
+          }
+        }
+      },
+      "Scan": {
+        "type": "object",
+        "required": ["id", "url", "expires_at"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The scan's id, for its fetches."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The address being scanned."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the scan's fetches stop being accepted."
+          }
+        }
+      },
+      "FetchRequest": {
+        "type": "object",
+        "required": ["url"],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "A public http(s) address."
+          },
+          "method": {
+            "type": "string",
+            "enum": ["GET", "HEAD"],
+            "default": "GET"
+          },
+          "headers": {
+            "type": "object",
+            "description": "Request headers. Only `accept`, `accept-language`, `access-control-request-headers`, `access-control-request-method`, `if-modified-since`, `if-none-match`, `origin` and `range` are passed on.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "Check": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "groups",
+          "section",
+          "section_title",
+          "section_order",
+          "origins"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "examples": ["csp-header"]
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "section": {
+            "type": "string"
+          },
+          "section_title": {
+            "type": "string"
+          },
+          "section_order": {
+            "type": "integer"
+          },
+          "reference": {
+            "type": "string",
+            "format": "uri"
+          },
+          "fixer": {
+            "description": "Who usually makes the fix, such as the web server's configuration or the DNS zone.",
+            "type": "string"
+          },
+          "origins": {
+            "description": "The upstream checks this one was taken from; empty for a check written for plumbline.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["source", "title", "url", "summary"],
+              "properties": {
+                "source": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "docs_url": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "summary": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "CheckPage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageLinks"
+          },
+          {
+            "type": "object",
+            "required": ["items"],
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Check"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "PageLinks": {
+        "type": "object",
+        "required": ["self"],
+        "properties": {
+          "self": {
+            "type": "string",
+            "format": "uri"
+          },
+          "next": {
+            "type": "string",
+            "format": "uri",
+            "description": "The next page; absent on the last one."
+          }
+        }
+      },
+      "DomainRequest": {
+        "type": "object",
+        "required": ["host"],
+        "properties": {
+          "host": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "A public domain, or any http(s) URL on it.",
+            "examples": ["example.com"]
+          }
+        },
+        "additionalProperties": false
+      },
+      "DomainPatch": {
+        "type": "object",
+        "required": ["checks"],
+        "additionalProperties": false,
+        "properties": {
+          "checks": {
+            "description": "The checks to run, as check ids and group names, or `null` for every check (including ones added later).",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "maxItems": 500,
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "Domain": {
+        "type": "object",
+        "required": [
+          "id",
+          "host",
+          "all_checks",
+          "checks",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "all_checks": {
+            "type": "boolean",
+            "description": "Whether every check runs, including ones added later."
+          },
+          "checks": {
+            "type": "array",
+            "description": "The ids of the checks that run.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DomainPage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageLinks"
+          },
+          {
+            "type": "object",
+            "required": ["items"],
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Domain"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "Finding": {
+        "type": "object",
+        "required": ["resource", "message", "level"],
+        "properties": {
+          "resource": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string",
+            "enum": ["error", "warning", "hint", "information"]
+          },
+          "snippet": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer"
+          },
+          "column": {
+            "type": "integer"
+          },
+          "links": {
+            "description": "Further reading for this finding, besides the check's own reference.",
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "object",
+              "required": ["url", "text"],
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "text": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Outcome": {
+        "type": "object",
+        "required": ["id", "status", "findings"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "A check id from `/api/checks`."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["failed", "warned", "passed", "skipped"]
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why a skipped check did not run."
+          },
+          "findings": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "$ref": "#/components/schemas/Finding"
+            }
+          }
+        }
+      },
+      "ReportRequest": {
+        "type": "object",
+        "required": ["url", "outcomes"],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The address that was scanned, on the domain's host."
+          },
+          "outcomes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/Outcome"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReportSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "domain_id",
+          "url",
+          "passed",
+          "warned",
+          "failed",
+          "skipped",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "domain_id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "passed": {
+            "type": "integer"
+          },
+          "warned": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "skipped": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Report": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ReportSummary"
+          },
+          {
+            "type": "object",
+            "required": ["outcomes"],
+            "properties": {
+              "outcomes": {
+                "type": "array",
+                "items": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Outcome"
+                    },
+                    {
+                      "type": "object",
+                      "required": ["name"],
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ReportPage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageLinks"
+          },
+          {
+            "type": "object",
+            "required": ["items"],
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ReportSummary"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "User": {
+        "type": "object",
+        "required": ["email", "created_at"],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "picture": {
+            "type": "string",
+            "format": "uri"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Connection": {
+        "type": "object",
+        "description": "An assistant the person approved over MCP.",
+        "additionalProperties": true
+      },
+      "ConnectionPage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageLinks"
+          },
+          {
+            "type": "object",
+            "required": ["items"],
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ProbeRequest": {
+        "type": "object",
+        "required": ["host", "port"],
+        "additionalProperties": false,
+        "properties": {
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer",
+            "enum": [443, 25]
+          },
+          "starttls": {
+            "type": "string",
+            "enum": ["smtp"],
+            "description": "Only with port 25."
+          },
+          "min_version": {
+            "type": "string",
+            "enum": ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]
+          },
+          "max_version": {
+            "type": "string",
+            "enum": ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]
+          },
+          "ciphers": {
+            "type": "string",
+            "description": "An OpenSSL cipher list."
+          },
+          "sigalgs": {
+            "type": "string",
+            "description": "An OpenSSL signature algorithm list."
+          },
+          "ecdh_curve": {
+            "type": "string",
+            "description": "Colon separated key exchange groups."
+          },
+          "request_ocsp": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Preview": {
+        "type": "object",
+        "required": [
+          "id",
+          "repo",
+          "sha",
+          "url",
+          "errors",
+          "warnings",
+          "hints",
+          "created_at",
+          "findings"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "sha": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "errors": {
+            "type": "integer"
+          },
+          "warnings": {
+            "type": "integer"
+          },
+          "hints": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "name", "severity", "message", "reference"],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": ["error", "warning", "hint"]
+                },
+                "message": {
+                  "type": "string"
+                },
+                "reference": {
+                  "type": ["string", "null"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "GithubSync": {
+        "type": "object",
+        "required": ["repositories", "deployed", "domains_added"],
+        "properties": {
+          "repositories": {
+            "type": "integer"
+          },
+          "deployed": {
+            "type": "integer"
+          },
+          "domains_added": {
+            "type": "integer"
+          }
+        }
+      },
+      "PushSubscription": {
+        "type": "object",
+        "required": ["endpoint", "keys"],
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "format": "uri"
+          },
+          "keys": {
+            "type": "object",
+            "required": ["p256dh", "auth"],
+            "properties": {
+              "p256dh": {
+                "type": "string"
+              },
+              "auth": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "PushSubscriptionId": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The lower-case hex SHA-256 of the endpoint."
+          }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "required": ["type", "title", "status"],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Nobody is signed in, or the session has ended.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "A request that changes something came from another site.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "The signed-in person has no such resource.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "BadRequest": {
+        "description": "The body is not a JSON object, or a field is missing or not valid; `errors` names each.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "PayloadTooLarge": {
+        "description": "The body is over 4 KiB.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "UnsupportedMediaType": {
+        "description": "The body is not `application/json`.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Too many requests from this address; wait for `Retry-After` seconds.",
+        "headers": {
+          "Retry-After": {
+            "schema": {
+              "type": "integer"
+            }
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "NotConfigured": {
+        "description": "The server has no secret to sign scans with.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "PushSubscriptionId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "The id that `POST /api/users/self/push/subscriptions` answered with.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "description": "The most items on a page (1 to 100, default 20).",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20
+        }
+      },
+      "Cursor": {
+        "name": "cursor",
+        "in": "query",
+        "description": "Where the page starts, from the previous page's `next` link.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "DomainId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "headers": {
+      "Location": {
+        "description": "The absolute address of the resource.",
+        "schema": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "ETag": {
+        "description": "The resource's entity tag, for `If-Match`.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "securitySchemes": {
+      "session": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "plumbline_session",
+        "description": "The signed session cookie set by signing in with Google at `/auth/login`."
+      }
+    }
+  }
+}

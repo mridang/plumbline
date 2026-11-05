@@ -9,7 +9,7 @@
 
 import type { Report, ReportCounts, ReportSummary } from '@/domain/db/reports';
 import { findCheck, isCheckId } from '@/domain/checks/catalogue';
-import type { Parsed } from '@/domain/api/domain-resource';
+import { unknownFields, type Parsed } from '@/domain/api/domain-resource';
 
 /** How one check ended. */
 export type OutcomeStatus = 'failed' | 'warned' | 'passed' | 'skipped';
@@ -197,7 +197,7 @@ export function parseReportInput(
   body: Readonly<Record<string, unknown>>,
   host: string,
 ): Parsed<ReportInput> {
-  const errors: string[] = [];
+  const errors: string[] = unknownFields(body, ['url', 'outcomes']);
   const rawUrl = body['url'];
   let url: string | undefined;
   if (typeof rawUrl !== 'string') {

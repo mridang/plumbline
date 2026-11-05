@@ -14,6 +14,7 @@ import {
   requestCookieResolver,
   type CurrentUserResolver,
 } from '@/domain/api/auth';
+import { unknownFields } from '@/domain/api/domain-resource';
 import { getDatabase } from '@/domain/db/client';
 import {
   PushSubscriptionRepository,
@@ -56,7 +57,7 @@ function checkSubscription(
 ): CheckedSubscription | readonly string[] {
   const { endpoint, keys } = body;
   const { p256dh, auth } = (keys ?? {}) as Readonly<Record<string, unknown>>;
-  const errors: string[] = [];
+  const errors: string[] = unknownFields(body, ['endpoint', 'keys']);
   if (typeof endpoint !== 'string' || !/^https:\/\//.test(endpoint)) {
     errors.push('endpoint: must be an https URL.');
   }

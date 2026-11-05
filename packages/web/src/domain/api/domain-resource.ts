@@ -56,10 +56,23 @@ export function parseHost(raw: unknown, field = 'host'): Parsed<string> {
 }
 
 /** Check the body of `POST /api/domains`: a `host`. */
+/** What is wrong with the fields of `body` that `known` does not name, one sentence each. */
+export function unknownFields(
+  body: Readonly<Record<string, unknown>>,
+  known: readonly string[],
+): string[] {
+  return Object.keys(body)
+    .filter((name) => !known.includes(name))
+    .map((name) => `${name}: is not a field of this request.`);
+}
+
 export function parseDomainInput(
   body: Readonly<Record<string, unknown>>,
 ): Parsed<string> {
-  return parseHost(body['host']);
+  const stray = unknownFields(body, ['host']);
+  return stray.length > 0
+    ? { ok: false, errors: stray }
+    : parseHost(body['host']);
 }
 
 /** The longest list of check ids or groups taken in one request. */

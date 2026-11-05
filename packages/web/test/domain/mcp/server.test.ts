@@ -50,6 +50,7 @@ describe('MCP tool scopes', () => {
       'list_checks',
       'list_domains',
       'list_reports',
+      'list_repositories',
       'scan_domain',
     ]);
   });

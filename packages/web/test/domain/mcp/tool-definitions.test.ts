@@ -24,6 +24,7 @@ function newAjv(): Ajv2020 {
 const GOOD_ARGUMENTS: Readonly<Record<string, Record<string, unknown>>> = {
   list_checks: { group: 'tls', query: 'hsts', limit: 20, offset: 10 },
   list_domains: {},
+  list_repositories: {},
   get_domain: { domain: 'example.com' },
   get_report: {
     domain: 'https://example.com/',
@@ -56,6 +57,7 @@ describe('the tool catalogue', () => {
     expect(TOOLS.map((t) => t.name)).toEqual([
       'list_checks',
       'list_domains',
+      'list_repositories',
       'get_domain',
       'get_report',
       'list_reports',
@@ -140,7 +142,10 @@ describe('the input schemas', () => {
 
   it.each(
     TOOLS.filter(
-      (t) => t.name !== 'list_checks' && t.name !== 'list_domains',
+      (t) =>
+        t.name !== 'list_checks' &&
+        t.name !== 'list_domains' &&
+        t.name !== 'list_repositories',
     ).map((t) => [t.name] as const),
   )('%s requires a domain', (name) => {
     expect(inputOf(name).required).toEqual(['domain']);
@@ -172,6 +177,13 @@ describe('the input schemas', () => {
         enable: [' '],
       }),
     ).not.toEqual([]);
+  });
+
+  it('takes no arguments for list_repositories', () => {
+    expect(
+      validateJson(inputOf('list_repositories'), { domain: 'x' }),
+    ).not.toEqual([]);
+    expect(validateJson(inputOf('list_repositories'), {})).toEqual([]);
   });
 
   it('takes no arguments for list_domains', () => {

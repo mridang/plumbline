@@ -62,7 +62,9 @@ export type ForwardRefusal = { readonly ok: false; readonly errors: string[] };
 export function parseForwardRequest(
   body: Readonly<Record<string, unknown>>,
 ): { readonly ok: true; readonly value: ForwardRequest } | ForwardRefusal {
-  const errors: string[] = [];
+  const errors: string[] = Object.keys(body)
+    .filter((name) => !['url', 'method', 'headers'].includes(name))
+    .map((name) => `${name}: is not a field of a fetch`);
   const { url, method = 'GET', headers = {} } = body;
   if (typeof url !== 'string' || !isPublicWebUrl(url)) {
     errors.push('url: must be a public http or https address');

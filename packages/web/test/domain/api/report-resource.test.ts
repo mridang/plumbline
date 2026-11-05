@@ -52,9 +52,10 @@ describe('parseReportInput', () => {
     });
   });
 
-  it('ignores counts the client sent', () => {
-    const parsed = parseReportInput(body({ passed: 99 }), HOST);
-    expect(parsed.ok && parsed.value.passed).toBe(1);
+  it('refuses counts the client sent, which the server works out itself', () => {
+    expect(errorsOf(body({ passed: 99 }))).toEqual([
+      'passed: is not a field of this request.',
+    ]);
   });
 
   it('takes an address on a subdomain', () => {

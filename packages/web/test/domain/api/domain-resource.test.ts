@@ -7,6 +7,7 @@ import {
   parseDomainInput,
   parseDomainPatch,
   parseHost,
+  unknownFields,
 } from '@/domain/api/domain-resource';
 import { CHECKS, checksInGroup } from '@/domain/checks/catalogue';
 import type { Domain } from '@/domain/db/domains';
@@ -211,5 +212,24 @@ describe('isDomainId', () => {
 
   it('refuses an upper-case UUID, which the app never makes', () => {
     expect(isDomainId('00000000-0000-4000-8000-00000000000A')).toBe(false);
+  });
+});
+
+describe('unknownFields', () => {
+  it('names each field that is not known, and nothing when there is none', () => {
+    expect(unknownFields({ host: 'a', extra: 1, more: 2 }, ['host'])).toEqual([
+      'extra: is not a field of this request.',
+      'more: is not a field of this request.',
+    ]);
+    expect(unknownFields({ host: 'a' }, ['host'])).toEqual([]);
+  });
+});
+
+describe('parseDomainInput, a field it does not know', () => {
+  it('is refused, so a typo is not taken for a choice', () => {
+    expect(parseDomainInput({ host: 'example.com', checks: [] })).toEqual({
+      ok: false,
+      errors: ['checks: is not a field of this request.'],
+    });
   });
 });

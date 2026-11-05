@@ -8,6 +8,7 @@ import {
   getDomain,
   setDomainChecks,
 } from '@/domain/db/domains';
+import { replaceAccess } from '@/domain/db/access';
 import type { User } from '@/domain/db/users';
 import {
   CLI_COMMAND,
@@ -295,6 +296,38 @@ describe('list_checks', () => {
     expect(textOf(await setup().call('list_checks', { limit: 3 }))).toContain(
       'showing 3 from 0.',
     );
+  });
+});
+
+describe('list_repositories', () => {
+  it('says where to start when there is nothing to show', async () => {
+    expect(textOf(await setup().call('list_repositories'))).toContain(
+      'No repositories yet.',
+    );
+  });
+
+  it('lists the sites of the user by repository, and those of repositories they can see', async () => {
+    const { db, call } = setup();
+    await addDomain(db, USER.id, 'mine.example');
+    await addDomain(db, USER.id, 'own.example', 'acme/own');
+    await addDomain(db, 2, 'shared.example', 'acme/shared');
+    await addDomain(db, 2, 'hidden.example', 'acme/hidden');
+    await replaceAccess(db, USER.id, ['acme/shared']);
+    expect(textOf(await call('list_repositories'))).toBe(
+      [
+        'acme/own:',
+        '  own.example: unchecked (0 errors, 0 warnings, 0 hints)',
+        'acme/shared:',
+        '  shared.example: unchecked (0 errors, 0 warnings, 0 hints)',
+        'Added by hand:',
+        '  mine.example: unchecked (0 errors, 0 warnings, 0 hints)',
+      ].join('\n'),
+    );
+  });
+
+  it('takes no arguments and changes nothing', async () => {
+    const { call } = setup();
+    expect((await call('list_repositories')).isError).not.toBe(true);
   });
 });
 

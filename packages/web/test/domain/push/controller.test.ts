@@ -104,6 +104,11 @@ describe('POST /api/users/self/push/subscriptions', () => {
     expect(owners()).toEqual([{ endpoint: ENDPOINT, user_id: 7 }]);
   });
 
+  it("refuses a field it does not know, such as the browser's own expirationTime", async () => {
+    expect((await post({ ...GOOD, expirationTime: null })).status).toBe(400);
+    expect(owners()).toEqual([]);
+  });
+
   it.each([
     [{ endpoint: 'http://push.test/x', keys: { p256dh: 'p', auth: 'a' } }],
     [{ endpoint: ENDPOINT, keys: { auth: 'a' } }],

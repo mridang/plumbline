@@ -213,6 +213,12 @@ const TOOL_DEFINITIONS = [
     ),
   },
   {
+    name: 'list_repositories',
+    description:
+      'Lists the repositories whose sites the user can see on their Plumbline dashboard: the ones they added themselves and every site of the GitHub repositories they have access to, with how each site stands now (checking, failing, with warnings, all clear, not answering or not checked yet).',
+    inputSchema: { type: 'object', additionalProperties: false },
+  },
+  {
     name: 'get_domain',
     description:
       "Shows one of the user's domains: which checks run for it (or that all do), the ones switched off, and how its newest scan went.",
@@ -350,6 +356,7 @@ interface ToolPresentation {
 const TOOL_PRESENTATION: Readonly<Record<ToolName, ToolPresentation>> = {
   list_checks: { title: 'List checks', annotations: READS },
   list_domains: { title: 'List domains', annotations: READS },
+  list_repositories: { title: 'List repositories', annotations: READS },
   get_domain: { title: 'Show a domain', annotations: READS },
   get_report: { title: 'Show a report', annotations: READS },
   list_reports: { title: 'List reports', annotations: READS },

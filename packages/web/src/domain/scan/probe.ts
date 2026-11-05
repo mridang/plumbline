@@ -27,6 +27,19 @@ export const MAX_CIPHERS = 1000;
 export const MAX_SIGALGS = 200;
 export const MAX_CURVES = 100;
 
+/** The fields a probe may carry. */
+const FIELDS: readonly string[] = [
+  'host',
+  'port',
+  'starttls',
+  'min_version',
+  'max_version',
+  'ciphers',
+  'sigalgs',
+  'ecdh_curve',
+  'request_ocsp',
+];
+
 /** A probe, as the container takes it. */
 export interface ProbeRequest {
   readonly host: string;
@@ -66,7 +79,9 @@ export function parseProbeRequest(
   body: Readonly<Record<string, unknown>>,
   scanHost: string,
 ): { readonly ok: true; readonly value: ProbeRequest } | ProbeRefusal {
-  const errors: string[] = [];
+  const errors: string[] = Object.keys(body)
+    .filter((name) => !FIELDS.includes(name))
+    .map((name) => `${name}: is not a field of a probe`);
   const {
     host,
     port,
