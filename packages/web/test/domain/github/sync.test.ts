@@ -16,6 +16,7 @@ function githubWith(
       homepage?: string;
       archived?: boolean;
       broken?: boolean;
+      fork?: boolean;
     }
   >,
 ): GitHubApi {
@@ -32,6 +33,7 @@ function githubWith(
             default_branch: 'main',
             homepage: r.homepage,
             archived: r.archived,
+            fork: r.fork,
           })),
       });
     }
@@ -141,6 +143,20 @@ describe('syncInstallation', () => {
     });
     expect((await listDomains(db, 7)).map((d) => d.host)).toEqual([
       'last.example.com',
+    ]);
+  });
+
+  it("ignores a fork's website, which is the upstream project's", async () => {
+    const { db } = sqliteDatabase(...APP_MIGRATIONS);
+    const api = githubWith({
+      'o/fork': { files: {}, homepage: 'https://upstream.dev', fork: true },
+      'o/own': { files: {}, homepage: 'https://own.example.com' },
+    });
+    expect(await syncInstallation(db, 7, 99, api)).toMatchObject({
+      deployed: 1,
+    });
+    expect((await listDomains(db, 7)).map((d) => d.host)).toEqual([
+      'own.example.com',
     ]);
   });
 

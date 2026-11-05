@@ -41,7 +41,8 @@ export async function analyseRepo(
     hosts = await deploymentHosts({
       paths,
       read: (path) => api.file(repo.full_name, path, repo.default_branch),
-      homepage: repo.homepage,
+      // A fork carries the upstream project's website, which is not this account's site.
+      homepage: repo.fork ? null : repo.homepage,
     });
   } catch {
     // An empty or unreadable repository is simply not a deployed application.

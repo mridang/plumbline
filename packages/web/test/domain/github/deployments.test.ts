@@ -135,6 +135,7 @@ describe('homepageHost', () => {
     expect(homepageHost('https://packagist.org/packages/a/b')).toBeUndefined();
     expect(homepageHost('https://pypi.python.org/pypi/x')).toBeUndefined();
     expect(homepageHost('https://plugins.gradle.org/plugin/x')).toBeUndefined();
+    expect(homepageHost('https://swiftpackageindex.com/a/b')).toBeUndefined();
     expect(homepageHost('https://notnpmjs.com')).toBe('notnpmjs.com');
     expect(homepageHost('')).toBeUndefined();
     expect(homepageHost(null)).toBeUndefined();

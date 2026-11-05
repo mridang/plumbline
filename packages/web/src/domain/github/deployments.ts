@@ -161,6 +161,7 @@ export const REGISTRY_HOSTS: readonly string[] = [
   'pypi.python.org',
   'rubygems.org',
   'search.maven.org',
+  'swiftpackageindex.com',
 ];
 
 /** Whether `host` is a package registry or app store, or a subdomain of one. */
