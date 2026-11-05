@@ -197,7 +197,7 @@ export class GitHubApi {
       title?: string;
       body?: string;
       state?: 'open' | 'closed';
-      state_reason?: 'completed' | 'reopened';
+      state_reason?: 'completed' | 'not_planned' | 'reopened';
     }>,
   ): Promise<IssueRef> {
     return this.write(

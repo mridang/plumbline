@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import { createDatabase } from '@/domain/db/client';
-import { addDomain } from '@/domain/db/domains';
 import { getPreviewReport } from '@/domain/db/preview-reports';
+import { CHECKS } from '@/domain/checks/catalogue';
+import { addDomain, deleteDomain } from '@/domain/db/domains';
 import { forgetIssue, issueOf, latestRuns } from '@/domain/db/suite';
 import { GitHubApi } from '@/domain/github/api';
 import { readGitHubConfig } from '@/domain/github/config';
@@ -12,6 +13,7 @@ import {
   handleDeployment,
   loadConfig,
 } from '@/domain/suite/github-run';
+import { MAX_NEW_ISSUES } from '@/domain/suite/publish';
 import type { SuiteRun } from '@/domain/suite/run';
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
@@ -97,6 +99,20 @@ const setup = async () => {
   return db;
 };
 
+/** Runs a deployment without the pause between writes to GitHub. */
+const deploy = (
+  db: Parameters<typeof handleDeployment>[0],
+  cfg: Parameters<typeof handleDeployment>[1],
+  installation: number,
+  user: number,
+  deployed: Deployment,
+  deps: Parameters<typeof handleDeployment>[5] = {},
+) =>
+  handleDeployment(db, cfg, installation, user, deployed, {
+    pause: async () => undefined,
+    ...deps,
+  });
+
 const paths = (calls: Call[]) => calls.map((c) => `${c.method} ${c.path}`);
 
 afterEach(() => {
@@ -165,7 +181,7 @@ describe('handleDeployment of the live site', () => {
   it('checks the site under the recommended rules and opens an issue for its errors', async () => {
     const db = await setup();
     const { fetcher, calls } = github();
-    await handleDeployment(db, config, 5, 7, live, { fetcher, run: failing() });
+    await deploy(db, config, 5, 7, live, { fetcher, run: failing() });
     expect(paths(calls)).toEqual([
       'POST /app/installations/5/access_tokens',
       'GET /repos/acme/site/contents/plumbline.yaml?ref=abc1234',
@@ -173,11 +189,13 @@ describe('handleDeployment of the live site', () => {
       'GET /repos/acme/site/contents/plumbline.json?ref=abc1234',
       'POST /repos/acme/site/issues',
     ]);
-    expect(calls[4]?.body['title']).toBe('Plumbline: 1 problem on site.test');
+    expect(calls[4]?.body['title']).toMatch(/^\[Plumbline\] .+ on site\.test$/);
     expect(String(calls[4]?.body['body'])).toContain(
       '`plumbline:recommended` rules were used',
     );
-    expect(await issueOf(db, 'acme/site', 'site.test')).toMatchObject({
+    expect(
+      await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'),
+    ).toMatchObject({
       number: 21,
       state: 'open',
     });
@@ -190,7 +208,7 @@ describe('handleDeployment of the live site', () => {
       'plumbline.yaml':
         'rules:\n  seo-viewport: off\n  seo-links: error\n  dnssec-valid: error\n',
     });
-    await handleDeployment(db, config, 5, 7, live, {
+    await deploy(db, config, 5, 7, live, {
       fetcher,
       run: async () => ({
         url: 'https://site.test/',
@@ -213,20 +231,28 @@ describe('handleDeployment of the live site', () => {
         skipped: [],
       }),
     });
-    const issue = calls.find((c) => c.path.endsWith('/issues'));
-    const body = String(issue?.body['body']);
-    expect(body).toContain('links');
-    expect(body).not.toContain('viewport');
-    expect(body).toContain('Rules from `plumbline.yaml`.');
+    const issues = calls.filter(
+      (c) => c.method === 'POST' && c.path.endsWith('/issues'),
+    );
+    // One issue for each check the rules ask for; the one they turned off has none.
+    expect(issues.map((c) => String(c.body['body']).split('\n')[0])).toEqual([
+      '<!-- plumbline:site.test:seo-links -->',
+      '<!-- plumbline:site.test:dnssec-valid -->',
+    ]);
+    const [links, dns] = issues.map((c) => String(c.body['body']));
+    expect(links).toContain('**error**: links');
+    expect(links).toContain('Rules from `plumbline.yaml`.');
     // A check the server could not run before (DNS) now counts like any other.
-    expect(body).toContain('`dnssec-valid`');
-    expect(body).toContain('not signed');
+    expect(dns).toContain('**error**: not signed');
+    expect(
+      issues.some((c) => String(c.body['body']).includes('viewport')),
+    ).toBe(false);
   });
 
   it('opens no issue when the file says issues are off', async () => {
     const db = await setup();
     const { fetcher, calls } = github({ 'plumbline.yaml': 'issues: off\n' });
-    await handleDeployment(db, config, 5, 7, live, { fetcher, run: failing() });
+    await deploy(db, config, 5, 7, live, { fetcher, run: failing() });
     expect(calls.some((c) => c.path.endsWith('/issues'))).toBe(false);
     expect((await latestRuns(db, 7, 'site.test'))[0]?.findings).toHaveLength(1);
   });
@@ -236,7 +262,7 @@ describe('handleDeployment of the live site', () => {
     const { fetcher, calls } = github({
       'plumbline.yaml': 'rules:\n  nope: error\n',
     });
-    await handleDeployment(db, config, 5, 7, live, { fetcher, run: failing() });
+    await deploy(db, config, 5, 7, live, { fetcher, run: failing() });
     const issue = calls.find((c) => c.path.endsWith('/issues'));
     expect(String(issue?.body['body'])).toContain(
       'Unknown rule "nope" in plumbline.yaml.',
@@ -246,7 +272,7 @@ describe('handleDeployment of the live site', () => {
   it('uses the default rules, and says so, when the file cannot be read', async () => {
     const db = await setup();
     const { fetcher, calls } = github({ 'plumbline.yaml': 500 });
-    await handleDeployment(db, config, 5, 7, live, { fetcher, run: failing() });
+    await deploy(db, config, 5, 7, live, { fetcher, run: failing() });
     const issue = calls.find((c) => c.path.endsWith('/issues'));
     expect(String(issue?.body['body'])).toContain(
       'could not be read from GitHub',
@@ -259,7 +285,7 @@ describe('handleDeployment of the live site', () => {
     const error = jest
       .spyOn(console, 'error')
       .mockImplementation(() => undefined);
-    await handleDeployment(db, config, 5, 7, live, { fetcher, run: failing() });
+    await deploy(db, config, 5, 7, live, { fetcher, run: failing() });
     expect(paths(calls)).toEqual(['POST /app/installations/5/access_tokens']);
     expect(error).toHaveBeenCalled();
     expect(await latestRuns(db, 7, 'site.test')).toHaveLength(1);
@@ -268,12 +294,12 @@ describe('handleDeployment of the live site', () => {
   it('says nothing about a site whose page and rules have not changed', async () => {
     const db = await setup();
     const first = github();
-    await handleDeployment(db, config, 5, 7, live, {
+    await deploy(db, config, 5, 7, live, {
       fetcher: first.fetcher,
       run: failing(),
     });
     const second = github();
-    await handleDeployment(db, config, 5, 7, live, {
+    await deploy(db, config, 5, 7, live, {
       fetcher: second.fetcher,
       now: () => new Date(Date.now() + 3_600_000),
       run: failing(),
@@ -283,12 +309,12 @@ describe('handleDeployment of the live site', () => {
 
   it('closes the issue when a later deployment has fixed the problems', async () => {
     const db = await setup();
-    await handleDeployment(db, config, 5, 7, live, {
+    await deploy(db, config, 5, 7, live, {
       fetcher: github().fetcher,
       run: failing(),
     });
     const later = github();
-    await handleDeployment(
+    await deploy(
       db,
       config,
       5,
@@ -313,18 +339,20 @@ describe('handleDeployment of the live site', () => {
     expect(later.calls.at(-1)?.path).toBe(
       '/repos/acme/site/issues/21/comments',
     );
-    expect((await issueOf(db, 'acme/site', 'site.test'))?.state).toBe('fixed');
+    expect(
+      (await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'))?.state,
+    ).toBe('fixed');
   });
 
   it('opens the issue again for a site that looks the same when a person deleted it', async () => {
     const db = await setup();
-    await handleDeployment(db, config, 5, 7, live, {
+    await deploy(db, config, 5, 7, live, {
       fetcher: github().fetcher,
       run: failing(),
     });
     await forgetIssue(db, 'acme/site', 21);
     const later = github();
-    await handleDeployment(
+    await deploy(
       db,
       config,
       5,
@@ -346,12 +374,12 @@ describe('handleDeployment of the live site', () => {
   it('looks up the pull request once for all the sites it closes issues for', async () => {
     const db = await setup();
     await addDomain(db, 7, 'other.test', 'acme/site');
-    await handleDeployment(db, config, 5, 7, live, {
+    await deploy(db, config, 5, 7, live, {
       fetcher: github().fetcher,
       run: failing(),
     });
     const later = github();
-    await handleDeployment(
+    await deploy(
       db,
       config,
       5,
@@ -382,7 +410,7 @@ describe('handleDeployment of the live site', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => undefined);
     await expect(
-      handleDeployment(db, config, 5, 7, live, { fetcher, run: failing() }),
+      deploy(db, config, 5, 7, live, { fetcher, run: failing() }),
     ).resolves.toBeUndefined();
     expect(error).toHaveBeenCalledWith(
       'issue sync failed',
@@ -393,13 +421,161 @@ describe('handleDeployment of the live site', () => {
   });
 });
 
+describe('handleDeployment, the life of the issues', () => {
+  const later = (sha: string) => ({
+    now: () => new Date(Date.now() + 3_600_000),
+    sha,
+  });
+
+  it('closes the issue of a check the repository then turns off, and says the rules did it', async () => {
+    const db = await setup();
+    await deploy(db, config, 5, 7, live, {
+      fetcher: github().fetcher,
+      run: failing(),
+    });
+    const next = github({ 'plumbline.yaml': 'rules:\n  seo-viewport: off\n' });
+    await deploy(
+      db,
+      config,
+      5,
+      7,
+      { ...live, sha: 'rules99' },
+      { fetcher: next.fetcher, now: later('').now, run: failing() },
+    );
+    expect(next.calls.find((c) => c.method === 'PATCH')).toMatchObject({
+      path: '/repos/acme/site/issues/21',
+      body: { state: 'closed', state_reason: 'not_planned' },
+    });
+    const note = next.calls.find((c) => c.path.endsWith('/comments'));
+    expect(String(note?.body['body'])).toContain('turned off by the rules');
+    expect(String(note?.body['body'])).toContain(
+      '[`plumbline.yaml`](https://github.com/acme/site/blob/rules99/plumbline.yaml)',
+    );
+    expect(
+      (await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'))?.state,
+    ).toBe('fixed');
+  });
+
+  it('closes the issues of a site the repository no longer deploys', async () => {
+    const db = await setup();
+    const other = await addDomain(db, 7, 'other.test', 'acme/site');
+    await deploy(db, config, 5, 7, live, {
+      fetcher: github().fetcher,
+      run: failing(),
+    });
+    expect(
+      (await issueOf(db, 'acme/site', 'other.test', 'seo-viewport'))?.state,
+    ).toBe('open');
+    await deleteDomain(db, 7, other.domain.id);
+    const next = github();
+    await deploy(
+      db,
+      config,
+      5,
+      7,
+      { ...live, sha: 'drop456' },
+      { fetcher: next.fetcher, now: later('').now, run: failing() },
+    );
+    expect(
+      (await issueOf(db, 'acme/site', 'other.test', 'seo-viewport'))?.state,
+    ).toBe('fixed');
+    expect(
+      (await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'))?.state,
+    ).toBe('open');
+    expect(
+      next.calls.find((c) => c.path.endsWith('/comments'))?.body['body'],
+    ).toContain('other.test is no longer deployed from this repository');
+  });
+
+  it('opens an issue for each check on each site of a monorepo', async () => {
+    const db = await setup();
+    await addDomain(db, 7, 'other.test', 'acme/site');
+    const { fetcher, calls } = github();
+    await deploy(db, config, 5, 7, live, { fetcher, run: failing() });
+    const opened = calls.filter(
+      (c) => c.method === 'POST' && c.path.endsWith('/issues'),
+    );
+    expect(
+      opened.map((c) => String(c.body['body']).split('\n')[0]).toSorted(),
+    ).toEqual([
+      '<!-- plumbline:other.test:seo-viewport -->',
+      '<!-- plumbline:site.test:seo-viewport -->',
+    ]);
+  });
+
+  it('opens a few issues on a first run with many problems, and says more will follow', async () => {
+    const db = await setup();
+    const ids = CHECKS.slice(0, MAX_NEW_ISSUES + 4).map((check) => check.id);
+    const { fetcher, calls } = github({
+      'plumbline.yaml': `rules:\n${ids.map((id) => `  ${id}: error`).join('\n')}\n`,
+    });
+    await deploy(db, config, 5, 7, live, {
+      fetcher,
+      run: async () => ({
+        url: 'https://site.test/',
+        status: 200,
+        hash: 'h',
+        checks: ids.map((id) => ({
+          id,
+          findings: [{ severity: 'error' as const, message: `${id} fails` }],
+        })),
+        skipped: [],
+      }),
+    });
+    expect(
+      calls.filter((c) => c.method === 'POST' && c.path.endsWith('/issues')),
+    ).toHaveLength(MAX_NEW_ISSUES);
+    const note = calls.find((c) => c.path.endsWith('/comments'));
+    expect(String(note?.body['body'])).toContain('4 more problems than');
+  });
+
+  it('pauses between its writes to GitHub unless told not to', async () => {
+    const db = await setup();
+    const pause = jest.fn(async () => undefined);
+    await handleDeployment(db, config, 5, 7, live, {
+      fetcher: github().fetcher,
+      run: failing(),
+      pause,
+    });
+    expect(pause).toHaveBeenCalled();
+  });
+
+  it('logs a failure to tidy up the issues and does not throw', async () => {
+    const db = await setup();
+    await deploy(db, config, 5, 7, live, {
+      fetcher: github().fetcher,
+      run: failing(),
+    });
+    const error = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+    await addDomain(db, 7, 'gone.test', 'acme/site');
+    const next = github({}, { '/issues/21': 403 });
+    await expect(
+      deploy(
+        db,
+        config,
+        5,
+        7,
+        { ...live, sha: 'next789' },
+        {
+          fetcher: next.fetcher,
+          now: later('').now,
+          run: failing('seo-links'),
+        },
+      ),
+    ).resolves.toBeUndefined();
+    expect(error).toHaveBeenCalled();
+  });
+});
+
 describe('handleDeployment, telling the repository', () => {
   const asks = { 'plumbline.yaml': 'dispatch: true\n' };
 
   it('sends repository_dispatch events for the live site when the file asks for them', async () => {
     const db = await setup();
     const { fetcher, calls } = github(asks);
-    await handleDeployment(db, config, 5, 7, live, { fetcher, run: failing() });
+    await deploy(db, config, 5, 7, live, { fetcher, run: failing() });
     const sent = calls.filter((c) => c.path.endsWith('/dispatches'));
     expect(sent.map((c) => c.body['event_type'])).toEqual([
       'plumbline.checked',
@@ -415,7 +591,7 @@ describe('handleDeployment, telling the repository', () => {
   it('sends them for a preview too', async () => {
     const db = await setup();
     const { fetcher, calls } = github(asks);
-    await handleDeployment(db, config, 5, 7, preview, {
+    await deploy(db, config, 5, 7, preview, {
       fetcher,
       run: failing(),
     });
@@ -429,7 +605,7 @@ describe('handleDeployment, telling the repository', () => {
   it('sends nothing unless the file asks', async () => {
     const db = await setup();
     const { fetcher, calls } = github();
-    await handleDeployment(db, config, 5, 7, live, { fetcher, run: failing() });
+    await deploy(db, config, 5, 7, live, { fetcher, run: failing() });
     expect(calls.some((c) => c.path.endsWith('/dispatches'))).toBe(false);
   });
 
@@ -437,7 +613,7 @@ describe('handleDeployment, telling the repository', () => {
     const db = await setup();
     const { fetcher, calls } = github(asks, { '/dispatches': 403 });
     jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    await handleDeployment(db, config, 5, 7, live, { fetcher, run: failing() });
+    await deploy(db, config, 5, 7, live, { fetcher, run: failing() });
     expect(calls.some((c) => c.path.endsWith('/issues'))).toBe(true);
   });
 });
@@ -451,16 +627,16 @@ describe('a forced check', () => {
       return failing()();
     };
     const first = github();
-    await handleDeployment(db, config, 5, 7, live, {
+    await deploy(db, config, 5, 7, live, {
       fetcher: first.fetcher,
       run,
     });
-    await handleDeployment(db, config, 5, 7, live, {
+    await deploy(db, config, 5, 7, live, {
       fetcher: github().fetcher,
       run,
     });
     expect(runs).toBe(1);
-    await handleDeployment(db, config, 5, 7, live, {
+    await deploy(db, config, 5, 7, live, {
       fetcher: github().fetcher,
       run,
       force: true,
@@ -474,7 +650,7 @@ describe('handleDeployment of a preview', () => {
     const db = await setup();
     const { fetcher, calls } = github();
     const urls: string[] = [];
-    await handleDeployment(db, config, 5, 7, preview, {
+    await deploy(db, config, 5, 7, preview, {
       fetcher,
       run: async (url) => {
         urls.push(url);
@@ -498,7 +674,7 @@ describe('handleDeployment of a preview', () => {
   it('keeps the report and links it from the check, so no sign-in is needed to read it', async () => {
     const db = await setup();
     const { fetcher, calls } = github();
-    await handleDeployment(db, config, 5, 7, preview, {
+    await deploy(db, config, 5, 7, preview, {
       fetcher,
       run: failing(),
       appUrl: 'https://plumbline.test',
@@ -527,27 +703,20 @@ describe('handleDeployment of a preview', () => {
       return failing()();
     };
     const deps = { fetcher, run, appUrl: 'https://plumbline.test' };
-    await handleDeployment(db, config, 5, 7, preview, deps);
-    await handleDeployment(db, config, 5, 7, preview, deps);
+    await deploy(db, config, 5, 7, preview, deps);
+    await deploy(db, config, 5, 7, preview, deps);
     expect(runs).toBe(1);
     expect(calls.filter((c) => c.path.endsWith('/check-runs'))).toHaveLength(1);
-    await handleDeployment(
-      db,
-      config,
-      5,
-      7,
-      { ...preview, sha: 'def5678' },
-      deps,
-    );
+    await deploy(db, config, 5, 7, { ...preview, sha: 'def5678' }, deps);
     expect(runs).toBe(2);
-    await handleDeployment(db, config, 5, 7, preview, { ...deps, force: true });
+    await deploy(db, config, 5, 7, preview, { ...deps, force: true });
     expect(runs).toBe(3);
   });
 
   it('links the preview and keeps nothing when the app does not know its own address', async () => {
     const db = await setup();
     const { fetcher, calls } = github();
-    await handleDeployment(db, config, 5, 7, preview, {
+    await deploy(db, config, 5, 7, preview, {
       fetcher,
       run: failing(),
     });
@@ -556,7 +725,7 @@ describe('handleDeployment of a preview', () => {
 
   it('keeps the registered sites and their stored runs out of it', async () => {
     const db = await setup();
-    await handleDeployment(db, config, 5, 7, preview, {
+    await deploy(db, config, 5, 7, preview, {
       fetcher: github().fetcher,
       run: failing(),
     });
@@ -566,7 +735,7 @@ describe('handleDeployment of a preview', () => {
 
   it('opens no issue, whatever it finds', async () => {
     const { fetcher, calls } = github();
-    await handleDeployment(await setup(), config, 5, 7, preview, {
+    await deploy(await setup(), config, 5, 7, preview, {
       fetcher,
       run: failing(),
     });
@@ -578,7 +747,7 @@ describe('handleDeployment of a preview', () => {
       'plumbline.yaml':
         'environments:\n  preview:\n    rules:\n      seo-viewport: off\n      dnssec-valid: error\n',
     });
-    await handleDeployment(await setup(), config, 5, 7, preview, {
+    await deploy(await setup(), config, 5, 7, preview, {
       fetcher,
       run: failing('dnssec-valid', 'warning'),
     });
@@ -598,13 +767,13 @@ describe('handleDeployment of a preview', () => {
         'environments:\n  preview:\n    rules:\n      seo-viewport: off\n',
     };
     const liveCalls = github(files);
-    await handleDeployment(await setup(), config, 5, 7, live, {
+    await deploy(await setup(), config, 5, 7, live, {
       fetcher: liveCalls.fetcher,
       run: failing(),
     });
     expect(liveCalls.calls.some((c) => c.path.endsWith('/issues'))).toBe(true);
     const previewCalls = github(files);
-    await handleDeployment(await setup(), config, 5, 7, preview, {
+    await deploy(await setup(), config, 5, 7, preview, {
       fetcher: previewCalls.fetcher,
       run: failing(),
     });
@@ -619,7 +788,7 @@ describe('handleDeployment of a preview', () => {
   ])('checks nothing when the deployment %s', async (_name, change) => {
     const { fetcher, calls } = github();
     let ran = false;
-    await handleDeployment(
+    await deploy(
       await setup(),
       config,
       5,
@@ -639,7 +808,7 @@ describe('handleDeployment of a preview', () => {
 
   it('does not even ask GitHub for a token when there is nothing to check', async () => {
     const { fetcher, calls } = github();
-    await handleDeployment(
+    await deploy(
       await setup(),
       config,
       5,
@@ -647,7 +816,7 @@ describe('handleDeployment of a preview', () => {
       { ...preview, url: null },
       { fetcher, run: failing() },
     );
-    await handleDeployment(
+    await deploy(
       await setup(),
       config,
       5,
@@ -663,7 +832,7 @@ describe('handleDeployment of a preview', () => {
     const error = jest
       .spyOn(console, 'error')
       .mockImplementation(() => undefined);
-    await handleDeployment(await setup(), config, 5, 7, preview, {
+    await deploy(await setup(), config, 5, 7, preview, {
       fetcher,
       run: async () => {
         throw new Error('401');

@@ -120,6 +120,8 @@ export interface SiteOutcome {
   readonly changes?: Changes;
   /** What the site has wrong now, under the rules of the run. */
   readonly findings?: readonly StoredFinding[];
+  /** The checks that did not finish this time (they timed out). */
+  readonly notRun?: readonly string[];
   /** The address that was checked. */
   readonly url?: string;
 }
@@ -227,6 +229,7 @@ export async function checkSite(
     unchanged,
     changes: diffFindings(previous?.findings ?? [], findings),
     findings,
+    notRun: result.skipped,
     url,
   };
 }

@@ -266,28 +266,170 @@ export function checkRunOutput(report: Readonly<RunReport>): {
   };
 }
 
-/** The marker that ties an issue to a site, in the first line of its text. */
-export function issueMarker(host: string): string {
-  return `<!-- plumbline:${host} -->`;
+/** The most findings written into the issue of one check; the rest are counted. */
+export const MAX_ISSUE_FINDINGS = 10;
+
+/** The marker that ties an issue to a check of a site, in the first line of its text. */
+export function issueMarker(host: string, check: string): string {
+  return `<!-- plumbline:${host}:${check} -->`;
 }
 
-/** The title and Markdown of the issue that tracks a site's problems. */
-export function issueText(
-  report: Readonly<RunReport> & { sha: string | null; level: IssueLevel },
-): { title: string; body: string } {
-  const host = new URL(report.url).host;
-  const reported = reportedFindings(report.findings, report.level);
-  const where = report.sha ? ` at commit \`${report.sha.slice(0, 7)}\`` : '';
+/** The `plumbline.yaml` lines that turn one check off, as a fenced block. */
+export function offSnippet(check: string): string {
+  return ['```yaml', 'rules:', `  ${check}: off`, '```'].join('\n');
+}
+
+/** Where the rules are, as a Markdown link when the file and commit are known. */
+function rulesLink(
+  repo: string,
+  source: string | null,
+  sha: string | null,
+): string {
+  const file = source ?? 'plumbline.yaml';
+  return source
+    ? `[\`${source}\`](https://github.com/${repo}/blob/${sha ?? 'HEAD'}/${source})`
+    : `\`${file}\``;
+}
+
+/** What is needed to write the issue of one check. */
+export interface CheckIssueInput {
+  readonly repo: string;
+  readonly host: string;
+  readonly url: string;
+  readonly sha: string | null;
+  /** The check's id. */
+  readonly check: string;
+  /** What it found, at the level that opens an issue. */
+  readonly findings: readonly StoredFinding[];
+  readonly source: string | null;
+  /** What is wrong with the configuration file, one sentence each. */
+  readonly problems?: readonly string[];
+  /** Where the app shows the repository's results, when known. */
+  readonly pageUrl?: string;
+}
+
+/** The title and Markdown of the issue that tracks one check of a site. */
+export function checkIssueText(input: Readonly<CheckIssueInput>): {
+  title: string;
+  body: string;
+} {
+  const check = findCheck(input.check);
+  const name = check?.name ?? input.check;
+  const where = input.sha ? ` at commit \`${input.sha.slice(0, 7)}\`` : '';
+  const listed = input.findings
+    .toSorted((a, b) => RANK[a.severity] - RANK[b.severity])
+    .slice(0, MAX_ISSUE_FINDINGS);
+  const more = input.findings.length - listed.length;
+  const fix = [
+    check?.description,
+    check?.fixer ? `This is usually fixed in the ${check.fixer}.` : undefined,
+    check?.reference ? `[Why it matters](${check.reference})` : undefined,
+  ].filter((part): part is string => part !== undefined && part !== '');
+  const body = [
+    issueMarker(input.host, input.check),
+    `Plumbline checked ${input.url}${where} and found ${amount(input.findings.length, 'problem')} for **${name}**.`,
+    [
+      ...listed.map(
+        (found) => `- **${found.severity}**: ${safeText(found.message)}`,
+      ),
+      ...(more > 0 ? [`- ...and ${more} more.`] : []),
+    ].join('\n'),
+    ['### How to fix', ...(fix.length > 0 ? [fix.join(' ')] : [])].join('\n\n'),
+    [
+      '### Not needed?',
+      `If you do not need this check, turn it off in ${rulesLink(input.repo, input.source, input.sha)}, in the root of the repository:`,
+      offSnippet(input.check),
+      'The next deployment closes this issue by itself.',
+      rulesNote(input.source, input.problems ?? []),
+    ].join('\n\n'),
+    [
+      'Plumbline keeps one issue for each check of each site. It updates this one when the problem changes and closes it when the problem is gone. Please leave it open until then.',
+      input.pageUrl ? `[Open the results](${input.pageUrl})` : undefined,
+    ]
+      .filter((part): part is string => part !== undefined)
+      .join('\n\n'),
+  ].join('\n\n');
   return {
-    title: `Plumbline: ${amount(reported.length, 'problem')} on ${host}`,
-    body: withinLimit(
-      [
-        issueMarker(host),
-        `Plumbline checked ${report.url}${where} and found ${amount(reported.length, 'problem')}.`,
-        breakdown(reported),
-        rulesNote(report.source, report.problems),
-        'This issue is updated after each deployment and closed when the problems are gone. Change which rules run, or which findings open an issue, in `plumbline.yaml`.',
-      ].join('\n\n'),
-    ),
+    title: `[Plumbline] ${name} on ${input.host}`,
+    body: withinLimit(body),
   };
+}
+
+/** Why the app closed an issue on its own. */
+export type CloseReason =
+  /** The check no longer finds the problem. */
+  | 'fixed'
+  /** The rules turned the check off. */
+  | 'off'
+  /** The rules still run the check, but what it finds no longer opens an issue. */
+  | 'level'
+  /** The check is not in the catalogue any more. */
+  | 'removed'
+  /** The site is no longer deployed by the repository. */
+  | 'undeployed';
+
+/** The comment that goes with closing an issue. */
+export function closingComment(
+  reason: CloseReason,
+  input: Readonly<{
+    repo: string;
+    host: string;
+    source: string | null;
+    sha: string | null;
+    /** Where the fix came in: a pull request or a commit. */
+    where: string;
+  }>,
+): string {
+  const rules = rulesLink(input.repo, input.source, input.sha);
+  switch (reason) {
+    case 'fixed':
+      return `Plumbline no longer finds this problem as of ${input.where}, so this issue is closed. It opens again if the problem comes back.`;
+    case 'off':
+      return `This check is turned off by the rules in ${rules}, so Plumbline stopped tracking it and closed this issue. If you turn it on again and the problem is still there, a new issue is opened.`;
+    case 'level':
+      return `What this check finds no longer opens an issue under the rules in ${rules}, so this issue is closed. The results in Plumbline still show it.`;
+    case 'removed':
+      return 'Plumbline no longer has this check, so this issue is closed.';
+    case 'undeployed':
+      return `${input.host} is no longer deployed from this repository, so Plumbline stopped checking it and closed this issue.`;
+  }
+}
+
+/** The comment when a person closed an issue while the problem is still there and the app reopened it. */
+export function reopenedComment(check: string, host: string): string {
+  return [
+    `Please do not close this issue: it tracks the **${findCheck(check)?.name ?? check}** check on ${host} and stays open while the problem is there. Plumbline closes it itself once the problem is gone.`,
+    `If you do not need this check, turn it off in \`plumbline.yaml\` instead:`,
+    offSnippet(check),
+    'The next deployment closes this issue by itself.',
+  ].join('\n\n');
+}
+
+/** The comment when a person closed the issue again and again, and the app stops reopening it. */
+export function leftClosedComment(check: string): string {
+  return [
+    'This issue was closed again while the problem is still there, so Plumbline will leave it closed and will not reopen it. The problem is still reported in Plumbline.',
+    `To stop checking it, turn it off in \`plumbline.yaml\`:`,
+    offSnippet(check),
+  ].join('\n\n');
+}
+
+/** The comment on the last issue opened in a run, when more problems than the limit were found. */
+export function deferredComment(deferred: number): string {
+  return `Plumbline found ${amount(deferred, 'more problem')} than it opens issues for at once. They get their own issues over the next runs, so your repository is not flooded.`;
+}
+
+/** The comment when a person reopens an issue the app had left closed, or when the problems return. */
+export function backComment(where: string): string {
+  return `This problem is back as of ${where}, so this issue is open again.`;
+}
+
+/** The comment when the problem changed after a person closed the issue. */
+export function changedComment(where: string): string {
+  return `Plumbline found a different problem as of ${where}, so this issue is open again.`;
+}
+
+/** The comment on an issue of the old kind (one for a whole site), which is closed. */
+export function replacedComment(): string {
+  return 'Plumbline now keeps one issue for each check instead of one for the whole site, so this issue is closed. Each problem that is still there has its own issue.';
 }

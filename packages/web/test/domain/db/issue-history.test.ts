@@ -6,6 +6,7 @@ import {
   ISSUES_LISTED,
   issuesOf,
   markIssueDeleted,
+  markIssueReplaced,
   recordIssue,
 } from '@/domain/db/issue-history';
 import { forgetIssue, saveIssue } from '@/domain/db/suite';
@@ -13,30 +14,30 @@ import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
 const empty = () => sqliteDatabase(...APP_MIGRATIONS);
-const issue = (number: number, state: 'open' | 'fixed' | 'dismissed') => ({
-  number,
-  state,
-  signature: 's',
-});
+const issue = (
+  number: number,
+  state: 'open' | 'fixed' | 'dismissed',
+  reopens = 0,
+) => ({ number, state, signature: 's', reopens });
 const at = (iso: string) => new Date(iso);
 
 describe('recordIssue and issuesOf', () => {
-  it('lists the issues of a site newest first, with the checks each reported', async () => {
+  it('lists the issues of a site newest first, each with the one check it tracks', async () => {
     const { db } = empty();
     await recordIssue(
       db,
       'a/b',
       'x.test',
+      'csp',
       { number: 1, state: 'open' },
-      ['csp', 'hsts'],
       at('2026-01-01T00:00:00.000Z'),
     );
     await recordIssue(
       db,
       'a/b',
       'x.test',
+      'hsts',
       { number: 2, state: 'open' },
-      ['csp'],
       at('2026-02-01T00:00:00.000Z'),
     );
     expect(await issuesOf(db, 'a/b', 'x.test')).toEqual([
@@ -44,13 +45,13 @@ describe('recordIssue and issuesOf', () => {
         number: 2,
         state: 'open',
         opened_at: '2026-02-01T00:00:00.000Z',
-        checks: ['csp'],
+        checks: ['hsts'],
       },
       {
         number: 1,
         state: 'open',
         opened_at: '2026-01-01T00:00:00.000Z',
-        checks: ['csp', 'hsts'],
+        checks: ['csp'],
       },
     ]);
   });
@@ -61,16 +62,16 @@ describe('recordIssue and issuesOf', () => {
       db,
       'a/b',
       'x.test',
+      'csp',
       { number: 1, state: 'open' },
-      ['csp'],
       at('2026-01-01T00:00:00.000Z'),
     );
     await recordIssue(
       db,
       'a/b',
       'x.test',
+      'csp',
       { number: 1, state: 'fixed' },
-      undefined,
       at('2026-03-01T00:00:00.000Z'),
     );
     expect(await issuesOf(db, 'a/b', 'x.test')).toEqual([
@@ -83,46 +84,48 @@ describe('recordIssue and issuesOf', () => {
     ]);
   });
 
-  it('replaces the checks when a write gives them, once each', async () => {
-    const { db } = empty();
-    await recordIssue(db, 'a/b', 'x.test', { number: 1, state: 'open' }, ['a']);
-    await recordIssue(db, 'a/b', 'x.test', { number: 1, state: 'open' }, [
-      'b',
-      'b',
-      'c',
-    ]);
-    expect((await issuesOf(db, 'a/b', 'x.test'))[0]?.checks).toEqual([
-      'b',
-      'c',
-    ]);
-  });
-
   it('does not record a claim that is not an issue yet', async () => {
     const { db } = empty();
-    await recordIssue(db, 'a/b', 'x.test', { number: 0, state: 'opening' });
-    await recordIssue(db, 'a/b', 'x.test', { number: 5, state: 'opening' });
+    await recordIssue(db, 'a/b', 'x.test', 'csp', {
+      number: 0,
+      state: 'opening',
+    });
+    await recordIssue(db, 'a/b', 'x.test', 'csp', {
+      number: 5,
+      state: 'opening',
+    });
     expect(await issuesOf(db, 'a/b', 'x.test')).toEqual([]);
   });
 
   it('keeps one site’s issues apart from another’s', async () => {
     const { db } = empty();
-    await recordIssue(db, 'a/b', 'x.test', { number: 1, state: 'open' });
-    await recordIssue(db, 'a/b', 'y.test', { number: 2, state: 'open' });
-    await recordIssue(db, 'c/d', 'x.test', { number: 3, state: 'open' });
+    await recordIssue(db, 'a/b', 'x.test', 'csp', { number: 1, state: 'open' });
+    await recordIssue(db, 'a/b', 'y.test', 'csp', { number: 2, state: 'open' });
+    await recordIssue(db, 'c/d', 'x.test', 'csp', { number: 3, state: 'open' });
     expect((await issuesOf(db, 'a/b', 'x.test')).map((i) => i.number)).toEqual([
       1,
     ]);
   });
 
-  it('reads a damaged list of checks as none, and lists at most a page', async () => {
+  it('reads an issue of the old kind (no check of its own) from its list of checks, and a damaged list as none, and lists at most a page', async () => {
     const { db, raw } = empty();
-    await recordIssue(db, 'a/b', 'x.test', { number: 1, state: 'open' });
+    await recordIssue(db, 'a/b', 'x.test', 'csp', { number: 1, state: 'open' });
+    raw.exec(
+      'UPDATE suite_issue_history SET check_id = \'\', checks = \'["a","b"]\'',
+    );
+    expect((await issuesOf(db, 'a/b', 'x.test'))[0]?.checks).toEqual([
+      'a',
+      'b',
+    ]);
     raw.exec("UPDATE suite_issue_history SET checks = 'not json'");
     expect((await issuesOf(db, 'a/b', 'x.test'))[0]?.checks).toEqual([]);
     raw.exec('UPDATE suite_issue_history SET checks = \'{"a":1}\'');
     expect((await issuesOf(db, 'a/b', 'x.test'))[0]?.checks).toEqual([]);
     for (let n = 2; n < ISSUES_LISTED + 5; n += 1) {
-      await recordIssue(db, 'a/b', 'x.test', { number: n, state: 'open' });
+      await recordIssue(db, 'a/b', 'x.test', 'csp', {
+        number: n,
+        state: 'open',
+      });
     }
     expect(await issuesOf(db, 'a/b', 'x.test')).toHaveLength(ISSUES_LISTED);
   });
@@ -131,30 +134,43 @@ describe('recordIssue and issuesOf', () => {
 describe('the history through saveIssue and forgetIssue', () => {
   it('records an issue as it is opened, closed, reopened and replaced by another', async () => {
     const { db } = empty();
-    await saveIssue(db, 'a/b', 'x.test', issue(1, 'open'), ['csp']);
-    await saveIssue(db, 'a/b', 'x.test', issue(1, 'fixed'));
+    await saveIssue(db, 'a/b', 'x.test', 'csp', issue(1, 'open'));
+    await saveIssue(db, 'a/b', 'x.test', 'csp', issue(1, 'fixed'));
     expect((await issuesOf(db, 'a/b', 'x.test'))[0]).toMatchObject({
       number: 1,
       state: 'fixed',
       checks: ['csp'],
     });
-    await saveIssue(db, 'a/b', 'x.test', issue(1, 'open'), ['csp', 'hsts']);
-    await saveIssue(db, 'a/b', 'x.test', issue(1, 'dismissed'));
-    await saveIssue(db, 'a/b', 'x.test', issue(2, 'open'), ['hsts']);
+    await saveIssue(db, 'a/b', 'x.test', 'csp', issue(1, 'open'));
+    await saveIssue(db, 'a/b', 'x.test', 'csp', issue(1, 'dismissed'));
+    await saveIssue(db, 'a/b', 'x.test', 'csp', issue(2, 'open'));
     const listed = await issuesOf(db, 'a/b', 'x.test');
-    expect(listed.map((i) => [i.number, i.state])).toEqual(
+    expect(listed.map((i) => [i.number, i.state, i.checks])).toEqual(
       expect.arrayContaining([
-        [1, 'dismissed'],
-        [2, 'open'],
+        [1, 'dismissed', ['csp']],
+        [2, 'open', ['csp']],
       ]),
     );
-    expect(listed.find((i) => i.number === 1)?.checks).toEqual(['csp', 'hsts']);
+  });
+
+  it('keeps an issue for each check of a site, each listed under its check', async () => {
+    const { db } = empty();
+    await saveIssue(db, 'a/b', 'x.test', 'csp', issue(1, 'open'));
+    await saveIssue(db, 'a/b', 'x.test', 'hsts', issue(2, 'open'));
+    expect(
+      (await issuesOf(db, 'a/b', 'x.test'))
+        .map((i) => [i.number, ...i.checks])
+        .toSorted(),
+    ).toEqual([
+      [1, 'csp'],
+      [2, 'hsts'],
+    ]);
   });
 
   it('leaves a deleted issue out of the list but keeps its row', async () => {
     const { db, raw } = empty();
-    await saveIssue(db, 'a/b', 'x.test', issue(1, 'open'), ['csp']);
-    await saveIssue(db, 'a/b', 'y.test', issue(1, 'open'), ['csp']);
+    await saveIssue(db, 'a/b', 'x.test', 'csp', issue(1, 'open'));
+    await saveIssue(db, 'a/b', 'y.test', 'csp', issue(1, 'open'));
     await forgetIssue(db, 'a/b', 1);
     expect(await issuesOf(db, 'a/b', 'x.test')).toEqual([]);
     expect(
@@ -164,58 +180,87 @@ describe('the history through saveIssue and forgetIssue', () => {
     ).toEqual([{ state: 'deleted' }, { state: 'deleted' }]);
   });
 
-  it('marks only the repository’s own issue number as deleted', async () => {
+  it('marks only the repository’s own issue number as deleted or replaced', async () => {
     const { db } = empty();
-    await saveIssue(db, 'a/b', 'x.test', issue(1, 'open'));
-    await saveIssue(db, 'c/d', 'x.test', issue(1, 'open'));
+    await saveIssue(db, 'a/b', 'x.test', 'csp', issue(1, 'open'));
+    await saveIssue(db, 'c/d', 'x.test', 'csp', issue(1, 'open'));
+    await saveIssue(db, 'e/f', 'x.test', 'csp', issue(1, 'open'));
     await markIssueDeleted(db, 'a/b', 1);
+    await markIssueReplaced(db, 'e/f', 1);
     expect(await issuesOf(db, 'a/b', 'x.test')).toEqual([]);
+    expect(await issuesOf(db, 'e/f', 'x.test')).toEqual([]);
     expect(await issuesOf(db, 'c/d', 'x.test')).toHaveLength(1);
   });
 });
 
-describe('migration 0016_issue_history', () => {
-  it('backfills the issues of today, leaving out claims, with no checks', () => {
+describe('migration 0017_issue_per_check', () => {
+  it('gives an issue that reported one check that check, leaves the others for the old kind, and drops claims', () => {
     const before = APP_MIGRATIONS.filter(
-      (file) => file < '0016_issue_history.sql',
+      (file) => file < '0017_issue_per_check.sql',
     );
     const { raw } = sqliteDatabase(...before);
     raw.exec(`
       INSERT INTO suite_issues (repo, host, number, state, signature) VALUES
         ('a/b', 'open.test', 4, 'open', 's'),
-        ('a/b', 'fixed.test', 5, 'fixed', 's'),
-        ('a/b', 'dismissed.test', 6, 'dismissed', 's'),
         ('a/b', 'claim.test', 0, 'opening', '2026-01-01T00:00:00.000Z');
+      INSERT INTO suite_issue_history (repo, host, number, state, opened_at, checks) VALUES
+        ('a/b', 'one.test', 1, 'open', '2026-01-01T00:00:00.000Z', '["csp"]'),
+        ('a/b', 'many.test', 2, 'open', '2026-01-01T00:00:00.000Z', '["csp","hsts"]'),
+        ('a/b', 'none.test', 3, 'open', '2026-01-01T00:00:00.000Z', '[]');
     `);
     raw.exec(
       readFileSync(
-        path.join(process.cwd(), 'migrations', '0016_issue_history.sql'),
+        path.join(process.cwd(), 'migrations', '0017_issue_per_check.sql'),
         'utf8',
       ),
     );
     expect(
       raw
         .prepare(
-          'SELECT host, number, state, checks FROM suite_issue_history ORDER BY number',
+          'SELECT number, check_id FROM suite_issue_history ORDER BY number',
         )
         .all(),
     ).toEqual([
-      { host: 'open.test', number: 4, state: 'open', checks: '[]' },
-      { host: 'fixed.test', number: 5, state: 'fixed', checks: '[]' },
-      { host: 'dismissed.test', number: 6, state: 'dismissed', checks: '[]' },
+      { number: 1, check_id: 'csp' },
+      { number: 2, check_id: '' },
+      { number: 3, check_id: '' },
     ]);
+    expect(raw.prepare('SELECT host, number FROM suite_issues').all()).toEqual([
+      { host: 'open.test', number: 4 },
+    ]);
+    expect(
+      raw.prepare('SELECT COUNT(*) AS n FROM suite_check_issues').get(),
+    ).toEqual({
+      n: 0,
+    });
   });
 });
 
-describe('the plan of the history queries', () => {
+describe('the plan of the issue queries', () => {
   it.each([
     [
-      'a site’s issues',
-      "SELECT number, state, opened_at, checks FROM suite_issue_history WHERE repo = 'a/b' AND host = 'x' AND state <> 'deleted' ORDER BY opened_at DESC, number DESC LIMIT 50",
+      'a site’s issues in the history',
+      "SELECT number, state, opened_at, checks, check_id FROM suite_issue_history WHERE repo = 'a/b' AND host = 'x' AND state NOT IN ('deleted', 'replaced') ORDER BY opened_at DESC, number DESC LIMIT 50",
+    ],
+    [
+      'an issue in the history by its number',
+      "UPDATE suite_issue_history SET state = 'deleted' WHERE repo = 'a/b' AND number = 1",
+    ],
+    [
+      'the issue of a check',
+      "SELECT * FROM suite_check_issues WHERE repo = 'a/b' AND host = 'x' AND check_id = 'csp'",
+    ],
+    [
+      'the issues of a host',
+      "SELECT * FROM suite_check_issues WHERE repo = 'a/b' AND host = 'x'",
+    ],
+    [
+      'the open issues of a repository',
+      "SELECT * FROM suite_check_issues WHERE repo = 'a/b' AND state = 'open' ORDER BY host ASC, check_id ASC",
     ],
     [
       'an issue by its number',
-      "UPDATE suite_issue_history SET state = 'deleted' WHERE repo = 'a/b' AND number = 1",
+      "SELECT * FROM suite_check_issues WHERE repo = 'a/b' AND number = 1",
     ],
   ])('answers %s from an index', (_name, sql) => {
     const { raw } = empty();

@@ -389,7 +389,31 @@ export const suiteIssues = sqliteTable(
   (table) => [primaryKey({ columns: [table.repo, table.host] })],
 );
 
-/** Every issue the app opened on GitHub, one row per issue number, with the checks it reported. */
+/**
+ * The GitHub issue that tracks one check of one host of one repository.
+ * `state` is 'open', 'fixed' (the app closed it), 'dismissed' (a person closed
+ * it) or 'opening' (a claim); `signature` fingerprints the problems it last
+ * reported and `reopens` counts how often the app reopened it after a person
+ * closed it.
+ */
+export const suiteCheckIssues = sqliteTable(
+  'suite_check_issues',
+  {
+    repo: text('repo').notNull(),
+    host: text('host').notNull(),
+    check_id: text('check_id').notNull(),
+    number: integer('number').notNull(),
+    state: text('state').notNull(),
+    signature: text('signature').notNull(),
+    reopens: integer('reopens').notNull().default(0),
+  },
+  (table) => [
+    primaryKey({ columns: [table.repo, table.host, table.check_id] }),
+    index('idx_suite_check_issues_number').on(table.repo, table.number),
+  ],
+);
+
+/** Every issue the app opened on GitHub, one row per issue number, with the check it reported. */
 export const suiteIssueHistory = sqliteTable(
   'suite_issue_history',
   {
@@ -399,6 +423,7 @@ export const suiteIssueHistory = sqliteTable(
     state: text('state').notNull(),
     opened_at: text('opened_at').notNull(),
     checks: text('checks').notNull().default('[]'),
+    check_id: text('check_id').notNull().default(''),
   },
   (table) => [
     primaryKey({ columns: [table.repo, table.host, table.number] }),

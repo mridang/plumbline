@@ -7,21 +7,29 @@
  * the results can say under a check which issues report it.
  */
 
-import { and, desc, eq, ne } from 'drizzle-orm';
+import { and, desc, eq, notInArray } from 'drizzle-orm';
 
 import type { Database } from '@/domain/db/client';
 import { suiteIssueHistory } from '@/domain/db/schema';
 
-/** How an issue stands: open, closed by the app, closed by a person, or gone from GitHub. */
-export type IssueHistoryState = 'open' | 'fixed' | 'dismissed' | 'deleted';
+/**
+ * How an issue stands: open, closed by the app, closed by a person, gone from
+ * GitHub, or replaced (an issue of the old kind, one per site, closed when the
+ * site got one issue per check).
+ */
+export type IssueHistoryState =
+  'open' | 'fixed' | 'dismissed' | 'deleted' | 'replaced';
+
+/** The states whose issues are not listed. */
+const NOT_LISTED: IssueHistoryState[] = ['deleted', 'replaced'];
 
 /** One issue of a site. */
 export interface IssueRef {
   readonly number: number;
-  readonly state: Exclude<IssueHistoryState, 'deleted'>;
+  readonly state: 'open' | 'fixed' | 'dismissed';
   /** When the app opened it (RFC 3339). */
   readonly opened_at: string;
-  /** The ids of the checks it reported. */
+  /** The ids of the checks it reports: the one check it tracks. */
   readonly checks: readonly string[];
 }
 
@@ -41,22 +49,21 @@ function checksOf(raw: string): string[] {
 }
 
 /**
- * Records an issue of a site: the first time adds it (opened now), a later one
- * updates how it stands and, when `checks` is given, which checks it reported.
- * A claim that is not an issue yet (number 0) is not recorded.
+ * Records the issue that tracks one check of a site: the first time adds it
+ * (opened now), a later one updates how it stands. A claim that is not an issue
+ * yet (number 0) is not recorded.
  */
 export async function recordIssue(
   db: Database,
   repo: string,
   host: string,
+  check: string,
   issue: Readonly<{ number: number; state: string }>,
-  checks?: readonly string[],
   now = new Date(),
 ): Promise<void> {
   if (issue.number <= 0 || issue.state === 'opening') {
     return;
   }
-  const json = JSON.stringify([...new Set(checks ?? [])]);
   await db
     .insert(suiteIssueHistory)
     .values({
@@ -65,7 +72,8 @@ export async function recordIssue(
       number: issue.number,
       state: issue.state,
       opened_at: now.toISOString(),
-      checks: json,
+      checks: JSON.stringify([check]),
+      check_id: check,
     })
     .onConflictDoUpdate({
       target: [
@@ -73,11 +81,25 @@ export async function recordIssue(
         suiteIssueHistory.host,
         suiteIssueHistory.number,
       ],
-      set: {
-        state: issue.state,
-        ...(checks === undefined ? {} : { checks: json }),
-      },
+      set: { state: issue.state },
     });
+}
+
+/** Marks an issue of the old kind (one per site) as replaced; its row stays but is not listed. */
+export async function markIssueReplaced(
+  db: Database,
+  repo: string,
+  number: number,
+): Promise<void> {
+  await db
+    .update(suiteIssueHistory)
+    .set({ state: 'replaced' })
+    .where(
+      and(
+        eq(suiteIssueHistory.repo, repo),
+        eq(suiteIssueHistory.number, number),
+      ),
+    );
 }
 
 /** Marks an issue of a repository as gone from GitHub; its row stays. */
@@ -97,7 +119,7 @@ export async function markIssueDeleted(
     );
 }
 
-/** The issues of a site, newest first, without the ones deleted on GitHub. */
+/** The issues of a site, newest first, without the ones deleted on GitHub or replaced. */
 export async function issuesOf(
   db: Database,
   repo: string,
@@ -109,13 +131,14 @@ export async function issuesOf(
       state: suiteIssueHistory.state,
       opened_at: suiteIssueHistory.opened_at,
       checks: suiteIssueHistory.checks,
+      check_id: suiteIssueHistory.check_id,
     })
     .from(suiteIssueHistory)
     .where(
       and(
         eq(suiteIssueHistory.repo, repo),
         eq(suiteIssueHistory.host, host),
-        ne(suiteIssueHistory.state, 'deleted'),
+        notInArray(suiteIssueHistory.state, NOT_LISTED),
       ),
     )
     .orderBy(desc(suiteIssueHistory.opened_at), desc(suiteIssueHistory.number))
@@ -125,6 +148,7 @@ export async function issuesOf(
     state:
       row.state === 'fixed' || row.state === 'dismissed' ? row.state : 'open',
     opened_at: row.opened_at,
-    checks: checksOf(row.checks),
+    // An issue of the old kind (no check of its own) reported several.
+    checks: row.check_id === '' ? checksOf(row.checks) : [row.check_id],
   }));
 }

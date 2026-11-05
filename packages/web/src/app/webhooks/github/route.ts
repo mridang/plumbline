@@ -5,7 +5,8 @@
  * push to a Wrangler configuration, reads the installation again so the
  * deployed hosts stay right. A push of `plumbline.yaml` to the default branch
  * checks the live site again under the new rules, and an issue a person
- * closes, reopens or deletes is noted so the app treats it accordingly. A
+ * closes, reopens or deletes is noted so the app treats it accordingly (one
+ * closed while its problem is still there is reopened, with a note). A
  * successful deployment runs every check in the scanner container, once per
  * delivery (GitHub retries are recognised by their id): on the repository's
  * sites when it is the live site, and on the deployment's own address when it
@@ -25,6 +26,8 @@ import {
   touchesWrangler,
   type Delivery,
 } from '@/domain/github/deployments';
+import { installationToken } from '@/domain/github/app-auth';
+import { GitHubApi } from '@/domain/github/api';
 import { githubConfig, syncAsApp } from '@/domain/github/service';
 import { verifySignature } from '@/domain/github/webhook';
 import { classifyDeployment } from '@/domain/suite/deploy';
@@ -114,7 +117,13 @@ export async function POST(request: Request): Promise<NextResponse> {
       });
     }
   } else if (event === 'issues') {
-    await handleIssueEvent(db, config.slug, delivery);
+    await handleIssueEvent(
+      db,
+      config.slug,
+      delivery,
+      async () =>
+        new GitHubApi(await installationToken(config, installationId)),
+    );
   } else {
     const owner = await ownerOfInstallation(db, installationId);
     if (owner !== undefined) {

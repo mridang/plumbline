@@ -8,9 +8,14 @@
 import { and, asc, desc, eq, isNotNull, lt, lte } from 'drizzle-orm';
 
 import type { Database } from '@/domain/db/client';
-import { markIssueDeleted, recordIssue } from '@/domain/db/issue-history';
+import {
+  markIssueDeleted,
+  markIssueReplaced,
+  recordIssue,
+} from '@/domain/db/issue-history';
 import {
   domains,
+  suiteCheckIssues,
   suiteIssues,
   suiteRuns,
   webhookDeliveries,
@@ -222,79 +227,150 @@ export async function dueSites(
     .limit(limit);
 }
 
-/** What became of an issue: open, closed by the app because the problems were fixed, or closed by a person. */
+/**
+ * What became of the issue of a check: open, closed by the app (the problem is
+ * gone or the rules no longer ask for the check), closed by a person while the
+ * problem was still there, or claimed by a delivery that is opening it.
+ */
 export type IssueState = 'open' | 'fixed' | 'dismissed' | 'opening';
 
-/** The issue that reports a host's problems, when one was opened. */
+/** The issue that tracks one check of one host, when one was opened. */
 export interface StoredIssue {
   readonly number: number;
   readonly state: IssueState;
   /** A fingerprint of the problems it last reported. */
   readonly signature: string;
+  /** How often the app reopened it after a person closed it. */
+  readonly reopens: number;
 }
 
-/** The issue that reports the problems of a host of a repository, if any. */
-export async function issueOf(
-  db: Database,
-  repo: string,
-  host: string,
-): Promise<StoredIssue | undefined> {
-  const [row] = await db
-    .select()
-    .from(suiteIssues)
-    .where(and(eq(suiteIssues.repo, repo), eq(suiteIssues.host, host)));
-  return row && toIssue(row);
-}
-
-/** The issue of a repository with this number, with the host it is about. */
-export async function issueNumbered(
-  db: Database,
-  repo: string,
-  number: number,
-): Promise<(StoredIssue & { host: string }) | undefined> {
-  const [row] = await db
-    .select()
-    .from(suiteIssues)
-    .where(and(eq(suiteIssues.repo, repo), eq(suiteIssues.number, number)));
-  return row && { ...toIssue(row), host: row.host };
+/** A stored issue with the host and the check it is about. */
+export interface IssueOfCheck extends StoredIssue {
+  readonly host: string;
+  readonly check: string;
 }
 
 /** A stored row as an issue; a state it does not know counts as open. */
-function toIssue(row: typeof suiteIssues.$inferSelect): StoredIssue {
+function toIssue(row: typeof suiteCheckIssues.$inferSelect): IssueOfCheck {
   const state =
     row.state === 'fixed' ||
     row.state === 'dismissed' ||
     row.state === 'opening'
       ? row.state
       : 'open';
-  return { number: row.number, state, signature: row.signature };
+  return {
+    number: row.number,
+    state,
+    signature: row.signature,
+    reopens: row.reopens,
+    host: row.host,
+    check: row.check_id,
+  };
+}
+
+/** The issue that tracks one check of one host of a repository, if any. */
+export async function issueOf(
+  db: Database,
+  repo: string,
+  host: string,
+  check: string,
+): Promise<StoredIssue | undefined> {
+  const [row] = await db
+    .select()
+    .from(suiteCheckIssues)
+    .where(
+      and(
+        eq(suiteCheckIssues.repo, repo),
+        eq(suiteCheckIssues.host, host),
+        eq(suiteCheckIssues.check_id, check),
+      ),
+    );
+  if (!row) {
+    return undefined;
+  }
+  const found = toIssue(row);
+  return {
+    number: found.number,
+    state: found.state,
+    signature: found.signature,
+    reopens: found.reopens,
+  };
+}
+
+/** The issues of one host of a repository, whatever their state, by check. */
+export async function issuesOfHost(
+  db: Database,
+  repo: string,
+  host: string,
+): Promise<Map<string, StoredIssue>> {
+  const rows = await db
+    .select()
+    .from(suiteCheckIssues)
+    .where(
+      and(eq(suiteCheckIssues.repo, repo), eq(suiteCheckIssues.host, host)),
+    );
+  return new Map(rows.map((row) => [row.check_id, toIssue(row)]));
+}
+
+/** The issues of a repository that are open, with the host and check of each. */
+export async function openIssuesOf(
+  db: Database,
+  repo: string,
+): Promise<IssueOfCheck[]> {
+  const rows = await db
+    .select()
+    .from(suiteCheckIssues)
+    .where(
+      and(eq(suiteCheckIssues.repo, repo), eq(suiteCheckIssues.state, 'open')),
+    )
+    .orderBy(asc(suiteCheckIssues.host), asc(suiteCheckIssues.check_id));
+  return rows.map(toIssue);
+}
+
+/** The issue of a repository with this number, with the host and check it is about. */
+export async function issueNumbered(
+  db: Database,
+  repo: string,
+  number: number,
+): Promise<IssueOfCheck | undefined> {
+  const [row] = await db
+    .select()
+    .from(suiteCheckIssues)
+    .where(
+      and(eq(suiteCheckIssues.repo, repo), eq(suiteCheckIssues.number, number)),
+    );
+  return row && toIssue(row);
 }
 
 /**
- * Remember the issue that reports a host's problems, replacing an earlier one
- * (the earlier one stays in the issue history). `checks` are the ids of the
- * checks the issue reports, when this write changes them.
+ * Remember the issue that tracks a check of a host, replacing an earlier one
+ * (the earlier one stays in the issue history).
  */
 export async function saveIssue(
   db: Database,
   repo: string,
   host: string,
+  check: string,
   issue: StoredIssue,
-  checks?: readonly string[],
 ): Promise<void> {
   const values = {
     number: issue.number,
     state: issue.state,
     signature: issue.signature,
+    reopens: issue.reopens,
   };
   await db
-    .insert(suiteIssues)
-    .values({ repo, host, ...values })
+    .insert(suiteCheckIssues)
+    .values({ repo, host, check_id: check, ...values })
     .onConflictDoUpdate({
-      target: [suiteIssues.repo, suiteIssues.host],
+      target: [
+        suiteCheckIssues.repo,
+        suiteCheckIssues.host,
+        suiteCheckIssues.check_id,
+      ],
       set: values,
     });
-  await recordIssue(db, repo, host, issue, checks);
+  await recordIssue(db, repo, host, check, issue);
 }
 
 /** Forget the issue of a repository with this number (it was deleted). */
@@ -303,6 +379,11 @@ export async function forgetIssue(
   repo: string,
   number: number,
 ): Promise<void> {
+  await db
+    .delete(suiteCheckIssues)
+    .where(
+      and(eq(suiteCheckIssues.repo, repo), eq(suiteCheckIssues.number, number)),
+    );
   await db
     .delete(suiteIssues)
     .where(and(eq(suiteIssues.repo, repo), eq(suiteIssues.number, number)));
@@ -313,41 +394,44 @@ export async function forgetIssue(
 export const CLAIM_MS = 2 * 60 * 1000;
 
 /**
- * Claims the right to open the issue of a host of a repository. True for the
- * one delivery that gets it; false when the host already has an issue, or
- * another delivery is opening it. A claim as old as {@link CLAIM_MS} or older
- * was left by a delivery that never finished and is taken over.
+ * Claims the right to open the issue of a check of a host. True for the one
+ * delivery that gets it; false when the check already has an issue, or another
+ * delivery is opening it. A claim as old as {@link CLAIM_MS} or older was left
+ * by a delivery that never finished and is taken over.
  */
 export async function claimNewIssue(
   db: Database,
   repo: string,
   host: string,
+  check: string,
   now = new Date(),
 ): Promise<boolean> {
   await db
-    .delete(suiteIssues)
+    .delete(suiteCheckIssues)
     .where(
       and(
-        eq(suiteIssues.repo, repo),
-        eq(suiteIssues.host, host),
-        eq(suiteIssues.state, 'opening'),
+        eq(suiteCheckIssues.repo, repo),
+        eq(suiteCheckIssues.host, host),
+        eq(suiteCheckIssues.check_id, check),
+        eq(suiteCheckIssues.state, 'opening'),
         lte(
-          suiteIssues.signature,
+          suiteCheckIssues.signature,
           new Date(now.getTime() - CLAIM_MS).toISOString(),
         ),
       ),
     );
   const claimed = await db
-    .insert(suiteIssues)
+    .insert(suiteCheckIssues)
     .values({
       repo,
       host,
+      check_id: check,
       number: 0,
       state: 'opening',
       signature: now.toISOString(),
     })
     .onConflictDoNothing()
-    .returning({ number: suiteIssues.number });
+    .returning({ number: suiteCheckIssues.number });
   return claimed.length > 0;
 }
 
@@ -356,14 +440,61 @@ export async function releaseIssueClaim(
   db: Database,
   repo: string,
   host: string,
+  check: string,
+): Promise<void> {
+  await db
+    .delete(suiteCheckIssues)
+    .where(
+      and(
+        eq(suiteCheckIssues.repo, repo),
+        eq(suiteCheckIssues.host, host),
+        eq(suiteCheckIssues.check_id, check),
+        eq(suiteCheckIssues.state, 'opening'),
+      ),
+    );
+}
+
+/** The issues of the old kind of a repository, one for each host that has one. */
+export async function legacyIssuesOf(
+  db: Database,
+  repo: string,
+): Promise<{ host: string; number: number; state: string }[]> {
+  return db
+    .select({
+      host: suiteIssues.host,
+      number: suiteIssues.number,
+      state: suiteIssues.state,
+    })
+    .from(suiteIssues)
+    .where(eq(suiteIssues.repo, repo));
+}
+
+/**
+ * The issue of the old kind, one for all of a host's problems, if it has one.
+ * Only the issues of the old kind are read here; each is closed and forgotten
+ * the first time its host is checked under one issue per check.
+ */
+export async function legacyIssueOf(
+  db: Database,
+  repo: string,
+  host: string,
+): Promise<{ number: number; state: string } | undefined> {
+  const [row] = await db
+    .select({ number: suiteIssues.number, state: suiteIssues.state })
+    .from(suiteIssues)
+    .where(and(eq(suiteIssues.repo, repo), eq(suiteIssues.host, host)));
+  return row;
+}
+
+/** Forgets the issue of the old kind of a host, and marks it replaced in the history. */
+export async function retireLegacyIssue(
+  db: Database,
+  repo: string,
+  host: string,
+  number: number,
 ): Promise<void> {
   await db
     .delete(suiteIssues)
-    .where(
-      and(
-        eq(suiteIssues.repo, repo),
-        eq(suiteIssues.host, host),
-        eq(suiteIssues.state, 'opening'),
-      ),
-    );
+    .where(and(eq(suiteIssues.repo, repo), eq(suiteIssues.host, host)));
+  await markIssueReplaced(db, repo, number);
 }

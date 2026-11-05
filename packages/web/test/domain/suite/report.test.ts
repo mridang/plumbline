@@ -14,8 +14,17 @@ import {
   checkRunOutput,
   conclusionOf,
   countsOf,
+  MAX_ISSUE_FINDINGS,
+  backComment,
+  changedComment,
+  checkIssueText,
+  closingComment,
+  deferredComment,
   issueMarker,
-  issueText,
+  leftClosedComment,
+  offSnippet,
+  reopenedComment,
+  replacedComment,
   reportedFindings,
   safeText,
 } from '@/domain/suite/report';
@@ -238,33 +247,154 @@ describe('dataBlock', () => {
   });
 });
 
-describe('issueText', () => {
-  const report = {
+describe('checkIssueText', () => {
+  const input = {
+    repo: 'acme/site',
+    host: 'site.test',
     url: 'https://site.test/',
     sha: 'abcdef123456',
-    level: 'error' as const,
-    source: null,
-    problems: [],
+    check: 'seo-viewport',
     findings: [found('error', 'e'), found('warning', 'w')],
+    source: null,
   };
 
-  it('counts only the findings that open an issue', () => {
-    expect(issueText(report).title).toBe('Plumbline: 1 problem on site.test');
-    expect(issueText({ ...report, level: 'warning' }).title).toBe(
-      'Plumbline: 2 problems on site.test',
+  it('is titled with the check and the site', () => {
+    expect(checkIssueText(input).title).toBe(
+      `[Plumbline] ${findCheck('seo-viewport')?.name} on site.test`,
     );
   });
 
-  it('starts with the marker of the site and names the commit', () => {
-    const { body } = issueText(report);
-    expect(body.startsWith(issueMarker('site.test'))).toBe(true);
+  it('starts with the marker of the check on the site, and names the commit', () => {
+    const { body } = checkIssueText(input);
+    expect(body.startsWith(issueMarker('site.test', 'seo-viewport'))).toBe(
+      true,
+    );
     expect(body).toContain('at commit `abcdef1`');
     expect(body).toContain('**error**: e');
-    expect(body).not.toContain('**warning**: w');
   });
 
   it('leaves the commit out when there is none', () => {
-    expect(issueText({ ...report, sha: null }).body).not.toContain('at commit');
+    expect(checkIssueText({ ...input, sha: null }).body).not.toContain(
+      'at commit',
+    );
+  });
+
+  it('tells how to fix it, with the reference when the check has one', () => {
+    const { body } = checkIssueText(input);
+    expect(body).toContain('### How to fix');
+    const reference = findCheck('seo-viewport')?.reference;
+    if (reference) {
+      expect(body).toContain(`[Why it matters](${reference})`);
+    }
+  });
+
+  it('shows the exact lines that turn the check off, and says the next deployment closes the issue', () => {
+    const { body } = checkIssueText(input);
+    expect(body).toContain('### Not needed?');
+    expect(body).toContain(offSnippet('seo-viewport'));
+    expect(offSnippet('seo-viewport')).toBe(
+      '```yaml\nrules:\n  seo-viewport: off\n```',
+    );
+    expect(body).toContain('`plumbline.yaml`');
+    expect(body).toContain('closes this issue by itself');
+  });
+
+  it('links the rules file when the rules came from one, at the commit', () => {
+    const { body } = checkIssueText({ ...input, source: 'plumbline.yml' });
+    expect(body).toContain(
+      '[`plumbline.yml`](https://github.com/acme/site/blob/abcdef123456/plumbline.yml)',
+    );
+  });
+
+  it('links the results when it is told where they are', () => {
+    expect(
+      checkIssueText({ ...input, pageUrl: 'https://app.test/repos/acme/site' })
+        .body,
+    ).toContain('[Open the results](https://app.test/repos/acme/site)');
+    expect(checkIssueText(input).body).not.toContain('Open the results');
+  });
+
+  it('lists the worst findings first, no more than the limit, and counts the rest', () => {
+    const many = Array.from({ length: MAX_ISSUE_FINDINGS + 3 }, (_, i) =>
+      found('error', `problem ${i}`),
+    );
+    const { body } = checkIssueText({
+      ...input,
+      findings: [found('warning', 'mild'), ...many],
+    });
+    expect(body).toContain('...and 4 more.');
+    expect(body.indexOf('problem 0')).toBeGreaterThan(-1);
+    expect(body).not.toContain('mild');
+  });
+
+  it('cannot mention a user or make a link from what the site said', () => {
+    const { body } = checkIssueText({
+      ...input,
+      findings: [found('error', 'ping @someone see https://evil.test #1')],
+    });
+    expect(body).not.toContain('@someone');
+    expect(body).not.toContain('https://evil.test');
+  });
+
+  it('never goes past what GitHub accepts, and falls back to the id for a check it does not know', () => {
+    const { title, body } = checkIssueText({
+      ...input,
+      check: 'no-such-check',
+      source: 'x'.repeat(MAX_TEXT),
+    });
+    expect(body.length).toBeLessThanOrEqual(MAX_TEXT + 20);
+    expect(title).toBe('[Plumbline] no-such-check on site.test');
+  });
+});
+
+describe('the comments the app makes', () => {
+  const where = {
+    repo: 'acme/site',
+    host: 'site.test',
+    source: null,
+    sha: 'abcdef123456',
+    where: '#4 (commit `abcdef1`)',
+  };
+
+  it.each([
+    ['fixed', 'no longer finds this problem as of #4'],
+    ['off', 'turned off by the rules in `plumbline.yaml`'],
+    ['level', 'no longer opens an issue under the rules'],
+    ['removed', 'no longer has this check'],
+    ['undeployed', 'site.test is no longer deployed from this repository'],
+  ] as const)('says why it closed an issue: %s', (reason, text) => {
+    expect(closingComment(reason, where)).toContain(text);
+  });
+
+  it('links the rules file in a closing comment when there is one', () => {
+    expect(
+      closingComment('off', { ...where, source: 'plumbline.yaml' }),
+    ).toContain('blob/abcdef123456/plumbline.yaml');
+  });
+
+  it('asks not to close the issue and shows how to turn the check off instead', () => {
+    const text = reopenedComment('seo-viewport', 'site.test');
+    expect(text).toContain('Please do not close this issue');
+    expect(text).toContain(offSnippet('seo-viewport'));
+    expect(text).toContain('closes this issue by itself');
+  });
+
+  it('says it stops reopening, and that the problem stays reported', () => {
+    const text = leftClosedComment('seo-viewport');
+    expect(text).toContain('will not reopen it');
+    expect(text).toContain('still reported in Plumbline');
+    expect(text).toContain(offSnippet('seo-viewport'));
+  });
+
+  it('counts the problems that found no room', () => {
+    expect(deferredComment(1)).toContain('1 more problem than');
+    expect(deferredComment(3)).toContain('3 more problems than');
+  });
+
+  it('says a problem is back, or changed, and that the issue was replaced', () => {
+    expect(backComment('#4')).toContain('back as of #4');
+    expect(changedComment('#4')).toContain('different problem as of #4');
+    expect(replacedComment()).toContain('one issue for each check');
   });
 });
 
@@ -334,20 +464,11 @@ describe('what a hostile configuration can make the text hold', () => {
     expect(summary).toContain('...and 5 more.');
   });
 
-  it('never goes past what GitHub accepts, in a summary or an issue', () => {
+  it('never goes past what GitHub accepts in a summary', () => {
     const findings = Array.from({ length: MAX_LISTED }, (_, i) =>
       found('error', 'x'.repeat(5_000) + i),
     );
     const out = checkRunOutput({ ...base, findings, problems: [] });
     expect(out.summary.length).toBeLessThanOrEqual(MAX_TEXT + 20);
-    const issue = issueText({
-      ...base,
-      findings,
-      problems: [],
-      sha: null,
-      level: 'error',
-    });
-    expect(issue.body.length).toBeLessThanOrEqual(MAX_TEXT + 20);
-    expect(issue.body.endsWith('...(cut short)')).toBe(true);
   });
 });

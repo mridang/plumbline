@@ -356,34 +356,66 @@ describe('POST /webhooks/github', () => {
       sender: { login: sender },
     });
 
+    /** What the fake GitHub is asked: the installation token, then edits and comments. */
+    let asked: string[];
+
     beforeEach(async () => {
-      await saveIssue(createDatabase(made.d1), 'acme/site', 'site.test', {
-        number: 12,
-        state: 'open',
-        signature: 'sig',
+      asked = fakeGitHub({
+        'https://api.github.com/app/installations/5/access_tokens': () =>
+          Response.json({ token: 'ghs_1' }),
+        'https://api.github.com/repos/acme/site/issues/12/comments': () =>
+          Response.json({ id: 1 }),
+        'https://api.github.com/repos/acme/site/issues/12': () =>
+          Response.json({ id: 12, number: 12, state: 'open' }),
       });
+      await saveIssue(
+        createDatabase(made.d1),
+        'acme/site',
+        'site.test',
+        'seo-viewport',
+        { number: 12, state: 'open', signature: 'sig', reopens: 0 },
+      );
     });
 
     const stored = () =>
-      issueOf(createDatabase(made.d1), 'acme/site', 'site.test');
+      issueOf(
+        createDatabase(made.d1),
+        'acme/site',
+        'site.test',
+        'seo-viewport',
+      );
 
-    it('notes an issue a person closed, so it is not reopened for the same problems', async () => {
+    it('reopens an issue a person closed while the problem is still there, and counts it', async () => {
       expect((await deliver('issues', issueEvent('closed'))).status).toBe(202);
       expect(await stored()).toMatchObject({
-        state: 'dismissed',
+        state: 'open',
         signature: 'sig',
+        reopens: 1,
       });
+      expect(asked).toEqual([
+        'POST https://api.github.com/app/installations/5/access_tokens',
+        'PATCH https://api.github.com/repos/acme/site/issues/12',
+        'POST https://api.github.com/repos/acme/site/issues/12/comments',
+      ]);
     });
 
     it('notes an issue a person reopened', async () => {
-      await deliver('issues', issueEvent('closed'));
+      await saveIssue(
+        createDatabase(made.d1),
+        'acme/site',
+        'site.test',
+        'seo-viewport',
+        { number: 12, state: 'dismissed', signature: 'sig', reopens: 3 },
+      );
       await deliver('issues', issueEvent('reopened'));
       expect((await stored())?.state).toBe('open');
+      expect(asked).toEqual([]);
     });
 
     it('ignores what the app did itself', async () => {
       await deliver('issues', issueEvent('closed', 'plumbline-test[bot]'));
       expect((await stored())?.state).toBe('open');
+      expect(asked).toEqual([]);
     });
 
     it('forgets an issue that was deleted, whoever deleted it', async () => {
@@ -396,6 +428,7 @@ describe('POST /webhooks/github', () => {
       await deliver('issues', issueEvent('edited'));
       await deliver('issues', issueEvent('labeled'));
       expect((await stored())?.state).toBe('open');
+      expect(asked).toEqual([]);
     });
   });
 });

@@ -4,8 +4,8 @@
  * What a successful deployment on GitHub starts. The repository's
  * `plumbline.yaml` is read at the deployed commit to find the rules; the
  * scanner container runs every check, and the rules say which count. A live
- * site is checked as its registered domains and its findings go to the issue
- * that tracks the site; a preview is checked at the address the deployment
+ * site is checked as its registered domains and each check that finds a problem
+ * has an issue of its own; a preview is checked at the address the deployment
  * names and the findings go to a check run on the commit, which GitHub shows
  * on the pull request. Nothing here may fail the delivery: a problem reaching
  * GitHub is logged and the run goes on with the default rules.
@@ -13,6 +13,7 @@
 
 import { parseHost } from '@/domain/api/domain-resource';
 import type { Database } from '@/domain/db/client';
+import { listDomainsOfRepo } from '@/domain/db/domains';
 import { GitHubApi, GitHubError, TooLargeError } from '@/domain/github/api';
 import { reportOfCommit, savePreviewReport } from '@/domain/db/preview-reports';
 import { installationToken } from '@/domain/github/app-auth';
@@ -31,10 +32,14 @@ import {
 } from '@/domain/suite/deploy';
 import { findingsOf } from '@/domain/suite/diff';
 import {
+  closeUndeployed,
+  newBudget,
+  noteDeferred,
   originOf,
+  pauseBetweenWrites,
   publishCheckRun,
   publishUnreachable,
-  syncIssue,
+  syncIssues,
 } from '@/domain/suite/publish';
 import { dispatchRun } from '@/domain/suite/dispatch';
 import { applyLevels } from '@/domain/suite/rules';
@@ -44,6 +49,8 @@ export interface RunDeps extends Deps {
   readonly fetcher?: typeof fetch;
   /** The app's public origin, for the link in a check to its report; no report is kept without it. */
   readonly appUrl?: string;
+  /** Waits between two writes to GitHub; a short pause when not given. */
+  readonly pause?: () => Promise<void>;
 }
 
 /** The longest configuration file that is read; a real one is a few lines. */
@@ -106,7 +113,11 @@ async function rulesFor(
     : rules;
 }
 
-/** Checks the registered sites of the repository and reports each on its issue. */
+/**
+ * Checks the registered sites of the repository and reports each problem on
+ * its own issue. The issues of checks the rules no longer ask for, and of sites
+ * the repository no longer deploys, are closed.
+ */
 async function checkLive(
   db: Database,
   api: GitHubApi | null,
@@ -120,22 +131,32 @@ async function checkLive(
     levels: rules.levels,
   });
   const origin = api ? originOf(api, deployed.repo, deployed.sha) : undefined;
+  // One budget for the whole repository, so a monorepo's first run is as calm
+  // as a single site's.
+  const budget = newBudget();
+  const pause = deps.pause ?? pauseBetweenWrites;
   for (const outcome of outcomes) {
     // Nothing to say about a site that was not looked at. A site that looks as
-    // it did is still synced, because the issue may not match what it found
+    // it did is still synced, because an issue may not match what it found
     // (the last update failed, or a person deleted it).
     if (!api || outcome.skipped || !outcome.url) {
       continue;
     }
     try {
-      await syncIssue(api, db, {
+      await syncIssues(api, db, {
         repo: deployed.repo,
         host: outcome.host,
         sha: deployed.sha,
         url: outcome.url,
         findings: outcome.findings ?? [],
-        unchanged: outcome.unchanged ?? false,
+        notRun: outcome.notRun ?? [],
+        levels: rules.levels,
         origin,
+        budget,
+        pause,
+        ...(deps.appUrl
+          ? { pageUrl: `${deps.appUrl}/repos/${deployed.repo}` }
+          : {}),
         level: rules.issues,
         source: rules.source,
         problems: rules.problems,
@@ -152,6 +173,27 @@ async function checkLive(
         findings: outcome.findings ?? [],
       });
     }
+  }
+  if (!api) {
+    return;
+  }
+  try {
+    await noteDeferred(api, deployed.repo, budget);
+    // The sites the repository still deploys; the issues of any other are closed.
+    const hosts = new Set(
+      (await listDomainsOfRepo(db, userId, deployed.repo)).map(
+        (site) => site.host,
+      ),
+    );
+    await closeUndeployed(api, db, {
+      repo: deployed.repo,
+      hosts,
+      sha: deployed.sha,
+      source: rules.source,
+      pause,
+    });
+  } catch (error) {
+    console.error('issue cleanup failed', deployed.repo, error);
   }
 }
 
