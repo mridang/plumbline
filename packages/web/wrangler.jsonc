@@ -159,15 +159,23 @@
     { "tag": "v1", "new_sqlite_classes": ["UserHub"] },
     { "tag": "v2", "new_sqlite_classes": ["ProbeContainer"] },
   ],
-  "containers": [
-    {
-      "class_name": "ProbeContainer",
-      "image": "./probe/Dockerfile",
-      // The smallest instance: 1/16 vCPU and 256 MiB are plenty for handshakes.
-      "instance_type": "lite",
-      "max_instances": 3,
-    },
-  ],
+  // The prober's container is OFF until the account lets the deploy manage
+  // containers. The deploy builds the image (probe/Dockerfile) and then calls
+  // Cloudflare's containers API, which answered with an error for the
+  // current API token. Give the token the Containers permission (Account,
+  // Containers, Edit) and make sure Containers is enabled for the account,
+  // then put this block back; until then probes answer "not available" and the
+  // TLS checks show as not run.
+  //
+  // "containers": [
+  //   {
+  //     "class_name": "ProbeContainer",
+  //     "image": "./probe/Dockerfile",
+  //     // The smallest instance: 1/16 vCPU and 256 MiB are plenty for handshakes.
+  //     "instance_type": "lite",
+  //     "max_instances": 3,
+  //   },
+  // ],
   "vars": {
     // The Cloudflare plan: sets the limits of the server-side checks.
     "WORKERS_PLAN": "paid",
