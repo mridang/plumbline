@@ -7,7 +7,6 @@ import {
   createDomainsCollection,
   domainPath,
 } from '@/domain/api/domains';
-import { MAX_DOMAINS } from '@/domain/db/domains';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import {
   installCloudflareContext,
@@ -51,16 +50,6 @@ beforeEach(() => {
 });
 
 afterEach(() => restore());
-
-/** A JSON request to the collection. */
-const post = (body: unknown, headers: Record<string, string> = {}) =>
-  collection.POST(
-    new Request(`${ORIGIN}/api/domains`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', ...headers },
-      body: typeof body === 'string' ? body : JSON.stringify(body),
-    }),
-  );
 
 /** A GET of the collection with the given query. */
 const list = (query = '') =>
@@ -132,84 +121,6 @@ describe('GET /api/domains', () => {
   it('answers 401 when nobody is signed in', async () => {
     session.uid = null;
     expect((await list()).status).toBe(401);
-  });
-});
-
-describe('POST /api/domains', () => {
-  it('adds the domain with 201 and its address', async () => {
-    const res = await post({ host: 'Example.com' });
-    const body = (await res.json()) as { id: string; host: string };
-    expect([res.status, body.host, res.headers.get('location')]).toEqual([
-      201,
-      'example.com',
-      `${ORIGIN}/api/domains/${body.id}`,
-    ]);
-  });
-
-  it('runs every check on a new domain', async () => {
-    const body = (await (await post({ host: 'example.com' })).json()) as {
-      all_checks: boolean;
-    };
-    expect(body.all_checks).toBe(true);
-  });
-
-  it('answers 200 with the domain the person already has for that host', async () => {
-    seed(ID, 7, 'example.com');
-    const res = await post({ host: 'https://example.com/page' });
-    expect([res.status, res.headers.get('location')]).toEqual([
-      200,
-      `${ORIGIN}/api/domains/${ID}`,
-    ]);
-  });
-
-  it('answers 400 with the reason for a host that is not a domain', async () => {
-    const res = await post({ host: '10.0.0.1' });
-    const body = (await res.json()) as { errors: string[] };
-    expect([res.status, body.errors]).toEqual([
-      400,
-      ['host: Enter a domain name, not an IP address.'],
-    ]);
-  });
-
-  it('answers 400 for a body that is not an object', async () => {
-    expect((await post('[1]')).status).toBe(400);
-  });
-
-  it('answers 415 for a body that is not JSON', async () => {
-    expect(
-      (await post('host=example.com', { 'content-type': 'text/plain' })).status,
-    ).toBe(415);
-  });
-
-  it(`answers 409 once the person keeps ${MAX_DOMAINS} domains`, async () => {
-    for (let n = 0; n < MAX_DOMAINS; n += 1) {
-      seed(`id-${n}`, 7, `d${n}.example`);
-    }
-    const res = await post({ host: 'one-more.example' });
-    const body = (await res.json()) as { type: string };
-    expect([res.status, body.type]).toEqual([
-      409,
-      '/problems/too-many-domains',
-    ]);
-  });
-
-  it('still answers the domain the person has when they are at the limit', async () => {
-    for (let n = 0; n < MAX_DOMAINS; n += 1) {
-      seed(`id-${n}`, 7, `d${n}.example`);
-    }
-    expect((await post({ host: 'd3.example' })).status).toBe(200);
-  });
-
-  it('answers 403 for a write from another site', async () => {
-    expect(
-      (await post({ host: 'example.com' }, { 'sec-fetch-site': 'cross-site' }))
-        .status,
-    ).toBe(403);
-  });
-
-  it('answers 401 when nobody is signed in', async () => {
-    session.uid = null;
-    expect((await post({ host: 'example.com' })).status).toBe(401);
   });
 });
 
@@ -308,39 +219,5 @@ describe('PATCH /api/domains/{id}', () => {
       (await patch(ID, { checks: null }, { 'sec-fetch-site': 'cross-site' }))
         .status,
     ).toBe(403);
-  });
-});
-
-describe('DELETE /api/domains/{id}', () => {
-  beforeEach(() => {
-    seed(ID, 7, 'example.com');
-    raw
-      .prepare(
-        "INSERT INTO reports (id, domain_id, user_id, url, passed, warned, failed, skipped, outcomes, created_at) VALUES ('r1', ?, 7, 'https://example.com/', 0, 0, 0, 0, '[]', 'now')",
-      )
-      .run(ID);
-  });
-
-  it('answers 204', async () => {
-    expect((await call('DELETE', ID)).status).toBe(204);
-  });
-
-  it('removes the domain', async () => {
-    await call('DELETE', ID);
-    expect((await call('GET', ID)).status).toBe(404);
-  });
-
-  it('removes the domain’s reports', async () => {
-    await call('DELETE', ID);
-    expect(raw.prepare('SELECT id FROM reports').all()).toEqual([]);
-  });
-
-  it('answers 404 for another person’s domain', async () => {
-    session.uid = 8;
-    expect((await call('DELETE', ID)).status).toBe(404);
-  });
-
-  it('answers 404 for an id that cannot be a domain', async () => {
-    expect((await call('DELETE', 'nope')).status).toBe(404);
   });
 });

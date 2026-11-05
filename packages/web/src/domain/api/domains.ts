@@ -9,24 +9,17 @@
  * {@link requestCookieResolver}, so a test can inject a fake resolver.
  *
  *   GET    /api/domains              → 200, a page of domains
- *   POST   /api/domains {host}       → 201 + Location (200 + Location when the
- *                                       person already has it)
  *   GET    /api/domains/{id}         → 200 + ETag
  *   PATCH  /api/domains/{id} {checks} → 200 + ETag (If-Match honoured)
- *   DELETE /api/domains/{id}         → 204
  */
 
 import {
   ApiController,
-  created,
   decodeCursor,
   entityTag,
   ifMatchSatisfied,
-  noContent,
-  ok,
   page,
   parseLimit,
-  problem,
   problems,
   readJsonObject,
   sliceAfter,
@@ -40,22 +33,16 @@ import {
 import {
   domainResource,
   isDomainId,
-  parseDomainInput,
   parseDomainPatch,
   type DomainResource,
 } from '@/domain/api/domain-resource';
 import { getDatabase } from '@/domain/db/client';
 import {
-  MAX_DOMAINS,
-  addDomain,
-  countDomains,
-  deleteDomain,
   getDomain,
   listDomains,
   setDomainChecks,
   type Domain,
 } from '@/domain/db/domains';
-import { deleteReportsOf } from '@/domain/db/reports';
 
 /** The signed-in caller's id. */
 interface UidContext {
@@ -87,16 +74,6 @@ function compare(a: CursorPosition, b: CursorPosition): number {
     : a.key.localeCompare(b.key);
 }
 
-/** The refusal for a person who already keeps the most domains allowed. */
-function tooManyDomains(): Response {
-  return problem(
-    409,
-    '/problems/too-many-domains',
-    'Too many domains',
-    `You can keep up to ${MAX_DOMAINS} domains. Remove one first.`,
-  );
-}
-
 /** The entity tag of a domain's representation. */
 export function domainTag(resource: DomainResource): Promise<string> {
   return entityTag(JSON.stringify(resource));
@@ -104,84 +81,42 @@ export function domainTag(resource: DomainResource): Promise<string> {
 
 /**
  * The domains collection: `GET` lists the person's domains a page at a time,
- * oldest first; `POST` adds one (201), or answers 200 with the one they
- * already have for that host. 400 for a host that is not a public domain, 409
- * when they already keep {@link MAX_DOMAINS}, 401/403 when not signed in or
- * cross-site, 415 for a body that is not JSON.
+ * oldest first. Domains are not added by hand: they come from the GitHub sync.
+ * 401/403 when not signed in or cross-site.
  */
 export function createDomainsCollection(
   resolver: CurrentUserResolver = requestCookieResolver,
 ): ApiController<UidContext> {
   return new ApiController<UidContext>({
     context: async (request) => ({ uid: await liveUid(request, resolver) }),
-  })
-    .on<
-      { readonly limit: number; readonly after?: CursorPosition },
-      { readonly items: readonly Domain[]; readonly next?: CursorPosition }
-    >({
-      method: 'GET',
-      decode: (request) => {
-        const query = new URL(request.url).searchParams;
-        const limit = parseLimit(query.get('limit'));
-        if (limit instanceof Response) {
-          throw limit;
-        }
-        const cursor = query.get('cursor');
-        const after = cursor === null ? undefined : decodeCursor(cursor);
-        if (cursor !== null && !after) {
-          throw problems.badRequest('cursor: not one this API handed out.');
-        }
-        return after ? { limit, after } : { limit };
-      },
-      handle: async ({ limit, after }, { uid }) =>
-        sliceAfter(
-          await listDomains(getDatabase(), uid),
-          positionOf,
-          compare,
-          after,
-          limit,
-        ),
-      encode: ({ items, next }) =>
-        page(items.map(domainResource), next, PRIVATE),
-    })
-    .on<string, { readonly domain: Domain; readonly created: boolean }>({
-      method: 'POST',
-      decode: async (request) => {
-        const body = await readJsonObject(
-          request,
-          'The domain must be a JSON object.',
-        );
-        if (!body.ok) {
-          throw body.response;
-        }
-        const host = parseDomainInput(body.value);
-        if (!host.ok) {
-          throw problems.badRequest('The domain is not valid.', host.errors);
-        }
-        return host.value;
-      },
-      handle: async (host, { uid }) => {
-        const db = getDatabase();
-        if ((await countDomains(db, uid)) >= MAX_DOMAINS) {
-          // Adding one they already have is still fine; it changes nothing.
-          const existing = (await listDomains(db, uid)).find(
-            (d) => d.host === host,
-          );
-          if (!existing) {
-            throw tooManyDomains();
-          }
-          return { domain: existing, created: false };
-        }
-        return addDomain(db, uid, host);
-      },
-      encode: ({ domain, created: isNew }) =>
-        isNew
-          ? created(domainResource(domain), domainPath(domain.id))
-          : ok(domainResource(domain), {
-              location: domainPath(domain.id),
-              headers: PRIVATE,
-            }),
-    });
+  }).on<
+    { readonly limit: number; readonly after?: CursorPosition },
+    { readonly items: readonly Domain[]; readonly next?: CursorPosition }
+  >({
+    method: 'GET',
+    decode: (request) => {
+      const query = new URL(request.url).searchParams;
+      const limit = parseLimit(query.get('limit'));
+      if (limit instanceof Response) {
+        throw limit;
+      }
+      const cursor = query.get('cursor');
+      const after = cursor === null ? undefined : decodeCursor(cursor);
+      if (cursor !== null && !after) {
+        throw problems.badRequest('cursor: not one this API handed out.');
+      }
+      return after ? { limit, after } : { limit };
+    },
+    handle: async ({ limit, after }, { uid }) =>
+      sliceAfter(
+        await listDomains(getDatabase(), uid),
+        positionOf,
+        compare,
+        after,
+        limit,
+      ),
+    encode: ({ items, next }) => page(items.map(domainResource), next, PRIVATE),
+  });
 }
 
 /** The domains collection bound to the production resolver. */
@@ -210,7 +145,7 @@ async function tagged(domain: Readonly<Domain>): Promise<Response> {
  * One domain: `GET` reads it (with an `ETag`), `PATCH` chooses its checks
  * (JSON Merge Patch with `checks`: a list of check ids and group names, or
  * null for every check; `If-Match` is honoured, 412 when it no longer
- * matches), `DELETE` removes it and its reports. 404 when the person has no
+ * matches). 404 when the person has no
  * domain with that id, 400 for checks that do not exist.
  */
 export function createDomainItem(
@@ -267,17 +202,6 @@ export function createDomainItem(
         return tagged(updated);
       },
       encode: (response) => response,
-    })
-    .on<null, void>({
-      method: 'DELETE',
-      handle: async (_input, { uid, id }) => {
-        const db = getDatabase();
-        if (!isDomainId(id) || !(await deleteDomain(db, uid, id))) {
-          throw problems.notFound('domain');
-        }
-        await deleteReportsOf(db, uid, id);
-      },
-      encode: () => noContent(),
     });
 }
 

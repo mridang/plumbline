@@ -1,59 +1,31 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import type { ReactElement } from 'react';
 
-import { ScanResults } from '@/components/scan/scan-results';
-import { Container, Heading } from '@/components/ui/layout';
+import { repoPath } from '@/components/repos/repo-path';
+import { Container } from '@/components/ui/layout';
 import { PageHeader } from '@/components/ui/page-header';
 import { isDomainId } from '@/domain/api/domain-resource';
-import { isReportId, reportResource } from '@/domain/api/report-resource';
-import { CHECKS, enabledChecks } from '@/domain/checks/catalogue';
-import { savedScan } from '@/domain/checks/saved-scan';
+import { isRunId } from '@/domain/api/runs';
 import { getDatabase } from '@/domain/db/client';
 import { getDomain } from '@/domain/db/domains';
-import { getReport, latestReport, listReports } from '@/domain/db/reports';
+import { latestReport, listReports } from '@/domain/db/reports';
+import { getRun, runAsReport } from '@/domain/db/runs';
 import { getCurrentUser } from '@/lib/core/auth/current-user';
 
-import { CheckForm, type CheckSection } from './_components/check-form';
-import { RemoveDomainButton } from './_components/remove-domain-button';
-import { RunChecks } from './_components/run-checks';
-import { compareText } from '@/lib/intl';
+import { SitePanel } from '@/app/(site)/repos/[owner]/[repo]/_components/site-panel';
 
 export const dynamic = 'force-dynamic';
 
 /** The tab title of a domain's page. */
 export const metadata: Metadata = { title: 'Domain' };
 
-/** Every check, grouped by report section in the report's own order. */
-function sections(): CheckSection[] {
-  const bySection = new Map<
-    string,
-    { title: string; order: number; checks: CheckSection['checks'][number][] }
-  >();
-  for (const check of CHECKS) {
-    const group = bySection.get(check.section) ?? {
-      title: check.section_title,
-      order: check.section_order,
-      checks: [],
-    };
-    group.checks.push({
-      id: check.id,
-      name: check.name,
-      description: check.description,
-    });
-    bySection.set(check.section, group);
-  }
-  return [...bySection.entries()]
-    .sort(([, a], [, b]) => a.order - b.order || compareText(a.title, b.title))
-    .map(([id, group]) => ({ id, title: group.title, checks: group.checks }));
-}
-
 /**
- * One of the signed-in person's domains: run its checks (and save the report),
- * the saved reports with the newest (or the one picked) drawn in full, the
- * form that chooses which checks run, and a way to remove it. Someone who is
- * not signed in is sent to sign in; a domain that is not theirs is not found.
+ * The old address of a site's page. A site found in a repository now lives on
+ * that repository's page, so this sends the person there (to the report they
+ * asked for, if any); only a domain with no repository, added before sites
+ * came from GitHub, is still shown here. Someone who is not signed in is sent
+ * to sign in; a domain that is not theirs is not found.
  */
 export default async function DomainPage({
   params,
@@ -73,88 +45,31 @@ export default async function DomainPage({
   if (!domain) {
     notFound();
   }
-  const enabled = enabledChecks(domain.checks);
+  if (domain.repo) {
+    const query = picked && isRunId(picked) ? `?report=${picked}` : '';
+    redirect(`${repoPath(domain.repo)}${query}#site-${domain.id}`);
+  }
   const [reports, shown] = await Promise.all([
     listReports(db, user.id, domain.id, 20),
-    picked && isReportId(picked)
-      ? getReport(db, user.id, domain.id, picked)
+    picked && isRunId(picked)
+      ? getRun(
+          db,
+          user.id,
+          { domainId: domain.id, host: domain.host },
+          picked,
+        ).then((run) => (run ? runAsReport(run, domain.id) : undefined))
       : latestReport(db, user.id, domain.id),
   ]);
-
   return (
     <>
-      <PageHeader
-        eyebrow="Domain"
-        title={domain.host}
-        intro={
-          <>
-            {enabled.length} of {CHECKS.length} checks run for this domain.
-          </>
-        }
-      >
-        <div className="mt-8">
-          <RunChecks
-            domainId={domain.id}
-            host={domain.host}
-            checks={enabled}
-            repository={domain.repo ?? undefined}
-          />
-        </div>
-      </PageHeader>
-
-      <Container className="space-y-14 pb-16">
-        <section>
-          <Heading variant="h3">Saved reports</Heading>
-          {reports.length === 0 ? (
-            <p className="mt-3 text-muted">
-              No reports yet. Run the checks to make one.
-            </p>
-          ) : (
-            <ul className="mt-4 flex flex-wrap gap-2">
-              {reports.map((report) => (
-                <li key={report.id}>
-                  <Link
-                    href={`/domains/${domain.id}?report=${report.id}`}
-                    aria-current={report.id === shown?.id ? 'true' : undefined}
-                    className="focus-ring inline-flex h-9 items-center rounded-full border border-field px-4 text-sm tabular-nums hover:border-ink aria-current:border-ink aria-current:bg-ink aria-current:text-on-ink"
-                  >
-                    {report.created_at.slice(0, 16).replace('T', ' ')} ·{' '}
-                    {report.failed} failed
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-          {shown ? (
-            <ScanResults
-              scan={savedScan(reportResource(shown))}
-              repository={domain.repo ?? undefined}
-            />
-          ) : null}
-        </section>
-
-        <section>
-          <Heading variant="h3">Checks</Heading>
-          <p className="mt-2 max-w-2xl text-muted">
-            Choose which checks run for {domain.host}. With every check on,
-            checks added to Plumbline later run too.
-          </p>
-          <div className="mt-6">
-            <CheckForm
-              domainId={domain.id}
-              sections={sections()}
-              enabled={enabled}
-            />
-          </div>
-        </section>
-
-        <section>
-          <Heading variant="h3">Remove</Heading>
-          <p className="mt-2 mb-4 text-muted">
-            Removing a domain also removes its saved reports.
-          </p>
-          <RemoveDomainButton domainId={domain.id} host={domain.host} />
-        </section>
+      <PageHeader eyebrow="Site" title={domain.host} />
+      <Container className="pb-16">
+        <SitePanel
+          domain={domain}
+          reports={reports}
+          shown={shown}
+          base={`/domains/${domain.id}`}
+        />
       </Container>
     </>
   );

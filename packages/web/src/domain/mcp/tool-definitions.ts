@@ -275,17 +275,6 @@ const TOOL_DEFINITIONS = [
     },
   },
   {
-    name: 'add_domain',
-    description:
-      "Adds a domain to the user's list, with every check switched on. Adding one they already have changes nothing.",
-    inputSchema: {
-      type: 'object',
-      additionalProperties: false,
-      properties: { domain: DOMAIN },
-      required: ['domain'],
-    },
-  },
-  {
     name: 'remove_domain',
     description:
       "Removes a domain from the user's list, with all of its saved reports.",
@@ -361,15 +350,6 @@ const TOOL_PRESENTATION: Readonly<Record<ToolName, ToolPresentation>> = {
   get_report: { title: 'Show a report', annotations: READS },
   list_reports: { title: 'List reports', annotations: READS },
   scan_domain: { title: 'Scan a domain', annotations: READS },
-  add_domain: {
-    title: 'Add a domain',
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  },
   remove_domain: {
     title: 'Remove a domain',
     annotations: {

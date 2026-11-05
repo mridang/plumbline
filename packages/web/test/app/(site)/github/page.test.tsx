@@ -116,7 +116,7 @@ describe('GitHubPage', () => {
     expect(out).toContain('mridang');
     expect(out).toContain('acme');
     expect(out).toContain('acme/site');
-    expect(out).toContain(`href="/domains/${domain.id}"`);
+    expect(out).toContain(`href="/repos/acme/site#site-${domain.id}"`);
     expect(out).toContain('1 other repository with no deployment found');
     expect(out).not.toContain('Refresh from GitHub');
   });

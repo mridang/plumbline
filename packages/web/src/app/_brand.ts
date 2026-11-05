@@ -62,7 +62,9 @@ export const CRAWLABLE_PATHS: readonly string[] = ['/$', '/privacy', '/terms'];
 
 /** What crawlers are kept out of: the API. */
 export const PRIVATE_PATHS: readonly string[] = [
+  '/dashboard',
   '/domains',
+  '/repos',
   '/connect',
   '/login',
   '/api/',
@@ -95,7 +97,7 @@ export const MANIFEST_CATEGORIES: readonly string[] = [
 
 /**
  * What else the installed app offers: two shortcuts on its icon, to scan a
- * site and to the kept domains. No screenshots or share target.
+ * site and to the dashboard. No screenshots or share target.
  */
 export const MANIFEST_EXTRAS: Pick<
   MetadataRoute.Manifest,
@@ -112,10 +114,10 @@ export const MANIFEST_EXTRAS: Pick<
       ],
     },
     {
-      name: 'Your domains',
-      short_name: 'Domains',
-      description: 'Your kept domains, their checks and reports.',
-      url: '/domains?source=pwa-shortcut',
+      name: 'Your dashboard',
+      short_name: 'Dashboard',
+      description: 'Your repositories and sites, and how each stands.',
+      url: '/dashboard?source=pwa-shortcut',
       icons: [
         { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
       ],

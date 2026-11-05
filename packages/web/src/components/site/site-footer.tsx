@@ -21,7 +21,7 @@ export const FOOTER_COLUMNS: readonly Readonly<{
     links: [
       { label: 'Scan a site', href: '/#scan' },
       { label: 'What it checks', href: '/#checks' },
-      { label: 'Your domains', href: '/domains' },
+      { label: 'Your dashboard', href: '/dashboard' },
       { label: 'Connect an assistant', href: '/connect' },
     ],
   },

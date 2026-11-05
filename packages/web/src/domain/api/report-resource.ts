@@ -263,16 +263,20 @@ function storedOutcomeOf(raw: unknown): StoredOutcome | undefined {
   return parsed.ok ? parsed.value : undefined;
 }
 
+/** The API's view of stored outcomes: each with its check's name; anything else in the list is dropped. */
+export function outcomeResources(
+  outcomes: readonly unknown[],
+): OutcomeResource[] {
+  return outcomes
+    .map(storedOutcomeOf)
+    .filter((o): o is StoredOutcome => o !== undefined)
+    .map((o) => ({ ...o, name: findCheck(o.id)?.name ?? o.id }));
+}
+
 /** The API's view of a stored report: each outcome with its check's name. */
 export function reportResource(report: Readonly<Report>): ReportResource {
   const { outcomes, ...summary } = report;
-  return {
-    ...summary,
-    outcomes: outcomes
-      .map(storedOutcomeOf)
-      .filter((o): o is StoredOutcome => o !== undefined)
-      .map((o) => ({ ...o, name: findCheck(o.id)?.name ?? o.id })),
-  };
+  return { ...summary, outcomes: outcomeResources(outcomes) };
 }
 
 /** Whether a path segment can be a report id (the ids are UUIDs). */

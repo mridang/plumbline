@@ -548,83 +548,6 @@
             "$ref": "#/components/responses/TooManyRequests"
           }
         }
-      },
-      "post": {
-        "operationId": "createDomain",
-        "tags": ["domains"],
-        "summary": "Add a domain, with every check on.",
-        "security": [
-          {
-            "session": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DomainRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "The person already has this domain; it is returned unchanged, with its `Location`.",
-            "headers": {
-              "Location": {
-                "$ref": "#/components/headers/Location"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Domain"
-                }
-              }
-            }
-          },
-          "201": {
-            "description": "Added.",
-            "headers": {
-              "Location": {
-                "$ref": "#/components/headers/Location"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Domain"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "409": {
-            "description": "The person already keeps the most domains allowed (50).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "415": {
-            "$ref": "#/components/responses/UnsupportedMediaType"
-          },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests"
-          }
-        }
       }
     },
     "/api/domains/{id}": {
@@ -738,33 +661,6 @@
           },
           "415": {
             "$ref": "#/components/responses/UnsupportedMediaType"
-          },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests"
-          }
-        }
-      },
-      "delete": {
-        "operationId": "deleteDomain",
-        "tags": ["domains"],
-        "summary": "Remove a domain and its saved reports.",
-        "security": [
-          {
-            "session": []
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Removed."
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -933,6 +829,103 @@
         }
       }
     },
+    "/api/domains/{id}/runs": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/DomainId"
+        }
+      ],
+      "get": {
+        "operationId": "listRuns",
+        "tags": ["domains"],
+        "summary": "List a domain's runs, newest first, without their outcomes.",
+        "description": "Every run of the domain's checks, whoever started it: a person pressing Run checks (`manual`), a finished deployment (`deployment`), the daily re-check (`scheduled`) or a change to `plumbline.yaml` (`config`). A count is null for an older run that did not keep it.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of runs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/domains/{id}/runs/{run_id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/DomainId"
+        },
+        {
+          "name": "run_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getRun",
+        "tags": ["domains"],
+        "summary": "Read one run of a domain with every check's outcome.",
+        "description": "A server run from before outcomes were kept answers 404, as does an id that is not one this API lists.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/users/self": {
       "get": {
         "operationId": "getSelf",
@@ -1040,6 +1033,81 @@
         "responses": {
           "204": {
             "description": "Disconnected."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/users/self/repositories/hidden/{owner}/{repo}": {
+      "parameters": [
+        {
+          "name": "owner",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "repo",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "put": {
+        "operationId": "hideRepository",
+        "tags": ["account"],
+        "summary": "Hide a repository from the dashboard.",
+        "description": "Only the signed-in person's dashboard changes. The repository is still checked by the webhooks and the schedule, and its issues and check runs still go to GitHub. Hiding a repository that is already hidden changes nothing.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The repository is hidden."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "unhideRepository",
+        "tags": ["account"],
+        "summary": "Show a hidden repository on the dashboard again.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The repository is shown again."
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -1514,6 +1582,109 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/ReportSummary"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "RunSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "ran_at",
+          "sha",
+          "passed",
+          "warned",
+          "failed",
+          "skipped",
+          "openable"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "A report's id as it is; a server run's id is `s` and its number."
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["manual", "deployment", "scheduled", "config"]
+          },
+          "ran_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sha": {
+            "type": ["string", "null"],
+            "description": "The commit the run was for, when known."
+          },
+          "passed": {
+            "type": ["integer", "null"]
+          },
+          "warned": {
+            "type": ["integer", "null"]
+          },
+          "failed": {
+            "type": ["integer", "null"]
+          },
+          "skipped": {
+            "type": ["integer", "null"]
+          },
+          "openable": {
+            "type": "boolean",
+            "description": "Whether the run keeps every check's outcome, so it can be read with `getRun`."
+          }
+        }
+      },
+      "Run": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/RunSummary"
+          },
+          {
+            "type": "object",
+            "required": ["url", "outcomes"],
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "outcomes": {
+                "type": "array",
+                "items": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Outcome"
+                    },
+                    {
+                      "type": "object",
+                      "required": ["name"],
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      "RunPage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageLinks"
+          },
+          {
+            "type": "object",
+            "required": ["items"],
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/RunSummary"
                 }
               }
             }

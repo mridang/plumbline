@@ -6,8 +6,8 @@ import { html } from '../render';
 describe('FinalCta', () => {
   const out = html(<FinalCta />);
 
-  it('leads to keeping domains, which asks a visitor to sign in first', () => {
-    expect(out).toMatch(/href="\/domains"[^>]*>Start keeping domains<\/a>/);
+  it('leads to the dashboard, which asks a visitor to sign in first', () => {
+    expect(out).toMatch(/href="\/dashboard"[^>]*>Open your dashboard<\/a>/);
   });
 
   it('leads back up to the scanner', () => {

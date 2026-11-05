@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { ReactElement } from 'react';
 
+import { repoPath } from '@/components/repos/repo-path';
 import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
 import { buttonClass } from '@/components/ui/button';
@@ -160,7 +161,7 @@ export default async function GitHubPage({
                             <li key={host} className="text-sm">
                               {id ? (
                                 <Link
-                                  href={`/domains/${id}`}
+                                  href={`${repoPath(repo.full_name)}#site-${id}`}
                                   className="focus-ring break-all underline"
                                 >
                                   {host}

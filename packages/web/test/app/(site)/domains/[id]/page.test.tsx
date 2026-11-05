@@ -124,7 +124,9 @@ describe('DomainPage', () => {
 
   it('counts the checks chosen for the domain', async () => {
     await setDomainChecks(db, 1, domain.id, ['csp']);
-    expect(await page()).toContain(`1 of ${CHECKS.length} checks run`);
+    expect(await page()).toContain(
+      `(1 of ${CHECKS.length} run for example.com)`,
+    );
   });
 
   it('offers to run the chosen checks', async () => {
@@ -155,7 +157,7 @@ describe('DomainPage', () => {
     const saved = await report(2);
     expect(await page()).toMatch(
       new RegExp(
-        `<a aria-current="true"[^>]*href="/domains/${domain.id}\\?report=${saved.id}"`,
+        `<a aria-current="true"[^>]*href="/domains/${domain.id}\\?report=${saved.id}#site-${domain.id}"`,
       ),
     );
   });
@@ -184,7 +186,32 @@ describe('DomainPage', () => {
     );
   });
 
-  it('offers to remove the domain', async () => {
-    expect(await page()).toContain('Remove domain');
+  it('does not offer to remove the domain: domains come from GitHub', async () => {
+    expect(await page()).not.toContain('Remove domain');
+  });
+
+  it('sends a domain found in a repository to the repository’s page, at that site', async () => {
+    const { domain: found } = await addDomain(
+      db,
+      1,
+      'found.example.com',
+      'acme/site',
+    );
+    await expect(render(found.id)).rejects.toEqual(
+      new Redirected(`/repos/acme/site#site-${found.id}`),
+    );
+  });
+
+  it('keeps the report picked when it sends the person on', async () => {
+    const { domain: found } = await addDomain(
+      db,
+      1,
+      'found.example.com',
+      'acme/site',
+    );
+    const picked = crypto.randomUUID();
+    await expect(render(found.id, picked)).rejects.toEqual(
+      new Redirected(`/repos/acme/site?report=${picked}#site-${found.id}`),
+    );
   });
 });

@@ -60,20 +60,23 @@ describe('SiteHeader signed out', () => {
 describe('SiteHeader signed in', () => {
   const out = html(<SiteHeader user={ADA} />);
 
-  it('links to the domains', () => {
-    expect(out).toContain('href="/domains">Domains</a>');
+  it('links to the dashboard', () => {
+    expect(out).toContain('href="/dashboard">Dashboard</a>');
   });
 
-  it('links to connecting an assistant', () => {
-    expect(out).toContain('href="/connect">Connect AI</a>');
+  it('greets the person by their first name in the account menu', () => {
+    expect(out).toContain('Hi Ada');
+  });
+
+  it('holds the account links in the menu, not in the bar', () => {
+    expect(out).not.toMatch(
+      /href="\/domains"|href="\/connect"|href="\/github"/,
+    );
+    expect(out).not.toContain('>Sign out<');
   });
 
   it('does not offer the scan button, which is for visitors', () => {
     expect(out).not.toContain('Scan a site');
-  });
-
-  it('offers a way to sign out', () => {
-    expect(out).toContain('>Sign out</button>');
   });
 
   it('does not offer to sign in', () => {

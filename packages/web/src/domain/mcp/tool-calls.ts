@@ -30,9 +30,6 @@ import { errorMessage, logError } from '@/utils/logging';
 import type { User } from '@/domain/db/users';
 import { getDatabase, type Database } from '@/domain/db/client';
 import {
-  MAX_DOMAINS,
-  addDomain,
-  countDomains,
   deleteDomain,
   findDomainByHost,
   getDomain,
@@ -118,7 +115,7 @@ async function ownDomain(
     ? { domain }
     : {
         refusal: errorResult(
-          `${host.host} is not one of the user's domains. Use list_domains to see them, or add_domain to add it.`,
+          `${host.host} is not one of the user's domains. Use list_domains to see them.`,
         ),
       };
 }
@@ -190,7 +187,7 @@ async function listRepositoriesTool(
   const repos = await overviewOf(db, user.id);
   if (repos.length === 0) {
     return textResult(
-      'No repositories yet. Add a domain with add_domain, or sign in with GitHub to see the sites of the repositories you have access to.',
+      'No repositories yet. Connect GitHub on Plumbline to see the sites of the repositories you have access to.',
     );
   }
   const lines = repos.flatMap((repo) => [
@@ -290,33 +287,6 @@ function scanDomainTool(domain: Readonly<Domain>): ToolResult {
       `- In the browser: open ${domainLink(domain)} and press "Run checks". It runs the checks chosen for the domain and saves a report, which get_report then reads.`,
       `- On the user's machine: \`${CLI_COMMAND} ${domain.host}\` runs every check, TLS and mail included, and prints the findings (add \`--format json\` for machine-readable output).`,
     ].join('\n'),
-  );
-}
-
-/** `add_domain`: add it with every check on, or say it is already there. */
-async function addDomainTool(
-  db: Database,
-  user: Readonly<User>,
-  args: Args,
-): Promise<ToolResult> {
-  const host = hostOf(args);
-  if ('refusal' in host) {
-    return host.refusal;
-  }
-  const existing = await findDomainByHost(db, user.id, host.host);
-  if (existing) {
-    return textResult(
-      `${host.host} is already one of the user's domains. Page: ${domainLink(existing)}`,
-    );
-  }
-  if ((await countDomains(db, user.id)) >= MAX_DOMAINS) {
-    return errorResult(
-      `The user already keeps ${MAX_DOMAINS} domains, the most allowed. Remove one first.`,
-    );
-  }
-  const { domain } = await addDomain(db, user.id, host.host);
-  return textResult(
-    `Added ${domain.host} with all ${CHECKS.length} checks on. Page: ${domainLink(domain)}`,
   );
 }
 
@@ -464,8 +434,7 @@ export async function callTool(
   if (
     !run &&
     tool.name !== 'list_domains' &&
-    tool.name !== 'list_repositories' &&
-    tool.name !== 'add_domain'
+    tool.name !== 'list_repositories'
   ) {
     // Advertised but not implemented: a bug here, not something to tell the caller.
     throw new Error(`Tool ${tool.name} is listed but has no implementation.`);
@@ -478,8 +447,8 @@ export async function callTool(
     if (tool.name === 'list_repositories') {
       return await listRepositoriesTool(db, user);
     }
-    if (tool.name === 'add_domain' || !run) {
-      return await addDomainTool(db, user, args);
+    if (!run) {
+      throw new Error(`Tool ${tool.name} is listed but has no implementation.`);
     }
     const found = await ownDomain(db, user, args);
     return 'refusal' in found

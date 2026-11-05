@@ -135,6 +135,14 @@ describe('the schema file and the migrations', () => {
       'SELECT endpoint FROM push_subscriptions WHERE user_id = 1',
     ],
     [
+      'a site’s server runs, newest first, a page at a time',
+      "SELECT id, ran_at FROM suite_runs WHERE user_id = 1 AND host = 'a' AND ran_at < 'x' ORDER BY ran_at DESC, id DESC LIMIT 10",
+    ],
+    [
+      'a domain’s saved reports, newest first, a page at a time',
+      "SELECT id, created_at FROM reports WHERE user_id = 1 AND domain_id = 'd' AND created_at < 'x' ORDER BY created_at DESC, id DESC LIMIT 10",
+    ],
+    [
       'the purge of old webhook deliveries',
       "DELETE FROM webhook_deliveries WHERE received_at < 'x'",
     ],

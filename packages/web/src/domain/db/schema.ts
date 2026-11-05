@@ -101,6 +101,8 @@ export const reports = sqliteTable(
     skipped: integer('skipped').notNull(),
     outcomes: text('outcomes').notNull(),
     created_at: text('created_at').notNull(),
+    /** The commit the repository was last known to be at, when the report was made; null when unknown. */
+    sha: text('sha'),
   },
   (table) => [
     index('idx_reports_domain_page').on(
@@ -269,9 +271,24 @@ export const suiteRuns = sqliteTable(
     /** The page's validators, so the next run can ask whether it changed. */
     etag: text('etag'),
     last_modified: text('last_modified'),
+    /** How the run started: `deployment`, `scheduled` or `config` (a change to plumbline.yaml). */
+    kind: text('kind').notNull().default('deployment'),
+    /** How many checks ended each way; null for a run from before they were kept. */
+    passed: integer('passed'),
+    warned: integer('warned'),
+    failed: integer('failed'),
+    skipped: integer('skipped'),
+    /** Every check's outcome as JSON, to open the run as a report; null when not kept. */
+    outcomes: text('outcomes'),
   },
   (table) => [
     index('idx_suite_runs_host').on(table.user_id, table.host, table.id),
+    index('idx_suite_runs_history').on(
+      table.user_id,
+      table.host,
+      sql`${table.ran_at} DESC`,
+      sql`${table.id} DESC`,
+    ),
   ],
 );
 
@@ -313,6 +330,20 @@ export const userRepositories = sqliteTable(
     primaryKey({ columns: [table.user_id, table.repo] }),
     index('idx_user_repositories_repo').on(table.repo, table.user_id),
   ],
+);
+
+/**
+ * A repository a person has hidden from their dashboard: one row each, with
+ * when. Only the dashboard looks at it; the checks still run.
+ */
+export const userHiddenRepos = sqliteTable(
+  'user_hidden_repos',
+  {
+    user_id: integer('user_id').notNull(),
+    repo: text('repo').notNull(),
+    hidden_at: text('hidden_at').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.user_id, table.repo] })],
 );
 
 /** What happened to a person's sites, in order, for the live dashboard to replay. */

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
-import { DELETE, GET, PATCH, dynamic } from '@/app/api/domains/[id]/route';
+import { GET, PATCH, dynamic } from '@/app/api/domains/[id]/route';
 import { SESSION_COOKIE } from '@/domain/auth/app';
 import { APP_MIGRATIONS } from '../../../../lib/core/db/migrations';
 import {
@@ -66,25 +66,11 @@ describe('/api/domains/:id', () => {
     expect(body.checks).toEqual(['accept-ch']);
   });
 
-  it('removes the domain', async () => {
-    const res = await DELETE(
-      new Request(URL, { method: 'DELETE', headers: { cookie } }),
-      params,
-    );
-    expect(res.status).toBe(204);
-  });
-
   it('answers 401 to a GET without a session cookie', async () => {
     expect((await GET(new Request(URL), params)).status).toBe(401);
   });
 
   it('answers 401 to a PATCH without a session cookie', async () => {
     expect((await patch({})).status).toBe(401);
-  });
-
-  it('answers 401 to a DELETE without a session cookie', async () => {
-    expect(
-      (await DELETE(new Request(URL, { method: 'DELETE' }), params)).status,
-    ).toBe(401);
   });
 });

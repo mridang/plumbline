@@ -61,7 +61,6 @@ export const ARGUMENT_ALIASES: Readonly<
   get_report: { host: 'domain', url: 'domain' },
   list_reports: { host: 'domain', url: 'domain' },
   scan_domain: { host: 'domain', url: 'domain' },
-  add_domain: { host: 'domain', url: 'domain' },
   remove_domain: { host: 'domain', url: 'domain' },
   configure_checks: { host: 'domain', url: 'domain', checks: 'enable' },
 };

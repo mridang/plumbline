@@ -9,8 +9,8 @@ const SECONDARY =
   'focus-ring inline-flex h-12 items-center rounded-control border border-on-night/25 px-6 font-semibold text-on-night transition hover:border-on-night/60';
 
 /**
- * The closing call: keep domains, choose their checks and keep their reports
- * (the domains page asks a signed-out visitor to sign in first), or go back up
+ * The closing call: open the dashboard (which asks a signed-out visitor to
+ * sign in first), or go back up
  * and scan one now. It is the same for everyone, so the page can be cached.
  */
 export function FinalCta(): ReactElement {
@@ -29,15 +29,15 @@ export function FinalCta(): ReactElement {
             id="cta-heading"
             className="font-display text-3xl leading-tight font-semibold tracking-tight sm:text-4xl"
           >
-            Keep watch over your domains
+            Keep watch over your sites
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-on-night/75">
-            Sign in to keep your domains, choose the checks that matter for
-            each, and keep every report to compare.
+            Sign in with GitHub and your deployed sites appear here by
+            themselves, each with its checks, its reports and a badge.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <a href="/domains" className={PRIMARY}>
-              Start keeping domains
+            <a href="/dashboard" className={PRIMARY}>
+              Open your dashboard
             </a>
             <a href="#scan" className={SECONDARY}>
               Scan a page now

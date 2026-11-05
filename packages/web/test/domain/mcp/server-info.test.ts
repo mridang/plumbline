@@ -105,9 +105,9 @@ describe('INSTRUCTIONS', () => {
     expect(INSTRUCTIONS).toMatch(/host name \(example\.com\) or any URL on it/);
   });
 
-  it('keep the tools that change the list for when the user asks', () => {
-    expect(INSTRUCTIONS).toMatch(
-      /Use add_domain and remove_domain only when the user asks/,
-    );
+  it('say domains come from GitHub and keep remove_domain for when the user asks', () => {
+    expect(INSTRUCTIONS).toMatch(/Domains come from the user's GitHub/);
+    expect(INSTRUCTIONS).toMatch(/remove_domain only when the user asks/);
+    expect(INSTRUCTIONS).not.toContain('add_domain');
   });
 });

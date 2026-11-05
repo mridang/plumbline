@@ -39,7 +39,7 @@ describe('SiteShell', () => {
     expect(await shell()).toContain('href="/login"');
   });
 
-  it('shows the account links to the person signed in', async () => {
+  it('shows the dashboard and the account menu to the person signed in', async () => {
     state.user = {
       id: 1,
       google_sub: 'g1',
@@ -50,6 +50,8 @@ describe('SiteShell', () => {
       created_at: '2026-01-01T00:00:00.000Z',
       updated_at: '2026-01-01T00:00:00.000Z',
     };
-    expect(await shell()).toContain('href="/domains"');
+    const out = await shell();
+    expect(out).toContain('href="/dashboard"');
+    expect(out).toContain('Hi Ada');
   });
 });

@@ -60,7 +60,6 @@ describe('MCP tool scopes', () => {
       (t) => scopeForTool(t.name) === SCOPE_WRITE,
     ).map((t) => t.name);
     expect(writeTools.toSorted()).toEqual([
-      'add_domain',
       'configure_checks',
       'remove_domain',
     ]);

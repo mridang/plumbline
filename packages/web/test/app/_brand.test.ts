@@ -41,7 +41,9 @@ describe('what crawlers may read', () => {
 
   it('keeps them out of the signed-in pages, the API, sign-in, OAuth and MCP', () => {
     expect(PRIVATE_PATHS).toEqual([
+      '/dashboard',
       '/domains',
+      '/repos',
       '/connect',
       '/login',
       '/api/',
@@ -53,11 +55,11 @@ describe('what crawlers may read', () => {
 });
 
 describe('what the installed app offers', () => {
-  it('offers shortcuts to scan a site and to the domains, and nothing else', () => {
+  it('offers shortcuts to scan a site and to the dashboard, and nothing else', () => {
     expect(Object.keys(MANIFEST_EXTRAS)).toEqual(['shortcuts']);
     expect(MANIFEST_EXTRAS.shortcuts?.map((s) => s.url)).toEqual([
       '/?source=pwa-shortcut#scan',
-      '/domains?source=pwa-shortcut',
+      '/dashboard?source=pwa-shortcut',
     ]);
   });
 });

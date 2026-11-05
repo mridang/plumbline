@@ -32,7 +32,6 @@ const GOOD_ARGUMENTS: Readonly<Record<string, Record<string, unknown>>> = {
   },
   list_reports: { domain: 'example.com' },
   scan_domain: { domain: 'example.com' },
-  add_domain: { domain: 'example.com' },
   remove_domain: { domain: 'example.com' },
   configure_checks: {
     domain: 'example.com',
@@ -62,7 +61,6 @@ describe('the tool catalogue', () => {
       'get_report',
       'list_reports',
       'scan_domain',
-      'add_domain',
       'remove_domain',
       'configure_checks',
     ]);
@@ -151,7 +149,7 @@ describe('the input schemas', () => {
     expect(inputOf(name).required).toEqual(['domain']);
   });
 
-  it.each(['get_domain', 'add_domain', 'configure_checks'])(
+  it.each(['get_domain', 'configure_checks'])(
     '%s refuses a blank domain',
     (name) => {
       expect(validateJson(inputOf(name), { domain: '   ' })).not.toEqual([]);

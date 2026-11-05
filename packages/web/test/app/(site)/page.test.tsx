@@ -28,7 +28,7 @@ describe('Home', () => {
     expect(out).toContain(SKILL_INSTALL);
   });
 
-  it('ends with the call to keep domains', () => {
-    expect(out).toContain('Start keeping domains');
+  it('ends with the call to open the dashboard', () => {
+    expect(out).toContain('Open your dashboard');
   });
 });

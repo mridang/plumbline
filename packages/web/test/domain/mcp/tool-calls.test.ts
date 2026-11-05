@@ -2,12 +2,7 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import { CHECKS, checksInGroup } from '@/domain/checks/catalogue';
 import type { Database } from '@/domain/db/client';
-import {
-  MAX_DOMAINS,
-  addDomain,
-  getDomain,
-  setDomainChecks,
-} from '@/domain/db/domains';
+import { addDomain, getDomain, setDomainChecks } from '@/domain/db/domains';
 import { replaceAccess } from '@/domain/db/access';
 import type { User } from '@/domain/db/users';
 import {
@@ -451,7 +446,7 @@ describe('get_domain', () => {
     const result = await setup().call('get_domain', { domain: 'example.com' });
     expect(result).toMatchObject({ isError: true });
     expect(textOf(result)).toBe(
-      "example.com is not one of the user's domains. Use list_domains to see them, or add_domain to add it.",
+      "example.com is not one of the user's domains. Use list_domains to see them.",
     );
   });
 
@@ -606,64 +601,10 @@ describe('scan_domain', () => {
 });
 
 describe('add_domain', () => {
-  it('adds the domain with every check on', async () => {
-    const { call } = setup();
-    expect(textOf(await call('add_domain', { domain: 'example.com' }))).toMatch(
-      new RegExp(
-        `^Added example\\.com with all ${TOTAL} checks on\\. Page: https://plumbline\\.apps\\.mrida\\.ng/domains/[0-9a-f-]{36}$`,
-      ),
-    );
-  });
-
-  it('stores the host, not the URL it was given', async () => {
-    const { raw, call } = setup();
-    await call('add_domain', { domain: 'https://WWW.Example.com/a?b=1' });
-    expect(raw.prepare('SELECT host, checks FROM domains').all()).toEqual([
-      { host: 'www.example.com', checks: null },
-    ]);
-  });
-
-  it('changes nothing for a domain the user already has', async () => {
-    const { raw, call } = await scanned();
-    const result = await call('add_domain', { domain: 'example.com' });
-    expect(textOf(result)).toMatch(
-      /^example\.com is already one of the user's domains\. Page: /,
-    );
-    expect(raw.prepare('SELECT COUNT(*) AS n FROM domains').get()).toEqual({
-      n: 1,
-    });
-  });
-
-  it('does not count an existing domain as an error', async () => {
-    const { call } = await scanned();
-    expect(
-      (await call('add_domain', { domain: 'example.com' })).isError,
-    ).toBeUndefined();
-  });
-
-  it('adds a domain another user has, for this user too', async () => {
-    const { call } = await scanned();
-    expect(
-      textOf(await call('add_domain', { domain: 'example.com' }, STRANGER)),
-    ).toMatch(/^Added example\.com/);
-  });
-
-  it('refuses an address that is not a public domain', async () => {
-    const result = await setup().call('add_domain', { domain: 'localhost' });
-    expect(result).toMatchObject({ isError: true });
-    expect(textOf(result)).toBe('domain: Only public domains can be scanned.');
-  });
-
-  it('refuses a domain beyond the most a user may keep', async () => {
-    const { db, call } = setup();
-    for (let i = 0; i < MAX_DOMAINS; i++) {
-      await addDomain(db, USER.id, `site${i}.example.com`);
-    }
-    const result = await call('add_domain', { domain: 'example.com' });
-    expect(result.isError).toBe(true);
-    expect(textOf(result)).toBe(
-      `The user already keeps ${MAX_DOMAINS} domains, the most allowed. Remove one first.`,
-    );
+  it('is not a tool: domains come from the GitHub sync', async () => {
+    await expect(
+      setup().call('add_domain', { domain: 'example.com' }),
+    ).rejects.toThrow();
   });
 });
 

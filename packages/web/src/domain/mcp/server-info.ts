@@ -82,4 +82,4 @@ export const INSTRUCTIONS =
   'A tool that takes a domain accepts its host name (example.com) or any URL on it. ' +
   'The checks run in a web browser or with the Plumbline CLI, never on this server: scan_domain gives the link that runs them and saves a report, and the CLI command for a full scan; get_report and list_reports read what was saved. ' +
   'list_checks shows every check with its id and groups; configure_checks switches checks on or off for one domain by id or by group (tls, owasp, seo, …). ' +
-  'Use add_domain and remove_domain only when the user asks to keep or stop keeping a domain.';
+  "Domains come from the user's GitHub repositories; use remove_domain only when the user asks to stop keeping one.";
