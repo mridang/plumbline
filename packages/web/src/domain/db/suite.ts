@@ -14,7 +14,11 @@ import {
   suiteRuns,
   webhookDeliveries,
 } from '@/domain/db/schema';
+import type { ReportCounts } from '@/domain/db/reports';
 import type { StoredFinding } from '@/domain/suite/diff';
+
+/** How a server run started. */
+export type SuiteRunKind = 'deployment' | 'scheduled' | 'config';
 
 /** How many runs are kept for each host. */
 export const RUNS_KEPT = 20;
@@ -64,6 +68,12 @@ export async function recordRun(
     findings: readonly StoredFinding[];
     etag?: string | null;
     lastModified?: string | null;
+    /** How the run started; a deployment when not said. */
+    kind?: SuiteRunKind;
+    /** How many checks ended each way. */
+    counts?: ReportCounts | null;
+    /** Every check's outcome as JSON, to open the run as a report. */
+    outcomes?: string | null;
   }>,
   timestamp = new Date().toISOString(),
 ): Promise<void> {
@@ -79,6 +89,12 @@ export async function recordRun(
     findings: JSON.stringify(run.findings),
     etag: run.etag ?? null,
     last_modified: run.lastModified ?? null,
+    kind: run.kind ?? 'deployment',
+    passed: run.counts?.passed ?? null,
+    warned: run.counts?.warned ?? null,
+    failed: run.counts?.failed ?? null,
+    skipped: run.counts?.skipped ?? null,
+    outcomes: run.outcomes ?? null,
   });
   // So the scheduled re-check can find the sites that are due without reading
   // every stored run.
@@ -116,8 +132,21 @@ export async function latestRuns(
   host: string,
   limit = 2,
 ): Promise<StoredRun[]> {
+  // Without the outcomes, which can be large and are not needed to compare runs.
   const rows = await db
-    .select()
+    .select({
+      id: suiteRuns.id,
+      host: suiteRuns.host,
+      repo: suiteRuns.repo,
+      sha: suiteRuns.sha,
+      status: suiteRuns.status,
+      hash: suiteRuns.hash,
+      rules: suiteRuns.rules,
+      ran_at: suiteRuns.ran_at,
+      findings: suiteRuns.findings,
+      etag: suiteRuns.etag,
+      last_modified: suiteRuns.last_modified,
+    })
     .from(suiteRuns)
     .where(and(eq(suiteRuns.user_id, userId), eq(suiteRuns.host, host)))
     .orderBy(desc(suiteRuns.id))

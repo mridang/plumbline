@@ -14,6 +14,9 @@ class TestHub extends UserHub {
   get open(): number {
     return this.clients.size;
   }
+  get pinging(): boolean {
+    return this.timer !== null;
+  }
   closeAll(): void {
     for (const client of this.clients) {
       void client.abort();
@@ -144,13 +147,34 @@ describe('UserHub', () => {
     expect(await readSome(response, 1)).toBe(': heartbeat\n\n');
   });
 
-  it('drops clients that have gone away', async () => {
+  it('lets go of a client that has gone away at once, without waiting for the next ping', async () => {
     const { hub, open } = setup();
     const response = await open({ 'Last-Event-ID': '0' });
-    await response.body!.cancel();
     expect(hub.open).toBe(1);
-    hub.heartbeat();
+    await response.body!.cancel();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(hub.open).toBe(0);
+  });
+
+  it('stops pinging when the last client has gone, and starts again for the next', async () => {
+    const { hub, open } = setup();
+    const first = await open({ 'Last-Event-ID': '0' });
+    expect(hub.pinging).toBe(true);
+    await first.body!.cancel();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(hub.pinging).toBe(false);
+    await open({ 'Last-Event-ID': '0' });
+    expect(hub.pinging).toBe(true);
+  });
+
+  it('keeps pinging while another client is still there', async () => {
+    const { hub, open } = setup();
+    const gone = await open({ 'Last-Event-ID': '0' });
+    await open({ 'Last-Event-ID': '0' });
+    await gone.body!.cancel();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(hub.open).toBe(1);
+    expect(hub.pinging).toBe(true);
   });
 
   it('sends a reset when too many events were missed', async () => {

@@ -37,7 +37,7 @@ export class UserHub extends DurableObject<CloudflareEnv> {
   protected position = 0;
   protected person: string | null = null;
   private readonly encoder = new TextEncoder();
-  private timer: ReturnType<typeof setInterval> | null = null;
+  protected timer: ReturnType<typeof setInterval> | null = null;
 
   /**
    * Open an event stream, replaying what the client missed.
@@ -80,6 +80,12 @@ export class UserHub extends DurableObject<CloudflareEnv> {
     }
     this.position = Math.max(this.position, sent);
     this.clients.add(writer);
+    // A client that goes away (a closed tab, a dropped connection) ends the
+    // writer; let go of it at once, not at the next ping or event.
+    void writer.closed.then(
+      () => this.release(writer),
+      () => this.release(writer),
+    );
     this.startHeartbeat();
     return new Response(readable, { headers: SSE_HEADERS });
   }
@@ -103,6 +109,14 @@ export class UserHub extends DurableObject<CloudflareEnv> {
   /** Ping every open stream, dropping the ones that have closed. */
   heartbeat(): void {
     this.broadcast(encodeHeartbeat());
+    if (this.clients.size === 0) {
+      this.stopHeartbeat();
+    }
+  }
+
+  /** Forget a writer whose client has gone, and stop pinging when none is left. */
+  private release(writer: WritableStreamDefaultWriter<Uint8Array>): void {
+    this.clients.delete(writer);
     if (this.clients.size === 0) {
       this.stopHeartbeat();
     }
@@ -143,7 +157,7 @@ export class UserHub extends DurableObject<CloudflareEnv> {
     frame: string,
   ): void {
     writer.write(this.encoder.encode(frame)).catch(() => {
-      this.clients.delete(writer);
+      this.release(writer);
     });
   }
 

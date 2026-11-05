@@ -42,6 +42,19 @@ describe('collectScan', () => {
     ]);
   });
 
+  it('keeps each outcome as the scanner sent it, with every field', async () => {
+    const result = await collectScan(
+      streamOf(
+        ready,
+        '{"type":"done","outcome":{"id":"a","status":"passed","findings":[],"name":"A","section":"seo"}}\n',
+        end,
+      ),
+    );
+    expect(result.raw).toEqual([
+      { id: 'a', status: 'passed', findings: [], name: 'A', section: 'seo' },
+    ]);
+  });
+
   it('skips blank lines and lines it does not know', async () => {
     const result = await collectScan(
       streamOf(

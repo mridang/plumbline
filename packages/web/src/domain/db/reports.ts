@@ -40,7 +40,9 @@ export interface Report extends ReportSummary {
 }
 
 /** The summary of a row. */
-function summaryOf(row: Readonly<Omit<ReportRow, 'outcomes'>>): ReportSummary {
+function summaryOf(
+  row: Readonly<Omit<ReportRow, 'outcomes' | 'sha'>>,
+): ReportSummary {
   return {
     id: row.id,
     domain_id: row.domain_id,
@@ -85,6 +87,8 @@ export async function saveReport(
   userId: number,
   domainId: string,
   input: Readonly<ReportCounts & { url: string; outcomes: readonly unknown[] }>,
+  /** The commit the repository was last known to be at, when known. */
+  sha: string | null = null,
 ): Promise<Report> {
   const row = {
     id: crypto.randomUUID(),
@@ -97,6 +101,7 @@ export async function saveReport(
     skipped: input.skipped,
     outcomes: JSON.stringify(input.outcomes),
     created_at: new Date().toISOString(),
+    sha,
   };
   await db.insert(reports).values(row);
   // The oldest report to keep, found through the index (one row read); only

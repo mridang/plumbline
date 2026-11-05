@@ -151,6 +151,61 @@ describe('GET /api/domains/{id}/reports', () => {
   });
 });
 
+describe('POST /api/domains/{id}/reports and the five-minute limit', () => {
+  it('refuses a second report within five minutes with 429 and when to try again', async () => {
+    expect((await post(good)).status).toBe(201);
+    const refused = await post(good);
+    expect(refused.status).toBe(429);
+    expect(refused.headers.get('content-type')).toBe(
+      'application/problem+json',
+    );
+    const wait = Number(refused.headers.get('retry-after'));
+    expect(wait).toBeGreaterThan(290);
+    expect(wait).toBeLessThanOrEqual(300);
+    expect(((await refused.json()) as { detail: string }).detail).toContain(
+      'try again in',
+    );
+  });
+
+  it('allows another report once five minutes have passed, and keeps only the refused one out', async () => {
+    seedReport('r-old', 7, new Date(Date.now() - 301_000).toISOString());
+    expect((await post(good)).status).toBe(201);
+    expect((await post(good)).status).toBe(429);
+    const body = (await (await list()).json()) as { items: unknown[] };
+    expect(body.items).toHaveLength(2);
+  });
+
+  it('counts each domain on its own', async () => {
+    const other = '00000000-0000-4000-8000-000000000002';
+    raw
+      .prepare(
+        "INSERT INTO domains (id, user_id, host, created_at, updated_at) VALUES (?, 7, 'other.com', 'now', 'now')",
+      )
+      .run(other);
+    expect((await post(good)).status).toBe(201);
+    expect(
+      (await post({ ...good, url: 'https://other.com/' }, other)).status,
+    ).toBe(201);
+  });
+
+  it('records the commit the site was last known to be at', async () => {
+    raw
+      .prepare(
+        "INSERT INTO suite_runs (user_id, host, repo, sha, status, ran_at, findings) VALUES (7, 'example.com', 'a/b', 'cafe123', 200, 'now', '[]')",
+      )
+      .run();
+    expect((await post(good)).status).toBe(201);
+    expect(raw.prepare('SELECT sha FROM reports').get()).toEqual({
+      sha: 'cafe123',
+    });
+  });
+
+  it('records no commit when the site has had no server run', async () => {
+    expect((await post(good)).status).toBe(201);
+    expect(raw.prepare('SELECT sha FROM reports').get()).toEqual({ sha: null });
+  });
+});
+
 describe('POST /api/domains/{id}/reports', () => {
   it('saves the report with 201 and its address', async () => {
     const res = await post(good);

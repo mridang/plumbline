@@ -2,6 +2,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 
 import { createDatabase } from '@/domain/db/client';
 import { addDomain } from '@/domain/db/domains';
+import { listRuns } from '@/domain/db/runs';
 import { latestRuns } from '@/domain/db/suite';
 import {
   RECHECK_AFTER_MS,
@@ -32,6 +33,15 @@ describe('checkDueSites', () => {
     const outcomes = await checkDueSites(db, { run: page, now: () => start });
     expect(outcomes.map((o) => o.host)).toEqual(['a.test']);
     expect(await latestRuns(db, 1, 'a.test')).toHaveLength(1);
+  });
+
+  it('records its runs as scheduled', async () => {
+    const db = createDatabase(sqliteD1(...APP_MIGRATIONS).d1);
+    const { domain } = await addDomain(db, 1, 'a.test', 'acme/a');
+    await checkDueSites(db, { run: page, now: () => start });
+    expect(
+      await listRuns(db, 1, { domainId: domain.id, host: 'a.test' }, 10),
+    ).toEqual([expect.objectContaining({ kind: 'scheduled', sha: null })]);
   });
 
   it('leaves a site alone until a day has passed', async () => {

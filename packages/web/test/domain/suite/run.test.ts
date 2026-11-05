@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { sha256Hex, suiteRunOf } from '@/domain/suite/run';
+import { CHECKS } from '@/domain/checks/catalogue';
+import { keptOutcomes, sha256Hex, suiteRunOf } from '@/domain/suite/run';
 import type { ScanOutcome, ScanResult } from '@/domain/suite/scanner';
 
 const outcome = (
@@ -17,6 +18,7 @@ const scan = (...outcomes: ScanOutcome[]): ScanResult => ({
   finalUrl: 'https://x.test/',
   status: 200,
   outcomes,
+  raw: outcomes,
 });
 
 describe('sha256Hex', () => {
@@ -27,7 +29,72 @@ describe('sha256Hex', () => {
   });
 });
 
+describe('keptOutcomes', () => {
+  it('is the outcomes as a saved report holds them', () => {
+    const kept = keptOutcomes({
+      ...scan(),
+      raw: [
+        {
+          id: 'seo-links',
+          status: 'warned',
+          findings: [
+            {
+              resource: 'https://x.test/',
+              level: 'warning',
+              message: 'Broken link.',
+            },
+          ],
+          name: 'ignored',
+        },
+      ],
+    });
+    expect(JSON.parse(kept ?? 'null')).toEqual([
+      {
+        id: 'seo-links',
+        status: 'warned',
+        findings: [
+          {
+            resource: 'https://x.test/',
+            level: 'warning',
+            message: 'Broken link.',
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('is null for outcomes that are not a valid report, or too large to keep', () => {
+    expect(keptOutcomes(scan(outcome('not-a-check', 'passed')))).toBeNull();
+    expect(keptOutcomes(scan())).toBeNull();
+    expect(keptOutcomes({ ...scan(), raw: ['nope'] })).toBeNull();
+    // Ten checks of fifty findings of 2,000 characters each is about 1 MB.
+    const heavy = CHECKS.slice(0, 10).map((check) => ({
+      id: check.id,
+      status: 'warned' as const,
+      findings: Array.from({ length: 50 }, () => ({
+        resource: 'https://x.test/',
+        level: 'warning' as const,
+        message: 'x'.repeat(1990),
+      })),
+    }));
+    expect(keptOutcomes({ ...scan(), raw: heavy })).toBeNull();
+  });
+});
+
 describe('suiteRunOf', () => {
+  it('counts the checks that ended each way and keeps the outcomes to open the run', async () => {
+    const run = await suiteRunOf(
+      scan(
+        outcome('seo-links', 'warned', ['x']),
+        outcome('seo-viewport', 'passed'),
+        outcome('seo-h1-missing', 'failed', ['y']),
+        outcome('agent-webmcp', 'skipped'),
+      ),
+    );
+    expect(run.counts).toEqual({ passed: 1, warned: 1, failed: 1, skipped: 1 });
+    expect(JSON.parse(run.outcomes ?? 'null')).toHaveLength(4);
+  });
+
   it('carries the address, status, the checks that ran and the ones that did not', async () => {
     const run = await suiteRunOf(
       scan(

@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import { createDatabase } from '@/domain/db/client';
 import { addDomain } from '@/domain/db/domains';
+import { listRuns } from '@/domain/db/runs';
 import { latestRuns, recordRun } from '@/domain/db/suite';
 import {
   MAX_SITES,
@@ -335,6 +336,64 @@ describe('checkDeployment, the sites together and the commits apart', () => {
       force: true,
     });
     expect(runs).toBe(2);
+  });
+});
+
+describe('checkSite and the history', () => {
+  const run = async (): Promise<SuiteRun> => ({
+    ...finding('slow'),
+    counts: { passed: 8, warned: 1, failed: 0, skipped: 2 },
+    outcomes: '[{"id":"seo-viewport","status":"warned","findings":[]}]',
+  });
+  const site = { host: 'a.test', repo: 'acme/site', sha: 'abc123' };
+
+  /** The domain, and the runs listed for it. */
+  const history = async (
+    db: Awaited<ReturnType<typeof setup>>,
+    domainId: string,
+  ) => listRuns(db, 1, { domainId, host: 'a.test' }, 10);
+
+  const withDomain = async () => {
+    const db = createDatabase(sqliteD1(...APP_MIGRATIONS).d1);
+    const { domain } = await addDomain(db, 1, 'a.test', 'acme/site');
+    return { db, domainId: domain.id };
+  };
+
+  it('records a deployment run with its commit, counts and outcomes, so it can be listed and opened', async () => {
+    const { db, domainId } = await withDomain();
+    await checkSite(db, 1, site, { run });
+    expect(await history(db, domainId)).toEqual([
+      expect.objectContaining({
+        kind: 'deployment',
+        sha: 'abc123',
+        passed: 8,
+        warned: 1,
+        failed: 0,
+        skipped: 2,
+        openable: true,
+      }),
+    ]);
+  });
+
+  it('records a run forced by a change to the rules as a config run', async () => {
+    const { db, domainId } = await withDomain();
+    await checkSite(db, 1, site, { run, force: true });
+    expect((await history(db, domainId))[0]?.kind).toBe('config');
+  });
+
+  it('records the kind it is given, and a run without counts or outcomes as one that cannot be opened', async () => {
+    const { db, domainId } = await withDomain();
+    await checkSite(db, 1, site, {
+      run: async () => finding('slow'),
+      kind: 'scheduled',
+    });
+    expect(await history(db, domainId)).toEqual([
+      expect.objectContaining({
+        kind: 'scheduled',
+        passed: null,
+        openable: false,
+      }),
+    ]);
   });
 });
 

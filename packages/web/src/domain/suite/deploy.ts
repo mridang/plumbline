@@ -12,7 +12,7 @@
 
 import type { Database } from '@/domain/db/client';
 import { listDomainsOfRepo } from '@/domain/db/domains';
-import { latestRuns, recordRun } from '@/domain/db/suite';
+import { latestRuns, recordRun, type SuiteRunKind } from '@/domain/db/suite';
 import {
   diffFindings,
   findingsOf,
@@ -140,6 +140,8 @@ export interface Deps {
   readonly limits?: Limits;
   /** Check even a site that was checked a moment ago (its rules changed). */
   readonly force?: boolean;
+  /** How the run started, kept with it; a deployment, or a config change when forced. */
+  readonly kind?: SuiteRunKind;
 }
 
 /** Stands in for the scanner where none is given: a site cannot be scanned. */
@@ -209,6 +211,9 @@ export async function checkSite(
       hash: result.hash,
       rules,
       findings,
+      kind: deps.kind ?? (deps.force ? 'config' : 'deployment'),
+      counts: result.counts,
+      outcomes: result.outcomes,
     },
     now().toISOString(),
   );

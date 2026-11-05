@@ -38,6 +38,9 @@ import {
 } from '@/domain/api/report-resource';
 import { getDatabase } from '@/domain/db/client';
 import { getDomain, type Domain } from '@/domain/db/domains';
+import { lastManualRunAt } from '@/domain/db/runs';
+import { latestRuns } from '@/domain/db/suite';
+import { secondsUntilNextRun, waitMessage } from '@/domain/scan/manual-run';
 import {
   getReport,
   listReports,
@@ -80,7 +83,8 @@ async function ownedDomain(uid: number, id: string): Promise<Domain> {
  * A domain's reports: `GET` lists them a page at a time, newest first, without
  * their outcomes; `POST` saves the outcome of a scan that has just run (201).
  * 404 when the person has no domain with that id, 400 for a report that is not
- * well formed or names checks that do not exist, 413 for one over 1 MB.
+ * well formed or names checks that do not exist, 413 for one over 1 MB, 429
+ * (with `Retry-After`) for a second report within five minutes.
  */
 export function createReportsCollection(
   resolver: CurrentUserResolver = requestCookieResolver,
@@ -151,7 +155,19 @@ export function createReportsCollection(
           throw problems.badRequest('The report is not valid.', input.errors);
         }
         const report: ReportInput = input.value;
-        return saveReport(getDatabase(), uid, domain.id, report);
+        const db = getDatabase();
+        // One run by hand per site every five minutes: a report that would
+        // be a second one is refused, whatever started it.
+        const wait = secondsUntilNextRun(
+          await lastManualRunAt(db, uid, domain.id),
+          Date.now(),
+        );
+        if (wait > 0) {
+          throw problems.rateLimited(waitMessage(wait), wait);
+        }
+        // The report is for the commit the site was last known to be at.
+        const sha = (await latestRuns(db, uid, domain.host, 1))[0]?.sha ?? null;
+        return saveReport(db, uid, domain.id, report, sha);
       },
       encode: (report) =>
         created(

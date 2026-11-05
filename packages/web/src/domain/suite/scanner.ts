@@ -62,6 +62,8 @@ export interface ScanResult {
   /** The page's HTTP status. */
   readonly status: number;
   readonly outcomes: readonly ScanOutcome[];
+  /** The same outcomes as the scanner sent them, with every field, to keep as a report. */
+  readonly raw: readonly unknown[];
 }
 
 /**
@@ -76,6 +78,7 @@ export async function collectScan(
   const reader = body.getReader();
   const decoder = new TextDecoder();
   const outcomes: ScanOutcome[] = [];
+  const raw: unknown[] = [];
   let ready: { finalUrl: string; status: number } | undefined;
   let ended = false;
   let buffer = '';
@@ -100,6 +103,7 @@ export async function collectScan(
       ready = { finalUrl: event.finalUrl, status: event.status };
     } else if (event.type === 'done') {
       outcomes.push(event.outcome);
+      raw.push((json as { outcome: unknown }).outcome);
     } else {
       ended = true;
     }
@@ -118,7 +122,7 @@ export async function collectScan(
   if (!ready || !ended) {
     throw new ScanFailed('The scan stopped before it finished.');
   }
-  return { ...ready, outcomes };
+  return { ...ready, outcomes, raw };
 }
 
 /** The scan of `url` as the container's stream; throws {@link ScanFailed} when it did not start. */

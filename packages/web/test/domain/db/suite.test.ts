@@ -32,7 +32,43 @@ const run = (host: string, message = 'x', userId = 1) => ({
   findings: [{ id: 'a', severity: 'warning' as const, message }],
 });
 
-describe('recordRun and latestRuns', () => {
+describe('recordRun, the history columns and latestRuns', () => {
+  it('stores how a run started, its counts and its outcomes, and does not read the outcomes back with the runs', async () => {
+    const made = sqliteD1(...APP_MIGRATIONS);
+    const db = createDatabase(made.d1);
+    await recordRun(db, {
+      ...run('a.test'),
+      kind: 'scheduled',
+      counts: { passed: 1, warned: 2, failed: 3, skipped: 4 },
+      outcomes: '[{"id":"x"}]',
+    });
+    expect(
+      made.raw
+        .prepare(
+          'SELECT kind, passed, warned, failed, skipped, outcomes FROM suite_runs',
+        )
+        .get(),
+    ).toEqual({
+      kind: 'scheduled',
+      passed: 1,
+      warned: 2,
+      failed: 3,
+      skipped: 4,
+      outcomes: '[{"id":"x"}]',
+    });
+    expect((await latestRuns(db, 1, 'a.test'))[0]).not.toHaveProperty(
+      'outcomes',
+    );
+  });
+
+  it('stores a deployment with no counts or outcomes when none are given', async () => {
+    const made = sqliteD1(...APP_MIGRATIONS);
+    await recordRun(createDatabase(made.d1), run('a.test'));
+    expect(
+      made.raw.prepare('SELECT kind, passed, outcomes FROM suite_runs').get(),
+    ).toEqual({ kind: 'deployment', passed: null, outcomes: null });
+  });
+
   it('returns the newest runs first with their findings', async () => {
     const db = database();
     await recordRun(db, run('a.test', 'first'));
