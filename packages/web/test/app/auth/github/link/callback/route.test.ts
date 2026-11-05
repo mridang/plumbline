@@ -129,6 +129,18 @@ describe('GET /auth/github/link/callback', () => {
     ).toBe('https://plumbline.test/github?error=failed');
   });
 
+  it('says so when the connection worked but no installation could be read', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    fakeGitHub({
+      ...DEPLOYED_APP,
+      'https://api.github.com/app/installations/5/access_tokens': () =>
+        new Response('{}', { status: 401 }),
+    });
+    expect(
+      (await call('?code=c1&state=github.abc')).headers.get('location'),
+    ).toBe('https://plumbline.test/github?error=read');
+  });
+
   it('says so when GitHub is not set up', async () => {
     restore();
     restore = installCloudflareContext(made.d1, {});

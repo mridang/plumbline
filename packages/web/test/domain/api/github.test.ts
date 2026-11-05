@@ -78,6 +78,28 @@ describe('POST /api/github/syncs', () => {
     });
   });
 
+  it('answers 502 as a problem naming the installation when none could be read', async () => {
+    const db = createDatabase(made.d1);
+    await linkAccount(db, 7, { id: 9, login: 'mridang' });
+    made.raw
+      .prepare(
+        "INSERT INTO github_installations (installation_id, user_id, account_login, created_at, updated_at) VALUES (5, 7, 'acme', 'now', 'now')",
+      )
+      .run();
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('{}', { status: 401 }));
+    const response = await post();
+    expect(response.status).toBe(502);
+    expect(response.headers.get('content-type')).toBe(
+      'application/problem+json',
+    );
+    expect(await response.json()).toMatchObject({
+      detail: 'acme: GitHub refused an installation token (401)',
+    });
+  });
+
   it('answers 401 as a problem without a session, and 403 across sites', async () => {
     session.uid = null;
     const refused = await post();

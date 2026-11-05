@@ -86,6 +86,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // Read now, not in the background: the person lands on /github straight
   // after this, and the list must already be there. A failing installation
   // is skipped inside syncAllOf, so this cannot fail the connection.
-  await syncAllOf(db, config, user.id);
-  return back(origin, null);
+  const synced = await syncAllOf(db, config, user.id);
+  return back(
+    origin,
+    synced.failures.length > 0 && synced.repositories === 0 ? 'read' : null,
+  );
 }

@@ -62,6 +62,14 @@ export function createGithubSyncs(
         );
       }
       const result = await syncAllOf(getDatabase(), config, uid);
+      if (result.failures.length > 0 && result.repositories === 0) {
+        throw problem(
+          502,
+          '/problems/github-unreachable',
+          'GitHub could not be read',
+          result.failures.join('; '),
+        );
+      }
       return {
         repositories: result.repositories,
         deployed: result.deployed,

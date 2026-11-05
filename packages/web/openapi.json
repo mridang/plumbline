@@ -347,6 +347,16 @@
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
+          "502": {
+            "description": "GitHub could not be read for any installation; the detail says why.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
           "503": {
             "$ref": "#/components/responses/NotConfigured"
           }

@@ -43,14 +43,21 @@ export async function syncAsApp(
   );
 }
 
+/** What reading every installation found, and why any of them could not be read. */
+export interface SyncAllResult extends SyncResult {
+  /** One line per installation that failed, for showing to the person. */
+  readonly failures: readonly string[];
+}
+
 /** Read every installation the person owns. A failing one is skipped, not fatal. */
 export async function syncAllOf(
   db: Database,
   config: GitHubConfig,
   userId: number,
   fetcher: typeof fetch = fetch,
-): Promise<SyncResult> {
+): Promise<SyncAllResult> {
   const total = { repositories: 0, deployed: 0, domainsAdded: 0 };
+  const failures: string[] = [];
   for (const installation of await listInstallations(db, userId)) {
     try {
       const result = await syncAsApp(
@@ -65,7 +72,10 @@ export async function syncAllOf(
       total.domainsAdded += result.domainsAdded;
     } catch (error) {
       console.error('github sync failed', installation.installation_id, error);
+      failures.push(
+        `${installation.account_login}: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
     }
   }
-  return total;
+  return { ...total, failures };
 }

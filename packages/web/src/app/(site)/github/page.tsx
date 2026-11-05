@@ -28,6 +28,7 @@ const ERRORS: Readonly<Record<string, string>> = {
   code: 'GitHub did not send a sign-in code. Try connecting again.',
   taken: 'That GitHub account is already connected to someone else.',
   failed: 'GitHub could not be reached. Try connecting again.',
+  read: 'You are connected, but the repositories could not be read. Press Refresh from GitHub to see why.',
 };
 
 /**
