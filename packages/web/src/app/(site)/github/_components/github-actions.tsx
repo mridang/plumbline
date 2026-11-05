@@ -77,19 +77,6 @@ function ActionButton({
   );
 }
 
-/** "Refresh": reads the installations again, so new repositories and changed deployments show up. */
-export function SyncButton(): ReactElement {
-  return (
-    <ActionButton
-      path="/api/github/syncs"
-      method="POST"
-      label="Refresh from GitHub"
-      busyLabel="Reading repositories…"
-      failure="The repositories could not be read."
-    />
-  );
-}
-
 /** "Disconnect": forgets the GitHub account, its installations and repositories. */
 export function DisconnectButton(): ReactElement {
   return (

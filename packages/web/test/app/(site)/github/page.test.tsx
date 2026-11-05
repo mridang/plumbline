@@ -118,7 +118,7 @@ describe('GitHubPage', () => {
     expect(out).toContain('acme/site');
     expect(out).toContain(`href="/domains/${domain.id}"`);
     expect(out).toContain('1 other repository with no deployment found');
-    expect(out).toContain('Refresh from GitHub');
+    expect(out).not.toContain('Refresh from GitHub');
   });
 
   it('explains what counts as a deployment when none was found', async () => {

@@ -2,7 +2,6 @@ import { describe, expect, it, jest } from '@jest/globals';
 
 import {
   DisconnectButton,
-  SyncButton,
   callOn,
 } from '@/app/(site)/github/_components/github-actions';
 import { htmlAt } from '../../../../components/render';
@@ -28,10 +27,7 @@ describe('callOn', () => {
 });
 
 describe('the buttons', () => {
-  it('offer to refresh and to disconnect', () => {
-    expect(htmlAt(<SyncButton />, { pathname: '/github' })).toContain(
-      'Refresh from GitHub',
-    );
+  it('offer to disconnect', () => {
     expect(htmlAt(<DisconnectButton />, { pathname: '/github' })).toContain(
       'Disconnect GitHub',
     );

@@ -14,7 +14,7 @@ import { getLink, listInstallations, listRepos } from '@/domain/db/github';
 import { githubConfig } from '@/domain/github/service';
 import { getCurrentUser } from '@/lib/core/auth/current-user';
 
-import { DisconnectButton, SyncButton } from './_components/github-actions';
+import { DisconnectButton } from './_components/github-actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +28,7 @@ const ERRORS: Readonly<Record<string, string>> = {
   code: 'GitHub did not send a sign-in code. Try connecting again.',
   taken: 'That GitHub account is already connected to someone else.',
   failed: 'GitHub could not be reached. Try connecting again.',
-  read: 'You are connected, but the repositories could not be read. Press Refresh from GitHub to see why.',
+  read: 'You are connected, but the repositories could not be read. Try connecting again.',
 };
 
 /**
@@ -103,7 +103,6 @@ export default async function GitHubPage({
                   >
                     Install on another account
                   </a>
-                  <SyncButton />
                   <DisconnectButton />
                 </div>
               </>
@@ -140,8 +139,8 @@ export default async function GitHubPage({
               <p className="mt-3 text-muted">
                 None found yet. A repository counts when its Wrangler
                 configuration names the domains it is served on, or its website
-                field names the live site. If you just installed the app, give
-                it a moment and refresh.
+                field names the live site. Repositories you add to the app later
+                show up here by themselves.
               </p>
             ) : (
               <ul className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
