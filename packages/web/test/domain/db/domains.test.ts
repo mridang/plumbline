@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import {
@@ -208,5 +211,28 @@ describe('addDomain with a repository', () => {
     });
     const again = await addDomain(db, 1, 'site.example.com', 'o/other');
     expect(again.domain.repo).toBe('o/site');
+  });
+});
+
+describe('migration 0012_registry_domains', () => {
+  it('removes registry hosts found in a repository, and keeps real sites and hosts added by hand', async () => {
+    const before = APP_MIGRATIONS.filter(
+      (file) => file < '0012_registry_domains.sql',
+    );
+    const { db, raw } = sqliteDatabase(...before);
+    await addDomain(db, 1, 'www.npmjs.com', 'o/lib');
+    await addDomain(db, 1, 'play.google.com', 'o/app');
+    await addDomain(db, 1, 'site.example.com', 'o/site');
+    await addDomain(db, 1, 'pypi.org');
+    raw.exec(
+      readFileSync(
+        path.join(process.cwd(), 'migrations', '0012_registry_domains.sql'),
+        'utf8',
+      ),
+    );
+    expect((await listDomains(db, 1)).map((d) => d.host).toSorted()).toEqual([
+      'pypi.org',
+      'site.example.com',
+    ]);
   });
 });

@@ -128,6 +128,14 @@ describe('homepageHost', () => {
   it('ignores GitHub pages, blanks and nonsense', () => {
     expect(homepageHost('https://mridang.github.io/x')).toBeUndefined();
     expect(homepageHost('https://github.com/mridang/x')).toBeUndefined();
+    expect(homepageHost('https://www.npmjs.com/package/x')).toBeUndefined();
+    expect(
+      homepageHost('https://play.google.com/store/apps/x'),
+    ).toBeUndefined();
+    expect(homepageHost('https://packagist.org/packages/a/b')).toBeUndefined();
+    expect(homepageHost('https://pypi.python.org/pypi/x')).toBeUndefined();
+    expect(homepageHost('https://plugins.gradle.org/plugin/x')).toBeUndefined();
+    expect(homepageHost('https://notnpmjs.com')).toBe('notnpmjs.com');
     expect(homepageHost('')).toBeUndefined();
     expect(homepageHost(null)).toBeUndefined();
     expect(homepageHost(undefined)).toBeUndefined();

@@ -131,6 +131,45 @@ export function wranglerHosts(path: string, text: string): string[] {
   return unique(patterns.map(hostOfPattern));
 }
 
+/**
+ * Package registries and app stores. A library's website field often links to
+ * its page there, but that page is not a site the repository deploys, so it is
+ * not a host to check. A subdomain of one of these is left out too.
+ */
+export const REGISTRY_HOSTS: readonly string[] = [
+  'addons.mozilla.org',
+  'apps.apple.com',
+  'central.sonatype.com',
+  'chrome.google.com',
+  'chromewebstore.google.com',
+  'cocoapods.org',
+  'crates.io',
+  'docs.rs',
+  'hex.pm',
+  'hub.docker.com',
+  'marketplace.visualstudio.com',
+  'mvnrepository.com',
+  'npmjs.com',
+  'nuget.org',
+  'packagist.org',
+  'pkg.go.dev',
+  'play.google.com',
+  'plugins.gradle.org',
+  'plugins.traefik.io',
+  'pub.dev',
+  'pypi.org',
+  'pypi.python.org',
+  'rubygems.org',
+  'search.maven.org',
+];
+
+/** Whether `host` is a package registry or app store, or a subdomain of one. */
+export function isRegistryHost(host: string): boolean {
+  return REGISTRY_HOSTS.some(
+    (registry) => host === registry || host.endsWith(`.${registry}`),
+  );
+}
+
 /** The host of a repository's website field, when it is a public site. */
 export function homepageHost(
   homepage: string | null | undefined,
@@ -139,7 +178,9 @@ export function homepageHost(
     return undefined;
   }
   const host = parseHost(homepage);
-  return host.ok && !/(^|\.)github\.(com|io)$/.test(host.value)
+  return host.ok &&
+    !/(^|\.)github\.(com|io)$/.test(host.value) &&
+    !isRegistryHost(host.value)
     ? host.value
     : undefined;
 }
