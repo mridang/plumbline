@@ -21,10 +21,15 @@ export function BrandMark({
 }
 
 /** The mark and the name, linking home. */
-export function Logo(): ReactElement {
+export function Logo({
+  href = '/',
+}: Readonly<{
+  /** Where it leads: the home page for a visitor, the dashboard once signed in. */
+  href?: string;
+}>): ReactElement {
   return (
     <a
-      href="/"
+      href={href}
       className="focus-ring flex items-center gap-2 font-semibold tracking-tight"
     >
       <BrandMark className="size-6" />

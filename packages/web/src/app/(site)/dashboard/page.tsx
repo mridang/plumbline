@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { getDatabase } from '@/domain/db/client';
 import { listHidden } from '@/domain/db/hidden';
 import { overviewOf } from '@/domain/db/live';
+import { serverNow } from '@/lib/clock';
 import { getCurrentUser } from '@/lib/core/auth/current-user';
 
 import { LiveOverview } from './_components/live-overview';
@@ -54,6 +55,7 @@ export default async function DashboardPage({
           initial={repos}
           hidden={hiddenList}
           showHidden={hidden === '1'}
+          now={serverNow()}
         />
       </Container>
     </>

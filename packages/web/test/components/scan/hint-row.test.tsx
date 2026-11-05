@@ -267,8 +267,8 @@ describe('HintRow', () => {
       <HintRow hint={hint('passed', { groups: ['observatory', 'tls'] })} />,
     );
     expect(out).toContain('aria-label="Groups"');
-    expect(out).toContain('>observatory</li>');
-    expect(out).toContain('>tls</li>');
+    expect(out).toContain('>observatory</span></li>');
+    expect(out).toContain('>tls</span></li>');
   });
 
   it('says why a check was skipped', () => {

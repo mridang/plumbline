@@ -4,16 +4,20 @@ import { redirect } from 'next/navigation';
 import type { ReactElement } from 'react';
 
 import { repoPath } from '@/components/repos/repo-path';
+import { Chip } from '@/components/ui-app/chip';
+import { EmptyState } from '@/components/ui-app/empty-state';
+import { KeyValue } from '@/components/ui-app/key-value';
+import { LinkButton } from '@/components/ui-app/link-button';
+import { Section } from '@/components/ui-app/section';
 import { Callout } from '@/components/ui/callout';
-import { Card } from '@/components/ui/card';
-import { buttonClass } from '@/components/ui/button';
-import { Container, Heading } from '@/components/ui/layout';
+import { Container } from '@/components/ui/layout';
 import { PageHeader } from '@/components/ui/page-header';
 import { getDatabase } from '@/domain/db/client';
 import { listDomains } from '@/domain/db/domains';
 import { getLink, listInstallations, listRepos } from '@/domain/db/github';
 import { githubConfig } from '@/domain/github/service';
 import { getCurrentUser } from '@/lib/core/auth/current-user';
+import { countOf } from '@/lib/intl';
 
 import { DisconnectButton } from './_components/github-actions';
 
@@ -68,7 +72,7 @@ export default async function GitHubPage({
         title="Your repositories"
         intro="Install the GitHub app and Plumbline finds the repositories that are deployed web applications, puts the sites they serve on your dashboard, and keeps them up to date as the repositories change."
       />
-      <Container className="space-y-12 pb-16">
+      <Container className="space-y-12 pt-8 pb-16">
         {error && ERRORS[error] ? (
           <Callout tone="error" shape="banner">
             {ERRORS[error]}
@@ -81,107 +85,112 @@ export default async function GitHubPage({
             GITHUB_CLIENT_SECRET, GITHUB_PRIVATE_KEY and GITHUB_WEBHOOK_SECRET)
             are missing.
           </Callout>
+        ) : link ? (
+          <Section
+            id="account"
+            title="Account"
+            actions={
+              <div className="flex flex-wrap gap-3">
+                <LinkButton href="/auth/github/link?install=1" native>
+                  Install on another account
+                </LinkButton>
+                <DisconnectButton />
+              </div>
+            }
+          >
+            <KeyValue
+              facts={[
+                { label: 'GitHub', value: <strong>{link.login}</strong> },
+                { label: 'Signed in as', value: user.email },
+                {
+                  label: 'Installed on',
+                  value:
+                    installations.length === 0 ? (
+                      'No account yet'
+                    ) : (
+                      <span className="flex flex-wrap gap-1.5">
+                        {installations.map((installation) => (
+                          <Chip key={installation.installation_id} size="md">
+                            {installation.account_login}
+                          </Chip>
+                        ))}
+                      </span>
+                    ),
+                },
+              ]}
+            />
+          </Section>
         ) : (
-          <section>
-            <Heading variant="h3">Account</Heading>
-            {link ? (
-              <>
-                <p className="mt-2 text-muted">
-                  Connected as <strong>{link.login}</strong> to {user.email}.{' '}
-                  {installations.length}{' '}
-                  {installations.length === 1
-                    ? 'installation'
-                    : 'installations'}
-                  {installations.length > 0
-                    ? ` (${installations.map((i) => i.account_login).join(', ')})`
-                    : ''}
-                  .
-                </p>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <a
-                    href="/auth/github/link?install=1"
-                    className={buttonClass({ variant: 'accent' })}
-                  >
-                    Install on another account
-                  </a>
-                  <DisconnectButton />
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="mt-2 max-w-2xl text-muted">
-                  Connecting proves the GitHub account is yours and ties it to{' '}
-                  {user.email}. Plumbline asks only to read repository contents
-                  and metadata, and keeps no GitHub sign-in token.
-                </p>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <a
-                    href="/auth/github/link?install=1"
-                    className={buttonClass({ variant: 'accent' })}
-                  >
-                    Install the GitHub app
-                  </a>
-                  <a
-                    href="/auth/github/link"
-                    className={buttonClass({ variant: 'outline' })}
-                  >
-                    Already installed? Connect
-                  </a>
-                </div>
-              </>
-            )}
-          </section>
+          <Section
+            id="account"
+            title="Connect GitHub"
+            description={`Connecting proves the GitHub account is yours and ties it to ${user.email}. Plumbline asks only to read repository contents and metadata, and keeps no GitHub sign-in token.`}
+          >
+            <div className="flex flex-wrap gap-3">
+              <LinkButton href="/auth/github/link?install=1" native>
+                Install the GitHub app
+              </LinkButton>
+              <LinkButton href="/auth/github/link" native variant="outline">
+                Already installed? Connect
+              </LinkButton>
+            </div>
+          </Section>
         )}
 
         {link ? (
-          <section>
-            <Heading variant="h3">Deployed web applications</Heading>
+          <Section
+            id="deployed"
+            title="Deployed web applications"
+            description={
+              deployed.length > 0
+                ? `${countOf(deployed.length, 'repository', 'repositories')} serving a site.`
+                : undefined
+            }
+          >
             {deployed.length === 0 ? (
-              <p className="mt-3 text-muted">
-                None found yet. A repository counts when its Wrangler
-                configuration names the addresses it is served on, or its
-                website field names the live site. Repositories you add to the
-                app later show up here by themselves.
-              </p>
+              <EmptyState title="None found yet">
+                A repository counts when its Wrangler configuration names the
+                addresses it is served on, or its website field names the live
+                site. Repositories you add to the app later show up here by
+                themselves.
+              </EmptyState>
             ) : (
-              <Card padding="lg" className="mt-4">
-                <ul className="divide-y divide-line">
-                  {deployed.map((repo) => (
-                    <li
-                      key={`${repo.installation_id}/${repo.full_name}`}
-                      className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-3 first:pt-0 last:pb-0"
+              <ul className="divide-y divide-line rounded-card border border-line bg-surface px-5">
+                {deployed.map((repo) => (
+                  <li
+                    key={`${repo.installation_id}/${repo.full_name}`}
+                    className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-3"
+                  >
+                    <Link
+                      href={repoPath(repo.full_name)}
+                      className="focus-ring font-semibold break-all underline-offset-4 hover:underline"
                     >
-                      <Link
-                        href={repoPath(repo.full_name)}
-                        className="focus-ring font-semibold break-all underline-offset-4 hover:underline"
-                      >
-                        {repo.full_name}
-                      </Link>
-                      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
-                        {repo.hosts.map((host) => {
-                          const id = domainOf.get(host);
-                          return (
-                            <li key={host} className="break-all">
-                              {id ? (
-                                <Link
-                                  href={`${repoPath(repo.full_name)}#site-${id}`}
-                                  className="focus-ring underline underline-offset-4 hover:text-ink"
-                                >
-                                  {host}
-                                </Link>
-                              ) : (
-                                <span title="Not added: the limit of sites was reached">
-                                  {host} · not added (site limit reached)
-                                </span>
-                              )}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </li>
-                  ))}
-                </ul>
-              </Card>
+                      {repo.full_name}
+                    </Link>
+                    <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
+                      {repo.hosts.map((host) => {
+                        const id = domainOf.get(host);
+                        return (
+                          <li key={host} className="break-all">
+                            {id ? (
+                              <Link
+                                href={`${repoPath(repo.full_name)}#site-${id}`}
+                                className="focus-ring underline underline-offset-4 hover:text-ink"
+                              >
+                                {host}
+                              </Link>
+                            ) : (
+                              <span title="Not added: the limit of sites was reached">
+                                {host} · not added (site limit reached)
+                              </span>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
             )}
             {others.length > 0 ? (
               <details className="mt-6">
@@ -199,7 +208,7 @@ export default async function GitHubPage({
                 </ul>
               </details>
             ) : null}
-          </section>
+          </Section>
         ) : null}
       </Container>
     </>

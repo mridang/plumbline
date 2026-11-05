@@ -5,8 +5,11 @@ import {
   compareText,
   countOf,
   foldText,
+  formatCompact,
+  formatCount,
   formatDay,
   formatDuration,
+  formatElapsed,
   formatGigabytes,
   formatHour,
   formatPercent,
@@ -199,5 +202,32 @@ describe('truncate', () => {
   it('never cuts an emoji in half', () => {
     expect(truncate('ab 👨‍👩‍👧👨‍👩‍👧 cd', 4)).toMatch(/^ab( 👨‍👩‍👧)?…$/);
     expect(characterCount('👨‍👩‍👧')).toBe(1);
+  });
+});
+
+describe('formatCount and formatCompact', () => {
+  it('groups thousands', () => {
+    expect(formatCount(1234567)).toBe('1,234,567');
+  });
+
+  it('shortens large numbers and leaves small ones alone', () => {
+    expect(formatCompact(1234)).toBe('1.2K');
+    expect(formatCompact(12)).toBe('12');
+  });
+});
+
+describe('formatElapsed', () => {
+  it('writes under a minute as seconds with one decimal', () => {
+    expect(formatElapsed(21_140)).toBe('21.1s');
+    expect(formatElapsed(0)).toBe('0s');
+  });
+
+  it('writes a minute or more as minutes and seconds', () => {
+    expect(formatElapsed(65_000)).toBe('1m 5s');
+    expect(formatElapsed(59_990)).toBe('1m');
+  });
+
+  it('never goes below zero', () => {
+    expect(formatElapsed(-5)).toBe('0s');
   });
 });

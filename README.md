@@ -22,6 +22,10 @@ The npm packages and the Docker image are released together; until the first rel
 
 Go to [plumbline.apps.mrida.ng](https://plumbline.apps.mrida.ng) and type a domain. Every check runs on the server, so nothing needs installing. Sign in with Google to keep a list of domains, choose which checks run for each, and keep their reports. See [`packages/web`](packages/web/README.md).
 
+### Choosing the rules of a repository
+
+A repository connected through the GitHub App can keep a `plumbline.yaml` in its root to choose which rules apply to its sites (`extends`, `rules`, `environments`, `issues`, `dispatch`). Editors can check it against the [JSON Schema](https://plumbline.apps.mrida.ng/schemas/plumbline.schema.json): put `# yaml-language-server: $schema=https://plumbline.apps.mrida.ng/schemas/plumbline.schema.json` on the first line. See [Choosing the rules with plumbline.yaml](packages/web/README.md#choosing-the-rules-with-plumblineyaml).
+
 ### From the command line
 
 ```sh

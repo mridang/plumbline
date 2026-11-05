@@ -1,29 +1,29 @@
 import type { ReactElement } from 'react';
 
-import { cn } from '@/components/ui/cn';
+import { Chip } from '@/components/ui-app/chip';
+import { RelativeTime } from '@/components/ui-app/relative-time';
+import type { Tone } from '@/components/ui-app/tone';
 import type { IssueRef } from '@/domain/db/issue-history';
-import { relativeTime } from '@/lib/intl';
+import { countOf } from '@/lib/intl';
 import type { Finding, FindingLink, HintOutcome } from '@/domain/scan/outcome';
 
 import { ISSUE_STATE_LABELS, STATUS_LABELS, type Status } from './results';
 
 /** The colour of each outcome's badge. */
-const BADGE: Readonly<Record<Status, string>> = {
-  failed: 'bg-failed text-white',
-  warned: 'bg-warned text-white',
-  passed: 'bg-passed text-white',
-  skipped: 'bg-skipped/15 text-skipped',
+const BADGE_TONE: Readonly<Record<Status, Tone>> = {
+  failed: 'bad',
+  warned: 'warn',
+  passed: 'good',
+  skipped: 'neutral',
 };
 
-/** The colour of each finding's level. */
-const LEVEL: Readonly<Record<Finding['level'], string>> = {
-  error: 'bg-failed/10 text-failed',
-  warning: 'bg-warned/10 text-warned',
-  hint: 'bg-ink/5 text-muted',
-  information: 'bg-ink/5 text-muted',
+const LEVEL_TONE: Readonly<Record<Finding['level'], Tone>> = {
+  error: 'bad',
+  warning: 'warn',
+  hint: 'neutral',
+  information: 'neutral',
 };
 
-/** A small heading inside a check. */
 const LABEL = 'text-label font-semibold text-subtle uppercase';
 
 /**
@@ -78,14 +78,9 @@ function FindingItem({
   return (
     <li className="rounded-control border border-line p-3">
       <p>
-        <span
-          className={cn(
-            'mr-2 inline-block rounded-full px-2 py-0.5 text-xs font-semibold capitalize',
-            LEVEL[finding.level],
-          )}
-        >
+        <Chip tone={LEVEL_TONE[finding.level]} className="mr-2 capitalize">
           {finding.level}
-        </span>
+        </Chip>
         {finding.message}
       </p>
       <p className="mt-1 text-xs text-subtle">
@@ -161,9 +156,7 @@ function FixPanel({
           <ul className="mt-1 space-y-2">
             {origins.map((origin) => (
               <li key={`${origin.source} ${origin.url} ${origin.title}`}>
-                <span className="mr-2 rounded-full bg-ink/5 px-2 py-0.5 text-xs font-medium">
-                  {origin.source}
-                </span>
+                <Chip className="mr-2 font-medium">{origin.source}</Chip>
                 <Outbound href={origin.url}>{origin.title}</Outbound>
                 {origin.docsUrl && isWebLink(origin.docsUrl) ? (
                   <>
@@ -184,13 +177,12 @@ function FixPanel({
 }
 
 /** The colour of each issue state's pill. */
-const ISSUE_PILL: Readonly<Record<IssueRef['state'], string>> = {
-  open: 'bg-failed/10 text-failed',
-  fixed: 'bg-passed/10 text-passed',
-  dismissed: 'bg-ink/5 text-muted',
+const ISSUE_TONE: Readonly<Record<IssueRef['state'], Tone>> = {
+  open: 'bad',
+  fixed: 'good',
+  dismissed: 'neutral',
 };
 
-/** The address of an issue on GitHub. */
 export function issueUrl(
   repository: string,
   issue: Readonly<IssueRef>,
@@ -202,9 +194,11 @@ export function issueUrl(
 function IssueList({
   repository,
   issues,
+  now,
 }: Readonly<{
   repository: string;
   issues: readonly IssueRef[];
+  now?: number | undefined;
 }>): ReactElement {
   return (
     <div>
@@ -215,21 +209,16 @@ function IssueList({
             <Outbound href={issueUrl(repository, issue)}>
               {`#${issue.number}`}
             </Outbound>
-            <span
-              className={cn(
-                'rounded-full px-2 py-0.5 text-xs font-semibold',
-                ISSUE_PILL[issue.state],
-              )}
-            >
+            <Chip tone={ISSUE_TONE[issue.state]}>
               {ISSUE_STATE_LABELS[issue.state]}
+            </Chip>
+            <span className="text-xs text-subtle">
+              opened{' '}
+              <RelativeTime
+                at={issue.opened_at}
+                {...(now === undefined ? {} : { now })}
+              />
             </span>
-            <time
-              dateTime={issue.opened_at}
-              title={issue.opened_at}
-              className="text-xs text-subtle"
-            >
-              opened {relativeTime(issue.opened_at)}
-            </time>
           </li>
         ))}
       </ul>
@@ -250,6 +239,7 @@ export function HintRow({
   onToggle,
   repository,
   issues = [],
+  now,
 }: Readonly<{
   hint: HintOutcome;
   open?: boolean;
@@ -259,6 +249,8 @@ export function HintRow({
   repository?: string | undefined;
   /** The issues that report this check. */
   issues?: readonly IssueRef[];
+  /** The server's clock when the page was made, in milliseconds, for the times shown. */
+  now?: number;
 }>): ReactElement {
   const problem = hint.status === 'failed' || hint.status === 'warned';
   const listed = repository !== undefined && issues.length > 0;
@@ -269,21 +261,19 @@ export function HintRow({
       onToggle={(event) => {
         // Opening or closing it from the code fires this too: only a change
         // the person made is news.
-        const now = event.currentTarget.open;
-        if (now !== open) {
-          onToggle?.(now);
+        const isOpen = event.currentTarget.open;
+        if (isOpen !== open) {
+          onToggle?.(isOpen);
         }
       }}
     >
       <summary className="focus-ring-flush flex items-start gap-3 px-4 py-3 hover:bg-ink/3">
-        <span
-          className={cn(
-            'mt-0.5 inline-flex w-20 shrink-0 justify-center rounded-full px-2 py-0.5 text-xs font-semibold',
-            BADGE[hint.status],
-          )}
+        <Chip
+          tone={BADGE_TONE[hint.status]}
+          className="mt-0.5 w-20 justify-center"
         >
           {STATUS_LABELS[hint.status]}
-        </span>
+        </Chip>
         <span className="min-w-0 flex-1">
           <span className="font-medium">{hint.name}</span>{' '}
           <code className="font-mono text-xs break-all text-subtle">
@@ -291,16 +281,15 @@ export function HintRow({
           </code>
           {hint.findings.length > 0 ? (
             <span className="ml-2 text-sm text-subtle">
-              {hint.findings.length}{' '}
-              {hint.findings.length === 1 ? 'finding' : 'findings'}
+              {countOf(hint.findings.length, 'finding')}
             </span>
           ) : null}
           {listed ? (
-            <span className="ml-2 rounded-full border border-line px-2 py-0.5 text-xs font-medium text-muted">
+            <Chip className="ml-2 font-medium">
               {issues.length === 1
                 ? `Issue #${issues[0]?.number}`
-                : `${issues.length} issues`}
-            </span>
+                : countOf(issues.length, 'issue')}
+            </Chip>
           ) : null}
         </span>
       </summary>
@@ -317,16 +306,15 @@ export function HintRow({
             </ul>
           </div>
         ) : null}
-        {listed ? <IssueList repository={repository} issues={issues} /> : null}
+        {listed ? (
+          <IssueList repository={repository} issues={issues} now={now} />
+        ) : null}
         <FixPanel hint={hint} problem={problem} />
         {hint.groups.length > 0 ? (
           <ul aria-label="Groups" className="flex flex-wrap gap-1.5">
             {hint.groups.map((group) => (
-              <li
-                key={group}
-                className="rounded-full border border-line px-2 py-0.5 text-xs text-subtle"
-              >
-                {group}
+              <li key={group}>
+                <Chip>{group}</Chip>
               </li>
             ))}
           </ul>

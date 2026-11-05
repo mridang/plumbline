@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import { SiteHeader } from '@/components/site/site-header';
 import type { User } from '@/domain/db/users';
-import { html } from '../render';
+import { htmlAt } from '../render';
 
 const ADA: User = {
   id: 1,
@@ -15,53 +15,72 @@ const ADA: User = {
   updated_at: '2026-01-01T00:00:00.000Z',
 };
 
+/** The header as it renders on a page of the app. */
+const draw = (user: User | null, pathname = '/') =>
+  htmlAt(<SiteHeader user={user} />, { pathname });
+
 describe('SiteHeader', () => {
   it('shows the logo', () => {
-    expect(html(<SiteHeader user={null} />)).toContain('Plumbline</a>');
-  });
-
-  it('links to the source', () => {
-    expect(html(<SiteHeader user={null} />)).toContain(
-      'href="https://github.com/mridang/plumbline"',
-    );
-  });
-
-  it('points to the home page’s checks and developer sections', () => {
-    const out = html(<SiteHeader user={null} />);
-    expect(out).toContain('href="/#checks"');
-    expect(out).toContain('href="/#developers"');
+    expect(draw(null)).toContain('Plumbline</a>');
   });
 
   it('stays in view while the page scrolls', () => {
-    expect(html(<SiteHeader user={null} />)).toContain('sticky top-0');
+    expect(draw(null)).toContain('sticky top-0');
+  });
+
+  it('does not link the source: it is in the footer', () => {
+    expect(draw(null)).not.toContain('github.com/mridang/plumbline');
+    expect(draw(ADA)).not.toContain('github.com/mridang/plumbline');
   });
 
   it('offers no install button until the browser offers one', () => {
-    expect(html(<SiteHeader user={null} />)).not.toContain('Install app');
+    expect(draw(null)).not.toContain('Install app');
   });
 });
 
 describe('SiteHeader signed out', () => {
-  const out = html(<SiteHeader user={null} />);
+  const out = draw(null);
+
+  it('leads home from the logo', () => {
+    expect(out).toMatch(/<a[^>]*href="\/"[^>]*>[^]*?Plumbline<\/a>/);
+  });
+
+  it('points to the checks and the docs pages', () => {
+    expect(out).toContain('href="/checks"');
+    expect(out).toContain('href="/docs"');
+  });
 
   it('offers to sign in, on the sign-in page', () => {
-    expect(out).toContain('href="/login">Sign in</a>');
+    expect(out).toContain('href="/login"');
   });
 
   it('offers a scan, as the main action', () => {
     expect(out).toMatch(/href="\/#scan"[^>]*>Scan a site<\/a>/);
   });
 
-  it('shows no account links', () => {
-    expect(out).not.toMatch(/href="\/domains"|href="\/connect"|Sign out/);
+  it('has a menu for phones, where the links would not fit', () => {
+    expect(out).toContain('aria-label="Menu"');
+  });
+
+  it('shows no account links and no dashboard', () => {
+    expect(out).not.toMatch(/href="\/dashboard"|href="\/connect"|Sign out/);
   });
 });
 
 describe('SiteHeader signed in', () => {
-  const out = html(<SiteHeader user={ADA} />);
+  const out = draw(ADA);
 
-  it('links to the dashboard', () => {
-    expect(out).toContain('href="/dashboard">Dashboard</a>');
+  it('leads to the dashboard from the logo, not the front page', () => {
+    expect(out).toMatch(/<a[^>]*href="\/dashboard"[^>]*>[^]*?Plumbline<\/a>/);
+    expect(out).not.toMatch(/<a[^>]*href="\/"[^>]*>[^]*?Plumbline<\/a>/);
+  });
+
+  it('lists the dashboard, the checks and the docs, in that order', () => {
+    const at = ['>Dashboard<', '>Checks<', '>Docs<'].map((text) =>
+      out.indexOf(text),
+    );
+    expect(at.every((index) => index >= 0)).toBe(true);
+    expect([...at].sort((a, b) => a - b)).toEqual(at);
   });
 
   it('greets the person by their first name in the account menu', () => {
@@ -69,17 +88,26 @@ describe('SiteHeader signed in', () => {
   });
 
   it('holds the account links in the menu, not in the bar', () => {
-    expect(out).not.toMatch(
-      /href="\/domains"|href="\/connect"|href="\/github"/,
-    );
+    expect(out).not.toMatch(/href="\/connect"|href="\/github"/);
     expect(out).not.toContain('>Sign out<');
   });
 
-  it('does not offer the scan button, which is for visitors', () => {
+  it('does not offer the scan button or signing in, which are for visitors', () => {
     expect(out).not.toContain('Scan a site');
+    expect(out).not.toContain('href="/login"');
   });
 
-  it('does not offer to sign in', () => {
-    expect(out).not.toContain('href="/login"');
+  it('marks the page it is on', () => {
+    const marked = draw(ADA, '/checks');
+    expect(marked).toMatch(/aria-current="page"[^>]*>Checks</);
+    expect(draw(ADA, '/dashboard')).toMatch(
+      /aria-current="page"[^>]*>Dashboard</,
+    );
+  });
+
+  it('keeps the dashboard marked on a repository page', () => {
+    expect(draw(ADA, '/repos/acme/site')).toMatch(
+      /aria-current="page"[^>]*>Dashboard</,
+    );
   });
 });

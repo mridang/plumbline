@@ -29,11 +29,19 @@ describe('the brand', () => {
 });
 
 describe('what crawlers may read', () => {
-  it('is the scan page and the legal pages, which may be indexed', () => {
+  it('is the scan page, the checks, the docs and the legal pages, which may be indexed', () => {
     expect(INDEX_BY_DEFAULT).toBe(true);
-    expect(CRAWLABLE_PATHS).toEqual(['/$', '/privacy', '/terms']);
+    expect(CRAWLABLE_PATHS).toEqual([
+      '/$',
+      '/checks',
+      '/docs',
+      '/privacy',
+      '/terms',
+    ]);
     expect(SITEMAP_PAGES).toEqual([
       { path: '/' },
+      { path: '/checks' },
+      { path: '/docs' },
       { path: '/privacy', lastModified: '2026-11-01' },
       { path: '/terms', lastModified: '2026-11-01' },
     ]);

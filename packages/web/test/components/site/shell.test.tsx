@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import type { User } from '@/domain/db/users';
-import { html } from '../render';
+import { htmlAt } from '../render';
 
 /** Who the shell finds signed in. */
 const state: { user: User | null } = { user: null };
@@ -14,7 +14,9 @@ const { SiteShell } = await import('@/components/site/shell');
 
 /** The shell around a page, rendered as the server would. */
 async function shell(): Promise<string> {
-  return html(await SiteShell({ children: <p>page</p> }));
+  return htmlAt(await SiteShell({ children: <p>page</p> }), {
+    pathname: '/dashboard',
+  });
 }
 
 beforeEach(() => {

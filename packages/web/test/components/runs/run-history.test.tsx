@@ -5,6 +5,9 @@ import type { RunSummary } from '@/domain/db/runs';
 
 import { htmlAt } from '../render';
 
+/** The clock the page was made with: two hours after the runs below. */
+const NOW = Date.parse('2026-11-01T12:00:00.000Z');
+
 const run = (extra: Partial<RunSummary>): RunSummary => ({
   id: 's1',
   kind: 'deployment',
@@ -27,6 +30,7 @@ const list = (runs: RunSummary[], shownId?: string) =>
       runs,
       base: '/repos/acme/site',
       shownId,
+      now: NOW,
     }),
     { pathname: '/repos/acme/site' },
   );
@@ -47,9 +51,7 @@ describe('RunList', () => {
   });
 
   it('says how long ago a run was, not only the date', () => {
-    const html = list([
-      run({ ran_at: new Date(Date.now() - 2 * 3600_000).toISOString() }),
-    ]);
+    const html = list([run({})]);
     expect(html).toContain('2 hours ago');
   });
 
@@ -92,9 +94,9 @@ describe('RunList', () => {
   });
 
   it('says so when a site has no runs yet', () => {
-    expect(list([])).toContain(
-      'No runs of site.example.com yet. Press Run checks',
-    );
+    const html = list([]);
+    expect(html).toContain('No runs of site.example.com yet');
+    expect(html).toContain('Press Run checks');
   });
 });
 
@@ -102,7 +104,13 @@ describe('SiteRuns', () => {
   const site = { id: 'd1', host: 'site.example.com' };
   const draw = (runs: RunSummary[]) =>
     htmlAt(
-      SiteRuns({ repo: 'acme/site', site, runs, base: '/repos/acme/site' }),
+      SiteRuns({
+        repo: 'acme/site',
+        site,
+        runs,
+        base: '/repos/acme/site',
+        now: NOW,
+      }),
       { pathname: '/repos/acme/site' },
     );
 

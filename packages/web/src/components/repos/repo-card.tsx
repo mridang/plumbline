@@ -10,54 +10,61 @@ import { setRepoHidden } from '@/components/repos/hide-repo';
 import { repoPath } from '@/components/repos/repo-path';
 import { STATES, StatusDot, worstState } from '@/components/repos/site-state';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Chip } from '@/components/ui-app/chip';
+import { RelativeTime } from '@/components/ui-app/relative-time';
+import { StatusCard } from '@/components/ui-app/status-card';
+import { TextList } from '@/components/ui-app/text-list';
 import type { RepoStatus, SiteStatus } from '@/domain/db/live';
-import { countOf, relativeTime } from '@/lib/intl';
+import { countOf } from '@/lib/intl';
 
-/** " · 2 errors, 1 warning": only the counts that are not zero, and nothing for a site with none. */
-function findingsOf(site: SiteStatus): string {
-  const parts = [
-    site.errors > 0 ? countOf(site.errors, 'error') : '',
-    site.warnings > 0 ? countOf(site.warnings, 'warning') : '',
-  ].filter((part) => part !== '');
-  return (site.state === 'failing' || site.state === 'warning') &&
-    parts.length > 0
-    ? ` · ${parts.join(', ')}`
-    : '';
+/** What a failing or warning site has wrong, as a list of counts. */
+function findingsOf(site: SiteStatus): string[] {
+  return site.state === 'failing' || site.state === 'warning'
+    ? [
+        site.errors > 0 ? countOf(site.errors, 'error') : '',
+        site.warnings > 0 ? countOf(site.warnings, 'warning') : '',
+      ].filter((part) => part !== '')
+    : [];
 }
 
-/** One site of a repository: its host as plain text, how it stands, and when it was last checked. */
+/**
+ * One site of a repository: its address (with a link out to the live site), how
+ * it stands, what it has wrong and when it was last checked. `now` is the
+ * server's clock, so the time reads the same in both places.
+ */
 export function SiteLine({
   site,
-}: Readonly<{ site: SiteStatus }>): ReactElement {
-  const { label, tone } = STATES[site.state];
+  now,
+}: Readonly<{ site: SiteStatus; now: number }>): ReactElement {
+  const { label, kind } = STATES[site.state];
+  const findings = findingsOf(site);
   return (
-    <li className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-2.5">
-      <span className="min-w-0 font-medium break-all">
-        {site.host}
+    <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 py-2.5">
+      <span className="flex min-w-0 items-center gap-1.5 font-medium">
+        <span className="break-all">{site.host}</span>
         <a
           href={`https://${site.host}`}
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`Open ${site.host} (opens in a new tab)`}
-          className="focus-ring ml-1.5 text-subtle hover:text-ink"
+          className="focus-ring shrink-0 text-subtle hover:text-ink"
         >
-          <LinkIcon size="sm" className="inline" />
+          <LinkIcon size="sm" />
         </a>
       </span>
-      <span className="text-sm">
-        <span className={`font-semibold ${tone}`}>
-          {label}
-          {findingsOf(site)}
-        </span>
+      <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm">
+        <Chip tone={kind}>{label}</Chip>
+        {findings.length > 0 ? (
+          <span className="text-muted">
+            <TextList items={findings} />
+          </span>
+        ) : null}
         {site.checked_at ? (
-          <time
-            dateTime={site.checked_at}
-            suppressHydrationWarning
-            className="ml-2 text-subtle"
-          >
-            {relativeTime(site.checked_at)}
-          </time>
+          <RelativeTime
+            at={site.checked_at}
+            now={now}
+            className="text-subtle"
+          />
         ) : null}
       </span>
     </li>
@@ -65,16 +72,19 @@ export function SiteLine({
 }
 
 /**
- * One repository on the dashboard: its name (the link to its page), how its
- * sites stand overall, each site, and a control to hide it from the dashboard
- * or show it again. A hidden repository (shown only when asked for) is dimmed.
- * The group of sites added by hand (`repo` null) has no page and cannot be
- * hidden.
+ * A repository on the dashboard: a card with an edge in the colour of its worst
+ * site, the repository's name as the link to its page, a Hide or Unhide button
+ * and one line for each site. A hidden one is dimmed.
  */
 export function RepoCard({
   repo,
   hidden,
-}: Readonly<{ repo: RepoStatus; hidden: boolean }>): ReactElement {
+  now,
+}: Readonly<{
+  repo: RepoStatus;
+  hidden: boolean;
+  now: number;
+}>): ReactElement {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -98,13 +108,9 @@ export function RepoCard({
   };
 
   return (
-    <Card
-      as="article"
-      padding="lg"
-      className={`flex h-full flex-col transition hover:border-ink/30 hover:shadow-sm ${hidden ? 'opacity-70' : ''}`}
-    >
+    <StatusCard tone={STATES[overall].kind} muted={hidden}>
       <div className="flex items-start justify-between gap-3">
-        <h2 className="flex min-w-0 items-center gap-2.5 text-lg font-semibold">
+        <h2 className="flex min-w-0 items-center gap-2.5 text-lg font-semibold text-balance">
           <StatusDot state={overall} />
           {name === null ? (
             <span className="break-all">Added by hand</span>
@@ -132,9 +138,9 @@ export function RepoCard({
         {countOf(repo.sites.length, 'site')}
         {hidden ? ' · hidden from your dashboard' : ''}
       </p>
-      <ul className="mt-3 divide-y divide-field/60 border-t border-field/60">
+      <ul className="mt-3 divide-y divide-line border-t border-line">
         {repo.sites.map((site) => (
-          <SiteLine key={site.id} site={site} />
+          <SiteLine key={site.id} site={site} now={now} />
         ))}
       </ul>
       {problem ? (
@@ -142,6 +148,6 @@ export function RepoCard({
           {problem}
         </p>
       ) : null}
-    </Card>
+    </StatusCard>
   );
 }

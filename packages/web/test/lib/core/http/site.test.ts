@@ -24,8 +24,8 @@ describe('site settings', () => {
     expect(EDGE_TTL_SECONDS).toBe(1800);
   });
 
-  it('lets search engines index the page: it is a public demo', () => {
-    expect([...PUBLIC_PAGES]).toEqual(['/']);
+  it('lets search engines index the scan page, the checks and the docs', () => {
+    expect([...PUBLIC_PAGES]).toEqual(['/', '/checks', '/docs']);
   });
 
   it.each([
@@ -35,6 +35,7 @@ describe('site settings', () => {
     '/sitemap.xml',
     '/.well-known/security.txt',
     '/badge/acme/site/0123456789abcdef0123.svg',
+    '/schemas/plumbline.schema.json',
   ])('opens %s to other sites', (path) => {
     expect(OPEN_FILES.test(path)).toBe(true);
   });
@@ -46,6 +47,7 @@ describe('site settings', () => {
     '/badge/acme/site/0123.png',
     '/badge/acme/0123.svg',
     '/r/abc/json',
+    '/schemas/other.schema.json',
   ])('keeps %s to this site', (path) => {
     expect(OPEN_FILES.test(path)).toBe(false);
   });

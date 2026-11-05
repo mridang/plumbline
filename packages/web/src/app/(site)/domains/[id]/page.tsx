@@ -12,6 +12,7 @@ import { getDatabase } from '@/domain/db/client';
 import { getDomain } from '@/domain/db/domains';
 import { latestReport, listReports } from '@/domain/db/reports';
 import { getRun, listRuns, runAsReport } from '@/domain/db/runs';
+import { serverNow } from '@/lib/clock';
 import { getCurrentUser } from '@/lib/core/auth/current-user';
 
 import { SitePanel } from '@/app/(site)/repos/[owner]/[repo]/_components/site-panel';
@@ -78,6 +79,7 @@ export default async function DomainPage({
           issues={[]}
           shown={shown}
           base={`/domains/${domain.id}`}
+          now={serverNow()}
         />
       </Container>
     </>

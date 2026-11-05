@@ -2,7 +2,9 @@
 
 import { useState, type ReactElement } from 'react';
 
-import { cn } from '@/components/ui/cn';
+import { Stat } from '@/components/ui-app/stat';
+import { ToggleChip } from '@/components/ui-app/toggle-chip';
+import type { Tone } from '@/components/ui-app/tone';
 import type { IssueRef } from '@/domain/db/issue-history';
 import type { HintOutcome } from '@/domain/scan/outcome';
 
@@ -20,7 +22,7 @@ import {
   type OpenOverrides,
   type Status,
 } from './results';
-import { countOf, formatRating } from '@/lib/intl';
+import { countOf, formatElapsed, formatTimestamp } from '@/lib/intl';
 
 /** A scan under way or done, or a saved one: where the page ended up, and what has run. */
 export interface Scan {
@@ -38,23 +40,23 @@ export interface Scan {
 }
 
 /** The colour of each outcome's count. */
-const COUNT: Readonly<Record<Status, string>> = {
-  failed: 'text-failed',
-  warned: 'text-warned',
-  passed: 'text-passed',
-  skipped: 'text-skipped',
+const COUNT_TONE: Readonly<Record<Status, Tone>> = {
+  failed: 'bad',
+  warned: 'warn',
+  passed: 'good',
+  skipped: 'neutral',
 };
 
 /** The line under the heading: the status, and how far along or how long it took. */
 export function progressLine(scan: Readonly<Scan>): string {
   if (scan.savedAt !== undefined) {
     // Written out the same on the server and in the browser, whatever the time zone.
-    return `${countOf(scan.total, 'check')} · scanned ${scan.savedAt.slice(0, 16).replace('T', ' ')} UTC`;
+    return `${countOf(scan.total, 'check')} · scanned ${formatTimestamp(scan.savedAt)} UTC`;
   }
   const status = scan.status === undefined ? '' : `HTTP ${scan.status} · `;
   return scan.finishedAt === undefined
     ? `${status}${scan.hints.length} of ${countOf(scan.total, 'check')} done…`
-    : `${status}${countOf(scan.total, 'check')} in ${formatRating((scan.finishedAt - scan.startedAt) / 1000)} s`;
+    : `${status}${countOf(scan.total, 'check')} in ${formatElapsed(scan.finishedAt - scan.startedAt)}`;
 }
 
 /** The summary, the filter and the list of checks. */
@@ -62,8 +64,11 @@ export function ScanResults({
   scan,
   repository,
   issuesByCheck = {},
+  now,
 }: Readonly<{
   scan: Scan;
+  /** The server's clock when the page was made, in milliseconds, for the times shown. */
+  now?: number;
   /** `owner/name` of the project that serves the site, when known. */
   repository?: string;
   /** The GitHub issues that report each check, by check id (see `issuesByCheck`). */
@@ -110,36 +115,28 @@ export function ScanResults({
       ) : null}
       <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {STATUS_ORDER.map((status) => (
-          <div
+          <Stat
             key={status}
-            className="rounded-card border border-line bg-surface px-4 py-3"
-          >
-            <dt className="text-label font-semibold text-subtle uppercase">
-              {STATUS_LABELS[status]}
-            </dt>
-            <dd className={cn('mt-1 text-3xl font-semibold', COUNT[status])}>
-              {counts[status]}
-            </dd>
-          </div>
+            label={STATUS_LABELS[status]}
+            value={counts[status]}
+            tone={COUNT_TONE[status]}
+          />
         ))}
       </dl>
-      <div role="group" aria-label="Show" className="mt-6 flex flex-wrap gap-2">
+      <div
+        role="group"
+        aria-label="Show"
+        className="sticky top-16 z-10 -mx-1 mt-6 flex flex-wrap gap-2 bg-paper/90 px-1 py-2 backdrop-blur"
+      >
         {filters.map((option) => (
-          <button
+          <ToggleChip
             key={option.value}
-            type="button"
-            aria-pressed={filter === option.value}
+            pressed={filter === option.value}
             onClick={() => setFilter(option.value)}
-            className={cn(
-              'focus-ring h-9 rounded-full border px-4 text-sm font-medium transition',
-              filter === option.value
-                ? 'border-ink bg-ink text-on-ink'
-                : 'border-field bg-surface text-ink hover:border-ink',
-            )}
+            count={option.count}
           >
-            {option.label}{' '}
-            <span className="tabular-nums opacity-70">{option.count}</span>
-          </button>
+            {option.label}
+          </ToggleChip>
         ))}
       </div>
       {shown.length > 0 ? (
@@ -153,7 +150,7 @@ export function ScanResults({
                 ...setAll(shown, !everyOneOpen),
               }))
             }
-            className="focus-ring h-9 rounded-full border border-field bg-surface px-4 text-sm font-medium transition hover:border-ink"
+            className="focus-ring h-9 rounded-full border border-field bg-surface px-4 text-sm font-medium hover:border-ink motion-safe:transition"
           >
             {everyOneOpen ? 'Collapse all' : 'Expand all'}
           </button>
@@ -189,6 +186,7 @@ export function ScanResults({
                       }
                       repository={repository}
                       issues={issuesByCheck[hint.id]}
+                      now={now}
                     />
                   </li>
                 ))}

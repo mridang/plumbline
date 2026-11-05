@@ -20,8 +20,9 @@ export const FOOTER_COLUMNS: readonly Readonly<{
     title: 'Product',
     links: [
       { label: 'Scan a site', href: '/#scan' },
-      { label: 'What it checks', href: '/#checks' },
-      { label: 'Your dashboard', href: '/dashboard' },
+      { label: 'Checks', href: '/checks' },
+      { label: 'Docs', href: '/docs' },
+      { label: 'Dashboard', href: '/dashboard' },
       { label: 'Connect an assistant', href: '/connect' },
     ],
   },
@@ -47,7 +48,7 @@ export const FOOTER_COLUMNS: readonly Readonly<{
       },
       {
         label: 'REST API',
-        href: `${SOURCE_URL}/blob/master/packages/web/openapi/plumbline.yaml`,
+        href: `${SOURCE_URL}/blob/master/packages/web/openapi.json`,
       },
       { label: 'MCP server', href: `${SITE_URL}/mcp` },
     ],
@@ -55,8 +56,8 @@ export const FOOTER_COLUMNS: readonly Readonly<{
   {
     title: 'Project',
     links: [
-      { label: 'Source on GitHub', href: SOURCE_URL },
-      { label: 'Report an issue', href: `${SOURCE_URL}/issues` },
+      { label: 'Source', href: SOURCE_URL },
+      { label: 'Report an issue', href: `${SOURCE_URL}/issues/new` },
       { label: 'Security policy', href: '/security-policy.txt' },
       { label: 'For AI crawlers', href: '/llms.txt' },
       { label: 'Privacy', href: '/privacy' },

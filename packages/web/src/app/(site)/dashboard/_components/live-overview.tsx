@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactElement } from 'react';
 
 import { RepoCard } from '@/components/repos/repo-card';
+import { Chip } from '@/components/ui-app/chip';
+import { Count } from '@/components/ui-app/count';
+import { EmptyState } from '@/components/ui-app/empty-state';
+import { LinkButton } from '@/components/ui-app/link-button';
 import type { RepoStatus } from '@/domain/db/live';
 import {
   browserEnvironment,
@@ -25,8 +29,11 @@ export function LiveOverview({
   initial,
   hidden,
   showHidden,
+  now,
 }: Readonly<{
   initial: readonly RepoStatus[];
+  /** The server's clock when the page was made, in milliseconds. */
+  now: number;
   /** The repositories the person has hidden. */
   hidden: readonly string[];
   /** Whether hidden repositories are listed (dimmed) or left out. */
@@ -92,13 +99,47 @@ export function LiveOverview({
   const hiddenCount = repos.filter(isHidden).length;
   const counts = tally(repos.filter((repo) => !isHidden(repo)));
   const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
+  if (repos.length === 0) {
+    return (
+      <EmptyState
+        title="No sites yet"
+        action={<LinkButton href="/github">Connect GitHub</LinkButton>}
+      >
+        Plumbline finds the repositories that are deployed web applications and
+        puts the sites they serve here. Install the GitHub app to begin.
+      </EmptyState>
+    );
+  }
   return (
     <div>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-        <p className="text-sm text-muted" aria-live="polite">
-          {total === 0
-            ? 'No sites yet.'
-            : `${total} ${total === 1 ? 'site' : 'sites'}: ${counts.running} checking, ${counts.failing + counts.unreachable} failing, ${counts.warning} with warnings, ${counts.ok} all clear.`}{' '}
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <p
+          className="flex flex-wrap items-center gap-2 text-sm text-muted"
+          aria-live="polite"
+        >
+          <span className="font-medium text-ink">
+            <Count value={total} /> {total === 1 ? 'site' : 'sites'}
+          </span>
+          {counts.running > 0 ? (
+            <Chip tone="info">
+              <Count value={counts.running} /> checking
+            </Chip>
+          ) : null}
+          {counts.failing + counts.unreachable > 0 ? (
+            <Chip tone="bad">
+              <Count value={counts.failing + counts.unreachable} /> failing
+            </Chip>
+          ) : null}
+          {counts.warning > 0 ? (
+            <Chip tone="warn">
+              <Count value={counts.warning} /> with warnings
+            </Chip>
+          ) : null}
+          {counts.ok > 0 ? (
+            <Chip tone="good">
+              <Count value={counts.ok} /> all clear
+            </Chip>
+          ) : null}
           <span className={live ? 'text-passed' : 'text-subtle'}>
             {live ? '● Live' : '○ Connecting…'}
           </span>
@@ -112,17 +153,18 @@ export function LiveOverview({
           </Link>
         ) : null}
       </div>
-      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="mt-6 grid grid-cols-[repeat(auto-fit,minmax(min(100%,26rem),1fr))] gap-4">
         {shown.map((repo) => (
           <RepoCard
             key={repo.repo ?? 'by-hand'}
             repo={repo}
             hidden={isHidden(repo)}
+            now={now}
           />
         ))}
       </div>
       {hiddenCount > 0 ? (
-        <p className="mt-6 text-sm text-subtle">
+        <p className="mt-6 text-sm text-pretty text-subtle">
           Hiding a repository only takes it off this page. Its sites are still
           checked, and GitHub still hears about them.
         </p>

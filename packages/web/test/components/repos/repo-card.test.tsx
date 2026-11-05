@@ -4,6 +4,9 @@ import { RepoCard } from '@/components/repos/repo-card';
 import type { RepoStatus } from '@/domain/db/live';
 import { htmlAt } from '../render';
 
+/** The clock the page was made with: a day after the first site was checked. */
+const NOW = Date.parse('2026-01-02T00:00:00.000Z');
+
 const REPO: RepoStatus = {
   repo: 'acme/site',
   sites: [
@@ -31,7 +34,7 @@ const REPO: RepoStatus = {
 };
 
 describe('RepoCard', () => {
-  const out = htmlAt(<RepoCard repo={REPO} hidden={false} />);
+  const out = htmlAt(<RepoCard now={NOW} repo={REPO} hidden={false} />);
 
   it('titles the card with the repository, linked to its page', () => {
     expect(out).toMatch(
@@ -51,7 +54,8 @@ describe('RepoCard', () => {
   });
 
   it('says how each site stands, and the count of sites', () => {
-    expect(out).toContain('Failing · 2 errors, 1 warning');
+    expect(out).toContain('>Failing</span>');
+    expect(out).toContain('2 errors and 1 warning');
     expect(out).toContain('All clear');
     expect(out).toContain('2 sites');
   });
@@ -59,6 +63,7 @@ describe('RepoCard', () => {
   it('leaves out a count of zero: a site with only warnings says no errors', () => {
     const only = htmlAt(
       <RepoCard
+        now={NOW}
         repo={{
           repo: 'acme/other',
           sites: [
@@ -68,7 +73,8 @@ describe('RepoCard', () => {
         hidden={false}
       />,
     );
-    expect(only).toContain('Warnings · 3 warnings');
+    expect(only).toContain('>Warnings</span>');
+    expect(only).toContain('3 warnings');
     expect(only).not.toContain('0 errors');
   });
 
@@ -78,7 +84,7 @@ describe('RepoCard', () => {
   });
 
   it('offers to unhide a hidden repository, dimmed and said to be hidden', () => {
-    const hiddenOut = htmlAt(<RepoCard repo={REPO} hidden />);
+    const hiddenOut = htmlAt(<RepoCard now={NOW} repo={REPO} hidden />);
     expect(hiddenOut).toContain('>Unhide<');
     expect(hiddenOut).toContain('opacity-70');
     expect(hiddenOut).toContain('hidden from your dashboard');
@@ -86,7 +92,7 @@ describe('RepoCard', () => {
 
   it('has no page and no hide control for sites added by hand', () => {
     const byHand = htmlAt(
-      <RepoCard repo={{ ...REPO, repo: null }} hidden={false} />,
+      <RepoCard now={NOW} repo={{ ...REPO, repo: null }} hidden={false} />,
     );
     expect(byHand).toContain('Added by hand');
     expect(byHand).not.toContain('href="/repos/');

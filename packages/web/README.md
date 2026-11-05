@@ -48,7 +48,7 @@ Every check runs on the server, in the scanner container (the same one the pages
 
 What a deployment starts depends on what was deployed. A deployment is a preview when GitHub marks it short-lived (`transient_environment`) or its environment is named like one (Preview, Staging, a review app, a pull request); anything else is the live site.
 
-- **The live site.** The scanner checks each site found in that repository (up to five, three at a time) and stores the run (`suite_runs`, the latest twenty per site), compared with the previous one so what the deployment broke or fixed is known. The sites are checked together, and a commit that was already checked is not checked again unless the rules changed. A run that finds what the previous one did, under the same rules, still brings its issue up to date, so an issue that failed to update, or that a person deleted, is put right by the next deployment. The findings go to one issue per site in the repository, titled `Plumbline: 2 problems on example.com` and labelled `plumbline`. It is edited as the problems change. When they are gone the app comments with the pull request (and commit) that fixed them, found through the deployed commit, and closes it. When they come back it comments and reopens the same issue. An issue a person closes with the problems still there stays closed until the problems change, and one they delete is replaced by a new issue. Only errors open an issue unless `issues: warning` says otherwise, and `issues: off` stops the app from opening or touching issues. Two deliveries cannot open two issues for one site, and a message that only changes in its numbers ("took 1234 ms") counts as the same problem, so an issue a person closed is not reopened because a page got a little slower.
+- **The live site.** The scanner checks each site found in that repository (up to five, three at a time) and stores the run (`suite_runs`, the latest twenty per site), compared with the previous one so what the deployment broke or fixed is known. The sites are checked together, and a commit that was already checked is not checked again unless the rules changed. A run that finds what the previous one did, under the same rules, still brings its issue up to date, so an issue that failed to update, or that a person deleted, is put right by the next deployment. The findings go to one issue for each check that finds a problem on each site (so a repository that deploys two sites has two issues for the same failing check), titled `[Plumbline] Mobile viewport is set on example.com`, labelled `plumbline`, with a hidden marker (`<!-- plumbline:example.com:seo-viewport -->`), what was found, how to fix it, and the exact `plumbline.yaml` lines that turn the check off. An issue is edited when what its check finds changes, with no comment. When the problem is gone the app comments with the pull request (and commit) that fixed it, found through the deployed commit, and closes the issue; when it comes back it comments and reopens the same issue. When the rules stop asking for a check (it is turned off, what it finds no longer reaches the `issues` level, or it left the catalogue) or the repository stops deploying the site, the next deployment closes the issue and says why. A person who closes an issue while its problem is still there has it reopened, with a note that says not to close it and how to turn the check off instead; after three reopenings the app leaves it closed, says so, and the problem is still reported in Plumbline. An issue a person deletes is replaced by a new one. A first run on a site with many problems opens at most twenty issues, a short pause apart, and says on the last one that more will follow on the next runs, so a new installation is not flooded. Only errors open an issue unless `issues: warning` says otherwise, and `issues: off` stops the app from opening issues and closes the ones it opened. Two deliveries cannot open two issues for one check of one site, and a message that only changes in its numbers ("took 1234 ms") counts as the same problem, so an issue is not edited because a page got a little slower. Sites that had one issue for all their problems (the app's first design) get those issues closed once, with a note, and new issues for each check that still fails.
 - **A preview.** The scanner checks the address the deployment names (`environment_url`), nothing else, and reports a check run called Plumbline on the deployed commit, which GitHub shows on the pull request: failed when there are errors, neutral for warnings, passed otherwise. Nothing is stored and no issue is opened. A preview that cannot be reached (a login in front of it, for one) gets a neutral check run that says so.
 
 A cron trigger (every 30 minutes) would re-check the sites found through GitHub that have not been checked for a day, three at a time, the longest-waiting first, so a site is still looked at when nothing is deployed. It uses the recommended rules (it does not read `plumbline.yaml`) and opens no issues. The trigger is not set in `wrangler.jsonc`: the Workers Free plan allows five cron triggers per account and this account has used them (the comment there says how to add it back).
@@ -78,12 +78,36 @@ Any check of the catalogue can be named as a rule, so a file can turn on DNS or 
 
 When `plumbline.yaml` changes on the default branch the live site is checked again under the new rules, even a moment after the last check.
 
+#### Checking the file in your editor
+
+The file has a JSON Schema, served at <https://plumbline.apps.mrida.ng/schemas/plumbline.schema.json>. It lists every key, every rule set and every rule (each check of the catalogue, with what it looks at), and refuses what the reader reports as a mistake, so the editor completes names and underlines a rule that does not exist or a level that is not one. It is generated from the reader and the catalogue (`src/domain/suite/config-schema.ts`), so a check added later is in it with no change, and the tests hold it to the reader. Point the file at it with a comment on the first line:
+
+```yaml
+# yaml-language-server: $schema=https://plumbline.apps.mrida.ng/schemas/plumbline.schema.json
+extends: plumbline:recommended
+```
+
+For VS Code with the Red Hat YAML extension, or any editor that reads the same settings, map it once instead (`.vscode/settings.json`):
+
+```json
+{
+  "yaml.schemas": {
+    "https://plumbline.apps.mrida.ng/schemas/plumbline.schema.json": [
+      "plumbline.yaml",
+      "plumbline.yml"
+    ]
+  }
+}
+```
+
+A `plumbline.json` cannot carry a `$schema` key (the reader reports it as an unknown key), so map it in the editor's settings the same way. The schema is served as `application/schema+json` with `Access-Control-Allow-Origin: *`, an `ETag` and an hour of public cache.
+
 Create a GitHub App (Settings, Developer settings, GitHub Apps) with:
 
 - **Callback URLs** (GitHub apps take several), each on `https://plumbline.apps.mrida.ng` in production and `http://localhost:3737` for development: `/auth/github/link/callback` (linking a GitHub account to a Google sign-in) and `/auth/github/callback` (signing in with GitHub). The earlier `/api/github/callback` still answers, with a redirect to the first, until the settings are changed; then delete `src/app/api/github/callback/route.ts`.
 - **Request user authorization (OAuth) during installation:** ticked. GitHub then disables the Setup URL and Redirect on update and sends people back to the callback URL, which is what the app wants (it needs the sign-in `code` only that flow supplies). Leave Enable Device Flow off.
 - **Webhook URL:** `https://plumbline.apps.mrida.ng/webhooks/github`, with a webhook secret. The earlier `/api/github/webhook` still answers with the same handler until the setting is changed; then delete `src/app/api/github/webhook/route.ts`.
-- **Permissions:** Repository permissions: Contents (read-only for the repository's files and `plumbline.yaml`; read and write only if you want `repository_dispatch` events, see below), Deployments (read-only), Issues (read and write, for the issue that tracks a site), Checks (read and write, for the check run on a preview), and Pull requests (read-only, to name the pull request that fixed a problem). Metadata is read-only by default.
+- **Permissions:** Repository permissions: Contents (read-only for the repository's files and `plumbline.yaml`; read and write only if you want `repository_dispatch` events, see below), Deployments (read-only), Issues (read and write, for the issues that track each check of a site), Checks (read and write, for the check run on a preview), and Pull requests (read-only, to name the pull request that fixed a problem). Metadata is read-only by default.
 - **Subscribe to events:** Push (a push to a Wrangler file reads the installation again, and a push of `plumbline.yaml` to the default branch checks the live site again), Deployment status (a successful deployment runs the checks) and Issues (an issue a person closes, reopens or deletes is noted). The installation events are always sent: an installation that is removed is forgotten, and one that is created, gets new permissions accepted or is unsuspended is read again, as is one whose repositories change.
 
 ### Hooking into the results

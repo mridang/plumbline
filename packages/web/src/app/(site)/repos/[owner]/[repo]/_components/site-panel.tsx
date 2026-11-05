@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 
-import { STATES, StatusDot } from '@/components/repos/site-state';
+import { STATES } from '@/components/repos/site-state';
+import { Chip } from '@/components/ui-app/chip';
 import { SiteRuns } from '@/components/runs/run-history';
 import { issuesByCheck } from '@/components/scan/results';
 import { ScanResults } from '@/components/scan/scan-results';
@@ -59,6 +60,7 @@ export function SitePanel({
   issues,
   shown,
   base,
+  now,
 }: Readonly<{
   domain: Domain;
   /** How the site stands now, when the dashboard knows. */
@@ -71,6 +73,8 @@ export function SitePanel({
   /** The report drawn in full. */
   shown: Report | undefined;
   base: string;
+  /** The server's clock when the page was made, in milliseconds. */
+  now: number;
 }>): ReactElement {
   const enabled = enabledChecks(domain.checks);
   const byCheck = issuesByCheck(issues);
@@ -86,11 +90,10 @@ export function SitePanel({
             <span className="break-all">{domain.host}</span>
           </Heading>
           {status ? (
-            <p
-              className={`mt-1 flex items-center gap-2 text-sm font-semibold ${STATES[status.state].tone}`}
-            >
-              <StatusDot state={status.state} />
-              {STATES[status.state].label}
+            <p className="mt-2">
+              <Chip tone={STATES[status.state].kind} size="md">
+                {STATES[status.state].label}
+              </Chip>
             </p>
           ) : null}
         </div>
@@ -111,12 +114,14 @@ export function SitePanel({
           runs={runs}
           base={base}
           shownId={shown?.id}
+          now={now}
         />
         {shown ? (
           <ScanResults
             scan={savedScan(reportResource(shown))}
             repository={domain.repo ?? undefined}
             issuesByCheck={byCheck}
+            now={now}
           />
         ) : null}
       </div>

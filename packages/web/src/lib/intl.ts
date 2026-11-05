@@ -232,6 +232,33 @@ export function formatTimestamp(when: Date | string | number): string {
   return timestamp.format(new Date(when));
 }
 
+/** A whole number with thousands separators: `formatCount(1234)` is "1,234". */
+const grouped = new Intl.NumberFormat(LOCALE);
+
+/** A large number in short form, to one decimal place: "1.2K". */
+const shortened = new Intl.NumberFormat(LOCALE, {
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
+
+/** A count of things, grouped in thousands: `formatCount(1234)` is "1,234". */
+export function formatCount(value: number): string {
+  return grouped.format(value);
+}
+
+/** A count in short form for tight places: `formatCompact(1234)` is "1.2K". */
+export function formatCompact(value: number): string {
+  return shortened.format(value);
+}
+
+/** Seconds, to one decimal place: "21.1s". */
+const secondsFormat = new Intl.NumberFormat(LOCALE, {
+  style: 'unit',
+  unit: 'second',
+  unitDisplay: 'narrow',
+  maximumFractionDigits: 1,
+});
+
 const durations = new Intl.DurationFormat(LOCALE, { style: 'narrow' });
 
 /** A length of time in prose, from its parts: `formatDuration({ hours: 1, minutes: 30 })` is "1h 30m". */
@@ -239,6 +266,22 @@ export function formatDuration(
   parts: Partial<Record<Intl.DurationFormatUnit, number>>,
 ): string {
   return durations.format(parts);
+}
+
+/**
+ * How long something took, from milliseconds: "21.1s" under a minute, and
+ * "1m 5s" from a minute up. Never negative.
+ */
+export function formatElapsed(milliseconds: number): string {
+  const seconds = Math.max(0, milliseconds) / 1000;
+  if (seconds < 59.95) {
+    return secondsFormat.format(seconds);
+  }
+  const whole = Math.round(seconds);
+  return durations.format({
+    minutes: Math.floor(whole / 60),
+    seconds: whole % 60,
+  });
 }
 
 const languages = new Intl.DisplayNames(LOCALE, { type: 'language' });

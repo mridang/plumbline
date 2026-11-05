@@ -1,54 +1,30 @@
 import type { ReactElement } from 'react';
 
+import { Chip } from '@/components/ui-app/chip';
+import { EmptyState } from '@/components/ui-app/empty-state';
+import { RelativeTime } from '@/components/ui-app/relative-time';
+import { CountCell } from '@/components/ui-app/stat';
+import {
+  Cell,
+  HeadCell,
+  Row,
+  Table,
+  TableBody,
+  TableHead,
+} from '@/components/ui-app/table';
+import type { Tone } from '@/components/ui-app/tone';
 import type { Domain } from '@/domain/db/domains';
 import type { RunKind, RunSummary } from '@/domain/db/runs';
-import { formatTimestamp, relativeTime } from '@/lib/intl';
 
-/** How each kind of run is named. */
-const KINDS: Readonly<Record<RunKind, string>> = {
-  manual: 'Manual',
-  deployment: 'Deployment',
-  scheduled: 'Scheduled',
-  config: 'Config change',
+/** How each way a run starts is written. */
+const KINDS: Readonly<Record<RunKind, { label: string; tone: Tone }>> = {
+  manual: { label: 'Manual', tone: 'info' },
+  deployment: { label: 'Deployment', tone: 'neutral' },
+  scheduled: { label: 'Scheduled', tone: 'neutral' },
+  config: { label: 'Config change', tone: 'neutral' },
 };
 
-/** The colour of each kind's label: a person's own runs stand out from the server's. */
-const KIND_TONES: Readonly<Record<RunKind, string>> = {
-  manual: 'bg-accent/10 text-accent',
-  deployment: 'bg-ink/10 text-ink',
-  scheduled: 'bg-ink/10 text-muted',
-  config: 'bg-ink/10 text-ink',
-};
-
-/** One count: coloured when there is something to see, muted at zero, a dash for one an older run did not keep. */
-function Count({
-  value,
-  word,
-  tone,
-}: Readonly<{
-  value: number | null;
-  word: string;
-  tone: string;
-}>): ReactElement {
-  if (value === null) {
-    return (
-      <span className="text-subtle" title={`${word}: not kept for this run`}>
-        –
-      </span>
-    );
-  }
-  return (
-    <span
-      className={value === 0 ? 'text-subtle' : `font-semibold ${tone}`}
-      title={`${value} ${word}`}
-    >
-      {value}
-      <span className="sr-only"> {word}</span>
-    </span>
-  );
-}
-
-/** The first seven characters of a commit, linked to it on GitHub. */
+/** A run's commit as a short monospace link to GitHub, or a dash when none is known. */
 function Commit({
   repo,
   sha,
@@ -71,15 +47,11 @@ function Commit({
   );
 }
 
-/** The column heads of a count, right-aligned over the numbers. */
-const COUNT_HEAD = 'py-2 pr-4 text-right font-medium';
-
 /**
- * The runs of one site as a table: when (as "2 hours ago", with the full time
- * on hover), the commit, how the run started, how many checks failed, warned
- * and passed, and a link to open the report where the run kept one. `base` is
- * the address of the page the report links return to; `shownId` marks the
- * report drawn on that page.
+ * The runs of a site as a table, newest first: when (in words, the full time
+ * on hover), the commit, how it started, the three counts and a link that opens
+ * the run's report. The one being shown is tinted and says "Showing". `now` is
+ * the server's clock, so the times read the same in the browser.
  */
 export function RunList({
   repo,
@@ -88,6 +60,7 @@ export function RunList({
   runs,
   base,
   shownId,
+  now,
 }: Readonly<{
   repo: string;
   domainId: string;
@@ -95,93 +68,69 @@ export function RunList({
   runs: readonly RunSummary[];
   base: string;
   shownId?: string | undefined;
+  now: number;
 }>): ReactElement {
   if (runs.length === 0) {
     return (
-      <p className="mt-2 text-muted">
-        No runs of {host} yet. Press Run checks, or deploy, to make the first.
-      </p>
+      <EmptyState title={`No runs of ${host} yet`}>
+        Press Run checks, or deploy, to make the first.
+      </EmptyState>
     );
   }
   return (
-    <div className="mt-3 overflow-x-auto rounded-card border border-line bg-surface">
-      <table className="w-full min-w-136 text-left text-sm">
-        <caption className="sr-only">Runs of {host}, newest first</caption>
-        <thead className="border-b border-line text-subtle">
-          <tr>
-            <th scope="col" className="px-4 py-2 font-medium">
-              When
-            </th>
-            <th scope="col" className="py-2 pr-4 font-medium">
-              Commit
-            </th>
-            <th scope="col" className="py-2 pr-4 font-medium">
-              Started by
-            </th>
-            <th scope="col" className={COUNT_HEAD}>
-              Failed
-            </th>
-            <th scope="col" className={COUNT_HEAD}>
-              Warned
-            </th>
-            <th scope="col" className={COUNT_HEAD}>
-              Passed
-            </th>
-            <th scope="col" className="py-2 pr-4 text-right font-medium">
-              <span className="sr-only">Report</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-line">
-          {runs.map((run) => (
-            <tr key={run.id} className={run.id === shownId ? 'bg-ink/5' : ''}>
-              <td className="px-4 py-2.5 whitespace-nowrap">
-                <time
-                  dateTime={run.ran_at}
-                  title={`${formatTimestamp(run.ran_at)} UTC`}
+    <Table caption={`Runs of ${host}, newest first`}>
+      <TableHead>
+        <tr>
+          <HeadCell>When</HeadCell>
+          <HeadCell>Commit</HeadCell>
+          <HeadCell>Started by</HeadCell>
+          <HeadCell align="end">Failed</HeadCell>
+          <HeadCell align="end">Warned</HeadCell>
+          <HeadCell align="end">Passed</HeadCell>
+          <HeadCell align="end" hidden>
+            Report
+          </HeadCell>
+        </tr>
+      </TableHead>
+      <TableBody>
+        {runs.map((run) => (
+          <Row key={run.id} current={run.id === shownId}>
+            <Cell>
+              <RelativeTime at={run.ran_at} now={now} />
+            </Cell>
+            <Cell>
+              <Commit repo={repo} sha={run.sha} />
+            </Cell>
+            <Cell>
+              <Chip tone={KINDS[run.kind].tone}>{KINDS[run.kind].label}</Chip>
+            </Cell>
+            <Cell align="end">
+              <CountCell value={run.failed} word="failed" tone="bad" />
+            </Cell>
+            <Cell align="end">
+              <CountCell value={run.warned} word="warned" tone="warn" />
+            </Cell>
+            <Cell align="end">
+              <CountCell value={run.passed} word="passed" tone="good" />
+            </Cell>
+            <Cell align="end">
+              {run.openable ? (
+                <a
+                  href={`${base}?report=${run.id}#site-${domainId}`}
+                  aria-current={run.id === shownId ? 'true' : undefined}
+                  className="focus-ring rounded-sm font-semibold text-accent underline underline-offset-4 hover:text-ink"
                 >
-                  {relativeTime(run.ran_at)}
-                </time>
-              </td>
-              <td className="py-2.5 pr-4">
-                <Commit repo={repo} sha={run.sha} />
-              </td>
-              <td className="py-2.5 pr-4">
-                <span
-                  className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ${KIND_TONES[run.kind]}`}
-                >
-                  {KINDS[run.kind]}
-                </span>
-              </td>
-              <td className="py-2.5 pr-4 text-right tabular-nums">
-                <Count value={run.failed} word="failed" tone="text-failed" />
-              </td>
-              <td className="py-2.5 pr-4 text-right tabular-nums">
-                <Count value={run.warned} word="warned" tone="text-warned" />
-              </td>
-              <td className="py-2.5 pr-4 text-right tabular-nums">
-                <Count value={run.passed} word="passed" tone="text-passed" />
-              </td>
-              <td className="py-2.5 pr-4 text-right whitespace-nowrap">
-                {run.openable ? (
-                  <a
-                    href={`${base}?report=${run.id}#site-${domainId}`}
-                    aria-current={run.id === shownId ? 'true' : undefined}
-                    className="focus-ring rounded-sm font-semibold text-accent underline underline-offset-4 hover:text-ink"
-                  >
-                    {run.id === shownId ? 'Showing' : 'Open report'}
-                  </a>
-                ) : null}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                  {run.id === shownId ? 'Showing' : 'Open report'}
+                </a>
+              ) : null}
+            </Cell>
+          </Row>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
-/** The runs listed for one site: the most recent ones. */
 export const RUNS_SHOWN = 20;
 
 /**
@@ -196,17 +145,19 @@ export function SiteRuns({
   runs,
   base,
   shownId,
+  now,
 }: Readonly<{
   repo: string;
   site: Pick<Domain, 'id' | 'host'>;
   runs: readonly RunSummary[];
   base: string;
   shownId?: string | undefined;
+  now: number;
 }>): ReactElement {
   return (
     <div>
       <h4 className="text-sm font-semibold text-muted">Runs</h4>
-      <p className="mt-1 max-w-2xl text-sm text-muted">
+      <p className="mt-1 mb-3 max-w-2xl text-sm text-pretty text-muted">
         Newest first: the ones you start, and the ones a deployment, the daily
         re-check or a change to plumbline.yaml starts.
       </p>
@@ -217,6 +168,7 @@ export function SiteRuns({
         runs={runs}
         base={base}
         shownId={shownId}
+        now={now}
       />
     </div>
   );

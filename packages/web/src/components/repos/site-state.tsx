@@ -1,24 +1,21 @@
 import type { ReactElement } from 'react';
 
+import { Dot } from '@/components/ui-app/status-dot';
+import type { Tone } from '@/components/ui-app/tone';
 import type { SiteState } from '@/domain/db/live';
 
 /** The words and colours for each state of a site. */
 export const STATES: Readonly<
-  Record<SiteState, { label: string; tone: string; dot: string }>
+  Record<SiteState, { label: string; tone: string; kind: Tone }>
 > = {
-  running: { label: 'Checking now', tone: 'text-ink', dot: 'bg-ink' },
-  unchecked: { label: 'Not checked yet', tone: 'text-muted', dot: 'bg-subtle' },
-  unreachable: {
-    label: 'Not answering',
-    tone: 'text-failed',
-    dot: 'bg-failed',
-  },
-  failing: { label: 'Failing', tone: 'text-failed', dot: 'bg-failed' },
-  warning: { label: 'Warnings', tone: 'text-warned', dot: 'bg-warned' },
-  ok: { label: 'All clear', tone: 'text-passed', dot: 'bg-passed' },
+  running: { label: 'Checking now', tone: 'text-accent', kind: 'info' },
+  unchecked: { label: 'Not checked yet', tone: 'text-muted', kind: 'neutral' },
+  unreachable: { label: 'Not answering', tone: 'text-failed', kind: 'bad' },
+  failing: { label: 'Failing', tone: 'text-failed', kind: 'bad' },
+  warning: { label: 'Warnings', tone: 'text-warned', kind: 'warn' },
+  ok: { label: 'All clear', tone: 'text-passed', kind: 'good' },
 };
 
-/** The states from the one to look at first to the one that needs nothing. */
 const WORST_FIRST: readonly SiteState[] = [
   'unreachable',
   'failing',
@@ -37,10 +34,5 @@ export function worstState(states: readonly SiteState[]): SiteState {
 export function StatusDot({
   state,
 }: Readonly<{ state: SiteState }>): ReactElement {
-  return (
-    <span
-      aria-hidden="true"
-      className={`inline-block size-2.5 shrink-0 rounded-full ${STATES[state].dot} ${state === 'running' ? 'animate-pulse' : ''}`}
-    />
-  );
+  return <Dot tone={STATES[state].kind} pulse={state === 'running'} />;
 }

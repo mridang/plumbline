@@ -10,8 +10,12 @@
  * needs. Everything else in those files is the same in every app.
  */
 
-/** The pages search engines may index: the one page, which is a public demo. */
-export const PUBLIC_PAGES: ReadonlySet<string> = new Set(['/']);
+/** The pages search engines may index: the scan page, which is a public demo, and the two references. */
+export const PUBLIC_PAGES: ReadonlySet<string> = new Set([
+  '/',
+  '/checks',
+  '/docs',
+]);
 
 /**
  * The pages the Worker may keep a copy of at the edge and answer without waking
@@ -32,12 +36,12 @@ export const EDGE_TTL_SECONDS = 1800;
 
 /**
  * The files other sites and browsers fetch on purpose (the icons, the
- * plain-text files at the root, and a repository's badge, which is embedded in
- * READMEs and other sites' pages), which any site may load and which are not
- * marked noindex.
+ * plain-text files at the root, a repository's badge, which is embedded in
+ * READMEs and other sites' pages, and the schema editors load to check a
+ * `plumbline.yaml`), which any site may load and which are not marked noindex.
  */
 export const OPEN_FILES =
-  /^\/(icon\.svg|favicon\.ico|robots\.txt|sitemap\.xml|\.well-known\/.*|badge\/[^/]+\/[^/]+\/[0-9a-f]+\.svg)$/;
+  /^\/(icon\.svg|favicon\.ico|robots\.txt|sitemap\.xml|\.well-known\/.*|badge\/[^/]+\/[^/]+\/[0-9a-f]+\.svg|schemas\/plumbline\.schema\.json)$/;
 
 /** The small files that rarely change, and for which a stale copy is harmless. */
 export const RARELY_CHANGING: ReadonlySet<string> = new Set([

@@ -58,7 +58,13 @@ export const COLOR_SCHEME = 'only light';
 export const INDEX_BY_DEFAULT = true;
 
 /** What crawlers may read: the scan page. */
-export const CRAWLABLE_PATHS: readonly string[] = ['/$', '/privacy', '/terms'];
+export const CRAWLABLE_PATHS: readonly string[] = [
+  '/$',
+  '/checks',
+  '/docs',
+  '/privacy',
+  '/terms',
+];
 
 /** What crawlers are kept out of: the API. */
 export const PRIVATE_PATHS: readonly string[] = [
@@ -79,6 +85,8 @@ export const SITEMAP_PAGES: readonly Readonly<{
   lastModified?: string;
 }>[] = [
   { path: '/' },
+  { path: '/checks' },
+  { path: '/docs' },
   { path: '/privacy', lastModified: PRIVACY_LAST_UPDATED },
   { path: '/terms', lastModified: TERMS_LAST_UPDATED },
 ];
