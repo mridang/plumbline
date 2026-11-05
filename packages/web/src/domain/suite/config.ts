@@ -50,12 +50,14 @@ export type IssueLevel = 'error' | 'warning' | 'off';
 const TOP_KEYS = ['extends', 'rules', 'environments', 'issues', 'dispatch'];
 const OVERLAY_KEYS = ['extends', 'rules'];
 
-const OverlaySchema = z.object({
+/** The settings an environment can change, as the reader takes them (leniently: its mistakes are reported, not refused). */
+export const OverlaySchema = z.object({
   extends: z.union([z.string(), z.array(z.string())]).optional(),
   rules: z.record(z.string(), z.unknown()).optional(),
 });
 
-const ConfigSchema = OverlaySchema.extend({
+/** A whole configuration file, as the reader takes it. `config-schema.ts` builds the editor's JSON Schema from it. */
+export const ConfigSchema = OverlaySchema.extend({
   issues: z.enum(['error', 'warning', 'off']).optional(),
   dispatch: z.boolean().optional(),
   environments: z.record(z.string(), OverlaySchema).optional(),
@@ -179,11 +181,15 @@ export function parseConfig(text: string, path: string): LoadedConfig {
 
 /**
  * The level a configuration value stands for, or undefined when it is not one.
- * Like ESLint, a number (0, 1, 2) or a one-item list works too.
+ * Like ESLint, a number (0, 1, 2) or a one-item list works too (not a list in
+ * a list).
  */
 export function parseLevel(value: unknown): Level | undefined {
   if (Array.isArray(value)) {
-    return value.length === 1 ? parseLevel(value[0]) : undefined;
+    // One level in a list, as ESLint writes `["error"]`; a list in a list is not one.
+    return value.length === 1 && !Array.isArray(value[0])
+      ? parseLevel(value[0])
+      : undefined;
   }
   if (value === true || value === 'on') {
     return 'on';

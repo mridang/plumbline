@@ -47,12 +47,17 @@ describe('parseLevel', () => {
     expect(parseLevel(value)).toBe(level);
   });
 
-  it.each([['loud'], [3], [null], [['error', { max: 1 }]], [[]], [{}]])(
-    'does not read %p',
-    (value) => {
-      expect(parseLevel(value)).toBeUndefined();
-    },
-  );
+  it.each([
+    ['loud'],
+    [3],
+    [null],
+    [['error', { max: 1 }]],
+    [[]],
+    [[['error']]],
+    [{}],
+  ])('does not read %p', (value) => {
+    expect(parseLevel(value)).toBeUndefined();
+  });
 });
 
 describe('with no configuration file', () => {
