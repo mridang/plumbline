@@ -7,8 +7,10 @@ import {
 import {
   buildReport,
   hintCatalogue,
+  runScan as defaultRun,
   saveReport,
   scan as defaultScan,
+  type ScanEvent,
   type ScanOptions,
   type ScanResult,
 } from '@mridang/plumbline';
@@ -28,6 +30,12 @@ export type ScanFn = (
   url: string,
   options?: ScanOptions,
 ) => Promise<ScanResult>;
+
+/** The streaming scan the server calls; injectable so tests can fake it. */
+export type RunFn = (
+  url: string,
+  emit: (event: ScanEvent) => void,
+) => Promise<void>;
 
 /** Writes a JSON response with the given status. */
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
@@ -109,8 +117,59 @@ async function handleScan(
   }
 }
 
-/** The request router: three endpoints, everything else is a 404. */
-function handle(req: IncomingMessage, res: ServerResponse, scan: ScanFn): void {
+/**
+ * Handles `POST /run {url}`: scan and stream what happens as it happens, one
+ * JSON object per line (`application/x-ndjson`): `ready` with every check's
+ * description, `done` for each check as it finishes, then `end`. A page that
+ * cannot be fetched gives `unreachable` and `end`. The scan stops when the
+ * client goes away.
+ */
+async function handleRun(
+  req: IncomingMessage,
+  res: ServerResponse,
+  run: RunFn,
+): Promise<void> {
+  let body: ScanRequest;
+  try {
+    const raw = await readBody(req);
+    body = raw ? (JSON.parse(raw) as ScanRequest) : {};
+  } catch {
+    sendJson(res, 400, { error: 'body must be valid JSON' });
+    return;
+  }
+  if (typeof body.url !== 'string' || !/^https?:\/\//.test(body.url)) {
+    sendJson(res, 400, { error: 'url must be an http(s) URL' });
+    return;
+  }
+  res.writeHead(200, {
+    'content-type': 'application/x-ndjson; charset=utf-8',
+    'cache-control': 'no-store',
+    'x-accel-buffering': 'no',
+  });
+  const emit = (event: ScanEvent): void => {
+    if (!res.writableEnded && !res.destroyed) {
+      res.write(`${JSON.stringify(event)}\n`);
+    }
+  };
+  try {
+    await run(body.url, emit);
+  } catch (error) {
+    emit({
+      type: 'unreachable',
+      detail: error instanceof Error ? error.message : String(error),
+    });
+    emit({ type: 'end' });
+  }
+  res.end();
+}
+
+/** The request router: four endpoints, everything else is a 404. */
+function handle(
+  req: IncomingMessage,
+  res: ServerResponse,
+  scan: ScanFn,
+  run: RunFn,
+): void {
   const path = (req.url ?? '/').split('?')[0];
   if (req.method === 'GET' && path === '/healthz') {
     sendJson(res, 200, { status: 'ok' });
@@ -124,18 +183,24 @@ function handle(req: IncomingMessage, res: ServerResponse, scan: ScanFn): void {
     void handleScan(req, res, scan);
     return;
   }
+  if (req.method === 'POST' && path === '/run') {
+    void handleRun(req, res, run);
+    return;
+  }
   sendJson(res, 404, { error: 'not found' });
 }
 
 /** Options for the server; the scan implementation can be replaced in tests. */
 export interface ServerOptions {
   scan?: ScanFn;
+  run?: RunFn;
 }
 
 /** Creates the HTTP server without starting it (used by tests). */
 export function createScanServer(options: ServerOptions = {}): Server {
   const scan = options.scan ?? defaultScan;
-  return createServer((req, res) => handle(req, res, scan));
+  const run = options.run ?? ((url, emit) => defaultRun(url, emit));
+  return createServer((req, res) => handle(req, res, scan, run));
 }
 
 /** Starts the server on HOST/PORT; the Docker image's entry point. */

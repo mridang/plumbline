@@ -9,6 +9,8 @@
 //   docker buildx bake release       # CI: push the multi-arch image. Driven by
 //                                    # @mridang/semantic-release-oci in bake mode, which injects
 //                                    # the resolved version tags via `--set "image.tags=..."`.
+//   docker buildx bake scanner       # the browser-less scanner image (both arches) to an OCI tarball
+//   docker buildx bake scanner-local # the browser-less scanner image, native arch, loaded locally
 
 variable "REGISTRY" {
   default = ""
@@ -22,9 +24,18 @@ variable "IMAGE_NAME" {
   default = "plumbline"
 }
 
+variable "SCANNER_IMAGE_NAME" {
+  default = "plumbline-scanner"
+}
+
 function "image" {
   params = [tag]
   result = REGISTRY == "" ? "${IMAGE_NAME}:${tag}" : "${REGISTRY}/${IMAGE_NAME}:${tag}"
+}
+
+function "scanner_image" {
+  params = [tag]
+  result = REGISTRY == "" ? "${SCANNER_IMAGE_NAME}:${tag}" : "${REGISTRY}/${SCANNER_IMAGE_NAME}:${tag}"
 }
 
 group "default" {
@@ -95,4 +106,23 @@ target "arm64" {
   platforms = ["linux/arm64"]
   tags      = [image("arm64")]
   output    = ["type=docker"]
+}
+
+# --- Scanner (no browser) ----------------------------------------------------
+# The image the Cloudflare container runs for the web app's scans. It is not in
+# the `release` group: it is built and loaded or exported, never pushed here.
+
+target "scanner" {
+  inherits  = ["_common"]
+  target    = "scanner"
+  platforms = ["linux/amd64", "linux/arm64"]
+  tags      = [scanner_image(TAG)]
+  output    = ["type=oci,dest=./dist/plumbline-scanner.tar"]
+}
+
+target "scanner-local" {
+  inherits = ["_common"]
+  target   = "scanner"
+  tags     = [scanner_image("local")]
+  output   = ["type=docker"]
 }

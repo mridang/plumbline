@@ -6,4 +6,4 @@
  * shares with `plumbline scan`; only the HTTP layer is here.
  */
 export { createScanServer, start } from './server.js';
-export type { ScanFn, ServerOptions } from './server.js';
+export type { RunFn, ScanFn, ServerOptions } from './server.js';

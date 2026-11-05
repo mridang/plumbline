@@ -15,6 +15,7 @@ docker run --rm -p 8080:8080 mridang/plumbline
 | `GET /healthz` | `{ "status": "ok" }`; a readiness probe, handy as a Testcontainers wait strategy |
 | `GET /hints`   | The catalogue: every shipped hint with its id, category and groups               |
 | `POST /scan`   | Scans `{ "url": "https://example.com/" }` and answers with the report            |
+| `POST /run`    | Scans the same body with no browser and streams the checks as JSON lines         |
 
 ```sh
 curl -s localhost:8080/scan -d '{"url":"https://example.com/"}'
@@ -62,6 +63,25 @@ docker run --rm -p 8080:8080 -e OUTPUT_DIR=/reports -v "$PWD/reports:/reports" m
 | `HOST`          | `0.0.0.0`           | The address the server binds             |
 | `OUTPUT_DIR`    | unset               | Where every scan also writes its reports |
 | `CHROMIUM_PATH` | `/usr/bin/chromium` | The browser the scan drives              |
+
+## Streaming scan
+
+`POST /run` is what the Cloudflare container behind the web app runs. It needs no Chromium: the page is fetched with Node, and the TLS, certificate, DNS and mail checks run for real. It answers with `application/x-ndjson`, one JSON object per line:
+
+| Line                                                 | When                                                              |
+| ---------------------------------------------------- | ----------------------------------------------------------------- |
+| `{"type":"ready","finalUrl","status","hints":[...]}` | The page was fetched; `hints` describes every check that will run |
+| `{"type":"done","outcome":{...}}`                    | One check finished: `passed`, `warned`, `failed` or `skipped`     |
+| `{"type":"unreachable","detail":"..."}`              | The page could not be fetched, or the address was refused         |
+| `{"type":"end"}`                                     | The scan is over; always the last line                            |
+
+The server fetches whatever address it is given, so every fetch and name lookup is kept on the public internet: private, loopback, link-local (the cloud metadata address included) and other reserved addresses are refused on the address actually connected to and on every redirect, and only the default ports and 80, 443, 8080 and 8443 are allowed. The `openssl` programs the TLS checks run are not covered by that guard; run the image where it cannot reach a private network.
+
+```sh
+docker buildx bake scanner-local    # plumbline-scanner:local, without a browser
+docker run --rm -p 8080:8080 plumbline-scanner:local
+curl -sN localhost:8080/run -d '{"url":"https://example.com/"}'
+```
 
 ## Build the image
 

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { Severity, type Problem } from '@hint/utils-types';
-import { createScanServer, type ScanFn } from '../src/server.js';
+import { createScanServer, type RunFn, type ScanFn } from '../src/server.js';
 import type { HintMeta } from '@mridang/plumbline';
 
 const HINT: HintMeta = {
@@ -31,8 +31,8 @@ const fakeScan: ScanFn = async () => ({ problems: [problem()], hints: [HINT] });
 let server: Server;
 let base: string;
 
-function listen(scan: ScanFn): Promise<void> {
-  server = createScanServer({ scan });
+function listen(scan: ScanFn, run?: RunFn): Promise<void> {
+  server = createScanServer({ scan, run });
   return new Promise((resolve) =>
     server.listen(0, '127.0.0.1', () => {
       const { port } = server.address() as AddressInfo;
@@ -122,5 +122,64 @@ describe('when a scan throws', () => {
     const body = (await res.json()) as { error: string; detail: string };
     expect(res.status).toBe(500);
     expect(body.detail).toContain('browser crashed');
+  });
+});
+
+/** A streaming scan that never touches the network, for the server under test. */
+const fakeRun: RunFn = async (url, emit) => {
+  emit({ type: 'ready', finalUrl: url, status: 200, hints: [] });
+  emit({ type: 'end' });
+};
+
+describe('POST /run', () => {
+  beforeEach(() => listen(fakeScan, fakeRun));
+
+  it('streams the scan as one JSON object per line', async () => {
+    const res = await fetch(`${base}/run`, {
+      method: 'POST',
+      body: JSON.stringify({ url: 'https://example.com/' }),
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('application/x-ndjson');
+    const lines = (await res.text()).trim().split('\n');
+    expect(lines.map((line) => JSON.parse(line).type)).toEqual([
+      'ready',
+      'end',
+    ]);
+  });
+
+  it.each([
+    ['a body that is not JSON', 'not json'],
+    ['no url', JSON.stringify({})],
+    [
+      'a url that is not http(s)',
+      JSON.stringify({ url: 'ftp://example.com/' }),
+    ],
+  ])('rejects %s', async (_name, body) => {
+    const res = await fetch(`${base}/run`, { method: 'POST', body });
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('POST /run when the scan throws', () => {
+  beforeEach(() =>
+    listen(fakeScan, async () => {
+      throw new Error('out of memory');
+    }),
+  );
+
+  it('streams unreachable and end instead of dropping the connection', async () => {
+    const res = await fetch(`${base}/run`, {
+      method: 'POST',
+      body: JSON.stringify({ url: 'https://example.com/' }),
+    });
+    const events = (await res.text())
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+    expect(events).toEqual([
+      { type: 'unreachable', detail: 'out of memory' },
+      { type: 'end' },
+    ]);
   });
 });
