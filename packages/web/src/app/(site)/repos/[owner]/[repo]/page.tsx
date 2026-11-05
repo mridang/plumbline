@@ -89,7 +89,8 @@ export default async function RepoPage({
       }),
   );
   const others = entry.sites.filter((site) => !site.mine);
-  const badge = `[![Plumbline](${SITE_URL}${await badgePath(getEnv().SESSION_SECRET, repo)})](${SITE_URL}${repoPath(repo)})`;
+  const badgeImage = await badgePath(getEnv().SESSION_SECRET, repo);
+  const badge = `[![Plumbline](${SITE_URL}${badgeImage})](${SITE_URL}${repoPath(repo)})`;
   const overall = worstState(entry.sites.map((site) => site.state));
 
   return (
@@ -116,10 +117,21 @@ export default async function RepoPage({
             <span id="badge">Badge</span>
           </Heading>
           <p className="mt-1 text-sm text-muted">
-            Paste it into the README of {repo} to show how its sites stand.
+            This is how it looks. Paste the Markdown into the README of {repo}{' '}
+            to show how its sites stand.
           </p>
+          <div className="mt-4 flex items-center rounded-card border border-line bg-surface p-5">
+            <img
+              src={badgeImage}
+              alt={`Plumbline badge for ${repo}`}
+              height={20}
+            />
+          </div>
           <div className="mt-3">
-            <CopyField value={badge} label={`Badge for ${repo}`} />
+            <CopyField
+              value={badge}
+              label={`Markdown for the badge of ${repo}`}
+            />
           </div>
         </section>
 

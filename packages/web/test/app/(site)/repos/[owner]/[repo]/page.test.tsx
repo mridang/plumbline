@@ -119,6 +119,13 @@ describe('RepoPage', () => {
     expect(out).toMatch(/\/badge\/acme\/site\/[0-9a-f]{20}\.svg/);
   });
 
+  it('shows the badge itself, not only the Markdown that pastes it', async () => {
+    const out = await page();
+    expect(out).toMatch(
+      /<img[^>]*src="\/badge\/acme\/site\/[0-9a-f]{20}\.svg"/,
+    );
+  });
+
   it('lets the person run the checks for a site they keep, and choose its checks', async () => {
     const out = await page();
     expect(out).toContain('site.example.com');

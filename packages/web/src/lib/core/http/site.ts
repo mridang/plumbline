@@ -47,9 +47,12 @@ export const RARELY_CHANGING: ReadonlySet<string> = new Set([
 
 /**
  * The outside places pages may load pictures from, besides this site (`'self'`)
- * and inline `data:` pictures. None: the page draws its icons inline.
+ * and inline `data:` pictures. Google's photo host, for the signed-in person's
+ * profile picture; the page draws its icons inline.
  */
-export const EXTRA_IMG_SOURCES: readonly string[] = [];
+export const EXTRA_IMG_SOURCES: readonly string[] = [
+  'https://lh3.googleusercontent.com',
+];
 
 /** Directives only this app adds to its policy. None. */
 export const EXTRA_DIRECTIVES: readonly string[] = [];

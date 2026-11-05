@@ -54,8 +54,8 @@ describe('site settings', () => {
     expect([...RARELY_CHANGING].sort()).toEqual(['/favicon.ico', '/icon.svg']);
   });
 
-  it('adds no outside picture sources', () => {
-    expect(EXTRA_IMG_SOURCES).toEqual([]);
+  it("lets pages load the signed-in person's Google profile picture, and nothing else outside", () => {
+    expect(EXTRA_IMG_SOURCES).toEqual(['https://lh3.googleusercontent.com']);
   });
 
   it('adds no directives of its own: nothing on the page is inline', () => {
