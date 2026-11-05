@@ -122,6 +122,24 @@ describe('syncInstallation', () => {
     expect((await listDomains(db, 7)).map((d) => d.repo)).toEqual(['o/site']);
   });
 
+  it('reads an account with well over a hundred repositories, the last one included', async () => {
+    const { db } = sqliteDatabase(...APP_MIGRATIONS);
+    const many: Record<string, { files: Record<string, string> }> = {};
+    for (let i = 0; i < 140; i += 1) {
+      many[`o/r${i}`] = { files: {} };
+    }
+    many['o/zlast'] = {
+      files: { 'wrangler.jsonc': '{"route": "last.example.com/*"}' },
+    };
+    expect(await syncInstallation(db, 7, 99, githubWith(many))).toMatchObject({
+      repositories: 141,
+      deployed: 1,
+    });
+    expect((await listDomains(db, 7)).map((d) => d.host)).toEqual([
+      'last.example.com',
+    ]);
+  });
+
   it('stops adding domains at the limit', async () => {
     const { db } = sqliteDatabase(...APP_MIGRATIONS);
     for (let i = 0; i < MAX_DOMAINS - 1; i += 1) {

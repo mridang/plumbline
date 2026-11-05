@@ -15,10 +15,10 @@ import { GitHubApi, type Repo } from './api';
 import { deploymentHosts } from './deployments';
 
 /** How many repositories are read at once, to stay inside a request's limits. */
-const CONCURRENCY = 5;
+const CONCURRENCY = 10;
 
 /** The most repositories read per installation in one sync. */
-export const MAX_REPOS = 100;
+export const MAX_REPOS = 300;
 
 /** What a sync found. */
 export interface SyncResult {
