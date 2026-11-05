@@ -25,6 +25,13 @@ export function fixture(name: string): Buffer {
   return readFileSync(new URL(name, FIXTURES));
 }
 
+/**
+ * A minimal OCSP response (status "successful", no body) a server can staple.
+ * OpenSSL 3.6 drops a staple that does not parse as an OCSP response, so the
+ * tests cannot staple arbitrary text.
+ */
+export const OCSP_STAPLE = Buffer.from('30030a0100', 'hex');
+
 /** The test CA, trusted by `pointAt` unless told otherwise. */
 const CA = fixture('ca.pem');
 

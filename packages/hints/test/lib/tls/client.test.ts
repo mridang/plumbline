@@ -11,6 +11,7 @@ import {
   tryConnect,
 } from '../../../src/lib/tls/client.js';
 import {
+  OCSP_STAPLE,
   pointAt,
   pointAtMail,
   restoreProbe,
@@ -93,11 +94,11 @@ describe('tryConnect', () => {
   it('reports a stapled OCSP response when asked', async () => {
     const server = await startServer();
     server.server.on('OCSPRequest', (_cert, _issuer, callback) =>
-      callback(null, Buffer.from('stapled')),
+      callback(null, OCSP_STAPLE),
     );
     const result = await tryConnect(at(server.port), { requestOCSP: true });
     await server.close();
-    expect(result?.ocspResponse?.toString()).toBe('stapled');
+    expect(result?.ocspResponse?.toString('hex')).toBe('30030a0100');
   });
 
   it('passes the signature algorithms to the handshake', async () => {

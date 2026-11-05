@@ -3,6 +3,7 @@ import { Severity } from '@hint/utils-types';
 import hint from '../../../src/hints/tls/tls-ocsp-stapling.js';
 import { runHint } from '../../helpers/run-hint.js';
 import {
+  OCSP_STAPLE,
   pointAt,
   restoreProbe,
   startServer,
@@ -15,7 +16,7 @@ async function scan(cert: string, staple: boolean) {
   const server = await startServer({ cert });
   if (staple) {
     server.server.on('OCSPRequest', (_cert, _issuer, callback) =>
-      callback(null, Buffer.from('stapled response')),
+      callback(null, OCSP_STAPLE),
     );
   }
   pointAt(server.port);
