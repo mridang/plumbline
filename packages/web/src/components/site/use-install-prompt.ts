@@ -26,7 +26,7 @@ export async function runInstall(event: InstallPromptEvent): Promise<void> {
 }
 
 /**
- * Lets the page offer "Install app" when the browser says the site can be
+ * Lets the page offer "Add to desktop" when the browser says the site can be
  * installed. `install` is undefined until then (and after it has been used, or
  * when the app is already installed), so callers show the option only when it
  * works. Chrome and Edge fire the event; Safari has its own Share menu route.

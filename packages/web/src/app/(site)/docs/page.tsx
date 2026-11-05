@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { ReactElement } from 'react';
 
 import { pageMetadata } from '@/app/_metadata';
-import { Chip } from '@/components/ui-app/chip';
+import { Badge } from '@/components/ui-app/badge';
 import { CodeBlock } from '@/components/ui-app/code-block';
 import { KeyValue } from '@/components/ui-app/key-value';
 import { LinkButton } from '@/components/ui-app/link-button';
@@ -66,7 +66,7 @@ export default function DocsPage(): ReactElement {
               >
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-base font-semibold">{way.title}</h3>
-                  <Chip tone="info">{way.tag}</Chip>
+                  <Badge tone="info">{way.tag}</Badge>
                 </div>
                 <p className="mt-2 text-sm text-pretty text-muted">
                   {way.body}

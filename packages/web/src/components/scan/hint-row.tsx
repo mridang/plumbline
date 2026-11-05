@@ -1,6 +1,8 @@
 import type { ReactElement } from 'react';
 
-import { Chip } from '@/components/ui-app/chip';
+import { ChevronIcon } from '@/components/icons';
+import { Badge } from '@/components/ui-app/badge';
+import { CopyButton } from '@/components/ui-app/copy-button';
 import { RelativeTime } from '@/components/ui-app/relative-time';
 import type { Tone } from '@/components/ui-app/tone';
 import type { IssueRef } from '@/domain/db/issue-history';
@@ -71,29 +73,34 @@ function Outbound({
   );
 }
 
-/** One thing a check found: how serious, what, where, and the evidence. */
+/** One thing a check found: how serious, what, where, and the evidence with a way to copy it. */
 function FindingItem({
   finding,
 }: Readonly<{ finding: Finding }>): ReactElement {
   return (
-    <li className="rounded-control border border-line p-3">
-      <p>
-        <Chip tone={LEVEL_TONE[finding.level]} className="mr-2 capitalize">
+    <li className="rounded-control border border-line bg-surface p-3">
+      <div className="flex items-start gap-2.5">
+        <Badge tone={LEVEL_TONE[finding.level]} className="mt-0.5 capitalize">
           {finding.level}
-        </Chip>
-        {finding.message}
-      </p>
-      <p className="mt-1 text-xs text-subtle">
+        </Badge>
+        <p className="min-w-0 flex-1 text-pretty">{finding.message}</p>
+      </div>
+      <p className="mt-1.5 truncate font-mono text-xs text-subtle">
         <Outbound href={finding.resource}>{placeOf(finding)}</Outbound>
       </p>
       {finding.snippet ? (
-        <figure className="mt-2">
-          <figcaption className="text-xs text-subtle">
+        <figure className="group relative mt-2.5">
+          <figcaption className="mb-1 text-xs font-medium text-subtle">
             Evidence{finding.language ? ` (${finding.language})` : ''}
           </figcaption>
-          <pre className="mt-1 overflow-x-auto rounded-control bg-ink/5 p-3 font-mono text-xs whitespace-pre-wrap">
+          <pre className="overflow-x-auto rounded-control bg-ink/5 py-2.5 pr-10 pl-3 font-mono text-xs leading-relaxed whitespace-pre-wrap">
             {finding.snippet}
           </pre>
+          <CopyButton
+            value={finding.snippet}
+            label="the evidence"
+            className="absolute top-6 right-1.5"
+          />
         </figure>
       ) : null}
     </li>
@@ -156,7 +163,7 @@ function FixPanel({
           <ul className="mt-1 space-y-2">
             {origins.map((origin) => (
               <li key={`${origin.source} ${origin.url} ${origin.title}`}>
-                <Chip className="mr-2 font-medium">{origin.source}</Chip>
+                <Badge className="mr-2 font-medium">{origin.source}</Badge>
                 <Outbound href={origin.url}>{origin.title}</Outbound>
                 {origin.docsUrl && isWebLink(origin.docsUrl) ? (
                   <>
@@ -209,9 +216,9 @@ function IssueList({
             <Outbound href={issueUrl(repository, issue)}>
               {`#${issue.number}`}
             </Outbound>
-            <Chip tone={ISSUE_TONE[issue.state]}>
+            <Badge tone={ISSUE_TONE[issue.state]}>
               {ISSUE_STATE_LABELS[issue.state]}
-            </Chip>
+            </Badge>
             <span className="text-xs text-subtle">
               opened{' '}
               <RelativeTime
@@ -267,33 +274,41 @@ export function HintRow({
         }
       }}
     >
-      <summary className="focus-ring-flush flex items-start gap-3 px-4 py-3 hover:bg-ink/3">
-        <Chip
-          tone={BADGE_TONE[hint.status]}
-          className="mt-0.5 w-20 justify-center"
-        >
+      <summary className="focus-ring-flush grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 px-4 py-2.5 hover:bg-ink/3">
+        <Badge tone={BADGE_TONE[hint.status]} className="w-19 justify-center">
           {STATUS_LABELS[hint.status]}
-        </Chip>
-        <span className="min-w-0 flex-1">
-          <span className="font-medium">{hint.name}</span>{' '}
-          <code className="font-mono text-xs break-all text-subtle">
+        </Badge>
+        <span className="flex min-w-0 items-baseline gap-2">
+          <span className="truncate text-sm font-medium">{hint.name}</span>
+          <code className="hidden shrink-0 rounded-sm bg-ink/5 px-1.5 py-0.5 font-mono text-[0.6875rem] leading-none text-subtle sm:inline">
             {hint.id}
           </code>
-          {hint.findings.length > 0 ? (
-            <span className="ml-2 text-sm text-subtle">
-              {countOf(hint.findings.length, 'finding')}
+          {hint.status === 'skipped' && hint.reason ? (
+            <span className="hidden min-w-0 truncate text-xs text-subtle md:inline">
+              {hint.reason}
             </span>
           ) : null}
+        </span>
+        <span className="flex items-center gap-3 text-xs text-subtle">
           {listed ? (
-            <Chip className="ml-2 font-medium">
+            <Badge tone="neutral">
               {issues.length === 1
                 ? `Issue #${issues[0]?.number}`
                 : countOf(issues.length, 'issue')}
-            </Chip>
+            </Badge>
           ) : null}
+          {hint.findings.length > 0 ? (
+            <span className="tabular-nums">
+              {countOf(hint.findings.length, 'finding')}
+            </span>
+          ) : null}
+          <ChevronIcon
+            size="sm"
+            className="shrink-0 group-open:rotate-180 motion-safe:transition"
+          />
         </span>
       </summary>
-      <div className="space-y-4 px-4 pb-5 text-sm sm:pl-27">
+      <div className="space-y-4 px-4 pt-1 pb-5 text-sm sm:pl-26">
         <p className="text-muted">{hint.description}</p>
         {hint.reason ? <p className="text-skipped">{hint.reason}</p> : null}
         {hint.findings.length > 0 ? (
@@ -314,7 +329,7 @@ export function HintRow({
           <ul aria-label="Groups" className="flex flex-wrap gap-1.5">
             {hint.groups.map((group) => (
               <li key={group}>
-                <Chip>{group}</Chip>
+                <Badge>{group}</Badge>
               </li>
             ))}
           </ul>

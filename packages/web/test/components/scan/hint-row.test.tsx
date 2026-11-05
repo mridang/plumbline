@@ -97,6 +97,60 @@ describe('furtherReading', () => {
   });
 });
 
+describe('HintRow, as a row of the report', () => {
+  it('has one status badge of a fixed width, the name, the id and a chevron that turns when open', () => {
+    const out = html(<HintRow hint={hint('failed')} />);
+    expect(out).toContain('>Failed</span>');
+    expect(out).toContain('w-19');
+    expect(out).toContain('grid-cols-[auto_minmax(0,1fr)_auto]');
+    expect(out).toContain('group-open:rotate-180');
+    expect(out).toContain('>hsts-header</code>');
+  });
+
+  it('says the same words for every outcome, in the badge', () => {
+    for (const [status, word] of [
+      ['failed', 'Failed'],
+      ['warned', 'Warning'],
+      ['passed', 'Passed'],
+      ['skipped', 'Skipped'],
+    ] as const) {
+      expect(html(<HintRow hint={hint(status)} />)).toContain(
+        `>${word}</span>`,
+      );
+    }
+  });
+
+  it('shows why a skipped check was skipped on its row, without opening it', () => {
+    const out = html(
+      <HintRow
+        hint={hint('skipped', { reason: 'Took longer than 45 seconds.' })}
+      />,
+    );
+    expect(out).toMatch(/<\/summary>/);
+    expect(out.slice(0, out.indexOf('</summary>'))).toContain(
+      'Took longer than 45 seconds.',
+    );
+  });
+
+  it('offers to copy the evidence of a finding', () => {
+    const out = html(
+      <HintRow
+        hint={hint('failed', {
+          findings: [finding({ snippet: 'Strict-Transport-Security: x' })],
+        })}
+      />,
+    );
+    expect(out).toContain('aria-label="Copy the evidence"');
+  });
+
+  it('shows the finding count on the right of the row', () => {
+    const out = html(
+      <HintRow hint={hint('warned', { findings: [finding(), finding()] })} />,
+    );
+    expect(out.slice(0, out.indexOf('</summary>'))).toContain('2 findings');
+  });
+});
+
 describe('HintRow', () => {
   it('starts open when the check failed', () => {
     expect(html(<HintRow hint={hint('failed')} />)).toMatch(OPEN);
@@ -137,7 +191,9 @@ describe('HintRow', () => {
       />,
     );
     expect(out).toContain('What was found');
-    expect(out).toContain('>error</span>No HSTS header.');
+    expect(out).toContain(
+      '>error</span><p class="min-w-0 flex-1 text-pretty">No HSTS header.</p>',
+    );
     expect(out).toContain(
       'href="https://example.com/" class="focus-ring break-all text-accent underline">https://example.com/:2</a>',
     );

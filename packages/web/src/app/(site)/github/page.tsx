@@ -3,18 +3,20 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { ReactElement } from 'react';
 
-import { repoPath } from '@/components/repos/repo-path';
-import { Chip } from '@/components/ui-app/chip';
+import { RepoLabel } from '@/components/repos/repo-label';
+import { siteHref } from '@/components/repos/site-href';
+import { Badge } from '@/components/ui-app/badge';
 import { EmptyState } from '@/components/ui-app/empty-state';
 import { KeyValue } from '@/components/ui-app/key-value';
 import { LinkButton } from '@/components/ui-app/link-button';
 import { Section } from '@/components/ui-app/section';
 import { Callout } from '@/components/ui/callout';
 import { Container } from '@/components/ui/layout';
-import { PageHeader } from '@/components/ui/page-header';
+import { PageHeading } from '@/components/ui-app/page-heading';
 import { getDatabase } from '@/domain/db/client';
 import { listDomains } from '@/domain/db/domains';
 import { getLink, listInstallations, listRepos } from '@/domain/db/github';
+import { signedInWithGithub } from '@/domain/github/sign-in';
 import { githubConfig } from '@/domain/github/service';
 import { getCurrentUser } from '@/lib/core/auth/current-user';
 import { countOf } from '@/lib/intl';
@@ -61,18 +63,19 @@ export default async function GitHubPage({
     listRepos(db, user.id),
     listDomains(db, user.id),
   ]);
-  const domainOf = new Map(domains.map((domain) => [domain.host, domain.id]));
+  const added = new Set(domains.map((domain) => domain.host));
+  const githubOnly = signedInWithGithub(user);
   const deployed = repos.filter((repo) => repo.hosts.length > 0);
   const others = repos.filter((repo) => repo.hosts.length === 0);
 
   return (
     <>
-      <PageHeader
+      <PageHeading
         eyebrow="GitHub"
         title="Your repositories"
-        intro="Install the GitHub app and Plumbline finds the repositories that are deployed web applications, puts the sites they serve on your dashboard, and keeps them up to date as the repositories change."
+        description="Install the GitHub app and Plumbline finds the repositories that are deployed web applications, puts the sites they serve on your dashboard, and keeps them up to date as the repositories change."
       />
-      <Container className="space-y-12 pt-8 pb-16">
+      <Container className="space-y-8 py-6 sm:py-8">
         {error && ERRORS[error] ? (
           <Callout tone="error" shape="banner">
             {ERRORS[error]}
@@ -94,14 +97,18 @@ export default async function GitHubPage({
                 <LinkButton href="/auth/github/link?install=1" native>
                   Install on another account
                 </LinkButton>
-                <DisconnectButton />
+                {/* Their GitHub account is how they sign in: there is nothing to disconnect it from. */}
+                {githubOnly ? null : <DisconnectButton />}
               </div>
             }
           >
             <KeyValue
               facts={[
                 { label: 'GitHub', value: <strong>{link.login}</strong> },
-                { label: 'Signed in as', value: user.email },
+                {
+                  label: 'Signed in with',
+                  value: githubOnly ? 'GitHub' : user.email,
+                },
                 {
                   label: 'Installed on',
                   value:
@@ -110,9 +117,9 @@ export default async function GitHubPage({
                     ) : (
                       <span className="flex flex-wrap gap-1.5">
                         {installations.map((installation) => (
-                          <Chip key={installation.installation_id} size="md">
+                          <Badge key={installation.installation_id} size="md">
                             {installation.account_login}
-                          </Chip>
+                          </Badge>
                         ))}
                       </span>
                     ),
@@ -161,20 +168,17 @@ export default async function GitHubPage({
                     key={`${repo.installation_id}/${repo.full_name}`}
                     className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-3"
                   >
-                    <Link
-                      href={repoPath(repo.full_name)}
-                      className="focus-ring font-semibold break-all underline-offset-4 hover:underline"
-                    >
-                      {repo.full_name}
-                    </Link>
+                    <RepoLabel
+                      repo={repo.full_name}
+                      href={siteHref(repo.full_name, repo.hosts[0] ?? '')}
+                    />
                     <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
                       {repo.hosts.map((host) => {
-                        const id = domainOf.get(host);
                         return (
                           <li key={host} className="break-all">
-                            {id ? (
+                            {added.has(host) ? (
                               <Link
-                                href={`${repoPath(repo.full_name)}#site-${id}`}
+                                href={siteHref(repo.full_name, host)}
                                 className="focus-ring underline underline-offset-4 hover:text-ink"
                               >
                                 {host}

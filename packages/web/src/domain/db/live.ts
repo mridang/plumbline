@@ -11,7 +11,13 @@ import { and, asc, eq, inArray, lt, or, sql } from 'drizzle-orm';
 
 import type { Database } from '@/domain/db/client';
 import { cutoffOf } from '@/domain/db/access';
-import { domains, liveEvents, userRepositories } from '@/domain/db/schema';
+import {
+  domains,
+  liveEvents,
+  suiteCheckIssues,
+  suiteRuns,
+  userRepositories,
+} from '@/domain/db/schema';
 
 /** How many events of one person are kept. */
 export const KEEP_EVENTS = 200;
@@ -96,6 +102,10 @@ export interface SiteStatus {
   readonly hints: number;
   /** When the last check ended; null before the first. */
   readonly checked_at: string | null;
+  /** When the site was last deployed (a deployment run), null when none is known. */
+  readonly deployed_at: string | null;
+  /** The commit of that deployment, null when none is known. */
+  readonly sha: string | null;
   /** Whether the person added it themselves: only then is its page theirs to open. */
   readonly mine: boolean;
 }
@@ -104,6 +114,8 @@ export interface SiteStatus {
 export interface RepoStatus {
   readonly repo: string | null;
   readonly sites: readonly SiteStatus[];
+  /** How many GitHub issues Plumbline has open for the repository's checks. */
+  readonly open_issues: number;
 }
 
 /** How a site stands, from what is stored about it. */
@@ -132,6 +144,92 @@ export function stateOf(
     return 'failing';
   }
   return (row.warnings ?? 0) > 0 ? 'warning' : 'ok';
+}
+
+/** How many values one query binds at most (D1 allows 100; one is kept for the owner). */
+const BATCH = 80;
+
+/** `items` in groups of at most {@link BATCH}. */
+function inBatches<T>(items: readonly T[]): T[][] {
+  const groups: T[][] = [];
+  for (let at = 0; at < items.length; at += BATCH) {
+    groups.push(items.slice(at, at + BATCH));
+  }
+  return groups;
+}
+
+/** The last deployment of a site: when, and which commit. */
+interface Deployment {
+  readonly at: string;
+  readonly sha: string | null;
+}
+
+/**
+ * The last deployment run of each site, keyed `owner/host`. One query for each
+ * owner and group of hosts: the run is found by the newest id of the owner's
+ * runs of the host (the `idx_suite_runs_host` index), and no run is read twice.
+ */
+async function deploymentsOf(
+  db: Database,
+  sites: readonly { owner: number; host: string }[],
+): Promise<Map<string, Deployment>> {
+  const hostsOf = new Map<number, Set<string>>();
+  for (const site of sites) {
+    const hosts = hostsOf.get(site.owner) ?? new Set<string>();
+    hosts.add(site.host);
+    hostsOf.set(site.owner, hosts);
+  }
+  const found = new Map<string, Deployment>();
+  for (const [owner, hosts] of hostsOf) {
+    for (const group of inBatches([...hosts])) {
+      const rows = await db
+        .select({
+          host: suiteRuns.host,
+          sha: suiteRuns.sha,
+          ran_at: suiteRuns.ran_at,
+        })
+        .from(suiteRuns)
+        .where(
+          and(
+            eq(suiteRuns.user_id, owner),
+            inArray(suiteRuns.host, group),
+            sql`${suiteRuns.id} = (
+              select max(r.id) from suite_runs r
+              where r.user_id = ${suiteRuns.user_id}
+                and r.host = ${suiteRuns.host}
+                and r.kind = 'deployment')`,
+          ),
+        );
+      for (const row of rows) {
+        found.set(`${owner}/${row.host}`, { at: row.ran_at, sha: row.sha });
+      }
+    }
+  }
+  return found;
+}
+
+/** How many issues are open for each of the repositories, in one query for each group. */
+async function openIssuesOf(
+  db: Database,
+  repos: readonly string[],
+): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  for (const group of inBatches(repos)) {
+    const rows = await db
+      .select({ repo: suiteCheckIssues.repo, total: sql<number>`count(*)` })
+      .from(suiteCheckIssues)
+      .where(
+        and(
+          inArray(suiteCheckIssues.repo, group),
+          eq(suiteCheckIssues.state, 'open'),
+        ),
+      )
+      .groupBy(suiteCheckIssues.repo);
+    for (const row of rows) {
+      counts.set(row.repo, Number(row.total));
+    }
+  }
+  return counts;
 }
 
 /**
@@ -176,8 +274,18 @@ export async function overviewOf(
       ),
     )
     .orderBy(asc(domains.created_at), asc(domains.id));
+  const [deployments, issues] = await Promise.all([
+    deploymentsOf(
+      db,
+      rows.map((row) => ({ owner: row.owner, host: row.host })),
+    ),
+    openIssuesOf(db, [
+      ...new Set(rows.flatMap((row) => (row.repo === null ? [] : [row.repo]))),
+    ]),
+  ]);
   const byRepo = new Map<string | null, SiteStatus[]>();
   for (const row of rows) {
+    const deployed = deployments.get(`${row.owner}/${row.host}`);
     const sites = byRepo.get(row.repo) ?? [];
     sites.push({
       id: row.id,
@@ -187,12 +295,18 @@ export async function overviewOf(
       warnings: row.warnings ?? 0,
       hints: row.hints ?? 0,
       checked_at: row.checked_at === '' ? null : row.checked_at,
+      deployed_at: deployed?.at ?? null,
+      sha: deployed?.sha ?? null,
       mine: row.owner === userId,
     });
     byRepo.set(row.repo, sites);
   }
   return [...byRepo]
-    .map(([repo, sites]) => ({ repo, sites }))
+    .map(([repo, sites]) => ({
+      repo,
+      sites,
+      open_issues: repo === null ? 0 : (issues.get(repo) ?? 0),
+    }))
     .toSorted((a, b) =>
       a.repo === null ? 1 : b.repo === null ? -1 : a.repo.localeCompare(b.repo),
     );

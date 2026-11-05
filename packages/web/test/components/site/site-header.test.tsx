@@ -34,7 +34,7 @@ describe('SiteHeader', () => {
   });
 
   it('offers no install button until the browser offers one', () => {
-    expect(draw(null)).not.toContain('Install app');
+    expect(draw(null)).not.toContain('Add to desktop');
   });
 });
 

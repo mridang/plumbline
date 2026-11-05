@@ -1,0 +1,40 @@
+import { describe, expect, it } from '@jest/globals';
+
+import { RepoHeader } from '@/components/repos/repo-header';
+import { htmlAt } from '../render';
+
+const out = htmlAt(
+  <RepoHeader
+    repo="acme/site"
+    state="failing"
+    siteCount={2}
+    badgeImage="/badge/acme/site/abc.svg"
+    badgeMarkdown="[![Plumbline](x)](y)"
+  />,
+);
+
+describe('RepoHeader', () => {
+  it('names the repository with the Octocat, in the one h1', () => {
+    expect(out.match(/<h1/g)).toHaveLength(1);
+    expect(out).toMatch(/<h1[^>]*>.*viewBox="0 0 16 16".*site<\/span>/s);
+    expect(out).toMatch(/text-muted">acme\/<\/span>/);
+  });
+
+  it('says how the worst site stands and how many sites there are', () => {
+    expect(out).toContain('Failing');
+    expect(out).toContain('2 sites');
+  });
+
+  it('has the Badge button and a View on GitHub link that opens a new tab', () => {
+    expect(out).toContain('>Badge<');
+    expect(out).toMatch(
+      /<a[^>]*href="https:\/\/github.com\/acme\/site"[^>]*target="_blank"/,
+    );
+    expect(out).toContain('View on GitHub');
+  });
+
+  it('has no big badge section: the badge is only in its button until opened', () => {
+    expect(out).not.toContain('<img');
+    expect(out).not.toContain('This is how it looks');
+  });
+});

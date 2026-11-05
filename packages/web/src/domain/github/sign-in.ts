@@ -23,6 +23,13 @@ export function subjectOf(githubId: number): string {
   return `github:${githubId}`;
 }
 
+/** Whether the person signed in with GitHub alone: their stable key is a GitHub one. */
+export function signedInWithGithub(
+  user: Readonly<{ google_sub: string }>,
+): boolean {
+  return user.google_sub.startsWith('github:');
+}
+
 /**
  * The address GitHub gives every account for commits, used as the contact
  * address of a person who signed in with GitHub: the app never asks for their

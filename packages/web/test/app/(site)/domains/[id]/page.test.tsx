@@ -40,6 +40,7 @@ jest.unstable_mockModule('next/navigation', () => ({
     throw new NotFound();
   },
   useRouter: () => ({ push: () => undefined, refresh: () => undefined }),
+  usePathname: () => '/',
 }));
 jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
@@ -63,16 +64,29 @@ beforeEach(async () => {
 afterEach(() => restore());
 
 /** Render the page for a domain id and the picked report. */
-function render(id: string, report?: string): Promise<ReactElement> {
+function render(
+  id: string,
+  report?: string,
+  view?: string,
+): Promise<ReactElement> {
   return DomainPage({
     params: Promise.resolve({ id }),
-    searchParams: Promise.resolve(report === undefined ? {} : { report }),
+    searchParams: Promise.resolve({
+      ...(report === undefined ? {} : { report }),
+      ...(view === undefined ? {} : { view }),
+    }),
   });
 }
 
 /** The page's HTML. */
-async function page(id = domain.id, report?: string): Promise<string> {
-  return htmlAt(await render(id, report), { pathname: `/domains/${id}` });
+async function page(
+  id = domain.id,
+  report?: string,
+  view?: string,
+): Promise<string> {
+  return htmlAt(await render(id, report, view), {
+    pathname: `/domains/${id}`,
+  });
 }
 
 /** Save a report of the domain with this many failed checks. */
@@ -122,19 +136,17 @@ describe('DomainPage', () => {
     expect(await page()).toContain('example.com</h1>');
   });
 
-  it('counts the checks chosen for the domain', async () => {
+  it('counts the checks chosen for the domain, on the button that opens the choice', async () => {
     await setDomainChecks(db, 1, domain.id, ['csp']);
-    expect(await page()).toContain(
-      `(1 of ${CHECKS.length} run for example.com)`,
-    );
+    expect(await page()).toContain(`Choose checks (1/${CHECKS.length})`);
   });
 
   it('offers to run the chosen checks', async () => {
     expect(await page()).toContain(`Run ${CHECKS.length} checks`);
   });
 
-  it('says there are no runs yet', async () => {
-    expect(await page()).toContain('No runs of');
+  it('says there is no report yet', async () => {
+    expect(await page()).toContain('No report yet');
   });
 
   it('draws the newest report in full', async () => {
@@ -153,11 +165,11 @@ describe('DomainPage', () => {
     expect(await page(domain.id, older.id)).toContain('older');
   });
 
-  it('marks the report shown in the list of runs', async () => {
+  it('marks the report shown in the history of runs', async () => {
     const saved = await report(2);
     expect(await page()).toMatch(
       new RegExp(
-        `<a [^>]*aria-current="true"[^>]*href="/domains/${domain.id}\\?report=${saved.id}#site-${domain.id}"|href="/domains/${domain.id}\\?report=${saved.id}#site-${domain.id}"[^>]*aria-current="true"`,
+        `aria-current="true"[^>]*href="/domains/${domain.id}\\?report=${saved.id}"|href="/domains/${domain.id}\\?report=${saved.id}"[^>]*aria-current="true"`,
       ),
     );
   });
@@ -176,12 +188,14 @@ describe('DomainPage', () => {
 
   it('lists every check in the form, ticked as chosen', async () => {
     await setDomainChecks(db, 1, domain.id, ['csp']);
-    expect(await page()).toMatch(/id="check-csp"[^>]* checked="" value="csp"/);
+    expect(await page(domain.id, undefined, 'settings')).toMatch(
+      /id="check-csp"[^>]* checked="" value="csp"/,
+    );
   });
 
   it('leaves the checks that were not chosen unticked', async () => {
     await setDomainChecks(db, 1, domain.id, ['csp']);
-    expect(await page()).toMatch(
+    expect(await page(domain.id, undefined, 'settings')).toMatch(
       /id="check-etag"[^>]* name="checks" value="etag"/,
     );
   });
@@ -198,7 +212,7 @@ describe('DomainPage', () => {
       'acme/site',
     );
     await expect(render(found.id)).rejects.toEqual(
-      new Redirected(`/repos/acme/site#site-${found.id}`),
+      new Redirected('/repos/acme/site?site=found.example.com'),
     );
   });
 
@@ -211,7 +225,9 @@ describe('DomainPage', () => {
     );
     const picked = crypto.randomUUID();
     await expect(render(found.id, picked)).rejects.toEqual(
-      new Redirected(`/repos/acme/site?report=${picked}#site-${found.id}`),
+      new Redirected(
+        `/repos/acme/site?site=found.example.com&report=${picked}`,
+      ),
     );
   });
 });

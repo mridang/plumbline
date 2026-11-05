@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 
-import { Chip } from '@/components/ui-app/chip';
+import { Badge } from '@/components/ui-app/badge';
 import { EmptyState } from '@/components/ui-app/empty-state';
 import { RelativeTime } from '@/components/ui-app/relative-time';
 import { CountCell } from '@/components/ui-app/stat';
@@ -13,11 +13,10 @@ import {
   TableHead,
 } from '@/components/ui-app/table';
 import type { Tone } from '@/components/ui-app/tone';
-import type { Domain } from '@/domain/db/domains';
 import type { RunKind, RunSummary } from '@/domain/db/runs';
 
 /** How each way a run starts is written. */
-const KINDS: Readonly<Record<RunKind, { label: string; tone: Tone }>> = {
+export const KINDS: Readonly<Record<RunKind, { label: string; tone: Tone }>> = {
   manual: { label: 'Manual', tone: 'info' },
   deployment: { label: 'Deployment', tone: 'neutral' },
   scheduled: { label: 'Scheduled', tone: 'neutral' },
@@ -25,7 +24,7 @@ const KINDS: Readonly<Record<RunKind, { label: string; tone: Tone }>> = {
 };
 
 /** A run's commit as a short monospace link to GitHub, or a dash when none is known. */
-function Commit({
+export function Commit({
   repo,
   sha,
 }: Readonly<{ repo: string; sha: string | null }>): ReactElement {
@@ -55,18 +54,17 @@ function Commit({
  */
 export function RunList({
   repo,
-  domainId,
   host,
   runs,
-  base,
+  hrefFor,
   shownId,
   now,
 }: Readonly<{
   repo: string;
-  domainId: string;
   host: string;
   runs: readonly RunSummary[];
-  base: string;
+  /** Where a run's report is shown. */
+  hrefFor: (runId: string) => string;
   shownId?: string | undefined;
   now: number;
 }>): ReactElement {
@@ -102,7 +100,7 @@ export function RunList({
               <Commit repo={repo} sha={run.sha} />
             </Cell>
             <Cell>
-              <Chip tone={KINDS[run.kind].tone}>{KINDS[run.kind].label}</Chip>
+              <Badge tone={KINDS[run.kind].tone}>{KINDS[run.kind].label}</Badge>
             </Cell>
             <Cell align="end">
               <CountCell value={run.failed} word="failed" tone="bad" />
@@ -116,7 +114,7 @@ export function RunList({
             <Cell align="end">
               {run.openable ? (
                 <a
-                  href={`${base}?report=${run.id}#site-${domainId}`}
+                  href={hrefFor(run.id)}
                   aria-current={run.id === shownId ? 'true' : undefined}
                   className="focus-ring rounded-sm font-semibold text-accent underline underline-offset-4 hover:text-ink"
                 >
@@ -132,44 +130,3 @@ export function RunList({
 }
 
 export const RUNS_SHOWN = 20;
-
-/**
- * The runs of one of the signed-in person's sites: every run of its checks,
- * whether the person started it or a deployment, the daily re-check or a change
- * to the rules did. For a site's panel on its repository's page; the page reads
- * `runs` (see `listRuns`, `RUNS_SHOWN`).
- */
-export function SiteRuns({
-  repo,
-  site,
-  runs,
-  base,
-  shownId,
-  now,
-}: Readonly<{
-  repo: string;
-  site: Pick<Domain, 'id' | 'host'>;
-  runs: readonly RunSummary[];
-  base: string;
-  shownId?: string | undefined;
-  now: number;
-}>): ReactElement {
-  return (
-    <div>
-      <h4 className="text-sm font-semibold text-muted">Runs</h4>
-      <p className="mt-1 mb-3 max-w-2xl text-sm text-pretty text-muted">
-        Newest first: the ones you start, and the ones a deployment, the daily
-        re-check or a change to plumbline.yaml starts.
-      </p>
-      <RunList
-        repo={repo}
-        domainId={site.id}
-        host={site.host}
-        runs={runs}
-        base={base}
-        shownId={shownId}
-        now={now}
-      />
-    </div>
-  );
-}

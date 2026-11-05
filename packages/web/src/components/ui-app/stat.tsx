@@ -3,9 +3,14 @@ import type { ReactElement } from 'react';
 import { cn } from '@/components/ui/cn';
 
 import { Count } from './count';
+import { Dot } from './status-dot';
 import { TONE_TEXT, type Tone } from './tone';
 
-/** A figure with its label above it, for a row of totals. */
+/**
+ * A figure with its label, for a row of totals: a tile with the tone's dot and
+ * label on one line and the figure under it. A zero is muted, so a row of
+ * totals shows at a glance which ones have anything in them.
+ */
 export function Stat({
   label,
   value,
@@ -16,13 +21,14 @@ export function Stat({
   tone?: Tone;
 }>): ReactElement {
   return (
-    <div className="rounded-card border border-line bg-surface px-4 py-3">
-      <dt className="text-label font-semibold text-subtle uppercase">
+    <div className="rounded-card border border-line bg-surface px-4 py-3 shadow-xs">
+      <dt className="flex items-center gap-2 text-sm font-medium text-muted">
+        <Dot tone={tone} size="sm" />
         {label}
       </dt>
       <dd
         className={cn(
-          'mt-1 text-3xl font-semibold',
+          'mt-1 text-2xl leading-none font-semibold tabular-nums',
           value === 0 ? 'text-subtle' : TONE_TEXT[tone],
         )}
       >

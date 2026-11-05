@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { RunList, SiteRuns } from '@/components/runs/run-history';
+import { RunList } from '@/components/runs/run-history';
 import type { RunSummary } from '@/domain/db/runs';
 
 import { htmlAt } from '../render';
@@ -25,10 +25,9 @@ const list = (runs: RunSummary[], shownId?: string) =>
   htmlAt(
     RunList({
       repo: 'acme/site',
-      domainId: 'd1',
       host: 'site.example.com',
       runs,
-      base: '/repos/acme/site',
+      hrefFor: (id) => `/repos/acme/site?site=site.example.com&report=${id}`,
       shownId,
       now: NOW,
     }),
@@ -83,7 +82,9 @@ describe('RunList', () => {
       run({ id: 'abc', openable: true }),
       run({ id: 's2', openable: false }),
     ]);
-    expect(html).toContain('href="/repos/acme/site?report=abc#site-d1"');
+    expect(html).toContain(
+      'href="/repos/acme/site?site=site.example.com&amp;report=abc"',
+    );
     expect(html).not.toContain('report=s2');
   });
 
@@ -97,31 +98,5 @@ describe('RunList', () => {
     const html = list([]);
     expect(html).toContain('No runs of site.example.com yet');
     expect(html).toContain('Press Run checks');
-  });
-});
-
-describe('SiteRuns', () => {
-  const site = { id: 'd1', host: 'site.example.com' };
-  const draw = (runs: RunSummary[]) =>
-    htmlAt(
-      SiteRuns({
-        repo: 'acme/site',
-        site,
-        runs,
-        base: '/repos/acme/site',
-        now: NOW,
-      }),
-      { pathname: '/repos/acme/site' },
-    );
-
-  it('is headed Runs and explains what starts one', () => {
-    const html = draw([run({ kind: 'scheduled' })]);
-    expect(html).toContain('>Runs</h4>');
-    expect(html).toContain('the daily');
-    expect(html).toContain('Scheduled');
-  });
-
-  it('says so when the site has no runs yet', () => {
-    expect(draw([])).toContain('No runs of site.example.com yet');
   });
 });

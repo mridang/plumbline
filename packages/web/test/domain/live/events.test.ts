@@ -16,12 +16,18 @@ const site = (host: string, state: RepoStatus['sites'][number]['state']) => ({
   warnings: 0,
   hints: 0,
   checked_at: null,
+  deployed_at: null,
+  sha: null,
   mine: true,
 });
 
 const repos: RepoStatus[] = [
-  { repo: 'acme/site', sites: [site('a.test', 'ok'), site('b.test', 'ok')] },
-  { repo: null, sites: [site('a.test', 'unchecked')] },
+  {
+    repo: 'acme/site',
+    sites: [site('a.test', 'ok'), site('b.test', 'ok')],
+    open_issues: 0,
+  },
+  { repo: null, sites: [site('a.test', 'unchecked')], open_issues: 0 },
 ];
 
 describe('parseEvent', () => {
@@ -104,7 +110,11 @@ describe('applyEvent', () => {
 
   it('keeps the last counts when the site did not answer', () => {
     const before: RepoStatus[] = [
-      { repo: null, sites: [{ ...site('a.test', 'ok'), errors: 3 }] },
+      {
+        repo: null,
+        sites: [{ ...site('a.test', 'ok'), errors: 3 }],
+        open_issues: 0,
+      },
     ];
     const next = applyEvent(before, {
       type: 'finished',

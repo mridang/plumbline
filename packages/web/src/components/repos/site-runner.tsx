@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
 
 import { problemText } from '@/components/api/problem-message';
 import { saveReport } from '@/components/scan/report-body';
@@ -25,27 +25,39 @@ type Saving =
   | { readonly kind: 'failed'; readonly message: string };
 
 /**
- * "Run checks" for one site: runs the checks chosen for it on the server,
- * shows them as they come, then saves the report and reloads the page so it
- * appears in the site's runs.
+ * What a site's tab is built around: the line that names the site, the page's
+ * own actions and "Run checks" on the right, and under them the report. Running
+ * the checks shows them as they come in the report's place, then saves the
+ * report and reads the page again so it joins the site's runs; otherwise
+ * `saved` (drawn by the server) is shown. A site may be run by hand once every
+ * five minutes: the button says when it can be again.
  */
-export function RunChecks({
+export function SiteRunner({
   domainId,
   host,
   checks,
   repository,
   issuesByCheck,
   lastRunAt,
+  identity,
+  actions,
+  saved,
 }: Readonly<{
   domainId: string;
   host: string;
   checks: readonly string[];
-  /** When the checks were last run by hand, when they were; a site may be run by hand once every five minutes. */
+  /** When the checks were last run by hand, when they were. */
   lastRunAt?: string | undefined;
   /** `owner/name` of the repository that serves the domain, when known. */
-  repository?: string;
+  repository?: string | undefined;
   /** The GitHub issues that report each check, by check id. */
   issuesByCheck?: Readonly<Record<string, readonly IssueRef[]>>;
+  /** The line that names the site: its address, how it stands, when it was checked. */
+  identity: ReactNode;
+  /** Other things to do with the site, beside Run checks. */
+  actions?: ReactNode;
+  /** What is shown when no run is under way: the report, drawn by the server. */
+  saved?: ReactNode;
 }>): ReactElement {
   const router = useRouter();
   const [saving, setSaving] = useState<Saving>({ kind: 'idle' });
@@ -88,45 +100,50 @@ export function RunChecks({
   const running = isRunning(state);
 
   return (
-    <div>
-      <div className="flex flex-wrap items-center gap-4">
-        <Button
-          size="lg"
-          variant="accent"
-          disabled={running || checks.length === 0 || wait > 0}
-          onClick={() => {
-            setSaving({ kind: 'idle' });
-            void run(host);
-          }}
-        >
-          {running ? (
-            'Running…'
-          ) : wait > 0 ? (
-            <span suppressHydrationWarning>
-              Run again in {formatCountdown(wait)}
-            </span>
-          ) : (
-            `Run ${countOf(checks.length, 'check')}`
-          )}
-        </Button>
-        <p aria-live="polite" className="text-sm text-muted">
-          {saving.kind === 'saving' ? 'Saving the report…' : null}
-          {saving.kind === 'saved' ? 'Report saved.' : null}
-        </p>
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <div className="min-w-0">{identity}</div>
+        <div className="flex flex-wrap items-center gap-2">
+          <p aria-live="polite" className="text-sm text-muted">
+            {saving.kind === 'saving' ? 'Saving the report…' : null}
+            {saving.kind === 'saved' ? 'Report saved.' : null}
+          </p>
+          {actions}
+          <Button
+            variant="accent"
+            disabled={running || checks.length === 0 || wait > 0}
+            onClick={() => {
+              setSaving({ kind: 'idle' });
+              void run(host);
+            }}
+          >
+            {running ? (
+              'Running…'
+            ) : wait > 0 ? (
+              <span suppressHydrationWarning>
+                Run again in {formatCountdown(wait)}
+              </span>
+            ) : (
+              `Run ${countOf(checks.length, 'check')}`
+            )}
+          </Button>
+        </div>
       </div>
       {saving.kind === 'failed' ? (
-        <p role="alert" className="mt-3 text-failed">
+        <p role="alert" className="text-failed">
           {saving.message}
         </p>
       ) : null}
-      <ScanStatus state={state} />
+      <ScanStatus state={state} className="empty:hidden" />
       {state.kind === 'scanning' ? (
         <ScanResults
           scan={state.scan}
           repository={repository}
           issuesByCheck={issuesByCheck}
         />
-      ) : null}
+      ) : (
+        saved
+      )}
     </div>
   );
 }

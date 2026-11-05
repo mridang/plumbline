@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { createDatabase } from '@/domain/db/client';
 import { ACCESS_TTL_MS, replaceAccess } from '@/domain/db/access';
 import { addDomain } from '@/domain/db/domains';
+import { recordRun, saveIssue } from '@/domain/db/suite';
 import {
   KEEP_EVENTS,
   STALE_CHECK_MS,
@@ -188,5 +189,126 @@ describe('overviewOf, for people who can see a repository on GitHub', () => {
     await replaceAccess(db, 1, ['acme/site'], granted());
     const [repo] = await overviewOf(db, 1, NOW);
     expect(repo?.sites).toHaveLength(1);
+  });
+});
+
+describe('overviewOf, with the last deployment and the open issues', () => {
+  const run = (
+    db: ReturnType<typeof made>['db'],
+    host: string,
+    sha: string,
+    at: string,
+    kind: 'deployment' | 'scheduled' = 'deployment',
+    userId = 1,
+  ) =>
+    recordRun(
+      db,
+      {
+        userId,
+        host,
+        repo: 'acme/site',
+        sha,
+        status: 200,
+        hash: 'h',
+        findings: [],
+        kind,
+      },
+      at,
+    );
+
+  it('gives each site the time and commit of its latest deployment', async () => {
+    const { db } = made();
+    await addDomain(db, 1, 'a.test', 'acme/site');
+    await addDomain(db, 1, 'b.test', 'acme/site');
+    await run(db, 'a.test', 'aaaaaaa1', '2026-01-01T00:00:00.000Z');
+    await run(db, 'a.test', 'aaaaaaa2', '2026-01-01T01:00:00.000Z');
+    const [repo] = await overviewOf(db, 1, NOW);
+    expect(
+      repo?.sites
+        .map((s) => [s.host, s.deployed_at, s.sha])
+        .toSorted(([a], [b]) => String(a).localeCompare(String(b))),
+    ).toEqual([
+      ['a.test', '2026-01-01T01:00:00.000Z', 'aaaaaaa2'],
+      ['b.test', null, null],
+    ]);
+  });
+
+  it('leaves a scheduled re-check out: it is not a deployment', async () => {
+    const { db } = made();
+    await addDomain(db, 1, 'a.test', 'acme/site');
+    await run(db, 'a.test', 'old1234', '2026-01-01T00:00:00.000Z');
+    await run(db, 'a.test', 'newer12', '2026-01-01T05:00:00.000Z', 'scheduled');
+    const [repo] = await overviewOf(db, 1, NOW);
+    expect(repo?.sites[0]?.sha).toBe('old1234');
+  });
+
+  it("shows the owner's deployment to someone who sees the repository", async () => {
+    const { db } = made();
+    await addDomain(db, 1, 'a.test', 'acme/site');
+    await run(db, 'a.test', 'abc1234', '2026-01-01T00:00:00.000Z');
+    await replaceAccess(db, 2, ['acme/site'], new Date(NOW).toISOString());
+    const [repo] = await overviewOf(db, 2, NOW);
+    expect(repo?.sites[0]?.sha).toBe('abc1234');
+  });
+
+  it('counts the issues that are open for the repository, and no others', async () => {
+    const { db } = made();
+    await addDomain(db, 1, 'a.test', 'acme/site');
+    await addDomain(db, 1, 'x.test', 'acme/quiet');
+    const issue = (number: number, state: 'open' | 'fixed') => ({
+      number,
+      state,
+      signature: 's',
+      reopens: 0,
+    });
+    await saveIssue(db, 'acme/site', 'a.test', 'csp', issue(1, 'open'));
+    await saveIssue(db, 'acme/site', 'a.test', 'hsts', issue(2, 'open'));
+    await saveIssue(db, 'acme/site', 'a.test', 'cors', issue(3, 'fixed'));
+    await saveIssue(db, 'acme/other', 'z.test', 'csp', issue(4, 'open'));
+    const overview = await overviewOf(db, 1, NOW);
+    expect(overview.map((r) => [r.repo, r.open_issues])).toEqual([
+      ['acme/quiet', 0],
+      ['acme/site', 2],
+    ]);
+  });
+
+  it('reads more than a hundred sites without binding more than D1 allows', async () => {
+    const { db, raw } = made();
+    const prepare = raw.prepare.bind(raw);
+    raw.prepare = (sql: string) => {
+      if ((sql.match(/\?/g) ?? []).length > 100) {
+        throw new Error('too many SQL variables');
+      }
+      return prepare(sql);
+    };
+    for (let n = 0; n < 120; n += 1) {
+      await addDomain(db, 1, `s${n}.test`, `acme/r${n}`);
+    }
+    const overview = await overviewOf(db, 1, NOW);
+    expect(overview).toHaveLength(120);
+  });
+
+  it('answers from the indexes: no scan of the run history or the issues', async () => {
+    const { db, raw } = made();
+    await addDomain(db, 1, 'a.test', 'acme/site');
+    const plan = (sql: string, ...params: (string | number)[]) =>
+      raw
+        .prepare(`EXPLAIN QUERY PLAN ${sql}`)
+        .all(...params)
+        .map((row) => String(row['detail']))
+        .join(' | ');
+    expect(
+      plan(
+        "select host, sha, ran_at from suite_runs where user_id = ? and host in (?) and id = (select max(r.id) from suite_runs r where r.user_id = suite_runs.user_id and r.host = suite_runs.host and r.kind = 'deployment')",
+        1,
+        'a.test',
+      ),
+    ).not.toMatch(/SCAN suite_runs/);
+    expect(
+      plan(
+        "select repo, count(*) from suite_check_issues where repo in (?) and state = 'open' group by repo",
+        'acme/site',
+      ),
+    ).not.toMatch(/SCAN suite_check_issues/);
   });
 });

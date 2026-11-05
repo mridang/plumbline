@@ -66,7 +66,7 @@ export function NavLinks({
 
 /**
  * The same links in a menu, for phones, where the row would not fit. It also
- * holds "Install app" when the browser offers it, and Sign in for a visitor.
+ * holds "Add to home screen" when the browser offers it, and Sign in for a visitor.
  */
 export function NavMenu({
   links,

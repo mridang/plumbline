@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 
+import { Badge } from '@/components/ui-app/badge';
 import { Dot } from '@/components/ui-app/status-dot';
 import type { Tone } from '@/components/ui-app/tone';
 import type { SiteState } from '@/domain/db/live';
@@ -16,7 +17,8 @@ export const STATES: Readonly<
   ok: { label: 'All clear', tone: 'text-passed', kind: 'good' },
 };
 
-const WORST_FIRST: readonly SiteState[] = [
+/** The states from the one that needs the most attention to the one that needs none. */
+export const WORST_FIRST: readonly SiteState[] = [
   'unreachable',
   'failing',
   'warning',
@@ -35,4 +37,24 @@ export function StatusDot({
   state,
 }: Readonly<{ state: SiteState }>): ReactElement {
   return <Dot tone={STATES[state].kind} pulse={state === 'running'} />;
+}
+
+/** A state as a badge: its dot and its words, one look wherever a site's state is named. */
+export function StatusBadge({
+  state,
+  size = 'sm',
+}: Readonly<{
+  state: SiteState;
+  size?: 'sm' | 'md';
+}>): ReactElement {
+  return (
+    <Badge
+      tone={STATES[state].kind}
+      size={size}
+      dot
+      pulse={state === 'running'}
+    >
+      {STATES[state].label}
+    </Badge>
+  );
 }

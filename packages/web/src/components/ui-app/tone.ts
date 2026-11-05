@@ -18,13 +18,17 @@ export const TONE_TEXT: Readonly<Record<Tone, string>> = {
   info: 'text-accent',
 };
 
-/** A soft fill and its text colour, for a chip. */
+/**
+ * A soft fill, its text colour and a hairline ring of the same colour, for a
+ * badge: the tint is light enough that the text keeps 4.5:1 on it, and the ring
+ * keeps the edge visible on paper and on white.
+ */
 export const TONE_FILL: Readonly<Record<Tone, string>> = {
-  neutral: 'bg-ink/8 text-ink',
-  good: 'bg-passed/10 text-passed',
-  warn: 'bg-warned/12 text-warned',
-  bad: 'bg-failed/10 text-failed',
-  info: 'bg-accent/10 text-accent',
+  neutral: 'bg-ink/6 text-ink ring-ink/15',
+  good: 'bg-passed/10 text-passed ring-passed/25',
+  warn: 'bg-warned/10 text-warned ring-warned/25',
+  bad: 'bg-failed/10 text-failed ring-failed/25',
+  info: 'bg-accent/10 text-accent ring-accent/25',
 };
 
 /** The solid colour of each tone, for a dot or an edge. */

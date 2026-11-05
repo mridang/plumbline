@@ -37,10 +37,11 @@ describe('LoginPage', () => {
     expect(metadata.title).toBe('Sign in');
   });
 
-  it('starts the Google sign-in', async () => {
-    expect(await page()).toMatch(
-      /href="\/auth\/login"[^>]*>Sign in with Google</,
-    );
+  it('starts the Google sign-in, as the only button when GitHub is not set up', async () => {
+    const markup = await page();
+    expect(markup).toMatch(/href="\/auth\/login"[^>]*>.*Sign in with Google</s);
+    expect(markup).toContain('bg-ink');
+    expect(markup).not.toContain('Sign in with GitHub');
   });
 
   it('shows no error after an ordinary visit', async () => {
@@ -60,8 +61,20 @@ describe('LoginPage', () => {
   it('offers the GitHub sign-in, and says what it shows, when the app has them', async () => {
     withSettings(GITHUB_ENV);
     const markup = await page();
-    expect(markup).toMatch(/href="\/auth\/github"[^>]*>Sign in with GitHub</);
+    expect(markup).toMatch(
+      /href="\/auth\/github"[^>]*>.*Sign in with GitHub</s,
+    );
     expect(markup).toContain('repositories you have access to');
+  });
+
+  it('puts GitHub first and primary, and Google second as the quiet button', async () => {
+    withSettings(GITHUB_ENV);
+    const markup = await page();
+    expect(markup.indexOf('Sign in with GitHub')).toBeLessThan(
+      markup.indexOf('Sign in with Google'),
+    );
+    expect(markup).toMatch(/href="\/auth\/github"[^>]*class="[^"]*bg-ink/);
+    expect(markup).toMatch(/href="\/auth\/login"[^>]*class="[^"]*border-field/);
   });
 
   it.each([

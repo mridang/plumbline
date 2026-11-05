@@ -27,7 +27,9 @@ class Redirected extends Error {
 }
 
 /** The signed-in user, or null for nobody. */
-const state: { user: { id: number; email: string } | null } = { user: null };
+const state: {
+  user: { id: number; email: string; google_sub: string } | null;
+} = { user: null };
 
 jest.unstable_mockModule('next/navigation', () => ({
   redirect: (to: string) => {
@@ -54,7 +56,7 @@ function setUp(env: Record<string, unknown>): void {
 }
 
 beforeEach(() => {
-  state.user = { id: 1, email: 'a@b.com' };
+  state.user = { id: 1, email: 'a@b.com', google_sub: '12345' };
   setUp(GITHUB_ENV);
 });
 
@@ -116,7 +118,9 @@ describe('GitHubPage', () => {
     expect(out).toContain('mridang');
     expect(out).toContain('acme');
     expect(out).toContain('acme/site');
-    expect(out).toContain(`href="/repos/acme/site#site-${domain.id}"`);
+    expect(out).toContain('href="/repos/acme/site?site=site.example.com"');
+    expect(out).toContain('viewBox="0 0 16 16"');
+    expect(domain.id).toBeTruthy();
     expect(out).toContain('1 other repository with no deployment found');
     expect(out).not.toContain('Refresh from GitHub');
   });
@@ -148,5 +152,30 @@ describe('GitHubPage', () => {
       },
     ]);
     expect(await page()).not.toContain('other/secret');
+  });
+
+  it('offers a Google person to disconnect their GitHub account', async () => {
+    await linkAccount(db, 1, { id: 9, login: 'mridang' });
+    const out = await page();
+    expect(out).toContain('Disconnect GitHub');
+    expect(out).toContain('a@b.com');
+  });
+
+  it('does not ask a person who signed in with GitHub to connect it again, or to disconnect it', async () => {
+    state.user = {
+      id: 1,
+      email: '9+mridang@users.noreply.github.com',
+      google_sub: 'github:9',
+    };
+    await linkAccount(db, 1, { id: 9, login: 'mridang' });
+    await saveInstallation(db, 1, 5, 'acme');
+    const out = await page();
+    expect(out).not.toContain('Connect GitHub');
+    expect(out).not.toContain('Already installed? Connect');
+    expect(out).not.toContain('Disconnect GitHub');
+    expect(out).toContain('Signed in with');
+    expect(out).toContain('>GitHub<');
+    expect(out).not.toContain('noreply');
+    expect(out).toContain('acme');
   });
 });

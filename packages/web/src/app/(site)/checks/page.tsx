@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import type { ReactElement } from 'react';
 
 import { pageMetadata } from '@/app/_metadata';
-import { Chip } from '@/components/ui-app/chip';
+import { Badge } from '@/components/ui-app/badge';
 import { Count } from '@/components/ui-app/count';
 import { Section } from '@/components/ui-app/section';
 import {
@@ -75,10 +75,10 @@ export default function ChecksPage(): ReactElement {
             title={section.title}
             description={`${section.description} Fixes usually come from ${section.fixer.toLowerCase()}.`}
             actions={
-              <Chip tone="info">
+              <Badge tone="info">
                 <Count value={checks.length} />{' '}
                 {checks.length === 1 ? 'check' : 'checks'}
-              </Chip>
+              </Badge>
             }
           >
             <Table caption={`Checks in ${section.title}`} minWidth="min-w-176">
@@ -106,7 +106,7 @@ export default function ChecksPage(): ReactElement {
                     <Cell nowrap={false}>
                       <span className="flex flex-wrap gap-1.5">
                         {sourcesOf(check).map((source) => (
-                          <Chip key={source}>{source}</Chip>
+                          <Badge key={source}>{source}</Badge>
                         ))}
                       </span>
                     </Cell>

@@ -103,9 +103,14 @@ export function isRunning(state: ScanState): boolean {
 /** What is said while a scan starts, or why it could not. */
 export function ScanStatus({
   state,
-}: Readonly<{ state: ScanState }>): ReactElement {
+  className = 'mt-8',
+}: Readonly<{
+  state: ScanState;
+  /** The space around it, where it sits on the page. */
+  className?: string;
+}>): ReactElement {
   return (
-    <div aria-live="polite" className="mt-8">
+    <div aria-live="polite" className={className}>
       {state.kind === 'starting' ? (
         <p className="text-muted">
           Fetching{' '}

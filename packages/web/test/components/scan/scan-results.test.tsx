@@ -71,6 +71,51 @@ describe('progressLine', () => {
   });
 });
 
+describe('ScanResults, laid out as a report', () => {
+  const hints = [
+    hint('a', 'failed'),
+    hint('b', 'warned'),
+    hint('c', 'passed'),
+    hint('d', 'skipped'),
+  ];
+  const out = html(<ScanResults scan={scanOf(hints)} />);
+
+  it('has one stat row of the four outcomes, in the colours of the badges', () => {
+    expect(out.match(/<dt/g)).toHaveLength(4);
+    for (const word of ['Failed', 'Warning', 'Passed', 'Skipped']) {
+      expect(out).toContain(`</span>${word}</dt>`);
+    }
+  });
+
+  it('has a segmented control with counts and Expand all on the same line, to the right', () => {
+    expect(out).toContain('role="group" aria-label="Show"');
+    expect(out).toContain('Problems<span');
+    const bar = out.slice(
+      out.indexOf('sticky top-16'),
+      out.indexOf('id="check-list"'),
+    );
+    expect(bar).toContain('justify-between');
+    expect(bar.indexOf('aria-label="Show"')).toBeLessThan(
+      bar.indexOf('Expand all'),
+    );
+  });
+
+  it('draws what a page puts between the totals and the list in that place', () => {
+    const between = html(
+      <ScanResults scan={scanOf(hints)} between={<p>the picker</p>} />,
+    );
+    expect(between.indexOf('<dl')).toBeLessThan(between.indexOf('the picker'));
+    expect(between.indexOf('the picker')).toBeLessThan(
+      between.indexOf('aria-label="Show"'),
+    );
+  });
+
+  it('opens the failed checks and closes the rest, with the failed ones first', () => {
+    expect(out.match(/<details[^>]* open=""/g)).toHaveLength(1);
+    expect(out.indexOf('Check a')).toBeLessThan(out.indexOf('Check b'));
+  });
+});
+
 describe('ScanResults', () => {
   it('heads the results with the address scanned', () => {
     expect(html(<ScanResults scan={scanOf([])} />)).toContain(

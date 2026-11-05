@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   ClockIcon,
   DriveIcon,
+  GithubIcon,
   GoogleIcon,
   Html5Icon,
   HeartIcon,
@@ -39,6 +40,14 @@ describe('icons', () => {
   it('are hidden from assistive technology, and the Google one honours sizes too', () => {
     expect(html(<HeartIcon />)).toContain('aria-hidden="true"');
     expect(classOf(html(<GoogleIcon size="md" />), 'svg')).toBe('h-5 w-5');
+  });
+
+  it('has the GitHub mark, solid, in the text colour and hidden from assistive technology', () => {
+    const out = html(<GithubIcon size="sm" />);
+    expect(classOf(out, 'svg')).toBe('h-4 w-4');
+    expect(out).toContain('viewBox="0 0 16 16"');
+    expect(out).toContain('fill="currentColor"');
+    expect(out).toContain('aria-hidden="true"');
   });
 
   it('has a filled play triangle that takes the same sizes', () => {

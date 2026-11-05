@@ -5,9 +5,9 @@ import {
   checksToSend,
   saveChecks,
   type CheckSection,
-} from '@/app/(site)/domains/[id]/_components/check-form';
+} from '@/components/repos/check-form';
 import { ProblemError } from '@/components/api/problem-message';
-import { htmlAt } from '../../../../../components/render';
+import { htmlAt } from '../render';
 
 const SECTIONS: readonly CheckSection[] = [
   {

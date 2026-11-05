@@ -1,6 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { StatusDot, worstState } from '@/components/repos/site-state';
+import {
+  StatusBadge,
+  StatusDot,
+  worstState,
+} from '@/components/repos/site-state';
 import { html } from '../render';
 
 describe('worstState', () => {
@@ -26,5 +30,24 @@ describe('StatusDot', () => {
   it('pulses only while a check runs', () => {
     expect(html(<StatusDot state="running" />)).toContain('animate-pulse');
     expect(html(<StatusDot state="ok" />)).not.toContain('animate-pulse');
+  });
+});
+
+describe('StatusBadge', () => {
+  it('says the state in its words and its colour, with a dot', () => {
+    const out = html(<StatusBadge state="failing" />);
+    expect(out).toContain('Failing');
+    expect(out).toContain('text-failed');
+    expect(out).toContain('size-1.5');
+    expect(out).toContain('bg-failed');
+  });
+
+  it('pulses only while a check runs', () => {
+    expect(html(<StatusBadge state="running" />)).toContain('animate-pulse');
+    expect(html(<StatusBadge state="ok" />)).not.toContain('animate-pulse');
+  });
+
+  it('has a taller size', () => {
+    expect(html(<StatusBadge state="ok" size="md" />)).toContain('h-6');
   });
 });

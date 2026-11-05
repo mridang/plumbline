@@ -4,11 +4,25 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactElement } from 'react';
 
-import { RepoCard } from '@/components/repos/repo-card';
-import { Chip } from '@/components/ui-app/chip';
+import {
+  DEFAULT_SORT,
+  dashboardHref,
+  filterRows,
+  groupRows,
+  nextSort,
+  rowsOf,
+  sortRows,
+  type Sort,
+  type View,
+} from '@/components/repos/site-rows';
+import { SiteCards } from '@/components/repos/site-cards';
+import { SitesTable } from '@/components/repos/sites-table';
+import { Badge } from '@/components/ui-app/badge';
 import { Count } from '@/components/ui-app/count';
 import { EmptyState } from '@/components/ui-app/empty-state';
 import { LinkButton } from '@/components/ui-app/link-button';
+import { SearchField } from '@/components/ui-app/search-field';
+import { SegmentedLinks } from '@/components/ui-app/segmented-control';
 import type { RepoStatus } from '@/domain/db/live';
 import {
   browserEnvironment,
@@ -29,9 +43,12 @@ export function LiveOverview({
   initial,
   hidden,
   showHidden,
+  view,
   now,
 }: Readonly<{
   initial: readonly RepoStatus[];
+  /** How the sites are shown: a table or cards. */
+  view: View;
   /** The server's clock when the page was made, in milliseconds. */
   now: number;
   /** The repositories the person has hidden. */
@@ -43,6 +60,8 @@ export function LiveOverview({
   const [repos, setRepos] = useState<readonly RepoStatus[]>(initial);
 
   const [live, setLive] = useState(false);
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState<Sort>(DEFAULT_SORT);
 
   useEffect(() => {
     if (typeof EventSource === 'undefined') {
@@ -95,10 +114,13 @@ export function LiveOverview({
   const hiddenSet = new Set(hidden);
   const isHidden = (repo: RepoStatus): boolean =>
     repo.repo !== null && hiddenSet.has(repo.repo);
-  const shown = repos.filter((repo) => showHidden || !isHidden(repo));
   const hiddenCount = repos.filter(isHidden).length;
   const counts = tally(repos.filter((repo) => !isHidden(repo)));
   const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
+  const rows = sortRows(
+    filterRows(rowsOf(repos, hiddenSet, showHidden), query),
+    sort,
+  );
   if (repos.length === 0) {
     return (
       <EmptyState
@@ -111,7 +133,7 @@ export function LiveOverview({
     );
   }
   return (
-    <div>
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <p
           className="flex flex-wrap items-center gap-2 text-sm text-muted"
@@ -121,52 +143,80 @@ export function LiveOverview({
             <Count value={total} /> {total === 1 ? 'site' : 'sites'}
           </span>
           {counts.running > 0 ? (
-            <Chip tone="info">
+            <Badge tone="info" dot pulse>
               <Count value={counts.running} /> checking
-            </Chip>
+            </Badge>
           ) : null}
           {counts.failing + counts.unreachable > 0 ? (
-            <Chip tone="bad">
+            <Badge tone="bad" dot>
               <Count value={counts.failing + counts.unreachable} /> failing
-            </Chip>
+            </Badge>
           ) : null}
           {counts.warning > 0 ? (
-            <Chip tone="warn">
+            <Badge tone="warn" dot>
               <Count value={counts.warning} /> with warnings
-            </Chip>
+            </Badge>
           ) : null}
           {counts.ok > 0 ? (
-            <Chip tone="good">
+            <Badge tone="good" dot>
               <Count value={counts.ok} /> all clear
-            </Chip>
+            </Badge>
           ) : null}
-          <span className={live ? 'text-passed' : 'text-subtle'}>
-            {live ? '● Live' : '○ Connecting…'}
-          </span>
+          <Badge tone={live ? 'good' : 'neutral'}>
+            {live ? 'Live' : 'Connecting…'}
+          </Badge>
         </p>
-        {hiddenCount > 0 || showHidden ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <SearchField
+            label="Search sites"
+            placeholder="Search sites"
+            value={query}
+            onChange={setQuery}
+          />
+          <SegmentedLinks
+            label="View"
+            value={view}
+            options={[
+              {
+                value: 'table',
+                label: 'Table',
+                href: dashboardHref('table', showHidden),
+              },
+              {
+                value: 'cards',
+                label: 'Cards',
+                href: dashboardHref('cards', showHidden),
+              },
+            ]}
+          />
+        </div>
+      </div>
+      {rows.length === 0 ? (
+        <EmptyState title="No site matches">
+          Nothing here has “{query.trim()}” in its repository or address.
+        </EmptyState>
+      ) : view === 'cards' ? (
+        <SiteCards repos={groupRows(rows)} hidden={hiddenSet} now={now} />
+      ) : (
+        <SitesTable
+          rows={rows}
+          sort={sort}
+          onSort={(key) => setSort((current) => nextSort(current, key))}
+          now={now}
+        />
+      )}
+      {hiddenCount > 0 || showHidden ? (
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-pretty text-subtle">
           <Link
-            href={showHidden ? '/dashboard' : '/dashboard?hidden=1'}
-            className="focus-ring text-sm font-medium text-muted underline-offset-4 hover:text-ink hover:underline"
+            href={dashboardHref(view, !showHidden)}
+            className="focus-ring font-medium text-muted underline-offset-4 hover:text-ink hover:underline"
           >
             {showHidden ? 'Hide hidden' : `Show hidden (${hiddenCount})`}
           </Link>
-        ) : null}
-      </div>
-      <div className="mt-6 grid grid-cols-[repeat(auto-fit,minmax(min(100%,26rem),1fr))] gap-4">
-        {shown.map((repo) => (
-          <RepoCard
-            key={repo.repo ?? 'by-hand'}
-            repo={repo}
-            hidden={isHidden(repo)}
-            now={now}
-          />
-        ))}
-      </div>
-      {hiddenCount > 0 ? (
-        <p className="mt-6 text-sm text-pretty text-subtle">
-          Hiding a repository only takes it off this page. Its sites are still
-          checked, and GitHub still hears about them.
+          <span>
+            Hiding a repository only takes it off this page. Its sites are still
+            checked, and GitHub still hears about them.
+          </span>
         </p>
       ) : null}
     </div>

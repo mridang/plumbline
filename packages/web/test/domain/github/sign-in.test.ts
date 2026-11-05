@@ -7,6 +7,7 @@ import { upsertUser } from '@/domain/db/users';
 import {
   noreplyOf,
   signInWithGitHub,
+  signedInWithGithub,
   subjectOf,
 } from '@/domain/github/sign-in';
 
@@ -104,5 +105,12 @@ describe('signInWithGitHub', () => {
 describe('noreplyOf', () => {
   it('is the address GitHub gives the account', () => {
     expect(noreplyOf(identity)).toBe('42+octo@users.noreply.github.com');
+  });
+});
+
+describe('signedInWithGithub', () => {
+  it('is true for a person keyed by their GitHub account, and false for a Google one', () => {
+    expect(signedInWithGithub({ google_sub: subjectOf(42) })).toBe(true);
+    expect(signedInWithGithub({ google_sub: '1234567890' })).toBe(false);
   });
 });

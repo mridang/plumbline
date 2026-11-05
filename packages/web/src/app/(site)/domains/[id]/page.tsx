@@ -2,10 +2,11 @@ import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import type { ReactElement } from 'react';
 
-import { repoPath } from '@/components/repos/repo-path';
+import { siteHref } from '@/components/repos/site-href';
 import { RUNS_SHOWN } from '@/components/runs/run-history';
+import { SiteView } from '@/components/repos/site-view';
 import { Container } from '@/components/ui/layout';
-import { PageHeader } from '@/components/ui/page-header';
+import { PageHeading } from '@/components/ui-app/page-heading';
 import { isDomainId } from '@/domain/api/domain-resource';
 import { isRunId } from '@/domain/api/runs';
 import { getDatabase } from '@/domain/db/client';
@@ -14,8 +15,6 @@ import { latestReport, listReports } from '@/domain/db/reports';
 import { getRun, listRuns, runAsReport } from '@/domain/db/runs';
 import { serverNow } from '@/lib/clock';
 import { getCurrentUser } from '@/lib/core/auth/current-user';
-
-import { SitePanel } from '@/app/(site)/repos/[owner]/[repo]/_components/site-panel';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,10 +33,10 @@ export default async function DomainPage({
   searchParams,
 }: Readonly<{
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ report?: string }>;
+  searchParams: Promise<{ report?: string; view?: string }>;
 }>): Promise<ReactElement> {
   const { id } = await params;
-  const { report: picked } = await searchParams;
+  const { report: picked, view } = await searchParams;
   const user = await getCurrentUser();
   if (!user) {
     redirect(`/auth/login?returnTo=${encodeURIComponent(`/domains/${id}`)}`);
@@ -48,8 +47,11 @@ export default async function DomainPage({
     notFound();
   }
   if (domain.repo) {
-    const query = picked && isRunId(picked) ? `?report=${picked}` : '';
-    redirect(`${repoPath(domain.repo)}${query}#site-${domain.id}`);
+    redirect(
+      siteHref(domain.repo, domain.host, {
+        report: picked && isRunId(picked) ? picked : undefined,
+      }),
+    );
   }
   const [reports, runs, shown] = await Promise.all([
     listReports(db, user.id, domain.id, 20),
@@ -68,17 +70,21 @@ export default async function DomainPage({
         ).then((run) => (run ? runAsReport(run, domain.id) : undefined))
       : latestReport(db, user.id, domain.id),
   ]);
+  const page = `/domains/${domain.id}`;
   return (
     <>
-      <PageHeader eyebrow="Site" title={domain.host} />
-      <Container className="pb-16">
-        <SitePanel
+      <PageHeading eyebrow="Site" title={domain.host} />
+      <Container className="py-6">
+        <SiteView
           domain={domain}
-          reports={reports}
           runs={runs}
           issues={[]}
           shown={shown}
-          base={`/domains/${domain.id}`}
+          view={view === 'settings' ? 'settings' : 'results'}
+          hrefFor={(runId) => `${page}?report=${runId}`}
+          settingsHref={`${page}?view=settings`}
+          resultsHref={page}
+          lastRunAt={reports[0]?.created_at}
           now={serverNow()}
         />
       </Container>
