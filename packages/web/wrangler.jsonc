@@ -131,17 +131,11 @@
       "namespace_id": "7506",
       "simple": { "limit": 900, "period": 60 },
     },
-    // scans started, per address: each one fans out into hundreds of fetches
+    // scans started and run, per address: each one runs every check on the scanner container
     {
       "name": "RL_SCAN",
       "namespace_id": "7507",
       "simple": { "limit": 5, "period": 60 },
-    },
-    // fetches made for a scan, per address: one scan makes a few hundred
-    {
-      "name": "RL_FETCH",
-      "namespace_id": "7508",
-      "simple": { "limit": 600, "period": 60 },
     },
   ],
   // One object per person holds the open server-sent-event streams of the
@@ -150,9 +144,6 @@
   "durable_objects": {
     "bindings": [
       { "name": "USER_HUB", "class_name": "UserHub" },
-      // The TLS prober (probe/, one static C binary of about 1 MB on OpenSSL): started
-      // when a scan needs a real TLS handshake, stopped after 15 s idle.
-      { "name": "PROBE", "class_name": "ProbeContainer" },
       // The scanner: every check of a scan runs in this container (Node, the
       // hints package and the engine, no browser) and streams its results.
       { "name": "SCANNER", "class_name": "ScannerContainer" },
@@ -162,18 +153,13 @@
     { "tag": "v1", "new_sqlite_classes": ["UserHub"] },
     { "tag": "v2", "new_sqlite_classes": ["ProbeContainer"] },
     { "tag": "v3", "new_sqlite_classes": ["ScannerContainer"] },
+    // The TLS prober is gone: the scanner makes its own handshakes.
+    { "tag": "v4", "deleted_classes": ["ProbeContainer"] },
   ],
-  // The TLS prober's container. The deploy builds the image (probe/Dockerfile)
-  // and registers it through Cloudflare's containers API, so the API token
-  // needs the Containers permission (Account, Containers, Edit).
+  // The scanner's container. The deploy builds the image and registers it
+  // through Cloudflare's containers API, so the API token needs the
+  // Containers permission (Account, Containers, Edit).
   "containers": [
-    {
-      "class_name": "ProbeContainer",
-      "image": "./probe/Dockerfile",
-      // The smallest instance: 1/16 vCPU and 256 MiB are plenty for handshakes.
-      "instance_type": "lite",
-      "max_instances": 3,
-    },
     {
       "class_name": "ScannerContainer",
       // The repository's Dockerfile: wrangler builds its last stage, which is

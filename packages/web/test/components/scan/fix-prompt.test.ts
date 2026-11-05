@@ -6,7 +6,7 @@ import {
   MAX_FINDINGS,
   MAX_SNIPPET,
 } from '@/components/scan/fix-prompt';
-import type { Finding, HintOutcome } from '@/domain/scan/engine';
+import type { Finding, HintOutcome } from '@/domain/scan/outcome';
 
 /** A finding with the given message. */
 const finding = (message: string, extra: Partial<Finding> = {}): Finding => ({

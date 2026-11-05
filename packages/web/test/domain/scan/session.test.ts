@@ -1,8 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { ProblemError } from '@/components/api/problem-message';
-import type { HintInfo } from '@/domain/scan/catalogue';
-import type { HintOutcome } from '@/domain/scan/engine';
+import type { HintInfo, HintOutcome } from '@/domain/scan/outcome';
 import { runScan } from '@/domain/scan/session';
 
 const info = (id: string): HintInfo => ({

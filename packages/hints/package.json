@@ -17,57 +17,46 @@
   },
   "imports": {
     "#hint": {
-      "browser": "./dist/browser/hint.js",
       "default": "hint"
     },
     "#net": {
       "types": "./types/net.d.ts",
-      "browser": "./dist/browser/net.js",
       "default": "./dist/node/net.js"
     },
     "#tls": {
       "types": "./types/tls.d.ts",
-      "browser": "./dist/browser/tls.js",
       "default": "./dist/node/tls.js"
     },
     "#child_process": {
       "types": "./types/child_process.d.ts",
-      "browser": "./dist/browser/child-process.js",
       "default": "./dist/node/child-process.js"
     },
     "#crypto": {
       "types": "./types/crypto.d.ts",
-      "browser": "./dist/browser/crypto.js",
       "default": "./dist/node/crypto.js"
     },
     "#http": {
       "types": "./types/http.d.ts",
-      "browser": "./dist/browser/http.js",
       "default": "./dist/node/http.js"
     },
     "#https": {
       "types": "./types/https.d.ts",
-      "browser": "./dist/browser/http.js",
       "default": "./dist/node/https.js"
     },
     "#fs/promises": {
       "types": "./types/fs-promises.d.ts",
-      "browser": "./dist/browser/fs.js",
       "default": "./dist/node/fs-promises.js"
     },
     "#os": {
       "types": "./types/os.d.ts",
-      "browser": "./dist/browser/fs.js",
       "default": "./dist/node/os.js"
     },
     "#path": {
       "types": "./types/path.d.ts",
-      "browser": "./dist/browser/fs.js",
       "default": "./dist/node/path.js"
     },
     "#url": {
       "types": "./types/url.d.ts",
-      "browser": "./dist/browser/url.js",
       "default": "./dist/node/url.js"
     }
   },

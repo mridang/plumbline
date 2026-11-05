@@ -6,12 +6,10 @@ export default {
   workspaces: {
     'packages/web': {
       // As in the sibling apps: OpenNext reads its config by name when it
-      // builds the Worker, the scan worker is started by URL, not imported,
-      // the MCP views are bundled to standalone pages by build:views, and the
+      // builds the Worker, the MCP views are bundled to standalone pages by build:views, and the
       // build scripts run from npm scripts.
       entry: [
         'open-next.config.ts',
-        'src/domain/scan/worker.ts',
         'src/views/report.tsx',
         'src/views/domain-list.tsx',
         'scripts/*.mjs',

@@ -4,7 +4,7 @@
     "title": "plumbline API",
     "version": "0.0.1",
     "summary": "Scan websites in the browser, and keep domains, their checks and their reports.",
-    "description": "The REST contract under `/api` follows the [Zalando RESTful API Guidelines](https://opensource.zalando.com/restful-api-guidelines/) with the deviations in the `api-design` skill: JSON properties are snake_case, timestamps are RFC 3339, and every error is `application/problem+json`.\n\nThe checks run in the visitor's browser. A browser may not read another site's headers or body, so the page starts a scan here, which checks the address and signs a scan id, and then asks for each fetch the checks make through that scan. Nothing is stored: the id carries the address and when the scan ends, signed so it cannot be made up.\n\nScanning and the list of checks are public. Keeping domains, choosing their checks, saving reports and the account need a sign-in with Google (`/auth/login`), which sets the `plumbline_session` cookie; those routes declare `session` security, answer `401` without a live session, and `403` for a request that changes something from another site. Every query is scoped to the signed-in person, so another person's domain is `404`.\n\nRequests are rate limited by the platform (`RL_SCAN` for starting scans and `RL_FETCH` for their fetches, per address; `RL_API` for the rest of `/api`), and a blocked request is answered with `429` and `Retry-After`. On top of that one page (its canonical URL) can be scanned once every five minutes, by anyone; a second scan within that time is `429` with `Retry-After` set to the seconds left.\n\nOnly the REST contract under `/api` is described here. What is not REST sits outside it and is not part of the contract: the browser sign-in and link flows (`/auth/*`), the OAuth server (`/oauth/*`, `/.well-known/*`), the MCP endpoint (`/mcp`), the live stream (`/events`), the GitHub webhook (`/webhooks/github`), the badge image (`/badge/*`), the report pages (`/r/{id}`), `/csp/reports` and `/health`.\n\nTesting the whole contract as an ordinary person: every operation here can be called by one signed-in account, with its session cookie. There is no administrator role and no operation that needs one, so a test account sees nothing it could not see in the app.",
+    "description": "The REST contract under `/api` follows the [Zalando RESTful API Guidelines](https://opensource.zalando.com/restful-api-guidelines/) with the deviations in the `api-design` skill: JSON properties are snake_case, timestamps are RFC 3339, and every error is `application/problem+json`.\n\nThe checks run on the server, in a scanner container. The page starts a scan here, which checks the address and signs a scan id, and then asks for the run, which streams each check as it finishes. Nothing is stored: the id carries the address and when the scan ends, signed so it cannot be made up.\n\nScanning and the list of checks are public. Keeping domains, choosing their checks, saving reports and the account need a sign-in with Google (`/auth/login`), which sets the `plumbline_session` cookie; those routes declare `session` security, answer `401` without a live session, and `403` for a request that changes something from another site. Every query is scoped to the signed-in person, so another person's domain is `404`.\n\nRequests are rate limited by the platform (`RL_SCAN` for starting scans and running them, per address; `RL_API` for the rest of `/api`), and a blocked request is answered with `429` and `Retry-After`. On top of that one page (its canonical URL) can be scanned once every five minutes, by anyone; a second scan within that time is `429` with `Retry-After` set to the seconds left.\n\nOnly the REST contract under `/api` is described here. What is not REST sits outside it and is not part of the contract: the browser sign-in and link flows (`/auth/*`), the OAuth server (`/oauth/*`, `/.well-known/*`), the MCP endpoint (`/mcp`), the live stream (`/events`), the GitHub webhook (`/webhooks/github`), the badge image (`/badge/*`), the report pages (`/r/{id}`), `/csp/reports` and `/health`.\n\nTesting the whole contract as an ordinary person: every operation here can be called by one signed-in account, with its session cookie. There is no administrator role and no operation that needs one, so a test account sees nothing it could not see in the app.",
     "license": {
       "name": "Apache-2.0",
       "identifier": "Apache-2.0"
@@ -44,7 +44,7 @@
         "operationId": "createScan",
         "tags": ["scans"],
         "summary": "Start a scan of a website.",
-        "description": "Checks the address, puts it in its canonical form (lowercase host without a trailing dot, no default port, fragment or repeated slashes, no `utm_*` or click-id parameters, the rest of the query sorted by name) and signs a scan id for it, good for ten minutes. A page can be scanned once every five minutes; a second scan within that time is refused with `429`. Nothing else is stored and there is nothing to read back; the id is for the scan's fetches.",
+        "description": "Checks the address, puts it in its canonical form (lowercase host without a trailing dot, no default port, fragment or repeated slashes, no `utm_*` or click-id parameters, the rest of the query sorted by name) and signs a scan id for it, good for ten minutes. A page can be scanned once every five minutes; a second scan within that time is refused with `429`. Nothing else is stored and there is nothing to read back; the id is for the scan's run.",
         "security": [],
         "requestBody": {
           "required": true,
@@ -87,182 +87,6 @@
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
-          },
-          "503": {
-            "$ref": "#/components/responses/NotConfigured"
-          }
-        }
-      }
-    },
-    "/api/scans/{id}/fetches": {
-      "post": {
-        "operationId": "createScanFetch",
-        "tags": ["scans"],
-        "summary": "Fetch a resource on a scan's behalf.",
-        "description": "Fetches one public `http(s)` address with `GET` or `HEAD` and answers with its body as it came (at most 5 MiB), with its status, address and headers in `Upstream-*` headers. Redirects are not followed, so each hop is one call. Only the request headers listed under `headers` are passed on.",
-        "security": [],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "The id `POST /api/scans` answered with.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/FetchRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "What the target answered.",
-            "headers": {
-              "Upstream-Status": {
-                "description": "The target's HTTP status.",
-                "schema": {
-                  "type": "integer"
-                }
-              },
-              "Upstream-Url": {
-                "description": "The address that was fetched.",
-                "schema": {
-                  "type": "string",
-                  "format": "uri"
-                }
-              },
-              "Upstream-Headers": {
-                "description": "The target's headers as percent-encoded JSON `[name, value]` pairs, lower-case names, each `Set-Cookie` on its own.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "404": {
-            "description": "No such scan, or it has ended.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "413": {
-            "$ref": "#/components/responses/PayloadTooLarge"
-          },
-          "415": {
-            "$ref": "#/components/responses/UnsupportedMediaType"
-          },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests"
-          },
-          "502": {
-            "description": "The target did not answer.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "503": {
-            "$ref": "#/components/responses/NotConfigured"
-          }
-        }
-      }
-    },
-    "/api/scans/{id}/probes": {
-      "post": {
-        "operationId": "createScanProbe",
-        "tags": ["scans"],
-        "summary": "Make a TLS handshake on a scan's behalf.",
-        "description": "Has the prober container make one TLS handshake and answers with what it showed (version, cipher, ephemeral key, certificate chain, verification result, stapled OCSP response). HTTPS can only be probed on the host being scanned; SMTP with STARTTLS on port 25 can be probed on any public host. The container only connects to public addresses.",
-        "security": [],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "The id `POST /api/scans` answered with.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProbeRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "What the handshake showed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "404": {
-            "description": "No such scan, or it has ended.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "413": {
-            "$ref": "#/components/responses/PayloadTooLarge"
-          },
-          "415": {
-            "$ref": "#/components/responses/UnsupportedMediaType"
-          },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests"
-          },
-          "502": {
-            "description": "The handshake failed (the server refused it, or did not answer).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
           },
           "503": {
             "$ref": "#/components/responses/NotConfigured"
@@ -1299,7 +1123,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "The scan's id, for its fetches."
+            "description": "The scan's id, for its run."
           },
           "url": {
             "type": "string",
@@ -1309,33 +1133,9 @@
           "expires_at": {
             "type": "string",
             "format": "date-time",
-            "description": "When the scan's fetches stop being accepted."
+            "description": "When the scan's run stops being accepted."
           }
         }
-      },
-      "FetchRequest": {
-        "type": "object",
-        "required": ["url"],
-        "properties": {
-          "url": {
-            "type": "string",
-            "format": "uri",
-            "description": "A public http(s) address."
-          },
-          "method": {
-            "type": "string",
-            "enum": ["GET", "HEAD"],
-            "default": "GET"
-          },
-          "headers": {
-            "type": "object",
-            "description": "Request headers. Only `accept`, `accept-language`, `access-control-request-headers`, `access-control-request-method`, `if-modified-since`, `if-none-match`, `origin` and `range` are passed on.",
-            "additionalProperties": {
-              "type": "string"
-            }
-          }
-        },
-        "additionalProperties": false
       },
       "Check": {
         "type": "object",
@@ -1763,48 +1563,6 @@
             }
           }
         ]
-      },
-      "ProbeRequest": {
-        "type": "object",
-        "required": ["host", "port"],
-        "additionalProperties": false,
-        "properties": {
-          "host": {
-            "type": "string"
-          },
-          "port": {
-            "type": "integer",
-            "enum": [443, 25]
-          },
-          "starttls": {
-            "type": "string",
-            "enum": ["smtp"],
-            "description": "Only with port 25."
-          },
-          "min_version": {
-            "type": "string",
-            "enum": ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]
-          },
-          "max_version": {
-            "type": "string",
-            "enum": ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]
-          },
-          "ciphers": {
-            "type": "string",
-            "description": "An OpenSSL cipher list."
-          },
-          "sigalgs": {
-            "type": "string",
-            "description": "An OpenSSL signature algorithm list."
-          },
-          "ecdh_curve": {
-            "type": "string",
-            "description": "Colon separated key exchange groups."
-          },
-          "request_ocsp": {
-            "type": "boolean"
-          }
-        }
       },
       "Preview": {
         "type": "object",

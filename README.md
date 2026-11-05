@@ -20,7 +20,7 @@ The npm packages and the Docker image are released together; until the first rel
 
 ### On the website
 
-Go to [plumbline.apps.mrida.ng](https://plumbline.apps.mrida.ng) and type a domain. The checks run in your browser, through the site's Worker, so nothing needs installing. Sign in with Google to keep a list of domains, choose which checks run for each, and keep their reports. A browser cannot open raw connections, so the TLS, mail and socket checks show as skipped there; the CLI runs them. See [`packages/web`](packages/web/README.md).
+Go to [plumbline.apps.mrida.ng](https://plumbline.apps.mrida.ng) and type a domain. Every check runs on the server, so nothing needs installing. Sign in with Google to keep a list of domains, choose which checks run for each, and keep their reports. See [`packages/web`](packages/web/README.md).
 
 ### From the command line
 

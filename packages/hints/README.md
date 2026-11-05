@@ -68,10 +68,6 @@ devbox run -- npm pack ./packages/hints --pack-destination "$(mktemp -d)"
 
 `npm pack` prints the path of the tarball; install it with `npm install hint @hint/connector-puppeteer @hint/parser-html /path/to/mridang-webhint-hint-plumbline-0.0.0.tgz`.
 
-## In the browser
-
-The package also loads in a browser, which is how the [plumbline site](../web/README.md) runs it. It imports Node's socket, TLS, process, crypto and file modules through the conditional imports in `package.json` (`#net`, `#tls`, `#child_process`, …): Node gets `src/node/`, browsers get `src/browser/`, whose stand-ins refuse, so a hint that needs a raw connection is reported as skipped there.
-
 ## Development
 
 Commands run from the repository root through devbox. [`AGENTS.md`](../../AGENTS.md) explains how a hint is written, registered and tested.

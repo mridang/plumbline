@@ -6,7 +6,7 @@ import {
   isWebLink,
   placeOf,
 } from '@/components/scan/hint-row';
-import type { Finding, HintOutcome } from '@/domain/scan/engine';
+import type { Finding, HintOutcome } from '@/domain/scan/outcome';
 import { html } from '../render';
 
 /** A check with the given outcome. */

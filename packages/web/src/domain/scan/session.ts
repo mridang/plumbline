@@ -9,8 +9,7 @@
 
 import { ensureOk, ProblemError } from '@/components/api/problem-message';
 
-import type { HintInfo } from './catalogue';
-import type { HintOutcome } from './engine';
+import type { HintInfo, HintOutcome } from './outcome';
 import { readScan } from './stream';
 
 /** What the page is told as a scan goes on. */

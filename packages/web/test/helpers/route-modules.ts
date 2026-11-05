@@ -20,8 +20,6 @@ export const ROUTE_MODULES: Readonly<
   '/api/previews/{id}': () => import('@/app/api/previews/[id]/route'),
   '/api/push/configuration': () => import('@/app/api/push/configuration/route'),
   '/api/scans': () => import('@/app/api/scans/route'),
-  '/api/scans/{id}/fetches': () => import('@/app/api/scans/[id]/fetches/route'),
-  '/api/scans/{id}/probes': () => import('@/app/api/scans/[id]/probes/route'),
   '/api/scans/{id}/run': () => import('@/app/api/scans/[id]/run/route'),
   '/api/sessions': () => import('@/app/api/sessions/route'),
   '/api/sessions/self': () => import('@/app/api/sessions/self/route'),

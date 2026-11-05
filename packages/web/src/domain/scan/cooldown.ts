@@ -3,10 +3,10 @@
  *
  * The cooldown between scans of one page: a page (its canonical URL, see
  * `target.ts`) may be scanned once every {@link SCAN_COOLDOWN} window, by
- * anyone. A scan sends a few dozen requests to the site through the Worker, so
- * without it the app could be used to hammer a site, and a page does not
- * change in five minutes. The per-address limits at the edge (`RL_SCAN`,
- * `RL_FETCH`) stop one visitor from starting many scans; this stops many
+ * anyone. A scan sends a few hundred requests to the site from the scanner
+ * container, so without it the app could be used to hammer a site, and a page
+ * does not change in five minutes. The per-address limit at the edge
+ * (`RL_SCAN`) stops one visitor from starting many scans; this stops many
  * visitors from scanning one page.
  *
  * The counters are the shared fixed-window ones in D1 (`lib/rate-limit.ts`),

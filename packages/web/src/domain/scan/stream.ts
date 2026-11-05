@@ -12,8 +12,7 @@
 
 import { ProblemError } from '@/components/api/problem-message';
 
-import type { HintInfo } from './catalogue';
-import type { HintOutcome } from './engine';
+import type { HintInfo, HintOutcome } from './outcome';
 
 /** One line of the stream. */
 export type ScanLine =

@@ -5,7 +5,7 @@ import {
   ScanResults,
   type Scan,
 } from '@/components/scan/scan-results';
-import type { HintOutcome } from '@/domain/scan/engine';
+import type { HintOutcome } from '@/domain/scan/outcome';
 import { html } from '../render';
 
 /** A check with the given outcome. */

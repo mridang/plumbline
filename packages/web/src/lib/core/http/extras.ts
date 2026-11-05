@@ -19,13 +19,12 @@ import {
 } from '@/lib/core/http/edge-limits';
 
 /** The kinds of request this app counts besides the classes every app has. */
-type OwnClass =
-  'auth' | 'token' | 'register' | 'mcp' | 'mcpAnonymous' | 'scan' | 'fetch';
+type OwnClass = 'auth' | 'token' | 'register' | 'mcp' | 'mcpAnonymous' | 'scan';
 
 /**
  * Every class this app counts, with its binding (limits in `wrangler.jsonc`):
  * sign-in and approval flows are slow human actions, the token endpoint serves
- * assistants that share egress addresses, and scans fan out into many fetches.
+ * assistants that share egress addresses, and a scan runs every check on a container.
  */
 const CLASSES: Readonly<Record<OwnClass, ClassSpec>> = {
   auth: {
@@ -64,16 +63,10 @@ const CLASSES: Readonly<Record<OwnClass, ClassSpec>> = {
     periodSeconds: 60,
     style: 'problem',
   },
-  fetch: {
-    binding: 'RL_FETCH',
-    counted: 'address',
-    periodSeconds: 60,
-    style: 'problem',
-  },
 };
 
-/** A scan's fetches and TLS probes: `/api/scans/{id}/fetches` and `/api/scans/{id}/probes`. */
-const FETCHES = /^\/api\/scans\/[^/]+\/(fetches|probes)$/;
+/** A scan's run on the scanner container: `/api/scans/{id}/run`. It costs as much as starting a scan, so it is counted with scans. */
+const RUN = /^\/api\/scans\/[^/]+\/run$/;
 
 /**
  * The class of a request this app counts specially, or undefined when it is one
@@ -102,10 +95,10 @@ function ownClass(request: Request): OwnClass | undefined {
   if (request.method !== 'POST') {
     return undefined;
   }
-  if (pathname === '/api/scans') {
+  if (pathname === '/api/scans' || RUN.test(pathname)) {
     return 'scan';
   }
-  return FETCHES.test(pathname) ? 'fetch' : undefined;
+  return undefined;
 }
 
 /** What this app counts, and how a request is sorted into it. */

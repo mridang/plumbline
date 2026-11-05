@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { FixPromptBox } from '@/components/scan/fix-prompt-box';
-import type { HintOutcome } from '@/domain/scan/engine';
+import type { HintOutcome } from '@/domain/scan/outcome';
 import { html } from '../render';
 
 const hint = (status: HintOutcome['status']): HintOutcome => ({

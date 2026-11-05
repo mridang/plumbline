@@ -6,7 +6,7 @@
  * outcomes first inside each section.
  */
 
-import type { HintOutcome } from '@/domain/scan/engine';
+import type { HintOutcome } from '@/domain/scan/outcome';
 import { compareText } from '@/lib/intl';
 
 /** An outcome, as the engine names it. */

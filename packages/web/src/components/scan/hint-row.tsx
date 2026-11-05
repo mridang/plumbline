@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 
 import { cn } from '@/components/ui/cn';
-import type { Finding, FindingLink, HintOutcome } from '@/domain/scan/engine';
+import type { Finding, FindingLink, HintOutcome } from '@/domain/scan/outcome';
 
 import { STATUS_LABELS, type Status } from './results';
 

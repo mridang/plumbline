@@ -1,7 +1,7 @@
 /**
  * @packageDocumentation
  *
- * `#fs/promises` under Node: Node's own module. Browsers get `src/browser/` instead (see
+ * `#fs/promises` under Node: Node's own module (see
  * `imports` in package.json).
  */
 

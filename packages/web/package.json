@@ -45,8 +45,6 @@
   "homepage": "https://github.com/mridang/plumbline/tree/master/packages/web",
   "bugs": "https://github.com/mridang/plumbline/issues",
   "devDependencies": {
-    "@hint/utils-dom": "^2.2.4",
-    "@hint/utils-types": "^1.2.1",
     "@modelcontextprotocol/core": "^2.4.0",
     "@modelcontextprotocol/ext-apps": "^2.0.4",
     "@mridang/webhint-hint-plumbline": "*",
@@ -62,7 +60,6 @@
     "eslint-plugin-drizzle": "^0.2.3",
     "hint": "^7.1.13",
     "jose": "^6.2.14",
-    "miniflare": "5.20261023.3-beta",
     "next": "16.4.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

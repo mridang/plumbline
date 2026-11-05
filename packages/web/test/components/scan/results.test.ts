@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { countByStatus, matches, sectionsOf } from '@/components/scan/results';
-import type { HintOutcome } from '@/domain/scan/engine';
+import type { HintOutcome } from '@/domain/scan/outcome';
 
 /** A hint with the given id, outcome and section. */
 function hint(

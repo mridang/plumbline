@@ -9,7 +9,7 @@
  * scanned address and the findings goes in.
  */
 
-import type { Finding, HintOutcome } from '@/domain/scan/engine';
+import type { Finding, HintOutcome } from '@/domain/scan/outcome';
 
 import { placeOf } from './hint-row';
 import { sectionsOf } from './results';

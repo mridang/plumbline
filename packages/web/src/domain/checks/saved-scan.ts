@@ -7,7 +7,7 @@
  * removed from the hints package is still shown, under its id.
  */
 
-import type { HintOutcome } from '@/domain/scan/engine';
+import type { HintOutcome } from '@/domain/scan/outcome';
 import type { ReportResource } from '@/domain/api/report-resource';
 import { findCheck } from '@/domain/checks/catalogue';
 

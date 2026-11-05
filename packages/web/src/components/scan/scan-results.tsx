@@ -3,7 +3,7 @@
 import { useState, type ReactElement } from 'react';
 
 import { cn } from '@/components/ui/cn';
-import type { HintOutcome } from '@/domain/scan/engine';
+import type { HintOutcome } from '@/domain/scan/outcome';
 
 import { FixPromptBox } from './fix-prompt-box';
 import { HintRow } from './hint-row';

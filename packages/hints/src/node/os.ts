@@ -1,7 +1,7 @@
 /**
  * @packageDocumentation
  *
- * `#os` under Node: Node's own module. Browsers get `src/browser/` instead (see
+ * `#os` under Node: Node's own module (see
  * `imports` in package.json).
  */
 

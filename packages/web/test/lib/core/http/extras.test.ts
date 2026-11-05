@@ -53,12 +53,6 @@ describe('EDGE_LIMITS', () => {
         periodSeconds: 60,
         style: 'problem',
       },
-      fetch: {
-        binding: 'RL_FETCH',
-        counted: 'address',
-        periodSeconds: 60,
-        style: 'problem',
-      },
     });
   });
 
@@ -92,22 +86,21 @@ describe('EDGE_LIMITS', () => {
     expect(classOf(pathname, method)).toBe('auth');
   });
 
-  it('leaves a GET of a scan fetch path to the API class', () => {
-    expect(classOf('/api/scans/abc.def/fetches')).toBe('api');
+  it('leaves a GET of a scan run path to the API class', () => {
+    expect(classOf('/api/scans/abc.def/run')).toBe('api');
   });
 
   it('puts starting a scan in its own class', () => {
     expect(classOf('/api/scans', 'POST')).toBe('scan');
   });
 
-  it('puts a scan fetch in its own class', () => {
-    expect(classOf('/api/scans/abc.def/fetches', 'POST')).toBe('fetch');
-    expect(classOf('/api/scans/abc.def/probes', 'POST')).toBe('fetch');
+  it('counts a scan run with the scans', () => {
+    expect(classOf('/api/scans/abc.def/run', 'POST')).toBe('scan');
   });
 
   it('leaves other scan paths to the API class', () => {
     expect(classOf('/api/scans/abc.def', 'POST')).toBe('api');
-    expect(classOf('/api/scans/a/b/fetches', 'POST')).toBe('api');
+    expect(classOf('/api/scans/a/b/run', 'POST')).toBe('api');
   });
 
   it.each([

@@ -1,7 +1,7 @@
 /**
  * @packageDocumentation
  *
- * `#net` under Node: Node's own module. Browsers get `src/browser/` instead (see
+ * `#net` under Node: Node's own module (see
  * `imports` in package.json).
  */
 

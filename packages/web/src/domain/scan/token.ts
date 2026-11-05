@@ -4,9 +4,9 @@
  * A scan's id: the address being scanned and when the scan ends, signed with
  * the app's `SCAN_SECRET` so nobody can make one up. Nothing is stored; the id
  * carries all there is to know, and the signature proves the app issued it.
- * Only a holder of a live id may have the Worker fetch on a scan's behalf (see
- * `forward.ts`), so the fetches cannot be had without first asking for a scan,
- * which is rate limited, and stop when the scan ends.
+ * Only a holder of a live id may have the scanner container run a scan (see
+ * `run.ts`), so a run cannot be had without first asking for a scan, which is
+ * rate limited, and stops being accepted when the scan ends.
  *
  * The id is `<payload>.<signature>`, both base64url: the payload is the JSON
  * `{"u": url, "e": expiry in epoch seconds}` and the signature its HMAC-SHA256.
