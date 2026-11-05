@@ -6,7 +6,7 @@
  * Every read is scoped by the owner, so one person never sees another's.
  */
 
-import { and, asc, eq, inArray, notInArray } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 
 import type { Database } from '@/domain/db/client';
 import {
@@ -195,6 +195,9 @@ export interface AnalysedRepo {
   readonly hosts: readonly string[];
 }
 
+/** How many repositories are forgotten per query (D1 binds at most 100 values). */
+const FORGET_BATCH = 50;
+
 /**
  * Store what was found in an installation's repositories. Repositories no
  * longer in `repos` are forgotten, so removing one from the installation
@@ -207,17 +210,29 @@ export async function saveRepos(
   repos: readonly AnalysedRepo[],
   timestamp = new Date().toISOString(),
 ): Promise<void> {
-  const names = repos.map((repo) => repo.full_name);
-  await db
-    .delete(githubRepos)
-    .where(
-      names.length === 0
-        ? eq(githubRepos.installation_id, installationId)
-        : and(
-            eq(githubRepos.installation_id, installationId),
-            notInArray(githubRepos.full_name, names),
+  // D1 allows 100 bound values in a query, so the forgotten repositories are
+  // found here and deleted in small groups, not with one long NOT IN list.
+  const keep = new Set(repos.map((repo) => repo.full_name));
+  const stored = await db
+    .select({ full_name: githubRepos.full_name })
+    .from(githubRepos)
+    .where(eq(githubRepos.installation_id, installationId));
+  const forgotten = stored
+    .map((row) => row.full_name)
+    .filter((name) => !keep.has(name));
+  for (let at = 0; at < forgotten.length; at += FORGET_BATCH) {
+    await db
+      .delete(githubRepos)
+      .where(
+        and(
+          eq(githubRepos.installation_id, installationId),
+          inArray(
+            githubRepos.full_name,
+            forgotten.slice(at, at + FORGET_BATCH),
           ),
-    );
+        ),
+      );
+  }
   for (const repo of repos) {
     await db
       .insert(githubRepos)

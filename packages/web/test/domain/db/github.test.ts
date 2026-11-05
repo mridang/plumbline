@@ -100,6 +100,31 @@ describe('repositories', () => {
     expect(await listRepos(db, 1)).toEqual([]);
   });
 
+  it('stays inside the 100 values D1 binds per query, however many repositories there are', async () => {
+    const made = sqliteDatabase(...APP_MIGRATIONS);
+    const prepare = made.raw.prepare.bind(made.raw);
+    made.raw.prepare = (sql: string) => {
+      if ((sql.match(/\?/g) ?? []).length > 100) {
+        throw new Error('too many SQL variables');
+      }
+      return prepare(sql);
+    };
+    const names = Array.from({ length: 180 }, (_, i) => `a/r${i}`);
+    await saveRepos(
+      made.db,
+      1,
+      100,
+      names.map((n) => repo(n)),
+    );
+    await saveRepos(
+      made.db,
+      1,
+      100,
+      names.slice(0, 100).map((n) => repo(n)),
+    );
+    expect(await listRepos(made.db, 1)).toHaveLength(100);
+  });
+
   it("keeps one person's repositories from another", async () => {
     const db = empty();
     await saveRepos(db, 1, 100, [repo('a/b')]);
