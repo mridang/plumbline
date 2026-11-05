@@ -97,7 +97,7 @@ export default async function GitHubPage({
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3">
                   <a
-                    href="/api/github/connect?install=1"
+                    href="/auth/github/link?install=1"
                     className={buttonClass({ variant: 'accent' })}
                   >
                     Install on another account
@@ -115,13 +115,13 @@ export default async function GitHubPage({
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3">
                   <a
-                    href="/api/github/connect?install=1"
+                    href="/auth/github/link?install=1"
                     className={buttonClass({ variant: 'accent' })}
                   >
                     Install the GitHub app
                   </a>
                   <a
-                    href="/api/github/connect"
+                    href="/auth/github/link"
                     className={buttonClass({ variant: 'outline' })}
                   >
                     Already installed? Connect

@@ -252,7 +252,7 @@ const char *verify_error(long code) {
 /* Writes a certificate's name as `{"CN":..,"O":..,"C":..}`. */
 void name_json(FILE *out, X509_NAME *name) {
   static const struct { int nid; const char *key; } parts[] = {
-      {NID_commonName, "CN"}, {NID_organizationName, "O"}, {NID_countryName, "C"}};
+      {NID_commonName, "common_name"}, {NID_organizationName, "organization"}, {NID_countryName, "country"}};
   int first = 1;
   fputc('{', out);
   for (int i = 0; i < 3; i++) {
@@ -288,7 +288,7 @@ void cert_json(FILE *out, X509 *cert) {
   name_json(out, X509_get_subject_name(cert));
   fputs(",\"issuer\":", out);
   name_json(out, X509_get_issuer_name(cert));
-  fputs(",\"subjectaltname\":\"", out);
+  fputs(",\"subject_alt_names\":\"", out);
   GENERAL_NAMES *names = X509_get_ext_d2i(cert, NID_subject_alt_name, NULL, NULL);
   int first = 1;
   for (int i = 0; names && i < sk_GENERAL_NAME_num(names); i++) {
@@ -307,7 +307,7 @@ void cert_json(FILE *out, X509 *cert) {
   time_json(out, X509_get0_notAfter(cert));
   BIGNUM *serial = ASN1_INTEGER_to_BN(X509_get_serialNumber(cert), NULL);
   char *hex = serial ? BN_bn2hex(serial) : NULL;
-  fputs(",\"serialNumber\":", out);
+  fputs(",\"serial_number\":", out);
   js(out, hex ? hex : "");
   OPENSSL_free(hex);
   BN_free(serial);
@@ -317,17 +317,17 @@ void cert_json(FILE *out, X509 *cert) {
   fputc('"', out);
   EVP_PKEY *key = X509_get0_pubkey(cert);
   int kind = key ? EVP_PKEY_base_id(key) : 0;
-  fprintf(out, ",\"keyType\":\"%s\",\"bits\":%d",
+  fprintf(out, ",\"key_type\":\"%s\",\"bits\":%d",
           kind == EVP_PKEY_RSA ? "RSA" : kind == EVP_PKEY_EC ? "EC" : kind ? OBJ_nid2sn(kind) : "",
           key ? EVP_PKEY_bits(key) : 0);
   if (key && EVP_PKEY_base_id(key) == EVP_PKEY_EC) {
     char curve[64] = "";
     size_t n = 0;
     EVP_PKEY_get_utf8_string_param(key, "group", curve, sizeof curve, &n);
-    fputs(",\"asn1Curve\":", out);
+    fputs(",\"asn1_curve\":", out);
     js(out, curve);
   }
-  fputs(",\"signatureAlgorithm\":", out);
+  fputs(",\"signature_algorithm\":", out);
   js(out, OBJ_nid2ln(X509_get_signature_nid(cert)));
   fputc('}', out);
 }
@@ -373,9 +373,9 @@ void handshake(int fd, const struct request *r) {
   js(out, SSL_get_version(ssl));
   fputs(",\"cipher\":{\"name\":", out);
   js(out, SSL_CIPHER_get_name(cipher));
-  fputs(",\"standardName\":", out);
+  fputs(",\"standard_name\":", out);
   js(out, SSL_CIPHER_standard_name(cipher));
-  fprintf(out, "},\"authorized\":%s,\"authorizationError\":", verdict == X509_V_OK ? "true" : "false");
+  fprintf(out, "},\"authorized\":%s,\"authorization_error\":", verdict == X509_V_OK ? "true" : "false");
   if (verdict == X509_V_OK) fputs("null", out); else js(out, verify_error(verdict));
 
   EVP_PKEY *tmp = NULL;

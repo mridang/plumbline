@@ -12,7 +12,7 @@ info:
 
     Requests are rate limited by the platform (`RL_SCAN` for starting scans and `RL_FETCH` for their fetches, per address; `RL_API` for the rest of `/api`), and a blocked request is answered with `429` and `Retry-After`. On top of that one page (its canonical URL) can be scanned once every five minutes, by anyone; a second scan within that time is `429` with `Retry-After` set to the seconds left.
 
-    `/csp/reports` sits outside `/api` and follows the browser Reporting API; it is documented here for completeness.
+    Outside `/api` sit what is not REST: the browser sign-in flows (`/auth/*`), the live stream (`/events`), the GitHub webhook (`/webhooks/github`), the badge image (`/badge/*`) and the report pages (`/r/{id}`). `/csp/reports` follows the browser Reporting API and is documented here for completeness.
   license:
     name: Apache-2.0
     identifier: Apache-2.0
@@ -24,6 +24,10 @@ tags:
   - name: checks
   - name: domains
   - name: account
+  - name: previews
+    description: What the checks on pull requests found.
+  - name: push
+    description: Web Push notifications.
   - name: reports
     description: Browser reports, outside the REST contract.
 paths:
@@ -123,6 +127,247 @@ paths:
           $ref: '#/components/responses/TooManyRequests'
         '502':
           description: The target did not answer.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          $ref: '#/components/responses/NotConfigured'
+  /api/scans/{id}/probes:
+    post:
+      operationId: createScanProbe
+      tags:
+        - scans
+      summary: Make a TLS handshake on a scan's behalf.
+      description: Has the prober container make one TLS handshake and answers with what it showed (version, cipher, ephemeral key, certificate chain, verification result, stapled OCSP response). HTTPS can only be probed on the host being scanned; SMTP with STARTTLS on port 25 can be probed on any public host. The container only connects to public addresses.
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The id `POST /api/scans` answered with.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProbeRequest'
+      responses:
+        '200':
+          description: What the handshake showed.
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: No such scan, or it has ended.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '502':
+          description: The handshake failed (the server refused it, or did not answer).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          $ref: '#/components/responses/NotConfigured'
+  /api/previews/{id}:
+    get:
+      operationId: getPreview
+      tags:
+        - previews
+      summary: What a check on a pull request found.
+      description: Public, so a tool that finds a failed check can read it without signing in; the random id in the address, which the check links to, is the only key. It is made once for a commit and never changes, so it is kept by its id, never by age.
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The report.
+          headers:
+            Cache-Control:
+              description: 'public, max-age=31536000, immutable'
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preview'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/github/syncs:
+    post:
+      operationId: createGithubSync
+      tags:
+        - account
+      summary: Read the person's GitHub installations again.
+      description: Reads the installations of the app the person connected, so repositories added since, and changes to where they are deployed, show up.
+      security:
+        - session: []
+      responses:
+        '200':
+          description: What was found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GithubSync'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/NotConfigured'
+  /api/users/self/github:
+    delete:
+      operationId: deleteGithub
+      tags:
+        - account
+      summary: Forget the connected GitHub account.
+      description: Forgets the account, its installations and the repositories found. Domains already added stay, and the app stays installed on GitHub until it is uninstalled there.
+      security:
+        - session: []
+      responses:
+        '204':
+          description: Forgotten.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/push/configuration:
+    get:
+      operationId: getPushConfiguration
+      tags:
+        - push
+      summary: The key a browser subscribes to Web Push with.
+      security:
+        - session: []
+      responses:
+        '200':
+          description: The VAPID public key.
+          headers:
+            Cache-Control:
+              description: 'private, max-age=3600'
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [vapid_public_key]
+                properties:
+                  vapid_public_key:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/users/self/push/subscriptions:
+    post:
+      operationId: createPushSubscription
+      tags:
+        - push
+      summary: Turn notifications on for a browser.
+      description: Registers the browser's Web Push subscription for the person. Registering the same endpoint again replaces its keys (browsers rotate them) and its owner (a device can change hands).
+      security:
+        - session: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushSubscription'
+      responses:
+        '200':
+          description: Already registered.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushSubscriptionId'
+        '201':
+          description: Registered.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushSubscriptionId'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/users/self/push/subscriptions/{id}:
+    delete:
+      operationId: deletePushSubscription
+      tags:
+        - push
+      summary: Turn notifications off for a browser.
+      security:
+        - session: []
+      parameters:
+        - $ref: '#/components/parameters/PushSubscriptionId'
+      responses:
+        '204':
+          description: Forgotten.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/users/self/push/subscriptions/{id}/tests:
+    post:
+      operationId: createPushSubscriptionTest
+      tags:
+        - push
+      summary: Send a test notification to a browser.
+      security:
+        - session: []
+      parameters:
+        - $ref: '#/components/parameters/PushSubscriptionId'
+      responses:
+        '204':
+          description: The push service took it.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '502':
+          description: The push service refused the notification.
           content:
             application/problem+json:
               schema:
@@ -848,6 +1093,110 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/Connection'
+    ProbeRequest:
+      type: object
+      required: [host, port]
+      additionalProperties: false
+      properties:
+        host:
+          type: string
+        port:
+          type: integer
+          enum: [443, 25]
+        starttls:
+          type: string
+          enum: [smtp]
+          description: Only with port 25.
+        min_version:
+          type: string
+          enum: [TLSv1, TLSv1.1, TLSv1.2, TLSv1.3]
+        max_version:
+          type: string
+          enum: [TLSv1, TLSv1.1, TLSv1.2, TLSv1.3]
+        ciphers:
+          type: string
+          description: An OpenSSL cipher list.
+        sigalgs:
+          type: string
+          description: An OpenSSL signature algorithm list.
+        ecdh_curve:
+          type: string
+          description: Colon separated key exchange groups.
+        request_ocsp:
+          type: boolean
+    Preview:
+      type: object
+      required:
+        [id, repo, sha, url, errors, warnings, hints, created_at, findings]
+      properties:
+        id:
+          type: string
+          format: uuid
+        repo:
+          type: string
+        sha:
+          type: string
+        url:
+          type: string
+          format: uri
+        errors:
+          type: integer
+        warnings:
+          type: integer
+        hints:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        findings:
+          type: array
+          items:
+            type: object
+            required: [id, name, severity, message, reference]
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              severity:
+                type: string
+                enum: [error, warning, hint]
+              message:
+                type: string
+              reference:
+                type: [string, 'null']
+    GithubSync:
+      type: object
+      required: [repositories, deployed, domains_added]
+      properties:
+        repositories:
+          type: integer
+        deployed:
+          type: integer
+        domains_added:
+          type: integer
+    PushSubscription:
+      type: object
+      required: [endpoint, keys]
+      properties:
+        endpoint:
+          type: string
+          format: uri
+        keys:
+          type: object
+          required: [p256dh, auth]
+          properties:
+            p256dh:
+              type: string
+            auth:
+              type: string
+    PushSubscriptionId:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          description: The lower-case hex SHA-256 of the endpoint.
     Problem:
       type: object
       required:
@@ -921,6 +1270,13 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
   parameters:
+    PushSubscriptionId:
+      name: id
+      in: path
+      required: true
+      description: The id that `POST /api/users/self/push/subscriptions` answered with.
+      schema:
+        type: string
     Limit:
       name: limit
       in: query

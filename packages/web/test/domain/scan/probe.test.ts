@@ -18,12 +18,12 @@ describe('parseProbeRequest', () => {
       parse({
         host: 'Example.com',
         port: 443,
-        minVersion: 'TLSv1.2',
-        maxVersion: 'TLSv1.3',
+        min_version: 'TLSv1.2',
+        max_version: 'TLSv1.3',
         ciphers: 'ECDHE-RSA-AES128-GCM-SHA256:@SECLEVEL=0',
         sigalgs: 'RSA+SHA256',
-        ecdhCurve: 'prime256v1:X25519',
-        requestOCSP: true,
+        ecdh_curve: 'prime256v1:X25519',
+        request_ocsp: true,
       }),
     ).toEqual({
       ok: true,
@@ -60,8 +60,8 @@ describe('parseProbeRequest', () => {
     [{ host: 'example.com', port: 25, starttls: 'imap' }, 'starttls'],
     [{ host: '127.0.0.1', port: 443 }, 'host'],
     [{ host: 'localhost', port: 443 }, 'host'],
-    [{ host: 'example.com', port: 443, minVersion: 'SSLv3' }, 'minVersion'],
-    [{ host: 'example.com', port: 443, maxVersion: 5 }, 'maxVersion'],
+    [{ host: 'example.com', port: 443, min_version: 'SSLv3' }, 'min_version'],
+    [{ host: 'example.com', port: 443, max_version: 5 }, 'max_version'],
     [
       { host: 'example.com', port: 443, ciphers: ['ok-name', '!aNULL'] },
       'ciphers',
@@ -74,7 +74,7 @@ describe('parseProbeRequest', () => {
       },
       'ciphers',
     ],
-    [{ host: 'example.com', port: 443, requestOCSP: 'yes' }, 'requestOCSP'],
+    [{ host: 'example.com', port: 443, request_ocsp: 'yes' }, 'request_ocsp'],
     [{ port: 443 }, 'host'],
   ])('refuses %j naming %s', (body, field) => {
     const result = parse(body as Record<string, unknown>);

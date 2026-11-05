@@ -71,12 +71,12 @@ export function parseProbeRequest(
     host,
     port,
     starttls,
-    minVersion,
-    maxVersion,
+    min_version: minVersion,
+    max_version: maxVersion,
     ciphers,
     sigalgs,
-    ecdhCurve,
-    requestOCSP,
+    ecdh_curve: ecdhCurve,
+    request_ocsp: requestOCSP,
   } = body;
   if (typeof host !== 'string' || !isPublicWebUrl(`https://${host}/`)) {
     errors.push('host: must be a public host name');
@@ -98,8 +98,8 @@ export function parseProbeRequest(
     errors.push('host: HTTPS can only be probed on the host being scanned');
   }
   for (const [name, value] of [
-    ['minVersion', minVersion],
-    ['maxVersion', maxVersion],
+    ['min_version', minVersion],
+    ['max_version', maxVersion],
   ] as const) {
     if (
       value !== undefined &&
@@ -115,10 +115,10 @@ export function parseProbeRequest(
     errors.push('sigalgs: must be an OpenSSL signature algorithm list');
   }
   if (ecdhCurve !== undefined && !listOf(ecdhCurve, CURVE_LIST, MAX_CURVES)) {
-    errors.push('ecdhCurve: must be a list of key exchange groups');
+    errors.push('ecdh_curve: must be a list of key exchange groups');
   }
   if (requestOCSP !== undefined && typeof requestOCSP !== 'boolean') {
-    errors.push('requestOCSP: must be true or false');
+    errors.push('request_ocsp: must be true or false');
   }
   if (errors.length > 0) {
     return { ok: false, errors };

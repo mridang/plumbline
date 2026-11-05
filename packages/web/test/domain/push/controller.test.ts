@@ -64,7 +64,7 @@ afterEach(() => {
 
 const post = (body: unknown) =>
   collection.POST(
-    new Request(`${ORIGIN}/api/push/subscriptions`, {
+    new Request(`${ORIGIN}/api/users/self/push/subscriptions`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
@@ -92,13 +92,13 @@ describe('GET /api/push/configuration', () => {
   });
 });
 
-describe('POST /api/push/subscriptions', () => {
+describe('POST /api/users/self/push/subscriptions', () => {
   it('registers a subscription for the person, then answers 200 for the same one', async () => {
     const first = await post(GOOD);
     expect(first.status).toBe(201);
     const id = await subscriptionId(ENDPOINT);
     expect(first.headers.get('location')).toBe(
-      `${ORIGIN}/api/push/subscriptions/${id}`,
+      `${ORIGIN}/api/users/self/push/subscriptions/${id}`,
     );
     expect((await post(GOOD)).status).toBe(200);
     expect(owners()).toEqual([{ endpoint: ENDPOINT, user_id: 7 }]);
@@ -120,10 +120,10 @@ describe('POST /api/push/subscriptions', () => {
   });
 });
 
-describe('DELETE /api/push/subscriptions/{id}', () => {
+describe('DELETE /api/users/self/push/subscriptions/{id}', () => {
   const remove = async (id: string) =>
     item.DELETE(
-      new Request(`${ORIGIN}/api/push/subscriptions/${id}`, {
+      new Request(`${ORIGIN}/api/users/self/push/subscriptions/${id}`, {
         method: 'DELETE',
       }),
       { params: Promise.resolve({ id }) },
@@ -147,10 +147,10 @@ describe('DELETE /api/push/subscriptions/{id}', () => {
   });
 });
 
-describe('POST /api/push/subscriptions/{id}/tests', () => {
+describe('POST /api/users/self/push/subscriptions/{id}/tests', () => {
   const test = async (id: string) =>
     tests.POST(
-      new Request(`${ORIGIN}/api/push/subscriptions/${id}/tests`, {
+      new Request(`${ORIGIN}/api/users/self/push/subscriptions/${id}/tests`, {
         method: 'POST',
       }),
       { params: Promise.resolve({ id }) },

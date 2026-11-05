@@ -7,23 +7,26 @@ import { ensureOk, problemText } from '@/components/api/problem-message';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/site/confirm-dialog';
 
-/** Post to a GitHub endpoint of this site. */
-export async function postTo(
+/** Call a GitHub endpoint of this site. */
+export async function callOn(
   path: string,
+  method: 'POST' | 'DELETE',
   transport: typeof fetch = (url, init) => fetch(url, init),
 ): Promise<void> {
-  await ensureOk(await transport(path, { method: 'POST' }));
+  await ensureOk(await transport(path, { method }));
 }
 
-/** A button that posts to `path`, then reloads the page to show what changed. */
+/** A button that calls `path` with `method`, then reloads the page to show what changed. */
 function ActionButton({
   path,
+  method,
   label,
   busyLabel,
   failure,
   confirm,
 }: Readonly<{
   path: string;
+  method: 'POST' | 'DELETE';
   label: string;
   busyLabel: string;
   failure: string;
@@ -38,7 +41,7 @@ function ActionButton({
     setBusy(true);
     setProblem(null);
     try {
-      await postTo(path);
+      await callOn(path, method);
       router.refresh();
     } catch (error) {
       setProblem(problemText(error, failure));
@@ -78,7 +81,8 @@ function ActionButton({
 export function SyncButton(): ReactElement {
   return (
     <ActionButton
-      path="/api/github/sync"
+      path="/api/github/syncs"
+      method="POST"
       label="Refresh from GitHub"
       busyLabel="Reading repositories…"
       failure="The repositories could not be read."
@@ -90,7 +94,8 @@ export function SyncButton(): ReactElement {
 export function DisconnectButton(): ReactElement {
   return (
     <ActionButton
-      path="/api/github/disconnect"
+      path="/api/users/self/github"
+      method="DELETE"
       label="Disconnect GitHub"
       busyLabel="Disconnecting…"
       failure="GitHub could not be disconnected."

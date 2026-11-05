@@ -52,7 +52,8 @@ export default async function DashboardPage(): Promise<ReactElement> {
         intro="Every repository and site, and how each stands right now. Checks show as they run."
       />
       <Container className="pb-16">
-        <LiveOverview initial={repos} />
+        {/* A fresh reading from the server starts the list again from it. */}
+        <LiveOverview key={JSON.stringify(repos)} initial={repos} />
         {badges.length > 0 ? (
           <section aria-labelledby="badges" className="mt-12 max-w-3xl">
             <h2 id="badges" className="text-lg font-semibold">

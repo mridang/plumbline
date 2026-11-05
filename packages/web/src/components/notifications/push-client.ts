@@ -92,7 +92,7 @@ async function checked(response: Response): Promise<Response> {
 
 /** The address of one of the person's subscriptions. */
 async function addressOf(subscription: BrowserSubscription): Promise<string> {
-  return `/api/push/subscriptions/${await subscriptionId(subscription.endpoint)}`;
+  return `/api/users/self/push/subscriptions/${await subscriptionId(subscription.endpoint)}`;
 }
 
 /** The browser's current subscription, if it has one. */
@@ -138,7 +138,7 @@ export async function enablePush(host: PushHost): Promise<BrowserSubscription> {
       ),
     }));
   await checked(
-    await host.fetcher('/api/push/subscriptions', {
+    await host.fetcher('/api/users/self/push/subscriptions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',

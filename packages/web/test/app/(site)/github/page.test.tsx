@@ -86,12 +86,12 @@ describe('GitHubPage', () => {
     setUp({});
     const out = await page();
     expect(out).toContain('GitHub is not set up on this site');
-    expect(out).not.toContain('/api/github/connect');
+    expect(out).not.toContain('/auth/github/link');
   });
 
   it('offers to install the app or connect an existing installation', async () => {
     const out = await page();
-    expect(out).toContain('href="/api/github/connect?install=1"');
+    expect(out).toContain('href="/auth/github/link?install=1"');
     expect(out).toContain('Already installed? Connect');
   });
 

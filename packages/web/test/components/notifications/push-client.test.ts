@@ -113,7 +113,7 @@ describe('enablePush', () => {
     });
     expect(calls.map((c) => `${c.method} ${c.url}`)).toEqual([
       'GET /api/push/configuration',
-      'POST /api/push/subscriptions',
+      'POST /api/users/self/push/subscriptions',
     ]);
     expect(JSON.parse(String(calls[1]?.body))).toEqual({
       endpoint: ENDPOINT,
@@ -144,7 +144,7 @@ describe('enablePush', () => {
 
   it('throws the server’s refusal', async () => {
     const { host } = browser({
-      responses: { 'POST /api/push/subscriptions': 400 },
+      responses: { 'POST /api/users/self/push/subscriptions': 400 },
     });
     await expect(enablePush(host)).rejects.toThrow();
   });
@@ -158,7 +158,7 @@ describe('disablePush', () => {
     expect(calls).toEqual([
       expect.objectContaining({
         method: 'DELETE',
-        url: `/api/push/subscriptions/${id}`,
+        url: `/api/users/self/push/subscriptions/${id}`,
       }),
     ]);
     expect(subscription.unsubscribe).toHaveBeenCalled();
@@ -168,7 +168,7 @@ describe('disablePush', () => {
     const id = await subscriptionId(ENDPOINT);
     const { host, subscription } = browser({
       existing: true,
-      responses: { [`DELETE /api/push/subscriptions/${id}`]: 404 },
+      responses: { [`DELETE /api/users/self/push/subscriptions/${id}`]: 404 },
     });
     await disablePush(host);
     expect(subscription.unsubscribe).toHaveBeenCalled();
@@ -188,7 +188,7 @@ describe('sendTest', () => {
     const id = await subscriptionId(ENDPOINT);
     expect(calls[0]).toMatchObject({
       method: 'POST',
-      url: `/api/push/subscriptions/${id}/tests`,
+      url: `/api/users/self/push/subscriptions/${id}/tests`,
     });
   });
 
@@ -200,7 +200,9 @@ describe('sendTest', () => {
     const id = await subscriptionId(ENDPOINT);
     const { host } = browser({
       existing: true,
-      responses: { [`POST /api/push/subscriptions/${id}/tests`]: 502 },
+      responses: {
+        [`POST /api/users/self/push/subscriptions/${id}/tests`]: 502,
+      },
     });
     await expect(sendTest(host)).rejects.toThrow();
   });

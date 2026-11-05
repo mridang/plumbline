@@ -514,7 +514,7 @@ describe('handleDeployment of a preview', () => {
       errors: 1,
     });
     expect(String((check?.body['output'] as { text: string }).text)).toContain(
-      `${link}/json`,
+      `https://plumbline.test/api/previews/${id}`,
     );
   });
 

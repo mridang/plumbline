@@ -31,7 +31,7 @@ const TONES = {
 
 /**
  * What a check on a pull request found, as a page that needs no sign-in: the
- * link in the check opens it. The same report is at `/r/{id}/json` for tools.
+ * link in the check opens it. The same report is at `/api/previews/{id}` for tools.
  */
 export default async function ReportPage({
   params,

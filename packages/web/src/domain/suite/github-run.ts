@@ -174,7 +174,7 @@ async function keepReport(
     return {
       reportId: id,
       reportUrl: `${appUrl}/r/${id}`,
-      dataUrl: `${appUrl}/r/${id}/json`,
+      dataUrl: `${appUrl}/api/previews/${id}`,
     };
   } catch (error) {
     console.error('report not kept', report.repo, error);

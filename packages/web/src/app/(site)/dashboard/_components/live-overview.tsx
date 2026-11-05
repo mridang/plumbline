@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactElement } from 'react';
 
 import { Card } from '@/components/ui/card';
@@ -60,29 +61,22 @@ function Site({ site }: Readonly<{ site: SiteStatus }>): ReactElement {
 export function LiveOverview({
   initial,
 }: Readonly<{ initial: readonly RepoStatus[] }>): ReactElement {
+  const router = useRouter();
   const [repos, setRepos] = useState<readonly RepoStatus[]>(initial);
+
   const [live, setLive] = useState(false);
 
   useEffect(() => {
     if (typeof EventSource === 'undefined') {
       return undefined;
     }
-    const source = new EventSource('/api/events');
+    const source = new EventSource('/events');
     let timer: ReturnType<typeof setTimeout> | undefined;
+    // What the page was drawn with is read again by the server, not by a call
+    // of ours: the page is the one place that knows how to read it.
     const reread = (): void => {
       clearTimeout(timer);
-      timer = setTimeout(() => {
-        void fetch('/api/overview', { credentials: 'same-origin' })
-          .then((response): Promise<{ repos?: RepoStatus[] } | null> =>
-            response.ok ? response.json() : Promise.resolve(null),
-          )
-          .then((body) => {
-            if (body?.repos) {
-              setRepos(body.repos);
-            }
-          })
-          .catch(() => undefined);
-      }, READ_AGAIN_MS);
+      timer = setTimeout(() => router.refresh(), READ_AGAIN_MS);
     };
     // A fresh stream starts from now, so read once on every (re)connection to
     // pick up whatever happened while it was away.
@@ -102,7 +96,7 @@ export function LiveOverview({
       clearTimeout(timer);
       source.close();
     };
-  }, []);
+  }, [router]);
 
   const counts = tally(repos);
   const total = Object.values(counts).reduce((sum, n) => sum + n, 0);

@@ -1,7 +1,9 @@
 /**
  * @packageDocumentation
  *
- * `/api/push`: the Web Push endpoints, all for the signed-in person. They read
+ * The Web Push endpoints, all for the signed-in person: the key at
+ * `/api/push/configuration` and the person's own subscriptions under
+ * `/api/users/self/push/subscriptions`. They read
  * the key a browser subscribes with, register and forget the browser's
  * subscription (a subscription belongs to whoever registered it, and nobody
  * else can see, test or remove it), and send a test notification to one.
@@ -123,7 +125,7 @@ export function createPushConfiguration(
 }
 
 /**
- * `POST /api/push/subscriptions`: register the browser's Web Push subscription
+ * `POST /api/users/self/push/subscriptions`: register the browser's Web Push subscription
  * for the signed-in person. A repeated call for the same `endpoint` replaces the
  * keys (browsers rotate them) and the owner (a device can change hands). 201
  * with a `Location` for a new subscription, 200 for one already registered, 400
@@ -165,7 +167,7 @@ export function createSubscriptionsCollection(
       return { id: await subscriptionId(subscription.endpoint), existed };
     },
     encode: (result) => {
-      const location = `/api/push/subscriptions/${result.id}`;
+      const location = `/api/users/self/push/subscriptions/${result.id}`;
       return result.existed
         ? ok({ id: result.id }, { location })
         : created({ id: result.id }, location);
@@ -174,7 +176,7 @@ export function createSubscriptionsCollection(
 }
 
 /**
- * `DELETE /api/push/subscriptions/{id}`: forget one of the person's Web Push
+ * `DELETE /api/users/self/push/subscriptions/{id}`: forget one of the person's Web Push
  * subscriptions. 204, 401 without a session, 403 cross-site, 404 when there is
  * no such subscription of theirs.
  */
@@ -215,7 +217,7 @@ function notifierOf(): PushNotifier | null {
 }
 
 /**
- * `POST /api/push/subscriptions/{id}/tests`: send a test notification to one of
+ * `POST /api/users/self/push/subscriptions/{id}/tests`: send a test notification to one of
  * the person's subscriptions. 204 when the push service took it, 401 without a
  * session, 403 cross-site, 404 when there is no such subscription of theirs
  * (also when the push service says it is gone, and it is forgotten), 502 when

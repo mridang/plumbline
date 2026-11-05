@@ -1,7 +1,7 @@
 /**
  * @packageDocumentation
  *
- * The id of a push subscription as it appears in `/api/push/subscriptions/{id}`:
+ * The id of a push subscription as it appears in `/api/users/self/push/subscriptions/{id}`:
  * the lowercase hex SHA-256 of its endpoint. The endpoint itself is a long,
  * secret-ish URL that does not belong in a path, and a browser can always
  * recompute the id from the subscription it holds.
