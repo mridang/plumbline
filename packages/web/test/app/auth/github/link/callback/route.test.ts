@@ -14,7 +14,6 @@ import { createDatabase } from '@/domain/db/client';
 import { APP_MIGRATIONS } from '../../../../../lib/core/db/migrations';
 import {
   installCloudflareContext,
-  settleBackground,
   sqliteD1,
 } from '../../../../../lib/core/db/sqlite-d1';
 import {
@@ -66,7 +65,6 @@ describe('GET /auth/github/link/callback', () => {
     expect(
       made.raw.prepare('SELECT user_id, repo FROM user_repositories').all(),
     ).toEqual([{ user_id: 7, repo: 'acme/site' }]);
-    await settleBackground();
     const db = createDatabase(made.d1);
     expect(await getLink(db, 7)).toMatchObject({
       github_id: 9,

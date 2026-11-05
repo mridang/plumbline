@@ -25,7 +25,6 @@ import {
 } from '@/domain/github/service';
 import { getCurrentUser } from '@/lib/core/auth/current-user';
 import { appOrigin } from '@/lib/core/origin';
-import { runInBackground } from '@/lib/core/runtime';
 
 /** Back to the GitHub page with the one-time cookie cleared. */
 function back(origin: string, flag: string | null): NextResponse {
@@ -84,6 +83,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     console.error('github sign-in failed', error);
     return back(origin, 'failed');
   }
-  runInBackground(syncAllOf(db, config, user.id));
+  // Read now, not in the background: the person lands on /github straight
+  // after this, and the list must already be there. A failing installation
+  // is skipped inside syncAllOf, so this cannot fail the connection.
+  await syncAllOf(db, config, user.id);
   return back(origin, null);
 }
