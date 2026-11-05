@@ -87,7 +87,6 @@ const report = (
   level: 'error',
   findings,
   source: null,
-  browserOnly: [],
   problems: [],
   ...more,
 });
@@ -433,7 +432,6 @@ describe('publishCheckRun', () => {
     sha: 'abc1234',
     url: 'https://pr-3.site.test/',
     source: null,
-    browserOnly: [],
     problems: [],
   };
 

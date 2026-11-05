@@ -34,6 +34,7 @@ const finding = (...messages: string[]): SuiteRun => ({
     id: RULES[i] ?? 'seo-viewport',
     findings: [{ severity: 'warning', message }],
   })),
+  skipped: [],
 });
 
 const setup = async (...hosts: string[]) => {
@@ -338,23 +339,16 @@ describe('checkDeployment, the sites together and the commits apart', () => {
 });
 
 describe('checkSite', () => {
-  it('keeps the previous findings when the page has not changed', async () => {
+  it('calls a run unchanged when it found what the previous one did', async () => {
     const db = await setup('a.test');
     const site = { host: 'a.test', repo: 'acme/site', sha: null };
-    await checkSite(db, 1, site, { run: async () => finding('slow') });
-    const seen: (string | null)[] = [];
-    const outcome = await checkSite(db, 1, site, {
-      run: async (_url, hash) => {
-        seen.push(hash);
-        return {
-          url: 'https://a.test/',
-          status: 200,
-          hash: 'slow',
-          checks: null,
-        };
-      },
+    const first = await checkSite(db, 1, site, {
+      run: async () => finding('slow'),
     });
-    expect(seen).toEqual(['slow']);
+    expect(first.unchanged).toBe(false);
+    const outcome = await checkSite(db, 1, site, {
+      run: async () => finding('slow'),
+    });
     expect(outcome).toMatchObject({ unchanged: true });
     expect(outcome.changes).toEqual({ added: [], fixed: [] });
     const [latest] = await latestRuns(db, 1, 'a.test', 1);
@@ -380,6 +374,7 @@ describe('checkSite', () => {
           findings: [{ severity: 'error', message: 'd' }],
         },
       ],
+      skipped: [],
     });
     const outcome = await checkSite(db, 1, site, {
       run,
@@ -396,46 +391,33 @@ describe('checkSite', () => {
     ]);
   });
 
-  it('reads an unchanged page again when the rules are not the ones of the previous run', async () => {
+  it('does not call a run unchanged when the rules are not the ones of the previous run', async () => {
     const db = await setup('a.test');
     const site = { host: 'a.test', repo: 'acme/site', sha: null };
+    const run = async () => finding('slow');
     await checkSite(db, 1, site, {
-      run: async () => finding('slow'),
+      run,
       levels: new Map([['seo-viewport', 'on']]),
     });
-    const seen: (string | null)[] = [];
-    const run = async (
-      _url: string,
-      hash: string | null,
-    ): Promise<SuiteRun> => {
-      seen.push(hash);
-      return finding('slow');
-    };
-    await checkSite(db, 1, site, {
+    const changed = await checkSite(db, 1, site, {
       run,
       levels: new Map([['seo-viewport', 'warn']]),
     });
-    await checkSite(db, 1, site, {
+    expect(changed.unchanged).toBe(false);
+    const same = await checkSite(db, 1, site, {
       run,
       levels: new Map([['seo-viewport', 'warn']]),
     });
-    expect(seen).toEqual([null, 'slow']);
+    expect(same.unchanged).toBe(true);
   });
 
-  it('reads the page when it has no earlier run to compare with', async () => {
+  it('is not unchanged when there is no earlier run to compare with', async () => {
     const db = await setup('a.test');
     const outcome = await checkSite(
       db,
       1,
       { host: 'a.test', repo: null, sha: null },
-      {
-        run: async () => ({
-          url: 'https://a.test/',
-          status: 200,
-          hash: 'h',
-          checks: null,
-        }),
-      },
+      { run: async () => finding('slow') },
     );
     expect(outcome.unchanged).toBe(false);
   });
@@ -498,53 +480,42 @@ describe('checkSite, telling the live dashboard', () => {
   });
 });
 
-describe('checkSite, asking the site whether its page changed', () => {
+describe('checkSite, a check the scanner could not run', () => {
   const site = { host: 'a.test', repo: 'acme/site', sha: 'abc' };
-  const NOW = new Date('2026-01-01T00:00:00.000Z');
-  const withHeaders = (over: Partial<SuiteRun>): SuiteRun => ({
-    ...finding('one'),
-    validators: { etag: '"v1"', lastModified: null },
-    ...over,
+  const previous = finding('old problem');
+  const skippedNow = (): SuiteRun => ({
+    url: 'https://x.test/',
+    status: 200,
+    hash: 'other',
+    checks: [],
+    skipped: ['seo-viewport'],
   });
 
-  it('asks the site whether the page changed, with the validators of the previous run', async () => {
+  it('keeps what the previous run found with that check, so a timeout does not look like a fix', async () => {
     const db = await setup('a.test');
-    await checkSite(db, 1, site, {
-      run: async () => withHeaders({}),
-      now: () => NOW,
-    });
-    const asked: unknown[] = [];
-    await checkSite(db, 1, site, {
-      run: async (_url, _hash, validators) => {
-        asked.push(validators);
-        return withHeaders({});
-      },
-      now: () => NOW,
-    });
-    expect(asked).toEqual([{ etag: '"v1"', lastModified: null }]);
-  });
-
-  it('asks nothing of a site that has not given validators', async () => {
-    const db = await setup('a.test');
-    await checkSite(db, 1, site, { run: async () => finding('one') });
-    const asked: unknown[] = [];
-    await checkSite(db, 1, site, {
-      run: async (_url, _hash, validators) => {
-        asked.push(validators);
-        return finding('one');
-      },
-    });
-    expect(asked).toEqual([null]);
-  });
-
-  it('keeps the status of the previous run when the site answers 304', async () => {
-    const db = await setup('a.test');
-    await checkSite(db, 1, site, { run: async () => withHeaders({}) });
+    await checkSite(db, 1, site, { run: async () => previous });
     const outcome = await checkSite(db, 1, site, {
-      run: async (_url, hash) =>
-        withHeaders({ status: 304, hash: hash ?? '', checks: null }),
+      run: async () => skippedNow(),
     });
-    expect(outcome.unchanged).toBe(true);
-    expect((await latestRuns(db, 1, 'a.test', 1))[0]?.status).toBe(200);
+    expect(outcome.findings?.map((f) => f.message)).toEqual(['old problem']);
+    expect(outcome.changes).toEqual({ added: [], fixed: [] });
+  });
+
+  it('keeps nothing for a check whose rule is off now', async () => {
+    const db = await setup('a.test');
+    await checkSite(db, 1, site, {
+      run: async () => previous,
+      levels: new Map([['seo-viewport', 'on']]),
+    });
+    const outcome = await checkSite(db, 1, site, {
+      run: async () => skippedNow(),
+      levels: new Map([['seo-viewport', 'on']]),
+    });
+    expect(outcome.findings).toHaveLength(1);
+    const off = await checkSite(db, 1, site, {
+      run: async () => skippedNow(),
+      levels: new Map([['seo-links', 'on']]),
+    });
+    expect(off.findings).toEqual([]);
   });
 });

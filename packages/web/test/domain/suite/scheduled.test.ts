@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 
 import { createDatabase } from '@/domain/db/client';
 import { addDomain } from '@/domain/db/domains';
@@ -7,6 +7,7 @@ import {
   RECHECK_AFTER_MS,
   SCHEDULED_BATCH,
   checkDueSites,
+  scheduled,
 } from '@/domain/suite/scheduled';
 import type { SuiteRun } from '@/domain/suite/run';
 
@@ -18,6 +19,7 @@ const page = async (): Promise<SuiteRun> => ({
   status: 200,
   hash: 'h',
   checks: [],
+  skipped: [],
 });
 
 const start = new Date('2026-01-01T00:00:00.000Z');
@@ -53,5 +55,57 @@ describe('checkDueSites', () => {
     expect(first).toHaveLength(SCHEDULED_BATCH);
     const second = await checkDueSites(db, { run: page, now: () => start });
     expect(second).toHaveLength(2);
+  });
+});
+
+describe('scheduled', () => {
+  it('scans the due sites in the scanner container, and returns once they are checked', async () => {
+    const made = sqliteD1(...APP_MIGRATIONS);
+    const db = createDatabase(made.d1);
+    await addDomain(db, 1, 'a.test', 'acme/a');
+    const asked: string[] = [];
+    const stream = [
+      { type: 'ready', finalUrl: 'https://a.test/', status: 200 },
+      {
+        type: 'done',
+        outcome: {
+          id: 'seo-viewport',
+          status: 'failed',
+          findings: [{ level: 'error', message: 'no viewport' }],
+        },
+      },
+      { type: 'end' },
+    ]
+      .map((line) => `${JSON.stringify(line)}\n`)
+      .join('');
+    const env = {
+      DB: made.d1,
+      SCANNER: {
+        idFromName: (name: string) => name,
+        get: () => ({
+          fetch: async (request: Request) => {
+            asked.push(await request.text());
+            return new Response(stream);
+          },
+        }),
+      },
+    };
+    await scheduled({} as ScheduledController, env as never, {} as never);
+    expect(asked).toEqual(['{"url":"https://a.test/"}']);
+    const [run] = await latestRuns(db, 1, 'a.test', 1);
+    expect(run?.findings.map((f) => f.message)).toEqual(['no viewport']);
+  });
+
+  it('records nothing for a site when the scanner is not there', async () => {
+    const made = sqliteD1(...APP_MIGRATIONS);
+    const db = createDatabase(made.d1);
+    await addDomain(db, 1, 'a.test', 'acme/a');
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    await scheduled(
+      {} as ScheduledController,
+      { DB: made.d1 } as never,
+      {} as never,
+    );
+    expect(await latestRuns(db, 1, 'a.test', 1)).toEqual([]);
   });
 });

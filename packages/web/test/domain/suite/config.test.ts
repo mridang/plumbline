@@ -6,7 +6,7 @@ import {
   parseLevel,
   resolveRules,
 } from '@/domain/suite/config';
-import { RULE_SETS, SERVER_RULES } from '@/domain/suite/rules';
+import { RULE_SETS } from '@/domain/suite/rules';
 
 const resolve = (
   text: string | null,
@@ -65,7 +65,6 @@ describe('with no configuration file', () => {
       issues: 'error',
       source: null,
       problems: [],
-      browserOnly: [],
     });
   });
 
@@ -87,7 +86,7 @@ describe('a configuration file', () => {
   it('can start from the advanced set', () => {
     const rules = resolve('extends: plumbline:advanced\n');
     expect([...rules.levels.keys()].toSorted()).toEqual(
-      [...SERVER_RULES].toSorted(),
+      Object.keys(RULE_SETS['plumbline:advanced']!).toSorted(),
     );
   });
 
@@ -190,22 +189,19 @@ describe('names that are not rule sets', () => {
   );
 });
 
-describe('rules that only run in the browser scan', () => {
-  it('are accepted and listed, so the person is told they are not run here', () => {
+describe('rules for the checks the scanner container runs', () => {
+  it('accept any check of the catalogue, the TLS, DNS and mail ones too', () => {
     const rules = resolve('rules:\n  dnssec-valid: error\n  mail-spf: warn\n');
     expect(rules.problems).toEqual([]);
-    expect(rules.browserOnly).toEqual(['dnssec-valid', 'mail-spf']);
+    expect(rules.levels.get('dnssec-valid')).toBe('error');
+    expect(rules.levels.get('mail-spf')).toBe('warn');
   });
 
-  it('are not listed when they are off', () => {
-    expect(resolve('rules:\n  dnssec-valid: off\n').browserOnly).toEqual([]);
-  });
-
-  it('can be turned on for previews only', () => {
+  it('can turn one on for previews only', () => {
     const text =
       'environments:\n  preview:\n    rules:\n      dnssec-valid: error\n';
-    expect(resolve(text, 'preview').browserOnly).toEqual(['dnssec-valid']);
-    expect(resolve(text, 'production').browserOnly).toEqual([]);
+    expect(resolve(text, 'preview').levels.get('dnssec-valid')).toBe('error');
+    expect(resolve(text, 'production').levels.has('dnssec-valid')).toBe(false);
   });
 });
 

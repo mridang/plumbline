@@ -5,10 +5,13 @@
  * push to a Wrangler configuration, reads the installation again so the
  * deployed hosts stay right. A push of `plumbline.yaml` to the default branch
  * checks the live site again under the new rules, and an issue a person
- * closes, reopens or deletes is noted so the app treats it accordingly. A successful deployment runs the server-side checks, once per
+ * closes, reopens or deletes is noted so the app treats it accordingly. A
+ * successful deployment runs every check in the scanner container, once per
  * delivery (GitHub retries are recognised by their id): on the repository's
  * sites when it is the live site, and on the deployment's own address when it
- * is a preview. Anything else is acknowledged and ignored.
+ * is a preview. A scan takes longer than a delivery may keep working, so the
+ * delivery only leaves a job with the container's Durable Object, which runs
+ * it. Anything else is acknowledged and ignored.
  */
 
 import { NextResponse } from 'next/server';
@@ -25,10 +28,8 @@ import {
 import { githubConfig, syncAsApp } from '@/domain/github/service';
 import { verifySignature } from '@/domain/github/webhook';
 import { classifyDeployment } from '@/domain/suite/deploy';
-import { handleDeployment } from '@/domain/suite/github-run';
 import { handleIssueEvent } from '@/domain/suite/issue-events';
-import { createLive } from '@/domain/live/live';
-import { readLimits } from '@/domain/suite/limits';
+import { enqueueJob, type ScannerNamespace } from '@/domain/suite/scanner';
 import { appOrigin } from '@/lib/core/origin';
 import { getEnv, runInBackground } from '@/lib/core/runtime';
 
@@ -52,6 +53,18 @@ function rereadsInstallation(
     );
   }
   return event === 'push' && touchesWrangler(delivery);
+}
+
+/** Leaves a deployment's checks with the scanner's Durable Object; a failure is logged, never raised. */
+async function leaveJob(job: Parameters<typeof enqueueJob>[1]): Promise<void> {
+  try {
+    await enqueueJob(
+      getEnv().SCANNER as unknown as ScannerNamespace | undefined,
+      job,
+    );
+  } catch (error) {
+    console.error('suite job not kept', job.deployed.repo, error);
+  }
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -82,18 +95,23 @@ export async function POST(request: Request): Promise<NextResponse> {
     const deployed = classifyDeployment(delivery);
     const owner = await ownerOfInstallation(db, installationId);
     const deliveryId = request.headers.get('x-github-delivery');
+    // A preview with no address or commit has nothing to check or to report on.
+    const checkable =
+      deployed !== null &&
+      (deployed.environment === 'production' ||
+        (deployed.url !== null && deployed.sha !== null));
     if (
       deployed &&
+      checkable &&
       owner !== undefined &&
       (deliveryId === null || (await claimDelivery(db, deliveryId)))
     ) {
-      runInBackground(
-        handleDeployment(db, config, installationId, owner, deployed, {
-          limits: readLimits(getEnv()),
-          live: createLive(db, getEnv()),
-          appUrl: appOrigin(request),
-        }),
-      );
+      await leaveJob({
+        installationId,
+        userId: owner,
+        deployed,
+        appUrl: appOrigin(request),
+      });
     }
   } else if (event === 'issues') {
     await handleIssueEvent(db, config.slug, delivery);
@@ -111,26 +129,18 @@ export async function POST(request: Request): Promise<NextResponse> {
         touchesConfig(delivery) &&
         isDefaultBranchPush(delivery)
       ) {
-        runInBackground(
-          handleDeployment(
-            db,
-            config,
-            installationId,
-            owner,
-            {
-              environment: 'production',
-              repo,
-              sha: delivery.after ?? null,
-              url: null,
-            },
-            {
-              force: true,
-              limits: readLimits(getEnv()),
-              live: createLive(db, getEnv()),
-              appUrl: appOrigin(request),
-            },
-          ),
-        );
+        await leaveJob({
+          installationId,
+          userId: owner,
+          deployed: {
+            environment: 'production',
+            repo,
+            sha: delivery.after ?? null,
+            url: null,
+          },
+          force: true,
+          appUrl: appOrigin(request),
+        });
       }
     }
   }

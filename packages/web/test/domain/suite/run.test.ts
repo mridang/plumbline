@@ -1,119 +1,80 @@
-import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
+import { describe, expect, it } from '@jest/globals';
 
-import { resolve } from 'node:path';
+import { sha256Hex, suiteRunOf } from '@/domain/suite/run';
+import type { ScanOutcome, ScanResult } from '@/domain/suite/scanner';
 
-import { runSuite, type SuiteRun } from '@/domain/suite/run';
+const outcome = (
+  id: string,
+  status: ScanOutcome['status'],
+  messages: string[] = [],
+): ScanOutcome => ({
+  id,
+  status,
+  findings: messages.map((message) => ({ level: 'warning', message })),
+});
 
-import { inWorkerd } from '../../helpers/workerd';
+const scan = (...outcomes: ScanOutcome[]): ScanResult => ({
+  finalUrl: 'https://x.test/',
+  status: 200,
+  outcomes,
+});
 
-describe('runSuite', () => {
-  let worker: Awaited<ReturnType<typeof inWorkerd<SuiteRun>>>;
-
-  beforeAll(async () => {
-    worker = await inWorkerd<SuiteRun>(
-      resolve('test/helpers/suite-entry.ts'),
-      'runOnHtml',
+describe('sha256Hex', () => {
+  it('is the SHA-256 of the text in hex', async () => {
+    expect(await sha256Hex('abc')).toBe(
+      'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
     );
-  });
-
-  afterAll(async () => {
-    await worker.dispose();
-  });
-
-  it('fetches the page once and returns every check', async () => {
-    const run = await worker.run(
-      '<html><head><title>Hi</title></head><body><p>short</p></body></html>',
-    );
-    expect(run.status).toBe(200);
-    expect(run.checks).toHaveLength(16);
-    expect(run.hash).toMatch(/^[0-9a-f]{64}$/);
-  });
-
-  it('does not read a page again when it hashes to the previous run', async () => {
-    const twice = await inWorkerd<{ first: SuiteRun; second: SuiteRun }>(
-      resolve('test/helpers/suite-entry.ts'),
-      'runTwice',
-    );
-    try {
-      const { first, second } = await twice.run(
-        '<html><body>same</body></html>',
-      );
-      expect(first.checks).toHaveLength(16);
-      expect(second.checks).toBeNull();
-      expect(second.hash).toBe(first.hash);
-    } finally {
-      await twice.dispose();
-    }
-  });
-
-  it('reports what the page lacks', async () => {
-    const run = await worker.run('<html><body><p>short</p></body></html>');
-    const missing = (id: string) =>
-      run.checks?.find((check) => check.id === id)?.findings.length;
-    expect(missing('seo-viewport')).toBe(1);
-    expect(missing('seo-content-length')).toBe(1);
   });
 });
 
-describe('runSuite, where it will go', () => {
-  /** A response that says it ended up at `address`. */
-  const endingAt = (address: string): Response => {
-    const response = new Response('<html></html>');
-    Object.defineProperty(response, 'url', { value: address });
-    return response;
-  };
-
-  it('refuses a page whose redirects ended on a plain http address', async () => {
-    await expect(
-      runSuite('https://x.test/', null, async () => endingAt('http://x.test/')),
-    ).rejects.toThrow('redirected to http://x.test/, which is not https');
+describe('suiteRunOf', () => {
+  it('carries the address, status, the checks that ran and the ones that did not', async () => {
+    const run = await suiteRunOf(
+      scan(
+        outcome('seo-links', 'warned', ['Broken link.']),
+        outcome('agent-webmcp', 'skipped'),
+      ),
+    );
+    expect(run).toMatchObject({
+      url: 'https://x.test/',
+      status: 200,
+      checks: [
+        {
+          id: 'seo-links',
+          findings: [{ severity: 'warning', message: 'Broken link.' }],
+        },
+      ],
+      skipped: ['agent-webmcp'],
+    });
   });
 
-  describe('asking the site whether the page changed', () => {
-    it('sends the validators back with the request', async () => {
-      const seen: Record<string, string>[] = [];
-      await runSuite(
-        'https://a.test/',
-        'h',
-        async (_url, init) => {
-          seen.push(init.headers as Record<string, string>);
-          return new Response(null, { status: 304 });
-        },
-        { etag: '"v1"', lastModified: 'Mon, 01 Jan 2026 00:00:00 GMT' },
-      );
-      expect(seen[0]).toMatchObject({
-        'if-none-match': '"v1"',
-        'if-modified-since': 'Mon, 01 Jan 2026 00:00:00 GMT',
-      });
-    });
+  it('hashes what was found the same whatever order the checks finished in', async () => {
+    const a = outcome('a', 'warned', ['x']);
+    const b = outcome('b', 'passed');
+    expect((await suiteRunOf(scan(a, b))).hash).toBe(
+      (await suiteRunOf(scan(b, a))).hash,
+    );
+  });
 
-    it('reads nothing when the site answers 304, and keeps the hash', async () => {
-      const run = await runSuite(
-        'https://a.test/',
-        'previous-hash',
-        async () =>
-          new Response(null, {
-            status: 304,
-            headers: { etag: '"v2"' },
-          }),
-        { etag: '"v1"', lastModified: null },
-      );
-      expect(run).toMatchObject({
-        status: 304,
-        hash: 'previous-hash',
-        checks: null,
-        validators: { etag: '"v2"' },
-      });
-    });
+  it('hashes differently when a finding or the status differs', async () => {
+    const base = (await suiteRunOf(scan(outcome('a', 'warned', ['x'])))).hash;
+    expect(
+      (await suiteRunOf(scan(outcome('a', 'warned', ['y'])))).hash,
+    ).not.toBe(base);
+    expect(
+      (
+        await suiteRunOf({
+          ...scan(outcome('a', 'warned', ['x'])),
+          status: 500,
+        })
+      ).hash,
+    ).not.toBe(base);
+  });
 
-    it('keeps the old validators when a 304 gives none', async () => {
-      const run = await runSuite(
-        'https://a.test/',
-        'h',
-        async () => new Response(null, { status: 304 }),
-        { etag: '"v1"', lastModified: null },
-      );
-      expect(run.validators).toEqual({ etag: '"v1"', lastModified: null });
-    });
+  it('refuses a scan where every check was skipped, which found nothing out', async () => {
+    await expect(
+      suiteRunOf(scan(outcome('a', 'skipped'), outcome('b', 'skipped'))),
+    ).rejects.toThrow('ran no checks');
+    await expect(suiteRunOf(scan())).rejects.toThrow('ran no checks');
   });
 });

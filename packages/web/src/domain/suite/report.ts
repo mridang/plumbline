@@ -151,21 +151,12 @@ export function breakdown(
 }
 
 /** The part of a summary that says where the rules came from and what is wrong with them. */
-function rulesNote(
-  source: string | null,
-  browserOnly: readonly string[],
-  problems: readonly string[],
-): string {
+function rulesNote(source: string | null, problems: readonly string[]): string {
   const lines = [
     source
       ? `Rules from \`${source}\`.`
       : 'No `plumbline.yaml` in this repository, so the `plumbline:recommended` rules were used.',
   ];
-  if (browserOnly.length > 0) {
-    lines.push(
-      `${amount(browserOnly.length, 'rule')} you turned on only run in the browser scan, because a Worker cannot make those checks: ${browserOnly.map((id) => `\`${id}\``).join(', ')}.`,
-    );
-  }
   if (problems.length > 0) {
     lines.push(
       'Problems in the configuration:',
@@ -192,7 +183,6 @@ export interface RunReport {
   readonly findings: readonly StoredFinding[];
   /** The configuration file the rules came from; null when there is none. */
   readonly source: string | null;
-  readonly browserOnly: readonly string[];
   readonly problems: readonly string[];
   /** Where the full report can be opened without signing in. */
   readonly reportUrl?: string;
@@ -264,7 +254,7 @@ export function checkRunOutput(report: Readonly<RunReport>): {
       ].join('\n'),
     );
   }
-  parts.push(rulesNote(report.source, report.browserOnly, report.problems));
+  parts.push(rulesNote(report.source, report.problems));
   const text = [
     report.findings.length > 0 ? breakdown(report.findings) : 'Nothing found.',
     dataBlock(report),
@@ -295,7 +285,7 @@ export function issueText(
         issueMarker(host),
         `Plumbline checked ${report.url}${where} and found ${amount(reported.length, 'problem')}.`,
         breakdown(reported),
-        rulesNote(report.source, report.browserOnly, report.problems),
+        rulesNote(report.source, report.problems),
         'This issue is updated after each deployment and closed when the problems are gone. Change which rules run, or which findings open an issue, in `plumbline.yaml`.',
       ].join('\n\n'),
     ),

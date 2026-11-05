@@ -3,8 +3,10 @@ import { describe, expect, it } from '@jest/globals';
 import {
   FREE_LIMITS,
   PAID_LIMITS,
+  SCAN_CONCURRENCY,
   inBatches,
   readLimits,
+  scanLimits,
 } from '@/domain/suite/limits';
 
 describe('readLimits', () => {
@@ -48,5 +50,18 @@ describe('inBatches', () => {
     expect(await inBatches([1, 2], 0, (n) => Promise.resolve(n))).toEqual([
       1, 2,
     ]);
+  });
+});
+
+describe('scanLimits', () => {
+  it('lets no more scans run at once than the container takes, on any plan', () => {
+    expect(scanLimits(PAID_LIMITS).concurrency).toBe(SCAN_CONCURRENCY);
+    expect(scanLimits(FREE_LIMITS).concurrency).toBe(SCAN_CONCURRENCY);
+  });
+
+  it('keeps a lower concurrency and every other limit as it is', () => {
+    const low = { ...FREE_LIMITS, concurrency: 1 };
+    expect(scanLimits(low)).toEqual(low);
+    expect(scanLimits(PAID_LIMITS).maxSites).toBe(PAID_LIMITS.maxSites);
   });
 });

@@ -5,16 +5,24 @@
  * not been checked for a day, so a problem that did not come from a deployment
  * (a site that went down, a page changed from outside the repository) is still
  * noticed. Each trigger takes only a few sites, the ones checked longest ago,
- * because a Worker invocation has 50 subrequests and, on the Free plan, 10 ms
- * of CPU; the trigger fires often enough that every site is reached within the
- * day.
+ * because a scan takes the container tens of seconds; the trigger fires often
+ * enough that every site is reached within the
+ * day. Every check is run by the scanner container, so a trigger awaits its
+ * scans: the work is waiting for the container, not CPU.
  */
 
 import { createDatabase, type Database } from '@/domain/db/client';
 import { dueSites } from '@/domain/db/suite';
 import { createLive } from '@/domain/live/live';
-import { FREE_LIMITS, inBatches, readLimits } from '@/domain/suite/limits';
+import {
+  FREE_LIMITS,
+  inBatches,
+  readLimits,
+  scanLimits,
+} from '@/domain/suite/limits';
 import { checkSite, type Deps, type SiteOutcome } from '@/domain/suite/deploy';
+import { suiteRunOf } from '@/domain/suite/run';
+import { scanThrough, type ScannerNamespace } from '@/domain/suite/scanner';
 
 /** Sites checked by one trigger on the Free plan. */
 export const SCHEDULED_BATCH = FREE_LIMITS.scheduledBatch;
@@ -44,14 +52,16 @@ export async function checkDueSites(
   );
 }
 
-/** The Worker's `scheduled` handler. */
-export const scheduled: ExportedHandlerScheduledHandler<CloudflareEnv> = (
+/** The Worker's `scheduled` handler. It returns when the scans are done. */
+export const scheduled: ExportedHandlerScheduledHandler<CloudflareEnv> = async (
   _controller,
   env,
-  ctx,
 ) => {
   const db = createDatabase(env.DB);
-  ctx.waitUntil(
-    checkDueSites(db, { limits: readLimits(env), live: createLive(db, env) }),
-  );
+  const namespace = env.SCANNER as unknown as ScannerNamespace | undefined;
+  await checkDueSites(db, {
+    limits: scanLimits(readLimits(env)),
+    live: createLive(db, env),
+    run: async (url) => suiteRunOf(await scanThrough(namespace, url)),
+  });
 };

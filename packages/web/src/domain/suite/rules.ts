@@ -1,9 +1,8 @@
 /**
  * @packageDocumentation
  *
- * The rules the server can run, the two rule sets that ship with them, and
- * what a rule's level does to what it reports. A rule is a check of the
- * catalogue; a level says whether it runs and how loudly it reports, as in
+ * The two rule sets that ship with the app, and what a rule's level does to
+ * what it reports. A rule is a check of the catalogue; a level says whether it runs and how loudly it reports, as in
  * ESLint:
  *
  * - `off` turns the rule off,
@@ -22,11 +21,11 @@ import type { CheckResult, Finding } from '@/domain/suite/checks';
 export type Level = 'off' | 'on' | 'warn' | 'error';
 
 /**
- * The rules the Worker can run: the page checks that only need the page's
- * HTML and the response. The checks that need DNS, mail, a socket or a
- * certificate run in the browser scan, because a Worker cannot make them.
+ * The rules of the advanced set: the recommended ones and the advisory content
+ * and performance rules. Any check of the catalogue can be turned on by a
+ * configuration file; the scanner runs all of them.
  */
-export const SERVER_RULES = [
+const ADVANCED_RULES = [
   'icons-apple-touch-icon-missing',
   'seo-content-length',
   'seo-deprecated-html',
@@ -44,11 +43,6 @@ export const SERVER_RULES = [
   'technical-lazy-loading',
   'technical-response-time',
 ] as const;
-
-/** Whether `id` is a rule the server runs. */
-export function isServerRule(id: string): boolean {
-  return (SERVER_RULES as readonly string[]).includes(id);
-}
 
 /** The rules a site gets with no configuration: the ones whose findings are worth acting on. */
 const RECOMMENDED_RULES: readonly string[] = [
@@ -73,7 +67,7 @@ function setOf(ids: readonly string[]): RuleSet {
 /** The rule sets that ship with the app, by the name a configuration file extends. */
 export const RULE_SETS: Readonly<Record<string, RuleSet>> = {
   'plumbline:recommended': setOf(RECOMMENDED_RULES),
-  'plumbline:advanced': setOf(SERVER_RULES),
+  'plumbline:advanced': setOf(ADVANCED_RULES),
 };
 
 /** The rule set a site with no configuration uses. */

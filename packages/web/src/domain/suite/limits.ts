@@ -37,6 +37,17 @@ export const PAID_LIMITS: Limits = {
   cron: '*/10 * * * *',
 };
 
+/** Scans the container runs at once: each runs every check, so a few fill it. */
+export const SCAN_CONCURRENCY = 3;
+
+/** `limits`, with no more scans at once than the container takes. */
+export function scanLimits(limits: Readonly<Limits>): Limits {
+  return {
+    ...limits,
+    concurrency: Math.min(limits.concurrency, SCAN_CONCURRENCY),
+  };
+}
+
 /** The limits for the plan named in `WORKERS_PLAN`; Free when it is missing or unknown. */
 export function readLimits(env: Readonly<{ WORKERS_PLAN?: string }>): Limits {
   return env.WORKERS_PLAN?.trim().toLowerCase() === 'paid'

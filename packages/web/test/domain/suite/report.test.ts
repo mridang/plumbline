@@ -110,7 +110,6 @@ describe('checkRunOutput', () => {
   const base = {
     url: 'https://pr-3.site.test/',
     source: 'plumbline.yaml',
-    browserOnly: [],
     problems: [],
   };
 
@@ -138,18 +137,6 @@ describe('checkRunOutput', () => {
     ).toContain('`plumbline:recommended` rules were used');
   });
 
-  it('explains the rules that only run in the browser scan', () => {
-    const summary = checkRunOutput({
-      ...base,
-      browserOnly: ['dnssec-valid', 'mail-spf'],
-      findings: [],
-    }).summary;
-    expect(summary).toContain(
-      '2 rules you turned on only run in the browser scan',
-    );
-    expect(summary).toContain('`dnssec-valid`, `mail-spf`');
-  });
-
   it('lists the problems in the configuration', () => {
     const summary = checkRunOutput({
       ...base,
@@ -165,7 +152,6 @@ describe('checkRunOutput, short for people and complete for tools', () => {
   const base = {
     url: 'https://pr-3.site.test/',
     source: null,
-    browserOnly: [],
     problems: [],
     reportUrl: 'https://plumbline.test/r/abc',
     dataUrl: 'https://plumbline.test/r/abc/json',
@@ -207,7 +193,6 @@ describe('dataBlock', () => {
   const base = {
     url: 'https://pr-3.site.test/',
     source: null,
-    browserOnly: [],
     problems: [],
     reportUrl: 'https://plumbline.test/r/abc',
     dataUrl: 'https://plumbline.test/r/abc/json',
@@ -259,7 +244,6 @@ describe('issueText', () => {
     sha: 'abcdef123456',
     level: 'error' as const,
     source: null,
-    browserOnly: [],
     problems: [],
     findings: [found('error', 'e'), found('warning', 'w')],
   };
@@ -323,7 +307,6 @@ describe('what a hostile configuration can make the text hold', () => {
   const base = {
     url: 'https://pr-3.site.test/',
     source: 'plumbline.yaml',
-    browserOnly: [],
     findings: [],
   };
 

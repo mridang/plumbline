@@ -1,14 +1,13 @@
 /**
  * @packageDocumentation
  *
- * What a successful deployment on GitHub starts: the server-side checks on
- * each site found in that repository, compared with the previous run of the
- * same site so a deployment that broke something (or fixed it) is visible.
+ * What a successful deployment on GitHub starts: the checks on each site found
+ * in that repository, run by the scanner container and compared with the
+ * previous run of the same site so a deployment that broke something (or fixed
+ * it) is visible.
  *
- * A Worker invocation has 50 subrequests and, on the Free plan, 10 ms of CPU
- * (waiting for the site is not CPU). One run makes one request and reads the
- * page in one streaming pass, so a handful of sites fit in one delivery; the
- * rest are left for the next deployment.
+ * A scan is the container's work and takes tens of seconds, so a handful of
+ * sites are checked together and the rest are left for the next deployment.
  */
 
 import type { Database } from '@/domain/db/client';
@@ -22,8 +21,7 @@ import {
 } from '@/domain/suite/diff';
 import type { Live } from '@/domain/live/live';
 import { countsOf } from '@/domain/suite/report';
-import type { Validators } from '@/domain/suite/http-cache';
-import { runSuite, type SuiteRun } from '@/domain/suite/run';
+import type { SuiteRun } from '@/domain/suite/run';
 import { resolveRules } from '@/domain/suite/config';
 import { FREE_LIMITS, inBatches, type Limits } from '@/domain/suite/limits';
 import { applyLevels, fingerprintOf, type Level } from '@/domain/suite/rules';
@@ -117,7 +115,7 @@ export interface SiteOutcome {
   readonly host: string;
   /** Why nothing was checked, when that is so. */
   readonly skipped?: 'recent' | 'unreachable';
-  /** True when the page and the rules were the same as at the previous run, so it was not read again. */
+  /** True when the run found what the previous one did, under the same rules. */
   readonly unchanged?: boolean;
   readonly changes?: Changes;
   /** What the site has wrong now, under the rules of the run. */
@@ -131,11 +129,8 @@ type StoredRun = Awaited<ReturnType<typeof latestRuns>>[number];
 
 /** What the runs can be given in place of the real thing, for tests. */
 export interface Deps {
-  readonly run?: (
-    url: string,
-    previousHash: string | null,
-    validators?: Validators | null,
-  ) => Promise<SuiteRun>;
+  /** Scans a site and says what it found; throws when it cannot be scanned. */
+  readonly run?: (url: string) => Promise<SuiteRun>;
   readonly now?: () => Date;
   /** The levels of the rules to apply; the recommended rules when not given. */
   readonly levels?: ReadonlyMap<string, Level>;
@@ -147,9 +142,14 @@ export interface Deps {
   readonly force?: boolean;
 }
 
+/** Stands in for the scanner where none is given: a site cannot be scanned. */
+const NO_SCANNER = (): Promise<SuiteRun> =>
+  Promise.reject(new Error('No scanner is available.'));
+
 /**
- * Check one site and store the run. A page that has not changed since the
- * previous run is not read again: the new run keeps the previous findings.
+ * Check one site and store the run. The findings of a check the scanner could
+ * not run this time (it timed out) are those of the previous run, so a slow
+ * check does not make a problem look fixed and then found again.
  */
 export async function checkSite(
   db: Database,
@@ -158,9 +158,7 @@ export async function checkSite(
   deps: Deps = {},
   last?: StoredRun | null,
 ): Promise<SiteOutcome> {
-  const run =
-    deps.run ??
-    ((url, hash, validators) => runSuite(url, hash, fetch, validators));
+  const run = deps.run ?? NO_SCANNER;
   const now = deps.now ?? (() => new Date());
   const levels = deps.levels ?? DEFAULT_LEVELS;
   const rules = await fingerprintOf(levels);
@@ -177,14 +175,7 @@ export async function checkSite(
   await deps.live?.started(userId, where, now().toISOString());
   let result: SuiteRun;
   try {
-    // A page that has not changed is only skipped when the rules have not either.
-    result = await run(
-      url,
-      same ? (previous.hash ?? null) : null,
-      same && (previous.etag || previous.last_modified)
-        ? { etag: previous.etag, lastModified: previous.last_modified }
-        : null,
-    );
+    result = await run(url);
   } catch (error) {
     console.error('suite run failed', site.host, error);
     await deps.live?.finished(userId, where, {
@@ -194,10 +185,19 @@ export async function checkSite(
     });
     return { host: site.host, skipped: 'unreachable' };
   }
-  const unchanged = result.checks === null && previous !== undefined;
-  const findings = result.checks
-    ? findingsOf(applyLevels(result.checks, levels))
-    : (previous?.findings ?? []);
+  // What the previous run found stands for a check that did not run now, but
+  // only under the rules it was found with.
+  const carried =
+    same && previous
+      ? previous.findings.filter(
+          (found) => result.skipped.includes(found.id) && levels.has(found.id),
+        )
+      : [];
+  const findings = [
+    ...findingsOf(applyLevels(result.checks, levels)),
+    ...carried,
+  ];
+  const unchanged = same && previous.hash === result.hash;
   await recordRun(
     db,
     {
@@ -205,14 +205,10 @@ export async function checkSite(
       host: site.host,
       repo: site.repo,
       sha: site.sha,
-      // A 304 says the page is the previous one, so its status is too.
-      status:
-        result.status === 304 && previous ? previous.status : result.status,
+      status: result.status,
       hash: result.hash,
       rules,
       findings,
-      etag: result.validators?.etag ?? null,
-      lastModified: result.validators?.lastModified ?? null,
     },
     now().toISOString(),
   );

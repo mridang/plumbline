@@ -75,6 +75,7 @@ const failing =
     status: 200,
     hash: 'h',
     checks: [{ id, findings: [{ severity, message: 'it is wrong' }] }],
+    skipped: [],
   });
 
 const live: Deployment = {
@@ -204,7 +205,12 @@ describe('handleDeployment of the live site', () => {
             id: 'seo-links',
             findings: [{ severity: 'hint', message: 'links' }],
           },
+          {
+            id: 'dnssec-valid',
+            findings: [{ severity: 'warning', message: 'not signed' }],
+          },
         ],
+        skipped: [],
       }),
     });
     const issue = calls.find((c) => c.path.endsWith('/issues'));
@@ -212,7 +218,9 @@ describe('handleDeployment of the live site', () => {
     expect(body).toContain('links');
     expect(body).not.toContain('viewport');
     expect(body).toContain('Rules from `plumbline.yaml`.');
+    // A check the server could not run before (DNS) now counts like any other.
     expect(body).toContain('`dnssec-valid`');
+    expect(body).toContain('not signed');
   });
 
   it('opens no issue when the file says issues are off', async () => {
@@ -268,12 +276,7 @@ describe('handleDeployment of the live site', () => {
     await handleDeployment(db, config, 5, 7, live, {
       fetcher: second.fetcher,
       now: () => new Date(Date.now() + 3_600_000),
-      run: async (url, hash) => ({
-        url,
-        status: 200,
-        hash: hash ?? 'h',
-        checks: null,
-      }),
+      run: failing(),
     });
     expect(second.calls.some((c) => c.path.includes('/issues'))).toBe(false);
   });
@@ -299,6 +302,7 @@ describe('handleDeployment of the live site', () => {
           status: 200,
           hash: 'fixed',
           checks: [],
+          skipped: [],
         }),
       },
     );
@@ -329,12 +333,7 @@ describe('handleDeployment of the live site', () => {
       {
         fetcher: later.fetcher,
         now: () => new Date(Date.now() + 3_600_000),
-        run: async (url, hash) => ({
-          url,
-          status: 200,
-          hash: hash ?? 'h',
-          checks: null,
-        }),
+        run: failing(),
       },
     );
     expect(
@@ -366,6 +365,7 @@ describe('handleDeployment of the live site', () => {
           status: 200,
           hash: 'fixed',
           checks: [],
+          skipped: [],
         }),
       },
     );
@@ -580,14 +580,15 @@ describe('handleDeployment of a preview', () => {
     });
     await handleDeployment(await setup(), config, 5, 7, preview, {
       fetcher,
-      run: failing(),
+      run: failing('dnssec-valid', 'warning'),
     });
     const check = calls.at(-1);
-    expect(check?.body['conclusion']).toBe('success');
+    expect(check?.body['conclusion']).toBe('failure');
     const summary = String(
       (check?.body['output'] as { summary: string }).summary,
     );
-    expect(summary).toContain('`dnssec-valid`');
+    // A DNS check, which the server could not make before, is reported at the level the file gives it.
+    expect(summary).toContain('- **error**: it is wrong');
     expect(summary).toContain('Rules from `plumbline.yaml`.');
   });
 

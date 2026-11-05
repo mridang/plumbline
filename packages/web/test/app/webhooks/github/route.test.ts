@@ -31,10 +31,28 @@ import {
 
 let restore: () => void;
 let made: ReturnType<typeof sqliteD1>;
+/** The jobs the deliveries left with the scanner's Durable Object. */
+let jobs: unknown[];
 
 beforeEach(async () => {
   made = sqliteD1(...APP_MIGRATIONS);
-  restore = installCloudflareContext(made.d1, GITHUB_ENV);
+  jobs = [];
+  const scanner = {
+    idFromName: (name: string) => name,
+    get: () => ({
+      fetch: async (request: Request) => {
+        jobs.push({
+          path: new URL(request.url).pathname,
+          ...((await request.json()) as object),
+        });
+        return new Response(null, { status: 202 });
+      },
+    }),
+  };
+  restore = installCloudflareContext(made.d1, {
+    ...GITHUB_ENV,
+    SCANNER: scanner,
+  });
   await saveInstallation(createDatabase(made.d1), 7, 5, 'acme');
 });
 
@@ -150,103 +168,86 @@ describe('POST /webhooks/github', () => {
       repository: { full_name: 'acme/site' },
     });
 
-    /**
-     * Answers the site, and GitHub with a token,
-     * no configuration file, and an issue and a check run when asked for one.
-     * Returns the requests made.
-     */
-    const answers = () =>
-      fakeGitHub({
-        'https://site.test/': () =>
-          new Response('<html></html>', {
-            status: 500,
-            headers: { 'content-type': 'text/html' },
-          }),
-        'https://pr-3.site.test/': () =>
-          new Response('<html></html>', {
-            headers: { 'content-type': 'text/html' },
-          }),
-        'https://api.github.com/app/installations/5/access_tokens': () =>
-          Response.json({ token: 'ghs_1' }),
-        'https://api.github.com/repos/acme/site/contents/': () =>
-          new Response('no', { status: 404 }),
-        'https://api.github.com/repos/acme/site/issues': () =>
-          Response.json({ number: 3, state: 'open' }),
-        'https://api.github.com/repos/acme/site/check-runs': () =>
-          Response.json({ id: 1 }),
-      });
+    const job = (more: Record<string, unknown> = {}) => ({
+      path: '/jobs',
+      installationId: 5,
+      userId: 7,
+      appUrl: 'https://plumbline.test',
+      ...more,
+    });
 
     beforeEach(async () => {
       await addDomain(createDatabase(made.d1), 7, 'site.test', 'acme/site');
     });
 
-    it("reads the repository's rules and checks its site after a successful deployment", async () => {
-      const requested = answers();
+    it('leaves a job for the live site after a successful deployment, and does not wait for the scan', async () => {
+      const requested = fakeGitHub({});
       const res = await deliver('deployment_status', deployment());
       expect(res.status).toBe(202);
-      await settleBackground();
-      expect(requested).toContain(
-        'GET https://api.github.com/repos/acme/site/contents/plumbline.yaml?ref=abc',
-      );
-      expect(requested).toContain('GET https://site.test/');
-      expect(requested).not.toContain(
-        'POST https://api.github.com/repos/acme/site/check-runs',
-      );
+      expect(jobs).toEqual([
+        job({
+          deployed: {
+            environment: 'production',
+            repo: 'acme/site',
+            sha: 'abc',
+            url: null,
+          },
+        }),
+      ]);
+      expect(requested).toEqual([]);
     });
 
-    it('checks a preview at its own address and reports it on the commit', async () => {
-      const requested = answers();
+    it('leaves a job for a preview with its own address', async () => {
       await deliver(
         'deployment_status',
         deployment('success', 'Preview', {
           environment_url: 'https://pr-3.site.test/',
         }),
       );
-      await settleBackground();
-      expect(requested).toContain('GET https://pr-3.site.test/');
-      expect(requested).toContain(
-        'POST https://api.github.com/repos/acme/site/check-runs',
-      );
-      expect(requested).not.toContain('GET https://site.test/');
-      expect(requested).not.toContain(
-        'POST https://api.github.com/repos/acme/site/issues',
-      );
+      expect(jobs).toEqual([
+        job({
+          deployed: {
+            environment: 'preview',
+            repo: 'acme/site',
+            sha: 'abc',
+            url: 'https://pr-3.site.test/',
+          },
+        }),
+      ]);
     });
 
-    it('does nothing for a preview that names no address', async () => {
-      const requested = answers();
+    it('leaves nothing for a preview that names no address', async () => {
       await deliver('deployment_status', deployment('success', 'Preview'));
-      await settleBackground();
-      expect(requested).toEqual([]);
+      expect(jobs).toEqual([]);
     });
 
-    it('does nothing for a deployment that has not succeeded', async () => {
-      const requested = answers();
+    it('leaves nothing for a deployment that has not succeeded', async () => {
       await deliver('deployment_status', deployment('pending'));
       await deliver('deployment_status', deployment('failure', 'Preview'));
-      await settleBackground();
-      expect(requested).toEqual([]);
+      expect(jobs).toEqual([]);
     });
 
-    it('handles a delivery GitHub sends again only once', async () => {
-      const requested = answers();
+    it('leaves one job for a delivery GitHub sends again', async () => {
       await deliver('deployment_status', deployment(), undefined, 'abc-1');
-      await settleBackground();
       await deliver('deployment_status', deployment(), undefined, 'abc-1');
-      await settleBackground();
-      expect(
-        requested.filter((r) => r === 'GET https://site.test/'),
-      ).toHaveLength(1);
+      expect(jobs).toHaveLength(1);
     });
 
-    it('ignores an installation nobody has linked', async () => {
-      const requested = answers();
+    it('leaves nothing for an installation nobody has linked', async () => {
       await deliver('deployment_status', {
         ...deployment(),
         installation: { id: 999 },
       });
-      await settleBackground();
-      expect(requested).toEqual([]);
+      expect(jobs).toEqual([]);
+    });
+
+    it('still answers 202 when the scanner is not there to take the job', async () => {
+      restore();
+      restore = installCloudflareContext(made.d1, GITHUB_ENV);
+      jest.spyOn(console, 'error').mockImplementation(() => undefined);
+      expect((await deliver('deployment_status', deployment())).status).toBe(
+        202,
+      );
     });
   });
 
@@ -298,65 +299,51 @@ describe('POST /webhooks/github', () => {
       ...more,
     });
 
-    /** A site with a problem, and a GitHub that has the new file. */
-    const fakeSite = () =>
-      fakeGitHub({
-        'https://site.test/': () => new Response('<html></html>'),
-        'https://api.github.com/app/installations/5/access_tokens': () =>
-          Response.json({ token: 'ghs_1' }),
-        'https://api.github.com/repos/acme/site/contents/plumbline.yaml': () =>
-          new Response('issues: off\n'),
-        'https://api.github.com/repos/acme/site/issues': () =>
-          Response.json({ number: 3, state: 'open' }),
-      });
-
     beforeEach(async () => {
       await addDomain(createDatabase(made.d1), 7, 'site.test', 'acme/site');
     });
 
     it.each(['plumbline.yaml', 'plumbline.yml', 'plumbline.json'])(
-      'checks the live site again under the new rules when %s changes on the default branch',
+      'leaves a job to check the live site again under the new rules when %s changes on the default branch',
       async (file) => {
-        const requested = fakeSite();
         await deliver('push', push({}, [file]));
-        await settleBackground();
-        expect(requested).toContain('GET https://site.test/');
-        expect(requested).toContain(
-          'GET https://api.github.com/repos/acme/site/contents/plumbline.yaml?ref=new-sha',
-        );
+        expect(jobs).toEqual([
+          {
+            path: '/jobs',
+            installationId: 5,
+            userId: 7,
+            force: true,
+            appUrl: 'https://plumbline.test',
+            deployed: {
+              environment: 'production',
+              repo: 'acme/site',
+              sha: 'new-sha',
+              url: null,
+            },
+          },
+        ]);
       },
     );
 
-    it('checks it again even a moment after the last check', async () => {
-      const requested = fakeSite();
+    it('leaves a job again even a moment after the last one', async () => {
       await deliver('push', push());
-      await settleBackground();
       await deliver('push', push());
-      await settleBackground();
-      expect(
-        requested.filter((r) => r === 'GET https://site.test/'),
-      ).toHaveLength(2);
+      expect(jobs).toHaveLength(2);
     });
 
-    it('does not check anything when another file changes', async () => {
-      const requested = fakeSite();
+    it('leaves nothing when another file changes', async () => {
       await deliver('push', push({}, ['src/a.ts', 'docs/plumbline.yaml']));
-      await settleBackground();
-      expect(requested).toEqual([]);
+      expect(jobs).toEqual([]);
     });
 
-    it('does not check anything for a push to another branch', async () => {
-      const requested = fakeSite();
+    it('leaves nothing for a push to another branch', async () => {
       await deliver('push', push({ ref: 'refs/heads/feature' }));
-      await settleBackground();
-      expect(requested).toEqual([]);
+      expect(jobs).toEqual([]);
     });
 
-    it('does not check anything for an installation nobody has linked', async () => {
-      const requested = fakeSite();
+    it('leaves nothing for an installation nobody has linked', async () => {
       await deliver('push', push({ installation: { id: 999 } }));
-      await settleBackground();
-      expect(requested).toEqual([]);
+      expect(jobs).toEqual([]);
     });
   });
 

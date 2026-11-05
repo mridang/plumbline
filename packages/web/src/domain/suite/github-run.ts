@@ -2,7 +2,8 @@
  * @packageDocumentation
  *
  * What a successful deployment on GitHub starts. The repository's
- * `plumbline.yaml` is read at the deployed commit to find the rules. A live
+ * `plumbline.yaml` is read at the deployed commit to find the rules; the
+ * scanner container runs every check, and the rules say which count. A live
  * site is checked as its registered domains and its findings go to the issue
  * that tracks the site; a preview is checked at the address the deployment
  * names and the findings go to a check run on the commit, which GitHub shows
@@ -36,7 +37,6 @@ import {
   syncIssue,
 } from '@/domain/suite/publish';
 import { dispatchRun } from '@/domain/suite/dispatch';
-import { runSuite } from '@/domain/suite/run';
 import { applyLevels } from '@/domain/suite/rules';
 
 /** What the work can be given in place of the real thing, for tests. */
@@ -138,7 +138,6 @@ async function checkLive(
         origin,
         level: rules.issues,
         source: rules.source,
-        browserOnly: rules.browserOnly,
         problems: rules.problems,
       });
     } catch (error) {
@@ -199,10 +198,12 @@ async function checkPreview(
   if (!deps.force && (await reportOfCommit(db, deployed.repo, sha, url))) {
     return;
   }
-  const run = deps.run ?? ((address, hash) => runSuite(address, hash));
   let checks;
   try {
-    checks = (await run(url, null)).checks ?? [];
+    if (!deps.run) {
+      throw new Error('No scanner is available.');
+    }
+    checks = (await deps.run(url)).checks;
   } catch (error) {
     console.error('preview run failed', deployed.repo, url, error);
     await publishUnreachable(api, deployed.repo, sha, url).catch(
@@ -225,7 +226,6 @@ async function checkPreview(
       findings,
       ...stored,
       source: rules.source,
-      browserOnly: rules.browserOnly,
       problems: rules.problems,
     });
   } catch (error) {

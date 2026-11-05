@@ -28,12 +28,7 @@ import { parse } from 'yaml';
 import { z } from 'zod';
 
 import { isCheckId } from '@/domain/checks/catalogue';
-import {
-  DEFAULT_RULE_SET,
-  RULE_SETS,
-  isServerRule,
-  type Level,
-} from '@/domain/suite/rules';
+import { DEFAULT_RULE_SET, RULE_SETS, type Level } from '@/domain/suite/rules';
 
 /** The file names looked for in the root of a repository, in order. */
 export const CONFIG_FILES = [
@@ -213,8 +208,6 @@ export interface ResolvedRules {
   readonly issues: IssueLevel;
   /** Whether to send a `repository_dispatch` event after each run. */
   readonly dispatch: boolean;
-  /** Rules that are on but only run in the browser scan, as the server cannot run them. */
-  readonly browserOnly: readonly string[];
   /** The mistakes in the configuration. */
   readonly problems: readonly string[];
   /** The file the rules came from; null when the repository has none. */
@@ -277,9 +270,6 @@ export function resolveRules(
     levels,
     issues: loaded?.issues ?? 'error',
     dispatch: loaded?.dispatch ?? false,
-    browserOnly: [...levels.keys()]
-      .filter((id) => !isServerRule(id))
-      .toSorted(),
     problems,
     source: loaded?.path ?? null,
   };

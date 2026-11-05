@@ -5,32 +5,19 @@ import type { CheckResult } from '@/domain/suite/checks';
 import {
   DEFAULT_RULE_SET,
   RULE_SETS,
-  SERVER_RULES,
   applyLevels,
   fingerprintOf,
-  isServerRule,
   type Level,
 } from '@/domain/suite/rules';
-
-describe('the rules the server runs', () => {
-  it('are all checks of the catalogue', () => {
-    expect(SERVER_RULES.filter((id) => !isCheckId(id))).toEqual([]);
-  });
-
-  it('are the checks the suite makes', () => {
-    expect(isServerRule('seo-viewport')).toBe(true);
-    expect(isServerRule('dnssec-valid')).toBe(false);
-  });
-});
 
 describe('the rule sets', () => {
   it('start from the recommended one', () => {
     expect(DEFAULT_RULE_SET).toBe('plumbline:recommended');
   });
 
-  it('only turn on rules the server runs', () => {
+  it('only turn on checks of the catalogue', () => {
     for (const set of Object.values(RULE_SETS)) {
-      expect(Object.keys(set).filter((id) => !isServerRule(id))).toEqual([]);
+      expect(Object.keys(set).filter((id) => !isCheckId(id))).toEqual([]);
     }
   });
 
@@ -39,7 +26,7 @@ describe('the rule sets', () => {
     const advanced = Object.keys(RULE_SETS['plumbline:advanced']!);
     expect(recommended.filter((id) => !advanced.includes(id))).toEqual([]);
     expect(advanced.length).toBeGreaterThan(recommended.length);
-    expect(advanced).toHaveLength(SERVER_RULES.length);
+    expect(advanced).toHaveLength(16);
   });
 
   it('keep the advisory content rules out of the recommended set', () => {
