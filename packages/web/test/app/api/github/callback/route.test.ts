@@ -60,6 +60,9 @@ describe('GET /api/github/callback', () => {
     const res = await call('?code=c1&state=github.abc');
     expect(res.headers.get('location')).toBe('https://plumbline.test/github');
     expect(res.headers.get('set-cookie')).toMatch(/plumbline_github_state=;/);
+    expect(
+      made.raw.prepare('SELECT user_id, repo FROM user_repositories').all(),
+    ).toEqual([{ user_id: 7, repo: 'acme/site' }]);
     await settleBackground();
     const db = createDatabase(made.d1);
     expect(await getLink(db, 7)).toMatchObject({

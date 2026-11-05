@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { createDatabase } from '@/domain/db/client';
+import { ACCESS_TTL_MS, replaceAccess } from '@/domain/db/access';
 import { addDomain } from '@/domain/db/domains';
 import {
   KEEP_EVENTS,
@@ -137,5 +138,55 @@ describe('markChecking, markChecked and overviewOf', () => {
       'acme/b',
       null,
     ]);
+  });
+});
+
+describe('overviewOf, for people who can see a repository on GitHub', () => {
+  const granted = (offset = 0) => new Date(NOW + offset).toISOString();
+
+  it('shows the sites of the repositories they can see, not only their own', async () => {
+    const { db } = made();
+    await addDomain(db, 1, 'owner.test', 'acme/site');
+    await addDomain(db, 1, 'other.test', 'acme/private');
+    await addDomain(db, 2, 'mine.test');
+    await replaceAccess(db, 2, ['acme/site'], granted());
+    const overview = await overviewOf(db, 2, NOW);
+    expect(overview.map((r) => r.repo)).toEqual(['acme/site', null]);
+    expect(overview[0]?.sites.map((s) => [s.host, s.mine])).toEqual([
+      ['owner.test', false],
+    ]);
+    expect(overview[1]?.sites.map((s) => [s.host, s.mine])).toEqual([
+      ['mine.test', true],
+    ]);
+  });
+
+  it('shows the person who added a site their own site, with or without access', async () => {
+    const { db } = made();
+    await addDomain(db, 1, 'owner.test', 'acme/site');
+    const [repo] = await overviewOf(db, 1, NOW);
+    expect(repo?.sites[0]?.mine).toBe(true);
+  });
+
+  it('shows nothing of a repository they cannot see', async () => {
+    const { db } = made();
+    await addDomain(db, 1, 'owner.test', 'acme/site');
+    await replaceAccess(db, 2, ['acme/other'], granted());
+    expect(await overviewOf(db, 2, NOW)).toEqual([]);
+  });
+
+  it('stops showing a repository once what GitHub said is too old', async () => {
+    const { db } = made();
+    await addDomain(db, 1, 'owner.test', 'acme/site');
+    await replaceAccess(db, 2, ['acme/site'], granted());
+    expect(await overviewOf(db, 2, NOW + ACCESS_TTL_MS - 1)).toHaveLength(1);
+    expect(await overviewOf(db, 2, NOW + ACCESS_TTL_MS + 1)).toEqual([]);
+  });
+
+  it('shows a site once, however it is reachable', async () => {
+    const { db } = made();
+    await addDomain(db, 1, 'owner.test', 'acme/site');
+    await replaceAccess(db, 1, ['acme/site'], granted());
+    const [repo] = await overviewOf(db, 1, NOW);
+    expect(repo?.sites).toHaveLength(1);
   });
 });

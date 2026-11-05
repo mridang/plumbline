@@ -8,7 +8,7 @@
  * `created_at` index.
  */
 
-import { eq, lt } from 'drizzle-orm';
+import { and, eq, lt } from 'drizzle-orm';
 
 import type { Database } from '@/domain/db/client';
 import { previewReports } from '@/domain/db/schema';
@@ -60,6 +60,31 @@ export async function savePreviewReport(
     .delete(previewReports)
     .where(lt(previewReports.created_at, cutoff.toISOString()));
   return id;
+}
+
+/**
+ * The id of the report already made for this commit of this preview, or
+ * undefined: the same commit is checked once, however many times its
+ * deployment is reported.
+ */
+export async function reportOfCommit(
+  db: Database,
+  repo: string,
+  sha: string,
+  url: string,
+): Promise<string | undefined> {
+  const [row] = await db
+    .select({ id: previewReports.id })
+    .from(previewReports)
+    .where(
+      and(
+        eq(previewReports.repo, repo),
+        eq(previewReports.sha, sha),
+        eq(previewReports.url, url),
+      ),
+    )
+    .limit(1);
+  return row?.id;
 }
 
 /** The report with this id, or undefined. */

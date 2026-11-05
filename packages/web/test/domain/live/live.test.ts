@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { createDatabase } from '@/domain/db/client';
 import { addDomain } from '@/domain/db/domains';
 import { overviewOf } from '@/domain/db/live';
+import { replaceAccess } from '@/domain/db/access';
 import { createLive } from '@/domain/live/live';
 import { PushSubscriptionRepository } from '@/domain/push/repository';
 
@@ -83,6 +84,49 @@ const found = (errors: number, warnings = 0) => ({
   errors,
   warnings,
   hints: 0,
+});
+
+describe('createLive, for everyone who can see the repository', () => {
+  it('tells the person it belongs to and each person who can see its repository, and no one else', async () => {
+    const { db, raw } = await setup();
+    await replaceAccess(db, 2, ['acme/site']);
+    await replaceAccess(db, 3, ['acme/other']);
+    const hub = hubs();
+    await createLive(db, { USER_HUB: hub.namespace }).started(1, site, 'now');
+    expect(hub.told.toSorted()).toEqual(['1', '2']);
+    const users = raw
+      .prepare('SELECT DISTINCT user_id FROM live_events ORDER BY user_id')
+      .all()
+      .map((row) => row['user_id']);
+    expect(users).toEqual([1, 2]);
+  });
+
+  it('sends the push to their subscriptions too', async () => {
+    const { db, env } = await setup();
+    await replaceAccess(db, 2, ['acme/site']);
+    const store = new PushSubscriptionRepository(db);
+    const device = await keys();
+    await store.upsert(
+      {
+        endpoint: 'https://push.test/member',
+        user_id: 2,
+        p256dh: device.publicKey,
+        auth: device.auth,
+      },
+      'now',
+    );
+    const fetched = jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(null, { status: 201 }));
+    await createLive(db, env).finished(1, site, {
+      before: found(0),
+      after: found(3),
+      at: 'now',
+    });
+    expect(
+      fetched.mock.calls.map((call) => String(call[0])).toSorted(),
+    ).toEqual(['https://push.test/device', 'https://push.test/member']);
+  });
 });
 
 describe('createLive', () => {

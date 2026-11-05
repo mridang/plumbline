@@ -269,8 +269,6 @@ export const suiteRuns = sqliteTable(
     /** The page's validators, so the next run can ask whether it changed. */
     etag: text('etag'),
     last_modified: text('last_modified'),
-    /** Until when the site said the page is fresh; null when it did not. */
-    fresh_until: text('fresh_until'),
   },
   (table) => [
     index('idx_suite_runs_host').on(table.user_id, table.host, table.id),
@@ -294,7 +292,27 @@ export const previewReports = sqliteTable(
     findings: text('findings').notNull(),
     created_at: text('created_at').notNull(),
   },
-  (table) => [index('idx_preview_reports_created').on(table.created_at)],
+  (table) => [
+    index('idx_preview_reports_created').on(table.created_at),
+    index('idx_preview_reports_commit').on(table.repo, table.sha, table.url),
+  ],
+);
+
+/**
+ * A repository a person can see, as GitHub said when they last signed in: one
+ * row each, with that time. Access older than twelve hours is not honoured.
+ */
+export const userRepositories = sqliteTable(
+  'user_repositories',
+  {
+    user_id: integer('user_id').notNull(),
+    repo: text('repo').notNull(),
+    granted_at: text('granted_at').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.user_id, table.repo] }),
+    index('idx_user_repositories_repo').on(table.repo, table.user_id),
+  ],
 );
 
 /** What happened to a person's sites, in order, for the live dashboard to replay. */

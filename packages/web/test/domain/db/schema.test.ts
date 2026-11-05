@@ -111,6 +111,18 @@ describe('the schema file and the migrations', () => {
       "SELECT errors FROM domains WHERE repo = 'acme/site'",
     ],
     [
+      'the report already made for a commit',
+      "SELECT id FROM preview_reports WHERE repo = 'a/b' AND sha = 'c' AND url = 'u' LIMIT 1",
+    ],
+    [
+      'the repositories a person can see',
+      "SELECT repo FROM user_repositories WHERE user_id = 1 AND granted_at > 'x'",
+    ],
+    [
+      'the people who can see a repository',
+      "SELECT user_id FROM user_repositories WHERE repo = 'a/b' AND granted_at > 'x' LIMIT 25",
+    ],
+    [
       'the purge of old preview reports',
       "DELETE FROM preview_reports WHERE created_at < 'x'",
     ],
@@ -131,7 +143,7 @@ describe('the schema file and the migrations', () => {
       .prepare(`EXPLAIN QUERY PLAN ${sql}`)
       .all()
       .map((row) => String(row['detail']));
-    expect(plan.join('\n')).toMatch(/USING (COVERING )?INDEX/);
+    expect(plan.join('\n')).toMatch(/USING (COVERING )?(INDEX|PRIMARY KEY)/);
     expect(plan.join('\n')).not.toMatch(/SCAN|TEMP B-TREE/);
   });
 });

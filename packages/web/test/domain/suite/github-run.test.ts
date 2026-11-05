@@ -285,16 +285,23 @@ describe('handleDeployment of the live site', () => {
       run: failing(),
     });
     const later = github();
-    await handleDeployment(db, config, 5, 7, live, {
-      fetcher: later.fetcher,
-      now: () => new Date(Date.now() + 3_600_000),
-      run: async () => ({
-        url: 'https://site.test/',
-        status: 200,
-        hash: 'fixed',
-        checks: [],
-      }),
-    });
+    await handleDeployment(
+      db,
+      config,
+      5,
+      7,
+      { ...live, sha: 'fix5678' },
+      {
+        fetcher: later.fetcher,
+        now: () => new Date(Date.now() + 3_600_000),
+        run: async () => ({
+          url: 'https://site.test/',
+          status: 200,
+          hash: 'fixed',
+          checks: [],
+        }),
+      },
+    );
     expect(later.calls.find((c) => c.method === 'PATCH')).toMatchObject({
       path: '/repos/acme/site/issues/21',
       body: { state: 'closed' },
@@ -313,16 +320,23 @@ describe('handleDeployment of the live site', () => {
     });
     await forgetIssue(db, 'acme/site', 21);
     const later = github();
-    await handleDeployment(db, config, 5, 7, live, {
-      fetcher: later.fetcher,
-      now: () => new Date(Date.now() + 3_600_000),
-      run: async (url, hash) => ({
-        url,
-        status: 200,
-        hash: hash ?? 'h',
-        checks: null,
-      }),
-    });
+    await handleDeployment(
+      db,
+      config,
+      5,
+      7,
+      { ...live, sha: 'fix5678' },
+      {
+        fetcher: later.fetcher,
+        now: () => new Date(Date.now() + 3_600_000),
+        run: async (url, hash) => ({
+          url,
+          status: 200,
+          hash: hash ?? 'h',
+          checks: null,
+        }),
+      },
+    );
     expect(
       later.calls.filter(
         (c) => c.method === 'POST' && c.path.endsWith('/issues'),
@@ -338,16 +352,23 @@ describe('handleDeployment of the live site', () => {
       run: failing(),
     });
     const later = github();
-    await handleDeployment(db, config, 5, 7, live, {
-      fetcher: later.fetcher,
-      now: () => new Date(Date.now() + 3_600_000),
-      run: async () => ({
-        url: 'https://site.test/',
-        status: 200,
-        hash: 'fixed',
-        checks: [],
-      }),
-    });
+    await handleDeployment(
+      db,
+      config,
+      5,
+      7,
+      { ...live, sha: 'fix5678' },
+      {
+        fetcher: later.fetcher,
+        now: () => new Date(Date.now() + 3_600_000),
+        run: async () => ({
+          url: 'https://site.test/',
+          status: 200,
+          hash: 'fixed',
+          checks: [],
+        }),
+      },
+    );
     expect(later.calls.filter((c) => c.path.endsWith('/pulls'))).toHaveLength(
       1,
     );
@@ -495,6 +516,32 @@ describe('handleDeployment of a preview', () => {
     expect(String((check?.body['output'] as { text: string }).text)).toContain(
       `${link}/json`,
     );
+  });
+
+  it('checks a commit of a preview once, however often its deployment is reported', async () => {
+    const db = await setup();
+    const { fetcher, calls } = github();
+    let runs = 0;
+    const run = async () => {
+      runs += 1;
+      return failing()();
+    };
+    const deps = { fetcher, run, appUrl: 'https://plumbline.test' };
+    await handleDeployment(db, config, 5, 7, preview, deps);
+    await handleDeployment(db, config, 5, 7, preview, deps);
+    expect(runs).toBe(1);
+    expect(calls.filter((c) => c.path.endsWith('/check-runs'))).toHaveLength(1);
+    await handleDeployment(
+      db,
+      config,
+      5,
+      7,
+      { ...preview, sha: 'def5678' },
+      deps,
+    );
+    expect(runs).toBe(2);
+    await handleDeployment(db, config, 5, 7, preview, { ...deps, force: true });
+    expect(runs).toBe(3);
   });
 
   it('links the preview and keeps nothing when the app does not know its own address', async () => {

@@ -5,6 +5,7 @@ import {
   exchangeCode,
   identify,
   installUrl,
+  accessibleRepositories,
 } from '@/domain/github/oauth';
 
 /** A fetch that answers by the start of the address. */
@@ -102,10 +103,45 @@ describe('identify', () => {
     expect(identity).toEqual({
       id: 9,
       login: 'mridang',
+      name: null,
+      picture: null,
       installations: [
         { id: 5, account: 'acme' },
         { id: 6, account: 'mridang' },
       ],
     });
+  });
+});
+
+describe('accessibleRepositories', () => {
+  it('lists the repositories of each installation the person can reach, once and without the archived', async () => {
+    const asked: string[] = [];
+    const fetcher = (async (input: unknown) => {
+      asked.push(String(input));
+      return String(input).includes('/installations/5/')
+        ? Response.json({
+            repositories: [
+              { full_name: 'acme/site', archived: false },
+              { full_name: 'acme/old', archived: true },
+            ],
+          })
+        : Response.json({
+            repositories: [
+              { full_name: 'acme/site' },
+              { full_name: 'mridang/blog' },
+            ],
+          });
+    }) as typeof fetch;
+    expect(
+      await accessibleRepositories('tok', [{ id: 5 }, { id: 6 }], fetcher),
+    ).toEqual(['acme/site', 'mridang/blog']);
+    expect(asked.map((url) => new URL(url).pathname)).toEqual([
+      '/user/installations/5/repositories',
+      '/user/installations/6/repositories',
+    ]);
+  });
+
+  it('is empty for a person with no installation', async () => {
+    expect(await accessibleRepositories('tok', [])).toEqual([]);
   });
 });

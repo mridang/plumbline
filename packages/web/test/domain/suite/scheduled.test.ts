@@ -44,29 +44,6 @@ describe('checkDueSites', () => {
     ).toHaveLength(1);
   });
 
-  it('leaves a site alone whose page its owner said is still fresh', async () => {
-    const db = createDatabase(sqliteD1(...APP_MIGRATIONS).d1);
-    await addDomain(db, 1, 'a.test', 'acme/a');
-    await checkDueSites(db, {
-      run: async () => ({
-        ...(await page()),
-        freshUntil: '2999-01-01T00:00:00.000Z',
-      }),
-      now: () => start,
-    });
-    const later = new Date(start.getTime() + RECHECK_AFTER_MS + 1);
-    let fetched = 0;
-    const outcomes = await checkDueSites(db, {
-      run: async () => {
-        fetched += 1;
-        return page();
-      },
-      now: () => later,
-    });
-    expect(outcomes).toEqual([{ host: 'a.test', skipped: 'fresh' }]);
-    expect(fetched).toBe(0);
-  });
-
   it('takes only a few sites at a time', async () => {
     const db = createDatabase(sqliteD1(...APP_MIGRATIONS).d1);
     for (let i = 0; i < SCHEDULED_BATCH + 2; i += 1) {

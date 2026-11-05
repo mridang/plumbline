@@ -7,10 +7,11 @@
  * runs.
  */
 
-import { and, asc, eq, lt } from 'drizzle-orm';
+import { and, asc, eq, inArray, lt, or, sql } from 'drizzle-orm';
 
 import type { Database } from '@/domain/db/client';
-import { domains, liveEvents } from '@/domain/db/schema';
+import { cutoffOf } from '@/domain/db/access';
+import { domains, liveEvents, userRepositories } from '@/domain/db/schema';
 
 /** How many events of one person are kept. */
 export const KEEP_EVENTS = 200;
@@ -95,6 +96,8 @@ export interface SiteStatus {
   readonly hints: number;
   /** When the last check ended; null before the first. */
   readonly checked_at: string | null;
+  /** Whether the person added it themselves: only then is its page theirs to open. */
+  readonly mine: boolean;
 }
 
 /** The sites of one repository, or the ones added by hand when `repo` is null. */
@@ -131,7 +134,11 @@ export function stateOf(
   return (row.warnings ?? 0) > 0 ? 'warning' : 'ok';
 }
 
-/** Every site of the person grouped by repository, the ones added by hand last. */
+/**
+ * Every site the person can see grouped by repository, the ones added by hand
+ * last: the ones they added, and every site of the repositories GitHub let
+ * them see when they last signed in (see `access.ts`).
+ */
 export async function overviewOf(
   db: Database,
   userId: number,
@@ -140,6 +147,7 @@ export async function overviewOf(
   const rows = await db
     .select({
       id: domains.id,
+      owner: domains.user_id,
       host: domains.host,
       repo: domains.repo,
       checked_at: domains.checked_at,
@@ -150,7 +158,23 @@ export async function overviewOf(
       reachable: domains.reachable,
     })
     .from(domains)
-    .where(eq(domains.user_id, userId))
+    .where(
+      or(
+        eq(domains.user_id, userId),
+        inArray(
+          domains.repo,
+          db
+            .select({ repo: userRepositories.repo })
+            .from(userRepositories)
+            .where(
+              and(
+                eq(userRepositories.user_id, userId),
+                sql`${userRepositories.granted_at} > ${cutoffOf(now)}`,
+              ),
+            ),
+        ),
+      ),
+    )
     .orderBy(asc(domains.created_at), asc(domains.id));
   const byRepo = new Map<string | null, SiteStatus[]>();
   for (const row of rows) {
@@ -163,6 +187,7 @@ export async function overviewOf(
       warnings: row.warnings ?? 0,
       hints: row.hints ?? 0,
       checked_at: row.checked_at === '' ? null : row.checked_at,
+      mine: row.owner === userId,
     });
     byRepo.set(row.repo, sites);
   }

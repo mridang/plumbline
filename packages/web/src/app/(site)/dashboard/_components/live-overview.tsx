@@ -25,12 +25,16 @@ function Site({ site }: Readonly<{ site: SiteStatus }>): ReactElement {
   const { label, tone } = STATES[site.state];
   return (
     <li className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2">
-      <Link
-        href={`/domains/${site.id}`}
-        className="focus-ring font-medium break-all underline-offset-4 hover:underline"
-      >
-        {site.host}
-      </Link>
+      {site.mine ? (
+        <Link
+          href={`/domains/${site.id}`}
+          className="focus-ring font-medium break-all underline-offset-4 hover:underline"
+        >
+          {site.host}
+        </Link>
+      ) : (
+        <span className="font-medium break-all">{site.host}</span>
+      )}
       <span className={`text-sm font-semibold ${tone}`}>
         {site.state === 'running' ? (
           <span

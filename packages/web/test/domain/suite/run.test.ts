@@ -94,7 +94,7 @@ describe('runSuite, where it will go', () => {
         async () =>
           new Response(null, {
             status: 304,
-            headers: { etag: '"v2"', 'cache-control': 'max-age=60' },
+            headers: { etag: '"v2"' },
           }),
         { etag: '"v1"', lastModified: null },
       );
@@ -104,7 +104,6 @@ describe('runSuite, where it will go', () => {
         checks: null,
         validators: { etag: '"v2"' },
       });
-      expect(run.freshUntil).not.toBeNull();
     });
 
     it('keeps the old validators when a 304 gives none', async () => {
@@ -115,7 +114,6 @@ describe('runSuite, where it will go', () => {
         { etag: '"v1"', lastModified: null },
       );
       expect(run.validators).toEqual({ etag: '"v1"', lastModified: null });
-      expect(run.freshUntil).toBeNull();
     });
   });
 });

@@ -80,7 +80,7 @@ When `plumbline.yaml` changes on the default branch the live site is checked aga
 
 Create a GitHub App (Settings, Developer settings, GitHub Apps) with:
 
-- **Callback URL:** `http://localhost:3737/api/github/callback` for development and `https://plumbline.apps.mrida.ng/api/github/callback` in production
+- **Callback URLs** (GitHub apps take several): `/api/github/callback` (linking a GitHub account to a Google sign-in) and `/auth/github/callback` (signing in with GitHub), each on `http://localhost:3737` for development and `https://plumbline.apps.mrida.ng` in production
 - **Request user authorization (OAuth) during installation:** ticked. GitHub then disables the Setup URL and Redirect on update and sends people back to the callback URL, which is what the app wants (it needs the sign-in `code` only that flow supplies). Leave Enable Device Flow off.
 - **Webhook URL:** `https://plumbline.apps.mrida.ng/api/github/webhook`, with a webhook secret
 - **Permissions:** Repository permissions: Contents (read-only for the repository's files and `plumbline.yaml`; read and write only if you want `repository_dispatch` events, see below), Deployments (read-only), Issues (read and write, for the issue that tracks a site), Checks (read and write, for the check run on a preview), and Pull requests (read-only, to name the pull request that fixed a problem). Metadata is read-only by default.
@@ -102,6 +102,14 @@ jobs:
 ```
 
 The payload has `version`, `environment`, `url`, `host`, `sha`, `conclusion`, `errors`, `warnings`, `hints` and the first ten `findings` (`id`, `severity`, `message`). GitHub only accepts the event when the app has Contents set to read and write; without it the event is not sent and the failure is logged, and the issue and check run are unaffected.
+
+### Who sees what
+
+A person can sign in with Google (`/auth/login`) or with GitHub (`/auth/github`), including an owner of an organization that installed the app and anyone with access to one of its repositories. When they sign in, GitHub is asked, with the app's own sign-in, which repositories of the installed app they can reach (`/user/installations/{id}/repositories`), and those are kept per person (`user_repositories`). The dashboard shows the sites they added themselves and every site of those repositories, so a member sees the stats of the repositories they have access to and nothing else; live updates and notifications of a site go to everyone who can see its repository. What GitHub said is honoured for twelve hours: a person who loses access on GitHub stops seeing a repository within that time, or at their next sign-in, whichever comes first. Only the person who connected an installation can change it; the rest see the dashboard.
+
+### Reports are made by commit, not by time
+
+A site's checks run when a commit is deployed (and a preview's when its deployment succeeds); what they find is shown live and kept by commit. A commit that has been checked is not checked again, however long ago, unless the rules in `plumbline.yaml` changed. Nothing is reused because a clock says it is recent: the badge is checked with the server every time (it answers 304 when the score has not changed), a preview report is kept under its id and never changes, and a site is asked whether its page changed with its own `ETag` or `Last-Modified`, never left alone because of its `max-age`. The only thing that runs on a timer is the daily re-check of sites found through GitHub, which catches a site that changed without a commit.
 
 Changing the permissions of an installed app asks each owner to accept them, and until they do the app keeps the old ones. Without the Issues or Checks permission a deployment is still checked and stored, and the failure to report it is logged.
 

@@ -13,7 +13,7 @@
 import { parseHost } from '@/domain/api/domain-resource';
 import type { Database } from '@/domain/db/client';
 import { GitHubApi, GitHubError, TooLargeError } from '@/domain/github/api';
-import { savePreviewReport } from '@/domain/db/preview-reports';
+import { reportOfCommit, savePreviewReport } from '@/domain/db/preview-reports';
 import { installationToken } from '@/domain/github/app-auth';
 import type { GitHubConfig } from '@/domain/github/config';
 import {
@@ -192,6 +192,11 @@ async function checkPreview(
 ): Promise<void> {
   const { url, sha } = deployed;
   if (!api || !url || !sha || !parseHost(url).ok) {
+    return;
+  }
+  // A report is kept by commit: the same commit of the same preview is checked
+  // once, however often its deployment is reported (unless the rules changed).
+  if (!deps.force && (await reportOfCommit(db, deployed.repo, sha, url))) {
     return;
   }
   const run = deps.run ?? ((address, hash) => runSuite(address, hash));

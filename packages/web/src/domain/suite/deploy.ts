@@ -31,9 +31,6 @@ import { applyLevels, fingerprintOf, type Level } from '@/domain/suite/rules';
 /** Sites checked for one deployment on the Free plan. */
 export const MAX_SITES = FREE_LIMITS.maxSites;
 
-/** A site that was checked a moment ago is not checked again for this long, in milliseconds. */
-export const DEBOUNCE_MS = 60_000;
-
 /** Environment names that are a preview, a staging copy or a review app, not the live site. */
 const PREVIEW =
   /preview|staging|review|dev|pull[-_ ]?request|(^|[-_ ])pr[-_ ]?\d/i;
@@ -119,7 +116,7 @@ const DEFAULT_LEVELS = resolveRules(null, 'production').levels;
 export interface SiteOutcome {
   readonly host: string;
   /** Why nothing was checked, when that is so. */
-  readonly skipped?: 'recent' | 'unreachable' | 'fresh';
+  readonly skipped?: 'recent' | 'unreachable';
   /** True when the page and the rules were the same as at the previous run, so it was not read again. */
   readonly unchanged?: boolean;
   readonly changes?: Changes;
@@ -139,11 +136,6 @@ export interface Deps {
     previousHash: string | null,
     validators?: Validators | null,
   ) => Promise<SuiteRun>;
-  /**
-   * Leave alone a site whose page its owner said is still fresh (a scheduled
-   * re-check). A deployment is never skipped for this: the page just changed.
-   */
-  readonly useFreshness?: boolean;
   readonly now?: () => Date;
   /** The levels of the rules to apply; the recommended rules when not given. */
   readonly levels?: ReadonlyMap<string, Level>;
@@ -180,14 +172,6 @@ export async function checkSite(
   const url = `https://${site.host}/`;
   // The previous run is only a basis for this one if the rules are the same.
   const same = previous !== undefined && previous.rules === rules;
-  if (
-    deps.useFreshness &&
-    same &&
-    previous.fresh_until !== null &&
-    Date.parse(previous.fresh_until) > now().getTime()
-  ) {
-    return { host: site.host, skipped: 'fresh' };
-  }
   const where = { host: site.host, repo: site.repo };
   const before = previous ? countsOf(previous.findings) : null;
   await deps.live?.started(userId, where, now().toISOString());
@@ -229,7 +213,6 @@ export async function checkSite(
       findings,
       etag: result.validators?.etag ?? null,
       lastModified: result.validators?.lastModified ?? null,
-      freshUntil: result.freshUntil ?? null,
     },
     now().toISOString(),
   );
@@ -254,7 +237,6 @@ export async function checkDeployment(
   deployed: Readonly<{ repo: string; sha: string | null }>,
   deps: Deps = {},
 ): Promise<SiteOutcome[]> {
-  const now = deps.now ?? (() => new Date());
   const limits = deps.limits ?? FREE_LIMITS;
   const sites = (await listDomainsOfRepo(db, userId, deployed.repo)).slice(
     0,
@@ -266,13 +248,13 @@ export async function checkDeployment(
     limits.concurrency,
     async (site): Promise<SiteOutcome> => {
       const previous = (await latestRuns(db, userId, site.host, 1))[0];
-      // The same commit again a moment later is the same deployment reported
-      // twice; a different commit is a new deployment, whenever it comes.
+      // A report is kept by commit: a commit that has been checked is not
+      // checked again, however long ago, unless the rules changed (force). A
+      // new commit is checked as soon as it is deployed.
       if (
         !deps.force &&
-        previous &&
-        previous.sha === deployed.sha &&
-        now().getTime() - Date.parse(previous.ran_at) < DEBOUNCE_MS
+        deployed.sha !== null &&
+        previous?.sha === deployed.sha
       ) {
         return { host: site.host, skipped: 'recent' };
       }

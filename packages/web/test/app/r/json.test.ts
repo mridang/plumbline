@@ -38,6 +38,9 @@ describe('GET /r/{id}/json', () => {
     const response = await get(id);
     expect(response.status).toBe(200);
     expect(response.headers.get('x-robots-tag')).toBe('noindex');
+    expect(response.headers.get('cache-control')).toBe(
+      'public, max-age=31536000, immutable',
+    );
     expect(await response.json()).toMatchObject({
       version: 1,
       repo: 'acme/site',

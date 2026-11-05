@@ -1,11 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import type { Relay, Relayed } from '@/domain/scan/relay';
-import {
-  FAILURE_MEMO_MS,
-  keyOf,
-  sharedRelay,
-} from '@/domain/scan/shared-relay';
+import { keyOf, sharedRelay } from '@/domain/scan/shared-relay';
 
 const answer: Relayed = {
   status: 200,
@@ -54,18 +50,13 @@ describe('sharedRelay', () => {
     expect(relay).toHaveBeenCalledTimes(2);
   });
 
-  it('remembers a failure for a while, then tries again', async () => {
-    let time = 0;
+  it('forgets a failure at once, so asking again is a new request', async () => {
     const relay = jest
       .fn<Relay>()
       .mockRejectedValueOnce(new Error('down'))
       .mockResolvedValue(answer);
-    const shared = sharedRelay(relay, () => time);
+    const shared = sharedRelay(relay);
     await expect(shared(get('https://a.test/'))).rejects.toThrow('down');
-    time = FAILURE_MEMO_MS - 1;
-    await expect(shared(get('https://a.test/'))).rejects.toThrow('down');
-    expect(relay).toHaveBeenCalledTimes(1);
-    time = FAILURE_MEMO_MS;
     await expect(shared(get('https://a.test/'))).resolves.toBe(answer);
     expect(relay).toHaveBeenCalledTimes(2);
   });

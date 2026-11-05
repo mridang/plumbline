@@ -1,13 +1,16 @@
 /**
  * @packageDocumentation
  *
- * Tells the person what their checks are doing, as it happens: a check began,
- * a check ended, and (when something changed that matters) a push notification.
+ * Tells the people who see a site what its checks are doing, as it happens: a
+ * check began, a check ended, and (when something changed that matters) a push
+ * notification. They are the person the site belongs to and everyone who can see
+ * its repository on GitHub.
  * Everything here is best effort: a hub or a push service that cannot be
  * reached is logged and never fails the check it reports on.
  */
 
 import type { Database } from '@/domain/db/client';
+import { peopleWithAccess } from '@/domain/db/access';
 import {
   appendEvent,
   markChecked,
@@ -84,23 +87,48 @@ export function createLive(db: Database, env: Readonly<LiveEnv>): Live {
       : null;
 
   /** Store `event` and wake the hub so open dashboards show it. */
-  const publish = async (userId: number, event: unknown, at: string) => {
-    await appendEvent(db, userId, event, at);
-    await broadcaster?.notify(String(userId));
+  /**
+   * Everyone who sees the site: the person it belongs to, and whoever GitHub
+   * lets see its repository (see `db/access.ts`).
+   */
+  const audience = async (
+    userId: number,
+    site: LiveSite,
+  ): Promise<number[]> => [
+    ...new Set([
+      userId,
+      ...(site.repo ? await peopleWithAccess(db, site.repo) : []),
+    ]),
+  ];
+
+  /** Store `event` for each of them and wake their hubs so open dashboards show it. */
+  const publish = async (
+    people: readonly number[],
+    event: unknown,
+    at: string,
+  ) => {
+    for (const person of people) {
+      await appendEvent(db, person, event, at);
+      await broadcaster?.notify(String(person));
+    }
   };
 
   return {
     async started(userId, site, at) {
       await quietly('live.started', async () => {
         await markChecking(db, userId, site.host, at);
-        await publish(userId, { type: 'started', ...site, at }, at);
+        await publish(
+          await audience(userId, site),
+          { type: 'started', ...site, at },
+          at,
+        );
       });
     },
     async finished(userId, site, { before, after, at }) {
       await quietly('live.finished', async () => {
         await markChecked(db, userId, site.host, { counts: after, at });
         await publish(
-          userId,
+          await audience(userId, site),
           {
             type: 'finished',
             ...site,
@@ -114,12 +142,16 @@ export function createLive(db: Database, env: Readonly<LiveEnv>): Live {
       const message = describeChange(site.host, before, after);
       if (message && notifier) {
         await quietly('live.push', async () => {
-          for (const subscription of await subscriptions.listForUser(userId)) {
-            await notifier.deliver(subscription, {
-              ...message,
-              tag: site.host,
-              url: '/dashboard',
-            });
+          for (const person of await audience(userId, site)) {
+            for (const subscription of await subscriptions.listForUser(
+              person,
+            )) {
+              await notifier.deliver(subscription, {
+                ...message,
+                tag: site.host,
+                url: '/dashboard',
+              });
+            }
           }
         });
       }

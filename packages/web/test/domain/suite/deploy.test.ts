@@ -4,7 +4,6 @@ import { createDatabase } from '@/domain/db/client';
 import { addDomain } from '@/domain/db/domains';
 import { latestRuns, recordRun } from '@/domain/db/suite';
 import {
-  DEBOUNCE_MS,
   MAX_SITES,
   checkDeployment,
   checkSite,
@@ -194,7 +193,7 @@ describe('checkDeployment', () => {
     ]);
   });
 
-  it('skips a site that was checked a moment ago', async () => {
+  it('does not check a commit again, however long after, and checks a new one at once', async () => {
     const db = await setup('a.test');
     const start = new Date('2026-01-01T00:00:00.000Z');
     let runs = 0;
@@ -203,14 +202,31 @@ describe('checkDeployment', () => {
       return finding();
     };
     await checkDeployment(db, 1, deployed, { run, now: () => start });
-    const soon = new Date(start.getTime() + DEBOUNCE_MS - 1);
+    const much = new Date(start.getTime() + 400 * 24 * 60 * 60 * 1000);
     const [outcome] = await checkDeployment(db, 1, deployed, {
       run,
-      now: () => soon,
+      now: () => much,
     });
     expect(outcome).toEqual({ host: 'a.test', skipped: 'recent' });
-    const later = new Date(start.getTime() + DEBOUNCE_MS);
-    await checkDeployment(db, 1, deployed, { run, now: () => later });
+    expect(runs).toBe(1);
+    await checkDeployment(
+      db,
+      1,
+      { ...deployed, sha: 'def456' },
+      { run, now: () => new Date(start.getTime() + 1000) },
+    );
+    expect(runs).toBe(2);
+  });
+
+  it('checks a commit again when asked to, because the rules changed', async () => {
+    const db = await setup('a.test');
+    let runs = 0;
+    const run = async () => {
+      runs += 1;
+      return finding();
+    };
+    await checkDeployment(db, 1, deployed, { run });
+    await checkDeployment(db, 1, deployed, { run, force: true });
     expect(runs).toBe(2);
   });
 
@@ -482,13 +498,12 @@ describe('checkSite, telling the live dashboard', () => {
   });
 });
 
-describe('checkSite, respecting what the site says about its page', () => {
+describe('checkSite, asking the site whether its page changed', () => {
   const site = { host: 'a.test', repo: 'acme/site', sha: 'abc' };
   const NOW = new Date('2026-01-01T00:00:00.000Z');
   const withHeaders = (over: Partial<SuiteRun>): SuiteRun => ({
     ...finding('one'),
     validators: { etag: '"v1"', lastModified: null },
-    freshUntil: '2026-01-01T00:30:00.000Z',
     ...over,
   });
 
@@ -531,69 +546,5 @@ describe('checkSite, respecting what the site says about its page', () => {
     });
     expect(outcome.unchanged).toBe(true);
     expect((await latestRuns(db, 1, 'a.test', 1))[0]?.status).toBe(200);
-  });
-
-  it('leaves alone, on a scheduled check, a page its owner said is still fresh', async () => {
-    const db = await setup('a.test');
-    await checkSite(db, 1, site, {
-      run: async () => withHeaders({}),
-      now: () => NOW,
-    });
-    let fetched = 0;
-    const run = async () => {
-      fetched += 1;
-      return withHeaders({});
-    };
-    const later = new Date(NOW.getTime() + 10 * 60 * 1000);
-    const outcome = await checkSite(db, 1, site, {
-      run,
-      now: () => later,
-      useFreshness: true,
-    });
-    expect(outcome).toEqual({ host: 'a.test', skipped: 'fresh' });
-    expect(fetched).toBe(0);
-  });
-
-  it('checks again once the freshness has run out', async () => {
-    const db = await setup('a.test');
-    await checkSite(db, 1, site, {
-      run: async () => withHeaders({}),
-      now: () => NOW,
-    });
-    const later = new Date(NOW.getTime() + 31 * 60 * 1000);
-    const outcome = await checkSite(db, 1, site, {
-      run: async () => withHeaders({}),
-      now: () => later,
-      useFreshness: true,
-    });
-    expect(outcome.skipped).toBeUndefined();
-  });
-
-  it('never skips a deployment because the old page was fresh', async () => {
-    const db = await setup('a.test');
-    await checkSite(db, 1, site, {
-      run: async () => withHeaders({}),
-      now: () => NOW,
-    });
-    const outcome = await checkSite(db, 1, site, {
-      run: async () => withHeaders({}),
-      now: () => new Date(NOW.getTime() + 1000),
-    });
-    expect(outcome.skipped).toBeUndefined();
-  });
-
-  it('does not rely on the freshness of a run made under other rules', async () => {
-    const db = await setup('a.test');
-    await checkSite(db, 1, site, {
-      run: async () => withHeaders({}),
-      now: () => NOW,
-      levels: new Map([['seo-viewport', 'error']]),
-    });
-    const outcome = await checkSite(db, 1, site, {
-      run: async () => withHeaders({}),
-      now: () => new Date(NOW.getTime() + 1000),
-      useFreshness: true,
-    });
-    expect(outcome.skipped).toBeUndefined();
   });
 });

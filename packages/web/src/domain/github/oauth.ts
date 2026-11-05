@@ -17,6 +17,9 @@ import type { GitHubConfig } from './config';
 export interface GitHubIdentity {
   readonly id: number;
   readonly login: string;
+  /** The name and picture on their GitHub profile, when they have them. */
+  readonly name: string | null;
+  readonly picture: string | null;
   /** The installations of the app that the person can reach. */
   readonly installations: readonly {
     readonly id: number;
@@ -89,7 +92,15 @@ export async function identify(
 ): Promise<GitHubIdentity> {
   const api = new GitHubApi(accessToken, fetcher);
   const [user, installations] = await Promise.all([
-    api.json('/user', z.object({ id: z.number().int(), login: z.string() })),
+    api.json(
+      '/user',
+      z.object({
+        id: z.number().int(),
+        login: z.string(),
+        name: z.string().nullish(),
+        avatar_url: z.string().nullish(),
+      }),
+    ),
     api.list(
       '/user/installations',
       z.object({
@@ -106,9 +117,49 @@ export async function identify(
   return {
     id: user.id,
     login: user.login,
+    name: user.name ?? null,
+    picture: user.avatar_url ?? null,
     installations: installations.map((i) => ({
       id: i.id,
       account: i.account?.login ?? user.login,
     })),
   };
+}
+
+/**
+ * The repositories of the app's installations that the person can reach, as
+ * GitHub says now, with the access token they signed in with: what a
+ * person may see is what GitHub lets them see, not something this app decides.
+ * Archived repositories are left out, since nothing is deployed from them.
+ */
+export async function accessibleRepositories(
+  accessToken: string,
+  installations: readonly { readonly id: number }[],
+  fetcher: typeof fetch = fetch,
+): Promise<string[]> {
+  const api = new GitHubApi(accessToken, fetcher);
+  const lists = await Promise.all(
+    installations.map((installation) =>
+      api.list(
+        `/user/installations/${installation.id}/repositories`,
+        z.object({
+          repositories: z.array(
+            z.object({
+              full_name: z.string(),
+              archived: z.boolean().nullish(),
+            }),
+          ),
+        }),
+        (page) => page.repositories,
+      ),
+    ),
+  );
+  return [
+    ...new Set(
+      lists
+        .flat()
+        .filter((repo) => !repo.archived)
+        .map((repo) => repo.full_name),
+    ),
+  ];
 }

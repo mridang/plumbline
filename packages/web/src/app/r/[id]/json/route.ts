@@ -51,7 +51,9 @@ export async function GET(_request: Request, { params }: Context) {
     },
     {
       headers: {
-        'Cache-Control': 'public, max-age=60',
+        // A report is made once for a commit and never changes, so it is kept by
+        // its id and never by age.
+        'Cache-Control': 'public, max-age=31536000, immutable',
         'X-Robots-Tag': 'noindex',
       },
     },

@@ -13,7 +13,9 @@ import {
   githubInstallations,
   githubLinks,
   githubRepos,
+  users,
 } from '@/domain/db/schema';
+import type { User } from '@/domain/db/users';
 
 /** The GitHub account a person connected. */
 export type GitHubLink = typeof githubLinks.$inferSelect;
@@ -54,6 +56,20 @@ export async function getLink(
     .where(eq(githubLinks.user_id, userId))
     .limit(1);
   return row;
+}
+
+/** The person a GitHub account is linked to, or undefined when it is linked to no one. */
+export async function linkedUser(
+  db: Database,
+  githubId: number,
+): Promise<User | undefined> {
+  const [row] = await db
+    .select({ user: users })
+    .from(githubLinks)
+    .innerJoin(users, eq(users.id, githubLinks.user_id))
+    .where(eq(githubLinks.github_id, githubId))
+    .limit(1);
+  return row?.user;
 }
 
 /**

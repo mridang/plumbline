@@ -11,7 +11,6 @@ import { extractFacts } from '@/domain/suite/facts';
 import { readTextCapped } from '@/domain/suite/capped-text';
 import {
   conditionalHeaders,
-  freshUntil,
   validatorsOf,
   type Validators,
 } from '@/domain/suite/http-cache';
@@ -36,8 +35,6 @@ export interface SuiteRun {
   checks: CheckResult[] | null;
   /** The page's validators, to ask next time whether it changed. */
   validators?: Validators | null;
-  /** Until when the site said the page is fresh; null when it did not say. */
-  freshUntil?: string | null;
 }
 
 /** The SHA-256 of `text` as hex, computed natively by the runtime. */
@@ -82,7 +79,6 @@ export async function runSuite(
     throw new Error(`${url} redirected to ${response.url}, which is not https`);
   }
   const given = validatorsOf(response.headers) ?? validators;
-  const until = freshUntil(response.headers, started);
   if (response.status === 304 && previousHash !== null) {
     // The site says the page is the one the run was told about: nothing to read.
     return {
@@ -91,7 +87,6 @@ export async function runSuite(
       hash: previousHash,
       checks: null,
       validators: given,
-      freshUntil: until,
     };
   }
   const { text: html, truncated } = await readTextCapped(
@@ -106,7 +101,6 @@ export async function runSuite(
       hash,
       checks: null,
       validators: given,
-      freshUntil: until,
     };
   }
   const page = {
@@ -122,6 +116,5 @@ export async function runSuite(
     hash,
     checks: runChecks(page, await extractFacts(html)),
     validators: given,
-    freshUntil: until,
   };
 }

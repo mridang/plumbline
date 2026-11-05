@@ -16,6 +16,7 @@ const site = (host: string, state: RepoStatus['sites'][number]['state']) => ({
   warnings: 0,
   hints: 0,
   checked_at: null,
+  mine: true,
 });
 
 const repos: RepoStatus[] = [

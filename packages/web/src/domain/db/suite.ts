@@ -34,10 +34,9 @@ export interface StoredRun {
   readonly rules: string | null;
   readonly ran_at: string;
   readonly findings: readonly StoredFinding[];
-  /** The page's validators and the time it was fresh until, as the site gave them. */
+  /** The page's validators, as the site gave them. */
   readonly etag: string | null;
   readonly last_modified: string | null;
-  readonly fresh_until: string | null;
 }
 
 /** The findings in a stored JSON array (anything unreadable counts as none). */
@@ -65,7 +64,6 @@ export async function recordRun(
     findings: readonly StoredFinding[];
     etag?: string | null;
     lastModified?: string | null;
-    freshUntil?: string | null;
   }>,
   timestamp = new Date().toISOString(),
 ): Promise<void> {
@@ -81,7 +79,6 @@ export async function recordRun(
     findings: JSON.stringify(run.findings),
     etag: run.etag ?? null,
     last_modified: run.lastModified ?? null,
-    fresh_until: run.freshUntil ?? null,
   });
   // So the scheduled re-check can find the sites that are due without reading
   // every stored run.
@@ -137,7 +134,6 @@ export async function latestRuns(
     findings: findingsIn(row.findings),
     etag: row.etag,
     last_modified: row.last_modified,
-    fresh_until: row.fresh_until,
   }));
 }
 

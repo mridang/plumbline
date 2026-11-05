@@ -49,6 +49,13 @@ export function fakeGitHub(
 export const DEPLOYED_APP: Readonly<Record<string, () => Response>> = {
   'https://github.com/login/oauth/access_token': () =>
     Response.json({ access_token: 'gho_1' }),
+  'https://api.github.com/user/installations/5/repositories': () =>
+    Response.json({
+      repositories: [
+        { full_name: 'acme/site', archived: false },
+        { full_name: 'acme/old', archived: true },
+      ],
+    }),
   'https://api.github.com/user/installations': () =>
     Response.json({ installations: [{ id: 5, account: { login: 'acme' } }] }),
   'https://api.github.com/user': () =>

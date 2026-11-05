@@ -42,10 +42,40 @@ describe('GET /badge/{owner}/{repo}/{signature}.svg', () => {
     );
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain('image/svg+xml');
-    expect(response.headers.get('cache-control')).toBe(
-      'public, max-age=300, s-maxage=300',
-    );
+    expect(response.headers.get('cache-control')).toBe('no-cache');
+    expect(response.headers.get('etag')).toMatch(/^"[0-9a-f]+"$/);
     expect(await response.text()).toContain('85%');
+  });
+
+  it('answers 304 to a request that already has this score, and the new image once it changed', async () => {
+    await addDomain(db, 1, 'a.test', 'acme/site');
+    const signature = await signRepo('secret', 'acme/site');
+    const first = await get('acme/site', signature);
+    const tag = first.headers.get('etag') ?? '';
+    const [owner = '', name = ''] = ['acme', 'site'];
+    const again = await GET(
+      new Request('https://plumbline.test/badge', {
+        headers: { 'if-none-match': tag },
+      }),
+      {
+        params: Promise.resolve({ owner, repo: name, sig: `${signature}.svg` }),
+      },
+    );
+    expect(again.status).toBe(304);
+    await markChecked(db, 1, 'a.test', {
+      counts: { errors: 3, warnings: 0, hints: 0 },
+      at: 't',
+    });
+    const changed = await GET(
+      new Request('https://plumbline.test/badge', {
+        headers: { 'if-none-match': tag },
+      }),
+      {
+        params: Promise.resolve({ owner, repo: name, sig: `${signature}.svg` }),
+      },
+    );
+    expect(changed.status).toBe(200);
+    expect(await changed.text()).toContain('55%');
   });
 
   it('says a repository with nothing checked is not checked', async () => {

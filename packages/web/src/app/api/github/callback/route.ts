@@ -11,7 +11,12 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { linkAccount, saveInstallation } from '@/domain/db/github';
 import { getDatabase } from '@/domain/db/client';
-import { exchangeCode, identify } from '@/domain/github/oauth';
+import { replaceAccess } from '@/domain/db/access';
+import {
+  accessibleRepositories,
+  exchangeCode,
+  identify,
+} from '@/domain/github/oauth';
 import {
   githubConfig,
   GITHUB_PATH,
@@ -55,7 +60,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
   const db = getDatabase();
   try {
-    const identity = await identify(await exchangeCode(config, code));
+    const token = await exchangeCode(config, code);
+    const identity = await identify(token);
     if (!(await linkAccount(db, user.id, identity))) {
       return back(origin, 'taken');
     }
@@ -67,6 +73,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         installation.account,
       );
     }
+    // What the person can reach is read now, so the dashboard shows them
+    // the sites of every repository they can see, not only their own.
+    await replaceAccess(
+      db,
+      user.id,
+      await accessibleRepositories(token, identity.installations),
+    );
   } catch (error) {
     console.error('github sign-in failed', error);
     return back(origin, 'failed');
