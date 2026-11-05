@@ -6,6 +6,7 @@ import { Hero } from '@/components/landing/hero';
 import { HowItWorks } from '@/components/landing/how-it-works';
 import { WaysIn } from '@/components/landing/ways-in';
 import { CHECKS, SECTIONS, checksPerSection } from '@/domain/checks/catalogue';
+import { jsonLdText, landingJsonLd } from '@/lib/core/seo';
 
 /**
  * The front page: the scanner first, then what it checks, how a scan works,
@@ -17,6 +18,10 @@ export default function Home(): ReactElement {
   const counts = checksPerSection();
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdText(landingJsonLd()) }}
+      />
       <Hero checks={CHECKS.length} />
       <Coverage
         areas={SECTIONS.map((section) => ({

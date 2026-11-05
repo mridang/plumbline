@@ -107,13 +107,13 @@
       "namespace_id": "7502",
       "simple": { "limit": 120, "period": 60 },
     },
-    // crawler files, per address
+    // well-known documents, health and crawler files, per address
     {
       "name": "RL_DISCOVERY",
       "namespace_id": "7503",
       "simple": { "limit": 120, "period": 60 },
     },
-    // browser reports (what the CSP blocked), per address
+    // browser reports (what the CSP blocked), per address: a broken page can send many
     {
       "name": "RL_REPORTS",
       "namespace_id": "7504",
@@ -125,7 +125,7 @@
       "namespace_id": "7505",
       "simple": { "limit": 300, "period": 60 },
     },
-    // everything, per address
+    // everything, per address: bounds callers who make up session cookies
     {
       "name": "RL_ADDRESS",
       "namespace_id": "7506",

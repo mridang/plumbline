@@ -31,4 +31,6 @@ interface CloudflareEnv extends Cloudflare.Env {
   GITHUB_WEBHOOK_SECRET?: string;
   /** The VAPID private key notifications are signed with; without it they are off. */
   VAPID_PRIVATE_KEY?: string;
+  /** Bearer token for the operator endpoints; where unset they are open (local development). */
+  CRON_SECRET?: string;
 }
