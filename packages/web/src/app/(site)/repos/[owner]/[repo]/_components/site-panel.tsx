@@ -2,7 +2,9 @@ import type { ReactElement } from 'react';
 
 import { STATES, StatusDot } from '@/components/repos/site-state';
 import { SiteRuns } from '@/components/runs/run-history';
+import { issuesByCheck } from '@/components/scan/results';
 import { ScanResults } from '@/components/scan/scan-results';
+import type { IssueRef } from '@/domain/db/issue-history';
 import { Heading } from '@/components/ui/layout';
 import { CHECKS, enabledChecks } from '@/domain/checks/catalogue';
 import { savedScan } from '@/domain/checks/saved-scan';
@@ -54,6 +56,7 @@ export function SitePanel({
   status,
   reports,
   runs,
+  issues,
   shown,
   base,
 }: Readonly<{
@@ -63,11 +66,14 @@ export function SitePanel({
   reports: readonly ReportSummary[];
   /** Its runs, newest first. */
   runs: readonly RunSummary[];
+  /** The GitHub issues Plumbline opened for it, newest first. */
+  issues: readonly IssueRef[];
   /** The report drawn in full. */
   shown: Report | undefined;
   base: string;
 }>): ReactElement {
   const enabled = enabledChecks(domain.checks);
+  const byCheck = issuesByCheck(issues);
   return (
     <section
       id={`site-${domain.id}`}
@@ -93,6 +99,7 @@ export function SitePanel({
           host={domain.host}
           checks={enabled}
           repository={domain.repo ?? undefined}
+          issuesByCheck={byCheck}
           lastRunAt={reports[0]?.created_at}
         />
       </div>
@@ -109,6 +116,7 @@ export function SitePanel({
           <ScanResults
             scan={savedScan(reportResource(shown))}
             repository={domain.repo ?? undefined}
+            issuesByCheck={byCheck}
           />
         ) : null}
       </div>

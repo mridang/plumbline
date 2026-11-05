@@ -149,6 +149,7 @@ export async function syncIssue(
   let stored = await issueOf(db, repo, host);
   const reported = reportedFindings(report.findings, report.level);
   const signature = await signatureOf(reported);
+  const checkIds = reported.map((found) => found.id);
 
   if (stored?.state === 'opening') {
     if (now.getTime() - Date.parse(stored.signature) < CLAIM_MS) {
@@ -214,11 +215,13 @@ export async function syncIssue(
         ...text,
         ...(reopening ? { state: 'open', state_reason: 'reopened' } : {}),
       });
-      await saveIssue(db, repo, host, {
-        number: stored.number,
-        state: 'open',
-        signature,
-      });
+      await saveIssue(
+        db,
+        repo,
+        host,
+        { number: stored.number, state: 'open', signature },
+        checkIds,
+      );
       if (reopening) {
         await say(
           api,
@@ -246,11 +249,13 @@ export async function syncIssue(
       ...text,
       labels: [ISSUE_LABEL],
     });
-    await saveIssue(db, repo, host, {
-      number: created.number,
-      state: 'open',
-      signature,
-    });
+    await saveIssue(
+      db,
+      repo,
+      host,
+      { number: created.number, state: 'open', signature },
+      checkIds,
+    );
   } catch (error) {
     await releaseIssueClaim(db, repo, host);
     throw error;

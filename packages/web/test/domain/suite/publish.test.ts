@@ -1,6 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { createDatabase } from '@/domain/db/client';
+import { issuesOf } from '@/domain/db/issue-history';
 import { CLAIM_MS, issueOf, saveIssue } from '@/domain/db/suite';
 import { GitHubApi } from '@/domain/github/api';
 import type { StoredFinding } from '@/domain/suite/diff';
@@ -135,6 +136,37 @@ describe('syncIssue', () => {
       state: 'open',
       signature: await signatureOf([error]),
     });
+  });
+
+  it('keeps a history of the issue with the checks it reported, as it is opened, edited and closed', async () => {
+    const db = database();
+    const { api } = github({
+      'POST /repos/acme/site/issues': [201, { number: 12, state: 'open' }],
+    });
+    await syncIssue(api, db, report([error]));
+    expect(await issuesOf(db, 'acme/site', 'site.test')).toMatchObject([
+      { number: 12, state: 'open', checks: ['seo-viewport'] },
+    ]);
+    await syncIssue(
+      api,
+      db,
+      report([error, other, warning], { level: 'error' }),
+    );
+    expect(await issuesOf(db, 'acme/site', 'site.test')).toMatchObject([
+      {
+        number: 12,
+        state: 'open',
+        checks: ['seo-viewport', 'seo-http-status'],
+      },
+    ]);
+    await syncIssue(api, db, report([]));
+    expect(await issuesOf(db, 'acme/site', 'site.test')).toMatchObject([
+      {
+        number: 12,
+        state: 'fixed',
+        checks: ['seo-viewport', 'seo-http-status'],
+      },
+    ]);
   });
 
   it('does nothing when there is nothing to report and no issue', async () => {

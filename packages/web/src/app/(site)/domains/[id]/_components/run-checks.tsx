@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { problemText } from '@/components/api/problem-message';
 import { saveReport } from '@/components/scan/report-body';
 import { ScanResults, type Scan } from '@/components/scan/scan-results';
+import type { IssueRef } from '@/domain/db/issue-history';
 import { ScanStatus, isRunning, useScan } from '@/components/scan/scanner';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,6 +34,7 @@ export function RunChecks({
   host,
   checks,
   repository,
+  issuesByCheck,
   lastRunAt,
 }: Readonly<{
   domainId: string;
@@ -42,6 +44,8 @@ export function RunChecks({
   lastRunAt?: string | undefined;
   /** `owner/name` of the repository that serves the domain, when known. */
   repository?: string;
+  /** The GitHub issues that report each check, by check id. */
+  issuesByCheck?: Readonly<Record<string, readonly IssueRef[]>>;
 }>): ReactElement {
   const router = useRouter();
   const [saving, setSaving] = useState<Saving>({ kind: 'idle' });
@@ -117,7 +121,11 @@ export function RunChecks({
       ) : null}
       <ScanStatus state={state} />
       {state.kind === 'scanning' ? (
-        <ScanResults scan={state.scan} repository={repository} />
+        <ScanResults
+          scan={state.scan}
+          repository={repository}
+          issuesByCheck={issuesByCheck}
+        />
       ) : null}
     </div>
   );

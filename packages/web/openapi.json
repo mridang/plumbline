@@ -1168,6 +1168,45 @@
           }
         }
       }
+    },
+    "/api/domains/{id}/issues": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/DomainId"
+        }
+      ],
+      "get": {
+        "operationId": "listIssues",
+        "tags": ["domains"],
+        "summary": "List the GitHub issues Plumbline opened for a domain, newest first.",
+        "description": "Every issue the app opened on GitHub for the domain's site, with how it stands (`open`, `fixed` when the app closed it because the problems were gone, `dismissed` when a person closed it) and the ids of the checks it reported. An issue deleted on GitHub is left out. A domain that is not served by a repository has none.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The issues, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuePage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1875,6 +1914,50 @@
             }
           }
         }
+      },
+      "Issue": {
+        "type": "object",
+        "required": ["number", "state", "opened_at", "checks"],
+        "properties": {
+          "number": {
+            "type": "integer",
+            "description": "The issue's number in the repository."
+          },
+          "state": {
+            "type": "string",
+            "enum": ["open", "fixed", "dismissed"]
+          },
+          "opened_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The ids of the checks the issue reported."
+          }
+        }
+      },
+      "IssuePage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PageLinks"
+          },
+          {
+            "type": "object",
+            "required": ["items"],
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Issue"
+                }
+              }
+            }
+          }
+        ]
       }
     },
     "responses": {

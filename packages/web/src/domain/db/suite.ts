@@ -8,6 +8,7 @@
 import { and, asc, desc, eq, isNotNull, lt, lte } from 'drizzle-orm';
 
 import type { Database } from '@/domain/db/client';
+import { markIssueDeleted, recordIssue } from '@/domain/db/issue-history';
 import {
   domains,
   suiteIssues,
@@ -269,12 +270,17 @@ function toIssue(row: typeof suiteIssues.$inferSelect): StoredIssue {
   return { number: row.number, state, signature: row.signature };
 }
 
-/** Remember the issue that reports a host's problems, replacing an earlier one. */
+/**
+ * Remember the issue that reports a host's problems, replacing an earlier one
+ * (the earlier one stays in the issue history). `checks` are the ids of the
+ * checks the issue reports, when this write changes them.
+ */
 export async function saveIssue(
   db: Database,
   repo: string,
   host: string,
   issue: StoredIssue,
+  checks?: readonly string[],
 ): Promise<void> {
   const values = {
     number: issue.number,
@@ -288,6 +294,7 @@ export async function saveIssue(
       target: [suiteIssues.repo, suiteIssues.host],
       set: values,
     });
+  await recordIssue(db, repo, host, issue, checks);
 }
 
 /** Forget the issue of a repository with this number (it was deleted). */
@@ -299,6 +306,7 @@ export async function forgetIssue(
   await db
     .delete(suiteIssues)
     .where(and(eq(suiteIssues.repo, repo), eq(suiteIssues.number, number)));
+  await markIssueDeleted(db, repo, number);
 }
 
 /** How long a claim to open an issue holds, in milliseconds, before a delivery that died is forgotten. */

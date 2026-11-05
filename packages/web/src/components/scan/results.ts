@@ -6,6 +6,7 @@
  * outcomes first inside each section.
  */
 
+import type { IssueRef } from '@/domain/db/issue-history';
 import type { HintOutcome } from '@/domain/scan/outcome';
 import { compareText } from '@/lib/intl';
 
@@ -94,4 +95,59 @@ export const STATUS_LABELS: Readonly<Record<Status, string>> = {
   warned: 'Warning',
   passed: 'Passed',
   skipped: 'Skipped',
+};
+
+/** Which checks a person has opened or closed by hand, by check id. */
+export type OpenOverrides = Readonly<Record<string, boolean>>;
+
+/**
+ * Whether a check starts open: only one that failed. A warning, a pass and a
+ * skip start closed, so a long list reads as a short one.
+ */
+export function openByDefault(hint: Readonly<HintOutcome>): boolean {
+  return hint.status === 'failed';
+}
+
+/** Whether a check is open: as the person left it, else as it starts. */
+export function isOpen(
+  hint: Readonly<HintOutcome>,
+  overrides: OpenOverrides,
+): boolean {
+  return overrides[hint.id] ?? openByDefault(hint);
+}
+
+/** Whether every one of these checks is open. */
+export function allOpen(
+  hints: readonly HintOutcome[],
+  overrides: OpenOverrides,
+): boolean {
+  return hints.every((hint) => isOpen(hint, overrides));
+}
+
+/** What "Expand all" and "Collapse all" set: every one of these checks open or closed. */
+export function setAll(
+  hints: readonly HintOutcome[],
+  open: boolean,
+): OpenOverrides {
+  return Object.fromEntries(hints.map((hint) => [hint.id, open]));
+}
+
+/** The issues of a site, grouped by the checks they reported, newest first. */
+export function issuesByCheck(
+  issues: readonly IssueRef[],
+): Readonly<Record<string, readonly IssueRef[]>> {
+  const grouped: Record<string, IssueRef[]> = {};
+  for (const issue of issues) {
+    for (const id of issue.checks) {
+      (grouped[id] ??= []).push(issue);
+    }
+  }
+  return grouped;
+}
+
+/** What each state of an issue is called on the page. */
+export const ISSUE_STATE_LABELS: Readonly<Record<IssueRef['state'], string>> = {
+  open: 'Open',
+  fixed: 'Closed — fixed',
+  dismissed: 'Closed by a person',
 };

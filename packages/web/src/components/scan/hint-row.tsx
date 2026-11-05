@@ -1,9 +1,11 @@
 import type { ReactElement } from 'react';
 
 import { cn } from '@/components/ui/cn';
+import type { IssueRef } from '@/domain/db/issue-history';
+import { relativeTime } from '@/lib/intl';
 import type { Finding, FindingLink, HintOutcome } from '@/domain/scan/outcome';
 
-import { STATUS_LABELS, type Status } from './results';
+import { ISSUE_STATE_LABELS, STATUS_LABELS, type Status } from './results';
 
 /** The colour of each outcome's badge. */
 const BADGE: Readonly<Record<Status, string>> = {
@@ -181,17 +183,98 @@ function FixPanel({
   );
 }
 
+/** The colour of each issue state's pill. */
+const ISSUE_PILL: Readonly<Record<IssueRef['state'], string>> = {
+  open: 'bg-failed/10 text-failed',
+  fixed: 'bg-passed/10 text-passed',
+  dismissed: 'bg-ink/5 text-muted',
+};
+
+/** The address of an issue on GitHub. */
+export function issueUrl(
+  repository: string,
+  issue: Readonly<IssueRef>,
+): string {
+  return `https://github.com/${repository}/issues/${issue.number}`;
+}
+
+/** The GitHub issues that report a check, each a link with its state and when it was opened. */
+function IssueList({
+  repository,
+  issues,
+}: Readonly<{
+  repository: string;
+  issues: readonly IssueRef[];
+}>): ReactElement {
+  return (
+    <div>
+      <h4 className={LABEL}>GitHub issues</h4>
+      <ul className="mt-2 space-y-1.5">
+        {issues.map((issue) => (
+          <li key={issue.number} className="flex flex-wrap items-center gap-2">
+            <Outbound href={issueUrl(repository, issue)}>
+              {`#${issue.number}`}
+            </Outbound>
+            <span
+              className={cn(
+                'rounded-full px-2 py-0.5 text-xs font-semibold',
+                ISSUE_PILL[issue.state],
+              )}
+            >
+              {ISSUE_STATE_LABELS[issue.state]}
+            </span>
+            <time
+              dateTime={issue.opened_at}
+              title={issue.opened_at}
+              className="text-xs text-subtle"
+            >
+              opened {relativeTime(issue.opened_at)}
+            </time>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /**
  * One check in the results: its outcome, name and id, and on opening what it
- * looks at, what it found and how to fix it. A check that failed or warned
- * starts open, so every fix is on the page without a click.
+ * looks at, what it found and how to fix it. Whether it is open is the
+ * caller's to say (a failed check starts open, see `openByDefault`), and the
+ * caller hears when a person opens or closes it. When GitHub issues report the
+ * check they are listed in its body and counted in its summary.
  */
 export function HintRow({
   hint,
-}: Readonly<{ hint: HintOutcome }>): ReactElement {
+  open = hint.status === 'failed',
+  onToggle,
+  repository,
+  issues = [],
+}: Readonly<{
+  hint: HintOutcome;
+  open?: boolean;
+  /** Called with the new state when the person opens or closes the check. */
+  onToggle?: (open: boolean) => void;
+  /** `owner/name` of the repository the issues are in. */
+  repository?: string | undefined;
+  /** The issues that report this check. */
+  issues?: readonly IssueRef[];
+}>): ReactElement {
   const problem = hint.status === 'failed' || hint.status === 'warned';
+  const listed = repository !== undefined && issues.length > 0;
   return (
-    <details className="group" open={problem}>
+    <details
+      className="group"
+      open={open}
+      onToggle={(event) => {
+        // Opening or closing it from the code fires this too: only a change
+        // the person made is news.
+        const now = event.currentTarget.open;
+        if (now !== open) {
+          onToggle?.(now);
+        }
+      }}
+    >
       <summary className="focus-ring-flush flex items-start gap-3 px-4 py-3 hover:bg-ink/3">
         <span
           className={cn(
@@ -212,6 +295,13 @@ export function HintRow({
               {hint.findings.length === 1 ? 'finding' : 'findings'}
             </span>
           ) : null}
+          {listed ? (
+            <span className="ml-2 rounded-full border border-line px-2 py-0.5 text-xs font-medium text-muted">
+              {issues.length === 1
+                ? `Issue #${issues[0]?.number}`
+                : `${issues.length} issues`}
+            </span>
+          ) : null}
         </span>
       </summary>
       <div className="space-y-4 px-4 pb-5 text-sm sm:pl-27">
@@ -227,6 +317,7 @@ export function HintRow({
             </ul>
           </div>
         ) : null}
+        {listed ? <IssueList repository={repository} issues={issues} /> : null}
         <FixPanel hint={hint} problem={problem} />
         {hint.groups.length > 0 ? (
           <ul aria-label="Groups" className="flex flex-wrap gap-1.5">

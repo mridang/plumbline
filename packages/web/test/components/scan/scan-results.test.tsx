@@ -144,3 +144,81 @@ describe('ScanResults', () => {
     expect(out).toContain('2 findings');
   });
 });
+
+describe('ScanResults, opening and closing the checks', () => {
+  const OPEN = /<details[^>]* open=""/g;
+  const opened = (out: string) => (out.match(OPEN) ?? []).length;
+
+  it('starts the checks that failed open, and the warnings, passes and skips closed', () => {
+    const out = html(
+      <ScanResults
+        scan={scanOf([
+          hint('a', 'failed'),
+          hint('b', 'warned'),
+          hint('c', 'passed'),
+          hint('d', 'skipped'),
+        ])}
+      />,
+    );
+    // The filter starts on the problems, so the pass and the skip are not drawn yet.
+    expect(opened(out)).toBe(1);
+    expect(out).toContain('Check b');
+  });
+
+  it('keeps them closed under the other filters too', () => {
+    const out = html(
+      <ScanResults
+        scan={scanOf([hint('c', 'passed'), hint('d', 'skipped')])}
+      />,
+    );
+    expect(opened(out)).toBe(0);
+    expect(out).toContain('Check c');
+    expect(out).toContain('Check d');
+  });
+
+  it('offers Expand all while some check is closed, and says what it controls', () => {
+    const out = html(
+      <ScanResults scan={scanOf([hint('a', 'failed'), hint('b', 'warned')])} />,
+    );
+    expect(out).toMatch(
+      /<button[^>]*aria-controls="check-list"[^>]*>Expand all</,
+    );
+    expect(out).toContain('id="check-list"');
+  });
+
+  it('offers Collapse all when every check shown is open', () => {
+    const out = html(<ScanResults scan={scanOf([hint('a', 'failed')])} />);
+    expect(out).toContain('>Collapse all<');
+  });
+
+  it('offers neither when there is nothing to show', () => {
+    const out = html(<ScanResults scan={scanOf([])} />);
+    expect(out).not.toContain('Collapse all');
+    expect(out).not.toContain('Expand all');
+  });
+
+  it('lists the issues that report a check, for a site of a repository', () => {
+    const out = html(
+      <ScanResults
+        scan={scanOf([hint('a', 'failed')])}
+        repository="acme/site"
+        issuesByCheck={{
+          a: [
+            {
+              number: 7,
+              state: 'open',
+              opened_at: '2026-01-01T00:00:00.000Z',
+              checks: ['a'],
+            },
+          ],
+        }}
+      />,
+    );
+    expect(out).toContain('href="https://github.com/acme/site/issues/7"');
+  });
+
+  it('shows no issues on a scan with no repository', () => {
+    const out = html(<ScanResults scan={scanOf([hint('a', 'failed')])} />);
+    expect(out).not.toContain('GitHub issues');
+  });
+});

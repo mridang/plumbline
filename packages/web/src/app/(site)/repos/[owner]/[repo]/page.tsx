@@ -11,6 +11,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { repoOf } from '@/domain/api/hidden';
 import { badgePath } from '@/domain/badge/sign';
 import { getDatabase } from '@/domain/db/client';
+import { issuesOf } from '@/domain/db/issue-history';
 import { getDomain } from '@/domain/db/domains';
 import { overviewOf } from '@/domain/db/live';
 import { getRun, listRuns, runAsReport } from '@/domain/db/runs';
@@ -68,7 +69,7 @@ export default async function RepoPage({
         if (!domain) {
           return null;
         }
-        const [reports, runs, run] = await Promise.all([
+        const [reports, runs, issues, run] = await Promise.all([
           listReports(db, user.id, domain.id, 20),
           listRuns(
             db,
@@ -76,6 +77,7 @@ export default async function RepoPage({
             { domainId: domain.id, host: domain.host },
             RUNS_SHOWN,
           ),
+          issuesOf(db, repo, domain.host),
           picked && isRunId(picked)
             ? getRun(
                 db,
@@ -91,6 +93,7 @@ export default async function RepoPage({
           status: site,
           reports,
           runs,
+          issues,
           shown: shown ?? (await latestReport(db, user.id, domain.id)),
         };
       }),
@@ -150,6 +153,7 @@ export default async function RepoPage({
               status={panel.status}
               reports={panel.reports}
               runs={panel.runs}
+              issues={panel.issues}
               shown={panel.shown}
               base={repoPath(repo)}
             />

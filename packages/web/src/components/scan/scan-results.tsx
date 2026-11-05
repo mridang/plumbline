@@ -3,16 +3,21 @@
 import { useState, type ReactElement } from 'react';
 
 import { cn } from '@/components/ui/cn';
+import type { IssueRef } from '@/domain/db/issue-history';
 import type { HintOutcome } from '@/domain/scan/outcome';
 
 import { FixPromptBox } from './fix-prompt-box';
 import { HintRow } from './hint-row';
 import {
+  allOpen,
   countByStatus,
+  isOpen,
   sectionsOf,
+  setAll,
   STATUS_LABELS,
   STATUS_ORDER,
   type Filter,
+  type OpenOverrides,
   type Status,
 } from './results';
 import { countOf, formatRating } from '@/lib/intl';
@@ -56,16 +61,23 @@ export function progressLine(scan: Readonly<Scan>): string {
 export function ScanResults({
   scan,
   repository,
+  issuesByCheck = {},
 }: Readonly<{
   scan: Scan;
   /** `owner/name` of the project that serves the site, when known. */
   repository?: string;
+  /** The GitHub issues that report each check, by check id (see `issuesByCheck`). */
+  issuesByCheck?: Readonly<Record<string, readonly IssueRef[]>>;
 }>): ReactElement {
   const counts = countByStatus(scan.hints);
   const [filter, setFilter] = useState<Filter>(
     counts.failed + counts.warned > 0 ? 'problems' : 'all',
   );
+  // What the person opened or closed by hand; the rest start as `openByDefault` says.
+  const [overrides, setOverrides] = useState<OpenOverrides>({});
   const sections = sectionsOf(scan.hints, filter);
+  const shown = sections.flatMap((section) => section.hints);
+  const everyOneOpen = allOpen(shown, overrides);
   const filters: readonly { value: Filter; label: string; count: number }[] = [
     {
       value: 'problems',
@@ -130,31 +142,61 @@ export function ScanResults({
           </button>
         ))}
       </div>
-      {sections.length === 0 ? (
-        <p className="mt-8 text-muted">Nothing to show here.</p>
-      ) : (
-        sections.map((section) => (
-          <section
-            key={section.id}
-            aria-labelledby={`section-${section.id}`}
-            className="mt-10"
+      {shown.length > 0 ? (
+        <div className="mt-4">
+          <button
+            type="button"
+            aria-controls="check-list"
+            onClick={() =>
+              setOverrides((before) => ({
+                ...before,
+                ...setAll(shown, !everyOneOpen),
+              }))
+            }
+            className="focus-ring h-9 rounded-full border border-field bg-surface px-4 text-sm font-medium transition hover:border-ink"
           >
-            <h3
-              id={`section-${section.id}`}
-              className="text-label font-semibold text-subtle uppercase"
+            {everyOneOpen ? 'Collapse all' : 'Expand all'}
+          </button>
+        </div>
+      ) : null}
+      <div id="check-list">
+        {sections.length === 0 ? (
+          <p className="mt-8 text-muted">Nothing to show here.</p>
+        ) : (
+          sections.map((section) => (
+            <section
+              key={section.id}
+              aria-labelledby={`section-${section.id}`}
+              className="mt-10"
             >
-              {section.title}
-            </h3>
-            <ul className="mt-3 divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
-              {section.hints.map((hint) => (
-                <li key={hint.id}>
-                  <HintRow hint={hint} />
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))
-      )}
+              <h3
+                id={`section-${section.id}`}
+                className="text-label font-semibold text-subtle uppercase"
+              >
+                {section.title}
+              </h3>
+              <ul className="mt-3 divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
+                {section.hints.map((hint) => (
+                  <li key={hint.id}>
+                    <HintRow
+                      hint={hint}
+                      open={isOpen(hint, overrides)}
+                      onToggle={(open) =>
+                        setOverrides((before) => ({
+                          ...before,
+                          [hint.id]: open,
+                        }))
+                      }
+                      repository={repository}
+                      issues={issuesByCheck[hint.id]}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))
+        )}
+      </div>
       {scan.finishedAt !== undefined || scan.savedAt !== undefined ? (
         <FixPromptBox scan={scan} repository={repository} />
       ) : null}

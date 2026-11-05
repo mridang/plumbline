@@ -75,6 +75,7 @@ export default async function DomainPage({
           domain={domain}
           reports={reports}
           runs={runs}
+          issues={[]}
           shown={shown}
           base={`/domains/${domain.id}`}
         />

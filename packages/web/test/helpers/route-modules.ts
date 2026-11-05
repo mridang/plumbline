@@ -16,6 +16,8 @@ export const ROUTE_MODULES: Readonly<
     import('@/app/api/domains/[id]/reports/route'),
   '/api/domains/{id}/reports/{report_id}': () =>
     import('@/app/api/domains/[id]/reports/[report_id]/route'),
+  '/api/domains/{id}/issues': () =>
+    import('@/app/api/domains/[id]/issues/route'),
   '/api/domains/{id}/runs': () => import('@/app/api/domains/[id]/runs/route'),
   '/api/domains/{id}/runs/{run_id}': () =>
     import('@/app/api/domains/[id]/runs/[run_id]/route'),

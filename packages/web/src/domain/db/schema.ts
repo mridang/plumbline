@@ -389,6 +389,29 @@ export const suiteIssues = sqliteTable(
   (table) => [primaryKey({ columns: [table.repo, table.host] })],
 );
 
+/** Every issue the app opened on GitHub, one row per issue number, with the checks it reported. */
+export const suiteIssueHistory = sqliteTable(
+  'suite_issue_history',
+  {
+    repo: text('repo').notNull(),
+    host: text('host').notNull(),
+    number: integer('number').notNull(),
+    state: text('state').notNull(),
+    opened_at: text('opened_at').notNull(),
+    checks: text('checks').notNull().default('[]'),
+  },
+  (table) => [
+    primaryKey({ columns: [table.repo, table.host, table.number] }),
+    index('idx_suite_issue_history_host').on(
+      table.repo,
+      table.host,
+      sql`${table.opened_at} DESC`,
+      sql`${table.number} DESC`,
+    ),
+    index('idx_suite_issue_history_number').on(table.repo, table.number),
+  ],
+);
+
 /** The id GitHub gave a webhook delivery, kept so a retried delivery is not handled twice. */
 export const webhookDeliveries = sqliteTable(
   'webhook_deliveries',

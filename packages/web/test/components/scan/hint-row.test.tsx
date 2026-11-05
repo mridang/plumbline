@@ -4,8 +4,10 @@ import {
   furtherReading,
   HintRow,
   isWebLink,
+  issueUrl,
   placeOf,
 } from '@/components/scan/hint-row';
+import type { IssueRef } from '@/domain/db/issue-history';
 import type { Finding, HintOutcome } from '@/domain/scan/outcome';
 import { html } from '../render';
 
@@ -96,19 +98,23 @@ describe('furtherReading', () => {
 });
 
 describe('HintRow', () => {
-  it.each(['failed', 'warned'] as const)(
-    'starts open when the check %s',
-    (status) => {
-      expect(html(<HintRow hint={hint(status)} />)).toMatch(OPEN);
-    },
-  );
+  it('starts open when the check failed', () => {
+    expect(html(<HintRow hint={hint('failed')} />)).toMatch(OPEN);
+  });
 
-  it.each(['passed', 'skipped'] as const)(
+  it.each(['warned', 'passed', 'skipped'] as const)(
     'starts closed when the check %s',
     (status) => {
       expect(html(<HintRow hint={hint(status)} />)).not.toMatch(OPEN);
     },
   );
+
+  it('is open or closed as the caller says, whatever the outcome', () => {
+    expect(html(<HintRow hint={hint('passed')} open />)).toMatch(OPEN);
+    expect(html(<HintRow hint={hint('failed')} open={false} />)).not.toMatch(
+      OPEN,
+    );
+  });
 
   it('shows the check’s id next to its name', () => {
     expect(html(<HintRow hint={hint('passed')} />)).toContain(
@@ -269,5 +275,64 @@ describe('HintRow', () => {
     expect(
       html(<HintRow hint={hint('skipped', { reason: 'Needs a server' })} />),
     ).toContain('Needs a server');
+  });
+});
+
+describe('the GitHub issues of a check', () => {
+  const issue = (
+    number: number,
+    state: IssueRef['state'],
+    opened_at = '2026-01-01T00:00:00.000Z',
+  ): IssueRef => ({ number, state, opened_at, checks: ['hsts-header'] });
+
+  it('builds the address of an issue from the repository', () => {
+    expect(issueUrl('acme/site', issue(12, 'open'))).toBe(
+      'https://github.com/acme/site/issues/12',
+    );
+  });
+
+  it('lists each issue as a link with its state and when it was opened', () => {
+    const out = html(
+      <HintRow
+        hint={hint('failed')}
+        repository="acme/site"
+        issues={[issue(12, 'open'), issue(9, 'fixed'), issue(4, 'dismissed')]}
+      />,
+    );
+    expect(out).toContain('GitHub issues');
+    expect(out).toContain('href="https://github.com/acme/site/issues/12"');
+    expect(out).toContain('href="https://github.com/acme/site/issues/9"');
+    expect(out).toContain('Open</span>');
+    expect(out).toContain('Closed — fixed</span>');
+    expect(out).toContain('Closed by a person</span>');
+    expect(out).toMatch(/<time[^>]*dateTime="2026-01-01T00:00:00.000Z"/);
+  });
+
+  it('counts them in the summary, naming the issue when there is one', () => {
+    const one = html(
+      <HintRow
+        hint={hint('passed')}
+        repository="acme/site"
+        issues={[issue(12, 'open')]}
+      />,
+    );
+    expect(one).toContain('Issue #12');
+    const two = html(
+      <HintRow
+        hint={hint('passed')}
+        repository="acme/site"
+        issues={[issue(12, 'open'), issue(9, 'fixed')]}
+      />,
+    );
+    expect(two).toContain('2 issues');
+  });
+
+  it('shows nothing about issues for a check no issue reported, or with no repository', () => {
+    expect(
+      html(<HintRow hint={hint('failed')} repository="acme/site" />),
+    ).not.toContain('GitHub issues');
+    expect(
+      html(<HintRow hint={hint('failed')} issues={[issue(12, 'open')]} />),
+    ).not.toContain('GitHub issues');
   });
 });
