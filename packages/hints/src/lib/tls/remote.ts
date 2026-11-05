@@ -16,27 +16,34 @@ import { TLS_VERSIONS, type TlsVersion } from './constants.js';
 import type { EphemeralKey } from './evaluate.js';
 import type { ProbeResult, TlsConnect } from './client.js';
 
-/** The certificate facts the prober reads, named as Node names them. */
+/** A certificate name, as the prober writes it. */
+export interface RemoteName {
+  common_name?: string;
+  organization?: string;
+  country?: string;
+}
+
+/** The certificate facts the prober reads. */
 export interface RemoteCertificate {
-  subject: Record<string, string>;
-  issuer: Record<string, string>;
-  subjectaltname: string;
+  subject: RemoteName;
+  issuer: RemoteName;
+  subject_alt_names: string;
   valid_from: string;
   valid_to: string;
-  serialNumber: string;
+  serial_number: string;
   fingerprint256: string;
-  keyType: string;
+  key_type: string;
   bits?: number;
-  asn1Curve?: string;
-  signatureAlgorithm: string;
+  asn1_curve?: string;
+  signature_algorithm: string;
 }
 
 /** What the prober answers. */
 export interface RemoteHandshake {
   protocol: string;
-  cipher: { name: string; standardName: string };
+  cipher: { name: string; standard_name: string };
   authorized: boolean;
-  authorizationError: string | null;
+  authorization_error: string | null;
   ephemeral: EphemeralKey | null;
   /** DER, base64, leaf first. */
   chain: string[] | null;
@@ -51,15 +58,15 @@ export interface RemoteRequest {
   host: string;
   port: number;
   starttls?: 'smtp';
-  minVersion?: string;
-  maxVersion?: string;
+  min_version?: string;
+  max_version?: string;
   /** An OpenSSL cipher list. */
   ciphers?: string;
   /** An OpenSSL signature algorithm list. */
   sigalgs?: string;
   /** Colon separated key exchange groups. */
-  ecdhCurve?: string;
-  requestOCSP?: boolean;
+  ecdh_curve?: string;
+  request_ocsp?: boolean;
 }
 
 /** Makes one request to the prober; rejects when the handshake failed. */
@@ -70,6 +77,15 @@ function bytesOf(base64: string): Buffer {
   return Buffer.from(base64, 'base64');
 }
 
+/** A name as Node shows it: `CN`, `O` and `C`. */
+function nodeName(name: RemoteName | undefined): Record<string, string> {
+  return {
+    ...(name?.common_name ? { CN: name.common_name } : {}),
+    ...(name?.organization ? { O: name.organization } : {}),
+    ...(name?.country ? { C: name.country } : {}),
+  };
+}
+
 /** The leaf certificate as Node shows it, from what the prober read. */
 function peerOf(
   certs: readonly RemoteCertificate[],
@@ -77,15 +93,15 @@ function peerOf(
 ): PeerCertificate {
   const leaf = certs[0];
   return {
-    subject: leaf?.subject ?? {},
-    issuer: leaf?.issuer ?? {},
-    subjectaltname: leaf?.subjectaltname,
+    subject: nodeName(leaf?.subject),
+    issuer: nodeName(leaf?.issuer),
+    subjectaltname: leaf?.subject_alt_names,
     valid_from: leaf?.valid_from,
     valid_to: leaf?.valid_to,
-    serialNumber: leaf?.serialNumber,
+    serialNumber: leaf?.serial_number,
     fingerprint256: leaf?.fingerprint256,
     bits: leaf?.bits,
-    asn1Curve: leaf?.asn1Curve,
+    asn1Curve: leaf?.asn1_curve,
     raw: chain[0],
   } as unknown as PeerCertificate;
 }
@@ -97,12 +113,12 @@ export function remoteConnect(call: RemoteCall): TlsConnect {
       host: target.host,
       port: target.port,
       ...(target.starttls ? { starttls: target.starttls } : {}),
-      ...(options.minVersion ? { minVersion: options.minVersion } : {}),
-      ...(options.maxVersion ? { maxVersion: options.maxVersion } : {}),
+      ...(options.minVersion ? { min_version: options.minVersion } : {}),
+      ...(options.maxVersion ? { max_version: options.maxVersion } : {}),
       ...(options.ciphers ? { ciphers: options.ciphers } : {}),
       ...(options.sigalgs ? { sigalgs: options.sigalgs } : {}),
-      ...(options.ecdhCurve ? { ecdhCurve: options.ecdhCurve } : {}),
-      ...(options.requestOCSP ? { requestOCSP: true } : {}),
+      ...(options.ecdhCurve ? { ecdh_curve: options.ecdhCurve } : {}),
+      ...(options.requestOCSP ? { request_ocsp: true } : {}),
     });
     const chain = (answer.chain ?? []).map(bytesOf);
     const protocol = (TLS_VERSIONS as readonly string[]).includes(
@@ -112,10 +128,13 @@ export function remoteConnect(call: RemoteCall): TlsConnect {
       : null;
     const result: ProbeResult = {
       protocol,
-      cipher: answer.cipher,
+      cipher: {
+        name: answer.cipher.name,
+        standardName: answer.cipher.standard_name,
+      },
       ephemeral: answer.ephemeral,
       authorized: answer.authorized,
-      authorizationError: answer.authorizationError,
+      authorizationError: answer.authorization_error,
       chain,
       peerCertificate: peerOf(answer.certificates ?? [], chain),
       ocspResponse: answer.ocsp ? bytesOf(answer.ocsp) : null,

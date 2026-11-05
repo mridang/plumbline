@@ -10,27 +10,27 @@ const answer = (over: Partial<RemoteHandshake> = {}): RemoteHandshake => ({
   protocol: 'TLSv1.2',
   cipher: {
     name: 'ECDHE-RSA-AES128-GCM-SHA256',
-    standardName: 'TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256',
+    standard_name: 'TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256',
   },
   authorized: true,
-  authorizationError: null,
+  authorization_error: null,
   chain: [
     Buffer.from('leaf').toString('base64'),
     Buffer.from('root').toString('base64'),
   ],
   certificates: [
     {
-      subject: { CN: 'example.com' },
-      issuer: { CN: 'Some CA' },
-      subjectaltname: 'DNS:example.com',
+      subject: { common_name: 'example.com' },
+      issuer: { common_name: 'Some CA', organization: 'Some Org' },
+      subject_alt_names: 'DNS:example.com',
       valid_from: 'Jan  1 00:00:00 2026 GMT',
       valid_to: 'Apr  1 00:00:00 2026 GMT',
-      serialNumber: 'AB',
+      serial_number: 'AB',
       fingerprint256: 'FF',
-      keyType: 'EC',
+      key_type: 'EC',
       bits: 256,
-      asn1Curve: 'P-256',
-      signatureAlgorithm: 'ECDSA-SHA256',
+      asn1_curve: 'P-256',
+      signature_algorithm: 'ECDSA-SHA256',
     },
   ],
   ephemeral: { type: 'ECDH', size: 253, name: 'X25519' },
@@ -60,25 +60,32 @@ describe('remoteConnect', () => {
       {
         host: 'example.com',
         port: 443,
-        minVersion: 'TLSv1.2',
-        maxVersion: 'TLSv1.2',
+        min_version: 'TLSv1.2',
+        max_version: 'TLSv1.2',
         ciphers: 'ECDHE-RSA-AES128-GCM-SHA256:@SECLEVEL=0',
         sigalgs: 'RSA+SHA256',
-        ecdhCurve: 'prime256v1',
-        requestOCSP: true,
+        ecdh_curve: 'prime256v1',
+        request_ocsp: true,
       },
     ]);
     expect(result).toMatchObject({
       protocol: 'TLSv1.2',
       authorized: true,
+      authorizationError: null,
       ephemeral: { type: 'ECDH', size: 253, name: 'X25519' },
-      cipher: { name: 'ECDHE-RSA-AES128-GCM-SHA256' },
+      cipher: {
+        name: 'ECDHE-RSA-AES128-GCM-SHA256',
+        standardName: 'TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256',
+      },
     });
     expect(result.chain.map((der) => der.toString())).toEqual(['leaf', 'root']);
     expect(result.ocspResponse?.toString()).toBe('ocsp');
     expect(result.peerCertificate).toMatchObject({
       subject: { CN: 'example.com' },
+      issuer: { CN: 'Some CA', O: 'Some Org' },
       subjectaltname: 'DNS:example.com',
+      serialNumber: 'AB',
+      asn1Curve: 'P-256',
       valid_to: 'Apr  1 00:00:00 2026 GMT',
       bits: 256,
     });
