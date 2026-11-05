@@ -40,15 +40,6 @@ jest.unstable_mockModule('next/navigation', () => ({
   },
   useRouter: () => ({ push: () => undefined, refresh: () => undefined }),
 }));
-// The history is an async server component with its own tests; here it only
-// has to be given the repository and the hosts the person keeps.
-jest.unstable_mockModule('@/components/runs/run-history', () => ({
-  RunHistory: ({ repo, hosts }: { repo: string; hosts: readonly string[] }) => (
-    <p>
-      History of {repo}: {hosts.join(', ')}
-    </p>
-  ),
-}));
 jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
 }));
@@ -145,8 +136,8 @@ describe('RepoPage', () => {
   it('shows the history of the sites the person keeps, and not of others’', async () => {
     await addDomain(db, 2, 'theirs.example.com', 'acme/site');
     await replaceAccess(db, 1, ['acme/site']);
-    expect(await page()).toContain(
-      'History of acme/site: site.example.com</p>',
-    );
+    const out = await page();
+    expect(out).toContain('No runs of site.example.com yet');
+    expect(out).not.toContain('No runs of theirs.example.com');
   });
 });

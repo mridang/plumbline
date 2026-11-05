@@ -31,9 +31,9 @@ export default async function LoginPage({
         Sign in
       </Heading>
       <p className="mt-3 leading-relaxed text-muted">
-        Sign in to keep your domains, choose which checks run for each, save
-        their reports and connect an assistant. Scanning a domain needs no
-        account.
+        Sign in to follow your GitHub repositories, choose which checks run for
+        each site, keep their reports and connect an assistant. Scanning a page
+        needs no account.
       </p>
       {error === 'auth' || error === 'denied' || error === 'github' ? (
         <p role="alert" className="mt-4 text-failed">

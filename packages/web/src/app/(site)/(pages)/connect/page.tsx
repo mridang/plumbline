@@ -18,7 +18,7 @@ import { ConnectedApps } from '@/app/(site)/(pages)/connect/_components/connecte
 export const metadata: Metadata = {
   title: 'Check with AI',
   description:
-    'Connect ChatGPT, Claude or any assistant that supports MCP to your domains and their reports.',
+    'Connect ChatGPT, Claude or any assistant that supports MCP to your sites and their reports.',
 };
 
 /** Where to add the address, for each assistant, in the order a person does it. */
@@ -56,11 +56,11 @@ const ASSISTANTS: readonly Readonly<{
 const ACCESS = [
   {
     title: 'Read',
-    body: 'See your domains, the checks chosen for them and their reports, and the list of checks.',
+    body: 'See your sites, the checks chosen for them and their reports, and the list of checks.',
   },
   {
     title: 'Write',
-    body: 'Add and remove domains, and choose which checks run for each.',
+    body: 'Remove sites, and choose which checks run for each.',
   },
 ] as const;
 
@@ -84,7 +84,7 @@ export default async function ConnectPage(): Promise<ReactElement> {
         roomy
         eyebrow="Assistants"
         title="Check with AI"
-        intro="Plumbline speaks MCP, the open standard assistants use to reach your tools. Add this address once and ask about your domains, their checks and their reports in plain words."
+        intro="Plumbline speaks MCP, the open standard assistants use to reach your tools. Add this address once and ask about your sites, their checks and their reports in plain words."
       >
         <div className="mt-8 max-w-2xl">
           <p className="mb-2 text-sm font-semibold">MCP server address</p>

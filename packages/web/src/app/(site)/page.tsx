@@ -10,9 +10,9 @@ import { jsonLdText, landingJsonLd } from '@/lib/core/seo';
 
 /**
  * The front page: the scanner first, then what it checks, how a scan works,
- * every other way to run the checks, and a call to keep domains. The checks
- * run in the visitor's browser (see `domain/scan`), and nothing about a scan
- * is stored. The page is the same for everyone, so it can be cached.
+ * every other way to run the checks, and a call to follow GitHub
+ * repositories. The checks run on the server (see `domain/scan`), and nothing
+ * about a scan is stored. The page is the same for everyone, so it can be cached.
  */
 export default function Home(): ReactElement {
   const counts = checksPerSection();

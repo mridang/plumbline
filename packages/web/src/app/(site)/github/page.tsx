@@ -66,7 +66,7 @@ export default async function GitHubPage({
       <PageHeader
         eyebrow="GitHub"
         title="Your repositories"
-        intro="Install the GitHub app and Plumbline finds the repositories that are deployed web applications, adds the sites they serve to your domains, and keeps them up to date as the repositories change."
+        intro="Install the GitHub app and Plumbline finds the repositories that are deployed web applications, puts the sites they serve on your dashboard, and keeps them up to date as the repositories change."
       />
       <Container className="space-y-12 pb-16">
         {error && ERRORS[error] ? (
@@ -139,55 +139,49 @@ export default async function GitHubPage({
             {deployed.length === 0 ? (
               <p className="mt-3 text-muted">
                 None found yet. A repository counts when its Wrangler
-                configuration names the domains it is served on, or its website
-                field names the live site. Repositories you add to the app later
-                show up here by themselves.
+                configuration names the addresses it is served on, or its
+                website field names the live site. Repositories you add to the
+                app later show up here by themselves.
               </p>
             ) : (
-              <ul className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                {deployed.map((repo) => (
-                  <li key={`${repo.installation_id}/${repo.full_name}`}>
-                    <Card padding="lg" className="h-full">
-                      <a
-                        href={`https://github.com/${repo.full_name}`}
+              <Card padding="lg" className="mt-4">
+                <ul className="divide-y divide-line">
+                  {deployed.map((repo) => (
+                    <li
+                      key={`${repo.installation_id}/${repo.full_name}`}
+                      className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-3 first:pt-0 last:pb-0"
+                    >
+                      <Link
+                        href={repoPath(repo.full_name)}
                         className="focus-ring font-semibold break-all underline-offset-4 hover:underline"
                       >
                         {repo.full_name}
-                      </a>
-                      <ul className="mt-3 space-y-1">
+                      </Link>
+                      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
                         {repo.hosts.map((host) => {
                           const id = domainOf.get(host);
                           return (
-                            <li key={host} className="text-sm">
+                            <li key={host} className="break-all">
                               {id ? (
                                 <Link
                                   href={`${repoPath(repo.full_name)}#site-${id}`}
-                                  className="focus-ring break-all underline"
+                                  className="focus-ring underline underline-offset-4 hover:text-ink"
                                 >
                                   {host}
                                 </Link>
                               ) : (
-                                <span className="break-all">{host}</span>
-                              )}
-                              {id ? (
-                                <span className="text-subtle">
-                                  {' '}
-                                  · run checks
-                                </span>
-                              ) : (
-                                <span className="text-subtle">
-                                  {' '}
-                                  · not added (domain limit reached)
+                                <span title="Not added: the limit of sites was reached">
+                                  {host} · not added (site limit reached)
                                 </span>
                               )}
                             </li>
                           );
                         })}
                       </ul>
-                    </Card>
-                  </li>
-                ))}
-              </ul>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
             )}
             {others.length > 0 ? (
               <details className="mt-6">

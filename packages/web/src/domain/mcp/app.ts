@@ -10,14 +10,14 @@
 
 /** May see domains, their checks and their reports. */
 export const SCOPE_READ = 'checks:read';
-/** May add and remove domains and choose their checks (implies read). */
+/** May remove sites and choose their checks (implies read). */
 export const SCOPE_WRITE = 'checks:write';
 
 /** What each scope lets the app do, in plain words, for the approval screen. */
 export const SCOPE_TEXT: Readonly<Record<string, string>> = {
   [SCOPE_READ]:
     'See your domains, the checks chosen for them and their reports',
-  [SCOPE_WRITE]: 'Add and remove domains, and choose which checks run',
+  [SCOPE_WRITE]: 'Remove sites, and choose which checks run',
 };
 
 /**

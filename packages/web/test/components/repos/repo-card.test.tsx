@@ -56,6 +56,22 @@ describe('RepoCard', () => {
     expect(out).toContain('2 sites');
   });
 
+  it('leaves out a count of zero: a site with only warnings says no errors', () => {
+    const only = htmlAt(
+      <RepoCard
+        repo={{
+          repo: 'acme/other',
+          sites: [
+            { ...REPO.sites[0]!, errors: 0, warnings: 3, state: 'warning' },
+          ],
+        }}
+        hidden={false}
+      />,
+    );
+    expect(only).toContain('Warnings · 3 warnings');
+    expect(only).not.toContain('0 errors');
+  });
+
   it('offers to hide the repository', () => {
     expect(out).toContain('>Hide<');
     expect(out).not.toContain('>Unhide<');

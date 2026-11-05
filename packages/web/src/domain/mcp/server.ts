@@ -4,7 +4,7 @@
  * plumbline's MCP server: the domain and report methods registered on the
  * generic {@link McpServer} engine (see `@/lib/mcp/server`). It lets an
  * assistant (Claude, ChatGPT, …) work with the user's domains: list them and
- * the checks, read their reports, add and remove domains and choose which
+ * the checks, read their reports, remove sites and choose which
  * checks run for each.
  *
  * The engine owns the JSON-RPC envelope (handshake vs modern era,

@@ -60,9 +60,9 @@ describe('PrivacyPage', () => {
     );
   });
 
-  it('says how to delete a domain and the account', () => {
+  it('says what disconnecting GitHub does and how to delete the account', () => {
     expect(out).toContain(
-      'Removing a domain deletes it and all of its reports',
+      'Disconnecting GitHub forgets the connection and the repositories found',
     );
     expect(out).toContain('email us from the address you sign in with');
   });

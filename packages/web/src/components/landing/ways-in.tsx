@@ -46,7 +46,7 @@ export const WAYS_IN: readonly WayIn[] = [
   {
     title: 'AI assistants',
     tag: 'MCP',
-    body: 'Connect ChatGPT, Claude or any MCP client to your domains and their reports. Ask what failed, what to fix first, or which checks to switch on.',
+    body: 'Connect ChatGPT, Claude or any MCP client to your sites and their reports. Ask what failed, what to fix first, or which checks to switch on.',
     snippet: MCP_ADDRESS,
     href: '/connect',
     more: 'Connect an assistant',

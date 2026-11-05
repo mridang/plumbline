@@ -133,8 +133,8 @@ describe('DomainPage', () => {
     expect(await page()).toContain(`Run ${CHECKS.length} checks`);
   });
 
-  it('says there are no reports yet', async () => {
-    expect(await page()).toContain('No reports yet.');
+  it('says there are no runs yet', async () => {
+    expect(await page()).toContain('No runs of');
   });
 
   it('draws the newest report in full', async () => {
@@ -153,11 +153,11 @@ describe('DomainPage', () => {
     expect(await page(domain.id, older.id)).toContain('older');
   });
 
-  it('marks the report shown in the list', async () => {
+  it('marks the report shown in the list of runs', async () => {
     const saved = await report(2);
     expect(await page()).toMatch(
       new RegExp(
-        `<a aria-current="true"[^>]*href="/domains/${domain.id}\\?report=${saved.id}#site-${domain.id}"`,
+        `<a [^>]*aria-current="true"[^>]*href="/domains/${domain.id}\\?report=${saved.id}#site-${domain.id}"|href="/domains/${domain.id}\\?report=${saved.id}#site-${domain.id}"[^>]*aria-current="true"`,
       ),
     );
   });

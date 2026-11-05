@@ -59,7 +59,7 @@ describe('ConnectPage', () => {
 
   it('says what an assistant may read and change', async () => {
     expect(await page()).toContain(
-      'Add and remove domains, and choose which checks run for each.',
+      'Remove sites, and choose which checks run for each.',
     );
   });
 

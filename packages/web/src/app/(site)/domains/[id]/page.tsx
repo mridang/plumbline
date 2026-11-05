@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import type { ReactElement } from 'react';
 
 import { repoPath } from '@/components/repos/repo-path';
+import { RUNS_SHOWN } from '@/components/runs/run-history';
 import { Container } from '@/components/ui/layout';
 import { PageHeader } from '@/components/ui/page-header';
 import { isDomainId } from '@/domain/api/domain-resource';
@@ -10,7 +11,7 @@ import { isRunId } from '@/domain/api/runs';
 import { getDatabase } from '@/domain/db/client';
 import { getDomain } from '@/domain/db/domains';
 import { latestReport, listReports } from '@/domain/db/reports';
-import { getRun, runAsReport } from '@/domain/db/runs';
+import { getRun, listRuns, runAsReport } from '@/domain/db/runs';
 import { getCurrentUser } from '@/lib/core/auth/current-user';
 
 import { SitePanel } from '@/app/(site)/repos/[owner]/[repo]/_components/site-panel';
@@ -49,8 +50,14 @@ export default async function DomainPage({
     const query = picked && isRunId(picked) ? `?report=${picked}` : '';
     redirect(`${repoPath(domain.repo)}${query}#site-${domain.id}`);
   }
-  const [reports, shown] = await Promise.all([
+  const [reports, runs, shown] = await Promise.all([
     listReports(db, user.id, domain.id, 20),
+    listRuns(
+      db,
+      user.id,
+      { domainId: domain.id, host: domain.host },
+      RUNS_SHOWN,
+    ),
     picked && isRunId(picked)
       ? getRun(
           db,
@@ -67,6 +74,7 @@ export default async function DomainPage({
         <SitePanel
           domain={domain}
           reports={reports}
+          runs={runs}
           shown={shown}
           base={`/domains/${domain.id}`}
         />

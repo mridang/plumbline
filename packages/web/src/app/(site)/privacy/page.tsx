@@ -62,8 +62,11 @@ export default function PrivacyPage(): ReactElement {
               account id.
             </LegalItem>
             <LegalItem>
-              The domains you choose to keep, the checks you picked for each,
-              and the reports of the scans you save for them.
+              If you connect GitHub: your GitHub username, the installations of
+              the app and the names, default branches and deployment settings of
+              the repositories it can see. The sites found there, which
+              repositories you hide, the checks you picked for each site, and
+              the runs and reports of their checks.
             </LegalItem>
             <LegalItem>
               For each assistant you have connected (see below): its name, what
@@ -92,12 +95,12 @@ export default function PrivacyPage(): ReactElement {
         <LegalSection title="Connected assistants">
           <p>
             If you connect an AI assistant to Plumbline, you approve it on a
-            consent screen first, and choose whether it may only read your
-            domains and reports or change them as well. What an assistant does
-            with them once you have allowed it is governed by that assistant’s
-            own privacy policy. You can see every assistant you have connected,
-            and disconnect any of them, from the Connect page; disconnecting
-            ends its access immediately.
+            consent screen first, and choose whether it may only read your sites
+            and reports or change them as well. What an assistant does with them
+            once you have allowed it is governed by that assistant’s own privacy
+            policy. You can see every assistant you have connected, and
+            disconnect any of them, from the Connect page; disconnecting ends
+            its access immediately.
           </p>
         </LegalSection>
 
@@ -132,10 +135,11 @@ export default function PrivacyPage(): ReactElement {
 
         <LegalSection title="Deleting your data">
           <p>
-            Removing a domain deletes it and all of its reports. To delete your
-            account and everything above with it, email us from the address you
-            sign in with and we will do it. To also withdraw Google’s
-            permission, remove Plumbline at{' '}
+            Disconnecting GitHub forgets the connection and the repositories
+            found; the sites and reports already kept stay until you ask us to
+            delete them. To delete your account and everything above with it,
+            email us from the address you sign in with and we will do it. To
+            also withdraw Google’s permission, remove Plumbline at{' '}
             <LegalLink href="https://myaccount.google.com/permissions">
               your Google account permissions
             </LegalLink>

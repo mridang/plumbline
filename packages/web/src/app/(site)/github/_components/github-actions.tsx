@@ -86,7 +86,7 @@ export function DisconnectButton(): ReactElement {
       label="Disconnect GitHub"
       busyLabel="Disconnecting…"
       failure="GitHub could not be disconnected."
-      confirm="Your domains and reports stay."
+      confirm="Your sites and reports stay."
     />
   );
 }

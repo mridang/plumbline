@@ -135,7 +135,7 @@ describe('GitHubPage', () => {
         hosts: ['site.example.com'],
       },
     ]);
-    expect(await page()).toContain('not added (domain limit reached)');
+    expect(await page()).toContain('not added (site limit reached)');
   });
 
   it('shows nobody else’s repositories', async () => {

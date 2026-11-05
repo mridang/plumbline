@@ -22,12 +22,12 @@ export const SITE_DESCRIPTION =
 export const SITE_APPLICATION_CATEGORY = 'DeveloperApplication';
 /** What a visitor needs to use the app, for the structured data. */
 export const SITE_REQUIREMENTS =
-  'Requires a modern web browser; signing in with Google is only needed to keep domains';
+  'Requires a modern web browser; signing in with Google is only needed to follow your GitHub repositories';
 /** What the app does, one short sentence each, for the structured data. */
 export const SITE_FEATURES: readonly string[] = [
   'More than 250 checks of security headers, TLS, DNS and email, privacy, SEO, social cards and agent readiness',
-  'Checks run in your own browser and nothing about a scan is stored',
-  'Keep domains and get a report and a badge for each',
+  'Checks run on Plumbline’s servers, and nothing about a scan is stored unless you save it',
+  'Follow your GitHub repositories and get a run history, a report and a badge for each',
   'Run the same checks from the command line, Docker or a GitHub App, or connect an MCP assistant',
 ];
 

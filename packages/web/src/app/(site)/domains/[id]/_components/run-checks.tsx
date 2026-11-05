@@ -24,9 +24,9 @@ type Saving =
   | { readonly kind: 'failed'; readonly message: string };
 
 /**
- * "Run checks" for one domain: runs the checks chosen for it in the browser,
+ * "Run checks" for one site: runs the checks chosen for it on the server,
  * shows them as they come, then saves the report and reloads the page so it
- * appears among the saved ones.
+ * appears in the site's runs.
  */
 export function RunChecks({
   domainId,

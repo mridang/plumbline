@@ -14,6 +14,18 @@ import { Card } from '@/components/ui/card';
 import type { RepoStatus, SiteStatus } from '@/domain/db/live';
 import { countOf, relativeTime } from '@/lib/intl';
 
+/** " · 2 errors, 1 warning": only the counts that are not zero, and nothing for a site with none. */
+function findingsOf(site: SiteStatus): string {
+  const parts = [
+    site.errors > 0 ? countOf(site.errors, 'error') : '',
+    site.warnings > 0 ? countOf(site.warnings, 'warning') : '',
+  ].filter((part) => part !== '');
+  return (site.state === 'failing' || site.state === 'warning') &&
+    parts.length > 0
+    ? ` · ${parts.join(', ')}`
+    : '';
+}
+
 /** One site of a repository: its host as plain text, how it stands, and when it was last checked. */
 export function SiteLine({
   site,
@@ -36,9 +48,7 @@ export function SiteLine({
       <span className="text-sm">
         <span className={`font-semibold ${tone}`}>
           {label}
-          {site.state === 'failing' || site.state === 'warning'
-            ? ` · ${countOf(site.errors, 'error')}, ${countOf(site.warnings, 'warning')}`
-            : ''}
+          {findingsOf(site)}
         </span>
         {site.checked_at ? (
           <time

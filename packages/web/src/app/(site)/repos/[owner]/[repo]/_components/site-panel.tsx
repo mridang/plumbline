@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import type { ReactElement } from 'react';
 
 import { STATES, StatusDot } from '@/components/repos/site-state';
+import { SiteRuns } from '@/components/runs/run-history';
 import { ScanResults } from '@/components/scan/scan-results';
 import { Heading } from '@/components/ui/layout';
 import { CHECKS, enabledChecks } from '@/domain/checks/catalogue';
@@ -10,6 +10,7 @@ import { reportResource } from '@/domain/api/report-resource';
 import type { Domain } from '@/domain/db/domains';
 import type { SiteStatus } from '@/domain/db/live';
 import type { Report, ReportSummary } from '@/domain/db/reports';
+import type { RunSummary } from '@/domain/db/runs';
 import { compareText } from '@/lib/intl';
 
 import {
@@ -52,6 +53,7 @@ export function SitePanel({
   domain,
   status,
   reports,
+  runs,
   shown,
   base,
 }: Readonly<{
@@ -59,6 +61,8 @@ export function SitePanel({
   /** How the site stands now, when the dashboard knows. */
   status?: SiteStatus | undefined;
   reports: readonly ReportSummary[];
+  /** Its runs, newest first. */
+  runs: readonly RunSummary[];
   /** The report drawn in full. */
   shown: Report | undefined;
   base: string;
@@ -94,27 +98,13 @@ export function SitePanel({
       </div>
 
       <div className="mt-6">
-        <h4 className="text-sm font-semibold text-muted">Saved reports</h4>
-        {reports.length === 0 ? (
-          <p className="mt-2 text-muted">
-            No reports yet. Run the checks to make one.
-          </p>
-        ) : (
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {reports.map((report) => (
-              <li key={report.id}>
-                <Link
-                  href={`${base}?report=${report.id}#site-${domain.id}`}
-                  aria-current={report.id === shown?.id ? 'true' : undefined}
-                  className="focus-ring inline-flex h-9 items-center rounded-full border border-field px-4 text-sm tabular-nums hover:border-ink aria-current:border-ink aria-current:bg-ink aria-current:text-on-ink"
-                >
-                  {report.created_at.slice(0, 16).replace('T', ' ')} ·{' '}
-                  {report.failed} failed
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+        <SiteRuns
+          repo={domain.repo ?? ''}
+          site={domain}
+          runs={runs}
+          base={base}
+          shownId={shown?.id}
+        />
         {shown ? (
           <ScanResults
             scan={savedScan(reportResource(shown))}
