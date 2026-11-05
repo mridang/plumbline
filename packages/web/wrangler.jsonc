@@ -148,9 +148,26 @@
   // dashboards they have open and replays missed events from the log in D1; it
   // stores nothing itself (src/lib/cloudflare/user-hub.ts).
   "durable_objects": {
-    "bindings": [{ "name": "USER_HUB", "class_name": "UserHub" }],
+    "bindings": [
+      { "name": "USER_HUB", "class_name": "UserHub" },
+      // The TLS prober (probe/, one static C binary of about 1 MB on OpenSSL): started
+      // when a scan needs a real TLS handshake, stopped after 15 s idle.
+      { "name": "PROBE", "class_name": "ProbeContainer" },
+    ],
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["UserHub"] }],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["UserHub"] },
+    { "tag": "v2", "new_sqlite_classes": ["ProbeContainer"] },
+  ],
+  "containers": [
+    {
+      "class_name": "ProbeContainer",
+      "image": "./probe/Dockerfile",
+      // The smallest instance: 1/16 vCPU and 256 MiB are plenty for handshakes.
+      "instance_type": "lite",
+      "max_instances": 3,
+    },
+  ],
   "vars": {
     // The Cloudflare plan: sets the limits of the server-side checks.
     "WORKERS_PLAN": "paid",

@@ -1,6 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { createScanFetches, createScansCollection } from '@/domain/api/scans';
+import {
+  createScanFetches,
+  createScanProbes,
+  createScansCollection,
+} from '@/domain/api/scans';
 import type { CooldownDeps } from '@/domain/scan/cooldown';
 import { issueScanId } from '@/domain/scan/token';
 import type { RateLimitStore } from '@/lib/rate-limit';
@@ -240,5 +244,90 @@ describe('POST /api/scans/{id}/fetches', () => {
       routeFor('x.y'),
     );
     expect(response.status).toBe(503);
+  });
+});
+
+describe('POST /api/scans/{id}/probes', () => {
+  const answered = (seen: unknown[] = []) => ({
+    idFromName: (name: string) => name,
+    get: () => ({
+      fetch: async (request: Request) => {
+        seen.push(await request.text());
+        return Response.json({ protocol: 'TLSv1.3' });
+      },
+    }),
+  });
+
+  it('has the container make the handshake for a live scan', async () => {
+    const seen: unknown[] = [];
+    const { POST } = createScanProbes(
+      () => SECRET,
+      () => answered(seen),
+    ).handlers();
+    const { id } = await issueScanId('https://example.com/', SECRET);
+    const response = await POST(
+      post(`/api/scans/${id}/probes`, { host: 'example.com', port: 443 }),
+      routeFor(id),
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ protocol: 'TLSv1.3' });
+    expect(seen).toEqual(['host=example.com\nport=443']);
+  });
+
+  it('answers 404 for a scan id it did not sign, and probes nothing', async () => {
+    const seen: unknown[] = [];
+    const { POST } = createScanProbes(
+      () => SECRET,
+      () => answered(seen),
+    ).handlers();
+    const response = await POST(
+      post('/api/scans/forged.id/probes', { host: 'example.com', port: 443 }),
+      routeFor('forged.id'),
+    );
+    expect(response.status).toBe(404);
+    expect(seen).toEqual([]);
+  });
+
+  it('refuses a probe of another host than the one scanned', async () => {
+    const seen: unknown[] = [];
+    const { POST } = createScanProbes(
+      () => SECRET,
+      () => answered(seen),
+    ).handlers();
+    const { id } = await issueScanId('https://example.com/', SECRET);
+    const response = await POST(
+      post(`/api/scans/${id}/probes`, { host: 'other.test', port: 443 }),
+      routeFor(id),
+    );
+    expect(response.status).toBe(400);
+    expect(seen).toEqual([]);
+  });
+
+  it('answers 502 when the handshake fails and 503 when there is no container', async () => {
+    const { id } = await issueScanId('https://example.com/', SECRET);
+    const failing = {
+      idFromName: (name: string) => name,
+      get: () => ({
+        fetch: async () => Response.json({ error: 'timeout' }, { status: 502 }),
+      }),
+    };
+    const down = createScanProbes(
+      () => SECRET,
+      () => failing,
+    ).handlers();
+    const failed = await down.POST(
+      post(`/api/scans/${id}/probes`, { host: 'example.com', port: 443 }),
+      routeFor(id),
+    );
+    expect(failed.status).toBe(502);
+    const none = createScanProbes(
+      () => SECRET,
+      () => undefined,
+    ).handlers();
+    const missing = await none.POST(
+      post(`/api/scans/${id}/probes`, { host: 'example.com', port: 443 }),
+      routeFor(id),
+    );
+    expect(missing.status).toBe(503);
   });
 });

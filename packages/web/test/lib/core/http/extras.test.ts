@@ -102,6 +102,7 @@ describe('EDGE_LIMITS', () => {
 
   it('puts a scan fetch in its own class', () => {
     expect(classOf('/api/scans/abc.def/fetches', 'POST')).toBe('fetch');
+    expect(classOf('/api/scans/abc.def/probes', 'POST')).toBe('fetch');
   });
 
   it('leaves other scan paths to the API class', () => {

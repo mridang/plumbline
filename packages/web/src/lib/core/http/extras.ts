@@ -72,8 +72,8 @@ const CLASSES: Readonly<Record<OwnClass, ClassSpec>> = {
   },
 };
 
-/** A scan's fetches: `/api/scans/{id}/fetches`. */
-const FETCHES = /^\/api\/scans\/[^/]+\/fetches$/;
+/** A scan's fetches and TLS probes: `/api/scans/{id}/fetches` and `/api/scans/{id}/probes`. */
+const FETCHES = /^\/api\/scans\/[^/]+\/(fetches|probes)$/;
 
 /**
  * The class of a request this app counts specially, or undefined when it is one

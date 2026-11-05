@@ -33,6 +33,13 @@ import {
   liveCooldownDeps,
   type CooldownDeps,
 } from '@/domain/scan/cooldown';
+import {
+  parseProbeRequest,
+  ProbeError,
+  runProbe,
+  type ProbeNamespace,
+  type ProbeRequest,
+} from '@/domain/scan/probe';
 import { issueScanId, readScanId, type ScanClaim } from '@/domain/scan/token';
 import {
   forward,
@@ -188,3 +195,55 @@ export function createScanFetches(
 }
 
 export const scanFetches = createScanFetches();
+
+/** A scan's probes: `POST /api/scans/{id}/probes` makes one TLS handshake in the prober container. */
+export function createScanProbes(
+  secret: SecretSource = secretFromEnv,
+  namespace: () => ProbeNamespace | undefined = () =>
+    getEnv().PROBE as unknown as ProbeNamespace | undefined,
+): ApiController<FetchContext> {
+  return new ApiController<FetchContext>({
+    context: async (_request, route) => ({ scan: await scanOf(route, secret) }),
+  }).on<ProbeRequest, Response>({
+    method: 'POST',
+    decode: async (request, context) => {
+      const body = await readJsonObject(
+        request,
+        'The probe must be a JSON object.',
+        [],
+        MAX_BODY_BYTES,
+      );
+      if (!body.ok) {
+        throw body.response;
+      }
+      const parsed = parseProbeRequest(
+        body.value,
+        new URL((context as FetchContext).scan.url).hostname,
+      );
+      if (!parsed.ok) {
+        throw problems.badRequest('The probe is not valid.', parsed.errors);
+      }
+      return parsed.value;
+    },
+    handle: async (request) => {
+      try {
+        return await runProbe(namespace(), request);
+      } catch (error) {
+        if (error instanceof ProbeError) {
+          throw problem(
+            error.status,
+            error.status === 502
+              ? '/problems/handshake-failed'
+              : '/problems/not-available',
+            error.status === 502 ? 'Handshake failed' : 'Probes not available',
+            error.message,
+          );
+        }
+        throw error;
+      }
+    },
+    encode: (response) => response,
+  });
+}
+
+export const scanProbes = createScanProbes();

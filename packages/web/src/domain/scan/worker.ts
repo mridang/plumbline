@@ -16,6 +16,11 @@ import { catalogue, type CatalogueEntry } from './catalogue';
 import { loadPage, runHint, type FetchContent, type Page } from './engine';
 import type { FromWorker, ToWorker } from './messages';
 import { fetchResource } from './network';
+import { refuse } from '@mridang/webhint-hint-plumbline/dist/browser/refusals.js';
+import { tlsProbe } from '@mridang/webhint-hint-plumbline/dist/lib/tls/client.js';
+import { remoteConnect } from '@mridang/webhint-hint-plumbline/dist/lib/tls/remote.js';
+
+import { probeFor, refusingWhenUnavailable } from './probe-client';
 import { relayFetch, relayFor, RelayError, type Relay } from './relay';
 import { sharedRelay } from './shared-relay';
 
@@ -59,6 +64,13 @@ async function load(scanId: string, url: string): Promise<void> {
   const relay = sharedRelay(relayFor(scanId, localFetch));
   globalThis.fetch = relayFetch(relay, localFetch);
   fetchContent = cachedFetchContent(relay);
+  // The TLS checks inspect real handshakes, which a browser cannot make: the
+  // Worker has the prober container make them.
+  tlsProbe.connect = remoteConnect(
+    refusingWhenUnavailable(probeFor(scanId, localFetch), (what) =>
+      refuse('socket', what),
+    ),
+  );
   try {
     page = await loadPage(new URL(url), fetchContent);
   } catch (error) {
