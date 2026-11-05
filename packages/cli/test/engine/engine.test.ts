@@ -3,6 +3,7 @@ import type { HintContext, NetworkData } from 'hint';
 import { Severity } from '@hint/utils-types';
 import type { CatalogueEntry, HintInfo } from '../../src/engine/catalogue.js';
 import {
+  HINT_TIMEOUT_MS,
   findingOf,
   loadPage,
   runHint,
@@ -331,5 +332,11 @@ describe('loadPage', () => {
     const loaded = await page();
     expect(loaded.url).toBe('https://example.com/');
     expect(loaded.document.querySelectorAll('title')).toHaveLength(1);
+  });
+});
+
+describe('HINT_TIMEOUT_MS', () => {
+  it('gives a check that queries a public service, such as the RPKI ones, longer than 20 seconds', () => {
+    expect(HINT_TIMEOUT_MS).toBeGreaterThan(20_000);
   });
 });

@@ -326,8 +326,12 @@ export async function loadPage(
   };
 }
 
-/** How long one hint may spend on one event, in milliseconds. */
-const HINT_TIMEOUT_MS = 20_000;
+/**
+ * How long one hint may spend on one event, in milliseconds. The RPKI checks
+ * query a public service and need more than 20 seconds when many checks run
+ * at once.
+ */
+export const HINT_TIMEOUT_MS = 45_000;
 
 /** Run one hint against a loaded page and say what it found. */
 export async function runHint(
