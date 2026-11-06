@@ -1,0 +1,26 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-plumbline/mail-cert-hostname": "default",
+    "@mridang/webhint-hint-plumbline/mail-cert-pubkey": "default",
+    "@mridang/webhint-hint-plumbline/mail-cert-signature": "default",
+    "@mridang/webhint-hint-plumbline/mail-cert-trust": "default",
+    "@mridang/webhint-hint-plumbline/mail-dmarc": "default",
+    "@mridang/webhint-hint-plumbline/mail-spf": "default",
+    "@mridang/webhint-hint-plumbline/mail-starttls": "default",
+    "@mridang/webhint-hint-plumbline/mail-tls-ciphers": "default",
+    "@mridang/webhint-hint-plumbline/mail-tls-compression": "default",
+    "@mridang/webhint-hint-plumbline/mail-tls-kex-hash": "default",
+    "@mridang/webhint-hint-plumbline/mail-tls-kex-params": "default",
+    "@mridang/webhint-hint-plumbline/mail-tls-renegotiation-client": "default",
+    "@mridang/webhint-hint-plumbline/mail-tls-renegotiation-secure": "default",
+    "@mridang/webhint-hint-plumbline/mail-tls-version": "default",
+    "@mridang/webhint-hint-plumbline/mta-sts": "default",
+    "@mridang/webhint-hint-plumbline/tls-rpt": "default"
+  }
+}

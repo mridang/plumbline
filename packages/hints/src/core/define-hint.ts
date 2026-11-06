@@ -3,7 +3,13 @@ import { HintScope } from '#hint';
 import { Category } from '@hint/utils-types';
 import type { Group } from './groups.js';
 import { ORIGINS, type Origin } from './origins.js';
-import { CATEGORIES, PLACEMENT } from './taxonomy.js';
+import {
+  PLACEMENT,
+  SECTIONS,
+  type Control,
+  type Target,
+  type Tier,
+} from './taxonomy.js';
 
 /** Describes one hint and how it attaches itself to a scan. */
 export interface HintSpec {
@@ -70,9 +76,9 @@ function withReference(context: HintContext, spec: HintSpec): HintContext {
 export function defineHint(spec: HintSpec): HintDefinition {
   // Webhint types `docs` with three fields. The rest are extras that stock
   // formatters ignore and our report formatter shows: the groups, the
-  // reference, the section the hint is sorted into and where it came from.
+  // reference, where the hint is placed in the taxonomy and where it came from.
   const placement = PLACEMENT[spec.id];
-  const section = CATEGORIES.find((c) => c.id === placement?.category);
+  const section = SECTIONS.find((s) => s.id === placement?.section);
   const docs: HintMetadata['docs'] & {
     url?: string;
     groups: readonly Group[];
@@ -80,7 +86,15 @@ export function defineHint(spec: HintSpec): HintDefinition {
     sectionTitle?: string;
     sectionDescription?: string;
     sectionOrder?: number;
+    group?: string;
+    groupTitle?: string;
+    subsection?: string;
     tags: readonly string[];
+    tier?: Tier;
+    target?: Target;
+    control?: Control;
+    since?: number;
+    added?: string;
     origins: readonly Origin[];
   } = {
     category: spec.category,
@@ -93,7 +107,19 @@ export function defineHint(spec: HintSpec): HintDefinition {
           section: section.id,
           sectionTitle: section.title,
           sectionDescription: section.description,
-          sectionOrder: CATEGORIES.indexOf(section),
+          sectionOrder: section.order,
+          group: section.group,
+          groupTitle: section.groupTitle,
+        }
+      : {}),
+    ...(placement
+      ? {
+          subsection: placement.subsection,
+          tier: placement.tier,
+          target: placement.target,
+          control: placement.control,
+          since: placement.since,
+          added: placement.added,
         }
       : {}),
     tags: placement?.tags ?? [],

@@ -1399,6 +1399,19 @@ export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
       licence: 'MIT',
     },
   ],
+  'privacy-geolocation': [
+    {
+      source: 'original',
+      upstreamId: 'Geolocation API',
+      title: 'Geolocation API',
+      url: 'https://www.w3.org/TR/geolocation/',
+      docsUrl:
+        'https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API',
+      summary:
+        'Written for this package, after Webbkoll: finds page scripts that use the Geolocation API defined by the W3C.',
+      licence: 'W3C document licence',
+    },
+  ],
   'privacy-insecure-first-party': [
     {
       source: 'webbkoll',

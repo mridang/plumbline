@@ -1,0 +1,16 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-plumbline/caa": "default",
+    "@mridang/webhint-hint-plumbline/dnssec-valid": "default",
+    "@mridang/webhint-hint-plumbline/ipv6-ns-aaaa": "default",
+    "@mridang/webhint-hint-plumbline/ipv6-ns-reach": "default",
+    "@mridang/webhint-hint-plumbline/ipv6-web-aaaa": "default",
+    "@mridang/webhint-hint-plumbline/ipv6-web-reach": "default"
+  }
+}

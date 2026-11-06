@@ -28,7 +28,9 @@ export default defineHint({
           site.url.href,
           'Your domain is insecure, because it is not DNSSEC signed.',
           {
-            severity: Severity.error,
+            // Few domains are signed and many registrars cannot sign, so
+            // an unsigned domain is advice rather than a failure.
+            severity: Severity.warning,
             codeSnippet: `${host}. IN SOA ; no AD flag, no DS record found\n<zone>. IN DS <key tag> <algorithm> <digest type> <digest>`,
           },
         );

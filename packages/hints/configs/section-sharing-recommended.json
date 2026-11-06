@@ -1,0 +1,29 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-plumbline/opengraph-description-is-url": "default",
+    "@mridang/webhint-hint-plumbline/opengraph-description-missing": "default",
+    "@mridang/webhint-hint-plumbline/opengraph-description-same-as-title": "default",
+    "@mridang/webhint-hint-plumbline/opengraph-description-too-long": "default",
+    "@mridang/webhint-hint-plumbline/opengraph-description-too-short": "default",
+    "@mridang/webhint-hint-plumbline/opengraph-image-alt-missing": "default",
+    "@mridang/webhint-hint-plumbline/opengraph-image-broken": "default",
+    "@mridang/webhint-hint-plumbline/opengraph-image-dimensions-missing": "default",
+    "@mridang/webhint-hint-plumbline/opengraph-image-dimensions-too-large": "default",
+    "@mridang/webhint-hint-plumbline/opengraph-image-missing": "default",
+    "@mridang/webhint-hint-plumbline/opengraph-image-not-https": "default",
+    "@mridang/webhint-hint-plumbline/opengraph-image-too-large": "default",
+    "@mridang/webhint-hint-plumbline/opengraph-image-too-small": "default",
+    "@mridang/webhint-hint-plumbline/opengraph-title-missing": "default",
+    "@mridang/webhint-hint-plumbline/opengraph-title-too-long": "default",
+    "@mridang/webhint-hint-plumbline/opengraph-type-missing": "default",
+    "@mridang/webhint-hint-plumbline/opengraph-url-missing": "default",
+    "@mridang/webhint-hint-plumbline/technical-twitter-card-type": "default",
+    "@mridang/webhint-hint-plumbline/twitter-card-missing": "default"
+  }
+}

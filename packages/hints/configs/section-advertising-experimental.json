@@ -1,0 +1,9 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {}
+}

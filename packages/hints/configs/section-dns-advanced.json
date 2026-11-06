@@ -1,0 +1,24 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-plumbline/caa": "default",
+    "@mridang/webhint-hint-plumbline/dane-rollover": "default",
+    "@mridang/webhint-hint-plumbline/dane-valid": "default",
+    "@mridang/webhint-hint-plumbline/dnssec-exists": "default",
+    "@mridang/webhint-hint-plumbline/dnssec-valid": "default",
+    "@mridang/webhint-hint-plumbline/ipv6-ns-aaaa": "default",
+    "@mridang/webhint-hint-plumbline/ipv6-ns-reach": "default",
+    "@mridang/webhint-hint-plumbline/ipv6-same-content": "default",
+    "@mridang/webhint-hint-plumbline/ipv6-web-aaaa": "default",
+    "@mridang/webhint-hint-plumbline/ipv6-web-reach": "default",
+    "@mridang/webhint-hint-plumbline/rpki-ns-exists": "default",
+    "@mridang/webhint-hint-plumbline/rpki-ns-valid": "default",
+    "@mridang/webhint-hint-plumbline/rpki-web-exists": "default",
+    "@mridang/webhint-hint-plumbline/rpki-web-valid": "default"
+  }
+}

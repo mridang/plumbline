@@ -1,55 +1,76 @@
 import { describe, expect, it } from '@jest/globals';
 import hints from '../../src/index.js';
-import { CATEGORIES, PLACEMENT } from '../../src/core/taxonomy.js';
+import {
+  GROUP_DEFS,
+  PLACEMENT,
+  SECTIONS,
+  SECTION_DEFS,
+} from '../../src/core/taxonomy.js';
 
-describe('the taxonomy', () => {
-  const ids = new Set(CATEGORIES.map((c) => c.id));
-
-  it('has between six and twelve categories, each explained', () => {
-    expect(CATEGORIES.length).toBeGreaterThanOrEqual(6);
-    expect(CATEGORIES.length).toBeLessThanOrEqual(12);
-    for (const c of CATEGORIES) {
-      expect(c.title.length).toBeGreaterThan(3);
-      expect(c.description.length).toBeGreaterThan(10);
-      expect(c.whoFixesIt.length).toBeGreaterThan(3);
+describe('the sections', () => {
+  it('has between six and sixteen, each explained', () => {
+    expect(SECTIONS.length).toBeGreaterThanOrEqual(6);
+    expect(SECTIONS.length).toBeLessThanOrEqual(16);
+    for (const section of SECTIONS) {
+      expect(section.title.length).toBeGreaterThanOrEqual(3);
+      expect(section.description.length).toBeGreaterThan(10);
+      expect(section.fixer.length).toBeGreaterThan(3);
     }
   });
 
   it('has no other bucket', () => {
-    expect(ids.has('other')).toBe(false);
+    expect(SECTIONS.some((section) => section.id === 'other')).toBe(false);
   });
 
-  it('places every hint, and only hints that exist', () => {
-    expect(Object.keys(PLACEMENT).sort()).toEqual(Object.keys(hints).sort());
+  it('numbers the sections in the order of their display groups', () => {
+    expect(SECTIONS.map((section) => section.order)).toEqual(
+      SECTIONS.map((_, index) => index),
+    );
+    expect(SECTIONS.map((section) => section.id)).toEqual(
+      GROUP_DEFS.flatMap((group) => group.sections),
+    );
   });
 
-  it('uses known categories, with tags that differ from the primary', () => {
-    for (const [id, placement] of Object.entries(PLACEMENT)) {
-      expect({ id, known: ids.has(placement.category) }).toEqual({
-        id,
-        known: true,
-      });
-      for (const tag of placement.tags) {
-        expect({ id, tag, known: ids.has(tag) }).toEqual({
-          id,
-          tag,
-          known: true,
-        });
-        expect(tag).not.toBe(placement.category);
-      }
-    }
+  it('carries the title of the display group', () => {
+    const https = SECTIONS.find((section) => section.id === 'https');
+    expect(https?.group).toBe('security-privacy');
+    expect(https?.groupTitle).toBe('Security and privacy');
+    expect(SECTION_DEFS).toHaveLength(SECTIONS.length);
   });
+});
 
-  it('stamps the section, tags and origins on the hint metadata', () => {
+describe('the metadata stamped on a hint', () => {
+  it('carries the placement, the tier and where the hint came from', () => {
     const docs = hints.csp.meta.docs as {
       section?: string;
       sectionTitle?: string;
+      sectionOrder?: number;
+      group?: string;
+      groupTitle?: string;
+      subsection?: string;
       tags?: string[];
+      tier?: string;
+      target?: string;
+      control?: string;
+      since?: number;
+      added?: string;
       origins?: { source: string }[];
     };
-    expect(docs.section).toBe(PLACEMENT.csp.category);
+    const placement = PLACEMENT.csp;
+    expect(docs.section).toBe(placement.section);
     expect(docs.sectionTitle).toBeTruthy();
-    expect(docs.tags).toEqual([...PLACEMENT.csp.tags]);
+    expect(docs.sectionOrder).toBe(
+      SECTIONS.findIndex((section) => section.id === placement.section),
+    );
+    expect(docs.group).toBeTruthy();
+    expect(docs.groupTitle).toBeTruthy();
+    expect(docs.subsection).toBe(placement.subsection);
+    expect(docs.tags).toEqual([...placement.tags]);
+    expect(docs.tier).toBe(placement.tier);
+    expect(docs.target).toBe(placement.target);
+    expect(docs.control).toBe(placement.control);
+    expect(docs.since).toBe(placement.since);
+    expect(docs.added).toBe(placement.added);
     expect(docs.origins?.length).toBeGreaterThan(0);
   });
 });

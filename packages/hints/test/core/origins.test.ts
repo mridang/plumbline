@@ -51,7 +51,10 @@ describe('the origins', () => {
   });
 
   it('marks hints written for this package as original work', () => {
-    expect(ORIGINS['privacy-geolocation']).toBeUndefined();
     expect(hintsByGroup.original).toContain('privacy-geolocation');
+    expect(ORIGINS['privacy-geolocation']?.[0].source).toBe('original');
+    expect(ORIGINS['privacy-geolocation']?.[0].url).toBe(
+      'https://www.w3.org/TR/geolocation/',
+    );
   });
 });

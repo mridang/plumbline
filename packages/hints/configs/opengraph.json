@@ -2,7 +2,9 @@
   "connector": {
     "name": "puppeteer"
   },
-  "parsers": ["html"],
+  "parsers": [
+    "html"
+  ],
   "hints": {
     "@mridang/webhint-hint-plumbline/icons-favicon-32-missing": "default",
     "@mridang/webhint-hint-plumbline/icons-favicon-ico-or-png-missing": "default",

@@ -1,0 +1,29 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-plumbline/agent-a2a-agent-card": "default",
+    "@mridang/webhint-hint-plumbline/agent-acp": "default",
+    "@mridang/webhint-hint-plumbline/agent-api-catalog": "default",
+    "@mridang/webhint-hint-plumbline/agent-ard": "default",
+    "@mridang/webhint-hint-plumbline/agent-auth-md": "default",
+    "@mridang/webhint-hint-plumbline/agent-dns-aid": "default",
+    "@mridang/webhint-hint-plumbline/agent-link-headers": "default",
+    "@mridang/webhint-hint-plumbline/agent-markdown-negotiation": "default",
+    "@mridang/webhint-hint-plumbline/agent-mcp-server-card": "default",
+    "@mridang/webhint-hint-plumbline/agent-mpp": "default",
+    "@mridang/webhint-hint-plumbline/agent-oauth-discovery": "default",
+    "@mridang/webhint-hint-plumbline/agent-oauth-protected-resource": "default",
+    "@mridang/webhint-hint-plumbline/agent-poppy": "default",
+    "@mridang/webhint-hint-plumbline/agent-score": "default",
+    "@mridang/webhint-hint-plumbline/agent-skills": "default",
+    "@mridang/webhint-hint-plumbline/agent-ucp": "default",
+    "@mridang/webhint-hint-plumbline/agent-web-bot-auth": "default",
+    "@mridang/webhint-hint-plumbline/agent-webmcp": "default",
+    "@mridang/webhint-hint-plumbline/agent-x402": "default"
+  }
+}

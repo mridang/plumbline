@@ -1,0 +1,14 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-plumbline/technical-html-size": "default",
+    "@mridang/webhint-hint-plumbline/technical-image-weight": "default",
+    "@mridang/webhint-hint-plumbline/technical-redirect-chain": "default",
+    "@mridang/webhint-hint-plumbline/timing-allow-origin": "default"
+  }
+}

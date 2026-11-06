@@ -1,0 +1,45 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-plumbline/agent-a2a-agent-card": "default",
+    "@mridang/webhint-hint-plumbline/agent-acp": "default",
+    "@mridang/webhint-hint-plumbline/agent-api-catalog": "default",
+    "@mridang/webhint-hint-plumbline/agent-ard": "default",
+    "@mridang/webhint-hint-plumbline/agent-auth-md": "default",
+    "@mridang/webhint-hint-plumbline/agent-dns-aid": "default",
+    "@mridang/webhint-hint-plumbline/agent-link-headers": "default",
+    "@mridang/webhint-hint-plumbline/agent-markdown-negotiation": "default",
+    "@mridang/webhint-hint-plumbline/agent-mcp-server-card": "default",
+    "@mridang/webhint-hint-plumbline/agent-mpp": "default",
+    "@mridang/webhint-hint-plumbline/agent-oauth-discovery": "default",
+    "@mridang/webhint-hint-plumbline/agent-oauth-protected-resource": "default",
+    "@mridang/webhint-hint-plumbline/agent-poppy": "default",
+    "@mridang/webhint-hint-plumbline/agent-score": "default",
+    "@mridang/webhint-hint-plumbline/agent-skills": "default",
+    "@mridang/webhint-hint-plumbline/agent-ucp": "default",
+    "@mridang/webhint-hint-plumbline/agent-web-bot-auth": "default",
+    "@mridang/webhint-hint-plumbline/agent-webmcp": "default",
+    "@mridang/webhint-hint-plumbline/agent-x402": "default",
+    "@mridang/webhint-hint-plumbline/attribution-reporting": "default",
+    "@mridang/webhint-hint-plumbline/dane-exists": "default",
+    "@mridang/webhint-hint-plumbline/geo-content-extraction": "default",
+    "@mridang/webhint-hint-plumbline/geo-faq-schema": "default",
+    "@mridang/webhint-hint-plumbline/geo-organization-schema": "default",
+    "@mridang/webhint-hint-plumbline/geo-speakable-schema": "default",
+    "@mridang/webhint-hint-plumbline/integrity-policy": "default",
+    "@mridang/webhint-hint-plumbline/integrity-policy-report-only": "default",
+    "@mridang/webhint-hint-plumbline/no-vary-search": "default",
+    "@mridang/webhint-hint-plumbline/observe-browsing-topics": "default",
+    "@mridang/webhint-hint-plumbline/seo-keywords-frequent": "default",
+    "@mridang/webhint-hint-plumbline/seo-keywords-in-title": "default",
+    "@mridang/webhint-hint-plumbline/set-login": "default",
+    "@mridang/webhint-hint-plumbline/speculation-rules": "default",
+    "@mridang/webhint-hint-plumbline/supports-loading-mode": "default",
+    "@mridang/webhint-hint-plumbline/use-as-dictionary": "default"
+  }
+}

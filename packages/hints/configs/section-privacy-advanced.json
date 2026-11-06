@@ -1,0 +1,21 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-plumbline/accept-ch": "default",
+    "@mridang/webhint-hint-plumbline/critical-ch": "default",
+    "@mridang/webhint-hint-plumbline/gpc-json": "default",
+    "@mridang/webhint-hint-plumbline/privacy-cookies": "default",
+    "@mridang/webhint-hint-plumbline/privacy-geolocation": "default",
+    "@mridang/webhint-hint-plumbline/privacy-local-storage": "default",
+    "@mridang/webhint-hint-plumbline/privacy-policy-link-missing": "default",
+    "@mridang/webhint-hint-plumbline/privacy-third-party-requests": "default",
+    "@mridang/webhint-hint-plumbline/referrer-policy": "default",
+    "@mridang/webhint-hint-plumbline/terms-of-service-link-missing": "default",
+    "@mridang/webhint-hint-plumbline/x-dns-prefetch-control": "default"
+  }
+}

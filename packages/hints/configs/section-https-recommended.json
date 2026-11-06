@@ -1,0 +1,27 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-plumbline/cert-hostname": "default",
+    "@mridang/webhint-hint-plumbline/cert-pubkey": "default",
+    "@mridang/webhint-hint-plumbline/cert-signature": "default",
+    "@mridang/webhint-hint-plumbline/cert-trust": "default",
+    "@mridang/webhint-hint-plumbline/form-action-secure": "default",
+    "@mridang/webhint-hint-plumbline/hsts": "default",
+    "@mridang/webhint-hint-plumbline/https-available": "default",
+    "@mridang/webhint-hint-plumbline/privacy-insecure-first-party": "default",
+    "@mridang/webhint-hint-plumbline/privacy-mixed-content": "default",
+    "@mridang/webhint-hint-plumbline/redirection": "default",
+    "@mridang/webhint-hint-plumbline/tls-ciphers": "default",
+    "@mridang/webhint-hint-plumbline/tls-compression": "default",
+    "@mridang/webhint-hint-plumbline/tls-kex-hash": "default",
+    "@mridang/webhint-hint-plumbline/tls-kex-params": "default",
+    "@mridang/webhint-hint-plumbline/tls-renegotiation-client": "default",
+    "@mridang/webhint-hint-plumbline/tls-renegotiation-secure": "default",
+    "@mridang/webhint-hint-plumbline/tls-version": "default"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-plumbline/no-vary-search": "default",
+    "@mridang/webhint-hint-plumbline/set-login": "default",
+    "@mridang/webhint-hint-plumbline/speculation-rules": "default",
+    "@mridang/webhint-hint-plumbline/supports-loading-mode": "default",
+    "@mridang/webhint-hint-plumbline/use-as-dictionary": "default"
+  }
+}

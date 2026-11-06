@@ -1,0 +1,19 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-plumbline/seo-responsive-images": "default",
+    "@mridang/webhint-hint-plumbline/technical-asset-count": "default",
+    "@mridang/webhint-hint-plumbline/technical-html-size": "default",
+    "@mridang/webhint-hint-plumbline/technical-image-formats": "default",
+    "@mridang/webhint-hint-plumbline/technical-image-weight": "default",
+    "@mridang/webhint-hint-plumbline/technical-lazy-loading": "default",
+    "@mridang/webhint-hint-plumbline/technical-redirect-chain": "default",
+    "@mridang/webhint-hint-plumbline/technical-response-time": "default",
+    "@mridang/webhint-hint-plumbline/timing-allow-origin": "default"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-plumbline/change-password": "default",
+    "@mridang/webhint-hint-plumbline/etag": "default",
+    "@mridang/webhint-hint-plumbline/exposed-backup-files": "default",
+    "@mridang/webhint-hint-plumbline/exposed-crossdomain": "default",
+    "@mridang/webhint-hint-plumbline/exposed-directory-listing": "default",
+    "@mridang/webhint-hint-plumbline/exposed-ds-store": "default",
+    "@mridang/webhint-hint-plumbline/exposed-env": "default",
+    "@mridang/webhint-hint-plumbline/exposed-git": "default",
+    "@mridang/webhint-hint-plumbline/exposed-server-status": "default",
+    "@mridang/webhint-hint-plumbline/exposed-source-map": "default",
+    "@mridang/webhint-hint-plumbline/exposed-svn": "default",
+    "@mridang/webhint-hint-plumbline/http-methods": "default",
+    "@mridang/webhint-hint-plumbline/security-txt": "default",
+    "@mridang/webhint-hint-plumbline/server-banner": "default",
+    "@mridang/webhint-hint-plumbline/server-timing": "default",
+    "@mridang/webhint-hint-plumbline/sourcemap": "default",
+    "@mridang/webhint-hint-plumbline/via": "default",
+    "@mridang/webhint-hint-plumbline/x-powered-by": "default"
+  }
+}

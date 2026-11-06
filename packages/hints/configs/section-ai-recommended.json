@@ -1,0 +1,12 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-plumbline/agent-ai-bot-rules": "default",
+    "@mridang/webhint-hint-plumbline/agent-content-signals": "default"
+  }
+}

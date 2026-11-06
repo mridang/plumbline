@@ -1,0 +1,16 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-plumbline/geo-content-extraction": "default",
+    "@mridang/webhint-hint-plumbline/geo-faq-schema": "default",
+    "@mridang/webhint-hint-plumbline/geo-organization-schema": "default",
+    "@mridang/webhint-hint-plumbline/geo-speakable-schema": "default",
+    "@mridang/webhint-hint-plumbline/seo-keywords-frequent": "default",
+    "@mridang/webhint-hint-plumbline/seo-keywords-in-title": "default"
+  }
+}

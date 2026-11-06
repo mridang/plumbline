@@ -1,0 +1,22 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-plumbline/apple-app-site-association": "default",
+    "@mridang/webhint-hint-plumbline/assetlinks-json": "default",
+    "@mridang/webhint-hint-plumbline/icons-apple-touch-icon-missing": "default",
+    "@mridang/webhint-hint-plumbline/icons-favicon-32-missing": "default",
+    "@mridang/webhint-hint-plumbline/icons-favicon-ico-or-png-missing": "default",
+    "@mridang/webhint-hint-plumbline/icons-favicon-missing": "default",
+    "@mridang/webhint-hint-plumbline/icons-favicon-svg-missing": "default",
+    "@mridang/webhint-hint-plumbline/manifest-icons": "default",
+    "@mridang/webhint-hint-plumbline/manifest-linked": "default",
+    "@mridang/webhint-hint-plumbline/manifest-valid": "default",
+    "@mridang/webhint-hint-plumbline/service-worker-allowed": "default",
+    "@mridang/webhint-hint-plumbline/theme-color-meta": "default"
+  }
+}

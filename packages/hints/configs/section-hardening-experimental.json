@@ -1,0 +1,12 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-plumbline/integrity-policy": "default",
+    "@mridang/webhint-hint-plumbline/integrity-policy-report-only": "default"
+  }
+}

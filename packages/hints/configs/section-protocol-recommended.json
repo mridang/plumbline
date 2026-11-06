@@ -1,0 +1,20 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-plumbline/accept-patch": "default",
+    "@mridang/webhint-hint-plumbline/accept-post": "default",
+    "@mridang/webhint-hint-plumbline/age": "default",
+    "@mridang/webhint-hint-plumbline/alt-svc": "default",
+    "@mridang/webhint-hint-plumbline/content-digest": "default",
+    "@mridang/webhint-hint-plumbline/expires": "default",
+    "@mridang/webhint-hint-plumbline/last-modified": "default",
+    "@mridang/webhint-hint-plumbline/repr-digest": "default",
+    "@mridang/webhint-hint-plumbline/retry-after": "default",
+    "@mridang/webhint-hint-plumbline/vary": "default"
+  }
+}

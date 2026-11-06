@@ -1,0 +1,13 @@
+{
+  "connector": {
+    "name": "puppeteer"
+  },
+  "parsers": [
+    "html"
+  ],
+  "hints": {
+    "@mridang/webhint-hint-plumbline/ads-txt": "default",
+    "@mridang/webhint-hint-plumbline/app-ads-txt": "default",
+    "@mridang/webhint-hint-plumbline/sellers-json": "default"
+  }
+}
