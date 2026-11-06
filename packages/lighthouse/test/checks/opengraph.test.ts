@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from '@jest/globals';
 import type * as LH from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
-import { CATEGORIES } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
+import { SECTIONS } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import {
   ogDescriptionCouldBeLonger,
@@ -138,10 +138,10 @@ describe('the opengraph registry', () => {
   });
 
   it('places every check in a real taxonomy section', () => {
-    const sectionIds = new Set(CATEGORIES.map((category) => category.id));
+    const sectionIds = new Set(SECTIONS.map((category) => category.id));
     for (const c of opengraphChecks) {
-      // Every Open Graph/Twitter hint lives under 'social-previews'.
-      expect(c.section).toBe('social-previews');
+      // Every Open Graph/Twitter hint lives under 'sharing'.
+      expect(c.section).toBe('sharing');
       expect(sectionIds.has(c.section)).toBe(true);
     }
   });

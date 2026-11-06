@@ -13,7 +13,7 @@ const CATALOGUE: HintMeta[] = [
     groups: ['owasp'],
   },
   {
-    id: 'spf',
+    id: 'mail-spf',
     name: 'SPF',
     description: 'Checks the SPF record.',
     category: 'email',
@@ -47,12 +47,33 @@ describe('plumbline checks', () => {
     ]);
     expect(JSON.parse(result.stdout)).toEqual([
       {
-        id: 'spf',
+        id: 'mail-spf',
         name: 'SPF',
         groups: ['email'],
         description: 'Checks the SPF record.',
       },
     ]);
+  });
+
+  it('lists the checks of a tier and a target', async () => {
+    const result = await run([
+      'checks',
+      '--tier',
+      'recommended',
+      '--target',
+      'mail',
+      '--format',
+      'json',
+    ]);
+    expect(
+      (JSON.parse(result.stdout) as { id: string }[]).map((c) => c.id),
+    ).toEqual(['mail-spf']);
+  });
+
+  it('lists the checks of a section written with its kind', async () => {
+    const result = await run(['checks', '--group', 'section:hardening']);
+    expect(result.stdout).toContain('csp  Content Security Policy');
+    expect(result.stdout).not.toContain('mail-spf');
   });
 
   it('refuses a scan option, which only applies to scan', async () => {

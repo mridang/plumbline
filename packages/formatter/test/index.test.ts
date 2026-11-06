@@ -27,10 +27,17 @@ describe('ExtraFormatter', () => {
           category: 'security',
           groups: ['owasp', 'tls'],
           url: 'https://ref.test/csp',
-          section: 'https-tls',
+          section: 'https',
           sectionTitle: 'HTTPS and certificates',
-          sectionOrder: 3,
-          tags: ['site-protection'],
+          sectionOrder: 0,
+          group: 'security-privacy',
+          groupTitle: 'Security and privacy',
+          subsection: 'csp',
+          tags: ['security'],
+          tier: 'advanced',
+          target: 'web',
+          control: 'deployer',
+          added: '2026-10',
           origins: [
             {
               source: 'owasp',
@@ -66,6 +73,12 @@ describe('ExtraFormatter', () => {
     expect(files).toEqual(['https-a-test-x-query-y-query-1.html']);
     const html = await readFile(path.join(out, files[0] ?? ''), 'utf8');
     expect(html).toContain('HTTPS and certificates');
+    expect(html).toContain('<li class="group">Security and privacy</li>');
+    expect(html).toContain('<span class="badge">advanced</span>');
+    expect(html).toContain('Subsection: csp');
+    expect(html).toContain('Fixed by: deployer');
+    expect(html).toContain('Looks at: web');
+    expect(html).toContain('Added: 2026-10');
     expect(html).toContain('href="https://src.test/csp"');
     expect(html).toContain('Missing CSP');
     expect(log).toHaveBeenCalledWith(

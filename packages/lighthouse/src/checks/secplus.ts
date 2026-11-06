@@ -101,7 +101,7 @@ function fromHint(
     id: definition.id,
     // Every secplus hint is placed in the taxonomy; fall back to site
     // protection defensively rather than emit an empty group.
-    section: docs.section ?? 'site-protection',
+    section: docs.section ?? 'hardening',
     title: docs.name,
     description: docs.description,
     reference: docs.url,

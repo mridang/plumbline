@@ -124,9 +124,9 @@ function fromHint(
   const docs = hintDocs(definition);
   return {
     id: definition.id,
-    // Every Open Graph/Twitter hint is placed under 'social-previews' in the
+    // Every Open Graph/Twitter hint is placed under 'sharing' in the
     // taxonomy; fall back to it defensively rather than emit an empty group.
-    section: docs.section ?? 'social-previews',
+    section: docs.section ?? 'sharing',
     title: docs.name,
     description: docs.description,
     reference: docs.url,

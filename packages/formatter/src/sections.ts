@@ -42,8 +42,21 @@ export interface HintInfo {
   sectionTitle?: string;
   sectionDescription?: string;
   sectionOrder?: number;
-  /** Ids of other sections the hint also touches. */
+  /** The display group of the section, by id and title. */
+  group?: string;
+  groupTitle?: string;
+  /** Free-text subsection inside the section, for example `cors`. */
+  subsection?: string;
+  /** Goal and audience tags, for example `seo` or `store`. */
   tags?: readonly string[];
+  /** `recommended`, `advanced` or `experimental`. */
+  tier?: string;
+  /** `web`, `mail` or `site`. */
+  target?: string;
+  /** Who can fix a finding: `deployer`, `platform`, `dns` or `mail`. */
+  control?: string;
+  /** The month the check was added, `YYYY-MM`. */
+  added?: string;
   /** Where the hint came from; absent for hints that do not record it. */
   origins?: readonly Origin[];
 }
@@ -83,7 +96,7 @@ export interface HintBlock {
   info: HintInfo;
   findings: Finding[];
   counts: Counts;
-  /** Source groups the hint came from and the other sections it touches. */
+  /** The tier (unless recommended), the sources the hint came from and its tags. */
   badges: string[];
 }
 
@@ -94,6 +107,9 @@ export interface Section {
   title: string;
   /** One line saying what the section holds, when known. */
   description?: string;
+  /** The display group the section is shown under. */
+  group?: string;
+  groupTitle?: string;
   hints: HintBlock[];
   counts: Counts;
   /** True when no hint in the section has a finding. */
@@ -198,7 +214,7 @@ export function buildSections(
     }
   }
 
-  // Titles of stamped sections, so a tag (a section id) can show its title.
+  // Titles of stamped sections, so a tag that is also a section id shows its title.
   const titles = new Map<string, string>();
   for (const info of infos.values()) {
     if (info.section && info.sectionTitle) {
@@ -216,6 +232,7 @@ export function buildSections(
       findings: own,
       counts: countFindings(own),
       badges: [
+        ...(info.tier && info.tier !== 'recommended' ? [info.tier] : []),
         ...info.groups.filter((g) =>
           (SOURCE_GROUPS as readonly string[]).includes(g),
         ),
@@ -226,6 +243,8 @@ export function buildSections(
       key,
       title,
       description: info.sectionDescription,
+      group: info.group,
+      groupTitle: info.groupTitle,
       hints: [],
       counts: { error: 0, warning: 0, hint: 0 },
       passed: true,

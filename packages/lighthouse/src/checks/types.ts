@@ -29,7 +29,7 @@ export interface AuditCheck {
   id: string;
   /**
    * The section this check is grouped under in the report: a category id from
-   * `src/core/taxonomy.ts` (the eight CATEGORIES). It decides the Lighthouse
+   * `src/core/taxonomy.ts` (the SECTIONS). It decides the Lighthouse
    * group, and is normally taken from the hint metadata, never re-decided.
    */
   section: string;

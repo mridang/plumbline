@@ -56,6 +56,32 @@ describe('entryOf', () => {
     });
   });
 
+  it('reads the placement of a hint and the fixer of its section', () => {
+    const { info } = entryOf(
+      'csp',
+      hintWith({
+        section: 'hardening',
+        group: 'security-privacy',
+        subsection: 'csp',
+        tags: ['security', 4],
+        tier: 'advanced',
+        target: 'web',
+        control: 'deployer',
+        added: '2026-10',
+      }),
+    );
+    expect(info).toMatchObject({
+      group: 'security-privacy',
+      subsection: 'csp',
+      tags: ['security'],
+      tier: 'advanced',
+      target: 'web',
+      control: 'deployer',
+      added: '2026-10',
+    });
+    expect(info.fixer).toBe('deployer (headers config, middleware, template)');
+  });
+
   it('falls back for a hint with no docs', () => {
     expect(entryOf('plain', hintWith(undefined)).info).toEqual({
       id: 'plain',
@@ -65,6 +91,7 @@ describe('entryOf', () => {
       sectionTitle: 'Other',
       sectionOrder: Number.MAX_SAFE_INTEGER,
       groups: [],
+      tags: [],
       origins: [],
     });
   });

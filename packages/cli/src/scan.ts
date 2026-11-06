@@ -57,6 +57,12 @@ export interface HintMeta {
   description: string;
   category: string;
   groups: string[];
+  /** Where the hint is placed in the taxonomy; absent for a hint without it. */
+  section?: string;
+  tier?: string;
+  target?: string;
+  control?: string;
+  tags?: string[];
 }
 
 /** Reads the stamped metadata off one hint, defaulting anything missing. */
@@ -70,6 +76,13 @@ function metaOf(id: string): HintMeta {
     groups: Array.isArray(docs.groups)
       ? docs.groups.filter((g): g is string => typeof g === 'string')
       : [],
+    ...(typeof docs.section === 'string' ? { section: docs.section } : {}),
+    ...(typeof docs.tier === 'string' ? { tier: docs.tier } : {}),
+    ...(typeof docs.target === 'string' ? { target: docs.target } : {}),
+    ...(typeof docs.control === 'string' ? { control: docs.control } : {}),
+    ...(Array.isArray(docs.tags)
+      ? { tags: docs.tags.filter((t): t is string => typeof t === 'string') }
+      : {}),
   };
 }
 

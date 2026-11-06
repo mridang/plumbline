@@ -14,16 +14,16 @@
  *   - `audits`    one `{ path }` per check (Lighthouse serialises the plugin
  *                 config as JSON, so audits must be referenced by module path;
  *                 the path points at the check's thin wrapper module).
- *   - `groups`    the taxonomy CATEGORIES that at least one check lands in; the
- *                 eight sections in `src/core/taxonomy.ts` are the single source
+ *   - `groups`    the taxonomy SECTIONS that at least one check lands in; the
+ *                 sections in `src/core/taxonomy.ts` are the single source
  *                 of grouping. Lighthouse prefixes each group id with the plugin
- *                 name, so `site-protection` becomes
- *                 `@mridang/lighthouse-plugin-plumbline-site-protection`.
+ *                 name, so `hardening` becomes
+ *                 `@mridang/lighthouse-plugin-plumbline-hardening`.
  *   - `auditRefs` one per check, grouped by its section, weighted 1 for a scored
  *                 check and 0 for an informative one.
  */
 import { checks } from './checks/index.js';
-import { CATEGORIES } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
+import { SECTIONS } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 
 /** The published package name Lighthouse resolves audit module paths against. */
 const PACKAGE = '@mridang/lighthouse-plugin-plumbline';
@@ -44,7 +44,7 @@ const usedSections = new Set(checks.map((check) => check.section));
  * the rest of the project. Only sections with audits are included.
  */
 const groups = Object.fromEntries(
-  CATEGORIES.filter((category) => usedSections.has(category.id)).map(
+  SECTIONS.filter((category) => usedSections.has(category.id)).map(
     (category) => [
       category.id,
       { title: category.title, description: category.description },

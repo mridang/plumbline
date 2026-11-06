@@ -63,7 +63,7 @@ function fromHint(
   const docs = hintDocs(definition);
   return {
     id: definition.id,
-    section: docs.section ?? 'site-protection',
+    section: docs.section ?? 'hardening',
     title: docs.name,
     description: docs.description,
     reference: docs.url,

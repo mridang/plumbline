@@ -61,11 +61,11 @@ async function run(
 }
 
 describe('the i18n registry', () => {
-  it('registers all seven checks under the search section', () => {
+  it('registers all seven checks under the seo section', () => {
     expect(i18nChecks).toHaveLength(7);
     for (const c of i18nChecks) {
       expect(c.id).toBeTruthy();
-      expect(c.section).toBe('search');
+      expect(c.section).toBe('seo');
     }
   });
 

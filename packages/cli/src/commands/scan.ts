@@ -37,7 +37,21 @@ export const SCAN_FLAGS = {
     multipleNonGreedy: true,
     delimiter: ',',
     summary:
-      'Run only the checks in these groups (owasp, tls, dns, email, seo, agent, …).',
+      'Run only the checks in these sections, tags, sources or targets (https, seo, owasp, section:email, tag:tls, …).',
+  }),
+  tier: Flags.string({
+    multiple: true,
+    multipleNonGreedy: true,
+    delimiter: ',',
+    options: ['recommended', 'advanced', 'experimental'],
+    summary: 'Run only the checks of these tiers.',
+  }),
+  target: Flags.string({
+    multiple: true,
+    multipleNonGreedy: true,
+    delimiter: ',',
+    options: ['web', 'mail', 'site'],
+    summary: 'Run only the checks that look at these targets.',
   }),
   'fail-on': Flags.option({
     options: FAIL_ON,
@@ -69,6 +83,8 @@ export function scanCommandOf(
     only?: string[];
     skip?: string[];
     group?: string[];
+    tier?: string[];
+    target?: string[];
     'fail-on': ScanCommand['failOn'];
     out: string;
     browser?: string;
@@ -84,6 +100,8 @@ export function scanCommandOf(
     only: trimmed(flags.only),
     skip: trimmed(flags.skip),
     groups: trimmed(flags.group),
+    tiers: trimmed(flags.tier),
+    targets: trimmed(flags.target),
     failOn: flags['fail-on'],
     out: flags.out,
     ...(flags.browser === undefined ? {} : { browser: flags.browser }),
@@ -107,7 +125,7 @@ Exit status: 0 ok, 1 findings at or above --fail-on, 2 a usage mistake, 3 the sc
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> example.com',
-    '<%= config.bin %> <%= command.id %> example.com --format json --group tls,email --fail-on warning',
+    '<%= config.bin %> <%= command.id %> example.com --format json --group tls,email --tier recommended --fail-on warning',
     '<%= config.bin %> <%= command.id %> https://example.com/blog --format html --out reports',
   ];
 

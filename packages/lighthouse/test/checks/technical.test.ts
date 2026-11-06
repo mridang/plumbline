@@ -146,14 +146,14 @@ describe('the technical registry', () => {
     const sections = Object.fromEntries(
       technicalChecks.map((c) => [c.id, c.section]),
     );
-    expect(sections['technical-heading-hierarchy']).toBe('search');
-    expect(sections['technical-image-alt-coverage']).toBe('search');
-    expect(sections['technical-robots-meta-advanced']).toBe('search');
-    expect(sections['technical-canonical-invalid']).toBe('search');
-    expect(sections['technical-redirect-chain']).toBe('search');
-    expect(sections['technical-image-weight']).toBe('search');
-    // The twitter-card check lands in social-previews per the taxonomy.
-    expect(sections['technical-twitter-card-type']).toBe('social-previews');
+    expect(sections['technical-heading-hierarchy']).toBe('seo');
+    expect(sections['technical-image-alt-coverage']).toBe('seo');
+    expect(sections['technical-robots-meta-advanced']).toBe('seo');
+    expect(sections['technical-canonical-invalid']).toBe('seo');
+    expect(sections['technical-redirect-chain']).toBe('performance');
+    expect(sections['technical-image-weight']).toBe('performance');
+    // The twitter-card check lands in sharing per the taxonomy.
+    expect(sections['technical-twitter-card-type']).toBe('sharing');
   });
 });
 

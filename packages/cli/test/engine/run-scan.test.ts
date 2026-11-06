@@ -17,6 +17,7 @@ function failing(id: string, message: string): CatalogueEntry {
       sectionTitle: 'Headers',
       sectionOrder: 1,
       groups: [],
+      tags: [],
       origins: [],
     },
     ctor: class {

@@ -169,7 +169,17 @@ function renderHintHead(block: HintBlock): string {
   const description = info.description
     ? `<p class="desc">${escapeHtml(info.description)}</p>`
     : '';
-  return `${description}${reference}${renderOrigins(info.origins)}${info.id.startsWith('extra/') ? '' : renderStockButtons(info.id)}`;
+  const facts = [
+    info.subsection ? `Subsection: ${info.subsection}` : '',
+    info.control ? `Fixed by: ${info.control}` : '',
+    info.target ? `Looks at: ${info.target}` : '',
+    info.added ? `Added: ${info.added}` : '',
+  ].filter(Boolean);
+  const meta =
+    facts.length > 0
+      ? `<p class="muted">${escapeHtml(facts.join(' \u00b7 '))}</p>`
+      : '';
+  return `${description}${meta}${reference}${renderOrigins(info.origins)}${info.id.startsWith('extra/') ? '' : renderStockButtons(info.id)}`;
 }
 
 /** Renders a hint that has findings as a collapsible block. */
@@ -212,15 +222,20 @@ function renderSection(section: Section): string {
 
 /** Renders the sidebar navigation. */
 function renderNav(sections: readonly Section[]): string {
+  let group: string | undefined;
   return sections
-    .map(
-      (s) =>
-        `<li><a href="#${anchor(s.key)}">${escapeHtml(s.title)}</a>${
-          s.passed
-            ? '<span class="ok">&#10003;</span>'
-            : `<span class="counts">${renderCounts(s.counts)}</span>`
-        }</li>`,
-    )
+    .map((s) => {
+      const heading =
+        s.groupTitle && s.group !== group
+          ? `<li class="group">${escapeHtml(s.groupTitle)}</li>`
+          : '';
+      group = s.group;
+      return `${heading}<li><a href="#${anchor(s.key)}">${escapeHtml(s.title)}</a>${
+        s.passed
+          ? '<span class="ok">&#10003;</span>'
+          : `<span class="counts">${renderCounts(s.counts)}</span>`
+      }</li>`;
+    })
     .join('');
 }
 
@@ -247,7 +262,7 @@ const STYLE = `
 a{color:var(--hint)}code,pre{font-family:ui-monospace,Menlo,monospace;font-size:13px}
 .layout{display:flex;gap:24px;max-width:1200px;margin:0 auto;padding:16px}
 nav{flex:0 0 230px;position:sticky;top:16px;align-self:flex-start;max-height:100vh;overflow:auto}
-nav ul{list-style:none;margin:0;padding:0}nav li{display:flex;justify-content:space-between;gap:8px;padding:4px 0}
+nav ul{list-style:none;margin:0;padding:0}nav li.group{display:block;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-top:10px}nav li{display:flex;justify-content:space-between;gap:8px;padding:4px 0}
 main{flex:1;min-width:0}h1{margin:0 0 4px;font-size:22px;word-break:break-all}h2{font-size:18px;margin:24px 0 8px}
 .meta{color:var(--muted);margin:0 0 12px}.totals{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
 .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin:12px 0}

@@ -47,9 +47,9 @@ function fromHint(
   const docs = hintDocs(definition);
   return {
     id: definition.id,
-    // The agent hints are placed in `llms-ai`; fall back defensively rather
+    // The agent hints are placed in `ai`; fall back defensively rather
     // than emit an empty group.
-    section: docs.section ?? 'llms-ai',
+    section: docs.section ?? 'ai',
     title: docs.name,
     description: docs.description,
     reference: docs.url,

@@ -102,9 +102,9 @@ function fromHint(
   const docs = hintDocs(definition);
   return {
     id: definition.id,
-    // Every i18n hint is placed in the `search` section; fall back to it
+    // Every i18n hint is placed in the `seo` section; fall back to it
     // defensively rather than emit none.
-    section: docs.section ?? 'search',
+    section: docs.section ?? 'seo',
     title: docs.name,
     description: docs.description,
     reference: docs.url,

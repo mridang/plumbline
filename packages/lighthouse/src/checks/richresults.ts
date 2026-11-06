@@ -13,7 +13,7 @@
  * so every check reads the served HTML. Titles, descriptions and references
  * come from the compiled hint metadata (`../meta.ts`); the message text comes
  * from the shared validators, so nothing is restated here. All ten checks live
- * in the `search` section. A check that validates required fields is graded
+ * in the `seo` section. A check that validates required fields is graded
  * (`numeric`); the recommended-only Article check is `informative`.
  */
 import type * as LH from 'lighthouse';
@@ -62,9 +62,8 @@ function pageUrl(artifacts: LH.Artifacts): string {
 /**
  * Builds a check from a compiled webhint hint and its shared validator. The
  * title, description and reference are taken from the hint, so they are never
- * restated here. Every richresults check lands in the `search` section (the set
- * is not yet wired into the shared taxonomy, so the section is set directly
- * rather than read from hint metadata that has no placement yet).
+ * restated here. Every richresults check lands in the `seo` section, read from the hint
+ * metadata (with `seo` as the fallback).
  */
 function fromHint(
   definition: HintDefinition,
@@ -74,7 +73,7 @@ function fromHint(
   const docs = hintDocs(definition);
   return {
     id: definition.id,
-    section: 'search',
+    section: docs.section ?? 'seo',
     title: docs.name,
     description: docs.description,
     reference: docs.url,

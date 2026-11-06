@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import type * as LH from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import { secplusChecks } from '../../src/checks/secplus.js';
+import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 import type { AuditCheck } from '../../src/checks/types.js';
 
 /**
@@ -98,7 +99,7 @@ describe('the secplus registry', () => {
     expect(secplusChecks).toHaveLength(4);
     for (const c of secplusChecks) {
       expect(c.id).toBeTruthy();
-      expect(c.section).toBe('site-protection');
+      expect(c.section).toBe(PLACEMENT[c.id]?.section);
       expect(c.title).toBeTruthy();
     }
   });

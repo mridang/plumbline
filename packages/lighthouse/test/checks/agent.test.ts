@@ -83,11 +83,11 @@ function check(id: string): AuditCheck {
 }
 
 describe('the agent registry', () => {
-  it('registers only agent-link-headers, graded, in llms-ai', () => {
+  it('registers only agent-link-headers, graded, in ai', () => {
     expect(agentChecks).toHaveLength(1);
     const only = agentChecks[0];
     expect(only?.id).toBe('agent-link-headers');
-    expect(only?.section).toBe('llms-ai');
+    expect(only?.section).toBe('ai');
     expect(only?.scoreMode).toBe('numeric');
     expect(only?.requiredArtifacts).toEqual(['DevtoolsLog', 'URL']);
   });

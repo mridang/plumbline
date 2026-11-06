@@ -54,7 +54,7 @@ export function runChecks(
   io: Io,
   catalogue: readonly HintMeta[],
 ): number {
-  const checks = filterByGroups(catalogue, command.groups);
+  const checks = filterByGroups(catalogue, command.groups, command);
   io.stdout(
     command.format === 'json'
       ? `${JSON.stringify(toJsonChecks(checks), null, 2)}\n`

@@ -4,7 +4,7 @@ A [Lighthouse](https://developer.chrome.com/docs/lighthouse) plugin that runs th
 
 Each audit reuses the check logic of the matching webhint hint, so it reports the same findings. A Lighthouse plugin cannot add gatherers, so every audit reads only the artifacts Lighthouse collects by default (the DevTools log, the URL, and the page's meta and link elements). Checks that need DNS, TLS, mail servers or other URLs are not here; use the [`plumbline` CLI](../cli/README.md) for those.
 
-The plugin adds one category, "Webhint extra", with 143 audits grouped by the same sections as the hints (Site protection, Search and page quality and so on). Audits whose hint is context-specific are shown but weigh 0 in the score.
+The plugin adds one category, "Webhint extra", with 143 audits grouped by the same sections as the hints (Security headers, SEO, Link previews and so on). Audits whose hint is context-specific are shown but weigh 0 in the score.
 
 ## Install
 

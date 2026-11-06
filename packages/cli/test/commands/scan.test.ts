@@ -21,7 +21,7 @@ const CATALOGUE: HintMeta[] = [
     groups: ['owasp'],
   },
   {
-    id: 'spf',
+    id: 'mail-spf',
     name: 'SPF',
     description: 'Checks the SPF record.',
     category: 'email',
@@ -106,15 +106,15 @@ describe('plumbline scan', () => {
     const result = await run([
       'scan',
       '--only',
-      'csp,spf',
+      'csp,mail-spf',
       '--skip',
-      'spf',
+      'mail-spf',
       'example.com',
     ]);
     expect(result.calls[0]?.options?.hints).toEqual(['csp']);
   });
   it('scans the normalised URL with the selected hints', async () => {
-    const result = await run(['scan', 'example.com', '--skip', 'spf']);
+    const result = await run(['scan', 'example.com', '--skip', 'mail-spf']);
     expect(result.calls).toEqual([
       {
         url: 'https://example.com/',
@@ -242,6 +242,8 @@ describe('scanCommandOf', () => {
       only: [],
       skip: [],
       groups: [],
+      tiers: [],
+      targets: [],
       failOn: 'error',
       out: 'hint-report',
       sandbox: true,
@@ -254,7 +256,14 @@ describe('scanCommandOf', () => {
         ...flags,
         only: [' csp ', ''],
         group: ['tls'],
+        tier: [' advanced '],
+        target: ['web'],
       }),
-    ).toMatchObject({ only: ['csp'], groups: ['tls'] });
+    ).toMatchObject({
+      only: ['csp'],
+      groups: ['tls'],
+      tiers: ['advanced'],
+      targets: ['web'],
+    });
   });
 });

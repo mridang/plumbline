@@ -9,14 +9,14 @@
  *
  * Four hints are covered, each in the section the taxonomy
  * (`src/core/taxonomy.ts` PLACEMENT) assigns it — the cookie and third-party
- * inventories under `visitor-privacy`, and the two TLS concerns under
- * `https-tls` (with `visitor-privacy` as a tag). The section is read from the
+ * inventories under `privacy`, and the two TLS concerns under
+ * `https` (with `privacy` as a tag). The section is read from the
  * hint, never re-decided here:
  *
- *  - privacy-cookies (visitor-privacy) — counts first/third-party cookies.
- *  - privacy-third-party-requests (visitor-privacy) — requests to other domains.
- *  - privacy-mixed-content (https-tls) — insecure subresources of an https page.
- *  - privacy-insecure-first-party (https-tls) — plain-http same-domain requests.
+ *  - privacy-cookies (privacy) — counts first/third-party cookies.
+ *  - privacy-third-party-requests (privacy) — requests to other domains.
+ *  - privacy-mixed-content (https) — insecure subresources of an https page.
+ *  - privacy-insecure-first-party (https) — plain-http same-domain requests.
  *
  * Scoring mirrors the webhint severity. `privacy-mixed-content` and
  * `privacy-insecure-first-party` report real `error`s (a security failure the
@@ -67,9 +67,9 @@ function fromHint(
   const docs = hintDocs(definition);
   return {
     id: definition.id,
-    // Every privacy hint is placed in `visitor-privacy`; fall back defensively
+    // Every privacy hint is placed in `privacy`; fall back defensively
     // rather than emit an empty group.
-    section: docs.section ?? 'visitor-privacy',
+    section: docs.section ?? 'privacy',
     title: docs.name,
     description: docs.description,
     reference: docs.url,

@@ -85,9 +85,9 @@ function fromHint(
   const docs = hintDocs(definition);
   return {
     id: definition.id,
-    // Every technical hint is placed in the taxonomy; fall back to the search
+    // Every technical hint is placed in the taxonomy; fall back to the seo
     // section defensively rather than emit an empty group.
-    section: docs.section ?? 'search',
+    section: docs.section ?? 'seo',
     title: docs.name,
     description: docs.description,
     reference: docs.url,
@@ -148,7 +148,7 @@ export const technicalChecks: readonly AuditCheck[] = [
   }),
 
   // The twitter:card value, from MetaElements. An unrecognised type is an
-  // error; this check lands in the social-previews section per the taxonomy.
+  // error; this check lands in the sharing section per the taxonomy.
   fromHint(twitterCardTypeHint, {
     scoreMode: 'numeric',
     requiredArtifacts: ['MetaElements'],

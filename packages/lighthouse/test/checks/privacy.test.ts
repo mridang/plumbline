@@ -105,16 +105,16 @@ describe('the privacy registry', () => {
       expect(c.requiredArtifacts).toEqual(['DevtoolsLog', 'URL']);
     }
     // Sections follow `src/core/taxonomy.ts` PLACEMENT: the cookie and
-    // third-party inventories sit under visitor-privacy, while mixed content
-    // and insecure first-party requests are TLS concerns (https-tls).
+    // third-party inventories sit under privacy, while mixed content
+    // and insecure first-party requests are TLS concerns (https).
     const sections = Object.fromEntries(
       privacyChecks.map((c) => [c.id, c.section]),
     );
     expect(sections).toEqual({
-      'privacy-cookies': 'visitor-privacy',
-      'privacy-third-party-requests': 'visitor-privacy',
-      'privacy-mixed-content': 'https-tls',
-      'privacy-insecure-first-party': 'https-tls',
+      'privacy-cookies': 'privacy',
+      'privacy-third-party-requests': 'privacy',
+      'privacy-mixed-content': 'https',
+      'privacy-insecure-first-party': 'https',
     });
   });
 

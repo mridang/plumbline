@@ -17,9 +17,8 @@
  *
  * Titles, descriptions, references and sections come from the compiled hint
  * metadata (`../meta.ts`); the message text comes from the shared `checks.js`
- * functions, so nothing is restated here. geo-structured-data-invalid lands in
- * the search section per the taxonomy; the other four land in the LLMs-and-AI
- * section. Every check is graded (`numeric`).
+ * functions, so nothing is restated here. All five land in the seo section
+ * per the taxonomy (the four AI-facing ones carry the `ai` tag). Every check is graded (`numeric`).
  */
 import type * as LH from 'lighthouse';
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
@@ -70,7 +69,7 @@ function fromHint(
     id: definition.id,
     // Every geo hint is placed in the taxonomy; fall back to the LLMs-and-AI
     // section defensively rather than emit an empty group.
-    section: docs.section ?? 'llms-ai',
+    section: docs.section ?? 'ai',
     title: docs.name,
     description: docs.description,
     reference: docs.url,

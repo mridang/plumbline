@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import type * as LH from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import { seoChecks } from '../../src/checks/seo.js';
+import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 import type { AuditCheck } from '../../src/checks/types.js';
 // The single-source rules the webhint hints call. The equivalence test runs the
 // Lighthouse check through its `adapt-seo` parser and asserts the findings match
@@ -148,23 +149,24 @@ describe('the seo registry', () => {
     expect(seoChecks).toHaveLength(18);
     for (const c of seoChecks) {
       expect(c.id).toBeTruthy();
-      expect(['search', 'social-previews']).toContain(c.section);
+      expect(c.section).toBe(PLACEMENT[c.id]?.section);
+      expect(['seo', 'pwa']).toContain(c.section);
     }
   });
 
-  it('places the title/description/robots rules in the search section', () => {
-    expect(check('seo-title-missing').section).toBe('search');
-    expect(check('seo-robots-noindex').section).toBe('search');
+  it('places the title/description/robots rules in the seo section', () => {
+    expect(check('seo-title-missing').section).toBe('seo');
+    expect(check('seo-robots-noindex').section).toBe('seo');
   });
 
-  it('places the favicon rules in the social-previews section', () => {
+  it('places the favicon rules in the pwa section', () => {
     for (const id of [
       'icons-favicon-missing',
       'icons-favicon-ico-or-png-missing',
       'icons-favicon-32-missing',
       'icons-favicon-svg-missing',
     ]) {
-      expect(check(id).section).toBe('social-previews');
+      expect(check(id).section).toBe('pwa');
     }
   });
 

@@ -47,9 +47,7 @@ describe('feeds checks', () => {
       'opensearch-discovery',
     ]);
     expect(feedsChecks.every((c) => c.scoreMode === 'informative')).toBe(true);
-    expect(feedsChecks.every((c) => c.section === 'social-previews')).toBe(
-      true,
-    );
+    expect(feedsChecks.every((c) => c.section === 'feeds')).toBe(true);
   });
 
   it('returns null when the main document is absent', async () => {

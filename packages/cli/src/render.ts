@@ -18,6 +18,10 @@ export interface JsonCheck {
   name: string;
   groups: string[];
   description: string;
+  section?: string;
+  tier?: string;
+  target?: string;
+  control?: string;
 }
 
 /** Findings carry the `extra/<id>` key webhint reports; the CLI shows bare ids. */
@@ -128,6 +132,11 @@ export function formatChecks(checks: readonly HintMeta[]): string {
     [
       `${check.id}  ${check.name}`,
       `  groups: ${check.groups.join(', ') || '(none)'}`,
+      ...(check.section
+        ? [
+            `  section: ${check.section}, tier: ${check.tier ?? '?'}, target: ${check.target ?? '?'}`,
+          ]
+        : []),
       ...(check.description ? [`  ${check.description}`] : []),
     ].join('\n'),
   );
@@ -136,10 +145,16 @@ export function formatChecks(checks: readonly HintMeta[]): string {
 
 /** The catalogue as `plumbline checks --format json` prints it. */
 export function toJsonChecks(checks: readonly HintMeta[]): JsonCheck[] {
-  return checks.map(({ id, name, groups, description }) => ({
-    id,
-    name,
-    groups,
-    description,
-  }));
+  return checks.map(
+    ({ id, name, groups, description, section, tier, target, control }) => ({
+      id,
+      name,
+      groups,
+      description,
+      ...(section ? { section } : {}),
+      ...(tier ? { tier } : {}),
+      ...(target ? { target } : {}),
+      ...(control ? { control } : {}),
+    }),
+  );
 }

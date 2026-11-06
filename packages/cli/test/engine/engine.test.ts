@@ -21,6 +21,7 @@ const INFO: HintInfo = {
   sectionTitle: 'Headers',
   sectionOrder: 1,
   groups: [],
+  tags: [],
   origins: [],
 };
 

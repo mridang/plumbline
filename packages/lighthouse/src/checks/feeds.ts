@@ -78,7 +78,7 @@ function fromHint(
   const docs = hintDocs(definition);
   return {
     id: definition.id,
-    section: docs.section ?? 'social-previews',
+    section: docs.section ?? 'feeds',
     title: docs.name,
     description: docs.description,
     reference: docs.url,

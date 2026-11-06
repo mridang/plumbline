@@ -143,8 +143,8 @@ function fromHint(
   return {
     id: definition.id,
     // Every SEO/favicon hint is placed in the taxonomy, so `section` is always
-    // set; fall back to the search section defensively rather than emit none.
-    section: docs.section ?? 'search',
+    // set; fall back to the seo section defensively rather than emit none.
+    section: docs.section ?? 'seo',
     title: docs.name,
     description: docs.description,
     reference: docs.url,

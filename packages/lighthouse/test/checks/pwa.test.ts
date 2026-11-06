@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import type * as LH from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import { pwaChecks } from '../../src/checks/pwa.js';
+import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 import type { AuditCheck } from '../../src/checks/types.js';
 // The single-source rules the webhint hints call. The Lighthouse check runs the
 // same functions through its own HTML parse, so the findings must match these
@@ -54,6 +55,7 @@ describe('pwaChecks', () => {
     const check = byId('manifest-linked');
     expect(check.title).toBe('Page links a Web App Manifest');
     expect(check.section).toBe('pwa');
+    expect(check.section).toBe(PLACEMENT['manifest-linked']?.section);
     expect(check.reference).toContain('w3.org');
   });
 

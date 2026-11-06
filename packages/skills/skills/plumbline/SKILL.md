@@ -75,9 +75,12 @@ npx @mridang/plumbline scan example.com --group tls,email --format json
 npx @mridang/plumbline scan example.com --skip tls-version
 ```
 
-Groups are a check's source (`observatory`, `owasp`, `webbkoll`, `internetnl`,
-`mdn`, `files`, …) or its topic (`security-headers`, `tls`, `dns`, `privacy`,
-`seo`, `social`, `email`, `agent`, `pwa`). An unknown id or group exits with
+Groups are a check's section (`https`, `hardening`, `exposure`, `privacy`,
+`dns`, `email`, `seo`, …), a tag (`security`, `tls`, `seo`, …), a target
+(`web`, `mail`, `site`) or its source (`observatory`, `owasp`, `webbkoll`,
+`internetnl`, `mdn`, …); the old topics (`security-headers`, `social`,
+`agent`) still work. `--tier recommended|advanced|experimental` and
+`--target web|mail|site` narrow further. An unknown id or group exits with
 status 2 and names it; check the spelling with `checks`.
 
 ### 4. Report

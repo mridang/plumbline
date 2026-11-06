@@ -35,7 +35,7 @@ plumbline checks --group email
 plumbline checks --format json
 ```
 
-Each check has an id (what `--only` and `--skip` take), a name, a description and its groups. The same list, with each check's section and source, is the [hints table](../hints/README.md#hints). Groups name the source a check came from (`observatory`, `owasp`, `webbkoll`, `internetnl`, `mdn`, …) and its topic (`security-headers`, `tls`, `dns`, `privacy`, `seo`, `social`, `email`, `agent`, `pwa`).
+Each check has an id (what `--only` and `--skip` take), a name, a description and its groups. The same list, with each check's section and source, is the [hints table](../hints/README.md#hints). `--group` takes a section (`https`, `hardening`, `exposure`, `privacy`, `dns`, `email`, `seo`, …), a tag (`security`, `seo`, `tls`, `store`, …), a target (`web`, `mail`, `site`), a control, or the source a check came from (`observatory`, `owasp`, `webbkoll`, `internetnl`, `mdn`, …), bare or with its kind (`section:email`, `tag:tls`). `--tier recommended|advanced|experimental` and `--target web|mail|site` narrow the list further. The old topic groups (`security-headers`, `social`, `agent`, …) still work as aliases of sections and tags.
 
 ## Help
 

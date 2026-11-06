@@ -6,7 +6,7 @@ import { PlumblineCommand } from './base.js';
 
 /**
  * `plumbline checks`: list every check with its id, name, groups and
- * description, optionally only those of some groups.
+ * description, optionally only those of some groups, tiers or targets.
  */
 export default class Checks extends PlumblineCommand {
   static override id = 'checks';
@@ -25,7 +25,22 @@ export default class Checks extends PlumblineCommand {
       multiple: true,
       multipleNonGreedy: true,
       delimiter: ',',
-      summary: 'List only the checks in these groups.',
+      summary:
+        'List only the checks in these sections, tags, sources or targets.',
+    }),
+    tier: Flags.string({
+      multiple: true,
+      multipleNonGreedy: true,
+      delimiter: ',',
+      options: ['recommended', 'advanced', 'experimental'],
+      summary: 'List only the checks of these tiers.',
+    }),
+    target: Flags.string({
+      multiple: true,
+      multipleNonGreedy: true,
+      delimiter: ',',
+      options: ['web', 'mail', 'site'],
+      summary: 'List only the checks that look at these targets.',
     }),
     format: Flags.option({
       char: 'f',
@@ -43,6 +58,8 @@ export default class Checks extends PlumblineCommand {
         {
           kind: 'checks',
           groups: (flags.group ?? []).map((g) => g.trim()).filter(Boolean),
+          tiers: (flags.tier ?? []).map((t) => t.trim()).filter(Boolean),
+          targets: (flags.target ?? []).map((t) => t.trim()).filter(Boolean),
           format: flags.format,
         },
         this.io(),

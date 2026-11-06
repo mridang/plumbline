@@ -19,7 +19,14 @@ interface Extras {
   sectionTitle?: unknown;
   sectionDescription?: unknown;
   sectionOrder?: unknown;
+  group?: unknown;
+  groupTitle?: unknown;
+  subsection?: unknown;
   tags?: unknown;
+  tier?: unknown;
+  target?: unknown;
+  control?: unknown;
+  added?: unknown;
   origins?: unknown;
 }
 
@@ -97,7 +104,14 @@ export default class ExtraFormatter implements IFormatter {
           typeof extras.sectionOrder === 'number'
             ? extras.sectionOrder
             : undefined,
+        group: text(extras.group),
+        groupTitle: text(extras.groupTitle),
+        subsection: text(extras.subsection),
         tags: texts(extras.tags),
+        tier: text(extras.tier),
+        target: text(extras.target),
+        control: text(extras.control),
+        added: text(extras.added),
         origins: originsOf(extras.origins),
       };
     });

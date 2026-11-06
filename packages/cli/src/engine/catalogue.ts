@@ -1,6 +1,6 @@
 import type { HintContext } from 'hint';
 import extraHints from '@mridang/webhint-hint-plumbline';
-import { CATEGORIES } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
+import { SECTIONS } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 
 /**
  * The hints as the scan engine sees them: each one's description for the
@@ -35,6 +35,19 @@ export interface HintInfo {
   readonly sectionTitle: string;
   readonly sectionOrder: number;
   readonly groups: readonly string[];
+  /** The display group of the section, and the hint's place in it. */
+  readonly group?: string;
+  readonly subsection?: string;
+  /** Goal and audience tags, for example `seo` or `store`. */
+  readonly tags: readonly string[];
+  /** `recommended`, `advanced` or `experimental`. */
+  readonly tier?: string;
+  /** What the hint looks at: `web`, `mail` or `site`. */
+  readonly target?: string;
+  /** Who can fix what it finds: `deployer`, `platform`, `dns` or `mail`. */
+  readonly control?: string;
+  /** The month the hint was added, `YYYY-MM`. */
+  readonly added?: string;
   /** Who usually fixes what the hint finds. */
   readonly fixer?: string;
   readonly origins: readonly HintOrigin[];
@@ -58,7 +71,7 @@ function text(
 
 /** Who fixes a section's findings, by section id. */
 const FIXERS: ReadonlyMap<string, string> = new Map(
-  CATEGORIES.map((category) => [category.id, category.whoFixesIt]),
+  SECTIONS.map((section) => [section.id, section.fixer]),
 );
 
 /** A string, or undefined for anything else. */
@@ -100,6 +113,13 @@ export function entryOf(id: string, ctor: HintClass): CatalogueEntry {
   const section = text(docs, 'section', 'other');
   const fixer = FIXERS.get(section);
   const groups = docs['groups'];
+  const tags = docs['tags'];
+  const group = stringOf(docs['group']);
+  const subsection = stringOf(docs['subsection']);
+  const tier = stringOf(docs['tier']);
+  const target = stringOf(docs['target']);
+  const control = stringOf(docs['control']);
+  const added = stringOf(docs['added']);
   return {
     ctor,
     info: {
@@ -113,6 +133,15 @@ export function entryOf(id: string, ctor: HintClass): CatalogueEntry {
       groups: Array.isArray(groups)
         ? groups.filter((group): group is string => typeof group === 'string')
         : [],
+      ...(group ? { group } : {}),
+      ...(subsection ? { subsection } : {}),
+      tags: Array.isArray(tags)
+        ? tags.filter((tag): tag is string => typeof tag === 'string')
+        : [],
+      ...(tier ? { tier } : {}),
+      ...(target ? { target } : {}),
+      ...(control ? { control } : {}),
+      ...(added ? { added } : {}),
       ...(fixer ? { fixer } : {}),
       origins: originsOf(docs['origins']),
     },

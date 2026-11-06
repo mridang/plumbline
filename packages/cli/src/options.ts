@@ -25,8 +25,12 @@ export interface ScanCommand {
   only: string[];
   /** Bare hint ids to leave out. */
   skip: string[];
-  /** Groups whose hints to run; empty means every group. */
+  /** Names of sections, tags, targets, sources or old groups; empty means all. */
   groups: string[];
+  /** Tiers whose checks to run (`recommended`, `advanced`, `experimental`). */
+  tiers: string[];
+  /** Targets whose checks to run (`web`, `mail`, `site`). */
+  targets: string[];
   failOn: FailOn;
   /** Where `--format html` writes its report files. */
   out: string;
@@ -40,6 +44,8 @@ export interface ScanCommand {
 export interface ChecksCommand {
   kind: 'checks';
   groups: string[];
+  tiers: string[];
+  targets: string[];
   format: ChecksFormat;
 }
 

@@ -66,15 +66,10 @@ describe('the geo registry', () => {
     }
   });
 
-  it('places structured-data-invalid in search and the rest in llms-ai', () => {
-    const sections = Object.fromEntries(
-      geoChecks.map((c) => [c.id, c.section]),
-    );
-    expect(sections['geo-structured-data-invalid']).toBe('search');
-    expect(sections['geo-faq-schema']).toBe('llms-ai');
-    expect(sections['geo-speakable-schema']).toBe('llms-ai');
-    expect(sections['geo-organization-schema']).toBe('llms-ai');
-    expect(sections['geo-content-extraction']).toBe('llms-ai');
+  it('places every geo check in the seo section', () => {
+    for (const c of geoChecks) {
+      expect(c.section).toBe('seo');
+    }
   });
 });
 

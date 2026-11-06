@@ -193,7 +193,7 @@ function fromHint(
     id: definition.id,
     // Every header hint is placed in the taxonomy, so `section` is always set;
     // fall back to site protection defensively rather than emit an empty group.
-    section: docs.section ?? 'site-protection',
+    section: docs.section ?? 'hardening',
     title: docs.name,
     description: docs.description,
     reference: docs.url,
@@ -303,7 +303,7 @@ export const headersChecks: readonly AuditCheck[] = [
   // here; the check still reuses the shared `exactHeaderFindings` logic.
   {
     id: 'x-content-type-options',
-    section: 'site-protection',
+    section: 'hardening',
     title: 'X-Content-Type-Options is set to nosniff',
     description:
       'The nosniff value stops browsers from guessing (sniffing) a response into a content type the server did not declare.',

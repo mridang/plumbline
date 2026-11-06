@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import type * as LH from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import { richresultsChecks } from '../../src/checks/richresults.js';
+import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 import type { AuditCheck } from '../../src/checks/types.js';
 import {
   readJsonLd,
@@ -48,11 +49,12 @@ function check(id: string): AuditCheck {
 }
 
 describe('the richresults registry', () => {
-  it('registers all ten checks in the search section', () => {
+  it('registers all ten checks in the section the taxonomy gives them', () => {
     expect(richresultsChecks).toHaveLength(10);
     for (const c of richresultsChecks) {
       expect(c.id).toMatch(/^richresults-/);
-      expect(c.section).toBe('search');
+      expect(c.section).toBe(PLACEMENT[c.id]?.section);
+      expect(c.section).toBe('seo');
     }
   });
 

@@ -117,6 +117,36 @@ describe('buildSections', () => {
     expect(search?.hints[0]?.badges).toEqual(['owasp', 'LLMs and AI']);
   });
 
+  it('shows the tier, unless recommended, before the sources', () => {
+    const sections = buildSections(
+      [
+        stamped('extra/a', 'seo', 'SEO', 0, {
+          groups: ['owasp'],
+          tier: 'experimental',
+        }),
+        stamped('extra/b', 'seo', 'SEO', 0, { tier: 'recommended' }),
+      ],
+      [],
+    );
+    const badges = sections[0]?.hints.map((h) => h.badges);
+    expect(badges).toContainEqual(['experimental', 'owasp']);
+    expect(badges).toContainEqual([]);
+  });
+
+  it('carries the display group of the section', () => {
+    const sections = buildSections(
+      [
+        stamped('extra/a', 'seo', 'SEO', 0, {
+          group: 'search-sharing',
+          groupTitle: 'Search and sharing',
+        }),
+      ],
+      [],
+    );
+    expect(sections[0]?.group).toBe('search-sharing');
+    expect(sections[0]?.groupTitle).toBe('Search and sharing');
+  });
+
   it('puts failing hints before passed ones', () => {
     const sections = buildSections(
       [hint('extra/a', { name: 'A' }), hint('extra/b', { name: 'B' })],
