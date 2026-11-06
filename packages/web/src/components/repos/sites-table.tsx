@@ -99,6 +99,15 @@ function Host({ host }: Readonly<{ host: string }>): ReactElement {
   );
 }
 
+/** How a row stands: a muted "Paused" when checks are off for its repository, else its state. */
+function Status({ row }: Readonly<{ row: SiteRow }>): ReactElement {
+  return row.paused ? (
+    <Badge>Paused</Badge>
+  ) : (
+    <StatusBadge state={row.site.state} />
+  );
+}
+
 /** What names a row: the repository as the link to its page, and the host under it. */
 function Name({ row }: Readonly<{ row: SiteRow }>): ReactElement {
   return (
@@ -114,7 +123,7 @@ function Name({ row }: Readonly<{ row: SiteRow }>): ReactElement {
         ) : (
           <RepoLabel repo={row.repo} href={sitePageOf(row.repo, row.site)} />
         )}
-        {row.hidden ? <Badge>Hidden</Badge> : null}
+        {row.paused ? <Badge>Paused</Badge> : null}
       </span>
       <Host host={row.site.host} />
     </div>
@@ -197,11 +206,11 @@ export function SitesTable({
                   key={row.key}
                   className={cn(
                     'hover:bg-ink/3 motion-safe:transition-colors',
-                    row.hidden && 'opacity-60',
+                    row.paused && 'opacity-60',
                   )}
                 >
                   <Cell>
-                    <StatusBadge state={row.site.state} />
+                    <Status row={row} />
                   </Cell>
                   <Cell nowrap={false}>
                     <Name row={row} />
@@ -236,7 +245,7 @@ export function SitesTable({
                     <SiteActions
                       repo={row.repo}
                       site={row.site}
-                      hidden={row.hidden}
+                      paused={row.paused}
                     />
                   </Cell>
                 </tr>
@@ -249,18 +258,18 @@ export function SitesTable({
         {rows.map((row) => (
           <li
             key={row.key}
-            className={cn('space-y-2 p-4', row.hidden && 'opacity-60')}
+            className={cn('space-y-2 p-4', row.paused && 'opacity-60')}
           >
             <div className="flex items-start justify-between gap-3">
               <Name row={row} />
               <SiteActions
                 repo={row.repo}
                 site={row.site}
-                hidden={row.hidden}
+                paused={row.paused}
               />
             </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted">
-              <StatusBadge state={row.site.state} />
+              <Status row={row} />
               {row.site.checked_at === null ? null : (
                 <span>
                   Checked <When at={row.site.checked_at} now={now} />

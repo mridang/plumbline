@@ -1,6 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { createDatabase } from '@/domain/db/client';
+import { disableRepo } from '@/domain/db/disabled';
 import { addDomain } from '@/domain/db/domains';
 import { listRuns } from '@/domain/db/runs';
 import { latestRuns } from '@/domain/db/suite';
@@ -44,7 +45,7 @@ describe('checkDueSites', () => {
     ).toEqual([expect.objectContaining({ kind: 'scheduled', sha: null })]);
   });
 
-  it('leaves a site alone until a day has passed', async () => {
+  it('leaves a site alone until six hours have passed', async () => {
     const db = createDatabase(sqliteD1(...APP_MIGRATIONS).d1);
     await addDomain(db, 1, 'a.test', 'acme/a');
     await checkDueSites(db, { run: page, now: () => start });
@@ -53,6 +54,32 @@ describe('checkDueSites', () => {
     const later = new Date(start.getTime() + RECHECK_AFTER_MS + 1);
     expect(
       await checkDueSites(db, { run: page, now: () => later }),
+    ).toHaveLength(1);
+  });
+
+  it('is due again after six hours', () => {
+    expect(RECHECK_AFTER_MS).toBe(6 * 60 * 60 * 1000);
+  });
+
+  it('never re-checks a repository whose checks are off', async () => {
+    const db = createDatabase(sqliteD1(...APP_MIGRATIONS).d1);
+    await addDomain(db, 1, 'a.test', 'acme/a');
+    await addDomain(db, 1, 'b.test', 'acme/b');
+    await disableRepo(db, 1, 'acme/a');
+    const outcomes = await checkDueSites(db, { run: page, now: () => start });
+    expect(outcomes.map((o) => o.host)).toEqual(['b.test']);
+  });
+
+  it('keeps a site due when the scanner failed, so the next trigger tries again', async () => {
+    const db = createDatabase(sqliteD1(...APP_MIGRATIONS).d1);
+    await addDomain(db, 1, 'a.test', 'acme/a');
+    const broken = async (): Promise<SuiteRun> => {
+      throw new Error('scanner restarting');
+    };
+    await checkDueSites(db, { run: broken, now: () => start });
+    const next = new Date(start.getTime() + 60_000);
+    expect(
+      await checkDueSites(db, { run: page, now: () => next }),
     ).toHaveLength(1);
   });
 

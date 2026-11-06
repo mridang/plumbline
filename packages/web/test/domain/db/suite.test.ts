@@ -21,6 +21,7 @@ import {
   retireLegacyIssue,
   saveIssue,
 } from '@/domain/db/suite';
+import { disableRepo, enableRepo } from '@/domain/db/disabled';
 import { issuesOf as historyOf } from '@/domain/db/issue-history';
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
@@ -151,6 +152,18 @@ describe('dueSites', () => {
     await recordRun(db, run('a.test'), '2026-01-01T00:00:00.000Z');
     await recordRun(db, run('a.test'), '2026-01-03T00:00:00.000Z');
     expect(await dueSites(db, cutoff, 10)).toEqual([]);
+  });
+
+  it('leaves out the sites of a repository whose checks are off', async () => {
+    const db = database();
+    await addDomain(db, 1, 'a.test', 'acme/a');
+    await addDomain(db, 1, 'b.test', 'acme/b');
+    await disableRepo(db, 1, 'acme/a');
+    expect((await dueSites(db, cutoff, 10)).map((s) => s.host)).toEqual([
+      'b.test',
+    ]);
+    await enableRepo(db, 'acme/a');
+    expect(await dueSites(db, cutoff, 10)).toHaveLength(2);
   });
 
   it('leaves out sites added by hand', async () => {

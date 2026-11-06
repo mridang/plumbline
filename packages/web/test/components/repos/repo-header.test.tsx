@@ -7,6 +7,7 @@ const out = htmlAt(
   <RepoHeader
     repo="acme/site"
     state="failing"
+    paused={false}
     siteCount={2}
     badgeImage="/badge/acme/site/abc.svg"
     badgeMarkdown="[![Plumbline](x)](y)"
@@ -23,6 +24,27 @@ describe('RepoHeader', () => {
   it('says how the worst site stands and how many sites there are', () => {
     expect(out).toContain('Failing');
     expect(out).toContain('2 sites');
+  });
+
+  it('has the switch for the checks, on', () => {
+    expect(out).toContain('role="switch"');
+    expect(out).toContain('aria-checked="true"');
+  });
+
+  it('shows Paused instead of the state when checks are off', () => {
+    const paused = htmlAt(
+      <RepoHeader
+        repo="acme/site"
+        state="failing"
+        paused
+        siteCount={2}
+        badgeImage="/badge/acme/site/abc.svg"
+        badgeMarkdown="[![Plumbline](x)](y)"
+      />,
+    );
+    expect(paused).toContain('>Paused<');
+    expect(paused).not.toContain('Failing');
+    expect(paused).toContain('aria-checked="false"');
   });
 
   it('has the Badge button and a View on GitHub link that opens a new tab', () => {

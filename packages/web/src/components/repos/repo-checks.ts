@@ -1,13 +1,13 @@
 import { ensureOk } from '@/components/api/problem-message';
 
 /**
- * Hide a repository from the dashboard (`PUT`), or show it again (`DELETE`),
- * at `/api/users/self/repositories/hidden/{owner}/{repo}`. Rejects with the
+ * Turn the checks of a repository off (`PUT`) or on again (`DELETE`), at
+ * `/api/users/self/repositories/disabled/{owner}/{repo}`. Rejects with the
  * problem the server gave when it refuses.
  */
-export async function setRepoHidden(
+export async function setRepoChecks(
   repo: string,
-  hidden: boolean,
+  on: boolean,
   transport: typeof fetch = (url, init) => fetch(url, init),
 ): Promise<void> {
   const path = repo
@@ -15,8 +15,8 @@ export async function setRepoHidden(
     .map((part) => encodeURIComponent(part))
     .join('/');
   await ensureOk(
-    await transport(`/api/users/self/repositories/hidden/${path}`, {
-      method: hidden ? 'PUT' : 'DELETE',
+    await transport(`/api/users/self/repositories/disabled/${path}`, {
+      method: on ? 'DELETE' : 'PUT',
     }),
   );
 }

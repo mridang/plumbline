@@ -5,7 +5,16 @@
  * deliveries already handled. Every read is scoped by the owner.
  */
 
-import { and, asc, desc, eq, isNotNull, lt, lte } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  isNotNull,
+  lt,
+  lte,
+  notInArray,
+} from 'drizzle-orm';
 
 import type { Database } from '@/domain/db/client';
 import {
@@ -14,6 +23,7 @@ import {
   recordIssue,
 } from '@/domain/db/issue-history';
 import {
+  disabledRepos,
   domains,
   suiteCheckIssues,
   suiteIssues,
@@ -222,7 +232,17 @@ export async function dueSites(
       repo: domains.repo,
     })
     .from(domains)
-    .where(and(isNotNull(domains.repo), lt(domains.checked_at, cutoff)))
+    .where(
+      and(
+        isNotNull(domains.repo),
+        lt(domains.checked_at, cutoff),
+        // A repository whose checks are off is never re-checked.
+        notInArray(
+          domains.repo,
+          db.select({ repo: disabledRepos.repo }).from(disabledRepos),
+        ),
+      ),
+    )
     .orderBy(asc(domains.checked_at), asc(domains.host), asc(domains.user_id))
     .limit(limit);
 }

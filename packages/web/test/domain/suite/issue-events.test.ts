@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { createDatabase } from '@/domain/db/client';
+import { disableRepo } from '@/domain/db/disabled';
 import { issuesOf as historyOf } from '@/domain/db/issue-history';
 import { issueOf, saveIssue, type IssueState } from '@/domain/db/suite';
 import { botLogin, handleIssueEvent } from '@/domain/suite/issue-events';
@@ -37,6 +38,17 @@ const stored = (db: Awaited<ReturnType<typeof setup>>) =>
 describe('botLogin', () => {
   it('is the name GitHub gives the account of an app', () => {
     expect(botLogin('plumbline')).toBe('plumbline[bot]');
+  });
+});
+
+describe('handleIssueEvent in a repository whose checks are off', () => {
+  it('ignores a closed issue: nothing is reopened and no comment is made', async () => {
+    const db = await setup();
+    await disableRepo(db, 1, 'acme/site');
+    const { api, requests } = github();
+    await handleIssueEvent(db, SLUG, event('closed'), async () => api);
+    expect(requests).toEqual([]);
+    expect((await stored(db))?.state).toBe('open');
   });
 });
 

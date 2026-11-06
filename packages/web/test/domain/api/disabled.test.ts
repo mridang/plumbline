@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
 import type { CurrentUserResolver } from '@/domain/api/auth';
-import { createHiddenRepository, repoOf } from '@/domain/api/hidden';
+import { createDisabledRepository } from '@/domain/api/disabled';
 import { createDatabase } from '@/domain/db/client';
+import { disableRepo, isRepoDisabled } from '@/domain/db/disabled';
 import { addDomain } from '@/domain/db/domains';
-import { hideRepo, listHidden } from '@/domain/db/hidden';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import {
   installCloudflareContext,
@@ -20,7 +20,14 @@ const resolver: CurrentUserResolver = {
   currentUser: async () => null,
 };
 
-const hidden = createHiddenRepository(resolver).handlers();
+/** The closings handed to the background, so the tests can wait for them. */
+let jobs: Promise<unknown>[];
+
+const disabled = () =>
+  createDisabledRepository(resolver, {
+    config: null,
+    background: (work) => jobs.push(work),
+  }).handlers();
 const ORIGIN = 'https://plumbline.test';
 
 let db: ReturnType<typeof createDatabase>;
@@ -28,6 +35,7 @@ let restore: () => void;
 
 beforeEach(async () => {
   session.uid = 7;
+  jobs = [];
   const made = sqliteD1(...APP_MIGRATIONS);
   restore = installCloudflareContext(made.d1);
   db = createDatabase(made.d1);
@@ -36,37 +44,28 @@ beforeEach(async () => {
 
 afterEach(() => restore());
 
-/** A request to hide or show `owner/repo`. */
+/** A request to turn the checks of `owner/repo` off (PUT) or on (DELETE). */
 const call = (
   method: 'PUT' | 'DELETE',
   owner: string,
   repo: string,
   headers: Record<string, string> = {},
 ) =>
-  hidden[method](
+  disabled()[method](
     new Request(
-      `${ORIGIN}/api/users/self/repositories/hidden/${owner}/${repo}`,
+      `${ORIGIN}/api/users/self/repositories/disabled/${owner}/${repo}`,
       { method, headers },
     ),
     { params: Promise.resolve({ owner, repo }) },
   );
 
-describe('repoOf', () => {
-  it('joins a GitHub owner and name, and refuses what cannot be one', () => {
-    expect(repoOf('acme', 'site.js')).toBe('acme/site.js');
-    expect(repoOf('', 'site')).toBeNull();
-    expect(repoOf('ac me', 'site')).toBeNull();
-    expect(repoOf('acme', '..')).toBeNull();
-    expect(repoOf('acme', 'a/b')).toBeNull();
-    expect(repoOf('-'.repeat(40), 'site')).toBeNull();
-  });
-});
-
-describe('PUT /api/users/self/repositories/hidden/{owner}/{repo}', () => {
-  it('hides the repository with 204, also the second time', async () => {
+describe('PUT /api/users/self/repositories/disabled/{owner}/{repo}', () => {
+  it('turns the checks off with 204, also the second time, and closes issues once', async () => {
     expect((await call('PUT', 'acme', 'site')).status).toBe(204);
     expect((await call('PUT', 'acme', 'site')).status).toBe(204);
-    expect([...(await listHidden(db, 7))]).toEqual(['acme/site']);
+    expect(await isRepoDisabled(db, 'acme/site')).toBe(true);
+    expect(jobs).toHaveLength(1);
+    await Promise.all(jobs);
   });
 
   it('answers 404 as a problem for a repository the person cannot see', async () => {
@@ -75,7 +74,7 @@ describe('PUT /api/users/self/repositories/hidden/{owner}/{repo}', () => {
     expect(response.headers.get('content-type')).toBe(
       'application/problem+json',
     );
-    expect((await listHidden(db, 7)).size).toBe(0);
+    expect(await isRepoDisabled(db, 'acme/other')).toBe(false);
   });
 
   it('answers 404 for a name that cannot be a repository', async () => {
@@ -90,18 +89,25 @@ describe('PUT /api/users/self/repositories/hidden/{owner}/{repo}', () => {
       (await call('PUT', 'acme', 'site', { origin: 'https://evil.test' }))
         .status,
     ).toBe(403);
+    expect(await isRepoDisabled(db, 'acme/site')).toBe(false);
   });
 });
 
-describe('DELETE /api/users/self/repositories/hidden/{owner}/{repo}', () => {
-  it('shows the repository again with 204', async () => {
-    await hideRepo(db, 7, 'acme/site');
+describe('DELETE /api/users/self/repositories/disabled/{owner}/{repo}', () => {
+  it('turns the checks on with 204', async () => {
+    await disableRepo(db, 7, 'acme/site');
     expect((await call('DELETE', 'acme', 'site')).status).toBe(204);
-    expect((await listHidden(db, 7)).size).toBe(0);
+    expect(await isRepoDisabled(db, 'acme/site')).toBe(false);
   });
 
-  it('answers 404 when it was not hidden', async () => {
+  it('answers 404 when the checks were not off', async () => {
     expect((await call('DELETE', 'acme', 'site')).status).toBe(404);
+  });
+
+  it('answers 404 for a repository the person cannot see, and leaves it off', async () => {
+    await disableRepo(db, 9, 'acme/other');
+    expect((await call('DELETE', 'acme', 'other')).status).toBe(404);
+    expect(await isRepoDisabled(db, 'acme/other')).toBe(true);
   });
 
   it('answers 401 without a session', async () => {

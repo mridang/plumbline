@@ -51,7 +51,7 @@ const REPOS: RepoStatus[] = [
 
 describe('rowsOf', () => {
   it('makes one row for each site, with its repository and issues', () => {
-    const rows = rowsOf(REPOS, new Set(), false);
+    const rows = rowsOf(REPOS, new Set());
     expect(rows.map((r) => [r.repo, r.site.host, r.openIssues])).toEqual([
       ['acme/b', 'b.test', 3],
       ['acme/a', 'a.test', 0],
@@ -61,15 +61,10 @@ describe('rowsOf', () => {
     expect(new Set(rows.map((r) => r.key)).size).toBe(4);
   });
 
-  it('leaves hidden repositories out, or lists them marked when asked', () => {
-    const hidden = new Set(['acme/a']);
-    expect(rowsOf(REPOS, hidden, false).map((r) => r.site.host)).toEqual([
-      'b.test',
-      'hand.test',
-    ]);
-    const shown = rowsOf(REPOS, hidden, true);
-    expect(shown).toHaveLength(4);
-    expect(shown.filter((r) => r.hidden).map((r) => r.site.host)).toEqual([
+  it('lists the sites of a repository whose checks are paused, marked', () => {
+    const rows = rowsOf(REPOS, new Set(['acme/a']));
+    expect(rows).toHaveLength(4);
+    expect(rows.filter((r) => r.paused).map((r) => r.site.host)).toEqual([
       'a.test',
       'www.a.test',
     ]);
@@ -77,7 +72,7 @@ describe('rowsOf', () => {
 });
 
 describe('filterRows', () => {
-  const rows = rowsOf(REPOS, new Set(), false);
+  const rows = rowsOf(REPOS, new Set());
 
   it('keeps every row for an empty search', () => {
     expect(filterRows(rows, '   ')).toBe(rows);
@@ -99,7 +94,7 @@ describe('filterRows', () => {
 });
 
 describe('sortRows', () => {
-  const rows = rowsOf(REPOS, new Set(), false);
+  const rows = rowsOf(REPOS, new Set());
   const hosts = (sorted: readonly { site: { host: string } }[]) =>
     sorted.map((r) => r.site.host);
 
@@ -180,17 +175,15 @@ describe('viewOf and dashboardHref', () => {
     expect(viewOf('grid')).toBe('table');
   });
 
-  it('builds the address of each view, keeping hidden repositories listed', () => {
-    expect(dashboardHref('table', false)).toBe('/dashboard');
-    expect(dashboardHref('cards', false)).toBe('/dashboard?view=cards');
-    expect(dashboardHref('table', true)).toBe('/dashboard?hidden=1');
-    expect(dashboardHref('cards', true)).toBe('/dashboard?view=cards&hidden=1');
+  it('builds the address of each view', () => {
+    expect(dashboardHref('table')).toBe('/dashboard');
+    expect(dashboardHref('cards')).toBe('/dashboard?view=cards');
   });
 });
 
 describe('groupRows', () => {
   it('puts the rows back into repositories in the order they come, with their issues', () => {
-    const rows = sortRows(rowsOf(REPOS, new Set(), false));
+    const rows = sortRows(rowsOf(REPOS, new Set()));
     const groups = groupRows(rows);
     expect(groups.map((g) => [g.repo, g.sites.length, g.open_issues])).toEqual([
       ['acme/a', 2, 0],

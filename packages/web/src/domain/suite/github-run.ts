@@ -11,6 +11,7 @@
  * GitHub is logged and the run goes on with the default rules.
  */
 
+import { isRepoDisabled } from '@/domain/db/disabled';
 import { parseHost } from '@/domain/api/domain-resource';
 import type { Database } from '@/domain/db/client';
 import { listDomainsOfRepo } from '@/domain/db/domains';
@@ -299,6 +300,10 @@ export async function handleDeployment(
 ): Promise<void> {
   // A preview with no address or commit has nothing to check or to report on.
   if (deployed.environment === 'preview' && (!deployed.url || !deployed.sha)) {
+    return;
+  }
+  // Checks were turned off after this job was queued.
+  if (await isRepoDisabled(db, deployed.repo)) {
     return;
   }
   const fetcher = deps.fetcher ?? fetch;

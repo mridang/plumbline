@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactElement } from 'react';
 
@@ -41,8 +40,7 @@ const READ_AGAIN_MS = 250;
  */
 export function LiveOverview({
   initial,
-  hidden,
-  showHidden,
+  paused,
   view,
   now,
 }: Readonly<{
@@ -51,10 +49,8 @@ export function LiveOverview({
   view: View;
   /** The server's clock when the page was made, in milliseconds. */
   now: number;
-  /** The repositories the person has hidden. */
-  hidden: readonly string[];
-  /** Whether hidden repositories are listed (dimmed) or left out. */
-  showHidden: boolean;
+  /** The repositories whose checks are turned off. */
+  paused: readonly string[];
 }>): ReactElement {
   const router = useRouter();
   const [repos, setRepos] = useState<readonly RepoStatus[]>(initial);
@@ -111,16 +107,12 @@ export function LiveOverview({
     };
   }, [router]);
 
-  const hiddenSet = new Set(hidden);
-  const isHidden = (repo: RepoStatus): boolean =>
-    repo.repo !== null && hiddenSet.has(repo.repo);
-  const hiddenCount = repos.filter(isHidden).length;
-  const counts = tally(repos.filter((repo) => !isHidden(repo)));
-  const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
-  const rows = sortRows(
-    filterRows(rowsOf(repos, hiddenSet, showHidden), query),
-    sort,
+  const pausedSet = new Set(paused);
+  const counts = tally(
+    repos.filter((repo) => repo.repo === null || !pausedSet.has(repo.repo)),
   );
+  const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
+  const rows = sortRows(filterRows(rowsOf(repos, pausedSet), query), sort);
   if (repos.length === 0) {
     return (
       <EmptyState
@@ -180,12 +172,12 @@ export function LiveOverview({
               {
                 value: 'table',
                 label: 'Table',
-                href: dashboardHref('table', showHidden),
+                href: dashboardHref('table'),
               },
               {
                 value: 'cards',
                 label: 'Cards',
-                href: dashboardHref('cards', showHidden),
+                href: dashboardHref('cards'),
               },
             ]}
           />
@@ -196,7 +188,7 @@ export function LiveOverview({
           Nothing here has “{query.trim()}” in its repository or address.
         </EmptyState>
       ) : view === 'cards' ? (
-        <SiteCards repos={groupRows(rows)} hidden={hiddenSet} now={now} />
+        <SiteCards repos={groupRows(rows)} paused={pausedSet} now={now} />
       ) : (
         <SitesTable
           rows={rows}
@@ -205,20 +197,6 @@ export function LiveOverview({
           now={now}
         />
       )}
-      {hiddenCount > 0 || showHidden ? (
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-pretty text-subtle">
-          <Link
-            href={dashboardHref(view, !showHidden)}
-            className="focus-ring font-medium text-muted underline-offset-4 hover:text-ink hover:underline"
-          >
-            {showHidden ? 'Hide hidden' : `Show hidden (${hiddenCount})`}
-          </Link>
-          <span>
-            Hiding a repository only takes it off this page. Its sites are still
-            checked, and GitHub still hears about them.
-          </span>
-        </p>
-      ) : null}
     </div>
   );
 }

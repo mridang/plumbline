@@ -2,7 +2,7 @@
  * @packageDocumentation
  *
  * The dashboard's table, as data: one row for each site, put in order, narrowed
- * by what was typed and kept apart from the repositories the person has hidden.
+ * by what was typed. A repository whose checks are paused keeps its rows, marked.
  * Pure, so the page in the browser and the tests use the same rules.
  */
 
@@ -17,13 +17,9 @@ export function viewOf(value: string | undefined): View {
   return value === 'cards' ? 'cards' : 'table';
 }
 
-/** The dashboard's address for a view, and whether hidden repositories are listed. */
-export function dashboardHref(view: View, showHidden: boolean): string {
-  const query = [
-    view === 'cards' ? 'view=cards' : '',
-    showHidden ? 'hidden=1' : '',
-  ].filter((part) => part !== '');
-  return query.length === 0 ? '/dashboard' : `/dashboard?${query.join('&')}`;
+/** The dashboard's address for a view. */
+export function dashboardHref(view: View): string {
+  return view === 'cards' ? '/dashboard?view=cards' : '/dashboard';
 }
 
 /** One site of the dashboard with what is known about its repository. */
@@ -35,8 +31,8 @@ export interface SiteRow {
   readonly site: SiteStatus;
   /** How many issues are open for the repository's checks. */
   readonly openIssues: number;
-  /** Whether the person has hidden the repository. */
-  readonly hidden: boolean;
+  /** Whether checks are turned off for the repository. */
+  readonly paused: boolean;
 }
 
 /** What the table can be sorted by. */
@@ -54,23 +50,19 @@ export interface Sort {
 /** The order a table starts in: the sites that need attention first. */
 export const DEFAULT_SORT: Sort = { key: 'status', direction: 'ascending' };
 
-/** The rows of the overview, one for each site, leaving out hidden repositories unless asked. */
+/** The rows of the overview, one for each site; those of a repository whose checks are paused are marked. */
 export function rowsOf(
   repos: readonly RepoStatus[],
-  hidden: ReadonlySet<string>,
-  showHidden: boolean,
+  paused: ReadonlySet<string>,
 ): SiteRow[] {
   return repos.flatMap((repo) => {
-    const isHidden = repo.repo !== null && hidden.has(repo.repo);
-    if (isHidden && !showHidden) {
-      return [];
-    }
+    const isPaused = repo.repo !== null && paused.has(repo.repo);
     return repo.sites.map((site) => ({
       key: `${repo.repo ?? 'by-hand'}/${site.id}`,
       repo: repo.repo,
       site,
       openIssues: repo.open_issues,
-      hidden: isHidden,
+      paused: isPaused,
     }));
   });
 }

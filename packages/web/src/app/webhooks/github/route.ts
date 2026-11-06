@@ -12,12 +12,14 @@
  * sites when it is the live site, and on the deployment's own address when it
  * is a preview. A scan takes longer than a delivery may keep working, so the
  * delivery only leaves a job with the container's Durable Object, which runs
- * it. Anything else is acknowledged and ignored.
+ * it. A repository whose checks a person turned off gets none of this: its
+ * deliveries are acknowledged and dropped. Anything else is acknowledged and ignored.
  */
 
 import { NextResponse } from 'next/server';
 
 import { getDatabase } from '@/domain/db/client';
+import { isRepoDisabled } from '@/domain/db/disabled';
 import { ownerOfInstallation, removeInstallation } from '@/domain/db/github';
 import { claimDelivery } from '@/domain/db/suite';
 import {
@@ -107,6 +109,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       deployed &&
       checkable &&
       owner !== undefined &&
+      // A repository whose checks are turned off is not checked: the delivery is dropped.
+      !(await isRepoDisabled(db, deployed.repo)) &&
       (deliveryId === null || (await claimDelivery(db, deliveryId)))
     ) {
       await leaveJob({
@@ -136,7 +140,8 @@ export async function POST(request: Request): Promise<NextResponse> {
         event === 'push' &&
         repo &&
         touchesConfig(delivery) &&
-        isDefaultBranchPush(delivery)
+        isDefaultBranchPush(delivery) &&
+        !(await isRepoDisabled(db, repo))
       ) {
         await leaveJob({
           installationId,

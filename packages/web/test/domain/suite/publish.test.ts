@@ -8,6 +8,7 @@ import {
   claimNewIssue,
   issueOf,
   issuesOfHost,
+  openIssuesOf,
   legacyIssueOf,
   saveIssue,
 } from '@/domain/db/suite';
@@ -805,6 +806,29 @@ describe('closeUndeployed', () => {
       (await issuesOfHost(db, 'acme/site', 'gone.test')).get('seo-links')
         ?.state,
     ).toBe('fixed');
+  });
+
+  it('closes every issue, saying checks were turned off, when the reason is disabled', async () => {
+    const db = database();
+    await open(db, 'seo-viewport', 12, 'sig', 'a.test');
+    await open(db, 'seo-links', 13, 'sig', 'b.test');
+    const { api, requests } = github();
+    await closeUndeployed(api, db, {
+      repo: 'acme/site',
+      hosts: new Set(),
+      sha: null,
+      source: null,
+      reason: 'disabled',
+    });
+    expect(
+      requests
+        .filter((r) => r.method === 'PATCH')
+        .map((r) => r.path)
+        .toSorted(),
+    ).toEqual(['/repos/acme/site/issues/12', '/repos/acme/site/issues/13']);
+    expect(said(requests)).toHaveLength(2);
+    expect(said(requests)[0]).toContain('turned off in Plumbline');
+    expect((await openIssuesOf(db, 'acme/site')).length).toBe(0);
   });
 
   it('does nothing when every site is still deployed', async () => {

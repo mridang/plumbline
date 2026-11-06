@@ -6,7 +6,7 @@ import { viewOf } from '@/components/repos/site-rows';
 import { Container } from '@/components/ui/layout';
 import { PageHeading } from '@/components/ui-app/page-heading';
 import { getDatabase } from '@/domain/db/client';
-import { listHidden } from '@/domain/db/hidden';
+import { disabledRepos } from '@/domain/db/disabled';
 import { overviewOf } from '@/domain/db/live';
 import { serverNow } from '@/lib/clock';
 import { getCurrentUser } from '@/lib/core/auth/current-user';
@@ -29,19 +29,19 @@ export const metadata: Metadata = { title: 'Dashboard' };
 export default async function DashboardPage({
   searchParams,
 }: Readonly<{
-  searchParams: Promise<{ hidden?: string; view?: string }>;
+  searchParams: Promise<{ view?: string }>;
 }>): Promise<ReactElement> {
   const user = await getCurrentUser();
   if (!user) {
     redirect(`/auth/login?returnTo=${encodeURIComponent('/dashboard')}`);
   }
-  const { hidden, view } = await searchParams;
+  const { view } = await searchParams;
   const db = getDatabase();
-  const [repos, hiddenRepos] = await Promise.all([
+  const [repos, pausedRepos] = await Promise.all([
     overviewOf(db, user.id),
-    listHidden(db, user.id),
+    disabledRepos(db, user.id),
   ]);
-  const hiddenList = [...hiddenRepos].toSorted();
+  const pausedList = [...pausedRepos].toSorted();
   return (
     <>
       <PageHeading
@@ -52,15 +52,9 @@ export default async function DashboardPage({
       <Container className="py-6 sm:py-8">
         {/* A fresh reading from the server starts the list again from it. */}
         <LiveOverview
-          key={JSON.stringify([
-            repos,
-            hiddenList,
-            hidden === '1',
-            viewOf(view),
-          ])}
+          key={JSON.stringify([repos, pausedList, viewOf(view)])}
           initial={repos}
-          hidden={hiddenList}
-          showHidden={hidden === '1'}
+          paused={pausedList}
           view={viewOf(view)}
           now={serverNow()}
         />

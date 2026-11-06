@@ -366,7 +366,9 @@ export type CloseReason =
   /** The check is not in the catalogue any more. */
   | 'removed'
   /** The site is no longer deployed by the repository. */
-  | 'undeployed';
+  | 'undeployed'
+  /** Checks for the whole repository were turned off. */
+  | 'disabled';
 
 /** The comment that goes with closing an issue. */
 export function closingComment(
@@ -390,6 +392,8 @@ export function closingComment(
       return `What this check finds no longer opens an issue under the rules in ${rules}, so this issue is closed. The results in Plumbline still show it.`;
     case 'removed':
       return 'Plumbline no longer has this check, so this issue is closed.';
+    case 'disabled':
+      return 'Checks for this repository were turned off in Plumbline, so Plumbline stopped tracking this issue and closed it. If you turn checks back on and the problem is still there, a new issue is opened.';
     case 'undeployed':
       return `${input.host} is no longer deployed from this repository, so Plumbline stopped checking it and closed this issue.`;
   }

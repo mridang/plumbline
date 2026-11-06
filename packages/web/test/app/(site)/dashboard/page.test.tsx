@@ -10,7 +10,7 @@ import type { ReactElement } from 'react';
 
 import { createDatabase, type Database } from '@/domain/db/client';
 import { addDomain } from '@/domain/db/domains';
-import { hideRepo } from '@/domain/db/hidden';
+import { disableRepo } from '@/domain/db/disabled';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 import {
   installCloudflareContext,
@@ -56,19 +56,18 @@ beforeEach(async () => {
 
 afterEach(() => restore());
 
-/** Render the page, with the `hidden` query parameter if given. */
-function render(hidden?: string, view?: string): Promise<ReactElement> {
+/** Render the page, with the `view` query parameter if given. */
+function render(view?: string): Promise<ReactElement> {
   return DashboardPage({
     searchParams: Promise.resolve({
-      ...(hidden === undefined ? {} : { hidden }),
       ...(view === undefined ? {} : { view }),
     }),
   });
 }
 
 /** The page's HTML. */
-async function page(hidden?: string, view?: string): Promise<string> {
-  return htmlAt(await render(hidden, view), { pathname: '/dashboard' });
+async function page(view?: string): Promise<string> {
+  return htmlAt(await render(view), { pathname: '/dashboard' });
 }
 
 describe('DashboardPage', () => {
@@ -123,7 +122,7 @@ describe('DashboardPage', () => {
   });
 
   it('shows the cards, with more of each site, for ?view=cards', async () => {
-    const out = await page(undefined, 'cards');
+    const out = await page('cards');
     expect(out).not.toContain('<table');
     expect(out).toContain('<article');
     expect(out).toContain('Deployed');
@@ -134,13 +133,7 @@ describe('DashboardPage', () => {
   });
 
   it('shows the table for a view it does not know', async () => {
-    expect(await page(undefined, 'grid')).toContain('<table');
-  });
-
-  it('keeps the view when it lists the hidden repositories', async () => {
-    await hideRepo(db, 1, 'acme/lib');
-    const out = await page(undefined, 'cards');
-    expect(out).toContain('href="/dashboard?view=cards&amp;hidden=1"');
+    expect(await page('grid')).toContain('<table');
   });
 
   it('has no form to add a domain, no badges block and no notification settings', async () => {
@@ -150,23 +143,15 @@ describe('DashboardPage', () => {
     expect(out).not.toContain('Notifications on this device');
   });
 
-  it('leaves a hidden repository out, and says how many are hidden', async () => {
-    await hideRepo(db, 1, 'acme/lib');
+  it('lists a repository whose checks are off, marked as paused and with no state', async () => {
+    await disableRepo(db, 1, 'acme/lib');
     const out = await page();
-    expect(out).toContain('href="/repos/acme/site?site=site.example.com"');
-    expect(out).not.toContain('lib.example.com');
-    expect(out).toContain('Show hidden (1)');
-  });
-
-  it('lists the hidden repository again, marked and with a way to unhide, when asked', async () => {
-    await hideRepo(db, 1, 'acme/lib');
-    const out = await page('1');
     expect(out).toContain('lib.example.com');
-    expect(out).toContain('>Hidden<');
-    expect(out).toContain('Hide hidden');
+    expect(out).toContain('>Paused<');
   });
 
-  it('offers no "show hidden" when nothing is hidden', async () => {
-    expect(await page()).not.toContain('Show hidden');
+  it('offers to turn checks off for a repository that is on', async () => {
+    const out = await page();
+    expect(out).not.toContain('>Paused<');
   });
 });

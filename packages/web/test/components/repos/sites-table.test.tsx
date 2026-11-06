@@ -47,14 +47,10 @@ const REPOS: RepoStatus[] = [
   },
 ];
 
-const draw = (
-  hidden = new Set<string>(),
-  showHidden = false,
-  sort = DEFAULT_SORT,
-) =>
+const draw = (paused = new Set<string>(), sort = DEFAULT_SORT) =>
   htmlAt(
     <SitesTable
-      rows={rowsOf(REPOS, hidden, showHidden)}
+      rows={rowsOf(REPOS, paused)}
       sort={sort}
       onSort={() => undefined}
       now={NOW}
@@ -137,9 +133,11 @@ describe('SitesTable', () => {
     expect(out.match(/<li/g)).toHaveLength(2);
   });
 
-  it('marks a hidden repository and dims its row', () => {
-    const hidden = draw(new Set(['acme/site']), true);
-    expect(hidden).toContain('>Hidden<');
-    expect(hidden).toContain('opacity-60');
+  it('marks a repository whose checks are paused, dims its row and shows no state', () => {
+    const paused = draw(new Set(['acme/site']));
+    expect(paused).toContain('>Paused<');
+    expect(paused).toContain('opacity-60');
+    expect(paused).not.toContain('Checking now');
+    expect(paused).not.toContain('Failing');
   });
 });

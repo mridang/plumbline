@@ -110,15 +110,15 @@ function SiteBlock({
  * A repository as a compact card: its name as the link to its page, how its
  * worst site stands, the issues open for it, a menu, and a block for each
  * site with its bar of what is wrong, when it was last checked and deployed
- * and the commit. A hidden repository is dimmed.
+ * and the commit. A repository whose checks are paused is dimmed.
  */
 export function SiteCard({
   repo,
-  hidden,
+  paused,
   now,
 }: Readonly<{
   repo: RepoStatus;
-  hidden: boolean;
+  paused: boolean;
   now: number;
 }>): ReactElement {
   const overall = worstState(repo.sites.map((site) => site.state));
@@ -127,7 +127,7 @@ export function SiteCard({
     <article
       className={cn(
         'flex flex-col rounded-card border border-line bg-surface p-4 shadow-xs hover:border-ink/25 hover:shadow-sm motion-safe:transition',
-        hidden && 'opacity-60',
+        paused && 'opacity-60',
       )}
       aria-label={repo.repo ?? 'Sites added by hand'}
     >
@@ -146,7 +146,7 @@ export function SiteCard({
             {repo.sites.length > 1 ? (
               <Badge tone={STATES[overall].kind}>{STATES[overall].label}</Badge>
             ) : null}
-            {hidden ? <Badge>Hidden</Badge> : null}
+            {paused ? <Badge>Paused</Badge> : null}
             {repo.repo !== null && repo.open_issues > 0 ? (
               <a
                 href={issuesUrl(repo.repo)}
@@ -159,7 +159,7 @@ export function SiteCard({
           </p>
         </div>
         {first ? (
-          <SiteActions repo={repo.repo} site={first} hidden={hidden} />
+          <SiteActions repo={repo.repo} site={first} paused={paused} />
         ) : null}
       </header>
       <ul className="mt-3 divide-y divide-line border-t border-line pt-3">
@@ -174,12 +174,12 @@ export function SiteCard({
 /** The dashboard as a grid of compact cards, each as wide as it can be within a comfortable range. */
 export function SiteCards({
   repos,
-  hidden,
+  paused,
   now,
 }: Readonly<{
   repos: readonly RepoStatus[];
-  /** The repositories the person has hidden. */
-  hidden: ReadonlySet<string>;
+  /** The repositories whose checks are turned off. */
+  paused: ReadonlySet<string>;
   now: number;
 }>): ReactElement {
   return (
@@ -188,7 +188,7 @@ export function SiteCards({
         <SiteCard
           key={repo.repo ?? 'by-hand'}
           repo={repo}
-          hidden={repo.repo !== null && hidden.has(repo.repo)}
+          paused={repo.repo !== null && paused.has(repo.repo)}
           now={now}
         />
       ))}

@@ -9,6 +9,7 @@ import {
 
 import { POST } from '@/app/webhooks/github/route';
 import { createDatabase } from '@/domain/db/client';
+import { disableRepo, enableRepo } from '@/domain/db/disabled';
 import { addDomain } from '@/domain/db/domains';
 import { issueOf, saveIssue } from '@/domain/db/suite';
 import {
@@ -227,6 +228,22 @@ describe('POST /webhooks/github', () => {
       expect(jobs).toEqual([]);
     });
 
+    it('drops the delivery of a repository whose checks are off, and takes it again once they are on', async () => {
+      const db = createDatabase(made.d1);
+      await disableRepo(db, 7, 'acme/site');
+      const res = await deliver(
+        'deployment_status',
+        deployment(),
+        undefined,
+        'off-1',
+      );
+      expect(res.status).toBe(202);
+      expect(jobs).toEqual([]);
+      await enableRepo(db, 'acme/site');
+      await deliver('deployment_status', deployment(), undefined, 'off-1');
+      expect(jobs).toHaveLength(1);
+    });
+
     it('leaves one job for a delivery GitHub sends again', async () => {
       await deliver('deployment_status', deployment(), undefined, 'abc-1');
       await deliver('deployment_status', deployment(), undefined, 'abc-1');
@@ -329,6 +346,12 @@ describe('POST /webhooks/github', () => {
       await deliver('push', push());
       await deliver('push', push());
       expect(jobs).toHaveLength(2);
+    });
+
+    it('leaves nothing for a repository whose checks are off', async () => {
+      await disableRepo(createDatabase(made.d1), 7, 'acme/site');
+      await deliver('push', push());
+      expect(jobs).toEqual([]);
     });
 
     it('leaves nothing when another file changes', async () => {

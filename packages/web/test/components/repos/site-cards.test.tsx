@@ -38,7 +38,7 @@ const REPO: RepoStatus = {
 };
 
 describe('SiteCard', () => {
-  const out = htmlAt(<SiteCard repo={REPO} hidden={false} now={NOW} />, {
+  const out = htmlAt(<SiteCard repo={REPO} paused={false} now={NOW} />, {
     pathname: '/dashboard',
   });
 
@@ -71,10 +71,10 @@ describe('SiteCard', () => {
     expect(out).toContain('aria-label="Actions for acme/site"');
   });
 
-  it('dims a hidden repository and says so', () => {
-    const hidden = htmlAt(<SiteCard repo={REPO} hidden now={NOW} />);
-    expect(hidden).toContain('opacity-60');
-    expect(hidden).toContain('>Hidden<');
+  it('dims a repository whose checks are paused and says so', () => {
+    const paused = htmlAt(<SiteCard repo={REPO} paused now={NOW} />);
+    expect(paused).toContain('opacity-60');
+    expect(paused).toContain('>Paused<');
   });
 
   it('is a compact card, not a tall one with a coloured edge', () => {
@@ -86,7 +86,7 @@ describe('SiteCard', () => {
 describe('SiteCards', () => {
   it('lays the cards out in a grid that fills the width', () => {
     const out = htmlAt(
-      <SiteCards repos={[REPO]} hidden={new Set(['acme/site'])} now={NOW} />,
+      <SiteCards repos={[REPO]} paused={new Set(['acme/site'])} now={NOW} />,
     );
     expect(out).toContain('grid-cols-[repeat(auto-fill');
     expect(out).toContain('opacity-60');

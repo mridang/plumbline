@@ -333,18 +333,14 @@ export const userRepositories = sqliteTable(
 );
 
 /**
- * A repository a person has hidden from their dashboard: one row each, with
- * when. Only the dashboard looks at it; the checks still run.
+ * A repository whose checks are turned off: one row each, with who turned them
+ * off and when. Its webhooks and scheduled checks are skipped.
  */
-export const userHiddenRepos = sqliteTable(
-  'user_hidden_repos',
-  {
-    user_id: integer('user_id').notNull(),
-    repo: text('repo').notNull(),
-    hidden_at: text('hidden_at').notNull(),
-  },
-  (table) => [primaryKey({ columns: [table.user_id, table.repo] })],
-);
+export const disabledRepos = sqliteTable('disabled_repos', {
+  repo: text('repo').primaryKey(),
+  user_id: integer('user_id').notNull(),
+  disabled_at: text('disabled_at').notNull(),
+});
 
 /** What happened to a person's sites, in order, for the live dashboard to replay. */
 export const liveEvents = sqliteTable(

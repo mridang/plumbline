@@ -514,7 +514,9 @@ export async function noteDeferred(
 
 /**
  * Closes what the repository no longer deploys: the open issues of hosts that
- * are not among `hosts`, and the issues of the old kind of such hosts.
+ * are not among `hosts`, and the issues of the old kind of such hosts. With
+ * `reason` `disabled` (and no hosts) it closes them all, because checks for the
+ * repository were turned off.
  */
 export async function closeUndeployed(
   api: GitHubApi,
@@ -525,9 +527,11 @@ export async function closeUndeployed(
     sha: string | null;
     source: string | null;
     pause?: () => Promise<void>;
+    reason?: 'undeployed' | 'disabled';
   }>,
 ): Promise<void> {
   const { repo } = input;
+  const reason = input.reason ?? 'undeployed';
   const pause = input.pause ?? (() => Promise.resolve());
   const origin = originOf(api, repo, input.sha);
   for (const issue of await openIssuesOf(db, repo)) {
@@ -548,7 +552,7 @@ export async function closeUndeployed(
         },
         issue.check,
         issue,
-        'undeployed',
+        reason,
       );
     } catch (error) {
       if (isThrottled(error)) {

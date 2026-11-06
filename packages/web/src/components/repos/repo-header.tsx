@@ -2,7 +2,9 @@ import type { ReactElement } from 'react';
 
 import { GithubIcon } from '@/components/icons';
 import { BadgeMenu } from '@/components/repos/badge-menu';
+import { ChecksSwitch } from '@/components/repos/checks-switch';
 import { RepoLabel } from '@/components/repos/repo-label';
+import { Badge } from '@/components/ui-app/badge';
 import { StatusBadge } from '@/components/repos/site-state';
 import { LinkButton } from '@/components/ui-app/link-button';
 import { PageHeading } from '@/components/ui-app/page-heading';
@@ -18,6 +20,7 @@ import { countOf } from '@/lib/intl';
 export function RepoHeader({
   repo,
   state,
+  paused,
   siteCount,
   badgeImage,
   badgeMarkdown,
@@ -25,6 +28,8 @@ export function RepoHeader({
   repo: string;
   /** How the worst of its sites stands. */
   state: SiteState;
+  /** Whether checks are turned off for the repository. */
+  paused: boolean;
   siteCount: number;
   badgeImage: string;
   badgeMarkdown: string;
@@ -34,12 +39,17 @@ export function RepoHeader({
       title={<RepoLabel repo={repo} href={false} size="lg" />}
       description={
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <StatusBadge state={state} size="md" />
+          {paused ? (
+            <Badge>Paused</Badge>
+          ) : (
+            <StatusBadge state={state} size="md" />
+          )}
           <span>{countOf(siteCount, 'site')}</span>
         </span>
       }
       actions={
         <>
+          <ChecksSwitch repo={repo} paused={paused} />
           <BadgeMenu repo={repo} image={badgeImage} markdown={badgeMarkdown} />
           <LinkButton
             href={`https://github.com/${repo}`}

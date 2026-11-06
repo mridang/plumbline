@@ -12,10 +12,11 @@ import { Container } from '@/components/ui/layout';
 import { Section } from '@/components/ui-app/section';
 import { TabList, TabPanel } from '@/components/ui-app/tabs';
 import { Dot } from '@/components/ui-app/status-dot';
-import { repoOf } from '@/domain/api/hidden';
+import { repoOf } from '@/domain/api/repo-name';
 import { isRunId } from '@/domain/api/runs';
 import { badgePath } from '@/domain/badge/sign';
 import { getDatabase } from '@/domain/db/client';
+import { disabledRepos } from '@/domain/db/disabled';
 import { issuesOf } from '@/domain/db/issue-history';
 import { getDomain } from '@/domain/db/domains';
 import { overviewOf } from '@/domain/db/live';
@@ -64,6 +65,7 @@ export default async function RepoPage({
   }
   const db = getDatabase();
   const entry = (await overviewOf(db, user.id)).find((r) => r.repo === repo);
+  const paused = (await disabledRepos(db, user.id)).has(repo);
   if (!entry) {
     notFound();
   }
@@ -117,6 +119,7 @@ export default async function RepoPage({
       <RepoHeader
         repo={repo}
         state={overall}
+        paused={paused}
         siteCount={entry.sites.length}
         badgeImage={badgeImage}
         badgeMarkdown={badgeMarkdown}

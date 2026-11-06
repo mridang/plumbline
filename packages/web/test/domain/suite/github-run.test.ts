@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { createDatabase } from '@/domain/db/client';
 import { getPreviewReport } from '@/domain/db/preview-reports';
 import { CHECKS } from '@/domain/checks/catalogue';
+import { disableRepo } from '@/domain/db/disabled';
 import { addDomain, deleteDomain } from '@/domain/db/domains';
 import { forgetIssue, issueOf, latestRuns } from '@/domain/db/suite';
 import { GitHubApi } from '@/domain/github/api';
@@ -418,6 +419,21 @@ describe('handleDeployment of the live site', () => {
       'site.test',
       expect.anything(),
     );
+  });
+});
+
+describe('handleDeployment of a repository whose checks are off', () => {
+  it('checks nothing, stores nothing and calls GitHub for nothing', async () => {
+    const db = await setup();
+    await disableRepo(db, 7, 'acme/site');
+    const { fetcher, calls } = github();
+    await deploy(db, config, 5, 7, live, { fetcher, run: failing() });
+    await deploy(db, config, 5, 7, preview, { fetcher, run: failing() });
+    expect(calls).toEqual([]);
+    expect(await latestRuns(db, 7, 'site.test')).toEqual([]);
+    expect(
+      await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'),
+    ).toBeUndefined();
   });
 });
 

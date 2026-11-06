@@ -2,12 +2,14 @@
  * @packageDocumentation
  *
  * The cron trigger's work: re-check the sites found through GitHub that have
- * not been checked for a day, so a problem that did not come from a deployment
+ * not been checked for six hours, so a problem that did not come from a deployment
  * (a site that went down, a page changed from outside the repository) is still
  * noticed. Each trigger takes only a few sites, the ones checked longest ago,
  * because a scan takes the container tens of seconds; the trigger fires often
- * enough that every site is reached within the
- * day. Every check is run by the scanner container, so a trigger awaits its
+ * enough that every site is reached soon after it
+ * falls due. A run that failed, because the scanner was busy or restarting, does
+ * not count as a check, so the site stays due. A repository whose checks a
+ * person turned off is never re-checked. Every check is run by the scanner container, so a trigger awaits its
  * scans: the work is waiting for the container, not CPU.
  */
 
@@ -27,8 +29,8 @@ import { scanThrough, type ScannerNamespace } from '@/domain/suite/scanner';
 /** Sites checked by one trigger on the Free plan. */
 export const SCHEDULED_BATCH = FREE_LIMITS.scheduledBatch;
 
-/** A site is due again after this long, in milliseconds. */
-export const RECHECK_AFTER_MS = 24 * 60 * 60 * 1000;
+/** A site is due again after this long without a check, in milliseconds (the trigger looks every ten minutes). */
+export const RECHECK_AFTER_MS = 6 * 60 * 60 * 1000;
 
 /** Re-check the sites that are due. */
 export async function checkDueSites(

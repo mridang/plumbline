@@ -269,6 +269,19 @@ export async function listRepos(
   return rows.map((row) => ({ ...row, hosts: hostsOf(row.hosts) }));
 }
 
+/** The installation that holds the repository, or undefined when the app has not seen it. */
+export async function installationOfRepo(
+  db: Database,
+  repo: string,
+): Promise<number | undefined> {
+  const [row] = await db
+    .select({ installation_id: githubRepos.installation_id })
+    .from(githubRepos)
+    .where(eq(githubRepos.full_name, repo))
+    .limit(1);
+  return row?.installation_id;
+}
+
 /** The repositories among `names` the person has, for the dashboard to match domains to them. */
 export async function reposNamed(
   db: Database,

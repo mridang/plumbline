@@ -23,12 +23,12 @@ describe('SiteActions', () => {
       <SiteActions
         repo="acme/site"
         site={{ id: 'a', host: 'x.test' }}
-        hidden={false}
+        paused={false}
       />,
     );
     expect(out).toContain('aria-label="Actions for acme/site"');
     expect(out).toContain('aria-expanded="false"');
-    expect(out).not.toContain('Hide from dashboard');
+    expect(out).not.toContain('Turn checks off');
   });
 
   it('is named for the host when the site was added by hand', () => {
@@ -37,7 +37,7 @@ describe('SiteActions', () => {
         <SiteActions
           repo={null}
           site={{ id: 'a', host: 'x.test' }}
-          hidden={false}
+          paused={false}
         />,
       ),
     ).toContain('aria-label="Actions for x.test"');

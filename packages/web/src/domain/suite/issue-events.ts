@@ -11,6 +11,7 @@
  */
 
 import type { Database } from '@/domain/db/client';
+import { isRepoDisabled } from '@/domain/db/disabled';
 import { forgetIssue, issueNumbered, saveIssue } from '@/domain/db/suite';
 import type { GitHubApi } from '@/domain/github/api';
 import type { Delivery } from '@/domain/github/deployments';
@@ -34,6 +35,10 @@ export async function handleIssueEvent(
   const repo = delivery.repository?.full_name;
   const number = delivery.issue?.number;
   if (!repo || number === undefined) {
+    return;
+  }
+  // A repository whose checks are off has no issues to look after.
+  if (await isRepoDisabled(db, repo)) {
     return;
   }
   const stored = await issueNumbered(db, repo, number);

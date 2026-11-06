@@ -41,7 +41,7 @@
     "directory": ".open-next/assets",
   },
   // The re-check (src/domain/suite/scheduled.ts) of the sites found through
-  // GitHub that have not been checked for a day. The account is on the Workers
+  // GitHub that have not been checked for six hours. The account is on the Workers
   // Paid plan (WORKERS_PLAN below, src/domain/suite/limits.ts), so each trigger
   // takes a bigger batch and it fires every ten minutes.
   "triggers": { "crons": ["*/10 * * * *"] },

@@ -1049,7 +1049,7 @@
         }
       }
     },
-    "/api/users/self/repositories/hidden/{owner}/{repo}": {
+    "/api/users/self/repositories/disabled/{owner}/{repo}": {
       "parameters": [
         {
           "name": "owner",
@@ -1069,10 +1069,10 @@
         }
       ],
       "put": {
-        "operationId": "hideRepository",
+        "operationId": "disableRepositoryChecks",
         "tags": ["account"],
-        "summary": "Hide a repository from the dashboard.",
-        "description": "Only the signed-in person's dashboard changes. The repository is still checked by the webhooks and the schedule, and its issues and check runs still go to GitHub. Hiding a repository that is already hidden changes nothing.",
+        "summary": "Turn the checks of a repository off.",
+        "description": "The repository's deployment and push webhooks are dropped, the schedule skips its sites, and its open Plumbline issues are closed with a note that checks were turned off. Turning off a repository whose checks are already off changes nothing.",
         "security": [
           {
             "session": []
@@ -1080,7 +1080,7 @@
         ],
         "responses": {
           "204": {
-            "description": "The repository is hidden."
+            "description": "Checks for the repository are off."
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -1097,9 +1097,10 @@
         }
       },
       "delete": {
-        "operationId": "unhideRepository",
+        "operationId": "enableRepositoryChecks",
         "tags": ["account"],
-        "summary": "Show a hidden repository on the dashboard again.",
+        "summary": "Turn the checks of a repository on again.",
+        "description": "Checks resume with the next deployment or the next scheduled check. Issues closed when the checks were turned off are not reopened; a problem that is still there opens a new one. 404 when the repository's checks were not off.",
         "security": [
           {
             "session": []
@@ -1107,7 +1108,7 @@
         ],
         "responses": {
           "204": {
-            "description": "The repository is shown again."
+            "description": "Checks for the repository are on."
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"

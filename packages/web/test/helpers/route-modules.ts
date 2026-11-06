@@ -34,8 +34,8 @@ export const ROUTE_MODULES: Readonly<
   '/api/users/self/connections/{grant_id}': () =>
     import('@/app/api/users/self/connections/[grant_id]/route'),
   '/api/users/self/github': () => import('@/app/api/users/self/github/route'),
-  '/api/users/self/repositories/hidden/{owner}/{repo}': () =>
-    import('@/app/api/users/self/repositories/hidden/[owner]/[repo]/route'),
+  '/api/users/self/repositories/disabled/{owner}/{repo}': () =>
+    import('@/app/api/users/self/repositories/disabled/[owner]/[repo]/route'),
   '/api/users/self/push/subscriptions': () =>
     import('@/app/api/users/self/push/subscriptions/route'),
   '/api/users/self/push/subscriptions/{id}': () =>
