@@ -87,6 +87,17 @@ describe('ScanResults, laid out as a report', () => {
     }
   });
 
+  it('shows no red dot for a failed count of zero', () => {
+    const calm = html(
+      <ScanResults scan={scanOf([hint('a', 'passed'), hint('b', 'warned')])} />,
+    );
+    const stats = calm.slice(calm.indexOf('<dl'), calm.indexOf('</dl>'));
+    expect(stats).not.toContain('bg-failed');
+    expect(
+      html(<ScanResults scan={scanOf([hint('a', 'failed')])} />),
+    ).toContain('bg-failed');
+  });
+
   it('has a segmented control with counts and Expand all on the same line, to the right', () => {
     expect(out).toContain('role="group" aria-label="Show"');
     expect(out).toContain('Problems<span');

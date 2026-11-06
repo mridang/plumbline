@@ -4,6 +4,7 @@ import type { ReactElement } from 'react';
 import { LinkIcon } from '@/components/icons';
 import { CheckForm, type CheckSection } from '@/components/repos/check-form';
 import { SiteRunner } from '@/components/repos/site-runner';
+import { RulesNote } from '@/components/repos/rules-note';
 import { StatusBadge } from '@/components/repos/site-state';
 import { commitUrl } from '@/components/repos/site-rows';
 import { RunPicker } from '@/components/runs/run-picker';
@@ -171,22 +172,27 @@ export function SiteView({
               />
             </div>
           ) : shown ? (
-            <ScanResults
-              scan={savedScan(reportResource(shown))}
-              repository={repo}
-              issuesByCheck={byCheck}
-              now={now}
-              between={
-                <RunPicker
-                  repo={domain.repo ?? ''}
-                  host={domain.host}
-                  runs={runs}
-                  shownId={shown.id}
-                  hrefFor={hrefFor}
-                  now={now}
-                />
-              }
-            />
+            <>
+              <ScanResults
+                scan={savedScan(reportResource(shown))}
+                repository={repo}
+                issuesByCheck={byCheck}
+                now={now}
+                between={
+                  <RunPicker
+                    repo={domain.repo ?? ''}
+                    host={domain.host}
+                    runs={runs}
+                    shownId={shown.id}
+                    hrefFor={hrefFor}
+                    now={now}
+                  />
+                }
+              />
+              {repo ? (
+                <RulesNote repo={repo} checks={shown.outcomes.length} />
+              ) : null}
+            </>
           ) : (
             <>
               <RunPicker
@@ -198,9 +204,10 @@ export function SiteView({
                 now={now}
               />
               <EmptyState title="No report yet">
-                Press Run checks to make the first, or deploy: every deployment
-                is checked.
+                Deploy the site or press Run checks: the first report covers the
+                checks your rules turn on.
               </EmptyState>
+              {repo ? <RulesNote repo={repo} /> : null}
             </>
           )
         }

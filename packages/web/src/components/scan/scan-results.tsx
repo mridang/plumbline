@@ -130,7 +130,7 @@ export function ScanResults({
             key={status}
             label={STATUS_LABELS[status]}
             value={counts[status]}
-            tone={COUNT_TONE[status]}
+            tone={counts[status] === 0 ? 'neutral' : COUNT_TONE[status]}
           />
         ))}
       </dl>

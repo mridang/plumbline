@@ -1,7 +1,14 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { CHECKS } from '@/domain/checks/catalogue';
-import { keptOutcomes, sha256Hex, suiteRunOf } from '@/domain/suite/run';
+import {
+  countsOf,
+  keptOutcomes,
+  restrictRun,
+  sha256Hex,
+  suiteRunOf,
+} from '@/domain/suite/run';
+import type { SuiteRun } from '@/domain/suite/run';
 import type { ScanOutcome, ScanResult } from '@/domain/suite/scanner';
 
 const outcome = (
@@ -143,5 +150,67 @@ describe('suiteRunOf', () => {
       suiteRunOf(scan(outcome('a', 'skipped'), outcome('b', 'skipped'))),
     ).rejects.toThrow('ran no checks');
     await expect(suiteRunOf(scan())).rejects.toThrow('ran no checks');
+  });
+});
+
+describe('countsOf', () => {
+  it('counts how many of the checks ended each way', () => {
+    expect(
+      countsOf([
+        { id: 'a', status: 'passed' },
+        { id: 'b', status: 'passed' },
+        { id: 'c', status: 'failed' },
+        { id: 'd', status: 'skipped' },
+      ]),
+    ).toEqual({ passed: 2, warned: 0, failed: 1, skipped: 1 });
+  });
+});
+
+describe('restrictRun', () => {
+  const made = () =>
+    suiteRunOf(
+      scan(
+        outcome('seo-links', 'warned', ['x']),
+        outcome('seo-viewport', 'passed'),
+        outcome('seo-h1-missing', 'failed', ['y']),
+      ),
+    );
+
+  it('keeps the outcome and count of the enabled checks only', async () => {
+    const run = restrictRun(
+      await made(),
+      new Set(['seo-links', 'seo-viewport']),
+    );
+    expect(run.counts).toEqual({ passed: 1, warned: 1, failed: 0, skipped: 0 });
+    expect(
+      (JSON.parse(run.outcomes ?? '[]') as { id: string }[]).map((o) => o.id),
+    ).toEqual(['seo-links', 'seo-viewport']);
+    expect(run.statuses).toHaveLength(2);
+  });
+
+  it('keeps the findings and hash, which the rules filter elsewhere', async () => {
+    const before = await made();
+    const run = restrictRun(before, new Set(['seo-links']));
+    expect(run.hash).toBe(before.hash);
+    expect(run.checks).toEqual(before.checks);
+  });
+
+  it('keeps a run that is too large to hold outcomes without them, and counts it', async () => {
+    const before = { ...(await made()), outcomes: null };
+    const run = restrictRun(before, new Set(['seo-links']));
+    expect(run.outcomes).toBeNull();
+    expect(run.counts).toEqual({ passed: 0, warned: 1, failed: 0, skipped: 0 });
+  });
+
+  it('returns a run without statuses as it is', async () => {
+    const bare: SuiteRun = { ...(await made()), statuses: undefined };
+    expect(restrictRun(bare, new Set())).toBe(bare);
+  });
+
+  it('leaves outcomes it cannot read as they were', async () => {
+    const before = { ...(await made()), outcomes: 'not json' };
+    expect(restrictRun(before, new Set(['seo-links'])).outcomes).toBe(
+      'not json',
+    );
   });
 });

@@ -26,7 +26,7 @@ import {
 } from '@/domain/suite/diff';
 import type { Live } from '@/domain/live/live';
 import { countsOf } from '@/domain/suite/report';
-import type { SuiteRun } from '@/domain/suite/run';
+import { restrictRun, type SuiteRun } from '@/domain/suite/run';
 import { resolveRules } from '@/domain/suite/config';
 import { FREE_LIMITS, inBatches, type Limits } from '@/domain/suite/limits';
 import { SiteUnreachable } from '@/domain/suite/scanner';
@@ -214,6 +214,9 @@ export async function checkSite(
     ...carried,
   ];
   const unchanged = same && previous.hash === result.hash;
+  // The scanner ran every check, but the figures and the report kept with the
+  // run cover only the checks the rules turn on.
+  const kept = restrictRun(result, new Set(levels.keys()));
   await recordRun(
     db,
     {
@@ -226,8 +229,8 @@ export async function checkSite(
       rules,
       findings,
       kind: deps.kind ?? (deps.force ? 'config' : 'deployment'),
-      counts: result.counts,
-      outcomes: result.outcomes,
+      counts: kept.counts,
+      outcomes: kept.outcomes,
     },
     now().toISOString(),
   );
@@ -241,7 +244,7 @@ export async function checkSite(
     unchanged,
     changes: diffFindings(previous?.findings ?? [], findings),
     findings,
-    notRun: result.skipped,
+    notRun: result.skipped.filter((id) => levels.has(id)),
     url,
   };
 }

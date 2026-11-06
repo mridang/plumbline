@@ -147,6 +147,29 @@ describe('SiteView', () => {
     expect(out).toMatch(/Run \d+ checks/);
   });
 
+  it('explains the rules under the results of a repository', () => {
+    const out = draw();
+    expect(out).toContain('aria-label="Rules"');
+    expect(out).toContain(
+      'These results cover the 2 checks your rules turn on',
+    );
+    expect(out).toContain('href="/schemas/plumbline.schema.json"');
+  });
+
+  it('explains the rules, and what to do, when there is no report yet', () => {
+    const out = draw({ shown: undefined, runs: [] });
+    expect(out).toContain('aria-label="Rules"');
+    expect(out).toContain('Only the checks your rules turn on are shown');
+    expect(out).toContain('the first report covers');
+  });
+
+  it('says nothing of rules for a site added by hand, which has no repository', () => {
+    const out = draw({
+      domain: { ...DOMAIN, repo: null } as unknown as Domain,
+    });
+    expect(out).not.toContain('aria-label="Rules"');
+  });
+
   it('draws the totals of the report shown, in the colours of the results', () => {
     const out = draw();
     expect(out).toContain('text-failed');

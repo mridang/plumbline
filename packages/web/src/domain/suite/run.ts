@@ -28,11 +28,19 @@ export interface SuiteRun {
   readonly counts?: ReportCounts;
   /** Every check's outcome as JSON, to open the run as a report; null when too large or unreadable. */
   readonly outcomes?: string | null;
+  /** Each check's id and how it ended, so the figures can be worked out again for fewer checks. */
+  readonly statuses?: readonly CheckStatus[];
 }
 
-/** How many checks of `outcomes` ended each way. */
-function countsOf(outcomes: ScanResult['outcomes']): ReportCounts {
-  const count = (status: ScanResult['outcomes'][number]['status']): number =>
+/** How one check ended. */
+export interface CheckStatus {
+  readonly id: string;
+  readonly status: ScanResult['outcomes'][number]['status'];
+}
+
+/** How many of the checks ended each way. */
+export function countsOf(outcomes: readonly CheckStatus[]): ReportCounts {
+  const count = (status: CheckStatus['status']): number =>
     outcomes.filter((outcome) => outcome.status === status).length;
   return {
     passed: count('passed'),
@@ -57,6 +65,52 @@ export function keptOutcomes(scan: Readonly<ScanResult>): string | null {
   }
   const text = JSON.stringify(parsed.value.outcomes);
   return text.length <= MAX_KEPT_OUTCOMES_BYTES ? text : null;
+}
+
+/** The ids in a stored outcomes JSON that `keep` allows; the text as it was when it cannot be read. */
+function restrictedOutcomes(text: string, keep: ReadonlySet<string>): string {
+  try {
+    const parsed: unknown = JSON.parse(text);
+    return Array.isArray(parsed)
+      ? JSON.stringify(
+          parsed.filter(
+            (outcome: unknown) =>
+              typeof outcome === 'object' &&
+              outcome !== null &&
+              'id' in outcome &&
+              typeof outcome.id === 'string' &&
+              keep.has(outcome.id),
+          ),
+        )
+      : text;
+  } catch {
+    return text;
+  }
+}
+
+/**
+ * The run as the rules see it: only the checks in `enabled` keep their outcome
+ * and count. The scanner runs every check of the catalogue, so without this a
+ * site would read as failing checks its rules never asked for. A run that
+ * lists no statuses (one made by hand elsewhere) is returned as it is.
+ */
+export function restrictRun(
+  run: Readonly<SuiteRun>,
+  enabled: ReadonlySet<string>,
+): SuiteRun {
+  if (run.statuses === undefined) {
+    return run;
+  }
+  const statuses = run.statuses.filter((entry) => enabled.has(entry.id));
+  return {
+    ...run,
+    statuses,
+    counts: countsOf(statuses),
+    outcomes:
+      run.outcomes === undefined || run.outcomes === null
+        ? run.outcomes
+        : restrictedOutcomes(run.outcomes, enabled),
+  };
 }
 
 /** The SHA-256 of `text` as hex, computed natively by the runtime. */
@@ -93,5 +147,6 @@ export async function suiteRunOf(
     skipped: skippedOf(scan.outcomes),
     counts: countsOf(scan.outcomes),
     outcomes: keptOutcomes(scan),
+    statuses: scan.outcomes.map(({ id, status }) => ({ id, status })),
   };
 }

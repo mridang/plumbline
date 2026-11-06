@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import { createDatabase } from '@/domain/db/client';
 import { addDomain } from '@/domain/db/domains';
-import { listRuns } from '@/domain/db/runs';
+import { getRun, listRuns } from '@/domain/db/runs';
 import { dueSites, latestRuns, recordRun } from '@/domain/db/suite';
 import {
   MAX_SITES,
@@ -476,6 +476,55 @@ describe('checkSite', () => {
       { run: async () => finding('slow') },
     );
     expect(outcome.unchanged).toBe(false);
+  });
+});
+
+describe('checkSite, keeping only the checks the rules turn on', () => {
+  const site = { host: 'a.test', repo: 'acme/site', sha: 'abc123' };
+  const [enabled] = RULES;
+  const outcomes = [
+    { id: enabled!, status: 'warned', findings: [] },
+    { id: 'not-in-the-rules', status: 'failed', findings: [] },
+    { id: 'also-not-in-the-rules', status: 'passed', findings: [] },
+  ];
+  const run = async (): Promise<SuiteRun> => ({
+    ...finding('one'),
+    counts: { passed: 1, warned: 1, failed: 1, skipped: 0 },
+    outcomes: JSON.stringify(outcomes),
+    statuses: outcomes.map(({ id, status }) => ({
+      id,
+      status: status as 'warned' | 'failed' | 'passed',
+    })),
+  });
+
+  it('counts and stores only the enabled checks, not what else the scanner ran', async () => {
+    const db = createDatabase(sqliteD1(...APP_MIGRATIONS).d1);
+    const { domain } = await addDomain(db, 1, 'a.test', 'acme/site');
+    const levels = new Map<string, 'on'>([[enabled!, 'on']]);
+    await checkSite(db, 1, site, { run, levels });
+    const [kept] = await listRuns(
+      db,
+      1,
+      { domainId: domain.id, host: 'a.test' },
+      10,
+    );
+    expect(kept).toMatchObject({ passed: 0, warned: 1, failed: 0, skipped: 0 });
+    const opened = await getRun(
+      db,
+      1,
+      { domainId: domain.id, host: 'a.test' },
+      kept!.id,
+    );
+    expect(opened?.outcomes).toEqual([outcomes[0]]);
+  });
+
+  it('leaves out of the not-run list the checks the rules do not ask for', async () => {
+    const db = await setup('a.test');
+    const result = await checkSite(db, 1, site, {
+      run: async () => ({ ...finding('one'), skipped: [enabled!, 'other'] }),
+      levels: new Map([[enabled!, 'on']]),
+    });
+    expect(result).toMatchObject({ notRun: [enabled] });
   });
 });
 
