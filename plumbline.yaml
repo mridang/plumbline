@@ -1,0 +1,5 @@
+# yaml-language-server: $schema=https://plumbline.apps.mrida.ng/schemas/plumbline.schema.json
+extends: plumbline:recommended
+rules:
+  # Cloudflare's Network Error Logging is wanted on purpose.
+  csp-reporting: warn
