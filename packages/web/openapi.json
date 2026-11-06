@@ -477,7 +477,7 @@
           {
             "name": "group",
             "in": "query",
-            "description": "Only the checks in this group (a source such as `owasp`, or a topic such as `tls`).",
+            "description": "Only the checks this name selects: a section (`https`), a tag (`seo`), a target, a tier, a control or a source (`owasp`), bare or written with its kind (`section:email`, `tag:seo`), or an old group name such as `tls`.",
             "schema": {
               "type": "string"
             }
@@ -1254,7 +1254,15 @@
           "section",
           "section_title",
           "section_order",
-          "origins"
+          "origins",
+          "group",
+          "subsection",
+          "tags",
+          "tier",
+          "target",
+          "control",
+          "since",
+          "added"
         ],
         "properties": {
           "id": {
@@ -1316,6 +1324,63 @@
                 }
               }
             }
+          },
+          "group": {
+            "type": "string",
+            "description": "The display group of the section, such as `security-privacy`."
+          },
+          "subsection": {
+            "type": "string",
+            "description": "A free-text subsection inside the section."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Goal and audience tags, such as `security` or `store`."
+          },
+          "tier": {
+            "type": "string",
+            "enum": ["recommended", "advanced", "experimental"]
+          },
+          "target": {
+            "type": "string",
+            "enum": ["web", "mail", "site"],
+            "description": "What the check looks at."
+          },
+          "control": {
+            "type": "string",
+            "enum": ["deployer", "platform", "dns", "mail"],
+            "description": "Who can fix what the check finds."
+          },
+          "since": {
+            "type": "integer",
+            "description": "The catalogue version in which the check entered its tier."
+          },
+          "added": {
+            "type": "string",
+            "description": "The month the check was added, `YYYY-MM`."
+          },
+          "how_to_fix": {
+            "type": "object",
+            "required": ["fix"],
+            "properties": {
+              "fix": {
+                "type": "string"
+              },
+              "vercel": {
+                "type": "string"
+              },
+              "cloudflare": {
+                "type": "string"
+              }
+            },
+            "description": "How to fix it, written for the checks of the recommended tier."
+          },
+          "note": {
+            "type": "string",
+            "description": "A note on the placement or the tier."
           }
         }
       },

@@ -26,16 +26,40 @@ describe('the rule sets', () => {
     const advanced = Object.keys(RULE_SETS['plumbline:advanced']!);
     expect(recommended.filter((id) => !advanced.includes(id))).toEqual([]);
     expect(advanced.length).toBeGreaterThan(recommended.length);
-    expect(advanced).toHaveLength(16);
   });
 
-  it('keep the advisory content rules out of the recommended set', () => {
-    expect(RULE_SETS['plumbline:recommended']).not.toHaveProperty(
-      'seo-keywords-frequent',
+  it('keep the experimental rules out of the recommended and advanced sets', () => {
+    const experimental = Object.keys(RULE_SETS['plumbline:experimental']!);
+    expect(experimental.length).toBeGreaterThan(0);
+    for (const id of experimental) {
+      expect(RULE_SETS['plumbline:recommended']).not.toHaveProperty(id);
+      expect(RULE_SETS['plumbline:advanced']).not.toHaveProperty(id);
+    }
+  });
+});
+
+describe('applyLevels on an experimental check', () => {
+  const id = Object.keys(RULE_SETS['plumbline:experimental']!)[0]!;
+  const checks: CheckResult[] = [
+    {
+      id,
+      findings: [
+        { severity: 'error', message: 'e' },
+        { severity: 'hint', message: 'h' },
+      ],
+    },
+  ];
+  const severities = (level: Level) =>
+    applyLevels(checks, new Map([[id, level]]))[0]?.findings.map(
+      (f) => f.severity,
     );
-    expect(RULE_SETS['plumbline:advanced']).toHaveProperty(
-      'seo-keywords-frequent',
-    );
+
+  it('never reports more than a warning at the level on', () => {
+    expect(severities('on')).toEqual(['warning', 'hint']);
+  });
+
+  it('reports an error when the level asks for one by name', () => {
+    expect(severities('error')).toEqual(['error', 'error']);
   });
 });
 

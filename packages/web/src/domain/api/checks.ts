@@ -19,6 +19,7 @@ import {
 import {
   CHECKS,
   GROUPS,
+  isGroup,
   checksInGroup,
   type Check,
 } from '@/domain/checks/catalogue';
@@ -61,7 +62,7 @@ export function createChecksCollection(): ApiController {
         throw limit;
       }
       const group = query.get('group');
-      if (group !== null && !GROUPS.includes(group)) {
+      if (group !== null && !isGroup(group)) {
         throw problems.badRequest(
           `group: must be one of ${GROUPS.join(', ')}.`,
         );

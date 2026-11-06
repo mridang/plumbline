@@ -12,6 +12,8 @@
 
 import type { MetadataRoute } from 'next';
 
+import { SECTIONS, TAGS } from '@/domain/checks/catalogue';
+
 import {
   PRIVACY_LAST_UPDATED,
   SITE_DESCRIPTION,
@@ -86,6 +88,12 @@ export const SITEMAP_PAGES: readonly Readonly<{
 }>[] = [
   { path: '/' },
   { path: '/checks' },
+  { path: '/checks/sets/recommended' },
+  { path: '/checks/sets/advanced' },
+  { path: '/checks/tags' },
+  ...SECTIONS.map((section) => ({ path: `/checks/areas/${section.id}` })),
+  ...TAGS.map((tag) => ({ path: `/checks/tags/${tag}` })),
+  { path: '/checks/webhint' },
   { path: '/docs' },
   { path: '/privacy', lastModified: PRIVACY_LAST_UPDATED },
   { path: '/terms', lastModified: TERMS_LAST_UPDATED },

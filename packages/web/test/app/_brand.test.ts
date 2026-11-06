@@ -11,6 +11,7 @@ import {
   SITEMAP_PAGES,
   THEME_COLOR,
 } from '@/app/_brand';
+import { SECTIONS, TAGS } from '@/domain/checks/catalogue';
 
 describe('the brand', () => {
   it('is named and placed as the site says', () => {
@@ -41,6 +42,12 @@ describe('what crawlers may read', () => {
     expect(SITEMAP_PAGES).toEqual([
       { path: '/' },
       { path: '/checks' },
+      { path: '/checks/sets/recommended' },
+      { path: '/checks/sets/advanced' },
+      { path: '/checks/tags' },
+      ...SECTIONS.map((section) => ({ path: `/checks/areas/${section.id}` })),
+      ...TAGS.map((tag) => ({ path: `/checks/tags/${tag}` })),
+      { path: '/checks/webhint' },
       { path: '/docs' },
       { path: '/privacy', lastModified: '2026-11-01' },
       { path: '/terms', lastModified: '2026-11-01' },

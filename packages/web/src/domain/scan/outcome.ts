@@ -28,6 +28,15 @@ export interface HintInfo {
   readonly sectionOrder: number;
   /** The sources and topics the hint belongs to. */
   readonly groups: readonly string[];
+  /** The display group of the section, and the hint's place in the taxonomy. */
+  readonly group?: string;
+  readonly subsection?: string;
+  readonly tags?: readonly string[];
+  readonly tier?: 'recommended' | 'advanced' | 'experimental';
+  readonly target?: 'web' | 'mail' | 'site';
+  readonly control?: 'deployer' | 'platform' | 'dns' | 'mail';
+  /** The month the hint was added, `YYYY-MM`. */
+  readonly added?: string;
   /** Who usually makes the fix, from the hint's section. */
   readonly fixer?: string;
   /** The upstream checks it was taken from; empty for one written here. */

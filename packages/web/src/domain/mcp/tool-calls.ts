@@ -46,6 +46,7 @@ import {
 import {
   CHECKS,
   GROUPS,
+  isGroup,
   applyChoice,
   checksInGroup,
   enabledChecks,
@@ -123,7 +124,7 @@ async function ownDomain(
 /** `list_checks`: the groups first, then a page of checks. */
 function listChecks(args: Args): ToolResult {
   const group = stringArg(args['group']);
-  if (group !== '' && !GROUPS.includes(group)) {
+  if (group !== '' && !isGroup(group)) {
     return errorResult(
       `There is no group "${group.slice(0, 80)}". The groups are ${GROUPS.join(', ')}.`,
     );

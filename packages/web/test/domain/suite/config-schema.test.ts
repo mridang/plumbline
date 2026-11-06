@@ -16,10 +16,10 @@ import {
   SCHEMA_URL,
   buildSchema,
   undocumentedKeys,
-  undocumentedRuleSets,
   type JsonSchema,
 } from '@/domain/suite/config-schema';
-import { DEFAULT_RULE_SET, RULE_SETS } from '@/domain/suite/rules';
+import { RULE_SET_DEFS } from '@/domain/checks/sets';
+import { DEFAULT_RULE_SET } from '@/domain/suite/rules';
 
 const schema = buildSchema();
 const validate = new Ajv2020({ strict: true }).compile(schema);
@@ -157,17 +157,18 @@ describe('buildSchema', () => {
     const defs = schema['$defs'] as Record<string, JsonSchema>;
     const name = (defs['extends']?.['anyOf'] as JsonSchema[])[0] as JsonSchema;
     expect(
-      (name['oneOf'] as { const: string }[]).map((set) => set.const).sort(),
-    ).toEqual(Object.keys(RULE_SETS).sort());
+      ((name['anyOf'] as JsonSchema[])[0]!['oneOf'] as { const: string }[])
+        .map((set) => set.const)
+        .sort(),
+    ).toEqual(RULE_SET_DEFS.map((set) => set.id).sort());
     expect(
       Object.keys(defs['environments']?.['properties'] as object).sort(),
     ).toEqual([...ENVIRONMENTS].sort());
     expect(defs['extends']?.['default']).toBe(DEFAULT_RULE_SET);
   });
 
-  it('has help written for every key and every rule set, so a new one is not shown bare', () => {
+  it('has help written for every key, so a new one is not shown bare', () => {
     expect(undocumentedKeys()).toEqual([]);
-    expect(undocumentedRuleSets()).toEqual([]);
   });
 
   it('takes the files the reader looks for as one kind of file', () => {
@@ -198,6 +199,29 @@ describe('the schema and the reader', () => {
         parseLevel(value) !== undefined,
       ]);
     }
+  });
+});
+
+describe('groups and pins', () => {
+  it('agree between the schema and the reader', () => {
+    const texts = [
+      'rules:\n  "tag:seo": warn\n',
+      'rules:\n  "tier:experimental": off\n',
+      'extends: plumbline:recommended@1\n',
+      'extends: [plumbline:advanced@2]\n',
+      'rules:\n  "tag:": warn\n',
+      'rules:\n  seo: warn\n',
+      'extends: plumbline:recommended@x\n',
+    ];
+    expect(texts.map((text) => [valid(text), readerAccepts(text)])).toEqual([
+      [true, true],
+      [true, true],
+      [true, true],
+      [true, true],
+      [false, false],
+      [false, false],
+      [false, false],
+    ]);
   });
 });
 

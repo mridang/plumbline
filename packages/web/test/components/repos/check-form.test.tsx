@@ -11,8 +11,8 @@ import { htmlAt } from '../render';
 
 const SECTIONS: readonly CheckSection[] = [
   {
-    id: 'site-protection',
-    title: 'Site protection',
+    id: 'hardening',
+    title: 'Security headers',
     checks: [
       { id: 'csp', name: 'Content Security Policy', description: 'CSP.' },
       { id: 'etag', name: 'ETag', description: 'ETag.' },

@@ -1,37 +1,52 @@
 import { describe, expect, it } from '@jest/globals';
 
 import ChecksPage, { metadata } from '@/app/(site)/checks/page';
-import { CHECKS, SECTIONS } from '@/domain/checks/catalogue';
+import { SECTIONS, CHECKS } from '@/domain/checks/catalogue';
+import { findRuleSet } from '@/domain/checks/sets';
+import { formatCount } from '@/lib/intl';
 import { htmlAt } from '../../../components/render';
 
-describe('the checks page', () => {
+describe('the rules overview', () => {
   const out = htmlAt(<ChecksPage />, { pathname: '/checks' });
 
-  it('may be indexed and says what it lists', () => {
-    expect(metadata.title).toBe('Checks');
+  it('may be indexed', () => {
+    expect(metadata.title).toBe('Rules');
     expect(metadata.alternates?.canonical).toContain('/checks');
   });
 
-  it('counts the checks in its introduction', () => {
-    expect(out).toContain(`>${CHECKS.length}</span> checks in`);
+  it('features the default set with its size and how to use it', () => {
+    const size = findRuleSet('plumbline:recommended')!.members.length;
+    expect(out).toContain('plumbline:recommended');
+    expect(out).toContain(formatCount(size));
+    expect(out).toContain('extends: plumbline:recommended');
+    expect(out).toContain(`See the ${formatCount(size)} recommended rules`);
   });
 
-  it('has an area for each section with checks, linked from the top', () => {
+  it('lists the other sets, the add-ons and the three steps', () => {
+    for (const id of ['advanced', 'experimental', 'all']) {
+      expect(out).toContain(`href="/checks/sets/${id}"`);
+    }
+    for (const section of SECTIONS.filter((s) => !s.default_on)) {
+      expect(out).toContain(`plumbline:${section.id}/recommended`);
+    }
+    expect(out).toContain('Pick a rule set');
+    expect(out).toContain('Tune single rules');
+  });
+
+  it('links every area', () => {
     for (const section of SECTIONS) {
-      if (CHECKS.some((check) => check.section === section.id)) {
-        expect(out).toContain(`href="#${section.id}"`);
-        expect(out).toContain(`id="${section.id}"`);
-      }
+      expect(out).toContain(`href="/checks/areas/${section.id}"`);
     }
+    expect(out).toContain(
+      `>${CHECKS.filter((c) => c.section === 'seo').length}<`,
+    );
   });
 
-  it('lists every check with its id, which a rules file uses', () => {
-    for (const check of CHECKS.slice(0, 20)) {
-      expect(out).toContain(`>${check.id}</code>`);
-    }
-  });
-
-  it('scrolls its tables inside their own boxes', () => {
-    expect(out).toContain('overflow-x-auto');
+  it('puts the sidebar around the page, with the areas folded and no profile for a platform', () => {
+    expect(out).toContain('Rules by area');
+    expect(out).toContain('Add-ons and audiences');
+    expect(out).toContain('aria-current="page"');
+    expect(out.toLowerCase()).not.toContain('profile/vercel');
+    expect(out.toLowerCase()).not.toContain('profile/cloudflare');
   });
 });

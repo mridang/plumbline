@@ -6,11 +6,20 @@ import {
   checksPerSection,
   checksInGroup,
   enabledChecks,
+  CONTROLS,
+  DISPLAY_GROUPS,
   expandSelection,
   findCheck,
   GROUPS,
+  INTRO,
   isCheckId,
+  isGroup,
+  OPT_IN_NOTE,
+  PROFILES,
   SECTIONS,
+  TAGS,
+  TARGETS,
+  TIERS,
 } from '@/domain/checks/catalogue';
 
 const ALL = CHECKS.map((check) => check.id);
@@ -89,14 +98,71 @@ describe('checksPerSection', () => {
 });
 
 describe('GROUPS', () => {
-  it('is every group a check belongs to, sorted and once each', () => {
-    expect(GROUPS).toEqual(
-      [...new Set(CHECKS.flatMap((c) => c.groups))].toSorted(),
-    );
+  it('is sorted and has each name once', () => {
+    expect(GROUPS).toEqual([...new Set(GROUPS)].toSorted());
   });
 
-  it('includes the sources and topics', () => {
-    expect(GROUPS).toEqual(expect.arrayContaining(['owasp', 'tls', 'dns']));
+  it('names the sections, tags, targets, tiers, sources and old groups', () => {
+    expect(GROUPS).toEqual(
+      expect.arrayContaining([
+        ...SECTIONS.map((section) => section.id),
+        ...TAGS,
+        ...TARGETS,
+        ...TIERS,
+        'owasp',
+        'tls',
+        'security-headers',
+      ]),
+    );
+  });
+});
+
+describe('the taxonomy of a check', () => {
+  it('gives every check a display group, a tier, a target, a control and a month', () => {
+    const groups = new Set(DISPLAY_GROUPS.map((group) => group.id));
+    for (const check of CHECKS) {
+      expect({ id: check.id, ok: groups.has(check.group) }).toEqual({
+        id: check.id,
+        ok: true,
+      });
+      expect(TIERS).toContain(check.tier);
+      expect(TARGETS).toContain(check.target);
+      expect(CONTROLS).toContain(check.control);
+      expect(check.added).toMatch(/^\d{4}-\d{2}$/);
+      expect(check.since).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('lists every section under one display group', () => {
+    const listed = DISPLAY_GROUPS.flatMap((group) => group.sections);
+    expect(listed.toSorted()).toEqual(SECTIONS.map((s) => s.id).toSorted());
+    for (const section of SECTIONS) {
+      expect(typeof section.default_on).toBe('boolean');
+      expect(section.group_title.length).toBeGreaterThan(1);
+    }
+  });
+
+  it('lists profile members that are checks', () => {
+    for (const profile of PROFILES) {
+      expect(profile.members.filter((id) => !isCheckId(id))).toEqual([]);
+    }
+  });
+
+  it('says how to fix every recommended check', () => {
+    for (const check of CHECKS.filter((c) => c.tier === 'recommended')) {
+      expect({ id: check.id, fix: check.how_to_fix?.fix }).toEqual({
+        id: check.id,
+        fix: expect.any(String),
+      });
+    }
+  });
+
+  it('introduces every section and the rules', () => {
+    for (const section of SECTIONS) {
+      expect(section.intro.length).toBeGreaterThan(20);
+    }
+    expect(INTRO.length).toBeGreaterThan(0);
+    expect(OPT_IN_NOTE).toContain('plumbline:');
   });
 });
 
@@ -125,20 +191,64 @@ describe('isCheckId', () => {
 });
 
 describe('checksInGroup', () => {
-  it('holds only checks of that group', () => {
-    expect(checksInGroup('tls').every((c) => c.groups.includes('tls'))).toBe(
+  it('holds the checks of a source group', () => {
+    const owasp = checksInGroup('owasp');
+    expect(owasp.length).toBeGreaterThan(0);
+    expect(owasp.every((c) => c.groups.includes('owasp'))).toBe(true);
+    expect(owasp).toHaveLength(
+      CHECKS.filter((c) => c.groups.includes('owasp')).length,
+    );
+  });
+
+  it('reads a section, a tag, a target, a tier and a control', () => {
+    expect(checksInGroup('section:hardening').map((c) => c.section)).toEqual(
+      checksInGroup('hardening').map(() => 'hardening'),
+    );
+    expect(checksInGroup('tag:seo').every((c) => c.tags.includes('seo'))).toBe(
+      true,
+    );
+    expect(checksInGroup('target:mail').every((c) => c.target === 'mail')).toBe(
+      true,
+    );
+    expect(
+      checksInGroup('tier:recommended').every((c) => c.tier === 'recommended'),
+    ).toBe(true);
+    expect(checksInGroup('control:dns').every((c) => c.control === 'dns')).toBe(
       true,
     );
   });
 
-  it('holds every check of that group', () => {
-    expect(checksInGroup('tls')).toHaveLength(
-      CHECKS.filter((c) => c.groups.includes('tls')).length,
+  it('reads a tag that is also a section as the larger tag', () => {
+    expect(checksInGroup('seo').map((c) => c.id)).toEqual(
+      checksInGroup('tag:seo').map((c) => c.id),
+    );
+    const section = new Set(checksInGroup('section:seo').map((c) => c.id));
+    const tagged = new Set(checksInGroup('tag:seo').map((c) => c.id));
+    expect([...section].every((id) => tagged.has(id))).toBe(true);
+  });
+
+  it('reads an old group name through its alias', () => {
+    expect(checksInGroup('https-tls').map((c) => c.id)).toEqual(
+      checksInGroup('section:https').map((c) => c.id),
+    );
+    expect(checksInGroup('security-headers').length).toBeGreaterThan(
+      checksInGroup('section:https').length,
     );
   });
 
-  it('is empty for a group that does not exist', () => {
+  it('is empty for a name that does not exist or a kind with a wrong name', () => {
     expect(checksInGroup('nope')).toEqual([]);
+    expect(checksInGroup('section:nope')).toEqual([]);
+    expect(checksInGroup('colour:red')).toEqual([]);
+  });
+});
+
+describe('isGroup', () => {
+  it('knows a selector and refuses anything else', () => {
+    expect(isGroup('tag:seo')).toBe(true);
+    expect(isGroup('owasp')).toBe(true);
+    expect(isGroup('csp')).toBe(false);
+    expect(isGroup('nope')).toBe(false);
   });
 });
 
@@ -207,6 +317,9 @@ describe('expandSelection', () => {
   it('expands a group into its checks', () => {
     expect(expandSelection(['tls']).ids).toEqual(
       checksInGroup('tls').map((c) => c.id),
+    );
+    expect(expandSelection(['section:email']).ids).toEqual(
+      checksInGroup('section:email').map((c) => c.id),
     );
   });
 

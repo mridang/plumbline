@@ -8,7 +8,7 @@
  *
  * It is built from the same definitions the reader uses, not written by hand:
  * the keys come from the reader's zod schema, the environments from
- * `ENVIRONMENTS`, the rule sets from `RULE_SETS` and the rules from the
+ * `ENVIRONMENTS`, the rule sets from the catalogue (`checks/sets.ts`) and the rules from the
  * catalogue of checks, so a check or a rule set added later shows up here with
  * no change. The reader is lenient on purpose (a typo in a file reports a
  * problem and the rest is still used), so this schema is the strict side of
@@ -25,7 +25,8 @@ import {
   ENVIRONMENTS,
   OverlaySchema,
 } from '@/domain/suite/config';
-import { DEFAULT_RULE_SET, RULE_SETS } from '@/domain/suite/rules';
+import { RULE_SET_DEFS } from '@/domain/checks/sets';
+import { DEFAULT_RULE_SET } from '@/domain/suite/rules';
 import { SITE_URL } from '@/utils/site';
 
 /** Where the schema is served, and so its `$id`. */
@@ -85,14 +86,6 @@ const KEY_DOCS: Readonly<Record<string, { title: string; text: string }>> = {
   },
 };
 
-/** What each rule set is for, as the editor lists it. */
-const SET_DOCS: Readonly<Record<string, string>> = {
-  'plumbline:recommended':
-    'What a site with no file gets: the checks whose findings are worth acting on.',
-  'plumbline:advanced':
-    'The recommended rules and the advisory content and performance rules.',
-};
-
 /** What each environment is, for the editor. */
 const ENVIRONMENT_DOCS: Readonly<Record<string, string>> = {
   production: 'The live site.',
@@ -105,13 +98,6 @@ export function undocumentedKeys(): string[] {
     ...Object.keys(ConfigSchema.shape),
     ...Object.keys(OverlaySchema.shape),
   ].filter((key) => !Object.hasOwn(KEY_DOCS, key));
-}
-
-/** The rule sets that have no help written for them yet; the tests keep this empty. */
-export function undocumentedRuleSets(): string[] {
-  return Object.keys(RULE_SETS).filter(
-    (name) => !Object.hasOwn(SET_DOCS, name),
-  );
 }
 
 /** Files that show what a file looks like, checked against the reader by the tests and shown in the editor's completion. */
@@ -132,10 +118,21 @@ export const EXAMPLES: readonly JsonSchema[] = [
 function extendsSchema(): JsonSchema {
   const name: JsonSchema = {
     title: 'A rule set',
-    oneOf: Object.keys(RULE_SETS).map((set) => ({
-      const: set,
-      description: SET_DOCS[set] ?? 'A rule set.',
-    })),
+    anyOf: [
+      {
+        oneOf: RULE_SET_DEFS.map((set) => ({
+          const: set.id,
+          description: set.description,
+        })),
+      },
+      {
+        type: 'string',
+        pattern: '^plumbline:[a-z0-9/-]+@[0-9]+$',
+        title: 'A rule set pinned to a catalogue version',
+        description:
+          'A rule set followed by @ and a catalogue version, such as plumbline:recommended@1: only the checks that were in the catalogue by then.',
+      },
+    ],
   };
   return {
     title: KEY_DOCS['extends']?.title,
@@ -164,6 +161,14 @@ function rulesSchema(): JsonSchema {
         },
       ]),
     ),
+    patternProperties: {
+      '^(section|tag|target|tier|source|control):.+$': {
+        $ref: '#/$defs/level',
+        title: 'A group of rules',
+        description:
+          'Every rule of a section, tag, target, tier, source or control, such as tag:seo. A rule named on its own wins over its group.',
+      },
+    },
     additionalProperties: false,
   };
 }

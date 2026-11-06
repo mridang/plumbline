@@ -1,60 +1,30 @@
 /**
  * @packageDocumentation
  *
- * The two rule sets that ship with the app, and what a rule's level does to
- * what it reports. A rule is a check of the catalogue; a level says whether it runs and how loudly it reports, as in
- * ESLint:
+ * The rule sets that ship with the app, and what a rule's level does to what it
+ * reports. A rule is a check of the catalogue; a level says whether it runs and
+ * how loudly it reports, as in ESLint:
  *
  * - `off` turns the rule off,
  * - `warn` and `error` report everything the rule finds as that severity,
- * - `on` reports each finding with the severity the check gave it.
+ * - `on` reports each finding with the severity the check gave it, except that
+ *   a check of the experimental tier never reports more than a warning (a
+ *   rule set must not fail a build over a check still being proven; `error`
+ *   asks for it by name).
  *
- * The rule sets are `plumbline:recommended`, what a site with no configuration
- * file gets, and `plumbline:advanced`, which adds the advisory content and
- * performance rules. A rule that is not in any rule set is off until the
+ * The rule sets are worked out from the catalogue (`checks/sets.ts`):
+ * `plumbline:recommended`, what a site with no configuration file gets, the
+ * advanced, experimental and all sets, one set of each tier for every section
+ * and the profiles. A rule that is not in any rule set is off until the
  * configuration file turns it on.
  */
 
+import { findCheck } from '@/domain/checks/catalogue';
+import { RULE_SET_DEFS } from '@/domain/checks/sets';
 import type { CheckResult, Finding } from '@/domain/suite/checks';
 
 /** How a rule reports. */
 export type Level = 'off' | 'on' | 'warn' | 'error';
-
-/**
- * The rules of the advanced set: the recommended ones and the advisory content
- * and performance rules. Any check of the catalogue can be turned on by a
- * configuration file; the scanner runs all of them.
- */
-const ADVANCED_RULES = [
-  'icons-apple-touch-icon-missing',
-  'seo-content-length',
-  'seo-deprecated-html',
-  'seo-http-status',
-  'seo-keywords-frequent',
-  'seo-keywords-in-title',
-  'seo-link-anchor-text',
-  'seo-links',
-  'seo-responsive-images',
-  'seo-url-friendly',
-  'seo-viewport',
-  'technical-asset-count',
-  'technical-html-size',
-  'technical-image-formats',
-  'technical-lazy-loading',
-  'technical-response-time',
-] as const;
-
-/** The rules a site gets with no configuration: the ones whose findings are worth acting on. */
-const RECOMMENDED_RULES: readonly string[] = [
-  'icons-apple-touch-icon-missing',
-  'seo-deprecated-html',
-  'seo-http-status',
-  'seo-links',
-  'seo-responsive-images',
-  'seo-viewport',
-  'technical-html-size',
-  'technical-response-time',
-];
 
 /** A rule set: the levels it sets, by rule id. */
 export type RuleSet = Readonly<Record<string, Level>>;
@@ -65,10 +35,9 @@ function setOf(ids: readonly string[]): RuleSet {
 }
 
 /** The rule sets that ship with the app, by the name a configuration file extends. */
-export const RULE_SETS: Readonly<Record<string, RuleSet>> = {
-  'plumbline:recommended': setOf(RECOMMENDED_RULES),
-  'plumbline:advanced': setOf(ADVANCED_RULES),
-};
+export const RULE_SETS: Readonly<Record<string, RuleSet>> = Object.fromEntries(
+  RULE_SET_DEFS.map((set) => [set.id, setOf(set.members)]),
+);
 
 /** The rule set a site with no configuration uses. */
 export const DEFAULT_RULE_SET = 'plumbline:recommended';
@@ -105,6 +74,10 @@ export function applyLevels(
       id: check.id,
       findings: check.findings.flatMap((found): Finding[] => {
         const severity = severityUnder(level, found.severity);
+        const experimental = findCheck(check.id)?.tier === 'experimental';
+        if (level === 'on' && experimental && severity === 'error') {
+          return [{ ...found, severity: 'warning' }];
+        }
         return severity === null ? [] : [{ ...found, severity }];
       }),
     };

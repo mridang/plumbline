@@ -11,7 +11,7 @@ import { Section } from '@/components/ui-app/section';
 import { Container } from '@/components/ui/layout';
 import { PageHeader } from '@/components/ui/page-header';
 import { MCP_ADDRESS, WAYS_IN } from '@/components/landing/ways-in';
-import { RULE_SETS } from '@/domain/suite/rules';
+import { RULE_SET_DEFS } from '@/domain/checks/sets';
 import { SITE_URL, SOURCE_URL } from '@/utils/site';
 
 /** A public page: it may be indexed. */
@@ -44,7 +44,9 @@ dispatch: true               # send a repository_dispatch event after each run
  * the rules file. The same for everyone, so it may be indexed and kept.
  */
 export default function DocsPage(): ReactElement {
-  const ruleSets = Object.keys(RULE_SETS);
+  const ruleSets = RULE_SET_DEFS.filter((set) => set.kind !== 'section').map(
+    (set) => set.id,
+  );
   return (
     <>
       <PageHeader
@@ -175,7 +177,9 @@ export default function DocsPage(): ReactElement {
                           <code>{name}</code>
                         </span>
                       ))}
-                      .
+                      , and for every section on the checks page{' '}
+                      <code>plumbline:&lt;section&gt;/recommended</code>,{' '}
+                      <code>/advanced</code> and <code>/experimental</code>.
                     </>
                   ),
                 },

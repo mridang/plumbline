@@ -11,6 +11,7 @@ import {
   classifyDeployment,
 } from '@/domain/suite/deploy';
 import { PAID_LIMITS } from '@/domain/suite/limits';
+import { RULE_SETS } from '@/domain/suite/rules';
 import type { SuiteRun } from '@/domain/suite/run';
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
@@ -19,12 +20,7 @@ import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 const deployed = { repo: 'acme/site', sha: 'abc123' };
 
 /** Rules of the recommended set, one for each finding of a run. */
-const RULES = [
-  'seo-viewport',
-  'seo-links',
-  'seo-deprecated-html',
-  'seo-http-status',
-];
+const RULES = Object.keys(RULE_SETS['plumbline:recommended']!).slice(0, 4);
 
 /** A run that found `messages`, each as a warning of its own check. */
 const finding = (...messages: string[]): SuiteRun => ({
@@ -547,7 +543,7 @@ describe('checkSite, a check the scanner could not run', () => {
     status: 200,
     hash: 'other',
     checks: [],
-    skipped: ['seo-viewport'],
+    skipped: [RULES[0]!],
   });
 
   it('keeps what the previous run found with that check, so a timeout does not look like a fix', async () => {
@@ -564,16 +560,16 @@ describe('checkSite, a check the scanner could not run', () => {
     const db = await setup('a.test');
     await checkSite(db, 1, site, {
       run: async () => previous,
-      levels: new Map([['seo-viewport', 'on']]),
+      levels: new Map([[RULES[0]!, 'on']]),
     });
     const outcome = await checkSite(db, 1, site, {
       run: async () => skippedNow(),
-      levels: new Map([['seo-viewport', 'on']]),
+      levels: new Map([[RULES[0]!, 'on']]),
     });
     expect(outcome.findings).toHaveLength(1);
     const off = await checkSite(db, 1, site, {
       run: async () => skippedNow(),
-      levels: new Map([['seo-links', 'on']]),
+      levels: new Map([[RULES[1]!, 'on']]),
     });
     expect(off.findings).toEqual([]);
   });

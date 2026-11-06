@@ -6,7 +6,13 @@ import {
   parseLevel,
   resolveRules,
 } from '@/domain/suite/config';
+import { findCheck } from '@/domain/checks/catalogue';
 import { RULE_SETS } from '@/domain/suite/rules';
+
+/** A rule of the advanced set that the recommended set does not hold. */
+const ADV = Object.keys(RULE_SETS['plumbline:advanced']!).find(
+  (id) => !(id in RULE_SETS['plumbline:recommended']!),
+)!;
 
 const resolve = (
   text: string | null,
@@ -84,7 +90,7 @@ describe('a configuration file', () => {
   it('starts from the recommended rules when it does not extend anything', () => {
     const rules = resolve('rules:\n  seo-viewport: warn\n');
     expect(rules.levels.get('seo-viewport')).toBe('warn');
-    expect(rules.levels.get('seo-links')).toBe('on');
+    expect(rules.levels.get('seo-title-missing')).toBe('on');
     expect(rules.source).toBe('plumbline.yaml');
   });
 
@@ -97,15 +103,15 @@ describe('a configuration file', () => {
 
   it('lets a later rule set win over an earlier one', () => {
     const rules = resolve(
-      'extends: [plumbline:advanced, plumbline:recommended]\nrules:\n  seo-content-length: error\n',
+      `extends: [plumbline:advanced, plumbline:recommended]\nrules:\n  ${ADV}: error\n`,
     );
-    expect(rules.levels.get('seo-content-length')).toBe('error');
-    expect(rules.levels.get('seo-links')).toBe('on');
+    expect(rules.levels.get(ADV)).toBe('error');
+    expect(rules.levels.get('seo-title-missing')).toBe('on');
   });
 
   it('starts from nothing when it extends an empty list', () => {
-    const rules = resolve('extends: []\nrules:\n  seo-links: error\n');
-    expect([...rules.levels]).toEqual([['seo-links', 'error']]);
+    const rules = resolve('extends: []\nrules:\n  seo-title-missing: error\n');
+    expect([...rules.levels]).toEqual([['seo-title-missing', 'error']]);
   });
 
   it('turns a rule off', () => {
@@ -114,8 +120,8 @@ describe('a configuration file', () => {
   });
 
   it('turns on a rule that is in no rule set', () => {
-    const rules = resolve('rules:\n  seo-content-length: warn\n');
-    expect(rules.levels.get('seo-content-length')).toBe('warn');
+    const rules = resolve(`rules:\n  ${ADV}: warn\n`);
+    expect(rules.levels.get(ADV)).toBe('warn');
   });
 
   it('reads JSON', () => {
@@ -148,6 +154,64 @@ describe('a configuration file', () => {
   });
 });
 
+describe('rules that name a group', () => {
+  const section = findCheck('seo-viewport')!.section;
+  const inSection = Object.keys(RULE_SETS['plumbline:recommended']!).filter(
+    (id) => findCheck(id)!.section === section,
+  );
+
+  it('sets every rule of a section', () => {
+    const rules = resolve(`rules:\n  "section:${section}": warn\n`);
+    expect(inSection.length).toBeGreaterThan(1);
+    expect(inSection.map((id) => rules.levels.get(id))).toEqual(
+      inSection.map(() => 'warn'),
+    );
+  });
+
+  it('lets a rule named on its own beat its group, whatever the order', () => {
+    const rules = resolve(
+      `rules:\n  seo-viewport: error\n  "section:${section}": off\n`,
+    );
+    expect(rules.levels.get('seo-viewport')).toBe('error');
+    expect(inSection.filter((id) => rules.levels.has(id))).toEqual([
+      'seo-viewport',
+    ]);
+  });
+
+  it('sets the rules of a tier', () => {
+    const rules = resolve('extends: []\nrules:\n  "tier:experimental": warn\n');
+    expect([...rules.levels.keys()].toSorted()).toEqual(
+      Object.keys(RULE_SETS['plumbline:experimental']!).toSorted(),
+    );
+  });
+
+  it('reports a group that does not exist, and a bare word that is not a rule', () => {
+    const rules = resolve('rules:\n  "tag:nope": warn\n  seo: warn\n');
+    expect(rules.problems).toEqual([
+      'Unknown rule "tag:nope" in plumbline.yaml.',
+      'Unknown rule "seo" in plumbline.yaml.',
+    ]);
+  });
+});
+
+describe('a rule set pinned to a catalogue version', () => {
+  it('holds only the checks that were in the catalogue by then', () => {
+    const pinned = resolve('extends: plumbline:advanced@1\n');
+    const current = resolve('extends: plumbline:advanced@3\n');
+    expect(pinned.levels.has('dnssec-exists')).toBe(false);
+    expect(current.levels.has('dnssec-exists')).toBe(true);
+    expect(pinned.problems).toEqual([]);
+  });
+
+  it('reports a pin that is not a whole number', () => {
+    const rules = resolve('extends: plumbline:advanced@soon\n');
+    expect(rules.problems).toEqual([
+      'Rule set "plumbline:advanced@soon" in plumbline.yaml has a version that is not a whole number.',
+    ]);
+    expect(rules.levels.size).toBe(0);
+  });
+});
+
 describe('the changes for an environment', () => {
   const text = [
     'rules:',
@@ -157,7 +221,7 @@ describe('the changes for an environment', () => {
     '    extends: plumbline:advanced',
     '    rules:',
     '      seo-viewport: warn',
-    '      seo-links: off',
+    '      seo-title-missing: off',
     '  production:',
     '    rules:',
     '      technical-html-size: error',
@@ -167,10 +231,10 @@ describe('the changes for an environment', () => {
     const preview = resolve(text, 'preview');
     const production = resolve(text, 'production');
     expect(preview.levels.get('seo-viewport')).toBe('warn');
-    expect(preview.levels.has('seo-links')).toBe(false);
-    expect(preview.levels.has('seo-content-length')).toBe(true);
+    expect(preview.levels.has('seo-title-missing')).toBe(false);
+    expect(preview.levels.has(ADV)).toBe(true);
     expect(production.levels.get('seo-viewport')).toBe('error');
-    expect(production.levels.has('seo-content-length')).toBe(false);
+    expect(production.levels.has(ADV)).toBe(false);
   });
 
   it('apply to production when it is the one named', () => {
@@ -203,68 +267,11 @@ describe('rules for the checks the scanner container runs', () => {
   });
 
   it('can turn one on for previews only', () => {
-    const text =
-      'environments:\n  preview:\n    rules:\n      dnssec-valid: error\n';
-    expect(resolve(text, 'preview').levels.get('dnssec-valid')).toBe('error');
-    expect(resolve(text, 'production').levels.has('dnssec-valid')).toBe(false);
-  });
-});
-
-describe('mistakes in a configuration file', () => {
-  it('are reported and do not stop the rest from being used', () => {
-    const rules = resolve(
-      [
-        'rules:',
-        '  not-a-rule: error',
-        '  seo-viewport: loud',
-        '  seo-links: warn',
-        'extends: plumbline:nope',
-        'colour: blue',
-      ].join('\n'),
-    );
-    expect(rules.problems).toEqual([
-      'Unknown key "colour" in plumbline.yaml.',
-      'Unknown rule set "plumbline:nope" in plumbline.yaml.',
-      'Unknown rule "not-a-rule" in plumbline.yaml.',
-      'Rule "seo-viewport" in plumbline.yaml is set to "loud"; use off, warn, error or on.',
-    ]);
-    expect(rules.levels.get('seo-links')).toBe('warn');
-    expect(rules.levels.has('seo-viewport')).toBe(false);
-  });
-
-  it('include an unknown environment and a stray key inside one', () => {
-    const rules = resolve(
-      'environments:\n  staging:\n    rules: {}\n  preview:\n    colour: blue\n',
-    );
-    expect(rules.problems).toEqual([
-      'Unknown environment "staging" in plumbline.yaml; use production or preview.',
-      'Unknown key "colour" in the preview environment of plumbline.yaml.',
-    ]);
-  });
-
-  it('include text that is not YAML', () => {
-    const loaded = parseConfig('rules: [unclosed', 'plumbline.yaml');
-    expect(loaded.problems).toHaveLength(1);
-    expect(loaded.problems[0]).toMatch(/^plumbline\.yaml could not be read: /);
-    expect(resolveRules(loaded, 'production').levels.has('seo-viewport')).toBe(
-      true,
-    );
-  });
-
-  it('include a file that is not a mapping', () => {
-    expect(parseConfig('- a\n- b\n', 'plumbline.yaml').problems).toEqual([
-      'plumbline.yaml must be a mapping of settings.',
-    ]);
-    expect(parseConfig('just text', 'plumbline.yaml').problems).toEqual([
-      'plumbline.yaml must be a mapping of settings.',
-    ]);
-  });
-
-  it('include a setting of the wrong kind', () => {
-    const loaded = parseConfig('issues: loudly\nrules: 4\n', 'plumbline.yaml');
-    expect(loaded.problems.length).toBeGreaterThan(0);
-    expect(loaded.problems.every((p) => p.startsWith('plumbline.yaml: '))).toBe(
-      true,
-    );
+    const outside = Object.keys(RULE_SETS['plumbline:all']!).find(
+      (id) => !(id in RULE_SETS['plumbline:recommended']!),
+    )!;
+    const text = `environments:\n  preview:\n    rules:\n      ${outside}: error\n`;
+    expect(resolve(text, 'preview').levels.get(outside)).toBe('error');
+    expect(resolve(text, 'production').levels.has(outside)).toBe(false);
   });
 });

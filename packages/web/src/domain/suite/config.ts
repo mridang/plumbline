@@ -9,6 +9,7 @@
  * rules:
  *   seo-viewport: error               # off, warn, error or on
  *   technical-lazy-loading: off
+ *   "tag:seo": warn                   # a whole group: section:, tag:, target:, tier:, source:
  * environments:                       # changes for one kind of deployment
  *   preview:
  *     extends: plumbline:advanced
@@ -17,6 +18,10 @@
  * issues: error                       # which findings open an issue: error, warning or off
  * dispatch: true                      # send a repository_dispatch event after each run
  * ```
+ *
+ * A rule set can be pinned to a catalogue version (`plumbline:recommended@1`):
+ * it then holds only the checks that were in the catalogue by that version.
+ * A rule that names one check beats a group, whatever order they are written in.
  *
  * A file is never required: without one a site gets `plumbline:recommended`.
  * A file with mistakes in it is not an error either; what can be read is used,
@@ -27,7 +32,12 @@
 import { parse } from 'yaml';
 import { z } from 'zod';
 
-import { isCheckId } from '@/domain/checks/catalogue';
+import {
+  checksInGroup,
+  findCheck,
+  isCheckId,
+  isGroup,
+} from '@/domain/checks/catalogue';
 import { DEFAULT_RULE_SET, RULE_SETS, type Level } from '@/domain/suite/rules';
 
 /** The file names looked for in the root of a repository, in order. */
@@ -232,26 +242,43 @@ export function resolveRules(
   const levels = new Map<string, Level>();
   const problems = [...(loaded?.problems ?? [])];
   const apply = (overlay: Overlay, where: string): void => {
-    for (const name of overlay.extends ?? []) {
+    for (const named of overlay.extends ?? []) {
+      const [name = named, pin] = named.split('@');
       const set = Object.hasOwn(RULE_SETS, name) ? RULE_SETS[name] : undefined;
       if (!set) {
         problems.push(`Unknown rule set "${name}" in ${where}.`);
         continue;
       }
+      const version = pin === undefined ? undefined : Number(pin);
+      if (version !== undefined && !Number.isInteger(version)) {
+        problems.push(
+          `Rule set "${named}" in ${where} has a version that is not a whole number.`,
+        );
+        continue;
+      }
       for (const [id, level] of Object.entries(set)) {
-        levels.set(id, level);
+        // A pinned set drops the checks added to the catalogue after the pin.
+        if (version === undefined || (findCheck(id)?.since ?? 0) <= version) {
+          levels.set(id, level);
+        }
       }
     }
-    for (const [id, value] of Object.entries(overlay.rules)) {
+    // Groups first, then single checks, so a check always beats its group.
+    const entries = Object.entries(overlay.rules);
+    const groups = entries.filter(([id]) => !isCheckId(id));
+    const checks = entries.filter(([id]) => isCheckId(id));
+    for (const [id, value] of [...groups, ...checks]) {
       const level = parseLevel(value);
       if (level === undefined) {
         problems.push(
           `Rule "${id}" in ${where} is set to ${JSON.stringify(value)}; use off, warn, error or on.`,
         );
-      } else if (!isCheckId(id)) {
-        problems.push(`Unknown rule "${id}" in ${where}.`);
-      } else {
+      } else if (isCheckId(id)) {
         levels.set(id, level);
+      } else if (id.includes(':') && isGroup(id)) {
+        checksInGroup(id).forEach((check) => levels.set(check.id, level));
+      } else {
+        problems.push(`Unknown rule "${id}" in ${where}.`);
       }
     }
   };
