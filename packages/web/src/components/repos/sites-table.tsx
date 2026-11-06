@@ -5,6 +5,7 @@ import type { ReactElement } from 'react';
 
 import { LinkIcon } from '@/components/icons';
 import {
+  clusterRows,
   commitUrl,
   issuesUrl,
   type Sort,
@@ -109,7 +110,21 @@ function Status({ row }: Readonly<{ row: SiteRow }>): ReactElement {
 }
 
 /** What names a row: the repository as the link to its page, and the host under it. */
-function Name({ row }: Readonly<{ row: SiteRow }>): ReactElement {
+function Name({
+  row,
+  continued = false,
+}: Readonly<{
+  row: SiteRow;
+  /** True for the second and later site of a repository, which leaves the repository's name out. */
+  continued?: boolean;
+}>): ReactElement {
+  if (continued) {
+    return (
+      <div className="min-w-0 pl-6">
+        <Host host={row.site.host} />
+      </div>
+    );
+  }
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
       <span className="flex min-w-0 items-center gap-2">
@@ -153,6 +168,12 @@ export function SitesTable({
   /** The server's clock when the page was made, in milliseconds. */
   now: number;
 }>): ReactElement {
+  const clustered = clusterRows(rows);
+  // A repository's later sites leave out its name and its issues, which are the repository's.
+  const continues = (index: number): boolean =>
+    index > 0 &&
+    clustered[index]!.repo !== null &&
+    clustered[index - 1]!.repo === clustered[index]!.repo;
   return (
     <>
       <div className="hidden overflow-x-auto rounded-card border border-line bg-surface shadow-xs sm:block">
@@ -199,7 +220,7 @@ export function SitesTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
-            {rows.map((row) => {
+            {clustered.map((row, index) => {
               const checked = row.site.checked_at !== null;
               return (
                 <tr
@@ -213,7 +234,7 @@ export function SitesTable({
                     <Status row={row} />
                   </Cell>
                   <Cell nowrap={false}>
-                    <Name row={row} />
+                    <Name row={row} continued={continues(index)} />
                   </Cell>
                   <Cell>
                     <When at={row.site.deployed_at} now={now} />
@@ -239,7 +260,9 @@ export function SitesTable({
                     />
                   </Cell>
                   <Cell>
-                    <Issues repo={row.repo} count={row.openIssues} />
+                    {continues(index) ? null : (
+                      <Issues repo={row.repo} count={row.openIssues} />
+                    )}
                   </Cell>
                   <Cell align="end">
                     <SiteActions
@@ -255,13 +278,13 @@ export function SitesTable({
         </table>
       </div>
       <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface shadow-xs sm:hidden">
-        {rows.map((row) => (
+        {clustered.map((row, index) => (
           <li
             key={row.key}
             className={cn('space-y-2 p-4', row.paused && 'opacity-60')}
           >
             <div className="flex items-start justify-between gap-3">
-              <Name row={row} />
+              <Name row={row} continued={continues(index)} />
               <SiteActions
                 repo={row.repo}
                 site={row.site}
@@ -281,7 +304,9 @@ export function SitesTable({
                 </span>
               )}
               <Commit repo={row.repo} sha={row.site.sha} />
-              <Issues repo={row.repo} count={row.openIssues} />
+              {continues(index) ? null : (
+                <Issues repo={row.repo} count={row.openIssues} />
+              )}
             </div>
           </li>
         ))}

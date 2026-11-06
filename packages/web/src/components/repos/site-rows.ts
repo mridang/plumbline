@@ -167,3 +167,22 @@ export function groupRows(rows: readonly SiteRow[]): RepoStatus[] {
     open_issues: group.openIssues,
   }));
 }
+
+/**
+ * The rows with each repository's sites together, in the order the repository's
+ * first row comes, so a repository with several sites is one block and not
+ * scattered by the sort. A site added by hand stays where it is.
+ */
+export function clusterRows(rows: readonly SiteRow[]): SiteRow[] {
+  const placed = new Set<string>();
+  const out: SiteRow[] = [];
+  for (const row of rows) {
+    if (row.repo === null) {
+      out.push(row);
+    } else if (!placed.has(row.repo)) {
+      placed.add(row.repo);
+      out.push(...rows.filter((other) => other.repo === row.repo));
+    }
+  }
+  return out;
+}

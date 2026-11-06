@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   DEFAULT_SORT,
+  clusterRows,
   commitUrl,
   dashboardHref,
   filterRows,
@@ -194,5 +195,32 @@ describe('groupRows', () => {
 
   it('is empty for no rows', () => {
     expect(groupRows([])).toEqual([]);
+  });
+});
+
+describe('clusterRows', () => {
+  it('keeps the sites of a repository together, after the first one', () => {
+    const rows = rowsOf(REPOS, new Set());
+    const scattered = [rows[1]!, rows[0]!, rows[2]!, rows[3]!];
+    expect(clusterRows(scattered).map((r) => r.site.host)).toEqual([
+      'a.test',
+      'www.a.test',
+      'b.test',
+      'hand.test',
+    ]);
+  });
+
+  it('leaves sites added by hand where they are', () => {
+    const hand = rowsOf(
+      [
+        { repo: null, open_issues: 0, sites: [site('x.test', 'ok')] },
+        { repo: null, open_issues: 0, sites: [site('y.test', 'ok')] },
+      ],
+      new Set(),
+    );
+    expect(clusterRows(hand).map((r) => r.site.host)).toEqual([
+      'x.test',
+      'y.test',
+    ]);
   });
 });
