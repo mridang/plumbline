@@ -2,9 +2,7 @@
   "connector": {
     "name": "puppeteer"
   },
-  "parsers": [
-    "html"
-  ],
+  "parsers": ["html"],
   "hints": {
     "@mridang/webhint-hint-plumbline/cache-control": "default",
     "@mridang/webhint-hint-plumbline/clear-site-data": "default",

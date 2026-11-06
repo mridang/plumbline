@@ -2,9 +2,7 @@
   "connector": {
     "name": "puppeteer"
   },
-  "parsers": [
-    "html"
-  ],
+  "parsers": ["html"],
   "hints": {
     "@mridang/webhint-hint-plumbline/cert-hostname": "default",
     "@mridang/webhint-hint-plumbline/cert-pubkey": "default",

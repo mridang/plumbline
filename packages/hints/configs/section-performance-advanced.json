@@ -2,9 +2,7 @@
   "connector": {
     "name": "puppeteer"
   },
-  "parsers": [
-    "html"
-  ],
+  "parsers": ["html"],
   "hints": {
     "@mridang/webhint-hint-plumbline/seo-responsive-images": "default",
     "@mridang/webhint-hint-plumbline/technical-asset-count": "default",

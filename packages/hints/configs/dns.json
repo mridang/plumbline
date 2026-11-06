@@ -2,9 +2,7 @@
   "connector": {
     "name": "puppeteer"
   },
-  "parsers": [
-    "html"
-  ],
+  "parsers": ["html"],
   "hints": {
     "@mridang/webhint-hint-plumbline/agent-ard": "default",
     "@mridang/webhint-hint-plumbline/agent-dns-aid": "default",

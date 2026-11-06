@@ -2,9 +2,7 @@
   "connector": {
     "name": "puppeteer"
   },
-  "parsers": [
-    "html"
-  ],
+  "parsers": ["html"],
   "hints": {
     "@mridang/webhint-hint-plumbline/attribution-reporting": "default",
     "@mridang/webhint-hint-plumbline/observe-browsing-topics": "default"
