@@ -50,6 +50,16 @@ function rereadsInstallation(
   if (event === 'installation_repositories') {
     return true;
   }
+  // A repository that was deleted, archived, renamed or moved to another owner.
+  if (event === 'repository') {
+    return [
+      'deleted',
+      'archived',
+      'unarchived',
+      'renamed',
+      'transferred',
+    ].includes(delivery.action ?? '');
+  }
   if (event === 'installation') {
     return (
       delivery.action === 'new_permissions_accepted' ||

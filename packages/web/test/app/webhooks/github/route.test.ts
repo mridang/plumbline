@@ -134,6 +134,22 @@ describe('POST /webhooks/github', () => {
     ).toEqual(['acme/site']);
   });
 
+  it('reads the installation again when a repository is deleted, archived, renamed or moved, and not when it is created', async () => {
+    const requested = fakeGitHub(DEPLOYED_APP);
+    await deliver('repository', {
+      action: 'created',
+      installation: { id: 5 },
+    });
+    await settleBackground();
+    expect(requested).toEqual([]);
+    for (const action of ['deleted', 'archived', 'renamed', 'transferred']) {
+      requested.length = 0;
+      await deliver('repository', { action, installation: { id: 5 } });
+      await settleBackground();
+      expect(requested.length).toBeGreaterThan(0);
+    }
+  });
+
   it('reads the installation again when a push changes a Wrangler file, and not otherwise', async () => {
     const requested = fakeGitHub(DEPLOYED_APP);
     await deliver('push', {

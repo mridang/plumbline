@@ -176,6 +176,63 @@ describe('syncInstallation', () => {
     expect(await listDomains(db, 7)).toHaveLength(MAX_DOMAINS);
   });
 
+  it('removes the sites of a repository that was deleted, and keeps the others', async () => {
+    const { db } = sqliteDatabase(...APP_MIGRATIONS);
+    const site = (host: string) => ({
+      files: { 'wrangler.jsonc': `{"route": "${host}/*"}` },
+    });
+    await syncInstallation(
+      db,
+      7,
+      99,
+      githubWith({
+        'o/keep': site('keep.example.com'),
+        'o/gone': site('gone.example.com'),
+        'o/old': { ...site('old.example.com') },
+      }),
+    );
+    await addDomain(db, 7, 'hand.example.com');
+    await syncInstallation(
+      db,
+      7,
+      99,
+      githubWith({
+        'o/keep': site('keep.example.com'),
+        'o/old': { ...site('old.example.com'), archived: true },
+      }),
+    );
+    expect((await listDomains(db, 7)).map((d) => d.host).toSorted()).toEqual([
+      'hand.example.com',
+      'keep.example.com',
+      'old.example.com',
+    ]);
+  });
+
+  it('removes the sites of a repository that left a former sync but is gone from the list too', async () => {
+    const { db } = sqliteDatabase(...APP_MIGRATIONS);
+    await addDomain(db, 7, 'orphan.example.com', 'o/deleted');
+    await syncInstallation(db, 7, 99, githubWith({ 'o/a': { files: {} } }));
+    expect(await listDomains(db, 7)).toEqual([]);
+  });
+
+  it('keeps the sites of repositories of the same person in another installation', async () => {
+    const { db } = sqliteDatabase(...APP_MIGRATIONS);
+    await syncInstallation(
+      db,
+      7,
+      98,
+      githubWith({
+        'p/other': {
+          files: { 'wrangler.jsonc': '{"route": "other.example.com/*"}' },
+        },
+      }),
+    );
+    await syncInstallation(db, 7, 99, githubWith({ 'o/a': { files: {} } }));
+    expect((await listDomains(db, 7)).map((d) => d.host)).toEqual([
+      'other.example.com',
+    ]);
+  });
+
   it('forgets repositories that left the installation', async () => {
     const { db } = sqliteDatabase(...APP_MIGRATIONS);
     await syncInstallation(

@@ -6,7 +6,7 @@
  * person can never read or change another's domain by guessing its id.
  */
 
-import { and, asc, count, eq } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, isNotNull } from 'drizzle-orm';
 
 import type { Database } from '@/domain/db/client';
 import { domains } from '@/domain/db/schema';
@@ -221,4 +221,39 @@ export async function deleteDomain(
     .where(and(eq(domains.user_id, userId), eq(domains.id, id)))
     .returning({ id: domains.id });
   return removed.length > 0;
+}
+
+/** How many repositories are removed per query (D1 allows 100 bound values). */
+const REMOVE_BATCH = 50;
+
+/**
+ * Removes the person's sites of repositories that are not in `present`: a
+ * repository that was deleted, or taken out of the app, leaves its sites
+ * behind otherwise. Sites added by hand (no repository) stay. The runs and
+ * issues already recorded are kept. Returns the repositories whose sites were
+ * removed.
+ */
+export async function removeSitesOfMissingRepos(
+  db: Database,
+  userId: number,
+  present: ReadonlySet<string>,
+): Promise<string[]> {
+  const rows = await db
+    .selectDistinct({ repo: domains.repo })
+    .from(domains)
+    .where(and(eq(domains.user_id, userId), isNotNull(domains.repo)));
+  const missing = rows
+    .map((row) => row.repo)
+    .filter((repo): repo is string => repo !== null && !present.has(repo));
+  for (let at = 0; at < missing.length; at += REMOVE_BATCH) {
+    await db
+      .delete(domains)
+      .where(
+        and(
+          eq(domains.user_id, userId),
+          inArray(domains.repo, missing.slice(at, at + REMOVE_BATCH)),
+        ),
+      );
+  }
+  return missing;
 }

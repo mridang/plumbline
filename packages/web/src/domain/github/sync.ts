@@ -8,8 +8,13 @@
  */
 
 import type { Database } from '@/domain/db/client';
-import { addDomain, countDomains, MAX_DOMAINS } from '@/domain/db/domains';
-import { saveRepos, type AnalysedRepo } from '@/domain/db/github';
+import {
+  addDomain,
+  countDomains,
+  MAX_DOMAINS,
+  removeSitesOfMissingRepos,
+} from '@/domain/db/domains';
+import { listRepos, saveRepos, type AnalysedRepo } from '@/domain/db/github';
 
 import { GitHubApi, type Repo } from './api';
 import { deploymentHosts } from './deployments';
@@ -79,11 +84,23 @@ export async function syncInstallation(
   installationId: number,
   api: GitHubApi,
 ): Promise<SyncResult> {
-  const repos = (await api.repositories())
-    .filter((repo) => !repo.archived)
-    .slice(0, MAX_REPOS);
+  const listed = await api.repositories();
+  const repos = listed.filter((repo) => !repo.archived).slice(0, MAX_REPOS);
   const analysed = await inBatches(repos, (repo) => analyseRepo(api, repo));
   await saveRepos(db, userId, installationId, analysed);
+  // A repository that was deleted, or taken out of the app, takes its sites
+  // off the dashboard. An archived one still exists, so its sites stay, and a
+  // listing cut short by the limit proves nothing about the rest.
+  if (listed.length < MAX_REPOS) {
+    await removeSitesOfMissingRepos(
+      db,
+      userId,
+      new Set([
+        ...listed.map((repo) => repo.full_name),
+        ...(await listRepos(db, userId)).map((repo) => repo.full_name),
+      ]),
+    );
+  }
 
   let room = MAX_DOMAINS - (await countDomains(db, userId));
   let domainsAdded = 0;
