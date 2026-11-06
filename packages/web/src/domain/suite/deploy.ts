@@ -24,6 +24,7 @@ import { countsOf } from '@/domain/suite/report';
 import type { SuiteRun } from '@/domain/suite/run';
 import { resolveRules } from '@/domain/suite/config';
 import { FREE_LIMITS, inBatches, type Limits } from '@/domain/suite/limits';
+import { SiteUnreachable } from '@/domain/suite/scanner';
 import { applyLevels, fingerprintOf, type Level } from '@/domain/suite/rules';
 
 /** Sites checked for one deployment on the Free plan. */
@@ -182,10 +183,13 @@ export async function checkSite(
     result = await run(url);
   } catch (error) {
     console.error('suite run failed', site.host, error);
+    // Only a site that did not answer the scanner is told as down; a scanner
+    // that was restarting or full is our trouble and must not alarm anyone.
     await deps.live?.finished(userId, where, {
       before,
       after: null,
       at: now().toISOString(),
+      ...(error instanceof SiteUnreachable ? {} : { failed: true }),
     });
     return { host: site.host, skipped: 'unreachable' };
   }

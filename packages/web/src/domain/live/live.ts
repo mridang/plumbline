@@ -13,6 +13,7 @@ import type { Database } from '@/domain/db/client';
 import { peopleWithAccess } from '@/domain/db/access';
 import {
   appendEvent,
+  markCheckFailed,
   markChecked,
   markChecking,
   type Counts,
@@ -41,6 +42,8 @@ export interface Live {
       before: Counts | null;
       after: Counts | null;
       at: string;
+      /** The check broke on our side: say nothing about the site and send no push. */
+      failed?: boolean;
     }>,
   ): Promise<void>;
 }
@@ -124,7 +127,18 @@ export function createLive(db: Database, env: Readonly<LiveEnv>): Live {
         );
       });
     },
-    async finished(userId, site, { before, after, at }) {
+    async finished(userId, site, { before, after, at, failed }) {
+      if (failed) {
+        // The scanner broke, which says nothing about the site: stop showing
+        // it as running, keep what was known, and send no push.
+        await quietly('live.failed', async () => {
+          await markCheckFailed(db, userId, site.host);
+          for (const person of await audience(userId, site)) {
+            await broadcaster?.notify(String(person));
+          }
+        });
+        return;
+      }
       await quietly('live.finished', async () => {
         await markChecked(db, userId, site.host, { counts: after, at });
         await publish(

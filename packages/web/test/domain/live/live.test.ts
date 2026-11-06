@@ -129,6 +129,39 @@ describe('createLive, for everyone who can see the repository', () => {
   });
 });
 
+describe('a check that broke on our side', () => {
+  it('stops showing the site as running and sends no push and no event', async () => {
+    const { db, raw, env } = await setup();
+    const store = new PushSubscriptionRepository(db);
+    const device = await keys();
+    await store.upsert(
+      {
+        endpoint: 'https://push.test/device',
+        user_id: 1,
+        p256dh: device.publicKey,
+        auth: device.auth,
+      },
+      'now',
+    );
+    const fetched = jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(null, { status: 201 }));
+    await createLive(db, env).started(1, site, 'then');
+    await createLive(db, env).finished(1, site, {
+      before: null,
+      after: null,
+      at: 'now',
+      failed: true,
+    });
+    const row = raw
+      .prepare('select checking_since, reachable from domains where host = ?')
+      .get(site.host) as Record<string, unknown>;
+    expect(row['checking_since']).toBeNull();
+    expect(row['reachable']).not.toBe(0);
+    expect(fetched).not.toHaveBeenCalled();
+  });
+});
+
 describe('createLive', () => {
   it('marks the site as running, records the event and wakes the hub', async () => {
     const { db, raw, env } = await setup();

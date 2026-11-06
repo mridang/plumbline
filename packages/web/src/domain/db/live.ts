@@ -88,6 +88,18 @@ export async function markChecked(
     .where(and(eq(domains.user_id, userId), eq(domains.host, host)));
 }
 
+/** A check broke before it could say anything about the site: it stops running and everything else stays as it was. */
+export async function markCheckFailed(
+  db: Database,
+  userId: number,
+  host: string,
+): Promise<void> {
+  await db
+    .update(domains)
+    .set({ checking_since: null })
+    .where(and(eq(domains.user_id, userId), eq(domains.host, host)));
+}
+
 /** How a site stands. */
 export type SiteState =
   'running' | 'unchecked' | 'unreachable' | 'failing' | 'warning' | 'ok';

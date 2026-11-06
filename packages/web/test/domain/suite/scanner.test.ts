@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   JOBS_PATH,
-  ScanFailed,
+  SiteUnreachable,
   collectScan,
   enqueueJob,
   scanThrough,
@@ -76,7 +76,7 @@ describe('collectScan', () => {
           end,
         ),
       ),
-    ).rejects.toThrow(new ScanFailed('x.test did not answer.'));
+    ).rejects.toThrow(new SiteUnreachable('x.test did not answer.'));
   });
 
   it('fails when the stream stops before its last line', async () => {

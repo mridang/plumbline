@@ -28,6 +28,14 @@ export class ScanFailed extends Error {
   }
 }
 
+/** The scanner ran, and the site did not answer it. Anything else that goes wrong is the scanner's trouble, not the site's. */
+export class SiteUnreachable extends ScanFailed {
+  public constructor(detail: string) {
+    super(detail);
+    this.name = 'SiteUnreachable';
+  }
+}
+
 /** One check's outcome, as much of it as the suite reads. */
 const OutcomeSchema = z.object({
   id: z.string(),
@@ -98,7 +106,7 @@ export async function collectScan(
     }
     const event = parsed.data;
     if (event.type === 'unreachable') {
-      throw new ScanFailed(event.detail);
+      throw new SiteUnreachable(event.detail);
     } else if (event.type === 'ready') {
       ready = { finalUrl: event.finalUrl, status: event.status };
     } else if (event.type === 'done') {

@@ -13,6 +13,7 @@ import {
 import { PAID_LIMITS } from '@/domain/suite/limits';
 import { RULE_SETS } from '@/domain/suite/rules';
 import type { SuiteRun } from '@/domain/suite/run';
+import { ScanFailed, SiteUnreachable } from '@/domain/suite/scanner';
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
@@ -491,9 +492,15 @@ describe('checkSite, telling the live dashboard', () => {
         finished: async (
           _user: number,
           site: { host: string },
-          change: { before: unknown; after: unknown },
+          change: { before: unknown; after: unknown; failed?: boolean },
         ) => {
-          told.push(['finished', site.host, change.before, change.after]);
+          told.push([
+            'finished',
+            site.host,
+            change.before,
+            change.after,
+            ...(change.failed ? ['failed'] : []),
+          ]);
         },
       },
     };
@@ -519,18 +526,33 @@ describe('checkSite, telling the live dashboard', () => {
     ]);
   });
 
-  it('says a site did not answer', async () => {
+  it('says a site did not answer when the scanner could not reach it', async () => {
     const db = await setup('a.test');
     const { told, live } = recorder();
     await checkSite(db, 1, site, {
       run: async () => {
-        throw new Error('down');
+        throw new SiteUnreachable('no answer');
       },
       live,
     });
     expect(told).toEqual([
       ['started', 'a.test'],
       ['finished', 'a.test', null, null],
+    ]);
+  });
+
+  it('says the check failed, not the site, when the scanner broke', async () => {
+    const db = await setup('a.test');
+    const { told, live } = recorder();
+    await checkSite(db, 1, site, {
+      run: async () => {
+        throw new ScanFailed('The scan stopped before it finished.');
+      },
+      live,
+    });
+    expect(told).toEqual([
+      ['started', 'a.test'],
+      ['finished', 'a.test', null, null, 'failed'],
     ]);
   });
 });
