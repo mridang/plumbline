@@ -2,6 +2,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 
 import { createDatabase } from '@/domain/db/client';
 import { disableRepo } from '@/domain/db/disabled';
+import { saveInstallation, touchInstallation } from '@/domain/db/github';
 import { addDomain } from '@/domain/db/domains';
 import { listRuns } from '@/domain/db/runs';
 import { latestRuns } from '@/domain/db/suite';
@@ -9,6 +10,7 @@ import {
   RECHECK_AFTER_MS,
   SCHEDULED_BATCH,
   checkDueSites,
+  resyncStaleInstallation,
   scheduled,
 } from '@/domain/suite/scheduled';
 import type { SuiteRun } from '@/domain/suite/run';
@@ -144,5 +146,47 @@ describe('scheduled', () => {
       {} as never,
     );
     expect(await latestRuns(db, 1, 'a.test', 1)).toEqual([]);
+  });
+});
+
+describe('resyncStaleInstallation', () => {
+  const later = new Date(start.getTime() + RECHECK_AFTER_MS + 1000);
+
+  it('reads an installation not read for six hours', async () => {
+    const db = createDatabase(sqliteD1(...APP_MIGRATIONS).d1);
+    await saveInstallation(db, 7, 99, 'acme');
+    await touchInstallation(db, 99, start.toISOString());
+    const sync = jest.fn(
+      async (_user: number, _installation: number) => undefined,
+    );
+    await resyncStaleInstallation(db, sync, () => later);
+    expect(sync).toHaveBeenCalledWith(7, 99);
+  });
+
+  it('leaves a recently read installation alone', async () => {
+    const db = createDatabase(sqliteD1(...APP_MIGRATIONS).d1);
+    await saveInstallation(db, 7, 99, 'acme');
+    await touchInstallation(db, 99, start.toISOString());
+    const sync = jest.fn(
+      async (_user: number, _installation: number) => undefined,
+    );
+    await resyncStaleInstallation(db, sync, () => start);
+    expect(sync).not.toHaveBeenCalled();
+  });
+
+  it('does not fail the trigger when GitHub cannot be read', async () => {
+    const db = createDatabase(sqliteD1(...APP_MIGRATIONS).d1);
+    await saveInstallation(db, 7, 99, 'acme');
+    await touchInstallation(db, 99, start.toISOString());
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    await expect(
+      resyncStaleInstallation(
+        db,
+        async () => {
+          throw new Error('down');
+        },
+        () => later,
+      ),
+    ).resolves.toBeUndefined();
   });
 });

@@ -6,7 +6,7 @@
  * Every read is scoped by the owner, so one person never sees another's.
  */
 
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, lt } from 'drizzle-orm';
 
 import type { Database } from '@/domain/db/client';
 import {
@@ -301,4 +301,30 @@ export async function reposNamed(
       ),
     );
   return rows.map((row) => row.full_name);
+}
+
+/** The installation read longest ago, if that was before `before`. */
+export async function staleInstallation(
+  db: Database,
+  before: string,
+): Promise<Installation | undefined> {
+  const [row] = await db
+    .select()
+    .from(githubInstallations)
+    .where(lt(githubInstallations.updated_at, before))
+    .orderBy(asc(githubInstallations.updated_at))
+    .limit(1);
+  return row;
+}
+
+/** Note that an installation was just read. */
+export async function touchInstallation(
+  db: Database,
+  installationId: number,
+  timestamp = new Date().toISOString(),
+): Promise<void> {
+  await db
+    .update(githubInstallations)
+    .set({ updated_at: timestamp })
+    .where(eq(githubInstallations.installation_id, installationId));
 }

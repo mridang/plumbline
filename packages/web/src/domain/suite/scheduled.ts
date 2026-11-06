@@ -14,7 +14,10 @@
  */
 
 import { createDatabase, type Database } from '@/domain/db/client';
+import { staleInstallation } from '@/domain/db/github';
 import { dueSites } from '@/domain/db/suite';
+import { readGitHubConfig } from '@/domain/github/config';
+import { syncAsApp } from '@/domain/github/service';
 import { createLive } from '@/domain/live/live';
 import {
   FREE_LIMITS,
@@ -54,12 +57,42 @@ export async function checkDueSites(
   );
 }
 
+/**
+ * Read the installation read longest ago, if that was over six hours back, so a
+ * repository deleted, renamed or moved while no webhook reached us still leaves
+ * the dashboard, and one added or changed is still found. One installation per
+ * trigger keeps the work small; the trigger fires often enough to reach all.
+ */
+export async function resyncStaleInstallation(
+  db: Database,
+  sync: (userId: number, installationId: number) => Promise<unknown>,
+  now: () => Date = () => new Date(),
+): Promise<void> {
+  const stale = await staleInstallation(
+    db,
+    new Date(now().getTime() - RECHECK_AFTER_MS).toISOString(),
+  );
+  if (stale) {
+    try {
+      await sync(stale.user_id, stale.installation_id);
+    } catch (error) {
+      console.error('github resync failed', stale.installation_id, error);
+    }
+  }
+}
+
 /** The Worker's `scheduled` handler. It returns when the scans are done. */
 export const scheduled: ExportedHandlerScheduledHandler<CloudflareEnv> = async (
   _controller,
   env,
 ) => {
   const db = createDatabase(env.DB);
+  const config = readGitHubConfig(env);
+  if (config) {
+    await resyncStaleInstallation(db, (userId, installationId) =>
+      syncAsApp(db, config, userId, installationId),
+    );
+  }
   const namespace = env.SCANNER as unknown as ScannerNamespace | undefined;
   await checkDueSites(db, {
     limits: scanLimits(readLimits(env)),

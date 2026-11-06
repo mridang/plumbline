@@ -7,7 +7,7 @@
  */
 
 import type { Database } from '@/domain/db/client';
-import { listInstallations } from '@/domain/db/github';
+import { listInstallations, touchInstallation } from '@/domain/db/github';
 import { getEnv } from '@/lib/core/runtime';
 
 import { GitHubApi } from './api';
@@ -35,12 +35,14 @@ export async function syncAsApp(
   fetcher: typeof fetch = fetch,
 ): Promise<SyncResult> {
   const token = await installationToken(config, installationId, fetcher);
-  return syncInstallation(
+  const result = await syncInstallation(
     db,
     userId,
     installationId,
     new GitHubApi(token, fetcher),
   );
+  await touchInstallation(db, installationId);
+  return result;
 }
 
 /** What reading every installation found, and why any of them could not be read. */
