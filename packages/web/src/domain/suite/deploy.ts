@@ -12,7 +12,12 @@
 
 import type { Database } from '@/domain/db/client';
 import { listDomainsOfRepo } from '@/domain/db/domains';
-import { latestRuns, recordRun, type SuiteRunKind } from '@/domain/db/suite';
+import {
+  latestRuns,
+  markTried,
+  recordRun,
+  type SuiteRunKind,
+} from '@/domain/db/suite';
 import {
   diffFindings,
   findingsOf,
@@ -183,6 +188,9 @@ export async function checkSite(
     result = await run(url);
   } catch (error) {
     console.error('suite run failed', site.host, error);
+    if (error instanceof SiteUnreachable) {
+      await markTried(db, userId, site.host, now().toISOString());
+    }
     // Only a site that did not answer the scanner is told as down; a scanner
     // that was restarting or full is our trouble and must not alarm anyone.
     await deps.live?.finished(userId, where, {

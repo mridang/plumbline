@@ -248,6 +248,23 @@ export async function dueSites(
 }
 
 /**
+ * Notes that a site was tried at `at` and did not answer, so the scheduled
+ * re-check waits its turn instead of trying it again every ten minutes (a few
+ * sites that are down would otherwise fill every batch).
+ */
+export async function markTried(
+  db: Database,
+  userId: number,
+  host: string,
+  at: string,
+): Promise<void> {
+  await db
+    .update(domains)
+    .set({ checked_at: at })
+    .where(and(eq(domains.user_id, userId), eq(domains.host, host)));
+}
+
+/**
  * What became of the issue of a check: open, closed by the app (the problem is
  * gone or the rules no longer ask for the check), closed by a person while the
  * problem was still there, or claimed by a delivery that is opening it.

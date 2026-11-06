@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { createDatabase } from '@/domain/db/client';
 import { addDomain } from '@/domain/db/domains';
 import { listRuns } from '@/domain/db/runs';
-import { latestRuns, recordRun } from '@/domain/db/suite';
+import { dueSites, latestRuns, recordRun } from '@/domain/db/suite';
 import {
   MAX_SITES,
   checkDeployment,
@@ -554,6 +554,39 @@ describe('checkSite, telling the live dashboard', () => {
       ['started', 'a.test'],
       ['finished', 'a.test', null, null, 'failed'],
     ]);
+  });
+});
+
+describe('checkSite, when the scheduled re-check comes round', () => {
+  const site = { host: 'a.test', repo: 'acme/site', sha: 'abc' };
+  const dueAt = async (db: Awaited<ReturnType<typeof setup>>) =>
+    (await dueSites(db, '9999-01-01T00:00:00.000Z', 10)).map((due) => due.host);
+  const dueBefore = (db: Awaited<ReturnType<typeof setup>>) =>
+    dueSites(db, '2026-11-06T00:00:00.000Z', 10).then((rows) =>
+      rows.map((due) => due.host),
+    );
+
+  it('does not try a site that does not answer again until it is due', async () => {
+    const db = await setup('a.test');
+    await checkSite(db, 1, site, {
+      now: () => new Date('2026-11-06T08:00:00.000Z'),
+      run: async () => {
+        throw new SiteUnreachable('no answer');
+      },
+    });
+    expect(await dueBefore(db)).toEqual([]);
+    expect(await dueAt(db)).toEqual(['a.test']);
+  });
+
+  it('keeps a site due when the scanner broke', async () => {
+    const db = await setup('a.test');
+    await checkSite(db, 1, site, {
+      now: () => new Date('2026-11-06T08:00:00.000Z'),
+      run: async () => {
+        throw new ScanFailed('The scan stopped before it finished.');
+      },
+    });
+    expect(await dueBefore(db)).toEqual(['a.test']);
   });
 });
 
