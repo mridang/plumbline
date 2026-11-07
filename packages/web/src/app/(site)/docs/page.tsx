@@ -37,6 +37,7 @@ environments:
     extends: plumbline:advanced
 issues: error                # which findings open an issue: error, warning or off
 dispatch: true               # send a repository_dispatch event after each run
+enabled: true                # false turns every check of this repository off
 `;
 
 /**
@@ -202,6 +203,11 @@ export default function DocsPage(): ReactElement {
                   label: 'dispatch',
                   value:
                     'Send a repository_dispatch event after each run, for a workflow to pick up.',
+                },
+                {
+                  label: 'enabled',
+                  value:
+                    'Set to false to turn every check of the repository off (default true). Read from the default branch: deployments and pushes are not checked, the schedule skips its sites and its open Plumbline issues are closed. Set it back to true, or remove it, and checks resume with the next deployment or push of the file.',
                 },
               ]}
             />

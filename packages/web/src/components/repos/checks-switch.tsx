@@ -1,9 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, type ReactElement } from 'react';
+import { useId, useState, type ReactElement } from 'react';
 
 import { problemText } from '@/components/api/problem-message';
+import {
+  lockedReason,
+  type ChecksControl,
+} from '@/components/repos/checks-control';
 import { setRepoChecks } from '@/components/repos/repo-checks';
 import { cn } from '@/components/ui/cn';
 import { POPOVER_ITEM } from '@/components/ui/popover';
@@ -18,15 +22,20 @@ export const PAUSE_WARNING =
  * and asks first before turning them off. `dialog` is the question, to be
  * drawn next to (not inside) whatever started it, since a menu unmounts its
  * contents when it closes. `problem` is what the server said when it refused.
+ * `locked` is why the viewer cannot flip the switch (they did not install the
+ * app, or the repository's file decides), or null; the server enforces it too.
  */
 export function useRepoChecks(
   repo: string | null,
   paused: boolean,
+  control: Readonly<ChecksControl>,
 ): {
   request: () => void;
   dialog: ReactElement | null;
   problem: string | null;
+  locked: string | null;
 } {
+  const locked = lockedReason(control);
   const router = useRouter();
   const [asking, setAsking] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -42,8 +51,18 @@ export function useRepoChecks(
     );
   };
   return {
-    request: () => (paused ? apply(true) : setAsking(true)),
+    request: () => {
+      if (locked !== null) {
+        return;
+      }
+      if (paused) {
+        apply(true);
+      } else {
+        setAsking(true);
+      }
+    },
     problem,
+    locked,
     dialog:
       repo === null ? null : (
         <ConfirmDialog
@@ -61,12 +80,32 @@ export function useRepoChecks(
 /** The entry of a row's menu that turns checks off or on. */
 export function ChecksMenuItem({
   paused,
+  locked,
   onRequest,
-}: Readonly<{ paused: boolean; onRequest: () => void }>): ReactElement {
+}: Readonly<{
+  paused: boolean;
+  /** Why the viewer cannot flip the switch; the entry is then disabled and says so. */
+  locked: string | null;
+  onRequest: () => void;
+}>): ReactElement {
+  const reason = useId();
   return (
-    <button type="button" className={POPOVER_ITEM} onClick={onRequest}>
-      {paused ? 'Turn checks on' : 'Turn checks off'}
-    </button>
+    <>
+      <button
+        type="button"
+        className={cn(POPOVER_ITEM, locked !== null && 'opacity-60')}
+        onClick={onRequest}
+        disabled={locked !== null}
+        aria-describedby={locked === null ? undefined : reason}
+      >
+        {paused ? 'Turn checks on' : 'Turn checks off'}
+      </button>
+      {locked === null ? null : (
+        <p id={reason} className="px-3 py-1 text-xs text-muted">
+          {locked}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -77,8 +116,18 @@ export function ChecksMenuItem({
 export function ChecksSwitch({
   repo,
   paused,
-}: Readonly<{ repo: string; paused: boolean }>): ReactElement {
-  const { request, dialog, problem } = useRepoChecks(repo, paused);
+  control,
+}: Readonly<{
+  repo: string;
+  paused: boolean;
+  control: Readonly<ChecksControl>;
+}>): ReactElement {
+  const { request, dialog, problem, locked } = useRepoChecks(
+    repo,
+    paused,
+    control,
+  );
+  const reason = useId();
   return (
     <>
       <button
@@ -86,8 +135,13 @@ export function ChecksSwitch({
         role="switch"
         aria-checked={!paused}
         aria-label={`Checks for ${repo}`}
+        aria-describedby={locked === null ? undefined : reason}
+        disabled={locked !== null}
         onClick={request}
-        className="focus-ring inline-flex items-center gap-2 rounded-full text-sm font-medium text-muted hover:text-ink"
+        className={cn(
+          'focus-ring inline-flex items-center gap-2 rounded-full text-sm font-medium text-muted',
+          locked === null ? 'hover:text-ink' : 'cursor-not-allowed opacity-60',
+        )}
       >
         <span
           aria-hidden="true"
@@ -105,6 +159,11 @@ export function ChecksSwitch({
         </span>
         {paused ? 'Checks paused' : 'Checks on'}
       </button>
+      {locked === null ? null : (
+        <p id={reason} className="text-xs text-muted">
+          {locked}
+        </p>
+      )}
       {problem ? (
         <p role="alert" className="text-xs text-failed">
           {problem}

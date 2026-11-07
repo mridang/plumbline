@@ -515,8 +515,8 @@ export async function noteDeferred(
 /**
  * Closes what the repository no longer deploys: the open issues of hosts that
  * are not among `hosts`, and the issues of the old kind of such hosts. With
- * `reason` `disabled` (and no hosts) it closes them all, because checks for the
- * repository were turned off.
+ * `reason` `disabled` or `config` (and no hosts) it closes them all, because
+ * checks for the repository were turned off, by the switch or by its file.
  */
 export async function closeUndeployed(
   api: GitHubApi,
@@ -527,7 +527,7 @@ export async function closeUndeployed(
     sha: string | null;
     source: string | null;
     pause?: () => Promise<void>;
-    reason?: 'undeployed' | 'disabled';
+    reason?: 'undeployed' | 'disabled' | 'config';
   }>,
 ): Promise<void> {
   const { repo } = input;

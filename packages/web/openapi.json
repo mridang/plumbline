@@ -1072,7 +1072,7 @@
         "operationId": "disableRepositoryChecks",
         "tags": ["account"],
         "summary": "Turn the checks of a repository off.",
-        "description": "The repository's deployment and push webhooks are dropped, the schedule skips its sites, and its open Plumbline issues are closed with a note that checks were turned off. Turning off a repository whose checks are already off changes nothing.",
+        "description": "The repository's deployment and push webhooks are dropped, the schedule skips its sites, and its open Plumbline issues are closed with a note that checks were turned off. Turning off a repository whose checks are already off changes nothing. Only the person who installed the GitHub App for the repository may do this: 404 for a repository the caller cannot see, 403 for one they can see but did not install the app for. A repository can also turn its checks off itself with `enabled: false` in `plumbline.yaml`; that is not changed by this call.",
         "security": [
           {
             "session": []
@@ -1100,7 +1100,7 @@
         "operationId": "enableRepositoryChecks",
         "tags": ["account"],
         "summary": "Turn the checks of a repository on again.",
-        "description": "Checks resume with the next deployment or the next scheduled check. Issues closed when the checks were turned off are not reopened; a problem that is still there opens a new one. 404 when the repository's checks were not off.",
+        "description": "Checks resume with the next deployment or the next scheduled check. Issues closed when the checks were turned off are not reopened; a problem that is still there opens a new one. Only the person who installed the GitHub App for the repository may do this: 404 for a repository the caller cannot see or whose checks were not off, 403 for one they can see but did not install the app for. This only removes the switch: while `plumbline.yaml` says `enabled: false` the repository stays off, and the file is changed in the repository.",
         "security": [
           {
             "session": []

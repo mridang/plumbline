@@ -19,7 +19,7 @@
 import { NextResponse } from 'next/server';
 
 import { getDatabase } from '@/domain/db/client';
-import { isRepoDisabled } from '@/domain/db/disabled';
+import { isRepoDisabled, isRepoSwitchedOff } from '@/domain/db/disabled';
 import { ownerOfInstallation, removeInstallation } from '@/domain/db/github';
 import { claimDelivery } from '@/domain/db/suite';
 import {
@@ -156,7 +156,9 @@ export async function POST(request: Request): Promise<NextResponse> {
         repo &&
         touchesConfig(delivery) &&
         isDefaultBranchPush(delivery) &&
-        !(await isRepoDisabled(db, repo))
+        // A repository whose file turns checks off still reads the push, to see
+        // whether the flag changed; one switched off by a person does not.
+        !(await isRepoSwitchedOff(db, repo))
       ) {
         await leaveJob({
           installationId,

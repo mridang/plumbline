@@ -4,6 +4,10 @@ import Link from 'next/link';
 import type { ReactElement } from 'react';
 
 import { LinkIcon } from '@/components/icons';
+import {
+  controlOf,
+  type ChecksControl,
+} from '@/components/repos/checks-control';
 import { RepoLabel } from '@/components/repos/repo-label';
 import { commitUrl, issuesUrl } from '@/components/repos/site-rows';
 import { SiteActions, sitePageOf } from '@/components/repos/site-actions';
@@ -120,10 +124,12 @@ function SiteBlock({
 export function SiteCard({
   repo,
   paused,
+  control,
   now,
 }: Readonly<{
   repo: RepoStatus;
   paused: boolean;
+  control: Readonly<ChecksControl>;
   now: number;
 }>): ReactElement {
   const overall = worstResult(repo.sites.map((site) => site.state));
@@ -166,7 +172,12 @@ export function SiteCard({
           </p>
         </div>
         {first ? (
-          <SiteActions repo={repo.repo} site={first} paused={paused} />
+          <SiteActions
+            repo={repo.repo}
+            site={first}
+            paused={paused}
+            control={control}
+          />
         ) : null}
       </header>
       <ul className="mt-3 divide-y divide-line border-t border-line pt-3">
@@ -182,11 +193,17 @@ export function SiteCard({
 export function SiteCards({
   repos,
   paused,
+  manageable,
+  fileOff,
   now,
 }: Readonly<{
   repos: readonly RepoStatus[];
   /** The repositories whose checks are turned off. */
   paused: ReadonlySet<string>;
+  /** The repositories the viewer installed the app for: only they may flip the switch. */
+  manageable: ReadonlySet<string>;
+  /** The repositories whose `plumbline.yaml` turns checks off. */
+  fileOff: ReadonlySet<string>;
   now: number;
 }>): ReactElement {
   return (
@@ -196,6 +213,7 @@ export function SiteCards({
           key={repo.repo ?? 'by-hand'}
           repo={repo}
           paused={repo.repo !== null && paused.has(repo.repo)}
+          control={controlOf(repo.repo, manageable, fileOff)}
           now={now}
         />
       ))}

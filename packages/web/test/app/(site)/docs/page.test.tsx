@@ -32,6 +32,7 @@ describe('the docs page', () => {
       'environments',
       'issues',
       'dispatch',
+      'enabled',
     ]) {
       expect(out).toContain(`>${key}</dt>`);
     }

@@ -16,7 +16,11 @@ import { repoOf } from '@/domain/api/repo-name';
 import { isRunId } from '@/domain/api/runs';
 import { badgePath } from '@/domain/badge/sign';
 import { getDatabase } from '@/domain/db/client';
-import { disabledRepos } from '@/domain/db/disabled';
+import {
+  canManageRepo,
+  disabledRepos,
+  fileDisabledRepos,
+} from '@/domain/db/disabled';
 import { issuesOf } from '@/domain/db/issue-history';
 import { getDomain } from '@/domain/db/domains';
 import { overviewOf } from '@/domain/db/live';
@@ -65,7 +69,12 @@ export default async function RepoPage({
   }
   const db = getDatabase();
   const entry = (await overviewOf(db, user.id)).find((r) => r.repo === repo);
-  const paused = (await disabledRepos(db, user.id)).has(repo);
+  const [pausedRepos, fileOffRepos, canManage] = await Promise.all([
+    disabledRepos(db, user.id),
+    fileDisabledRepos(db, user.id),
+    canManageRepo(db, user.id, repo),
+  ]);
+  const paused = pausedRepos.has(repo);
   if (!entry) {
     notFound();
   }
@@ -120,6 +129,7 @@ export default async function RepoPage({
         repo={repo}
         state={overall}
         paused={paused}
+        control={{ canManage, fileOff: fileOffRepos.has(repo) }}
         siteCount={entry.sites.length}
         badgeImage={badgeImage}
         badgeMarkdown={badgeMarkdown}

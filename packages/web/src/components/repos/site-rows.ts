@@ -7,6 +7,10 @@
  */
 
 import {
+  controlOf,
+  type ChecksControl,
+} from '@/components/repos/checks-control';
+import {
   NO_FILTER,
   queryOf,
   type Filter,
@@ -38,6 +42,8 @@ export interface SiteRow {
   readonly openIssues: number;
   /** Whether checks are turned off for the repository. */
   readonly paused: boolean;
+  /** What the viewer may do with the repository's checks switch. */
+  readonly control: ChecksControl;
 }
 
 /** What the table can be sorted by. */
@@ -59,6 +65,8 @@ export const DEFAULT_SORT: Sort = { key: 'status', direction: 'ascending' };
 export function rowsOf(
   repos: readonly RepoStatus[],
   paused: ReadonlySet<string>,
+  manageable: ReadonlySet<string> = new Set(),
+  fileOff: ReadonlySet<string> = new Set(),
 ): SiteRow[] {
   return repos.flatMap((repo) => {
     const isPaused = repo.repo !== null && paused.has(repo.repo);
@@ -68,6 +76,7 @@ export function rowsOf(
       site,
       openIssues: repo.open_issues,
       paused: isPaused,
+      control: controlOf(repo.repo, manageable, fileOff),
     }));
   });
 }

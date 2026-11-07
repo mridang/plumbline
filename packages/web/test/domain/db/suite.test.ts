@@ -21,7 +21,12 @@ import {
   retireLegacyIssue,
   saveIssue,
 } from '@/domain/db/suite';
-import { disableRepo, enableRepo } from '@/domain/db/disabled';
+import {
+  disableRepo,
+  disableRepoByFile,
+  enableRepo,
+  enableRepoByFile,
+} from '@/domain/db/disabled';
 import { issuesOf as historyOf } from '@/domain/db/issue-history';
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
@@ -163,6 +168,18 @@ describe('dueSites', () => {
       'b.test',
     ]);
     await enableRepo(db, 'acme/a');
+    expect(await dueSites(db, cutoff, 10)).toHaveLength(2);
+  });
+
+  it('leaves out the sites of a repository whose file turns checks off, until it does not', async () => {
+    const db = database();
+    await addDomain(db, 1, 'a.test', 'acme/a');
+    await addDomain(db, 1, 'b.test', 'acme/b');
+    await disableRepoByFile(db, 'acme/a');
+    expect((await dueSites(db, cutoff, 10)).map((s) => s.host)).toEqual([
+      'b.test',
+    ]);
+    await enableRepoByFile(db, 'acme/a');
     expect(await dueSites(db, cutoff, 10)).toHaveLength(2);
   });
 

@@ -3,7 +3,11 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { createDatabase } from '@/domain/db/client';
 import { getPreviewReport } from '@/domain/db/preview-reports';
 import { CHECKS } from '@/domain/checks/catalogue';
-import { disableRepo } from '@/domain/db/disabled';
+import {
+  disableRepo,
+  disableRepoByFile,
+  isRepoFileDisabled,
+} from '@/domain/db/disabled';
 import { addDomain, deleteDomain } from '@/domain/db/domains';
 import { forgetIssue, issueOf, latestRuns } from '@/domain/db/suite';
 import { GitHubApi } from '@/domain/github/api';
@@ -434,6 +438,166 @@ describe('handleDeployment of a repository whose checks are off', () => {
     expect(
       await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'),
     ).toBeUndefined();
+  });
+});
+
+describe('handleDeployment of a repository whose plumbline.yaml turns checks off', () => {
+  const off = { 'plumbline.yaml': 'enabled: false\n' };
+
+  it('checks nothing, remembers the flag and closes the open issues saying the file did it', async () => {
+    const db = await setup();
+    await deploy(db, config, 5, 7, live, {
+      fetcher: github().fetcher,
+      run: failing(),
+    });
+    let runs = 0;
+    const next = github(off);
+    await deploy(
+      db,
+      config,
+      5,
+      7,
+      { ...live, sha: 'off0001' },
+      {
+        fetcher: next.fetcher,
+        run: async () => {
+          runs += 1;
+          return failing()();
+        },
+      },
+    );
+    expect(runs).toBe(0);
+    expect(await isRepoFileDisabled(db, 'acme/site')).toBe(true);
+    expect(next.calls.find((c) => c.method === 'PATCH')).toMatchObject({
+      path: '/repos/acme/site/issues/21',
+      body: { state: 'closed', state_reason: 'not_planned' },
+    });
+    const note = next.calls.find((c) => c.path.endsWith('/comments'));
+    expect(String(note?.body['body'])).toContain(
+      'turned off in `plumbline.yaml`',
+    );
+    expect(
+      (await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'))?.state,
+    ).toBe('fixed');
+  });
+
+  it('closes the issues once: a second push of the same file writes nothing more', async () => {
+    const db = await setup();
+    await deploy(db, config, 5, 7, live, {
+      fetcher: github().fetcher,
+      run: failing(),
+    });
+    await deploy(db, config, 5, 7, live, {
+      fetcher: github(off).fetcher,
+      run: failing(),
+      force: true,
+    });
+    const again = github(off);
+    await deploy(db, config, 5, 7, live, {
+      fetcher: again.fetcher,
+      run: failing(),
+      force: true,
+    });
+    expect(again.calls.filter((c) => c.method !== 'GET')).toHaveLength(1);
+  });
+
+  it('does not check a later deployment, and does not even read the file', async () => {
+    const db = await setup();
+    await disableRepoByFile(db, 'acme/site');
+    const { fetcher, calls } = github();
+    await deploy(db, config, 5, 7, live, { fetcher, run: failing() });
+    await deploy(db, config, 5, 7, preview, { fetcher, run: failing() });
+    expect(calls).toEqual([]);
+    expect(await latestRuns(db, 7, 'site.test')).toEqual([]);
+  });
+
+  it('does not check a preview of a branch whose file turns checks off, and remembers nothing', async () => {
+    const db = await setup();
+    const { fetcher } = github(off);
+    let runs = 0;
+    await deploy(db, config, 5, 7, preview, {
+      fetcher,
+      run: async () => {
+        runs += 1;
+        return failing()();
+      },
+    });
+    expect(runs).toBe(0);
+    expect(await isRepoFileDisabled(db, 'acme/site')).toBe(false);
+  });
+
+  it('resumes with the push that sets enabled: true, and checks the site then', async () => {
+    const db = await setup();
+    await disableRepoByFile(db, 'acme/site');
+    const { fetcher } = github({ 'plumbline.yaml': 'enabled: true\n' });
+    await deploy(db, config, 5, 7, live, {
+      fetcher,
+      run: failing(),
+      force: true,
+    });
+    expect(await isRepoFileDisabled(db, 'acme/site')).toBe(false);
+    expect(await latestRuns(db, 7, 'site.test')).toHaveLength(1);
+  });
+
+  it('resumes when the key is removed from the file, or the file is gone', async () => {
+    const db = await setup();
+    await disableRepoByFile(db, 'acme/site');
+    await deploy(db, config, 5, 7, live, {
+      fetcher: github().fetcher,
+      run: failing(),
+      force: true,
+    });
+    expect(await isRepoFileDisabled(db, 'acme/site')).toBe(false);
+    expect(await latestRuns(db, 7, 'site.test')).toHaveLength(1);
+  });
+
+  it('stays off, and writes nothing, when a push of the file still says false', async () => {
+    const db = await setup();
+    await disableRepoByFile(db, 'acme/site');
+    const { fetcher, calls } = github(off);
+    await deploy(db, config, 5, 7, live, {
+      fetcher,
+      run: failing(),
+      force: true,
+    });
+    expect(await isRepoFileDisabled(db, 'acme/site')).toBe(true);
+    expect(calls.filter((c) => c.method !== 'GET')).toHaveLength(1);
+    expect(await latestRuns(db, 7, 'site.test')).toEqual([]);
+  });
+
+  it('stays off when the file cannot be read, so a GitHub failure does not resume checks', async () => {
+    const db = await setup();
+    await disableRepoByFile(db, 'acme/site');
+    const { fetcher } = github({ 'plumbline.yaml': 500 });
+    await deploy(db, config, 5, 7, live, {
+      fetcher,
+      run: failing(),
+      force: true,
+    });
+    expect(await isRepoFileDisabled(db, 'acme/site')).toBe(true);
+    expect(await latestRuns(db, 7, 'site.test')).toEqual([]);
+  });
+
+  it('is not turned off by a file whose enabled is not a boolean', async () => {
+    const db = await setup();
+    await deploy(db, config, 5, 7, live, {
+      fetcher: github({ 'plumbline.yaml': 'enabled: "no"\n' }).fetcher,
+      run: failing(),
+    });
+    expect(await isRepoFileDisabled(db, 'acme/site')).toBe(false);
+    expect(await latestRuns(db, 7, 'site.test')).toHaveLength(1);
+  });
+
+  it('stays off when the switch is also off, whatever the file says', async () => {
+    const db = await setup();
+    await disableRepo(db, 7, 'acme/site');
+    const { fetcher, calls } = github({ 'plumbline.yaml': 'enabled: true\n' });
+    await deploy(db, config, 5, 7, live, {
+      fetcher,
+      run: failing(),
+      force: true,
+    });
+    expect(calls).toEqual([]);
   });
 });
 

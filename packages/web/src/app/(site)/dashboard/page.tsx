@@ -7,7 +7,11 @@ import { viewOf } from '@/components/repos/site-rows';
 import { Container } from '@/components/ui/layout';
 import { PageHeading } from '@/components/ui-app/page-heading';
 import { getDatabase } from '@/domain/db/client';
-import { disabledRepos } from '@/domain/db/disabled';
+import {
+  disabledRepos,
+  fileDisabledRepos,
+  manageableRepos,
+} from '@/domain/db/disabled';
 import { overviewOf } from '@/domain/db/live';
 import { serverNow } from '@/lib/clock';
 import { getCurrentUser } from '@/lib/core/auth/current-user';
@@ -39,11 +43,15 @@ export default async function DashboardPage({
   const { view, status, paused } = await searchParams;
   const filter = filterOf({ status, paused });
   const db = getDatabase();
-  const [repos, pausedRepos] = await Promise.all([
+  const [repos, pausedRepos, manageable, fileOff] = await Promise.all([
     overviewOf(db, user.id),
     disabledRepos(db, user.id),
+    manageableRepos(db, user.id),
+    fileDisabledRepos(db, user.id),
   ]);
   const pausedList = [...pausedRepos].toSorted();
+  const manageableList = [...manageable].toSorted();
+  const fileOffList = [...fileOff].toSorted();
   return (
     <>
       <PageHeading
@@ -54,9 +62,17 @@ export default async function DashboardPage({
       <Container className="py-6 sm:py-8">
         {/* A fresh reading from the server starts the list again from it. */}
         <LiveOverview
-          key={JSON.stringify([repos, pausedList, viewOf(view)])}
+          key={JSON.stringify([
+            repos,
+            pausedList,
+            manageableList,
+            fileOffList,
+            viewOf(view),
+          ])}
           initial={repos}
           paused={pausedList}
+          manageable={manageableList}
+          fileOff={fileOffList}
           filter={filter}
           view={viewOf(view)}
           now={serverNow()}

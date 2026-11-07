@@ -17,6 +17,7 @@
  *       seo-http-status: warn
  * issues: error                       # which findings open an issue: error, warning or off
  * dispatch: true                      # send a repository_dispatch event after each run
+ * enabled: false                      # turn every check of this repository off (default true)
  * ```
  *
  * A rule set can be pinned to a catalogue version (`plumbline:recommended@1`):
@@ -57,7 +58,14 @@ export type Environment = (typeof ENVIRONMENTS)[number];
 export type IssueLevel = 'error' | 'warning' | 'off';
 
 /** The keys a configuration file understands, so the others can be reported. */
-const TOP_KEYS = ['extends', 'rules', 'environments', 'issues', 'dispatch'];
+const TOP_KEYS = [
+  'extends',
+  'rules',
+  'environments',
+  'issues',
+  'dispatch',
+  'enabled',
+];
 const OVERLAY_KEYS = ['extends', 'rules'];
 
 /** The settings an environment can change, as the reader takes them (leniently: its mistakes are reported, not refused). */
@@ -70,6 +78,7 @@ export const OverlaySchema = z.object({
 export const ConfigSchema = OverlaySchema.extend({
   issues: z.enum(['error', 'warning', 'off']).optional(),
   dispatch: z.boolean().optional(),
+  enabled: z.boolean().optional(),
   environments: z.record(z.string(), OverlaySchema).optional(),
 });
 
@@ -88,6 +97,8 @@ export interface LoadedConfig extends Overlay {
   readonly issues: IssueLevel;
   /** Whether to send a `repository_dispatch` event after each run. */
   readonly dispatch: boolean;
+  /** Whether checks are on for the repository; `enabled: false` turns every check off. */
+  readonly enabled: boolean;
   /** Everything that could not be understood, one sentence each. */
   readonly problems: readonly string[];
 }
@@ -106,6 +117,7 @@ function empty(path: string, problems: readonly string[]): LoadedConfig {
     environments: {},
     issues: 'error',
     dispatch: false,
+    enabled: true,
     problems,
   };
 }
@@ -185,6 +197,7 @@ export function parseConfig(text: string, path: string): LoadedConfig {
     environments,
     issues: config.issues ?? 'error',
     dispatch: config.dispatch ?? false,
+    enabled: config.enabled ?? true,
     problems,
   };
 }
@@ -224,6 +237,8 @@ export interface ResolvedRules {
   readonly issues: IssueLevel;
   /** Whether to send a `repository_dispatch` event after each run. */
   readonly dispatch: boolean;
+  /** Whether checks are on; false when the file says `enabled: false`. */
+  readonly enabled: boolean;
   /** The mistakes in the configuration. */
   readonly problems: readonly string[];
   /** The file the rules came from; null when the repository has none. */
@@ -303,6 +318,7 @@ export function resolveRules(
     levels,
     issues: loaded?.issues ?? 'error',
     dispatch: loaded?.dispatch ?? false,
+    enabled: loaded?.enabled ?? true,
     problems,
     source: loaded?.path ?? null,
   };

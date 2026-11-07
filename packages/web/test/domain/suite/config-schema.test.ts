@@ -73,6 +73,8 @@ const FILES: readonly [string, string, boolean][] = [
   ],
   ['issues and dispatch', 'issues: warning\ndispatch: true', true],
   ['issues off', 'issues: off', true],
+  ['checks off', 'enabled: false', true],
+  ['checks on', 'enabled: true', true],
   [
     'an environment of each kind',
     'environments:\n  production:\n    rules:\n      seo-links: off\n  preview:\n    extends: plumbline:advanced',
@@ -97,6 +99,13 @@ const FILES: readonly [string, string, boolean][] = [
   ['a list of no levels', 'rules:\n  seo-viewport: []', false],
   ['issues that are not a level', 'issues: always', false],
   ['dispatch that is not a boolean', 'dispatch: yes please', false],
+  ['enabled that is not a boolean', 'enabled: "no"', false],
+  ['enabled that is a list', 'enabled: [false]', false],
+  [
+    'enabled inside an environment',
+    'environments:\n  preview:\n    enabled: false',
+    false,
+  ],
   [
     'an environment that does not exist',
     'environments:\n  staging:\n    rules: {}',
@@ -132,11 +141,21 @@ describe('buildSchema', () => {
   it('has every key of the reader, with the same names', () => {
     expect(Object.keys(schema['properties'] as object).sort()).toEqual([
       'dispatch',
+      'enabled',
       'environments',
       'extends',
       'issues',
       'rules',
     ]);
+  });
+
+  it('describes enabled as a boolean that turns the repository off, true by default', () => {
+    const enabled = (schema['properties'] as Record<string, JsonSchema>)[
+      'enabled'
+    ];
+    expect(enabled).toMatchObject({ title: 'Enabled', type: 'boolean' });
+    expect(String(enabled?.['description'])).toContain('false');
+    expect(String(enabled?.['description'])).toContain('turn every check');
   });
 
   it('lists every check of the catalogue as a rule, with its name and what it looks at', () => {

@@ -11,7 +11,11 @@ import { eq } from 'drizzle-orm';
 
 import { POST } from '@/app/webhooks/github/route';
 import { createDatabase } from '@/domain/db/client';
-import { disableRepo, enableRepo } from '@/domain/db/disabled';
+import {
+  disableRepo,
+  disableRepoByFile,
+  enableRepo,
+} from '@/domain/db/disabled';
 import { addDomain } from '@/domain/db/domains';
 import { pendingScans } from '@/domain/db/schema';
 import { issueOf, saveIssue } from '@/domain/db/suite';
@@ -261,6 +265,12 @@ describe('POST /webhooks/github', () => {
       expect(jobs).toHaveLength(1);
     });
 
+    it('drops a deployment of a repository whose file turns checks off', async () => {
+      await disableRepoByFile(createDatabase(made.d1), 'acme/site');
+      await deliver('deployment_status', deployment());
+      expect(jobs).toEqual([]);
+    });
+
     it('keeps only the newest commit when deployments follow each other', async () => {
       await deliver('deployment_status', deployment());
       await deliver('deployment_status', {
@@ -382,6 +392,12 @@ describe('POST /webhooks/github', () => {
       await disableRepo(createDatabase(made.d1), 7, 'acme/site');
       await deliver('push', push());
       expect(jobs).toEqual([]);
+    });
+
+    it('still leaves a job for a repository whose file turns checks off, to see whether the flag changed', async () => {
+      await disableRepoByFile(createDatabase(made.d1), 'acme/site');
+      await deliver('push', push());
+      expect(jobs).toHaveLength(1);
     });
 
     it('leaves nothing when another file changes', async () => {

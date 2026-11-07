@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import type { ReactElement } from 'react';
 
+import type { ChecksControl } from '@/components/repos/checks-control';
 import {
   ChecksMenuItem,
   useRepoChecks,
@@ -30,13 +31,15 @@ export function SiteActions({
   repo,
   site,
   paused,
+  control,
 }: Readonly<{
   repo: string | null;
   site: Readonly<{ id: string; host: string }>;
   paused: boolean;
+  control: Readonly<ChecksControl>;
 }>): ReactElement {
   const page = sitePageOf(repo, site);
-  const checks = useRepoChecks(repo, paused);
+  const checks = useRepoChecks(repo, paused, control);
   return (
     <>
       <RowActions label={repo ?? site.host}>
@@ -65,7 +68,11 @@ export function SiteActions({
               Open on GitHub
             </a>
             <PopoverSeparator />
-            <ChecksMenuItem paused={paused} onRequest={checks.request} />
+            <ChecksMenuItem
+              paused={paused}
+              locked={checks.locked}
+              onRequest={checks.request}
+            />
             {checks.problem ? (
               <p role="alert" className="px-3 py-1 text-xs text-failed">
                 {checks.problem}

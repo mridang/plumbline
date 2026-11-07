@@ -363,6 +363,7 @@ describe('the comments the app makes', () => {
     ['removed', 'no longer has this check'],
     ['undeployed', 'site.test is no longer deployed from this repository'],
     ['disabled', 'Checks for this repository were turned off in Plumbline'],
+    ['config', 'turned off in `plumbline.yaml` (`enabled: false`)'],
   ] as const)('says why it closed an issue: %s', (reason, text) => {
     expect(closingComment(reason, where)).toContain(text);
   });

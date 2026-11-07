@@ -80,6 +80,10 @@ const KEY_DOCS: Readonly<Record<string, { title: string; text: string }>> = {
     title: 'Repository dispatch',
     text: 'Send a repository_dispatch event after each run (plumbline.checked, and plumbline.failed when there are errors), so a workflow can react.',
   },
+  enabled: {
+    title: 'Enabled',
+    text: 'Set to false to turn every check of this repository off: deployments and pushes are not checked, the schedule skips its sites, and its open Plumbline issues are closed with a note. Read from the default branch; set it back to true (or remove it) and checks resume with the next deployment or push of this file. Default: true.',
+  },
   environments: {
     title: 'Environments',
     text: 'Changes for one kind of deployment, applied after everything above: production is the live site, preview is a preview of a branch or pull request.',
@@ -106,6 +110,7 @@ export const EXAMPLES: readonly JsonSchema[] = [
     extends: 'plumbline:recommended',
     rules: { 'seo-viewport': 'error', 'technical-lazy-loading': 'off' },
   },
+  { enabled: false },
   {
     extends: ['plumbline:advanced'],
     issues: 'warning',

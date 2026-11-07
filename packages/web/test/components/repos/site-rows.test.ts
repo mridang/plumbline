@@ -50,6 +50,28 @@ const REPOS: RepoStatus[] = [
   { repo: null, open_issues: 0, sites: [site('hand.test', 'unchecked')] },
 ];
 
+describe('rowsOf, who may flip the switch', () => {
+  it('carries what the viewer may do with each repository: installed, and turned off by its file', () => {
+    const rows = rowsOf(
+      REPOS,
+      new Set(),
+      new Set(['acme/a']),
+      new Set(['acme/b']),
+    );
+    const control = (repo: string | null) =>
+      rows.find((row) => row.repo === repo)?.control;
+    expect(control('acme/a')).toEqual({ canManage: true, fileOff: false });
+    expect(control('acme/b')).toEqual({ canManage: false, fileOff: true });
+    expect(control(null)).toEqual({ canManage: false, fileOff: false });
+  });
+
+  it('lets nobody flip a switch when it is not told who installed', () => {
+    expect(rowsOf(REPOS, new Set()).every((r) => !r.control.canManage)).toBe(
+      true,
+    );
+  });
+});
+
 describe('rowsOf', () => {
   it('makes one row for each site, with its repository and issues', () => {
     const rows = rowsOf(REPOS, new Set());

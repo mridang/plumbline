@@ -146,6 +146,33 @@ describe('a configuration file', () => {
     expect(resolve('issues: off\n').issues).toBe('off');
   });
 
+  it('has checks on unless the file says enabled: false', () => {
+    expect(resolve('').enabled).toBe(true);
+    expect(resolve(null).enabled).toBe(true);
+    expect(resolve('extends: plumbline:advanced\n').enabled).toBe(true);
+    expect(resolve('enabled: true\n').enabled).toBe(true);
+    expect(resolve('enabled: false\n').enabled).toBe(false);
+    expect(resolve('{"enabled": false}').enabled).toBe(false);
+  });
+
+  it('ignores a file whose enabled is not a boolean, and says so', () => {
+    const rules = resolve('enabled: "no"\n');
+    expect(rules.enabled).toBe(true);
+    expect(rules.problems.join(' ')).toContain('enabled');
+  });
+
+  it('knows enabled at the top, but not inside an environment', () => {
+    expect(resolve('enabled: false\n').problems).toEqual([]);
+    expect(
+      resolve('environments:\n  preview:\n    enabled: false\n').problems,
+    ).toEqual([
+      'Unknown key "enabled" in the preview environment of plumbline.yaml.',
+    ]);
+    expect(resolve('enable: false\n').problems).toEqual([
+      'Unknown key "enable" in plumbline.yaml.',
+    ]);
+  });
+
   it('sends no repository_dispatch event unless the file asks for it', () => {
     expect(resolve('').dispatch).toBe(false);
     expect(resolve('dispatch: true\n').dispatch).toBe(true);

@@ -8,6 +8,7 @@ const out = htmlAt(
     repo="acme/site"
     state="failing"
     paused={false}
+    control={{ canManage: true, fileOff: false }}
     siteCount={2}
     badgeImage="/badge/acme/site/abc.svg"
     badgeMarkdown="[![Plumbline](x)](y)"
@@ -37,6 +38,7 @@ describe('RepoHeader', () => {
         repo="acme/site"
         state="failing"
         paused
+        control={{ canManage: true, fileOff: false }}
         siteCount={2}
         badgeImage="/badge/acme/site/abc.svg"
         badgeMarkdown="[![Plumbline](x)](y)"
@@ -45,6 +47,40 @@ describe('RepoHeader', () => {
     expect(paused).toContain('>Paused<');
     expect(paused).not.toContain('Failing');
     expect(paused).toContain('aria-checked="false"');
+  });
+
+  it('says the file turned checks off, and shows the switch read-only with the reason', () => {
+    const file = htmlAt(
+      <RepoHeader
+        repo="acme/site"
+        state="failing"
+        paused
+        control={{ canManage: true, fileOff: true }}
+        siteCount={2}
+        badgeImage="/badge/acme/site/abc.svg"
+        badgeMarkdown="[![Plumbline](x)](y)"
+      />,
+    );
+    expect(file).toContain('Turned off in plumbline.yaml');
+    expect(file).toMatch(/<button[^>]*role="switch"[^>]*\sdisabled[\s=>]/);
+    expect(file).toContain('Set enabled: true in plumbline.yaml');
+  });
+
+  it('shows the switch disabled, with the reason, to someone who did not install the app', () => {
+    const other = htmlAt(
+      <RepoHeader
+        repo="acme/site"
+        state="failing"
+        paused={false}
+        control={{ canManage: false, fileOff: false }}
+        siteCount={2}
+        badgeImage="/badge/acme/site/abc.svg"
+        badgeMarkdown="[![Plumbline](x)](y)"
+      />,
+    );
+    expect(other).toMatch(/<button[^>]*role="switch"[^>]*\sdisabled[\s=>]/);
+    expect(other).toContain('Only the person who installed the app');
+    expect(other).not.toContain('Turned off in plumbline.yaml');
   });
 
   it('has the Badge button and a View on GitHub link that opens a new tab', () => {

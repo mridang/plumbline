@@ -50,6 +50,8 @@ const READ_AGAIN_MS = 250;
 export function LiveOverview({
   initial,
   paused,
+  manageable,
+  fileOff,
   view,
   filter: initialFilter,
   now,
@@ -63,6 +65,10 @@ export function LiveOverview({
   now: number;
   /** The repositories whose checks are turned off. */
   paused: readonly string[];
+  /** The repositories the viewer installed the app for. */
+  manageable: readonly string[];
+  /** The repositories whose `plumbline.yaml` turns checks off. */
+  fileOff: readonly string[];
 }>): ReactElement {
   const router = useRouter();
   const [repos, setRepos] = useState<readonly RepoStatus[]>(initial);
@@ -121,7 +127,12 @@ export function LiveOverview({
   }, [router]);
 
   const pausedSet = new Set(paused);
-  const searched = filterRows(rowsOf(repos, pausedSet), query);
+  const manageableSet = new Set(manageable);
+  const fileOffSet = new Set(fileOff);
+  const searched = filterRows(
+    rowsOf(repos, pausedSet, manageableSet, fileOffSet),
+    query,
+  );
   // Counts are taken over the same rows the filter works on, so a chip's
   // number is the number of rows it shows.
   const counts = countsOf(searched);
@@ -184,7 +195,13 @@ export function LiveOverview({
             : `Nothing here has “${query.trim()}” in its repository or address.`}
         </EmptyState>
       ) : view === 'cards' ? (
-        <SiteCards repos={groupRows(rows)} paused={pausedSet} now={now} />
+        <SiteCards
+          repos={groupRows(rows)}
+          paused={pausedSet}
+          manageable={manageableSet}
+          fileOff={fileOffSet}
+          now={now}
+        />
       ) : (
         <SitesTable
           rows={rows}

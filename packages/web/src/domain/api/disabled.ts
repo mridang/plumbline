@@ -12,8 +12,9 @@ import {
   type CurrentUserResolver,
 } from '@/domain/api/auth';
 import { repoOf } from '@/domain/api/repo-name';
-import { getDatabase } from '@/domain/db/client';
-import { canSeeRepo, enableRepo } from '@/domain/db/disabled';
+import { getDatabase, type Database } from '@/domain/db/client';
+import { NOT_INSTALLER } from '@/components/repos/checks-messages';
+import { canManageRepo, canSeeRepo, enableRepo } from '@/domain/db/disabled';
 import { pauseRepo, type PauseDeps } from '@/domain/suite/disable';
 
 /** The person and the repository to act on. */
@@ -24,13 +25,33 @@ interface RepoContext {
 }
 
 /**
+ * The repository the person may flip the switch of. 404 for a name that is not
+ * a repository or one they cannot see (so its existence is not revealed), 403
+ * for one they see but did not install the app for.
+ */
+async function mayManage(
+  db: Database,
+  uid: number,
+  repo: string | null,
+): Promise<string> {
+  if (repo === null || !(await canSeeRepo(db, uid, repo))) {
+    throw problems.notFound('repository');
+  }
+  if (!(await canManageRepo(db, uid, repo))) {
+    throw problems.forbidden(NOT_INSTALLER);
+  }
+  return repo;
+}
+
+/**
  * `PUT /api/users/self/repositories/disabled/{owner}/{repo}` turns the
  * repository's checks off (204, also when they already are): its deployment
  * and push webhooks are discarded, the schedule skips it and its open issues
  * are closed with an explanation. `DELETE` turns them on again (204; 404 when
  * they were not off): checks resume with the next deployment or schedule. 404
  * for a name that is not a repository or one the person cannot see, 401
- * without a session, 403 cross-site.
+ * without a session, 403 cross-site and 403 for a repository the person can see
+ * but did not install the app for: only the installer flips the switch.
  */
 export function createDisabledRepository(
   resolver: CurrentUserResolver = requestCookieResolver,
@@ -49,10 +70,7 @@ export function createDisabledRepository(
       method: 'PUT',
       handle: async (_input, { uid, repo }) => {
         const db = getDatabase();
-        if (repo === null || !(await canSeeRepo(db, uid, repo))) {
-          throw problems.notFound('repository');
-        }
-        await pauseRepo(db, uid, repo, deps);
+        await pauseRepo(db, uid, await mayManage(db, uid, repo), deps);
       },
       encode: () => noContent(),
     })
@@ -60,11 +78,7 @@ export function createDisabledRepository(
       method: 'DELETE',
       handle: async (_input, { uid, repo }) => {
         const db = getDatabase();
-        if (
-          repo === null ||
-          !(await canSeeRepo(db, uid, repo)) ||
-          !(await enableRepo(db, repo))
-        ) {
+        if (!(await enableRepo(db, await mayManage(db, uid, repo)))) {
           throw problems.notFound('repository');
         }
       },

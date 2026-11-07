@@ -264,6 +264,7 @@ export function SitesTable({
                       repo={row.repo}
                       site={row.site}
                       paused={row.paused}
+                      control={row.control}
                     />
                   </Cell>
                 </tr>
@@ -284,6 +285,7 @@ export function SitesTable({
                 repo={row.repo}
                 site={row.site}
                 paused={row.paused}
+                control={row.control}
               />
             </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted">

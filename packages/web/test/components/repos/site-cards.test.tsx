@@ -37,10 +37,15 @@ const REPO: RepoStatus = {
   ],
 };
 
+const INSTALLER = { canManage: true, fileOff: false } as const;
+
 describe('SiteCard', () => {
-  const out = htmlAt(<SiteCard repo={REPO} paused={false} now={NOW} />, {
-    pathname: '/dashboard',
-  });
+  const out = htmlAt(
+    <SiteCard repo={REPO} paused={false} control={INSTALLER} now={NOW} />,
+    {
+      pathname: '/dashboard',
+    },
+  );
 
   it('titles the card with the Octocat and the repository, linked to its page', () => {
     expect(out).toContain('viewBox="0 0 16 16"');
@@ -72,7 +77,9 @@ describe('SiteCard', () => {
   });
 
   it('dims a repository whose checks are paused and says so', () => {
-    const paused = htmlAt(<SiteCard repo={REPO} paused now={NOW} />);
+    const paused = htmlAt(
+      <SiteCard repo={REPO} paused control={INSTALLER} now={NOW} />,
+    );
     expect(paused).toContain('opacity-60');
     expect(paused).toContain('>Paused<');
   });
@@ -86,7 +93,13 @@ describe('SiteCard', () => {
 describe('SiteCards', () => {
   it('lays the cards out in a grid that fills the width', () => {
     const out = htmlAt(
-      <SiteCards repos={[REPO]} paused={new Set(['acme/site'])} now={NOW} />,
+      <SiteCards
+        repos={[REPO]}
+        paused={new Set(['acme/site'])}
+        manageable={new Set(['acme/site'])}
+        fileOff={new Set()}
+        now={NOW}
+      />,
     );
     expect(out).toContain('grid-cols-[repeat(auto-fill');
     expect(out).toContain('opacity-60');

@@ -2,6 +2,8 @@ import type { ReactElement } from 'react';
 
 import { GithubIcon } from '@/components/icons';
 import { BadgeMenu } from '@/components/repos/badge-menu';
+import type { ChecksControl } from '@/components/repos/checks-control';
+import { TURNED_OFF_IN_FILE } from '@/components/repos/checks-messages';
 import { ChecksSwitch } from '@/components/repos/checks-switch';
 import { RepoLabel } from '@/components/repos/repo-label';
 import { Badge } from '@/components/ui-app/badge';
@@ -21,6 +23,7 @@ export function RepoHeader({
   repo,
   state,
   paused,
+  control,
   siteCount,
   badgeImage,
   badgeMarkdown,
@@ -30,6 +33,8 @@ export function RepoHeader({
   state: SiteState;
   /** Whether checks are turned off for the repository. */
   paused: boolean;
+  /** What the viewer may do with the repository's checks switch. */
+  control: Readonly<ChecksControl>;
   siteCount: number;
   badgeImage: string;
   badgeMarkdown: string;
@@ -40,7 +45,10 @@ export function RepoHeader({
       description={
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
           {paused ? (
-            <Badge>Paused</Badge>
+            <>
+              <Badge>Paused</Badge>
+              {control.fileOff ? <span>{TURNED_OFF_IN_FILE}</span> : null}
+            </>
           ) : (
             <StatusBadge state={state} size="md" />
           )}
@@ -49,7 +57,7 @@ export function RepoHeader({
       }
       actions={
         <>
-          <ChecksSwitch repo={repo} paused={paused} />
+          <ChecksSwitch repo={repo} paused={paused} control={control} />
           <BadgeMenu repo={repo} image={badgeImage} markdown={badgeMarkdown} />
           <LinkButton
             href={`https://github.com/${repo}`}

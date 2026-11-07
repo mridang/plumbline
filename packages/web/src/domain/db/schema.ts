@@ -246,6 +246,7 @@ export const githubRepos = sqliteTable(
   (table) => [
     primaryKey({ columns: [table.installation_id, table.full_name] }),
     index('idx_github_repos_user').on(table.user_id, table.full_name),
+    index('idx_github_repos_name').on(table.full_name),
   ],
 );
 
@@ -339,6 +340,15 @@ export const userRepositories = sqliteTable(
 export const disabledRepos = sqliteTable('disabled_repos', {
   repo: text('repo').primaryKey(),
   user_id: integer('user_id').notNull(),
+  disabled_at: text('disabled_at').notNull(),
+});
+
+/**
+ * Repositories whose own `plumbline.yaml` says `enabled: false`, and when that
+ * was seen. Treated like `disabled_repos`; the file is its source of truth.
+ */
+export const configDisabledRepos = sqliteTable('config_disabled_repos', {
+  repo: text('repo').primaryKey(),
   disabled_at: text('disabled_at').notNull(),
 });
 

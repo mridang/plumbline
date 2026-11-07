@@ -23,6 +23,7 @@ import {
   recordIssue,
 } from '@/domain/db/issue-history';
 import {
+  configDisabledRepos,
   disabledRepos,
   domains,
   suiteCheckIssues,
@@ -240,6 +241,12 @@ export async function dueSites(
         notInArray(
           domains.repo,
           db.select({ repo: disabledRepos.repo }).from(disabledRepos),
+        ),
+        notInArray(
+          domains.repo,
+          db
+            .select({ repo: configDisabledRepos.repo })
+            .from(configDisabledRepos),
         ),
       ),
     )

@@ -11,7 +11,13 @@
  * GitHub is logged and the run goes on with the default rules.
  */
 
-import { isRepoDisabled } from '@/domain/db/disabled';
+import {
+  disableRepoByFile,
+  enableRepoByFile,
+  isRepoFileDisabled,
+  isRepoSwitchedOff,
+  stopChecking,
+} from '@/domain/db/disabled';
 import { parseHost } from '@/domain/api/domain-resource';
 import type { Database } from '@/domain/db/client';
 import { listDomainsOfRepo } from '@/domain/db/domains';
@@ -99,9 +105,9 @@ export async function loadConfig(
 async function rulesFor(
   api: GitHubApi | null,
   deployed: Readonly<Deployment>,
-): Promise<ResolvedRules> {
+): Promise<ResolvedRules & { readonly read: boolean }> {
   if (!api || !deployed.sha) {
-    return resolveRules(null, deployed.environment);
+    return { ...resolveRules(null, deployed.environment), read: false };
   }
   const { loaded, unreadable } = await loadConfig(
     api,
@@ -109,9 +115,59 @@ async function rulesFor(
     deployed.sha,
   );
   const rules = resolveRules(loaded, deployed.environment);
+  // `read` is false when the file could not be read, so what it says is not known.
   return unreadable
-    ? { ...rules, problems: [...rules.problems, unreadable] }
-    : rules;
+    ? { ...rules, problems: [...rules.problems, unreadable], read: false }
+    : { ...rules, read: true };
+}
+
+/**
+ * Applies the `enabled` flag of the repository's file to a live deployment or a
+ * push of the file. Returns true when checks are off and the run must stop.
+ * `enabled: false` is remembered (the repository's issues are closed once, with
+ * a note); a file that no longer says it forgets it, and the run goes on. When
+ * the file could not be read nothing changes: an unreadable file must not
+ * resume checks the file turned off.
+ */
+async function applyEnabledFlag(
+  db: Database,
+  api: GitHubApi | null,
+  deployed: Readonly<Deployment>,
+  rules: ResolvedRules & { readonly read: boolean },
+  fileOff: boolean,
+  deps: RunDeps,
+): Promise<boolean> {
+  if (!rules.read) {
+    return fileOff;
+  }
+  if (!rules.enabled) {
+    const added = await disableRepoByFile(db, deployed.repo);
+    if (added) {
+      await stopChecking(db, deployed.repo);
+      if (api) {
+        try {
+          await closeUndeployed(api, db, {
+            repo: deployed.repo,
+            hosts: new Set(),
+            sha: deployed.sha,
+            source: rules.source,
+            pause: deps.pause ?? pauseBetweenWrites,
+            reason: 'config',
+          });
+        } catch (error) {
+          console.error(
+            'closing issues of a disabled repository failed',
+            error,
+          );
+        }
+      }
+    }
+    return true;
+  }
+  if (fileOff) {
+    await enableRepoByFile(db, deployed.repo);
+  }
+  return false;
 }
 
 /**
@@ -303,7 +359,13 @@ export async function handleDeployment(
     return;
   }
   // Checks were turned off after this job was queued.
-  if (await isRepoDisabled(db, deployed.repo)) {
+  if (await isRepoSwitchedOff(db, deployed.repo)) {
+    return;
+  }
+  // A repository whose file turns checks off is read only to see whether the
+  // flag changed, which is what a push of the file (`force`) is for.
+  const fileOff = await isRepoFileDisabled(db, deployed.repo);
+  if (fileOff && !deps.force) {
     return;
   }
   const fetcher = deps.fetcher ?? fetch;
@@ -318,7 +380,13 @@ export async function handleDeployment(
   }
   const rules = await rulesFor(api, deployed);
   if (deployed.environment === 'production') {
+    if (await applyEnabledFlag(db, api, deployed, rules, fileOff, deps)) {
+      return;
+    }
     await checkLive(db, api, userId, deployed, rules, deps);
+  } else if (rules.read && !rules.enabled) {
+    // A branch whose file turns checks off is not checked; nothing is remembered.
+    return;
   } else {
     await checkPreview(db, api, deployed, rules, deps);
   }

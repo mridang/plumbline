@@ -24,6 +24,7 @@ describe('SiteActions', () => {
         repo="acme/site"
         site={{ id: 'a', host: 'x.test' }}
         paused={false}
+        control={{ canManage: true, fileOff: false }}
       />,
     );
     expect(out).toContain('aria-label="Actions for acme/site"');
@@ -38,6 +39,7 @@ describe('SiteActions', () => {
           repo={null}
           site={{ id: 'a', host: 'x.test' }}
           paused={false}
+          control={{ canManage: true, fileOff: false }}
         />,
       ),
     ).toContain('aria-label="Actions for x.test"');
