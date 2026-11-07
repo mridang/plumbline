@@ -122,7 +122,7 @@ export default function DocsPage(): ReactElement {
           description="Connect an assistant to your sites and their reports."
           actions={
             <LinkButton href="/connect" variant="outline" size="sm">
-              Connect an assistant
+              Connect an assistant (MCP)
             </LinkButton>
           }
         >

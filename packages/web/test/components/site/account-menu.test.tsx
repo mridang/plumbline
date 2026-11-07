@@ -19,9 +19,26 @@ describe('AccountMenuItems', () => {
   it('holds the GitHub connection, connecting an assistant, notifications and sign out', () => {
     expect(out).toContain('href="/github"');
     expect(out).toContain('href="/connect"');
-    expect(out).toContain('Connect MCP');
-    expect(out).toContain('Notifications');
+    expect(out).toContain('Connect an assistant (MCP)');
+    expect(out).toContain('Manage notifications');
     expect(out).toContain('Sign out');
+  });
+});
+
+describe('AccountMenuItems when connected', () => {
+  it('offers to manage what is connected, with the status in words', () => {
+    const out = html(
+      <AccountMenuItems
+        email="ada@example.com"
+        state={{ github: true, assistants: true }}
+        onNotifications={() => undefined}
+        onSignOut={() => undefined}
+      />,
+    );
+    expect(out).toContain('Manage GitHub');
+    expect(out).toContain('Manage assistants (MCP)');
+    expect(out).toContain('Connected');
+    expect(out).not.toContain('Connect GitHub');
   });
 });
 

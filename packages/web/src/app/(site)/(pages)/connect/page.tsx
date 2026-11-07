@@ -12,11 +12,13 @@ import { Container, Heading } from '@/components/ui/layout';
 import { NumberBadge } from '@/components/ui/number-badge';
 import { PageHeader } from '@/components/ui/page-header';
 
+import { connectionState } from '@/domain/db/account-state';
+import { getDatabase } from '@/domain/db/client';
 import { ConnectedApps } from '@/app/(site)/(pages)/connect/_components/connected-apps';
 
-/** The tab title and description of the Check with AI page. */
+/** The tab title and description of the assistants (MCP) page. */
 export const metadata: Metadata = {
-  title: 'Check with AI',
+  title: 'Assistants (MCP)',
   description:
     'Connect ChatGPT, Claude or any assistant that supports MCP to your sites and their reports.',
 };
@@ -77,13 +79,16 @@ export default async function ConnectPage(): Promise<ReactElement> {
     redirect(`/auth/login?returnTo=${encodeURIComponent('/connect')}`);
   }
   const origin = appOriginFromHeaders(await headers());
+  const { assistants } = await connectionState(getDatabase(), user.id);
 
   return (
     <>
       <PageHeader
         roomy
         eyebrow="Assistants"
-        title="Check with AI"
+        title={
+          assistants ? 'Manage assistants (MCP)' : 'Connect an assistant (MCP)'
+        }
         intro="Plumbline speaks MCP, the open standard assistants use to reach your tools. Add this address once and ask about your sites, their checks and their reports in plain words."
       >
         <div className="mt-8 max-w-2xl">

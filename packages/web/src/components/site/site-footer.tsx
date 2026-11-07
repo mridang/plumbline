@@ -23,7 +23,7 @@ export const FOOTER_COLUMNS: readonly Readonly<{
       { label: 'Checks', href: '/checks' },
       { label: 'Docs', href: '/docs' },
       { label: 'Dashboard', href: '/dashboard' },
-      { label: 'Connect an assistant', href: '/connect' },
+      { label: 'Connect an assistant (MCP)', href: '/connect' },
     ],
   },
   {

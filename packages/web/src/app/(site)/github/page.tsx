@@ -26,7 +26,7 @@ import { DisconnectButton } from './_components/github-actions';
 export const dynamic = 'force-dynamic';
 
 /** The tab title of the GitHub page. */
-export const metadata: Metadata = { title: 'GitHub' };
+export const metadata: Metadata = { title: 'Manage GitHub' };
 
 /** What each flag the callback can leave in the address says. */
 const ERRORS: Readonly<Record<string, string>> = {
@@ -72,7 +72,7 @@ export default async function GitHubPage({
     <>
       <PageHeading
         eyebrow="GitHub"
-        title="Your repositories"
+        title={link ? 'Manage GitHub' : 'Connect GitHub'}
         description="Install the GitHub app and Plumbline finds the repositories that are deployed web applications, puts the sites they serve on your dashboard, and keeps them up to date as the repositories change."
       />
       <Container className="space-y-8 py-6 sm:py-8">
@@ -130,7 +130,7 @@ export default async function GitHubPage({
         ) : (
           <Section
             id="account"
-            title="Connect GitHub"
+            title="Connect your account"
             description={`Connecting proves the GitHub account is yours and ties it to ${user.email}. Plumbline asks only to read repository contents and metadata, and keeps no GitHub sign-in token.`}
           >
             <div className="flex flex-wrap gap-3">

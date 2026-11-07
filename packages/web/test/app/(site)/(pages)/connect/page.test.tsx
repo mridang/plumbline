@@ -25,6 +25,13 @@ jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
 }));
 
+jest.unstable_mockModule('@/domain/db/client', () => ({
+  getDatabase: () => ({}),
+}));
+jest.unstable_mockModule('@/domain/db/account-state', () => ({
+  connectionState: async () => ({ github: false, assistants: false }),
+}));
+
 const { default: ConnectPage, metadata } =
   await import('@/app/(site)/(pages)/connect/page');
 
@@ -38,8 +45,8 @@ async function page(): Promise<string> {
 }
 
 describe('ConnectPage', () => {
-  it('is titled for checking with an assistant', () => {
-    expect(metadata.title).toBe('Check with AI');
+  it('is titled for assistants (MCP)', () => {
+    expect(metadata.title).toBe('Assistants (MCP)');
   });
 
   it('sends someone not signed in to sign in and back here', async () => {
