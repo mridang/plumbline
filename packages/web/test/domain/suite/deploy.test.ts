@@ -57,6 +57,7 @@ describe('classifyDeployment', () => {
   it('calls a successful deployment of the live site production', () => {
     expect(classifyDeployment(status('success', 'Production'))).toEqual({
       environment: 'production',
+      name: 'Production',
       repo: 'acme/site',
       sha: 'abc',
       url: null,
@@ -109,11 +110,6 @@ describe('classifyDeployment', () => {
     ).toBe('https://pr-3.site.test/');
     expect(
       classifyDeployment(
-        status('success', 'Preview', { target_url: 'https://t.site.test/' }),
-      )?.url,
-    ).toBe('https://t.site.test/');
-    expect(
-      classifyDeployment(
         status('success', 'Preview', { environment_url: 'http://plain.test/' }),
       )?.url,
     ).toBeNull();
@@ -123,6 +119,51 @@ describe('classifyDeployment', () => {
       )?.url,
     ).toBeNull();
   });
+
+  it('never takes the target_url for the address: it is where the log is, not the site', () => {
+    expect(
+      classifyDeployment(
+        status('success', 'Production', {
+          target_url: 'https://t.site.test/',
+        }),
+      )?.url,
+    ).toBeNull();
+    expect(
+      classifyDeployment(
+        status('success', 'Production', {
+          environment_url: '',
+          target_url: 'https://github.com/acme/site/actions/runs/1/job/2',
+        }),
+      )?.url,
+    ).toBeNull();
+  });
+
+  it('does not take an address on GitHub or a registry for the site', () => {
+    expect(
+      classifyDeployment(
+        status('success', 'Production', {
+          environment_url: 'https://github.com/acme/site/actions/runs/1',
+        }),
+      )?.url,
+    ).toBeNull();
+    expect(
+      classifyDeployment(
+        status('success', 'Production', {
+          environment_url: 'https://www.npmjs.com/package/x',
+        }),
+      )?.url,
+    ).toBeNull();
+  });
+
+  it.each(['production', 'prd_foo', 'micro_svc'])(
+    'keeps the name of the environment, %s, whatever it is called',
+    (environment) => {
+      expect(classifyDeployment(status('success', environment))).toMatchObject({
+        environment: 'production',
+        name: environment,
+      });
+    },
+  );
 
   it('ignores a delivery with no repository', () => {
     expect(

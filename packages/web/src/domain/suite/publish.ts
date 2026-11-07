@@ -35,7 +35,7 @@ import {
   checkIssueText,
   checkRunOutput,
   closingComment,
-  conclusionOf,
+  conclusionOfReport,
   deferredComment,
   leftClosedComment,
   reopenedComment,
@@ -633,7 +633,7 @@ export async function publishCheckRun(
   await api.createCheckRun(report.repo, {
     name: CHECK_NAME,
     head_sha: report.sha,
-    conclusion: conclusionOf(report.findings),
+    conclusion: conclusionOfReport(report),
     // "Details" opens the report, which needs no sign-in; the preview itself
     // is linked in the report.
     details_url: report.reportUrl ?? report.url,

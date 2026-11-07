@@ -165,6 +165,8 @@ export async function POST(request: Request): Promise<NextResponse> {
           userId: owner,
           deployed: {
             environment: 'production',
+            // A push of the file is no deployment, so it has no environment.
+            name: '',
             repo,
             sha: delivery.after ?? null,
             url: null,

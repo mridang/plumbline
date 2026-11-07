@@ -65,6 +65,8 @@ describe('analyseRepo', () => {
       full_name: 'o/site',
       default_branch: 'main',
       hosts: ['site.example.com'],
+      fallback: ['site.example.com'],
+      declared: [],
     });
   });
 
@@ -243,5 +245,154 @@ describe('syncInstallation', () => {
     );
     await syncInstallation(db, 7, 99, githubWith({ 'o/a': { files: {} } }));
     expect((await listRepos(db, 7)).map((r) => r.full_name)).toEqual(['o/a']);
+  });
+});
+
+describe('syncInstallation, where the sites come from', () => {
+  const route = (host: string) => ({
+    'wrangler.jsonc': `{"route": "${host}/*"}`,
+  });
+  const hostsOf = async (db: ReturnType<typeof sqliteDatabase>['db']) =>
+    (await listDomains(db, 7)).map((d) => [d.host, d.source]).toSorted();
+
+  it('takes the sites a plumbline.yaml declares, and not the routes or the Website field', async () => {
+    const { db } = sqliteDatabase(...APP_MIGRATIONS);
+    await syncInstallation(
+      db,
+      7,
+      99,
+      githubWith({
+        'o/site': {
+          files: {
+            ...route('route.example.com'),
+            'plumbline.yaml': 'sites:\n  - https://api.example.com\n',
+          },
+          homepage: 'https://www.example.com',
+        },
+      }),
+    );
+    expect(await hostsOf(db)).toEqual([['api.example.com', 'config']]);
+  });
+
+  it('does not consult the Website field once a Wrangler route is found: a stale field cannot add a dead site', async () => {
+    const { db } = sqliteDatabase(...APP_MIGRATIONS);
+    await syncInstallation(
+      db,
+      7,
+      99,
+      githubWith({
+        'o/marshall': {
+          files: route('marshall.apps.mrida.ng'),
+          homepage: 'https://marshall.agarwal.la/',
+        },
+      }),
+    );
+    expect(await hostsOf(db)).toEqual([['marshall.apps.mrida.ng', 'fallback']]);
+  });
+
+  it('drops a dead site a Website field once added, as soon as a better source names one', async () => {
+    const { db } = sqliteDatabase(...APP_MIGRATIONS);
+    await addDomain(db, 7, 'marshall.agarwal.la', 'o/marshall', {
+      source: 'fallback',
+    });
+    await syncInstallation(
+      db,
+      7,
+      99,
+      githubWith({
+        'o/marshall': {
+          files: route('marshall.apps.mrida.ng'),
+          homepage: 'https://marshall.agarwal.la/',
+        },
+      }),
+    );
+    expect(await hostsOf(db)).toEqual([['marshall.apps.mrida.ng', 'fallback']]);
+  });
+
+  it('drops a declared site when the file stops declaring it', async () => {
+    const { db } = sqliteDatabase(...APP_MIGRATIONS);
+    await syncInstallation(
+      db,
+      7,
+      99,
+      githubWith({
+        'o/site': {
+          files: { 'plumbline.yaml': 'sites: [a.example.com, b.example.com]' },
+        },
+      }),
+    );
+    await syncInstallation(
+      db,
+      7,
+      99,
+      githubWith({
+        'o/site': { files: { 'plumbline.yaml': 'sites: [a.example.com]' } },
+      }),
+    );
+    expect(await hostsOf(db)).toEqual([['a.example.com', 'config']]);
+  });
+
+  it('keeps the site a deployment named, and drops the fallback the routes suggest', async () => {
+    const { db } = sqliteDatabase(...APP_MIGRATIONS);
+    await addDomain(db, 7, 'live.example.com', 'o/site', {
+      source: 'deployment',
+      environment: 'production',
+    });
+    await addDomain(db, 7, 'route.example.com', 'o/site', {
+      source: 'fallback',
+    });
+    await syncInstallation(
+      db,
+      7,
+      99,
+      githubWith({ 'o/site': { files: route('route.example.com') } }),
+    );
+    expect(await hostsOf(db)).toEqual([['live.example.com', 'deployment']]);
+    expect((await listRepos(db, 7))[0]?.hosts).toEqual(['live.example.com']);
+  });
+
+  it('keeps the sites of a repository that could not be read this time, so a GitHub hiccup drops nothing', async () => {
+    const { db } = sqliteDatabase(...APP_MIGRATIONS);
+    await addDomain(db, 7, 'site.example.com', 'o/site', {
+      source: 'fallback',
+    });
+    await syncInstallation(
+      db,
+      7,
+      99,
+      githubWith({ 'o/site': { files: {}, broken: true } }),
+    );
+    expect(await hostsOf(db)).toEqual([['site.example.com', 'fallback']]);
+  });
+
+  it("does not take the sites of a fork's file, which is the upstream project's", async () => {
+    const { db } = sqliteDatabase(...APP_MIGRATIONS);
+    await syncInstallation(
+      db,
+      7,
+      99,
+      githubWith({
+        'o/fork': {
+          files: { 'plumbline.yaml': 'sites: [upstream.example.com]' },
+          fork: true,
+        },
+      }),
+    );
+    expect(await hostsOf(db)).toEqual([]);
+  });
+
+  it('never drops a site the person added, whatever the repository says', async () => {
+    const { db } = sqliteDatabase(...APP_MIGRATIONS);
+    await addDomain(db, 7, 'hand.example.com', 'o/site');
+    await syncInstallation(
+      db,
+      7,
+      99,
+      githubWith({ 'o/site': { files: route('route.example.com') } }),
+    );
+    expect(await hostsOf(db)).toEqual([
+      ['hand.example.com', 'manual'],
+      ['route.example.com', 'fallback'],
+    ]);
   });
 });

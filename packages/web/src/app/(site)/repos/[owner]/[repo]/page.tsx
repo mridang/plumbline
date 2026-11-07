@@ -8,6 +8,7 @@ import { siteHref } from '@/components/repos/site-href';
 import { SiteView } from '@/components/repos/site-view';
 import { STATES, StatusBadge, worstState } from '@/components/repos/site-state';
 import { RUNS_SHOWN } from '@/components/runs/run-history';
+import { Callout } from '@/components/ui/callout';
 import { Container } from '@/components/ui/layout';
 import { Section } from '@/components/ui-app/section';
 import { TabList, TabPanel } from '@/components/ui-app/tabs';
@@ -15,6 +16,7 @@ import { Dot } from '@/components/ui-app/status-dot';
 import { repoOf } from '@/domain/api/repo-name';
 import { isRunId } from '@/domain/api/runs';
 import { badgePath } from '@/domain/badge/sign';
+import { listGaps } from '@/domain/db/deploy-gaps';
 import { getDatabase } from '@/domain/db/client';
 import {
   canManageRepo,
@@ -70,11 +72,12 @@ export default async function RepoPage({
   const db = getDatabase();
   // Only this repository's sites are read, and the pause flags and the
   // viewer's permission are asked for in the same round trip.
-  const [overview, paused, fileOff, canManage] = await Promise.all([
+  const [overview, paused, fileOff, canManage, gaps] = await Promise.all([
     overviewOf(db, user.id, serverNow(), repo),
     isRepoDisabled(db, repo),
     isRepoFileDisabled(db, repo),
     canManageRepo(db, user.id, repo),
+    listGaps(db, repo),
   ]);
   const entry = overview.find((r) => r.repo === repo);
   if (!entry) {
@@ -137,6 +140,21 @@ export default async function RepoPage({
         badgeMarkdown={badgeMarkdown}
       />
       <Container className="space-y-6 py-6">
+        {gaps.length > 0 ? (
+          <Callout tone="highlight" shape="banner">
+            <p className="font-medium">
+              {gaps.length === 1
+                ? `The ${gaps[0]} deployment of this repository reports no address.`
+                : `The ${gaps.join(', ')} deployments of this repository report no address.`}
+            </p>
+            <p className="mt-1 text-sm">
+              Plumbline cannot tell which site a deployment made without one.
+              Set <code>url:</code> under <code>environment:</code> in the
+              workflow that deploys it, or list the site under{' '}
+              <code>sites:</code> in <code>plumbline.yaml</code>.
+            </p>
+          </Callout>
+        ) : null}
         {domain && current && loaded ? (
           <>
             {mine.length > 1 ? (

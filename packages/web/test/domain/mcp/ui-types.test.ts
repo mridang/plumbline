@@ -14,6 +14,8 @@ const DOMAIN: Domain = {
   host: 'example.com',
   checks: null,
   repo: null,
+  source: 'manual',
+  environment: null,
   created_at: '2026-09-01T00:00:00.000Z',
   updated_at: '2026-09-01T00:00:00.000Z',
 };

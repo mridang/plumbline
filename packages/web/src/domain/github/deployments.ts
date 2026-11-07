@@ -205,9 +205,12 @@ export interface RepoFiles {
 }
 
 /**
- * The hosts a repository is deployed on: those of its Wrangler configurations
- * and its website field. Empty when it is not a deployed web application. A
- * file that cannot be read is skipped.
+ * The hosts a repository suggests it is deployed on: those of its Wrangler
+ * configurations, or, when it has none, its website field. The website field
+ * is a last resort because it goes stale (a project moves and the field still
+ * names the old address), while a route is what the repository really deploys
+ * to. Empty when it is not a deployed web application. A file that cannot be
+ * read is skipped.
  */
 export async function deploymentHosts(repo: RepoFiles): Promise<string[]> {
   const files = repo.paths.filter(isWranglerPath).slice(0, MAX_WRANGLER_FILES);
@@ -220,7 +223,8 @@ export async function deploymentHosts(repo: RepoFiles): Promise<string[]> {
       }
     }),
   );
-  return unique([...found.flat(), homepageHost(repo.homepage)]);
+  const routed = unique(found.flat());
+  return routed.length > 0 ? routed : unique([homepageHost(repo.homepage)]);
 }
 
 /** The parts of a webhook delivery the app reads. */

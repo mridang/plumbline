@@ -126,6 +126,7 @@ const suiteJob: SuiteJob = {
   userId: 7,
   deployed: {
     environment: 'production',
+    name: 'production',
     repo: 'acme/site',
     sha: 'abc',
     url: null,
@@ -143,6 +144,7 @@ describe('keyOf', () => {
         deployed: {
           ...suiteJob.deployed,
           environment: 'preview',
+          name: 'preview',
           url: 'https://pr-1.site.test/',
         },
       }),

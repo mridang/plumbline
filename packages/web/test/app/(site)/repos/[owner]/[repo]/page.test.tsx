@@ -9,6 +9,7 @@ import {
 import type { ReactElement } from 'react';
 
 import { createDatabase, type Database } from '@/domain/db/client';
+import { clearGap, noteGap } from '@/domain/db/deploy-gaps';
 import { addDomain } from '@/domain/db/domains';
 import { replaceAccess } from '@/domain/db/access';
 import { APP_MIGRATIONS } from '../../../../../lib/core/db/migrations';
@@ -83,6 +84,33 @@ async function page(
     pathname: `/repos/${owner}/${repo}`,
   });
 }
+
+describe('RepoPage, a deployment with no address', () => {
+  it('says which environment reports none and how to fix it', async () => {
+    await noteGap(db, 'acme/site', 'prd_foo');
+    const html = await page();
+    expect(html).toContain(
+      'The prd_foo deployment of this repository reports no address.',
+    );
+    expect(html).toContain('url:');
+    expect(html).toContain('sites:');
+  });
+
+  it('names every environment when there are several', async () => {
+    await noteGap(db, 'acme/site', 'prd_foo');
+    await noteGap(db, 'acme/site', 'micro_svc');
+    expect(await page()).toContain(
+      'The micro_svc, prd_foo deployments of this repository report no address.',
+    );
+  });
+
+  it('says nothing once the environment reports an address, or for another repository', async () => {
+    await noteGap(db, 'acme/site', 'prd_foo');
+    await noteGap(db, 'acme/other', 'production');
+    await clearGap(db, 'acme/site', 'prd_foo');
+    expect(await page()).not.toContain('reports no address');
+  });
+});
 
 describe('RepoPage', () => {
   it('has a tab title', () => {

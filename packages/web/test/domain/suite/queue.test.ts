@@ -27,6 +27,7 @@ const deployment = (sha: string): ScanJob => ({
   userId: 7,
   deployed: {
     environment: 'production',
+    name: 'production',
     repo: 'acme/site',
     sha,
     url: null,

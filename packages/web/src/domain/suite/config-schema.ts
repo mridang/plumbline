@@ -84,6 +84,18 @@ const KEY_DOCS: Readonly<Record<string, { title: string; text: string }>> = {
     title: 'Enabled',
     text: 'Set to false to turn every check of this repository off: deployments and pushes are not checked, the schedule skips its sites, and its open Plumbline issues are closed with a note. Read from the default branch; set it back to true (or remove it) and checks resume with the next deployment or push of this file. Default: true.',
   },
+  sites: {
+    title: 'Sites',
+    text: 'Addresses to check as the sites of this repository, in addition to the ones its deployments report (the environment_url of a deployment). Use it when a deployment reports no address, or to name a site by hand. Each is an https address or a host name; an address on GitHub or a package registry is refused.',
+  },
+  deployments: {
+    title: 'Deployments',
+    text: 'How the successful deployments of this repository become sites.',
+  },
+  previews: {
+    title: 'Previews',
+    text: "Which live site a preview is compared with, so a pull request fails the check only for problems it adds. Each key is an environment name (a * matches any run of characters), each value the host of a site of this repository. Without a match, the repository's only site is used, then the site whose environment name is the preview's with words like preview, pr and staging taken away; with none, the preview is judged on its own.",
+  },
   environments: {
     title: 'Environments',
     text: 'Changes for one kind of deployment, applied after everything above: production is the live site, preview is a preview of a branch or pull request.',
@@ -111,6 +123,11 @@ export const EXAMPLES: readonly JsonSchema[] = [
     rules: { 'seo-viewport': 'error', 'technical-lazy-loading': 'off' },
   },
   { enabled: false },
+  {
+    sites: ['https://api.example.com', 'https://app.example.com'],
+    deployments: { environments: ['production', 'prd_*'] },
+    previews: { 'pr-*': 'app.example.com' },
+  },
   {
     extends: ['plumbline:advanced'],
     issues: 'warning',
@@ -210,11 +227,66 @@ function environmentsSchema(): JsonSchema {
   };
 }
 
+/** The schema of `sites`: https addresses or host names, each one a site. */
+function sitesSchema(): JsonSchema {
+  return {
+    title: KEY_DOCS['sites']?.title,
+    description: KEY_DOCS['sites']?.text,
+    type: 'array',
+    items: {
+      type: 'string',
+      title: 'A site',
+      description:
+        'An https address or a host name, such as https://api.example.com.',
+      pattern: '^(https://)?[^/\\s:@]+(/.*)?$',
+    },
+    uniqueItems: true,
+  };
+}
+
+/** The schema of `deployments`: which environments are sites. */
+function deploymentsSchema(): JsonSchema {
+  return {
+    title: KEY_DOCS['deployments']?.title,
+    description: KEY_DOCS['deployments']?.text,
+    type: 'object',
+    properties: {
+      environments: {
+        title: 'Environments that are sites',
+        description:
+          'Environment names, or patterns with * for any run of characters and ? for one, whose successful deployments are sites. Leave it out for every environment that is not a preview. Matching ignores case.',
+        type: 'array',
+        items: { type: 'string', minLength: 1 },
+        uniqueItems: true,
+      },
+    },
+    additionalProperties: false,
+  };
+}
+
+/** The schema of `previews`: environment-name patterns and the site each is compared with. */
+function previewsSchema(): JsonSchema {
+  return {
+    title: KEY_DOCS['previews']?.title,
+    description: KEY_DOCS['previews']?.text,
+    type: 'object',
+    additionalProperties: {
+      type: 'string',
+      title: 'The host of a site',
+      description:
+        'The host of a site of this repository, such as app.example.com.',
+    },
+  };
+}
+
 /** The keys that need more than the reader's own type, built above. */
 const OWN: Readonly<Record<string, string>> = {
   extends: '#/$defs/extends',
   rules: '#/$defs/rules',
   environments: '#/$defs/environments',
+  sites: '#/$defs/sites',
+  deployments: '#/$defs/deployments',
+  previews: '#/$defs/previews',
 };
 
 /**
@@ -255,6 +327,9 @@ export function buildSchema(): JsonSchema {
       rules: rulesSchema(),
       overlay: overlaySchema(),
       environments: environmentsSchema(),
+      sites: sitesSchema(),
+      deployments: deploymentsSchema(),
+      previews: previewsSchema(),
     },
   };
 }

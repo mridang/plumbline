@@ -145,7 +145,7 @@ describe('homepageHost', () => {
 });
 
 describe('deploymentHosts', () => {
-  it('collects the hosts of every Wrangler file and the website', async () => {
+  it('collects the hosts of every Wrangler file, and ignores a website field that disagrees', async () => {
     const files: Record<string, string> = {
       'wrangler.jsonc': '{"route": "a.example.com/*"}',
       'apps/api/wrangler.toml': 'route = "api.example.com/*"',
@@ -160,11 +160,16 @@ describe('deploymentHosts', () => {
       read: async (path) => files[path] ?? '',
       homepage: 'https://www.example.com',
     });
-    expect(hosts).toEqual([
-      'a.example.com',
-      'api.example.com',
-      'www.example.com',
-    ]);
+    expect(hosts).toEqual(['a.example.com', 'api.example.com']);
+  });
+
+  it('falls back to the website field when no Wrangler route names a host', async () => {
+    const hosts = await deploymentHosts({
+      paths: ['README.md', 'wrangler.jsonc'],
+      read: async () => '{"name": "worker"}',
+      homepage: 'https://www.example.com',
+    });
+    expect(hosts).toEqual(['www.example.com']);
   });
 
   it('skips a file that cannot be read', async () => {

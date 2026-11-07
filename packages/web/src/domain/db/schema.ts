@@ -54,6 +54,15 @@ export const domains = sqliteTable(
     checks: text('checks'),
     /** `owner/name` of the repository the domain was found in; null when added by hand. */
     repo: text('repo'),
+    /**
+     * Where the site came from: `manual` (a person added it), `config` (the
+     * sites list of plumbline.yaml), `deployment` (a deployment's address) or
+     * `fallback` (a Wrangler route or the Website field). Only a source other
+     * than `manual` can drop the site again.
+     */
+    source: text('source').notNull().default('manual'),
+    /** The environment that reported a `deployment` site; null for the others. */
+    environment: text('environment'),
     /** When the domain was last checked on the server; the empty string when never. */
     checked_at: text('checked_at').notNull().default(''),
     /** When the check that is running now began; null when none is. */
@@ -351,6 +360,20 @@ export const configDisabledRepos = sqliteTable('config_disabled_repos', {
   repo: text('repo').primaryKey(),
   disabled_at: text('disabled_at').notNull(),
 });
+
+/**
+ * Environments whose latest successful deployment reported no usable address,
+ * so the repository page can say how to fix it.
+ */
+export const deployUrlGaps = sqliteTable(
+  'deploy_url_gaps',
+  {
+    repo: text('repo').notNull(),
+    environment: text('environment').notNull(),
+    seen_at: text('seen_at').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.repo, table.environment] })],
+);
 
 /** What happened to a person's sites, in order, for the live dashboard to replay. */
 export const liveEvents = sqliteTable(

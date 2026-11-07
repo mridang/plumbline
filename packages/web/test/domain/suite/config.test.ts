@@ -302,3 +302,95 @@ describe('rules for the checks the scanner container runs', () => {
     expect(resolve(text, 'production').levels.has(outside)).toBe(false);
   });
 });
+
+describe('sites', () => {
+  it('declares none when the file says nothing', () => {
+    expect(resolve(null)).toMatchObject({
+      sites: [],
+      siteEnvironments: null,
+      previews: [],
+    });
+    expect(resolve('rules: {}\n')).toMatchObject({ sites: [] });
+  });
+
+  it('reads the hosts of the addresses and host names it lists, each once', () => {
+    const rules = resolve(
+      'sites:\n  - https://API.example.com/path\n  - app.example.com\n  - api.example.com\n',
+    );
+    expect(rules.sites).toEqual(['api.example.com', 'app.example.com']);
+    expect(rules.problems).toEqual([]);
+  });
+
+  it('ignores an address that cannot be a site and says why', () => {
+    const rules = resolve(
+      'sites:\n  - http://plain.example.com\n  - https://github.com/acme/site\n  - localhost\n  - ok.example.com\n',
+    );
+    expect(rules.sites).toEqual(['ok.example.com']);
+    expect(rules.problems).toEqual([
+      'plumbline.yaml: "http://plain.example.com" in sites is not an https address, so it was ignored.',
+      'plumbline.yaml: "https://github.com/acme/site" in sites is not a site (GitHub or a registry), so it was ignored.',
+      'plumbline.yaml: "localhost" in sites is not a public domain name, so it was ignored.',
+    ]);
+  });
+
+  it('reports sites that are not a list', () => {
+    const rules = resolve('sites: api.example.com\n');
+    expect(rules.sites).toEqual([]);
+    expect(rules.problems).toHaveLength(1);
+  });
+});
+
+describe('deployments', () => {
+  it('lists the environments whose deployments are sites', () => {
+    const rules = resolve(
+      'deployments:\n  environments: [production, "prd_*"]\n',
+    );
+    expect(rules.siteEnvironments).toEqual(['production', 'prd_*']);
+    expect(rules.problems).toEqual([]);
+  });
+
+  it('means an empty list: no environment is a site', () => {
+    expect(
+      resolve('deployments:\n  environments: []\n').siteEnvironments,
+    ).toEqual([]);
+  });
+
+  it('reports a key it does not have, and a value that is not a list', () => {
+    expect(
+      resolve('deployments:\n  environment: production\n').problems,
+    ).toEqual(['Unknown key "environment" in deployments of plumbline.yaml.']);
+    expect(
+      resolve('deployments:\n  environments: production\n').problems,
+    ).toHaveLength(1);
+  });
+});
+
+describe('previews', () => {
+  it('maps environment names to the host of the site they are a copy of, in file order', () => {
+    const rules = resolve(
+      'previews:\n  "pr-*": https://App.example.com\n  preview: api.example.com\n',
+    );
+    expect(rules.previews).toEqual([
+      ['pr-*', 'app.example.com'],
+      ['preview', 'api.example.com'],
+    ]);
+    expect(rules.problems).toEqual([]);
+  });
+
+  it('ignores a target that cannot be a site and says why', () => {
+    const rules = resolve(
+      'previews:\n  "pr-*": http://app.example.com\n  ok: app.example.com\n',
+    );
+    expect(rules.previews).toEqual([['ok', 'app.example.com']]);
+    expect(rules.problems).toEqual([
+      'plumbline.yaml: "http://app.example.com" for "pr-*" in previews is not an https address, so it was ignored.',
+    ]);
+  });
+
+  it('is the same for a preview and for the live site', () => {
+    const text = 'previews:\n  "pr-*": app.example.com\n';
+    expect(resolve(text, 'preview').previews).toEqual(
+      resolve(text, 'production').previews,
+    );
+  });
+});

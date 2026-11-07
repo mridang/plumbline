@@ -210,6 +210,7 @@ describe('POST /webhooks/github', () => {
         job({
           deployed: {
             environment: 'production',
+            name: 'Production',
             repo: 'acme/site',
             sha: 'abc',
             url: null,
@@ -230,6 +231,7 @@ describe('POST /webhooks/github', () => {
         job({
           deployed: {
             environment: 'preview',
+            name: 'Preview',
             repo: 'acme/site',
             sha: 'abc',
             url: 'https://pr-3.site.test/',
@@ -373,6 +375,7 @@ describe('POST /webhooks/github', () => {
             appUrl: 'https://plumbline.test',
             deployed: {
               environment: 'production',
+              name: '',
               repo: 'acme/site',
               sha: 'new-sha',
               url: null,

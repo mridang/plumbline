@@ -18,6 +18,12 @@
  * issues: error                       # which findings open an issue: error, warning or off
  * dispatch: true                      # send a repository_dispatch event after each run
  * enabled: false                      # turn every check of this repository off (default true)
+ * sites:                              # addresses to check, in addition to the ones deployments report
+ *   - https://api.example.com
+ * deployments:
+ *   environments: [production, "prd_*"]   # which deployment environments are sites (default: every one that is not a preview)
+ * previews:                           # which site a preview is compared with
+ *   "pr-*": api.example.com
  * ```
  *
  * A rule set can be pinned to a catalogue version (`plumbline:recommended@1`):
@@ -39,6 +45,7 @@ import {
   isCheckId,
   isGroup,
 } from '@/domain/checks/catalogue';
+import { siteAddress } from '@/domain/suite/site-address';
 import { DEFAULT_RULE_SET, RULE_SETS, type Level } from '@/domain/suite/rules';
 
 /** The file names looked for in the root of a repository, in order. */
@@ -65,8 +72,12 @@ const TOP_KEYS = [
   'issues',
   'dispatch',
   'enabled',
+  'sites',
+  'deployments',
+  'previews',
 ];
 const OVERLAY_KEYS = ['extends', 'rules'];
+const DEPLOYMENT_KEYS = ['environments'];
 
 /** The settings an environment can change, as the reader takes them (leniently: its mistakes are reported, not refused). */
 export const OverlaySchema = z.object({
@@ -80,6 +91,11 @@ export const ConfigSchema = OverlaySchema.extend({
   dispatch: z.boolean().optional(),
   enabled: z.boolean().optional(),
   environments: z.record(z.string(), OverlaySchema).optional(),
+  sites: z.array(z.string()).optional(),
+  deployments: z
+    .object({ environments: z.array(z.string()).optional() })
+    .optional(),
+  previews: z.record(z.string(), z.string()).optional(),
 });
 
 /** Rule sets and rules to add on top of what came before. */
@@ -99,6 +115,12 @@ export interface LoadedConfig extends Overlay {
   readonly dispatch: boolean;
   /** Whether checks are on for the repository; `enabled: false` turns every check off. */
   readonly enabled: boolean;
+  /** The hosts of the file's `sites` (the addresses that can be a site; the others are problems). */
+  readonly sites: readonly string[];
+  /** The environment-name patterns whose deployments are sites; null when the file does not say (every non-preview one). */
+  readonly siteEnvironments: readonly string[] | null;
+  /** Which site a preview is compared with: an environment-name pattern and the host it stands for, in file order. */
+  readonly previews: readonly (readonly [string, string])[];
   /** Everything that could not be understood, one sentence each. */
   readonly problems: readonly string[];
 }
@@ -118,6 +140,9 @@ function empty(path: string, problems: readonly string[]): LoadedConfig {
     issues: 'error',
     dispatch: false,
     enabled: true,
+    sites: [],
+    siteEnvironments: null,
+    previews: [],
     problems,
   };
 }
@@ -190,6 +215,13 @@ export function parseConfig(text: string, path: string): LoadedConfig {
       rules: overlay.rules ?? {},
     };
   }
+  problems.push(
+    ...strayKeys(
+      (record['deployments'] ?? {}) as Record<string, unknown>,
+      DEPLOYMENT_KEYS,
+      ` in deployments of ${path}`,
+    ),
+  );
   return {
     path,
     extends: namesOf(config.extends),
@@ -198,8 +230,52 @@ export function parseConfig(text: string, path: string): LoadedConfig {
     issues: config.issues ?? 'error',
     dispatch: config.dispatch ?? false,
     enabled: config.enabled ?? true,
+    sites: hostsOf(config.sites ?? [], 'sites', path, problems),
+    siteEnvironments: config.deployments?.environments ?? null,
+    previews: previewsOf(config.previews ?? {}, path, problems),
     problems,
   };
+}
+
+/** The distinct hosts of a list of addresses; each one that cannot be a site is a problem. */
+function hostsOf(
+  addresses: readonly string[],
+  where: string,
+  path: string,
+  problems: string[],
+): string[] {
+  const hosts = new Set<string>();
+  for (const address of addresses) {
+    const site = siteAddress(address);
+    if (site.ok) {
+      hosts.add(site.host);
+    } else {
+      problems.push(
+        `${path}: "${address}" in ${where} ${site.reason}, so it was ignored.`,
+      );
+    }
+  }
+  return [...hosts];
+}
+
+/** The `previews` mapping as pattern and host pairs; each target that cannot be a site is a problem. */
+function previewsOf(
+  mapping: Readonly<Record<string, string>>,
+  path: string,
+  problems: string[],
+): (readonly [string, string])[] {
+  const pairs: (readonly [string, string])[] = [];
+  for (const [pattern, address] of Object.entries(mapping)) {
+    const site = siteAddress(address);
+    if (site.ok) {
+      pairs.push([pattern, site.host]);
+    } else {
+      problems.push(
+        `${path}: "${address}" for "${pattern}" in previews ${site.reason}, so it was ignored.`,
+      );
+    }
+  }
+  return pairs;
 }
 
 /**
@@ -239,6 +315,12 @@ export interface ResolvedRules {
   readonly dispatch: boolean;
   /** Whether checks are on; false when the file says `enabled: false`. */
   readonly enabled: boolean;
+  /** The hosts the file declares as sites. */
+  readonly sites: readonly string[];
+  /** The environment-name patterns whose deployments are sites; null for every non-preview environment. */
+  readonly siteEnvironments: readonly string[] | null;
+  /** Which site a preview is compared with, as environment-name patterns and hosts. */
+  readonly previews: readonly (readonly [string, string])[];
   /** The mistakes in the configuration. */
   readonly problems: readonly string[];
   /** The file the rules came from; null when the repository has none. */
@@ -319,6 +401,9 @@ export function resolveRules(
     issues: loaded?.issues ?? 'error',
     dispatch: loaded?.dispatch ?? false,
     enabled: loaded?.enabled ?? true,
+    sites: loaded?.sites ?? [],
+    siteEnvironments: loaded?.siteEnvironments ?? null,
+    previews: loaded?.previews ?? [],
     problems,
     source: loaded?.path ?? null,
   };

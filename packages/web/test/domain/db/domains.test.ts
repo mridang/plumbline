@@ -7,6 +7,7 @@ import {
   addDomain,
   countDomains,
   deleteDomain,
+  deleteSites,
   domainOf,
   findDomainByHost,
   getDomain,
@@ -36,6 +37,8 @@ const row = (checks: string | null) => ({
   host: 'example.com',
   checks,
   repo: null,
+  source: 'manual',
+  environment: null,
   created_at: '2026-01-01T00:00:00.000Z',
   updated_at: '2026-01-01T00:00:00.000Z',
 });
@@ -215,26 +218,169 @@ describe('addDomain with a repository', () => {
   });
 });
 
+describe('addDomain with a source', () => {
+  it('records a person as the source unless it is told another', async () => {
+    const { db } = empty();
+    const { domain } = await addDomain(db, 1, 'a.example.com', 'o/a');
+    expect(domain).toMatchObject({ source: 'manual', environment: null });
+  });
+
+  it('records what found the site, and the environment of a deployment', async () => {
+    const { db } = empty();
+    expect(
+      (
+        await addDomain(db, 1, 'a.example.com', 'o/a', {
+          source: 'deployment',
+          environment: 'prd_foo',
+        })
+      ).domain,
+    ).toMatchObject({ source: 'deployment', environment: 'prd_foo' });
+    expect(
+      (await addDomain(db, 1, 'b.example.com', 'o/a', { source: 'config' }))
+        .domain,
+    ).toMatchObject({ source: 'config', environment: null });
+  });
+
+  it('keeps no environment for a source that has none, even when one is given', async () => {
+    const { db } = empty();
+    const { domain } = await addDomain(db, 1, 'a.example.com', 'o/a', {
+      source: 'fallback',
+      environment: 'production',
+    });
+    expect(domain.environment).toBeNull();
+  });
+
+  it('gives a site the more trusted source when two find it', async () => {
+    const { db } = empty();
+    await addDomain(db, 1, 'a.example.com', 'o/a', { source: 'fallback' });
+    const viaConfig = await addDomain(db, 1, 'a.example.com', 'o/a', {
+      source: 'config',
+    });
+    expect(viaConfig).toMatchObject({
+      created: false,
+      domain: { source: 'config' },
+    });
+    const viaDeployment = await addDomain(db, 1, 'a.example.com', 'o/a', {
+      source: 'deployment',
+      environment: 'production',
+    });
+    expect(viaDeployment.domain).toMatchObject({
+      source: 'deployment',
+      environment: 'production',
+    });
+    const back = await addDomain(db, 1, 'a.example.com', 'o/a', {
+      source: 'fallback',
+    });
+    expect(back.domain.source).toBe('deployment');
+  });
+
+  it('never changes a site a person added, only tells it its repository', async () => {
+    const { db } = empty();
+    await addDomain(db, 1, 'a.example.com');
+    const { domain } = await addDomain(db, 1, 'a.example.com', 'o/a', {
+      source: 'deployment',
+      environment: 'production',
+    });
+    expect(domain).toMatchObject({
+      source: 'manual',
+      environment: null,
+      repo: 'o/a',
+    });
+  });
+
+  it('does not let another repository take over a site', async () => {
+    const { db } = empty();
+    await addDomain(db, 1, 'a.example.com', 'o/a', { source: 'fallback' });
+    const { domain } = await addDomain(db, 1, 'a.example.com', 'o/b', {
+      source: 'deployment',
+      environment: 'production',
+    });
+    expect(domain).toMatchObject({ repo: 'o/a', source: 'fallback' });
+  });
+});
+
+describe('deleteSites', () => {
+  it('removes the sites by id and says how many, leaving the others and other people alone', async () => {
+    const { db } = empty();
+    const a = (await addDomain(db, 1, 'a.example.com', 'o/a')).domain;
+    const b = (await addDomain(db, 1, 'b.example.com', 'o/a')).domain;
+    const theirs = (await addDomain(db, 2, 'a.example.com', 'o/a')).domain;
+    expect(await deleteSites(db, 1, [a.id, theirs.id])).toBe(1);
+    expect((await listDomains(db, 1)).map((d) => d.id)).toEqual([b.id]);
+    expect(await getDomain(db, 2, theirs.id)).toBeDefined();
+  });
+
+  it('does nothing for no ids', async () => {
+    const { db } = empty();
+    await addDomain(db, 1, 'a.example.com');
+    expect(await deleteSites(db, 1, [])).toBe(0);
+    expect(await countDomains(db, 1)).toBe(1);
+  });
+
+  it('removes more than one batch of sites', async () => {
+    const { db } = empty();
+    const ids: string[] = [];
+    for (let n = 0; n < 120; n += 1) {
+      ids.push((await addDomain(db, 1, `s${n}.example.com`)).domain.id);
+    }
+    expect(await deleteSites(db, 1, ids)).toBe(120);
+    expect(await countDomains(db, 1)).toBe(0);
+  });
+});
+
+describe('migration 0020_site_sources', () => {
+  it('marks the sites a repository supplied as fallback and the ones added by hand as manual', async () => {
+    const before = APP_MIGRATIONS.filter(
+      (file) => file < '0020_site_sources.sql',
+    );
+    const { db, raw } = sqliteDatabase(...before);
+    raw.exec(
+      `INSERT INTO domains (id, user_id, host, repo, created_at, updated_at) VALUES
+        ('1', 1, 'found.example.com', 'o/site', 't', 't'),
+        ('2', 1, 'hand.example.com', NULL, 't', 't')`,
+    );
+    raw.exec(
+      readFileSync(
+        path.join(process.cwd(), 'migrations', '0020_site_sources.sql'),
+        'utf8',
+      ),
+    );
+    expect(
+      (await listDomains(db, 1)).map((d) => [d.host, d.source, d.environment]),
+    ).toEqual([
+      ['found.example.com', 'fallback', null],
+      ['hand.example.com', 'manual', null],
+    ]);
+  });
+});
+
 describe('migration 0012_registry_domains', () => {
   it('removes registry hosts found in a repository, and keeps real sites and hosts added by hand', async () => {
     const before = APP_MIGRATIONS.filter(
       (file) => file < '0012_registry_domains.sql',
     );
-    const { db, raw } = sqliteDatabase(...before);
-    await addDomain(db, 1, 'www.npmjs.com', 'o/lib');
-    await addDomain(db, 1, 'play.google.com', 'o/app');
-    await addDomain(db, 1, 'site.example.com', 'o/site');
-    await addDomain(db, 1, 'pypi.org');
+    const { raw } = sqliteDatabase(...before);
+    // The database is as it was before the migration, so the rows are written
+    // with the columns it had then.
+    raw.exec(
+      `INSERT INTO domains (id, user_id, host, repo, created_at, updated_at) VALUES
+        ('1', 1, 'www.npmjs.com', 'o/lib', 't', 't'),
+        ('2', 1, 'play.google.com', 'o/app', 't', 't'),
+        ('3', 1, 'site.example.com', 'o/site', 't', 't'),
+        ('4', 1, 'pypi.org', NULL, 't', 't')`,
+    );
     raw.exec(
       readFileSync(
         path.join(process.cwd(), 'migrations', '0012_registry_domains.sql'),
         'utf8',
       ),
     );
-    expect((await listDomains(db, 1)).map((d) => d.host).toSorted()).toEqual([
-      'pypi.org',
-      'site.example.com',
-    ]);
+    expect(
+      raw
+        .prepare('SELECT host FROM domains WHERE user_id = 1 ORDER BY host')
+        .all()
+        .map((row) => String(row['host'])),
+    ).toEqual(['pypi.org', 'site.example.com']);
   });
 });
 

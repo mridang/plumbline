@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { findCheck } from '@/domain/checks/catalogue';
+import type { Comparison } from '@/domain/suite/baseline';
 import type { StoredFinding } from '@/domain/suite/diff';
 import {
   MAX_LISTED,
@@ -13,6 +14,7 @@ import {
   SUMMARY_LISTED,
   checkRunOutput,
   conclusionOf,
+  conclusionOfReport,
   countsOf,
   MAX_ISSUE_FINDINGS,
   backComment,
@@ -472,5 +474,131 @@ describe('what a hostile configuration can make the text hold', () => {
     );
     const out = checkRunOutput({ ...base, findings, problems: [] });
     expect(out.summary.length).toBeLessThanOrEqual(MAX_TEXT + 20);
+  });
+});
+
+describe('a report compared with the live site', () => {
+  const compared = (over: Partial<Comparison> = {}): Comparison => ({
+    host: 'live.example.com',
+    added: [],
+    existing: [],
+    fixed: [],
+    uncompared: [],
+    ...over,
+  });
+  const report = (comparison: Comparison, findings: StoredFinding[] = []) => ({
+    url: 'https://pr-3.example.com/',
+    findings,
+    source: null,
+    problems: [],
+    comparison,
+  });
+
+  it('ends on the comparison when there is one, and on the findings alone when there is none', () => {
+    const findings = [found('error')];
+    expect(conclusionOfReport({ findings })).toBe('failure');
+    expect(
+      conclusionOfReport({
+        findings,
+        comparison: compared({ existing: findings }),
+      }),
+    ).toBe('success');
+    expect(
+      conclusionOfReport({
+        findings,
+        comparison: compared({ added: findings }),
+      }),
+    ).toBe('failure');
+  });
+
+  it('says there is nothing new, and how many problems were already there', () => {
+    const old = [found('error', 'a', 'seo-viewport'), found('warning', 'b')];
+    const out = checkRunOutput(report(compared({ existing: old }), old));
+    expect(out.title).toBe(
+      'No new problems on pr-3.example.com (2 already on live.example.com)',
+    );
+    expect(out.summary).toContain(
+      'Compared with the latest check of live.example.com: 2 existing issues, none new.',
+    );
+    expect(out.summary).toContain(
+      'Only problems this change adds fail the check.',
+    );
+  });
+
+  it('puts the new errors first and fails the title on them', () => {
+    const added = [found('warning', 'w'), found('error', 'e')];
+    const out = checkRunOutput(
+      report(compared({ added, existing: [found('error', 'old')] }), [
+        ...added,
+        found('error', 'old'),
+      ]),
+    );
+    expect(out.title).toBe('1 new error on pr-3.example.com');
+    expect(out.summary).toContain('1 existing issue, 2 new');
+    expect(out.summary.indexOf('**new error**: e')).toBeLessThan(
+      out.summary.indexOf('**new warning**: w'),
+    );
+  });
+
+  it('titles a change that adds only warnings by them', () => {
+    const added = [found('warning', 'w1'), found('warning', 'w2')];
+    expect(checkRunOutput(report(compared({ added }), added)).title).toBe(
+      '2 new warnings on pr-3.example.com',
+    );
+  });
+
+  it('says plainly that nothing is wrong when nothing is', () => {
+    expect(checkRunOutput(report(compared())).title).toBe(
+      'No problems found on pr-3.example.com',
+    );
+  });
+
+  it('names what the change fixed', () => {
+    const out = checkRunOutput(
+      report(compared({ fixed: [found('error', 'x', 'seo-viewport')] })),
+    );
+    expect(out.summary).toContain('1 fixed');
+    expect(out.summary).toContain(
+      `Fixed by this change: ${findCheck('seo-viewport')?.name}.`,
+    );
+  });
+
+  it('says which findings could not be compared and why', () => {
+    const out = checkRunOutput(
+      report(compared({ uncompared: [found('error', 'x', 'seo-viewport')] })),
+    );
+    expect(out.summary).toContain(
+      '1 finding could not be compared, because live.example.com does not run those checks.',
+    );
+  });
+
+  it('cuts the list of new problems and counts the rest', () => {
+    const added = Array.from({ length: SUMMARY_LISTED + 2 }, (_, i) =>
+      found('error', `e${i}`),
+    );
+    const out = checkRunOutput(report(compared({ added }), added));
+    expect(out.summary).toContain('...and 2 more new in the report.');
+  });
+
+  it('tells a tool the same in the data block', () => {
+    const added = [found('error', 'e')];
+    const block = dataBlock(
+      report(compared({ added, existing: [found('warning', 'w')] }), added),
+    );
+    expect(block).toContain('"conclusion": "failure"');
+    expect(block).toContain('"site": "live.example.com"');
+    expect(block).toContain('"new": 1');
+    expect(block).toContain('"existing": 1');
+  });
+
+  it('leaves the baseline out of the data block when there is none', () => {
+    expect(
+      dataBlock({
+        url: 'https://pr-3.example.com/',
+        findings: [],
+        source: null,
+        problems: [],
+      }),
+    ).not.toContain('baseline');
   });
 });

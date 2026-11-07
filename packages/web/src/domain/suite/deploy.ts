@@ -30,6 +30,7 @@ import { restrictRun, type SuiteRun } from '@/domain/suite/run';
 import { resolveRules } from '@/domain/suite/config';
 import { FREE_LIMITS, inBatches, type Limits } from '@/domain/suite/limits';
 import { SiteUnreachable } from '@/domain/suite/scanner';
+import { siteAddress } from '@/domain/suite/site-address';
 import { applyLevels, fingerprintOf, type Level } from '@/domain/suite/rules';
 
 /** Sites checked for one deployment on the Free plan. */
@@ -46,7 +47,6 @@ export interface DeploymentStatus {
     readonly environment?: string;
     /** Where the deployed site can be reached. */
     readonly environment_url?: string;
-    readonly target_url?: string;
   };
   readonly deployment?: {
     readonly sha?: string;
@@ -65,17 +65,23 @@ export interface DeploymentStatus {
 export interface Deployment {
   /** The live site, or a preview of a branch or pull request. */
   readonly environment: 'production' | 'preview';
+  /** The name of the deployment environment as GitHub has it (`production`, `prd_foo`, `Preview`). */
+  readonly name: string;
   readonly repo: string;
   readonly sha: string | null;
   /** The address the deployment says it can be reached at, when it says. */
   readonly url: string | null;
 }
 
-/** The address a delivery names, when it is a plain https address. */
+/**
+ * The address a delivery says the deployment can be reached at: its
+ * `environment_url`, when that is the address of a site. The `target_url` is
+ * never used: it is where the deployment's log is (for a GitHub Actions job,
+ * a page on github.com), not the site.
+ */
 function reachableAt(delivery: Readonly<DeploymentStatus>): string | null {
-  const status = delivery.deployment_status;
-  const given = status?.environment_url || status?.target_url;
-  if (!given) {
+  const given = delivery.deployment_status?.environment_url;
+  if (!given || !siteAddress(given).ok) {
     return null;
   }
   try {
@@ -107,6 +113,7 @@ export function classifyDeployment(
     delivery.deployment?.transient_environment === true || PREVIEW.test(name);
   return {
     environment: preview ? 'preview' : 'production',
+    name,
     repo,
     sha: delivery.deployment?.sha ?? null,
     url: reachableAt(delivery),

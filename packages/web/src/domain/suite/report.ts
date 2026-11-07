@@ -8,6 +8,7 @@
  */
 
 import { findCheck } from '@/domain/checks/catalogue';
+import { comparisonConclusion, type Comparison } from '@/domain/suite/baseline';
 import type { IssueLevel } from '@/domain/suite/config';
 import type { StoredFinding } from '@/domain/suite/diff';
 
@@ -188,6 +189,17 @@ export interface RunReport {
   readonly reportUrl?: string;
   /** The same report as JSON. */
   readonly dataUrl?: string;
+  /** How a preview's findings stand against the live site it is a copy of; none when there is no baseline. */
+  readonly comparison?: Comparison;
+}
+
+/** How a run ends: against the live site's findings when it was compared, else on its own. */
+export function conclusionOfReport(
+  report: Readonly<Pick<RunReport, 'findings' | 'comparison'>>,
+): Conclusion {
+  return report.comparison
+    ? comparisonConclusion(report.comparison)
+    : conclusionOf(report.findings);
 }
 
 /**
@@ -201,8 +213,19 @@ export function dataBlock(report: Readonly<RunReport>): string {
     {
       version: 1,
       url: report.url,
-      conclusion: conclusionOf(report.findings),
+      conclusion: conclusionOfReport(report),
       ...counts,
+      ...(report.comparison
+        ? {
+            baseline: {
+              site: report.comparison.host,
+              new: report.comparison.added.length,
+              existing: report.comparison.existing.length,
+              fixed: report.comparison.fixed.length,
+              uncompared: report.comparison.uncompared.length,
+            },
+          }
+        : {}),
       report: report.reportUrl ?? null,
       json: report.dataUrl ?? null,
       truncated: report.findings.length > MAX_DATA,
@@ -220,6 +243,68 @@ export function dataBlock(report: Readonly<RunReport>): string {
   return `\`\`\`json\n${json}\n\`\`\``;
 }
 
+/** The findings that matter to a pull request: errors and warnings. */
+const worrying = (list: readonly StoredFinding[]): StoredFinding[] =>
+  list.filter((found) => found.severity !== 'hint');
+
+/** The title of a check run that compared the preview with the live site. */
+function comparedTitle(comparison: Readonly<Comparison>, host: string): string {
+  const added = worrying(comparison.added);
+  const newErrors = added.filter((found) => found.severity === 'error').length;
+  if (newErrors > 0) {
+    return `${amount(newErrors, 'new error')} on ${host}`;
+  }
+  if (added.length > 0) {
+    return `${amount(added.length, 'new warning')} on ${host}`;
+  }
+  const existing = worrying(comparison.existing).length;
+  return existing > 0
+    ? `No new problems on ${host} (${existing} already on ${comparison.host})`
+    : `No problems found on ${host}`;
+}
+
+/** The summary lines of a check run that compared the preview with the live site. */
+function comparedSummary(comparison: Readonly<Comparison>): string {
+  const added = worrying(comparison.added);
+  const existing = worrying(comparison.existing).length;
+  const fixed = comparison.fixed;
+  const counts = [
+    `${existing} existing ${existing === 1 ? 'issue' : 'issues'}`,
+    added.length === 0 ? 'none new' : `${added.length} new`,
+    ...(fixed.length > 0 ? [`${fixed.length} fixed`] : []),
+  ].join(', ');
+  const lines = [
+    `Compared with the latest check of ${comparison.host}: ${counts}. Only problems this change adds fail the check.`,
+  ];
+  const worst = added
+    .toSorted((a, b) => RANK[a.severity] - RANK[b.severity])
+    .slice(0, SUMMARY_LISTED);
+  if (worst.length > 0) {
+    lines.push(
+      [
+        ...worst.map(
+          (found) => `- **new ${found.severity}**: ${found.message}`,
+        ),
+        ...(added.length > worst.length
+          ? [`- ...and ${added.length - worst.length} more new in the report.`]
+          : []),
+      ].join('\n'),
+    );
+  }
+  if (fixed.length > 0) {
+    lines.push(
+      `Fixed by this change: ${fixed.map((found) => findCheck(found.id)?.name ?? found.id).join(', ')}.`,
+    );
+  }
+  const uncompared = worrying(comparison.uncompared).length;
+  if (uncompared > 0) {
+    lines.push(
+      `${amount(uncompared, 'finding')} could not be compared, because ${comparison.host} does not run those checks.`,
+    );
+  }
+  return lines.join('\n\n');
+}
+
 /**
  * The title, a short summary and the full text of the check run that reports a
  * preview. The summary says what was found in a few lines and links to the
@@ -234,15 +319,18 @@ export function checkRunOutput(report: Readonly<RunReport>): {
 } {
   const host = new URL(report.url).host;
   const { errors, warnings, hints } = countsOf(report.findings);
-  const title =
-    report.findings.length === 0
+  const title = report.comparison
+    ? comparedTitle(report.comparison, host)
+    : report.findings.length === 0
       ? `No problems found on ${host}`
       : `${amount(errors, 'error')}, ${amount(warnings, 'warning')} and ${amount(hints, 'hint')} on ${host}`;
   const parts = [`Checked ${report.url}`];
   if (report.reportUrl) {
     parts.push(`[Open the full report](${report.reportUrl})`);
   }
-  if (report.findings.length > 0) {
+  if (report.comparison) {
+    parts.push(comparedSummary(report.comparison));
+  } else if (report.findings.length > 0) {
     const worst = report.findings
       .toSorted((a, b) => RANK[a.severity] - RANK[b.severity])
       .slice(0, SUMMARY_LISTED);

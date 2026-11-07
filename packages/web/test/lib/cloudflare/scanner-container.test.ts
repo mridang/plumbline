@@ -193,6 +193,7 @@ const JOB: SuiteJob = {
   userId: 7,
   deployed: {
     environment: 'production',
+    name: 'production',
     repo: 'acme/site',
     sha: 'abc123',
     url: null,

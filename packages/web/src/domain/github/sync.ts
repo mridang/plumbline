@@ -9,15 +9,15 @@
 
 import type { Database } from '@/domain/db/client';
 import {
-  addDomain,
-  countDomains,
-  MAX_DOMAINS,
+  listDomainsOfRepo,
   removeSitesOfMissingRepos,
 } from '@/domain/db/domains';
 import { listRepos, saveRepos, type AnalysedRepo } from '@/domain/db/github';
+import { loadConfig } from '@/domain/suite/github-run';
 
 import { GitHubApi, type Repo } from './api';
 import { deploymentHosts } from './deployments';
+import { isReal, reconcileSites } from './sites';
 
 /** How many repositories are read at once, to stay inside a request's limits. */
 const CONCURRENCY = 10;
@@ -35,27 +35,57 @@ export interface SyncResult {
   readonly domainsAdded: number;
 }
 
-/** Read one repository: where it is deployed, or nowhere. */
+/** What reading one repository found. */
+export interface Analysis extends AnalysedRepo {
+  /**
+   * The hosts the Wrangler routes and the Website field suggest; null when the
+   * repository could not be read, so a GitHub hiccup cannot drop its sites.
+   */
+  readonly fallback: readonly string[] | null;
+  /**
+   * The hosts the repository's `plumbline.yaml` declares as sites; null when
+   * the file could not be read (or the repository is a fork, whose file is the
+   * upstream project's).
+   */
+  readonly declared: readonly string[] | null;
+}
+
+/**
+ * Read one repository: the sites its file declares and the ones its Wrangler
+ * routes and Website field suggest. `hosts` is the fallback until the sites are
+ * settled by {@link syncInstallation}.
+ */
 export async function analyseRepo(
   api: GitHubApi,
   repo: Readonly<Repo>,
-): Promise<AnalysedRepo> {
-  let hosts: string[] = [];
+): Promise<Analysis> {
+  let fallback: string[] | null = null;
+  let declared: readonly string[] | null = null;
   try {
     const paths = await api.filePaths(repo.full_name, repo.default_branch);
-    hosts = await deploymentHosts({
+    fallback = await deploymentHosts({
       paths,
       read: (path) => api.file(repo.full_name, path, repo.default_branch),
       // A fork carries the upstream project's website, which is not this account's site.
       homepage: repo.fork ? null : repo.homepage,
     });
+    if (!repo.fork) {
+      const { loaded, unreadable } = await loadConfig(
+        api,
+        repo.full_name,
+        repo.default_branch,
+      );
+      declared = unreadable === null ? (loaded?.sites ?? []) : null;
+    }
   } catch {
-    // An empty or unreadable repository is simply not a deployed application.
+    // A repository that cannot be read right now says nothing about its sites.
   }
   return {
     full_name: repo.full_name,
     default_branch: repo.default_branch,
-    hosts,
+    hosts: fallback ?? [],
+    fallback,
+    declared,
   };
 }
 
@@ -75,8 +105,9 @@ async function inBatches<T, R>(
 
 /**
  * Read an installation's repositories (archived ones are skipped) with an
- * installation token, store what was found, and add each deployed host as a
- * domain of the owner, up to the number of domains a person may keep.
+ * installation token, store what was found, and settle each repository's
+ * sites as domains of the owner (see `sites.ts`), up to the number of domains a
+ * person may keep.
  */
 export async function syncInstallation(
   db: Database,
@@ -87,7 +118,34 @@ export async function syncInstallation(
   const listed = await api.repositories();
   const repos = listed.filter((repo) => !repo.archived).slice(0, MAX_REPOS);
   const analysed = await inBatches(repos, (repo) => analyseRepo(api, repo));
-  await saveRepos(db, userId, installationId, analysed);
+  // Settle each repository's sites from what its file and routes say, and what
+  // its deployments have already reported (those are in the database).
+  let domainsAdded = 0;
+  const settled: AnalysedRepo[] = [];
+  for (const repo of analysed) {
+    const changes = await reconcileSites(db, userId, repo.full_name, {
+      declared: repo.declared,
+      fallback: repo.fallback,
+    });
+    domainsAdded += changes.added.length;
+    const sites = await listDomainsOfRepo(db, userId, repo.full_name);
+    const declared = repo.declared ?? [];
+    const real = declared.length > 0 || sites.some(isReal);
+    // What the repository is deployed on, even where the limit on a person's
+    // domains kept a site off the dashboard.
+    settled.push({
+      full_name: repo.full_name,
+      default_branch: repo.default_branch,
+      hosts: [
+        ...new Set([
+          ...sites.map((site) => site.host),
+          ...declared,
+          ...(real ? [] : (repo.fallback ?? [])),
+        ]),
+      ],
+    });
+  }
+  await saveRepos(db, userId, installationId, settled);
   // A repository that was deleted, or taken out of the app, takes its sites
   // off the dashboard. An archived one still exists, so its sites stay, and a
   // listing cut short by the limit proves nothing about the rest.
@@ -101,24 +159,9 @@ export async function syncInstallation(
       ]),
     );
   }
-
-  let room = MAX_DOMAINS - (await countDomains(db, userId));
-  let domainsAdded = 0;
-  for (const repo of analysed) {
-    for (const host of repo.hosts) {
-      if (room <= 0) {
-        break;
-      }
-      const { created } = await addDomain(db, userId, host, repo.full_name);
-      if (created) {
-        domainsAdded += 1;
-        room -= 1;
-      }
-    }
-  }
   return {
     repositories: analysed.length,
-    deployed: analysed.filter((repo) => repo.hosts.length > 0).length,
+    deployed: settled.filter((repo) => repo.hosts.length > 0).length,
     domainsAdded,
   };
 }

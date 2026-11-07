@@ -85,6 +85,41 @@ const FILES: readonly [string, string, boolean][] = [
     '{"extends": "plumbline:advanced", "rules": {"seo-viewport": "error"}}',
     true,
   ],
+  [
+    'sites as addresses and host names',
+    'sites:\n  - https://api.example.com\n  - app.example.com',
+    true,
+  ],
+  ['no sites', 'sites: []', true],
+  [
+    'the environments whose deployments are sites',
+    'deployments:\n  environments: [production, "prd_*"]',
+    true,
+  ],
+  ['deployments that say nothing', 'deployments: {}', true],
+  [
+    'previews mapped to sites',
+    'previews:\n  "pr-*": app.example.com\n  preview: https://api.example.com',
+    true,
+  ],
+  ['sites that are not a list', 'sites: api.example.com', false],
+  ['a site that is not https', 'sites:\n  - http://api.example.com', false],
+  ['a site that is not a string', 'sites:\n  - 5', false],
+  [
+    'a key deployments does not have',
+    'deployments:\n  environment: production',
+    false,
+  ],
+  [
+    'environments that are not a list',
+    'deployments:\n  environments: production',
+    false,
+  ],
+  [
+    'a preview mapped to something that is not a host',
+    'previews:\n  "pr-*": 5',
+    false,
+  ],
   ['a key the file does not have', 'extend: plumbline:advanced', false],
   ['a rule set that does not exist', 'extends: plumbline:strict', false],
   [
@@ -140,12 +175,15 @@ describe('buildSchema', () => {
 
   it('has every key of the reader, with the same names', () => {
     expect(Object.keys(schema['properties'] as object).sort()).toEqual([
+      'deployments',
       'dispatch',
       'enabled',
       'environments',
       'extends',
       'issues',
+      'previews',
       'rules',
+      'sites',
     ]);
   });
 

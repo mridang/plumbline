@@ -20,7 +20,9 @@ import {
 } from '@/domain/db/disabled';
 import { parseHost } from '@/domain/api/domain-resource';
 import type { Database } from '@/domain/db/client';
+import { clearGap, noteGap } from '@/domain/db/deploy-gaps';
 import { listDomainsOfRepo } from '@/domain/db/domains';
+import { latestRuns } from '@/domain/db/suite';
 import { GitHubApi, GitHubError, TooLargeError } from '@/domain/github/api';
 import { reportOfCommit, savePreviewReport } from '@/domain/db/preview-reports';
 import { installationToken } from '@/domain/github/app-auth';
@@ -37,7 +39,7 @@ import {
   type Deployment,
   type Deps,
 } from '@/domain/suite/deploy';
-import { findingsOf } from '@/domain/suite/diff';
+import { findingsOf, type StoredFinding } from '@/domain/suite/diff';
 import {
   closeUndeployed,
   newBudget,
@@ -50,6 +52,14 @@ import {
 } from '@/domain/suite/publish';
 import { dispatchRun } from '@/domain/suite/dispatch';
 import { applyLevels } from '@/domain/suite/rules';
+import {
+  baselineHost,
+  compareWithBaseline,
+  type Comparison,
+} from '@/domain/suite/baseline';
+import { matchesAny } from '@/domain/suite/glob';
+import { siteAddress } from '@/domain/suite/site-address';
+import { reconcileSites } from '@/domain/github/sites';
 
 /** What the work can be given in place of the real thing, for tests. */
 export interface RunDeps extends Deps {
@@ -101,13 +111,24 @@ export async function loadConfig(
   return { loaded: null, unreadable: null };
 }
 
+/** The rules of a deployment, whether they were read from the file, and what the live site's rules ask for. */
+type DeploymentRules = ResolvedRules & {
+  readonly read: boolean;
+  /** The checks the live site's rules ask for, to tell which findings of a preview can be compared with it. */
+  readonly liveChecks: ReadonlySet<string>;
+};
+
 /** The rules for a deployment: those in the repository's file at that commit, or the defaults. */
 async function rulesFor(
   api: GitHubApi | null,
   deployed: Readonly<Deployment>,
-): Promise<ResolvedRules & { readonly read: boolean }> {
+): Promise<DeploymentRules> {
   if (!api || !deployed.sha) {
-    return { ...resolveRules(null, deployed.environment), read: false };
+    return {
+      ...resolveRules(null, deployed.environment),
+      read: false,
+      liveChecks: new Set(resolveRules(null, 'production').levels.keys()),
+    };
   }
   const { loaded, unreadable } = await loadConfig(
     api,
@@ -115,10 +136,77 @@ async function rulesFor(
     deployed.sha,
   );
   const rules = resolveRules(loaded, deployed.environment);
+  const liveChecks = new Set(resolveRules(loaded, 'production').levels.keys());
   // `read` is false when the file could not be read, so what it says is not known.
   return unreadable
-    ? { ...rules, problems: [...rules.problems, unreadable], read: false }
-    : { ...rules, read: true };
+    ? {
+        ...rules,
+        problems: [...rules.problems, unreadable],
+        read: false,
+        liveChecks,
+      }
+    : { ...rules, read: true, liveChecks };
+}
+
+/**
+ * Settles the repository's sites from this deployment and its file, before the
+ * run, so a new site is checked at once. A successful deployment of an
+ * environment the file's `deployments.environments` allows (every one that is
+ * not a preview, without it) names its site with its address; one that names
+ * none cannot be told apart from any other, so it adds nothing and is noted for
+ * the repository page, unless the file declares the sites itself. The sites
+ * the file declares are kept current here too; a file that could not be read
+ * changes none.
+ */
+async function settleSites(
+  db: Database,
+  userId: number,
+  deployed: Readonly<Deployment>,
+  rules: DeploymentRules,
+): Promise<void> {
+  // A push of the file (`force`, no environment) is no deployment: it only
+  // refreshes the sites the file declares.
+  const isDeployment = deployed.name !== '';
+  const named =
+    isDeployment &&
+    (rules.siteEnvironments === null ||
+      matchesAny(rules.siteEnvironments, deployed.name));
+  const address = named && deployed.url ? siteAddress(deployed.url) : null;
+  if (isDeployment) {
+    if (!named || address?.ok || (rules.read && rules.sites.length > 0)) {
+      await clearGap(db, deployed.repo, deployed.name);
+    } else {
+      await noteGap(db, deployed.repo, deployed.name);
+    }
+  }
+  await reconcileSites(db, userId, deployed.repo, {
+    declared: rules.read ? rules.sites : null,
+    ...(address?.ok
+      ? { deployed: { environment: deployed.name, host: address.host } }
+      : {}),
+  });
+}
+
+/**
+ * The latest run of the live site a preview is a copy of, or null when there is
+ * none to compare with (see `baseline.ts` for how the site is found).
+ */
+async function baselineOf(
+  db: Database,
+  userId: number,
+  deployed: Readonly<Deployment>,
+  rules: DeploymentRules,
+): Promise<{ host: string; findings: readonly StoredFinding[] } | null> {
+  const host = baselineHost({
+    environment: deployed.name,
+    sites: await listDomainsOfRepo(db, userId, deployed.repo),
+    mapping: rules.previews,
+  });
+  if (host === null) {
+    return null;
+  }
+  const [run] = await latestRuns(db, userId, host, 1);
+  return run ? { host, findings: run.findings } : null;
 }
 
 /**
@@ -133,7 +221,7 @@ async function applyEnabledFlag(
   db: Database,
   api: GitHubApi | null,
   deployed: Readonly<Deployment>,
-  rules: ResolvedRules & { readonly read: boolean },
+  rules: DeploymentRules,
   fileOff: boolean,
   deps: RunDeps,
 ): Promise<boolean> {
@@ -280,12 +368,18 @@ async function keepReport(
   }
 }
 
-/** Checks the preview at the address the deployment names and reports it on the commit. */
+/**
+ * Checks the preview at the address the deployment names and reports it on the
+ * commit. The check fails only for problems the change brought: the findings
+ * are compared with the latest run of the live site the preview is a copy of.
+ * Without such a site to compare with, any error fails it.
+ */
 async function checkPreview(
   db: Database,
   api: GitHubApi | null,
+  userId: number,
   deployed: Readonly<Deployment>,
-  rules: ResolvedRules,
+  rules: DeploymentRules,
   deps: RunDeps,
 ): Promise<void> {
   const { url, sha } = deployed;
@@ -311,6 +405,20 @@ async function checkPreview(
     return;
   }
   const findings = findingsOf(applyLevels(checks, rules.levels));
+  let comparison: Comparison | undefined;
+  try {
+    const baseline = await baselineOf(db, userId, deployed, rules);
+    comparison = baseline
+      ? compareWithBaseline(
+          findings,
+          { ...baseline, levels: rules.liveChecks },
+          new Set(rules.levels.keys()),
+        )
+      : undefined;
+  } catch (error) {
+    // Without a baseline the preview is judged on its own, as it was before.
+    console.error('baseline not read', deployed.repo, error);
+  }
   const stored = await keepReport(db, deps.appUrl, {
     repo: deployed.repo,
     sha,
@@ -323,6 +431,7 @@ async function checkPreview(
       sha,
       url,
       findings,
+      ...(comparison ? { comparison } : {}),
       ...stored,
       source: rules.source,
       problems: rules.problems,
@@ -383,11 +492,16 @@ export async function handleDeployment(
     if (await applyEnabledFlag(db, api, deployed, rules, fileOff, deps)) {
       return;
     }
+    try {
+      await settleSites(db, userId, deployed, rules);
+    } catch (error) {
+      console.error('settling the sites failed', deployed.repo, error);
+    }
     await checkLive(db, api, userId, deployed, rules, deps);
   } else if (rules.read && !rules.enabled) {
     // A branch whose file turns checks off is not checked; nothing is remembered.
     return;
   } else {
-    await checkPreview(db, api, deployed, rules, deps);
+    await checkPreview(db, api, userId, deployed, rules, deps);
   }
 }

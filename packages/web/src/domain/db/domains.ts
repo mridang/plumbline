@@ -14,6 +14,37 @@ import { domains } from '@/domain/db/schema';
 /** A domain row as stored (`checks` is still JSON text). */
 type DomainRow = typeof domains.$inferSelect;
 
+/**
+ * Where a site came from. Only `manual` is safe from pruning: the others are
+ * dropped when the place they came from stops listing them.
+ */
+export type SiteSource = 'manual' | 'config' | 'deployment' | 'fallback';
+
+/**
+ * How much a source is trusted when two find the same site: a deployment is
+ * proof the site is live, the file declares it, the Wrangler routes and the
+ * Website field only suggest it, and a person's own choice beats them all.
+ */
+const SOURCE_RANK: Readonly<Record<SiteSource, number>> = {
+  fallback: 0,
+  config: 1,
+  deployment: 2,
+  manual: 3,
+};
+
+/** The sources a site can have, as a stored value is checked against. */
+function sourceOf(value: string): SiteSource {
+  return value === 'config' || value === 'deployment' || value === 'fallback'
+    ? value
+    : 'manual';
+}
+
+/** What found a site: the source, and for a deployment the environment that reported it. */
+export interface SiteOrigin {
+  readonly source: SiteSource;
+  readonly environment?: string | null;
+}
+
 /** A domain with its chosen checks read out of the JSON column. */
 export interface Domain {
   readonly id: string;
@@ -23,6 +54,10 @@ export interface Domain {
   readonly checks: readonly string[] | null;
   /** `owner/name` of the repository the domain was found in; null when added by hand. */
   readonly repo: string | null;
+  /** Where the site came from; only a `manual` site is never dropped by a sync. */
+  readonly source: SiteSource;
+  /** The environment that reported a `deployment` site; null for the others. */
+  readonly environment: string | null;
   readonly created_at: string;
   readonly updated_at: string;
 }
@@ -61,6 +96,8 @@ export function domainOf(
       | 'host'
       | 'checks'
       | 'repo'
+      | 'source'
+      | 'environment'
       | 'created_at'
       | 'updated_at'
     >
@@ -74,6 +111,8 @@ export function domainOf(
     host: row.host,
     checks: checksOf(row.checks),
     repo: row.repo,
+    source: sourceOf(row.source),
+    environment: row.environment,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -148,15 +187,22 @@ export async function listDomainsOfRepo(
 
 /**
  * Add a domain for the person, or return the one they already have for that
- * host (`created` says which). A new domain runs every check.
+ * host (`created` says which). A new domain runs every check. `origin` says
+ * what found it (a person, by default). A site that already exists keeps its
+ * place on the dashboard, but learns its repository when it had none, and
+ * takes a more trusted source over a less trusted one (a deployment's address
+ * over a Wrangler route); a `manual` site stays manual.
  */
 export async function addDomain(
   db: Database,
   userId: number,
   host: string,
   repo: string | null = null,
+  origin: SiteOrigin = { source: 'manual' },
 ): Promise<{ readonly domain: Domain; readonly created: boolean }> {
   const timestamp = now();
+  const environment =
+    origin.source === 'deployment' ? (origin.environment ?? null) : null;
   const [row] = await db
     .insert(domains)
     .values({
@@ -165,6 +211,8 @@ export async function addDomain(
       host,
       checks: null,
       repo,
+      source: origin.source,
+      environment,
       created_at: timestamp,
       updated_at: timestamp,
     })
@@ -177,16 +225,27 @@ export async function addDomain(
   if (!existing) {
     throw new Error('Saving the domain returned no row');
   }
-  // A domain added by hand that a repository turns out to serve learns its repository.
-  if (repo !== null && existing.repo === null) {
-    const [tagged] = await db
-      .update(domains)
-      .set({ repo, updated_at: timestamp })
-      .where(and(eq(domains.user_id, userId), eq(domains.id, existing.id)))
-      .returning();
-    return { domain: tagged ? domainOf(tagged) : existing, created: false };
+  // A domain added by hand that a repository turns out to serve learns its
+  // repository, and one found in this repository takes the better source.
+  const learns = repo !== null && existing.repo === null;
+  const upgrades =
+    repo !== null &&
+    (existing.repo === null || existing.repo === repo) &&
+    SOURCE_RANK[origin.source] > SOURCE_RANK[existing.source] &&
+    existing.source !== 'manual';
+  if (!learns && !upgrades) {
+    return { domain: existing, created: false };
   }
-  return { domain: existing, created: false };
+  const [changed] = await db
+    .update(domains)
+    .set({
+      ...(learns ? { repo } : {}),
+      ...(upgrades ? { source: origin.source, environment } : {}),
+      updated_at: timestamp,
+    })
+    .where(and(eq(domains.user_id, userId), eq(domains.id, existing.id)))
+    .returning();
+  return { domain: changed ? domainOf(changed) : existing, created: false };
 }
 
 /**
@@ -225,6 +284,33 @@ export async function deleteDomain(
 
 /** How many repositories are removed per query (D1 allows 100 bound values). */
 const REMOVE_BATCH = 50;
+
+/**
+ * Remove some of the person's sites by id, the way a site is removed
+ * everywhere else: only the site goes. The runs and issues already recorded
+ * stay, and the issues of a site the repository no longer deploys are closed
+ * by the next run. Returns how many were removed.
+ */
+export async function deleteSites(
+  db: Database,
+  userId: number,
+  ids: readonly string[],
+): Promise<number> {
+  let removed = 0;
+  for (let at = 0; at < ids.length; at += REMOVE_BATCH) {
+    const gone = await db
+      .delete(domains)
+      .where(
+        and(
+          eq(domains.user_id, userId),
+          inArray(domains.id, ids.slice(at, at + REMOVE_BATCH)),
+        ),
+      )
+      .returning({ id: domains.id });
+    removed += gone.length;
+  }
+  return removed;
+}
 
 /**
  * Removes the person's sites of repositories that are not in `present`: a

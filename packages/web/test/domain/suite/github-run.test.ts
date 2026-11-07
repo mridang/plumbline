@@ -8,7 +8,12 @@ import {
   disableRepoByFile,
   isRepoFileDisabled,
 } from '@/domain/db/disabled';
-import { addDomain, deleteDomain } from '@/domain/db/domains';
+import { listGaps } from '@/domain/db/deploy-gaps';
+import {
+  addDomain,
+  deleteDomain,
+  listDomainsOfRepo,
+} from '@/domain/db/domains';
 import { forgetIssue, issueOf, latestRuns } from '@/domain/db/suite';
 import { GitHubApi } from '@/domain/github/api';
 import { readGitHubConfig } from '@/domain/github/config';
@@ -19,6 +24,7 @@ import {
   loadConfig,
 } from '@/domain/suite/github-run';
 import { MAX_NEW_ISSUES } from '@/domain/suite/publish';
+import { RULE_SETS } from '@/domain/suite/rules';
 import type { SuiteRun } from '@/domain/suite/run';
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
@@ -26,6 +32,11 @@ import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 import { GITHUB_ENV } from '../github/github-test-kit';
 
 const config = readGitHubConfig(GITHUB_ENV)!;
+
+/** A check of the advanced rules that the recommended rules (the live site's) leave out. */
+const ONLY_ADVANCED = Object.keys(RULE_SETS['plumbline:advanced']!).find(
+  (id) => !(id in RULE_SETS['plumbline:recommended']!),
+)!;
 
 interface Call {
   method: string;
@@ -87,12 +98,14 @@ const failing =
 
 const live: Deployment = {
   environment: 'production',
+  name: 'production',
   repo: 'acme/site',
   sha: 'abc1234',
   url: null,
 };
 const preview: Deployment = {
   environment: 'preview',
+  name: 'preview',
   repo: 'acme/site',
   sha: 'abc1234',
   url: 'https://pr-3.site.test/',
@@ -1041,5 +1054,410 @@ describe('handleDeployment of a preview', () => {
       'acme/site',
       expect.anything(),
     );
+  });
+});
+
+describe('handleDeployment, the sites a deployment names', () => {
+  const sitesOf = async (db: Awaited<ReturnType<typeof setup>>) =>
+    (await listDomainsOfRepo(db, 7, 'acme/site'))
+      .map((d) => [d.host, d.source, d.environment] as const)
+      .toSorted(([a], [b]) => a.localeCompare(b));
+
+  it('adds the address a deployment reports as a site of its environment, and checks it', async () => {
+    const db = await setup();
+    const { fetcher } = github();
+    const urls: string[] = [];
+    await deploy(
+      db,
+      config,
+      5,
+      7,
+      { ...live, name: 'prd_foo', url: 'https://foo.site.test/' },
+      {
+        fetcher,
+        run: async (url) => {
+          urls.push(url);
+          return failing()();
+        },
+      },
+    );
+    expect(await sitesOf(db)).toEqual([
+      ['foo.site.test', 'deployment', 'prd_foo'],
+      ['site.test', 'manual', null],
+    ]);
+    expect(urls.toSorted()).toEqual([
+      'https://foo.site.test/',
+      'https://site.test/',
+    ]);
+  });
+
+  it('takes any environment name, so each microservice has its own site', async () => {
+    const db = await setup();
+    const { fetcher } = github();
+    const run = failing();
+    for (const [name, url] of [
+      ['prd_foo', 'https://foo.site.test/'],
+      ['micro_svc', 'https://svc.site.test/'],
+    ] as const) {
+      await deploy(db, config, 5, 7, { ...live, name, url }, { fetcher, run });
+    }
+    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
+      'foo.site.test',
+      'site.test',
+      'svc.site.test',
+    ]);
+  });
+
+  it('drops the old address of an environment that reports a new one, and closes nothing of the others', async () => {
+    const db = await setup();
+    const { fetcher } = github();
+    const run = failing();
+    const named = (url: string) => ({ ...live, name: 'production', url });
+    await deploy(db, config, 5, 7, named('https://old.site.test/'), {
+      fetcher,
+      run,
+    });
+    await deploy(db, config, 5, 7, named('https://new.site.test/'), {
+      fetcher,
+      run,
+    });
+    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
+      'new.site.test',
+      'site.test',
+    ]);
+  });
+
+  it('adds nothing for a deployment with no address, and notes it for the repository page', async () => {
+    const db = await setup();
+    const { fetcher } = github();
+    await deploy(
+      db,
+      config,
+      5,
+      7,
+      { ...live, name: 'prd_foo' },
+      { fetcher, run: failing() },
+    );
+    expect(await sitesOf(db)).toEqual([['site.test', 'manual', null]]);
+    expect(await listGaps(db, 'acme/site')).toEqual(['prd_foo']);
+  });
+
+  it('forgets the note when the environment reports an address', async () => {
+    const db = await setup();
+    const { fetcher } = github();
+    const run = failing();
+    await deploy(
+      db,
+      config,
+      5,
+      7,
+      { ...live, name: 'prd_foo' },
+      { fetcher, run },
+    );
+    await deploy(
+      db,
+      config,
+      5,
+      7,
+      { ...live, name: 'prd_foo', url: 'https://foo.site.test/' },
+      { fetcher, run },
+    );
+    expect(await listGaps(db, 'acme/site')).toEqual([]);
+  });
+
+  it('does not note a missing address when the file declares the sites itself', async () => {
+    const db = await setup();
+    const { fetcher } = github({
+      'plumbline.yaml': 'sites:\n  - https://api.site.test\n',
+    });
+    await deploy(db, config, 5, 7, live, { fetcher, run: failing() });
+    expect(await listGaps(db, 'acme/site')).toEqual([]);
+    expect(await sitesOf(db)).toEqual([
+      ['api.site.test', 'config', null],
+      ['site.test', 'manual', null],
+    ]);
+  });
+
+  it('adds only the environments the file lists, and ignores the rest without a note', async () => {
+    const db = await setup();
+    const { fetcher } = github({
+      'plumbline.yaml': 'deployments:\n  environments: ["prd_*"]\n',
+    });
+    const run = failing();
+    await deploy(
+      db,
+      config,
+      5,
+      7,
+      { ...live, name: 'production', url: 'https://main.site.test/' },
+      { fetcher, run },
+    );
+    await deploy(
+      db,
+      config,
+      5,
+      7,
+      { ...live, name: 'prd_foo', url: 'https://foo.site.test/' },
+      { fetcher, run },
+    );
+    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
+      'foo.site.test',
+      'site.test',
+    ]);
+    expect(await listGaps(db, 'acme/site')).toEqual([]);
+  });
+
+  it('keeps the declared sites current when the file is pushed, and notes no gap for the push', async () => {
+    const db = await setup();
+    const { fetcher } = github({ 'plumbline.yaml': 'sites: [a.site.test]\n' });
+    const push = { ...live, name: '' };
+    await deploy(db, config, 5, 7, push, {
+      fetcher,
+      run: failing(),
+      force: true,
+    });
+    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
+      'a.site.test',
+      'site.test',
+    ]);
+    expect(await listGaps(db, 'acme/site')).toEqual([]);
+    const later = github({ 'plumbline.yaml': 'sites: [b.site.test]\n' });
+    await deploy(db, config, 5, 7, push, {
+      fetcher: later.fetcher,
+      run: failing(),
+      force: true,
+    });
+    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
+      'b.site.test',
+      'site.test',
+    ]);
+  });
+
+  it('leaves the declared sites alone when the file could not be read', async () => {
+    const db = await setup();
+    await addDomain(db, 7, 'a.site.test', 'acme/site', { source: 'config' });
+    const { fetcher } = github({ 'plumbline.yaml': 500 });
+    await deploy(db, config, 5, 7, live, { fetcher, run: failing() });
+    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
+      'a.site.test',
+      'site.test',
+    ]);
+  });
+
+  it('settles nothing for a preview', async () => {
+    const db = await setup();
+    const { fetcher } = github();
+    await deploy(db, config, 5, 7, preview, { fetcher, run: failing() });
+    expect(await sitesOf(db)).toEqual([['site.test', 'manual', null]]);
+    expect(await listGaps(db, 'acme/site')).toEqual([]);
+  });
+});
+
+describe('handleDeployment of a preview, against the live site', () => {
+  /** A run that finds these checks, each as an error unless it is said to be a warning. */
+  const finding =
+    (...ids: string[]) =>
+    async (): Promise<SuiteRun> => ({
+      url: 'https://site.test/',
+      status: 200,
+      hash: 'h',
+      checks: ids.map((id) => ({
+        id,
+        findings: [{ severity: 'error', message: `${id} is wrong` }],
+      })),
+      skipped: [],
+    });
+  const outcome = (calls: Call[]) => {
+    const body = calls.at(-1)?.body as {
+      conclusion: string;
+      output: { title: string; summary: string };
+    };
+    return {
+      conclusion: body.conclusion,
+      title: body.output.title,
+      summary: body.output.summary,
+    };
+  };
+  /** The live site after a deployment that found these checks, so there is a baseline. */
+  const withBaseline = async (...ids: string[]) => {
+    const db = await setup();
+    await deploy(db, config, 5, 7, live, {
+      fetcher: github().fetcher,
+      run: finding(...ids),
+    });
+    return db;
+  };
+
+  it('passes a preview that has only the problems the live site has', async () => {
+    const db = await withBaseline('seo-viewport', 'seo-title-missing');
+    const { fetcher, calls } = github();
+    await deploy(db, config, 5, 7, preview, {
+      fetcher,
+      run: finding('seo-viewport', 'seo-title-missing'),
+    });
+    const result = outcome(calls);
+    expect(result.conclusion).toBe('success');
+    expect(result.title).toBe(
+      'No new problems on pr-3.site.test (2 already on site.test)',
+    );
+    expect(result.summary).toContain('2 existing issues, none new');
+  });
+
+  it('fails a preview that adds an error the live site does not have, and lists it as new', async () => {
+    const db = await withBaseline('seo-viewport');
+    const { fetcher, calls } = github();
+    await deploy(db, config, 5, 7, preview, {
+      fetcher,
+      run: finding('seo-viewport', 'seo-title-missing'),
+    });
+    const result = outcome(calls);
+    expect(result.conclusion).toBe('failure');
+    expect(result.title).toBe('1 new error on pr-3.site.test');
+    expect(result.summary).toContain('1 existing issue, 1 new');
+    expect(result.summary).toContain(
+      '**new error**: seo-title-missing is wrong',
+    );
+  });
+
+  it('mentions what the change fixed, without failing for what is left', async () => {
+    const db = await withBaseline('seo-viewport', 'seo-title-missing');
+    const { fetcher, calls } = github();
+    await deploy(db, config, 5, 7, preview, {
+      fetcher,
+      run: finding('seo-viewport'),
+    });
+    const result = outcome(calls);
+    expect(result.conclusion).toBe('success');
+    expect(result.summary).toContain('1 fixed');
+    expect(result.summary).toContain('Fixed by this change:');
+  });
+
+  it('judges a preview on its own, failing on any error, when the live site was never checked', async () => {
+    const db = await setup();
+    const { fetcher, calls } = github();
+    await deploy(db, config, 5, 7, preview, {
+      fetcher,
+      run: finding('seo-viewport'),
+    });
+    expect(outcome(calls).conclusion).toBe('failure');
+    expect(outcome(calls).summary).not.toContain('Compared with');
+  });
+
+  it('judges a preview on its own when the live site it is a copy of cannot be told', async () => {
+    const db = await withBaseline('seo-viewport');
+    await addDomain(db, 7, 'other.test', 'acme/site');
+    const { fetcher, calls } = github();
+    await deploy(db, config, 5, 7, preview, {
+      fetcher,
+      run: finding('seo-viewport'),
+    });
+    expect(outcome(calls).conclusion).toBe('failure');
+  });
+
+  it('uses the site the previews mapping of the file names', async () => {
+    const db = await withBaseline('seo-viewport');
+    await addDomain(db, 7, 'other.test', 'acme/site');
+    const { fetcher, calls } = github({
+      'plumbline.yaml': 'previews:\n  "prev*": site.test\n',
+    });
+    await deploy(db, config, 5, 7, preview, {
+      fetcher,
+      run: finding('seo-viewport'),
+    });
+    expect(outcome(calls).conclusion).toBe('success');
+    expect(outcome(calls).summary).toContain(
+      'Compared with the latest check of site.test',
+    );
+  });
+
+  it('finds the live site by its environment name when the repository has several', async () => {
+    const db = await setup();
+    const run = finding('seo-viewport');
+    const fetcher = github().fetcher;
+    await deploy(
+      db,
+      config,
+      5,
+      7,
+      { ...live, name: 'prd_app', url: 'https://app.site.test/' },
+      { fetcher, run },
+    );
+    await deploy(
+      db,
+      config,
+      5,
+      7,
+      { ...live, name: 'prd_api', url: 'https://api.site.test/' },
+      { fetcher, run: finding() },
+    );
+    const app = github();
+    await deploy(
+      db,
+      config,
+      5,
+      7,
+      { ...preview, name: 'preview_prd_app' },
+      { fetcher: app.fetcher, run },
+    );
+    expect(outcome(app.calls).conclusion).toBe('success');
+    expect(outcome(app.calls).summary).toContain('app.site.test');
+    const api = github();
+    await deploy(
+      db,
+      config,
+      5,
+      7,
+      { ...preview, name: 'preview_prd_api', sha: 'def5678' },
+      { fetcher: api.fetcher, run },
+    );
+    expect(outcome(api.calls).conclusion).toBe('failure');
+    expect(outcome(api.calls).summary).toContain('api.site.test');
+  });
+
+  it('leaves a new warning neutral, as it was', async () => {
+    const db = await withBaseline();
+    const { fetcher, calls } = github();
+    await deploy(db, config, 5, 7, preview, {
+      fetcher,
+      run: failing('seo-viewport', 'warning'),
+    });
+    expect(outcome(calls).conclusion).toBe('neutral');
+  });
+
+  it('does not fail on a finding of a check the live site does not run', async () => {
+    const db = await withBaseline();
+    const { fetcher, calls } = github({
+      'plumbline.yaml': `environments:\n  preview:\n    rules:\n      ${ONLY_ADVANCED}: error\n`,
+    });
+    await deploy(db, config, 5, 7, preview, {
+      fetcher,
+      run: finding(ONLY_ADVANCED),
+    });
+    expect(outcome(calls).conclusion).toBe('neutral');
+    expect(outcome(calls).summary).toContain('could not be compared');
+  });
+
+  it('applies the levels of the file to the pull request check too', async () => {
+    const db = await withBaseline();
+    const { fetcher, calls } = github({
+      'plumbline.yaml': 'rules:\n  seo-viewport: warn\n',
+    });
+    await deploy(db, config, 5, 7, preview, {
+      fetcher,
+      run: finding('seo-viewport'),
+    });
+    expect(outcome(calls).conclusion).toBe('neutral');
+  });
+
+  it('keeps a preview that cannot be reached neutral, as it was', async () => {
+    const db = await withBaseline('seo-viewport');
+    const { fetcher, calls } = github();
+    await deploy(db, config, 5, 7, preview, {
+      fetcher,
+      run: async () => {
+        throw new Error('401');
+      },
+    });
+    expect(calls.at(-1)?.body['conclusion']).toBe('neutral');
   });
 });
