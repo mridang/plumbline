@@ -12,19 +12,27 @@ import { eq, inArray } from 'drizzle-orm';
 import type { Database } from '@/domain/db/client';
 import {
   domains,
+  githubInstallations,
+  githubLinks,
+  githubRepos,
   liveEvents,
   pushSubscriptions,
   oauthCodes,
   oauthGrants,
   oauthTokens,
   reports,
+  suiteRuns,
+  userRepositories,
   users,
 } from '@/domain/db/schema';
 
 /**
  * Delete the user row and every row that hangs off it: their domains and the
- * reports of those domains, and the connections they gave to assistants
- * (grants, with the tokens and unspent codes behind them).
+ * reports of those domains, their run history, the GitHub account they
+ * connected (with its installations, repositories and the access it gave), and
+ * the connections they gave to assistants (grants, with the tokens and unspent
+ * codes behind them). A repository's switch for its checks belongs to the
+ * repository, not to the person, and stays.
  */
 export async function deleteAccountData(
   db: Database,
@@ -57,6 +65,13 @@ export async function deleteAccountData(
       ),
     db.delete(liveEvents).where(eq(liveEvents.user_id, userId)),
     db.delete(pushSubscriptions).where(eq(pushSubscriptions.user_id, userId)),
+    db.delete(suiteRuns).where(eq(suiteRuns.user_id, userId)),
+    db.delete(githubRepos).where(eq(githubRepos.user_id, userId)),
+    db
+      .delete(githubInstallations)
+      .where(eq(githubInstallations.user_id, userId)),
+    db.delete(githubLinks).where(eq(githubLinks.user_id, userId)),
+    db.delete(userRepositories).where(eq(userRepositories.user_id, userId)),
     db.delete(domains).where(eq(domains.user_id, userId)),
     db.delete(users).where(eq(users.id, userId)),
   ]);

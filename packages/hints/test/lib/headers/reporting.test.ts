@@ -100,6 +100,55 @@ describe('externalReports', () => {
   });
 });
 
+describe('externalReports on a site served by Cloudflare', () => {
+  const nel = '{"report_to":"cf-nel"}';
+  const collector = group('cf-nel', 'https://a.nel.cloudflare.com/report/v4');
+
+  it("ignores Cloudflare's injected NEL collector", () => {
+    expect(
+      externalReports({ ...base, nel, reportTo: collector, cloudflare: true }),
+    ).toEqual({});
+  });
+
+  it('reports the same collector when the response did not come through Cloudflare', () => {
+    expect(externalReports({ ...base, nel, reportTo: collector }).nel).toEqual([
+      'https://a.nel.cloudflare.com/report/v4',
+    ]);
+    expect(
+      externalReports({ ...base, nel, reportTo: collector, cloudflare: false })
+        .nel,
+    ).toEqual(['https://a.nel.cloudflare.com/report/v4']);
+  });
+
+  it("ignores the collector in a CSP 'report-uri' and in both CSP 'report-to' groups", () => {
+    expect(
+      externalReports({
+        ...base,
+        csp: "default-src 'self'; report-uri https://a.nel.cloudflare.com/r; report-to cf-nel",
+        cspReportOnly: "default-src 'self'; report-to cf-nel",
+        reportTo: collector,
+        cloudflare: true,
+      }),
+    ).toEqual({});
+  });
+
+  it.each([
+    'https://nel.cloudflare.com.example.net/r',
+    'https://evilnel.cloudflare.com/r',
+    'https://cloudflare.com/r',
+    'https://r.example.net/r',
+  ])('still reports %s', (url) => {
+    expect(
+      externalReports({
+        ...base,
+        nel,
+        reportTo: group('cf-nel', url),
+        cloudflare: true,
+      }).nel,
+    ).toEqual([url]);
+  });
+});
+
 describe('reportingFindings', () => {
   it('has one error per offending place', () => {
     const findings = reportingFindings({

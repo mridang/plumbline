@@ -11,6 +11,7 @@ import {
   findDomainByHost,
   getDomain,
   listDomains,
+  removeSitesOfMissingRepos,
   setDomainChecks,
 } from '@/domain/db/domains';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
@@ -234,5 +235,42 @@ describe('migration 0012_registry_domains', () => {
       'pypi.org',
       'site.example.com',
     ]);
+  });
+});
+
+describe('removeSitesOfMissingRepos', () => {
+  it('removes the sites of repositories that are not present, and says which', async () => {
+    const { db } = empty();
+    await addDomain(db, 1, 'a.example.com', 'o/a');
+    await addDomain(db, 1, 'gone.example.com', 'o/gone');
+    await addDomain(db, 1, 'by-hand.example.com');
+    expect(await removeSitesOfMissingRepos(db, 1, new Set(['o/a']))).toEqual([
+      'o/gone',
+    ]);
+    expect((await listDomains(db, 1)).map((d) => d.host).toSorted()).toEqual([
+      'a.example.com',
+      'by-hand.example.com',
+    ]);
+  });
+
+  it("never touches another person's sites", async () => {
+    const { db } = empty();
+    await addDomain(db, 1, 'mine.example.com', 'o/mine');
+    await addDomain(db, 2, 'theirs.example.com', 'o/mine');
+    expect(await removeSitesOfMissingRepos(db, 1, new Set())).toEqual([
+      'o/mine',
+    ]);
+    expect((await listDomains(db, 2)).map((d) => d.host)).toEqual([
+      'theirs.example.com',
+    ]);
+  });
+
+  it('removes more repositories than one query can bind', async () => {
+    const { db } = empty();
+    for (let n = 0; n < 120; n += 1) {
+      await addDomain(db, 1, `s${n}.example.com`, `o/r${n}`);
+    }
+    expect(await removeSitesOfMissingRepos(db, 1, new Set())).toHaveLength(120);
+    expect(await listDomains(db, 1)).toEqual([]);
   });
 });
