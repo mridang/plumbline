@@ -16,7 +16,7 @@ const {
 } = await import('@/lib/core/worker-extras');
 
 describe('extraHandlers', () => {
-  it('adds the cron handler and the scan queue's consumer to the Worker, and nothing else', () => {
+  it('adds the cron handler and the scan queue consumer to the Worker, and nothing else', () => {
     expect(extraHandlers).toEqual({ scheduled, queue: handleScanQueue });
   });
 
