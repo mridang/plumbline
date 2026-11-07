@@ -179,6 +179,12 @@ describe('viewOf and dashboardHref', () => {
   it('builds the address of each view', () => {
     expect(dashboardHref('table')).toBe('/dashboard');
     expect(dashboardHref('cards')).toBe('/dashboard?view=cards');
+    expect(dashboardHref('cards', { status: 'failing', paused: true })).toBe(
+      '/dashboard?view=cards&status=failing&paused=1',
+    );
+    expect(dashboardHref('table', { status: 'warning', paused: false })).toBe(
+      '/dashboard?status=warnings',
+    );
   });
 });
 

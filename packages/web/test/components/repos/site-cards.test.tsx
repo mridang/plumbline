@@ -51,7 +51,7 @@ describe('SiteCard', () => {
     expect(out).toContain('site.example.com');
     expect(out).toContain('href="https://site.example.com"');
     expect(out).toContain('Failing');
-    expect(out).toContain('All clear');
+    expect(out).toContain('Passing');
     expect(out).toContain('aria-label="2 failed, 1 with warnings"');
   });
 

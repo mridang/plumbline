@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import type { ReactElement } from 'react';
 
+import { filterOf } from '@/components/repos/site-filter';
 import { viewOf } from '@/components/repos/site-rows';
 import { Container } from '@/components/ui/layout';
 import { PageHeading } from '@/components/ui-app/page-heading';
@@ -22,20 +23,21 @@ export const metadata: Metadata = { title: 'Dashboard' };
  * Every repository of the signed-in person and how its sites stand, live: a
  * check shows as running while it runs and settles on its result when it ends,
  * with no refreshing. Repositories come from GitHub; the person can hide one
- * from this page (`?hidden=1` lists the hidden ones again), as a table or, with `?view=cards`, as cards. Notifications, the
+ * from this page (`?hidden=1` lists the hidden ones again), as a table or, with `?view=cards`, as cards; `?status=` (failing, warnings, passing, checking, unchecked, unresponsive) and `?paused=1` narrow the list. Notifications, the
  * GitHub connection and connecting an assistant are in the account menu in the
  * header.
  */
 export default async function DashboardPage({
   searchParams,
 }: Readonly<{
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{ view?: string; status?: string; paused?: string }>;
 }>): Promise<ReactElement> {
   const user = await getCurrentUser();
   if (!user) {
     redirect(`/auth/login?returnTo=${encodeURIComponent('/dashboard')}`);
   }
-  const { view } = await searchParams;
+  const { view, status, paused } = await searchParams;
+  const filter = filterOf({ status, paused });
   const db = getDatabase();
   const [repos, pausedRepos] = await Promise.all([
     overviewOf(db, user.id),
@@ -55,6 +57,7 @@ export default async function DashboardPage({
           key={JSON.stringify([repos, pausedList, viewOf(view)])}
           initial={repos}
           paused={pausedList}
+          filter={filter}
           view={viewOf(view)}
           now={serverNow()}
         />

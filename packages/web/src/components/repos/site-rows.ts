@@ -6,6 +6,11 @@
  * Pure, so the page in the browser and the tests use the same rules.
  */
 
+import {
+  NO_FILTER,
+  queryOf,
+  type Filter,
+} from '@/components/repos/site-filter';
 import { WORST_FIRST } from '@/components/repos/site-state';
 import type { RepoStatus, SiteStatus } from '@/domain/db/live';
 
@@ -17,9 +22,9 @@ export function viewOf(value: string | undefined): View {
   return value === 'cards' ? 'cards' : 'table';
 }
 
-/** The dashboard's address for a view. */
-export function dashboardHref(view: View): string {
-  return view === 'cards' ? '/dashboard?view=cards' : '/dashboard';
+/** The dashboard's address for a view and a filter, so a shared link shows the same list. */
+export function dashboardHref(view: View, filter: Filter = NO_FILTER): string {
+  return `/dashboard${queryOf(filter, view)}`;
 }
 
 /** One site of the dashboard with what is known about its repository. */

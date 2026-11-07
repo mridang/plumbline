@@ -133,11 +133,15 @@ describe('SitesTable', () => {
     expect(out.match(/<li/g)).toHaveLength(2);
   });
 
-  it('marks a repository whose checks are paused, dims its row and shows no state', () => {
+  it('marks a repository whose checks are paused as a state beside its result, and dims its row', () => {
     const paused = draw(new Set(['acme/site']));
     expect(paused).toContain('>Paused<');
     expect(paused).toContain('opacity-60');
-    expect(paused).not.toContain('Checking now');
-    expect(paused).not.toContain('Failing');
+    expect(paused).toContain('Failing');
+  });
+
+  it('keeps the state apart from the result: a live row has no state marker', () => {
+    expect(draw(new Set())).not.toContain('>Paused<');
+    expect(draw(new Set())).not.toContain('Unresponsive');
   });
 });

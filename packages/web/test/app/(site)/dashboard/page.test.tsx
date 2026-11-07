@@ -57,17 +57,24 @@ beforeEach(async () => {
 afterEach(() => restore());
 
 /** Render the page, with the `view` query parameter if given. */
-function render(view?: string): Promise<ReactElement> {
+function render(
+  view?: string,
+  extra: Readonly<{ status?: string; paused?: string }> = {},
+): Promise<ReactElement> {
   return DashboardPage({
     searchParams: Promise.resolve({
       ...(view === undefined ? {} : { view }),
+      ...extra,
     }),
   });
 }
 
 /** The page's HTML. */
-async function page(view?: string): Promise<string> {
-  return htmlAt(await render(view), { pathname: '/dashboard' });
+async function page(
+  view?: string,
+  extra: Readonly<{ status?: string; paused?: string }> = {},
+): Promise<string> {
+  return htmlAt(await render(view, extra), { pathname: '/dashboard' });
 }
 
 describe('DashboardPage', () => {
@@ -143,11 +150,18 @@ describe('DashboardPage', () => {
     expect(out).not.toContain('Notifications on this device');
   });
 
-  it('lists a repository whose checks are off, marked as paused and with no state', async () => {
+  it('hides a repository whose checks are off until ?paused=1 asks for it', async () => {
     await disableRepo(db, 1, 'acme/lib');
-    const out = await page();
+    expect(await page()).not.toContain('lib.example.com');
+    const out = await page(undefined, { paused: '1' });
     expect(out).toContain('lib.example.com');
     expect(out).toContain('>Paused<');
+    expect(out).toContain('1 paused');
+  });
+
+  it('starts with the filter the address asks for', async () => {
+    const out = await page(undefined, { status: 'failing' });
+    expect(out).toContain('aria-pressed="true"');
   });
 
   it('offers to turn checks off for a repository that is on', async () => {

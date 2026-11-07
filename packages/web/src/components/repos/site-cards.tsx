@@ -7,7 +7,12 @@ import { LinkIcon } from '@/components/icons';
 import { RepoLabel } from '@/components/repos/repo-label';
 import { commitUrl, issuesUrl } from '@/components/repos/site-rows';
 import { SiteActions, sitePageOf } from '@/components/repos/site-actions';
-import { STATES, StatusBadge, worstState } from '@/components/repos/site-state';
+import { worstResult } from '@/components/repos/site-filter';
+import {
+  ResultBadge,
+  SiteStateMarker,
+  SiteStanding,
+} from '@/components/repos/site-status';
 import { cn } from '@/components/ui/cn';
 import { Badge } from '@/components/ui-app/badge';
 import { CountsBar } from '@/components/ui-app/counts-bar';
@@ -67,7 +72,7 @@ function SiteBlock({
             <LinkIcon size="xs" />
           </a>
         </span>
-        <StatusBadge state={site.state} />
+        <SiteStanding state={site.state} paused={false} />
       </div>
       {checked ? (
         <CountsBar failed={site.errors} warned={site.warnings} />
@@ -121,7 +126,7 @@ export function SiteCard({
   paused: boolean;
   now: number;
 }>): ReactElement {
-  const overall = worstState(repo.sites.map((site) => site.state));
+  const overall = worstResult(repo.sites.map((site) => site.state));
   const first = repo.sites[0];
   return (
     <article
@@ -143,10 +148,12 @@ export function SiteCard({
           )}
           <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted">
             <span>{countOf(repo.sites.length, 'site')}</span>
-            {repo.sites.length > 1 ? (
-              <Badge tone={STATES[overall].kind}>{STATES[overall].label}</Badge>
+            {repo.sites.length > 1 && overall !== null ? (
+              <ResultBadge result={overall} />
             ) : null}
-            {paused ? <Badge>Paused</Badge> : null}
+            {paused ? (
+              <SiteStateMarker state={first?.state ?? 'unchecked'} paused />
+            ) : null}
             {repo.repo !== null && repo.open_issues > 0 ? (
               <a
                 href={issuesUrl(repo.repo)}

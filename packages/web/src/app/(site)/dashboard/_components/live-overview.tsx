@@ -4,6 +4,12 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactElement } from 'react';
 
 import {
+  applyFilter,
+  countsOf,
+  summaryOf,
+  type Filter,
+} from '@/components/repos/site-filter';
+import {
   DEFAULT_SORT,
   dashboardHref,
   filterRows,
@@ -16,8 +22,11 @@ import {
 } from '@/components/repos/site-rows';
 import { SiteCards } from '@/components/repos/site-cards';
 import { SitesTable } from '@/components/repos/sites-table';
-import { Badge } from '@/components/ui-app/badge';
-import { Count } from '@/components/ui-app/count';
+import { StatusFilterBar } from '@/components/repos/status-filter-bar';
+import {
+  ConnectionIndicator,
+  type Connection,
+} from '@/components/ui-app/connection-indicator';
 import { EmptyState } from '@/components/ui-app/empty-state';
 import { LinkButton } from '@/components/ui-app/link-button';
 import { SearchField } from '@/components/ui-app/search-field';
@@ -27,7 +36,7 @@ import {
   browserEnvironment,
   keepStreamWhileVisible,
 } from '@/domain/live/connection';
-import { applyEvent, parseEvent, tally } from '@/domain/live/events';
+import { applyEvent, parseEvent } from '@/domain/live/events';
 
 /** How long the page waits for a burst of events before it shows them, in milliseconds. */
 const READ_AGAIN_MS = 250;
@@ -42,11 +51,14 @@ export function LiveOverview({
   initial,
   paused,
   view,
+  filter: initialFilter,
   now,
 }: Readonly<{
   initial: readonly RepoStatus[];
   /** How the sites are shown: a table or cards. */
   view: View;
+  /** What the address asked to narrow the list by. */
+  filter: Filter;
   /** The server's clock when the page was made, in milliseconds. */
   now: number;
   /** The repositories whose checks are turned off. */
@@ -55,7 +67,8 @@ export function LiveOverview({
   const router = useRouter();
   const [repos, setRepos] = useState<readonly RepoStatus[]>(initial);
 
-  const [live, setLive] = useState(false);
+  const [connection, setConnection] = useState<Connection>('connecting');
+  const [filter, setFilter] = useState<Filter>(initialFilter);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<Sort>(DEFAULT_SORT);
 
@@ -81,10 +94,10 @@ export function LiveOverview({
           // A fresh stream starts from now, so read once on every (re)connection to
           // pick up whatever happened while it was away.
           opened.addEventListener('open', () => {
-            setLive(true);
+            setConnection('live');
             reread();
           });
-          opened.addEventListener('error', () => setLive(false));
+          opened.addEventListener('error', () => setConnection('offline'));
           opened.addEventListener('live', (message) => {
             const event = parseEvent((message as MessageEvent<string>).data);
             if (event) {
@@ -96,7 +109,7 @@ export function LiveOverview({
         close: () => {
           source?.close();
           source = undefined;
-          setLive(false);
+          setConnection('offline');
         },
       },
       browserEnvironment(),
@@ -108,11 +121,16 @@ export function LiveOverview({
   }, [router]);
 
   const pausedSet = new Set(paused);
-  const counts = tally(
-    repos.filter((repo) => repo.repo === null || !pausedSet.has(repo.repo)),
-  );
-  const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
-  const rows = sortRows(filterRows(rowsOf(repos, pausedSet), query), sort);
+  const searched = filterRows(rowsOf(repos, pausedSet), query);
+  // Counts are taken over the same rows the filter works on, so a chip's
+  // number is the number of rows it shows.
+  const counts = countsOf(searched);
+  const rows = sortRows(applyFilter(searched, filter), sort);
+  const change = (next: Filter): void => {
+    setFilter(next);
+    // Keep the address in step so the view can be shared and survives a refresh.
+    window.history.replaceState(null, '', dashboardHref(view, next));
+  };
   if (repos.length === 0) {
     return (
       <EmptyState
@@ -126,38 +144,14 @@ export function LiveOverview({
   }
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-        <p
-          className="flex flex-wrap items-center gap-2 text-sm text-muted"
-          aria-live="polite"
-        >
-          <span className="font-medium text-ink">
-            <Count value={total} /> {total === 1 ? 'site' : 'sites'}
-          </span>
-          {counts.running > 0 ? (
-            <Badge tone="info" dot pulse>
-              <Count value={counts.running} /> checking
-            </Badge>
-          ) : null}
-          {counts.failing + counts.unreachable > 0 ? (
-            <Badge tone="bad" dot>
-              <Count value={counts.failing + counts.unreachable} /> failing
-            </Badge>
-          ) : null}
-          {counts.warning > 0 ? (
-            <Badge tone="warn" dot>
-              <Count value={counts.warning} /> with warnings
-            </Badge>
-          ) : null}
-          {counts.ok > 0 ? (
-            <Badge tone="good" dot>
-              <Count value={counts.ok} /> all clear
-            </Badge>
-          ) : null}
-          <Badge tone={live ? 'good' : 'neutral'}>
-            {live ? 'Live' : 'Connecting…'}
-          </Badge>
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+        <p className="text-sm font-medium text-ink" aria-live="polite">
+          {summaryOf(counts)}
         </p>
+        <ConnectionIndicator state={connection} />
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <StatusFilterBar counts={counts} filter={filter} onChange={change} />
         <div className="flex flex-wrap items-center gap-3">
           <SearchField
             label="Search sites"
@@ -172,12 +166,12 @@ export function LiveOverview({
               {
                 value: 'table',
                 label: 'Table',
-                href: dashboardHref('table'),
+                href: dashboardHref('table', filter),
               },
               {
                 value: 'cards',
                 label: 'Cards',
-                href: dashboardHref('cards'),
+                href: dashboardHref('cards', filter),
               },
             ]}
           />
@@ -185,7 +179,9 @@ export function LiveOverview({
       </div>
       {rows.length === 0 ? (
         <EmptyState title="No site matches">
-          Nothing here has “{query.trim()}” in its repository or address.
+          {query.trim() === ''
+            ? 'No site is shown with these filters.'
+            : `Nothing here has “${query.trim()}” in its repository or address.`}
         </EmptyState>
       ) : view === 'cards' ? (
         <SiteCards repos={groupRows(rows)} paused={pausedSet} now={now} />

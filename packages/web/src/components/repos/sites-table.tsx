@@ -14,7 +14,7 @@ import {
 } from '@/components/repos/site-rows';
 import { RepoLabel } from '@/components/repos/repo-label';
 import { SiteActions, sitePageOf } from '@/components/repos/site-actions';
-import { StatusBadge } from '@/components/repos/site-state';
+import { SiteStanding } from '@/components/repos/site-status';
 import { cn } from '@/components/ui/cn';
 import { Badge } from '@/components/ui-app/badge';
 import { RelativeTime } from '@/components/ui-app/relative-time';
@@ -100,13 +100,9 @@ function Host({ host }: Readonly<{ host: string }>): ReactElement {
   );
 }
 
-/** How a row stands: a muted "Paused" when checks are off for its repository, else its state. */
+/** How a row stands: its result, and its state when it is paused or does not answer. */
 function Status({ row }: Readonly<{ row: SiteRow }>): ReactElement {
-  return row.paused ? (
-    <Badge>Paused</Badge>
-  ) : (
-    <StatusBadge state={row.site.state} />
-  );
+  return <SiteStanding state={row.site.state} paused={row.paused} />;
 }
 
 /** What names a row: the repository as the link to its page, and the host under it. */
@@ -138,7 +134,6 @@ function Name({
         ) : (
           <RepoLabel repo={row.repo} href={sitePageOf(row.repo, row.site)} />
         )}
-        {row.paused ? <Badge>Paused</Badge> : null}
       </span>
       <Host host={row.site.host} />
     </div>
