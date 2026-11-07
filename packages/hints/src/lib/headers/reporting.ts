@@ -5,6 +5,14 @@
  * the browser to send reports, with the visitor's URL and details, to the
  * endpoint; when that endpoint is on another registrable domain, visitor data
  * leaves the site.
+ *
+ * One exception: a site served through Cloudflare gets a `NEL` header and a
+ * `Report-To` group injected by Cloudflare itself, pointing at
+ * `*.nel.cloudflare.com`. The site's owner did not choose that endpoint and
+ * cannot remove it without switching Network Error Logging off in their
+ * Cloudflare account, so it is the hosting platform's own reporting and not
+ * a third party they added. It is skipped when the response shows it came
+ * through Cloudflare; the same endpoint on any other site is still reported.
  */
 import { parseCspLoose } from './csp.js';
 import { finding, type Finding } from './finding.js';
@@ -18,6 +26,26 @@ export interface ReportingInput {
   nel: string | null;
   /** Raw `Report-To` header: a comma separated list of JSON groups. */
   reportTo: string | null;
+  /** The response came through Cloudflare (its `server` or `cf-ray` header). */
+  cloudflare?: boolean;
+}
+
+/** Cloudflare's own Network Error Logging collector, injected on proxied sites. */
+const CLOUDFLARE_NEL = /(^|\.)nel\.cloudflare\.com$/i;
+
+/** Whether an endpoint is Cloudflare's injected collector on a site served by Cloudflare. */
+function isPlatformEndpoint(
+  url: string,
+  cloudflare: boolean | undefined,
+): boolean {
+  if (!cloudflare) {
+    return false;
+  }
+  try {
+    return CLOUDFLARE_NEL.test(new URL(url).hostname);
+  } catch {
+    return false;
+  }
 }
 
 export interface ExternalReports {
@@ -44,6 +72,7 @@ function thirdPartyEndpoints(
   groups: Group[],
   name: unknown,
   registrable: string,
+  cloudflare?: boolean,
 ): string[] {
   const urls: string[] = [];
   for (const group of groups) {
@@ -52,7 +81,10 @@ function thirdPartyEndpoints(
     }
     for (const endpoint of group.endpoints as { url?: unknown }[]) {
       const url = typeof endpoint?.url === 'string' ? endpoint.url : '';
-      if (isThirdParty(url, registrable)) {
+      if (
+        isThirdParty(url, registrable) &&
+        !isPlatformEndpoint(url, cloudflare)
+      ) {
         urls.push(url);
       }
     }
@@ -68,8 +100,10 @@ export function externalReports(input: ReportingInput): ExternalReports {
   const groups = input.reportTo === null ? null : parseGroups(input.reportTo);
 
   const reportUri = (policy: Map<string, string[]>): string[] =>
-    (policy.get('report-uri') ?? []).filter((url) =>
-      isThirdParty(url, input.registrable),
+    (policy.get('report-uri') ?? []).filter(
+      (url) =>
+        isThirdParty(url, input.registrable) &&
+        !isPlatformEndpoint(url, input.cloudflare),
     );
   const uriHeader = reportUri(csp);
   if (uriHeader.length > 0) {
@@ -83,14 +117,24 @@ export function externalReports(input: ReportingInput): ExternalReports {
   if (groups) {
     const toHeader = csp.get('report-to')?.[0];
     if (toHeader !== undefined) {
-      const urls = thirdPartyEndpoints(groups, toHeader, input.registrable);
+      const urls = thirdPartyEndpoints(
+        groups,
+        toHeader,
+        input.registrable,
+        input.cloudflare,
+      );
       if (urls.length > 0) {
         found.cspReportTo = urls;
       }
     }
     const toReportOnly = reportOnly.get('report-to')?.[0];
     if (toReportOnly !== undefined) {
-      const urls = thirdPartyEndpoints(groups, toReportOnly, input.registrable);
+      const urls = thirdPartyEndpoints(
+        groups,
+        toReportOnly,
+        input.registrable,
+        input.cloudflare,
+      );
       if (urls.length > 0) {
         found.cspReportOnlyReportTo = urls;
       }
@@ -103,6 +147,7 @@ export function externalReports(input: ReportingInput): ExternalReports {
             groups,
             nel.report_to,
             input.registrable,
+            input.cloudflare,
           );
           if (urls.length > 0) {
             found.nel = urls;

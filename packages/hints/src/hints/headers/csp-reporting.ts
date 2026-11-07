@@ -8,6 +8,16 @@ import { reportFindings } from './shared.js';
 const join = (values: string[], separator: string): string | null =>
   values.length > 0 ? values.join(separator) : null;
 
+/** Whether the response came through Cloudflare, by its `server` or `cf-ray` header. */
+function viaCloudflare(headers: Parameters<typeof headerValues>[0]): boolean {
+  return (
+    headerValues(headers, 'cf-ray').length > 0 ||
+    headerValues(headers, 'server').some((value) =>
+      value.toLowerCase().includes('cloudflare'),
+    )
+  );
+}
+
 /**
  * Violation and error reports sent to third parties (Webbkoll's
  * `external_report`). A Content-Security-Policy or
@@ -48,6 +58,7 @@ export default defineHint({
             '; ',
           ),
           nel: nel[0] ?? null,
+          cloudflare: viaCloudflare(page.headers),
           reportTo: join(headerValues(page.headers, 'report-to'), ', '),
         }),
         {

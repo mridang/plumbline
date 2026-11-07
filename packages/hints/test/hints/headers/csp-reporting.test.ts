@@ -73,4 +73,36 @@ describe('csp-reporting', () => {
     expect(problems).toHaveLength(1);
     expect(problems[0]?.message).toContain('NEL');
   });
+
+  const cloudflareNel = {
+    nel: JSON.stringify({ report_to: 'cf-nel', max_age: 604800 }),
+    'report-to': group('cf-nel', 'https://a.nel.cloudflare.com/report/v4?s=x'),
+  };
+
+  it("passes Cloudflare's injected NEL endpoint on a site served by Cloudflare", async () => {
+    expect(
+      await runHint(
+        hint,
+        page({ ...cloudflareNel, server: 'cloudflare', 'cf-ray': 'abc-AMS' }),
+      ),
+    ).toEqual([]);
+  });
+
+  it("reports Cloudflare's NEL endpoint on a site not served by Cloudflare", async () => {
+    const problems = await runHint(hint, page(cloudflareNel));
+    expect(problems).toHaveLength(1);
+    expect(problems[0]?.message).toContain('a.nel.cloudflare.com');
+  });
+
+  it('still reports another third party on a site served by Cloudflare', async () => {
+    const problems = await runHint(
+      hint,
+      page({
+        server: 'cloudflare',
+        'content-security-policy':
+          "default-src 'self'; report-uri https://r.example.net/c",
+      }),
+    );
+    expect(problems).toHaveLength(1);
+  });
 });
