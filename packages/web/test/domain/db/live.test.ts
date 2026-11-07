@@ -288,6 +288,33 @@ describe('overviewOf, with the last deployment and the open issues', () => {
     expect(overview).toHaveLength(120);
   });
 
+  it('reads only the repository asked for', async () => {
+    const { db } = made();
+    await addDomain(db, 1, 'a.test', 'acme/a');
+    await addDomain(db, 1, 'b.test', 'acme/b');
+    const one = await overviewOf(db, 1, NOW, 'acme/b');
+    expect(one.map((r) => r.repo)).toEqual(['acme/b']);
+    expect(await overviewOf(db, 1, NOW, 'acme/none')).toEqual([]);
+  });
+
+  it('does not show another person the repository asked for', async () => {
+    const { db } = made();
+    await addDomain(db, 2, 'a.test', 'acme/a');
+    expect(await overviewOf(db, 1, NOW, 'acme/a')).toEqual([]);
+  });
+
+  it('answers a single repository from the repo index', async () => {
+    const { raw } = made();
+    const plan = raw
+      .prepare(
+        'EXPLAIN QUERY PLAN select id from domains where repo = ? and (user_id = ? or repo in (select repo from user_repositories where user_id = ? and granted_at > ?))',
+      )
+      .all('acme/a', 1, 1, '2020')
+      .map((row) => String(row['detail']))
+      .join(' | ');
+    expect(plan).not.toMatch(/SCAN domains/);
+  });
+
   it('answers from the indexes: no scan of the run history or the issues', async () => {
     const { db, raw } = made();
     await addDomain(db, 1, 'a.test', 'acme/site');

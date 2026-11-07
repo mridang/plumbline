@@ -18,8 +18,8 @@ import { badgePath } from '@/domain/badge/sign';
 import { getDatabase } from '@/domain/db/client';
 import {
   canManageRepo,
-  disabledRepos,
-  fileDisabledRepos,
+  isRepoDisabled,
+  isRepoFileDisabled,
 } from '@/domain/db/disabled';
 import { issuesOf } from '@/domain/db/issue-history';
 import { getDomain } from '@/domain/db/domains';
@@ -68,13 +68,15 @@ export default async function RepoPage({
     notFound();
   }
   const db = getDatabase();
-  const entry = (await overviewOf(db, user.id)).find((r) => r.repo === repo);
-  const [pausedRepos, fileOffRepos, canManage] = await Promise.all([
-    disabledRepos(db, user.id),
-    fileDisabledRepos(db, user.id),
+  // Only this repository's sites are read, and the pause flags and the
+  // viewer's permission are asked for in the same round trip.
+  const [overview, paused, fileOff, canManage] = await Promise.all([
+    overviewOf(db, user.id, serverNow(), repo),
+    isRepoDisabled(db, repo),
+    isRepoFileDisabled(db, repo),
     canManageRepo(db, user.id, repo),
   ]);
-  const paused = pausedRepos.has(repo);
+  const entry = overview.find((r) => r.repo === repo);
   if (!entry) {
     notFound();
   }
@@ -129,7 +131,7 @@ export default async function RepoPage({
         repo={repo}
         state={overall}
         paused={paused}
-        control={{ canManage, fileOff: fileOffRepos.has(repo) }}
+        control={{ canManage, fileOff }}
         siteCount={entry.sites.length}
         badgeImage={badgeImage}
         badgeMarkdown={badgeMarkdown}

@@ -247,12 +247,15 @@ async function openIssuesOf(
 /**
  * Every site the person can see grouped by repository, the ones added by hand
  * last: the ones they added, and every site of the repositories GitHub let
- * them see when they last signed in (see `access.ts`).
+ * them see when they last signed in (see `access.ts`). With `only`, just that
+ * repository (a page about one repository must not read every site of the
+ * account to show one).
  */
 export async function overviewOf(
   db: Database,
   userId: number,
   now = Date.now(),
+  only?: string,
 ): Promise<RepoStatus[]> {
   const rows = await db
     .select({
@@ -269,19 +272,22 @@ export async function overviewOf(
     })
     .from(domains)
     .where(
-      or(
-        eq(domains.user_id, userId),
-        inArray(
-          domains.repo,
-          db
-            .select({ repo: userRepositories.repo })
-            .from(userRepositories)
-            .where(
-              and(
-                eq(userRepositories.user_id, userId),
-                sql`${userRepositories.granted_at} > ${cutoffOf(now)}`,
+      and(
+        only === undefined ? undefined : eq(domains.repo, only),
+        or(
+          eq(domains.user_id, userId),
+          inArray(
+            domains.repo,
+            db
+              .select({ repo: userRepositories.repo })
+              .from(userRepositories)
+              .where(
+                and(
+                  eq(userRepositories.user_id, userId),
+                  sql`${userRepositories.granted_at} > ${cutoffOf(now)}`,
+                ),
               ),
-            ),
+          ),
         ),
       ),
     )
