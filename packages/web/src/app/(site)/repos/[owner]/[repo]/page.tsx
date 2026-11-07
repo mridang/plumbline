@@ -16,7 +16,7 @@ import { repoOf } from '@/domain/api/repo-name';
 import { isRunId } from '@/domain/api/runs';
 import { badgePath } from '@/domain/badge/sign';
 import { getDatabase } from '@/domain/db/client';
-import { disabledRepos } from '@/domain/db/disabled';
+import { isRepoDisabled } from '@/domain/db/disabled';
 import { issuesOf } from '@/domain/db/issue-history';
 import { getDomain } from '@/domain/db/domains';
 import { overviewOf } from '@/domain/db/live';
@@ -64,8 +64,13 @@ export default async function RepoPage({
     notFound();
   }
   const db = getDatabase();
-  const entry = (await overviewOf(db, user.id)).find((r) => r.repo === repo);
-  const paused = (await disabledRepos(db, user.id)).has(repo);
+  // Only this repository's sites are read, and the pause flag is asked for in
+  // the same round trip.
+  const [overview, paused] = await Promise.all([
+    overviewOf(db, user.id, Date.now(), repo),
+    isRepoDisabled(db, repo),
+  ]);
+  const entry = overview.find((r) => r.repo === repo);
   if (!entry) {
     notFound();
   }
