@@ -156,9 +156,8 @@ describe('resyncStaleInstallation', () => {
     const db = createDatabase(sqliteD1(...APP_MIGRATIONS).d1);
     await saveInstallation(db, 7, 99, 'acme');
     await touchInstallation(db, 99, start.toISOString());
-    const sync = jest.fn(
-      async (_user: number, _installation: number) => undefined,
-    );
+    const sync =
+      jest.fn<(user: number, installation: number) => Promise<void>>();
     await resyncStaleInstallation(db, sync, () => later);
     expect(sync).toHaveBeenCalledWith(7, 99);
   });
@@ -167,9 +166,8 @@ describe('resyncStaleInstallation', () => {
     const db = createDatabase(sqliteD1(...APP_MIGRATIONS).d1);
     await saveInstallation(db, 7, 99, 'acme');
     await touchInstallation(db, 99, start.toISOString());
-    const sync = jest.fn(
-      async (_user: number, _installation: number) => undefined,
-    );
+    const sync =
+      jest.fn<(user: number, installation: number) => Promise<void>>();
     await resyncStaleInstallation(db, sync, () => start);
     expect(sync).not.toHaveBeenCalled();
   });
