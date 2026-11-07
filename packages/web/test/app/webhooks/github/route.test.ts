@@ -7,10 +7,13 @@ import {
   jest,
 } from '@jest/globals';
 
+import { eq } from 'drizzle-orm';
+
 import { POST } from '@/app/webhooks/github/route';
 import { createDatabase } from '@/domain/db/client';
 import { disableRepo, enableRepo } from '@/domain/db/disabled';
 import { addDomain } from '@/domain/db/domains';
+import { pendingScans } from '@/domain/db/schema';
 import { issueOf, saveIssue } from '@/domain/db/suite';
 import {
   listInstallations,
@@ -32,27 +35,25 @@ import {
 
 let restore: () => void;
 let made: ReturnType<typeof sqliteD1>;
-/** The jobs the deliveries left with the scanner's Durable Object. */
+/** The jobs the deliveries left with the scan queue, as they were stored. */
 let jobs: unknown[];
 
 beforeEach(async () => {
   made = sqliteD1(...APP_MIGRATIONS);
   jobs = [];
-  const scanner = {
-    idFromName: (name: string) => name,
-    get: () => ({
-      fetch: async (request: Request) => {
-        jobs.push({
-          path: new URL(request.url).pathname,
-          ...((await request.json()) as object),
-        });
-        return new Response(null, { status: 202 });
-      },
-    }),
+  const database = createDatabase(made.d1);
+  const queue = {
+    send: async (message: { key: string }) => {
+      const [row] = await database
+        .select({ job: pendingScans.job })
+        .from(pendingScans)
+        .where(eq(pendingScans.key, message.key));
+      jobs.push(JSON.parse(row?.job ?? 'null'));
+    },
   };
   restore = installCloudflareContext(made.d1, {
     ...GITHUB_ENV,
-    SCANNER: scanner,
+    SCAN_QUEUE: queue,
   });
   await saveInstallation(createDatabase(made.d1), 7, 5, 'acme');
 });
@@ -186,7 +187,7 @@ describe('POST /webhooks/github', () => {
     });
 
     const job = (more: Record<string, unknown> = {}) => ({
-      path: '/jobs',
+      kind: 'deployment',
       installationId: 5,
       userId: 7,
       appUrl: 'https://plumbline.test',
@@ -258,6 +259,19 @@ describe('POST /webhooks/github', () => {
       await enableRepo(db, 'acme/site');
       await deliver('deployment_status', deployment(), undefined, 'off-1');
       expect(jobs).toHaveLength(1);
+    });
+
+    it('keeps only the newest commit when deployments follow each other', async () => {
+      await deliver('deployment_status', deployment());
+      await deliver('deployment_status', {
+        ...deployment(),
+        deployment: { sha: 'def' },
+      });
+      const waiting = await createDatabase(made.d1)
+        .select({ job: pendingScans.job })
+        .from(pendingScans);
+      expect(waiting).toHaveLength(1);
+      expect(JSON.parse(waiting[0]?.job ?? '{}').deployed.sha).toBe('def');
     });
 
     it('leaves one job for a delivery GitHub sends again', async () => {
@@ -342,7 +356,7 @@ describe('POST /webhooks/github', () => {
         await deliver('push', push({}, [file]));
         expect(jobs).toEqual([
           {
-            path: '/jobs',
+            kind: 'deployment',
             installationId: 5,
             userId: 7,
             force: true,

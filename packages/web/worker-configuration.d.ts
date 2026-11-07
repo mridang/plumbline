@@ -26,6 +26,7 @@ interface __BaseEnv_Env {
   SCAN_SECRET: string;
   USER_HUB: DurableObjectNamespace /* UserHub */;
   SCANNER: DurableObjectNamespace /* ScannerContainer */;
+  SCAN_QUEUE: Queue;
 }
 declare namespace Cloudflare {
   interface GlobalProps {

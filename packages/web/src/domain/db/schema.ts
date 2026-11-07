@@ -442,3 +442,19 @@ export const webhookDeliveries = sqliteTable(
   },
   (table) => [index('idx_webhook_deliveries_received').on(table.received_at)],
 );
+
+/**
+ * A scan waiting for the scan queue (see `pending-scans.ts`): the newest job of
+ * each key, kept until a consumer has finished it.
+ */
+export const pendingScans = sqliteTable(
+  'pending_scans',
+  {
+    key: text('key').primaryKey(),
+    job: text('job').notNull(),
+    seq: integer('seq').notNull(),
+    enqueued_at: text('enqueued_at').notNull(),
+    claimed_at: text('claimed_at'),
+  },
+  (table) => [index('idx_pending_scans_enqueued').on(table.enqueued_at)],
+);

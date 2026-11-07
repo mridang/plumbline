@@ -42,6 +42,19 @@ jobs:
       - name: Build Workspaces
         run: npm run build
 
+      # The scan queue and its dead-letter queue must exist before the Worker
+      # that binds them is deployed (wrangler.jsonc, "queues"). Create them
+      # when they are missing; the API token needs Account, Queues, Edit.
+      - name: Create queues
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        working-directory: ./packages/web
+        run: |
+          for queue in plumbline-scans plumbline-scans-dlq; do
+            npx wrangler queues info "$queue" >/dev/null 2>&1 || npx wrangler queues create "$queue"
+          done
+
       - name: Deploy to Cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

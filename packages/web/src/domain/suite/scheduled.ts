@@ -4,13 +4,13 @@
  * The cron trigger's work: re-check the sites found through GitHub that have
  * not been checked for six hours, so a problem that did not come from a deployment
  * (a site that went down, a page changed from outside the repository) is still
- * noticed. Each trigger takes only a few sites, the ones checked longest ago,
- * because a scan takes the container tens of seconds; the trigger fires often
- * enough that every site is reached soon after it
- * falls due. A run that failed, because the scanner was busy or restarting, does
- * not count as a check, so the site stays due. A repository whose checks a
- * person turned off is never re-checked. Every check is run by the scanner container, so a trigger awaits its
- * scans: the work is waiting for the container, not CPU.
+ * noticed. The trigger does not scan anything itself: it leaves a re-check of
+ * each due site (the ones checked longest ago first) with the scan queue
+ * (`domain/suite/queue.ts`), which runs them in scanner containers of their own,
+ * and sends again the jobs that have waited too long. A run that failed,
+ * because the scanner was busy or restarting, does not count as a check, so the
+ * site stays due. A repository whose checks a person turned off is never
+ * re-checked.
  */
 
 import { createDatabase, type Database } from '@/domain/db/client';
@@ -18,16 +18,12 @@ import { staleInstallation } from '@/domain/db/github';
 import { dueSites } from '@/domain/db/suite';
 import { readGitHubConfig } from '@/domain/github/config';
 import { syncAsApp } from '@/domain/github/service';
-import { createLive } from '@/domain/live/live';
+import { FREE_LIMITS, readLimits } from '@/domain/suite/limits';
 import {
-  FREE_LIMITS,
-  inBatches,
-  readLimits,
-  scanLimits,
-} from '@/domain/suite/limits';
-import { checkSite, type Deps, type SiteOutcome } from '@/domain/suite/deploy';
-import { suiteRunOf } from '@/domain/suite/run';
-import { scanThrough, type ScannerNamespace } from '@/domain/suite/scanner';
+  enqueueScan,
+  sweepPending,
+  type ScanQueue,
+} from '@/domain/suite/queue';
 
 /** Sites checked by one trigger on the Free plan. */
 export const SCHEDULED_BATCH = FREE_LIMITS.scheduledBatch;
@@ -35,26 +31,42 @@ export const SCHEDULED_BATCH = FREE_LIMITS.scheduledBatch;
 /** A site is due again after this long without a check, in milliseconds (the trigger looks every ten minutes). */
 export const RECHECK_AFTER_MS = 6 * 60 * 60 * 1000;
 
-/** Re-check the sites that are due. */
-export async function checkDueSites(
+/**
+ * Leave a re-check of each due site with the scan queue, which runs them in
+ * their own containers. Returns how many were sent: a site that is due and
+ * already waiting is not sent again.
+ */
+export async function enqueueDueSites(
   db: Database,
-  deps: Deps = {},
-): Promise<SiteOutcome[]> {
-  const now = deps.now ?? (() => new Date());
-  const limits = deps.limits ?? FREE_LIMITS;
+  queue: ScanQueue | undefined,
+  options: Readonly<{ batch?: number; now?: () => Date }> = {},
+): Promise<number> {
+  const now = options.now ?? (() => new Date());
   const due = await dueSites(
     db,
     new Date(now().getTime() - RECHECK_AFTER_MS).toISOString(),
-    limits.scheduledBatch,
+    options.batch ?? SCHEDULED_BATCH,
   );
-  return inBatches(due, limits.concurrency, (site) =>
-    checkSite(
-      db,
-      site.user_id,
-      { host: site.host, repo: site.repo, sha: null },
-      { ...deps, kind: 'scheduled' },
-    ),
-  );
+  let sent = 0;
+  for (const site of due) {
+    try {
+      const queued = await enqueueScan(
+        db,
+        queue,
+        {
+          kind: 'recheck',
+          userId: site.user_id,
+          host: site.host,
+          repo: site.repo ?? '',
+        },
+        now(),
+      );
+      sent += queued ? 1 : 0;
+    } catch (error) {
+      console.error('re-check not queued', site.host, error);
+    }
+  }
+  return sent;
 }
 
 /**
@@ -81,7 +93,7 @@ export async function resyncStaleInstallation(
   }
 }
 
-/** The Worker's `scheduled` handler. It returns when the scans are done. */
+/** The Worker's `scheduled` handler. It only queues work, so it returns at once. */
 export const scheduled: ExportedHandlerScheduledHandler<CloudflareEnv> = async (
   _controller,
   env,
@@ -93,10 +105,12 @@ export const scheduled: ExportedHandlerScheduledHandler<CloudflareEnv> = async (
       syncAsApp(db, config, userId, installationId),
     );
   }
-  const namespace = env.SCANNER as unknown as ScannerNamespace | undefined;
-  await checkDueSites(db, {
-    limits: scanLimits(readLimits(env)),
-    live: createLive(db, env),
-    run: async (url) => suiteRunOf(await scanThrough(namespace, url)),
+  const queue = env.SCAN_QUEUE;
+  await enqueueDueSites(db, queue, {
+    batch: readLimits(env).scheduledBatch,
   });
+  // Jobs whose messages were lost or dead-lettered are sent again.
+  if (queue) {
+    await sweepPending(db, queue);
+  }
 };

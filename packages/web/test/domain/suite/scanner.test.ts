@@ -4,8 +4,8 @@ import {
   JOBS_PATH,
   SiteUnreachable,
   collectScan,
-  enqueueJob,
-  scanThrough,
+  keyOf,
+  runJobThrough,
   scanWith,
   type ScannerNamespace,
   type SuiteJob,
@@ -92,11 +92,11 @@ describe('collectScan', () => {
   });
 });
 
-describe('scanWith and scanThrough', () => {
+describe('scanWith', () => {
   const answer = () =>
     new Response(streamOf(ready, done('a', 'passed'), end), { status: 200 });
 
-  it('post the address to the scanner and collect the answer', async () => {
+  it('posts the address to the scanner and collects the answer', async () => {
     const seen: { url: string; body: string }[] = [];
     const result = await scanWith(async (request) => {
       seen.push({ url: request.url, body: await request.text() });
@@ -111,7 +111,7 @@ describe('scanWith and scanThrough', () => {
     expect(result.outcomes).toHaveLength(1);
   });
 
-  it('fail when the scanner does not answer', async () => {
+  it('fails when the scanner does not answer', async () => {
     await expect(
       scanWith(
         async () => new Response('no', { status: 503 }),
@@ -119,63 +119,88 @@ describe('scanWith and scanThrough', () => {
       ),
     ).rejects.toThrow('did not answer');
   });
+});
 
-  it('go through the namespace, and fail without one', async () => {
-    const namespace: ScannerNamespace = {
-      idFromName: (name) => name,
-      get: () => ({ fetch: async () => answer() }),
-    };
-    expect((await scanThrough(namespace, 'https://x.test/')).status).toBe(200);
-    await expect(scanThrough(undefined, 'https://x.test/')).rejects.toThrow(
-      'not available',
+const suiteJob: SuiteJob = {
+  installationId: 5,
+  userId: 7,
+  deployed: {
+    environment: 'production',
+    repo: 'acme/site',
+    sha: 'abc',
+    url: null,
+  },
+  appUrl: 'https://plumbline.test',
+};
+
+describe('keyOf', () => {
+  it('names the work: the repository for a live site, the address for a preview', () => {
+    expect(keyOf({ kind: 'deployment', ...suiteJob })).toBe('deploy:acme/site');
+    expect(
+      keyOf({
+        kind: 'deployment',
+        ...suiteJob,
+        deployed: {
+          ...suiteJob.deployed,
+          environment: 'preview',
+          url: 'https://pr-1.site.test/',
+        },
+      }),
+    ).toBe('preview:acme/site:https://pr-1.site.test/');
+  });
+
+  it('keeps a change of rules and a re-check apart from a deployment', () => {
+    expect(keyOf({ kind: 'deployment', ...suiteJob, force: true })).toBe(
+      'config:acme/site',
     );
+    expect(
+      keyOf({ kind: 'recheck', userId: 7, host: 'a.test', repo: 'acme/site' }),
+    ).toBe('site:7:a.test');
   });
 });
 
-describe('enqueueJob', () => {
-  const job: SuiteJob = {
-    installationId: 5,
-    userId: 7,
-    deployed: {
-      environment: 'production',
-      repo: 'acme/site',
-      sha: 'abc',
-      url: null,
-    },
-    appUrl: 'https://plumbline.test',
-  };
+describe('runJobThrough', () => {
+  const job = { kind: 'deployment', ...suiteJob } as const;
 
-  it('posts the job to the namespace on the jobs path', async () => {
-    const seen: { url: string; method: string; body: unknown }[] = [];
+  it('posts the job to the object of that name on the jobs path', async () => {
+    const seen: { name: string; url: string; body: unknown }[] = [];
+    let named = '';
     const namespace: ScannerNamespace = {
-      idFromName: (name) => name,
+      idFromName: (name) => {
+        named = name;
+        return name;
+      },
       get: () => ({
         fetch: async (request) => {
           seen.push({
+            name: named,
             url: request.url,
-            method: request.method,
             body: await request.json(),
           });
-          return new Response(null, { status: 202 });
+          return new Response(null, { status: 200 });
         },
       }),
     };
-    await enqueueJob(namespace, job);
+    await runJobThrough(namespace, 'deploy:acme/site#1', job);
     expect(seen).toEqual([
       {
+        name: 'deploy:acme/site#1',
         url: `https://scanner.internal${JOBS_PATH}`,
-        method: 'POST',
         body: job,
       },
     ]);
   });
 
-  it('fails when there is no namespace or the job was not taken', async () => {
-    await expect(enqueueJob(undefined, job)).rejects.toThrow('not available');
+  it('fails when there is no namespace or the object did not run the job', async () => {
+    await expect(runJobThrough(undefined, 'x', job)).rejects.toThrow(
+      'not available',
+    );
     const refusing: ScannerNamespace = {
       idFromName: (name) => name,
       get: () => ({ fetch: async () => new Response('no', { status: 500 }) }),
     };
-    await expect(enqueueJob(refusing, job)).rejects.toThrow('did not take');
+    await expect(runJobThrough(refusing, 'x', job)).rejects.toThrow(
+      'did not run the job (500): no',
+    );
   });
 });

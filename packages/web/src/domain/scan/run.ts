@@ -7,6 +7,18 @@
  * for the lines). The Worker passes the stream on as it is.
  */
 
+/**
+ * Scans started from the page are spread over this many scanner objects (a
+ * container each), so a busy minute is not one container's queue. They take
+ * their share of the containers `max_instances` allows (see `wrangler.jsonc`).
+ */
+export const INTERACTIVE_SHARDS = 2;
+
+/** The name of the scanner object for the next page scan. */
+export function interactiveName(random: () => number = Math.random): string {
+  return `interactive-${Math.floor(random() * INTERACTIVE_SHARDS)}`;
+}
+
 /** The part of the container's Durable Object namespace the Worker uses. */
 export interface ScannerNamespace {
   idFromName(name: string): unknown;
@@ -37,7 +49,7 @@ export async function runOnServer(
   if (!namespace) {
     throw new ScannerError('Scans are not available.');
   }
-  const stub = namespace.get(namespace.idFromName('main'));
+  const stub = namespace.get(namespace.idFromName(interactiveName()));
   const answer = await stub.fetch(
     new Request('https://scanner.internal/run', {
       method: 'POST',

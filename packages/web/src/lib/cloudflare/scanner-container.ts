@@ -10,22 +10,33 @@
  * It is never reachable from outside: only the Worker has the binding, and it
  * only forwards scans it has checked (see `domain/scan/run.ts`).
  *
- * It also runs the checks a GitHub deployment starts. A scan takes tens of
- * seconds, longer than a webhook delivery may keep working after it has
- * answered, so the delivery leaves a job here (`POST /jobs`) and this object
- * finishes it from an alarm: the job is kept in its storage until it has run,
- * so it survives the request, a restart, and the container's start-up time.
+ * It also runs the checks of one queued job (`POST /jobs`; see
+ * `domain/suite/queue.ts`). The scan queue's consumer gives each job a Durable
+ * Object name of its own, so each job gets a container of its own and jobs run
+ * at the same time; the request lives until the job is done and answers 200,
+ * or 500 so the queue tries again. The container is told to stop soon after
+ * its job, because the containers that may run at once are limited
+ * (`max_instances` in `wrangler.jsonc`).
  */
 
 import { DurableObject } from 'cloudflare:workers';
 
 import { createDatabase } from '@/domain/db/client';
+import { isRepoDisabled } from '@/domain/db/disabled';
 import { readGitHubConfig } from '@/domain/github/config';
 import { createLive } from '@/domain/live/live';
+import { checkSite } from '@/domain/suite/deploy';
 import { handleDeployment } from '@/domain/suite/github-run';
 import { readLimits, scanLimits } from '@/domain/suite/limits';
+import { enqueueScan } from '@/domain/suite/queue';
 import { suiteRunOf, type SuiteRun } from '@/domain/suite/run';
-import { JOBS_PATH, scanWith, type SuiteJob } from '@/domain/suite/scanner';
+import {
+  JOBS_PATH,
+  SiteUnreachable,
+  scanWith,
+  type ScanJob,
+  type SuiteJob,
+} from '@/domain/suite/scanner';
 
 /** The port the scanner listens on. */
 const PORT = 8080;
@@ -39,76 +50,114 @@ export const START_TIMEOUT_MS = 60_000;
 /** The pause between attempts to reach a starting container, in milliseconds. */
 const RETRY_MS = 250;
 
-/** The storage key prefix of a job waiting to run. */
-const JOB_PREFIX = 'job:';
+/** How long a container that has finished its job may stay up, in milliseconds. */
+export const AFTER_JOB_IDLE_MS = 5_000;
 
-/** Starts the scanner on demand, forwards requests to it and runs the jobs left with it. */
+/** The storage key prefix of the jobs the single-object version of this class kept. */
+const LEGACY_JOB_PREFIX = 'job:';
+
+/** Starts the scanner on demand, forwards requests to it and runs the job it is given. */
 export class ScannerContainer extends DurableObject<CloudflareEnv> {
-  /** Keep the job in the request and make sure an alarm will run it. */
-  private async keep(request: Request): Promise<Response> {
-    let job: SuiteJob;
-    try {
-      job = (await request.json()) as SuiteJob;
-    } catch {
-      return new Response('The job is not JSON.', { status: 400 });
-    }
-    await this.ctx.storage.put(`${JOB_PREFIX}${crypto.randomUUID()}`, job);
-    if ((await this.ctx.storage.getAlarm()) === null) {
-      await this.ctx.storage.setAlarm(Date.now());
-    }
-    return new Response(null, { status: 202 });
-  }
-
   /** Scan `url` in the container and say what the run found. */
   private async scan(url: string): Promise<SuiteRun> {
     const scan = await scanWith((request) => this.forward(request), url);
     return suiteRunOf(scan);
   }
 
-  /** Run one job: the checks of a deployment, reported on GitHub. */
-  private async perform(job: Readonly<SuiteJob>): Promise<void> {
-    const config = readGitHubConfig(this.env);
-    if (!config) {
-      console.error('suite job dropped: GitHub is not set up');
-      return;
-    }
+  /**
+   * Run one job to its end. Throws when the scanner itself failed (it was
+   * full, it restarted, its stream broke), so that the queue tries the job
+   * again; a site that does not answer is not a failure, it is a result.
+   */
+  private async perform(job: Readonly<ScanJob>): Promise<void> {
     const db = createDatabase(this.env.DB);
-    await handleDeployment(
-      db,
-      config,
-      job.installationId,
-      job.userId,
-      job.deployed,
-      {
-        limits: scanLimits(readLimits(this.env)),
-        live: createLive(db, this.env),
-        run: (url) => this.scan(url),
-        ...(job.appUrl ? { appUrl: job.appUrl } : {}),
-        ...(job.force ? { force: true } : {}),
-      },
-    );
+    let trouble: unknown;
+    const run = async (url: string): Promise<SuiteRun> => {
+      try {
+        return await this.scan(url);
+      } catch (error) {
+        if (!(error instanceof SiteUnreachable)) {
+          trouble = error;
+        }
+        throw error;
+      }
+    };
+    const limits = scanLimits(readLimits(this.env));
+    const live = createLive(db, this.env);
+    if (job.kind === 'recheck') {
+      if (!(await isRepoDisabled(db, job.repo))) {
+        await checkSite(
+          db,
+          job.userId,
+          { host: job.host, repo: job.repo, sha: null },
+          { kind: 'scheduled', limits, live, run },
+        );
+      }
+    } else {
+      const config = readGitHubConfig(this.env);
+      if (!config) {
+        console.error('suite job dropped: GitHub is not set up');
+        return;
+      }
+      await handleDeployment(
+        db,
+        config,
+        job.installationId,
+        job.userId,
+        job.deployed,
+        {
+          limits,
+          live,
+          run,
+          ...(job.appUrl ? { appUrl: job.appUrl } : {}),
+          ...(job.force ? { force: true } : {}),
+        },
+      );
+    }
+    if (trouble) {
+      throw trouble;
+    }
+  }
+
+  /** Run the job in the request and answer when it is done. */
+  private async runJob(request: Request): Promise<Response> {
+    let job: ScanJob;
+    try {
+      job = (await request.json()) as ScanJob;
+    } catch {
+      return new Response('The job is not JSON.', { status: 400 });
+    }
+    try {
+      await this.perform(job);
+      return new Response(null, { status: 200 });
+    } catch (error) {
+      console.error('scan job failed in the scanner', error);
+      return new Response(
+        error instanceof Error ? error.message : 'The job failed.',
+        { status: 500 },
+      );
+    } finally {
+      // Free the container's place for the next job.
+      await this.ctx.container
+        ?.setInactivityTimeout(AFTER_JOB_IDLE_MS)
+        .catch(() => undefined);
+    }
   }
 
   /**
-   * Run the jobs that are waiting, one after another, and forget each when it
-   * is done, however it went (a failure is logged; it must not run again for
-   * ever). A job that arrives meanwhile sets the alarm again.
+   * Jobs the earlier version of this class kept in its own storage (it was one
+   * object for every job) are handed to the queue, so none is lost by the
+   * change; after that this has nothing to do.
    */
   override async alarm(): Promise<void> {
-    const waiting = await this.ctx.storage.list<SuiteJob>({
-      prefix: JOB_PREFIX,
+    const left = await this.ctx.storage.list<SuiteJob>({
+      prefix: LEGACY_JOB_PREFIX,
     });
-    for (const [key, job] of waiting) {
-      try {
-        await this.perform(job);
-      } catch (error) {
-        console.error('suite job failed', job.deployed.repo, error);
-      }
+    const queue = this.env.SCAN_QUEUE;
+    const db = createDatabase(this.env.DB);
+    for (const [key, job] of left) {
+      await enqueueScan(db, queue, { kind: 'deployment', ...job });
       await this.ctx.storage.delete(key);
-    }
-    const more = await this.ctx.storage.list({ prefix: JOB_PREFIX, limit: 1 });
-    if (more.size > 0) {
-      await this.ctx.storage.setAlarm(Date.now());
     }
   }
 
@@ -118,7 +167,7 @@ export class ScannerContainer extends DurableObject<CloudflareEnv> {
       request.method === 'POST' &&
       new URL(request.url).pathname === JOBS_PATH
     ) {
-      return this.keep(request);
+      return this.runJob(request);
     }
     return this.forward(request);
   }

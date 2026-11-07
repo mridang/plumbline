@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import { createDatabase } from '@/domain/db/client';
+import { disableRepo } from '@/domain/db/disabled';
 import { addDomain } from '@/domain/db/domains';
+import { listRuns } from '@/domain/db/runs';
+import { latestRuns } from '@/domain/db/suite';
 import type { SuiteJob } from '@/domain/suite/scanner';
 
 import { GITHUB_ENV, fakeGitHub } from '../../domain/github/github-test-kit';
@@ -13,7 +16,7 @@ jest.unstable_mockModule('cloudflare:workers', cloudflareWorkersStub, {
   virtual: true,
 } as never);
 
-const { ScannerContainer, IDLE_MS, START_TIMEOUT_MS } =
+const { ScannerContainer, AFTER_JOB_IDLE_MS, IDLE_MS, START_TIMEOUT_MS } =
   await import('@/lib/cloudflare/scanner-container');
 
 /** A container that records how it is used; it answers once `failures` health checks have failed. */
@@ -197,20 +200,28 @@ const JOB: SuiteJob = {
   appUrl: 'https://plumbline.test',
 };
 
-const post = (job: unknown = JOB) =>
+const post = (job: unknown = { kind: 'deployment', ...JOB }) =>
   new Request('https://scanner.internal/jobs', {
     method: 'POST',
     body: typeof job === 'string' ? job : JSON.stringify(job),
   });
 
-describe('ScannerContainer, the jobs a deployment leaves', () => {
+const RECHECK = {
+  kind: 'recheck',
+  userId: 7,
+  host: 'site.test',
+  repo: 'acme/site',
+} as const;
+
+describe('ScannerContainer, the job of the queue', () => {
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
   const setup = async (env: Record<string, unknown> = GITHUB_ENV) => {
     const made = sqliteD1(...APP_MIGRATIONS);
-    await addDomain(createDatabase(made.d1), 7, 'site.test', 'acme/site');
+    const db = createDatabase(made.d1);
+    await addDomain(db, 7, 'site.test', 'acme/site');
     const storage = fakeStorage();
     const make = (container: unknown) =>
       new ScannerContainer(
@@ -225,40 +236,41 @@ describe('ScannerContainer, the jobs a deployment leaves', () => {
       'https://api.github.com/repos/acme/site/issues': () =>
         Response.json({ number: 3, state: 'open' }),
     });
-    return { storage, make, requested };
+    return { db, storage, make, requested };
   };
 
-  it('keeps the job and sets an alarm, and answers 202', async () => {
-    const { storage, make } = await setup();
-    const { container } = scanner(() => new Response(FAILED_SCAN));
-    const answer = await make(container).fetch(post());
-    expect(answer.status).toBe(202);
-    expect([...storage.data.values()]).toEqual([JOB]);
-    expect(storage.alarmAt()).not.toBeNull();
-  });
-
-  it('refuses a job that is not JSON, and keeps nothing', async () => {
-    const { storage, make } = await setup();
-    const { container } = scanner(() => new Response(FAILED_SCAN));
-    expect((await make(container).fetch(post('nope'))).status).toBe(400);
-    expect(storage.data.size).toBe(0);
-  });
-
-  it('runs the job from the alarm: scans the site in the container, opens the issue, then forgets the job', async () => {
-    const { storage, make, requested } = await setup();
+  it('runs the job in the request: scans the site in the container, opens the issue, answers 200', async () => {
+    const { make, requested } = await setup();
     const { container, asked } = scanner(() => new Response(FAILED_SCAN));
-    const object = make(container);
-    await object.fetch(post());
-    await object.alarm();
+    const answer = await make(container).fetch(post());
+    expect(answer.status).toBe(200);
     expect(asked).toEqual(['{"url":"https://site.test/"}']);
     expect(requested).toContain(
       'POST https://api.github.com/repos/acme/site/issues',
     );
-    expect(storage.data.size).toBe(0);
   });
 
-  it('forgets a job whose site could not be scanned, so it does not run for ever', async () => {
-    const { storage, make, requested } = await setup();
+  it('refuses a job that is not JSON', async () => {
+    const { make } = await setup();
+    const { container, asked } = scanner(() => new Response(FAILED_SCAN));
+    expect((await make(container).fetch(post('nope'))).status).toBe(400);
+    expect(asked).toEqual([]);
+  });
+
+  it('lets the container stop soon after the job', async () => {
+    const { make } = await setup();
+    const idle: (number | bigint)[] = [];
+    const { container } = scanner(() => new Response(FAILED_SCAN));
+    (container as { setInactivityTimeout: unknown }).setInactivityTimeout =
+      async (ms: number | bigint) => {
+        idle.push(ms);
+      };
+    await make(container).fetch(post());
+    expect(idle.at(-1)).toBe(AFTER_JOB_IDLE_MS);
+  });
+
+  it('answers 200 for a site that did not answer, because that is a result and not a failure', async () => {
+    const { make, requested } = await setup();
     jest.spyOn(console, 'error').mockImplementation(() => undefined);
     const { container } = scanner(
       () =>
@@ -266,49 +278,78 @@ describe('ScannerContainer, the jobs a deployment leaves', () => {
           lines({ type: 'unreachable', detail: 'down' }, { type: 'end' }),
         ),
     );
-    const object = make(container);
-    await object.fetch(post());
-    await object.alarm();
+    expect((await make(container).fetch(post())).status).toBe(200);
     expect(requested).not.toContain(
       'POST https://api.github.com/repos/acme/site/issues',
     );
-    expect(storage.data.size).toBe(0);
   });
 
-  it('forgets a job when GitHub is not set up', async () => {
-    const { storage, make } = await setup({});
+  it('answers 500 when the scanner itself failed, so the queue tries the job again', async () => {
+    const { make } = await setup();
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { container } = scanner(() => new Response('busy', { status: 503 }));
+    const answer = await make(container).fetch(post());
+    expect(answer.status).toBe(500);
+    expect(await answer.text()).toContain('did not answer');
+  });
+
+  it('answers 500 when the scan stops part-way', async () => {
+    const { make } = await setup();
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { container } = scanner(
+      () =>
+        new Response(
+          lines({ type: 'ready', finalUrl: 'https://site.test/', status: 200 }),
+        ),
+    );
+    expect((await make(container).fetch(post())).status).toBe(500);
+  });
+
+  it('drops a deployment job when GitHub is not set up', async () => {
+    const { make } = await setup({});
     const { container, asked } = scanner(() => new Response(FAILED_SCAN));
     jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    const object = make(container);
-    await object.fetch(post());
-    await object.alarm();
+    expect((await make(container).fetch(post())).status).toBe(200);
     expect(asked).toEqual([]);
-    expect(storage.data.size).toBe(0);
   });
 
-  it('runs jobs one after another, and sets the alarm again for one that came while it ran', async () => {
-    const { storage, make } = await setup();
-    let object: InstanceType<typeof ScannerContainer> | undefined;
-    let first = true;
-    const { container, asked } = scanner(
-      () => new Response(FAILED_SCAN),
-      async () => {
-        if (first) {
-          first = false;
-          await object?.fetch(
-            post({ ...JOB, deployed: { ...JOB.deployed, sha: 'def456' } }),
-          );
-        }
-      },
-    );
-    object = make(container);
-    await object.fetch(post());
-    await object.alarm();
-    expect(asked).toHaveLength(1);
-    expect(storage.data.size).toBe(1);
-    expect(storage.alarmAt()).not.toBeNull();
-    await object.alarm();
-    expect(asked).toHaveLength(2);
+  it('runs a re-check and records it as scheduled', async () => {
+    const { db, make } = await setup();
+    const { domain } = await addDomain(db, 7, 'site.test', 'acme/site');
+    const { container, asked } = scanner(() => new Response(FAILED_SCAN));
+    expect((await make(container).fetch(post(RECHECK))).status).toBe(200);
+    expect(asked).toEqual(['{"url":"https://site.test/"}']);
+    expect(
+      await listRuns(db, 7, { domainId: domain.id, host: 'site.test' }, 10),
+    ).toEqual([expect.objectContaining({ kind: 'scheduled', sha: null })]);
+  });
+
+  it('does not re-check a repository whose checks were turned off meanwhile', async () => {
+    const { db, make } = await setup();
+    await disableRepo(db, 7, 'acme/site');
+    const { container, asked } = scanner(() => new Response(FAILED_SCAN));
+    expect((await make(container).fetch(post(RECHECK))).status).toBe(200);
+    expect(asked).toEqual([]);
+  });
+
+  it('answers 500 for a re-check the scanner failed, and records nothing', async () => {
+    const { db, make } = await setup();
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { container } = scanner(() => new Response('no', { status: 503 }));
+    expect((await make(container).fetch(post(RECHECK))).status).toBe(500);
+    expect(await latestRuns(db, 7, 'site.test', 1)).toEqual([]);
+  });
+
+  it('hands the jobs the single-object version kept to the queue, and forgets them', async () => {
+    const sent: unknown[] = [];
+    const { storage, make } = await setup({
+      ...GITHUB_ENV,
+      SCAN_QUEUE: { send: async (m: unknown) => sent.push(m) },
+    });
+    storage.data.set('job:1', JOB);
+    const { container } = scanner(() => new Response(FAILED_SCAN));
+    await make(container).alarm();
+    expect(sent).toEqual([{ key: 'deploy:acme/site', seq: 1 }]);
     expect(storage.data.size).toBe(0);
   });
 });

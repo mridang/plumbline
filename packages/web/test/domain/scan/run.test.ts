@@ -1,6 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { NDJSON, runOnServer, ScannerError } from '@/domain/scan/run';
+import {
+  INTERACTIVE_SHARDS,
+  NDJSON,
+  interactiveName,
+  runOnServer,
+  ScannerError,
+} from '@/domain/scan/run';
 
 /** A namespace whose scanner answers with `answer`, noting what it was asked. */
 function scanner(answer: () => Response, seen: Request[] = []) {
@@ -55,5 +61,14 @@ describe('runOnServer', () => {
     await expect(
       runOnServer(scanner(answer), 'https://example.com/'),
     ).rejects.toBeInstanceOf(ScannerError);
+  });
+});
+
+describe('interactiveName', () => {
+  it('spreads page scans over the shards, and stays inside them', async () => {
+    expect(interactiveName(() => 0)).toBe('interactive-0');
+    expect(interactiveName(() => 0.999999)).toBe(
+      `interactive-${INTERACTIVE_SHARDS - 1}`,
+    );
   });
 });

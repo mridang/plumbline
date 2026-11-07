@@ -169,9 +169,45 @@
       "image_build_context": "../..",
       // 4 GiB: a scan keeps the hints package, the engine and a page in memory.
       "instance_type": "standard-1",
-      "max_instances": 3,
+      // THE LIMIT ON SCANS AT ONCE: the containers that may run together.
+      // Every queued job and every page scan has a scanner Durable Object of
+      // its own with a container of its own, so this bounds all of them: the
+      // scan queue's consumer ("queues" below) may run at most
+      // QUEUE_SCAN_CONCURRENCY jobs, and the page's scans are spread over
+      // INTERACTIVE_SHARDS objects (src/domain/scan/run.ts). Keep
+      //   consumer max_concurrency + INTERACTIVE_SHARDS <= max_instances
+      // (test/wrangler-config.test.ts holds the file to it). A start that
+      // would pass this limit fails, the job is retried with a delay.
+      // Containers are billed while they run (4 GiB, half a vCPU each).
+      "max_instances": 10,
     },
   ],
+  // The scan queue (src/domain/suite/queue.ts). The GitHub webhook and the cron
+  // trigger only send a message; this Worker's consumer runs each job in a
+  // scanner container of its own. Create both queues once (wrangler queues
+  // create plumbline-scans; plumbline-scans-dlq): see README.md.
+  "queues": {
+    "producers": [{ "binding": "SCAN_QUEUE", "queue": "plumbline-scans" }],
+    "consumers": [
+      {
+        "queue": "plumbline-scans",
+        // One job for each consumer invocation, which has 15 minutes of wall
+        // time to itself: a repository's sites take a few minutes at most.
+        "max_batch_size": 1,
+        "max_batch_timeout": 0,
+        // QUEUE_SCAN_CONCURRENCY: jobs running at the same time, each in its
+        // own container. 8 + the 2 page-scan objects = max_instances (10).
+        "max_concurrency": 8,
+        // Retries wait 30 s, 60 s, 120 s ... (domain/suite/queue.ts), then the
+        // message goes to the dead-letter queue, which is logged; the job
+        // itself stays in D1 and is sent again by the cron sweep.
+        "max_retries": 5,
+        "dead_letter_queue": "plumbline-scans-dlq",
+      },
+      // The dead-letter queue: its consumer only logs what ran out of retries.
+      { "queue": "plumbline-scans-dlq", "max_batch_size": 10 },
+    ],
+  },
   "vars": {
     // The Cloudflare plan: sets the limits of the server-side checks.
     "WORKERS_PLAN": "paid",
@@ -195,4 +231,7 @@
   // Uploads source maps with the Worker so stack traces in logs and traces
   // point at the original source.
   "upload_source_maps": true,
+  // A queue consumer's CPU time is 30 s by default; a job parses scanner output
+  // and talks to GitHub for several sites, so give it room (wall time is 15 min).
+  "limits": { "cpu_ms": 120000 },
 }

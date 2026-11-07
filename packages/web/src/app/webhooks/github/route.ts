@@ -11,8 +11,8 @@
  * delivery (GitHub retries are recognised by their id): on the repository's
  * sites when it is the live site, and on the deployment's own address when it
  * is a preview. A scan takes longer than a delivery may keep working, so the
- * delivery only leaves a job with the container's Durable Object, which runs
- * it. A repository whose checks a person turned off gets none of this: its
+ * delivery only leaves a job with the scan queue, which runs it in a scanner
+ * container of its own, many at once. A repository whose checks a person turned off gets none of this: its
  * deliveries are acknowledged and dropped. Anything else is acknowledged and ignored.
  */
 
@@ -34,7 +34,8 @@ import { githubConfig, syncAsApp } from '@/domain/github/service';
 import { verifySignature } from '@/domain/github/webhook';
 import { classifyDeployment } from '@/domain/suite/deploy';
 import { handleIssueEvent } from '@/domain/suite/issue-events';
-import { enqueueJob, type ScannerNamespace } from '@/domain/suite/scanner';
+import { enqueueScan } from '@/domain/suite/queue';
+import type { SuiteJob } from '@/domain/suite/scanner';
 import { appOrigin } from '@/lib/core/origin';
 import { getEnv, runInBackground } from '@/lib/core/runtime';
 
@@ -70,13 +71,17 @@ function rereadsInstallation(
   return event === 'push' && touchesWrangler(delivery);
 }
 
-/** Leaves a deployment's checks with the scanner's Durable Object; a failure is logged, never raised. */
-async function leaveJob(job: Parameters<typeof enqueueJob>[1]): Promise<void> {
+/**
+ * Leaves a deployment's checks with the scan queue, which runs them (a newer
+ * job for the same repository replaces one that has not started). A failure is
+ * logged, never raised.
+ */
+async function leaveJob(job: SuiteJob): Promise<void> {
   try {
-    await enqueueJob(
-      getEnv().SCANNER as unknown as ScannerNamespace | undefined,
-      job,
-    );
+    await enqueueScan(getDatabase(), getEnv().SCAN_QUEUE, {
+      kind: 'deployment',
+      ...job,
+    });
   } catch (error) {
     console.error('suite job not kept', job.deployed.repo, error);
   }

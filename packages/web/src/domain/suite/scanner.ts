@@ -3,11 +3,9 @@
  *
  * Talking to the scanner container from the server side: starting a scan,
  * reading the stream of lines it answers with (the same lines the page reads;
- * see `domain/scan/stream.ts` for the page's reader), and handing a
- * deployment to the container's Durable Object as a job that outlives the
- * request. A scan takes tens of seconds, far longer than a webhook delivery
- * may keep working after it has answered, so the delivery only leaves the job
- * behind and the Durable Object finishes it from an alarm.
+ * see `domain/scan/stream.ts` for the page's reader), and running the jobs the
+ * scan queue hands out (see `domain/suite/queue.ts`) in a scanner Durable
+ * Object of their own.
  */
 
 import { z } from 'zod';
@@ -159,19 +157,7 @@ export async function scanWith(
   return collectScan(await startScan(send, url));
 }
 
-/** A scan of `url` through the container's Durable Object namespace. */
-export function scanThrough(
-  namespace: ScannerNamespace | undefined,
-  url: string,
-): Promise<ScanResult> {
-  if (!namespace) {
-    return Promise.reject(new ScanFailed('Scans are not available.'));
-  }
-  const stub = namespace.get(namespace.idFromName('main'));
-  return scanWith((request) => stub.fetch(request), url);
-}
-
-/** What a deployment leaves for the container's Durable Object to finish. */
+/** What a deployment leaves for a scanner Durable Object to finish. */
 export interface SuiteJob {
   readonly installationId: number;
   readonly userId: number;
@@ -182,22 +168,54 @@ export interface SuiteJob {
   readonly force?: boolean;
 }
 
-/** The path the Durable Object takes jobs on. */
+/** One unit of work for the scan queue. */
+export type ScanJob =
+  | ({ readonly kind: 'deployment' } & SuiteJob)
+  | {
+      /** The scheduled re-check of one site found through GitHub. */
+      readonly kind: 'recheck';
+      readonly userId: number;
+      readonly host: string;
+      readonly repo: string;
+    };
+
+/**
+ * What a job is about: jobs with the same key are the same work, so only the
+ * newest is run (see `domain/db/pending-scans.ts`). A deployment of a live site
+ * is the whole repository, a preview is its address, a change of rules is kept
+ * apart from deployments so that neither replaces the other.
+ */
+export function keyOf(job: Readonly<ScanJob>): string {
+  if (job.kind === 'recheck') {
+    return `site:${job.userId}:${job.host}`;
+  }
+  const { repo, environment, url } = job.deployed;
+  if (job.force) {
+    return `config:${repo}`;
+  }
+  return environment === 'production'
+    ? `deploy:${repo}`
+    : `preview:${repo}:${url ?? ''}`;
+}
+
+/** The path a scanner Durable Object takes a job on; it answers once the job has run. */
 export const JOBS_PATH = '/jobs';
 
 /**
- * Leave `job` with the container's Durable Object, which keeps it until it has
- * run it, whatever happens to the request that brought it. Resolves once the
- * job is kept; the checks run afterwards.
+ * Run `job` in the scanner Durable Object called `name` (each name has its own
+ * container, so jobs of different names run at the same time) and resolve when
+ * it is done. Throws {@link ScanFailed} when the object could not run it, so
+ * the caller can try again.
  */
-export async function enqueueJob(
+export async function runJobThrough(
   namespace: ScannerNamespace | undefined,
-  job: SuiteJob,
+  name: string,
+  job: Readonly<ScanJob>,
 ): Promise<void> {
   if (!namespace) {
     throw new ScanFailed('Scans are not available.');
   }
-  const stub = namespace.get(namespace.idFromName('main'));
+  const stub = namespace.get(namespace.idFromName(name));
   const answer = await stub.fetch(
     new Request(`https://scanner.internal${JOBS_PATH}`, {
       method: 'POST',
@@ -206,6 +224,8 @@ export async function enqueueJob(
     }),
   );
   if (!answer.ok) {
-    throw new ScanFailed('The scanner did not take the job.');
+    throw new ScanFailed(
+      `The scanner did not run the job (${answer.status}): ${(await answer.text()).slice(0, 200)}`,
+    );
   }
 }
