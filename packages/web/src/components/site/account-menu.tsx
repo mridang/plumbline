@@ -11,6 +11,12 @@ import {
   McpIcon,
 } from '@/components/icons';
 import { NotificationSettings } from '@/components/notifications/notification-settings';
+import {
+  accountLinks,
+  NOTHING_CONNECTED,
+  type AccountLink,
+  type AccountState,
+} from '@/components/site/account-links';
 import { signOut } from '@/components/site/sign-out';
 import {
   Dialog,
@@ -59,6 +65,18 @@ export function Avatar({
   );
 }
 
+/** An entry's wording and, when known, its status in words (never colour alone). */
+function ItemLabel({ link }: Readonly<{ link: AccountLink }>): ReactElement {
+  return (
+    <>
+      <span className="flex-1">{link.label}</span>
+      {link.status ? (
+        <span className="text-xs text-subtle">{link.status}</span>
+      ) : null}
+    </>
+  );
+}
+
 /**
  * What the account menu holds: who is signed in, the GitHub connection,
  * connecting an assistant (MCP), the notification settings, and signing out.
@@ -66,29 +84,33 @@ export function Avatar({
  */
 export function AccountMenuItems({
   email,
+  state = NOTHING_CONNECTED,
   onNotifications,
   onSignOut,
 }: Readonly<{
   email: string;
+  /** What the person has connected; words each entry. */
+  state?: AccountState;
   /** Opens the notification settings. */
   onNotifications: () => void;
   onSignOut: () => void;
 }>): ReactElement {
+  const links = accountLinks(state);
   return (
     <>
       <PopoverLabel caption="Signed in as">{email}</PopoverLabel>
       <PopoverSeparator />
       <Link href="/github" className={POPOVER_ITEM}>
         <LinkIcon size="menu" className="text-subtle" />
-        GitHub repositories
+        <ItemLabel link={links.github} />
       </Link>
       <Link href="/connect" className={POPOVER_ITEM}>
         <McpIcon size="menu" />
-        Connect MCP
+        <ItemLabel link={links.assistants} />
       </Link>
       <button type="button" className={POPOVER_ITEM} onClick={onNotifications}>
         <BoltIcon size="menu" className="text-subtle" />
-        Notifications
+        <ItemLabel link={links.notifications} />
       </button>
       <PopoverSeparator />
       <button type="button" className={POPOVER_ITEM} onClick={onSignOut}>
@@ -109,7 +131,9 @@ export function AccountMenu({
   name,
   email,
   picture,
+  state,
 }: Readonly<{
+  state?: AccountState;
   firstName: string;
   name: string;
   email: string;
@@ -139,6 +163,7 @@ export function AccountMenu({
       >
         <AccountMenuItems
           email={email}
+          {...(state ? { state } : {})}
           onNotifications={() => setNotifying(true)}
           onSignOut={() => void signOut()}
         />
@@ -147,7 +172,7 @@ export function AccountMenu({
       <Dialog open={notifying} onOpenChange={setNotifying}>
         <DialogContent variant="center" className="max-w-lg p-6">
           <DialogTitle className="font-display text-xl font-semibold">
-            Notifications
+            Manage notifications
           </DialogTitle>
           <DialogDescription className="mt-1 text-sm text-muted">
             Be told when one of your sites changes.

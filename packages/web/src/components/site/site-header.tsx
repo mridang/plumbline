@@ -5,6 +5,7 @@ import { buttonClass } from '@/components/ui/button';
 import { Container } from '@/components/ui/layout';
 import type { User } from '@/domain/db/users';
 
+import type { AccountState } from '@/components/site/account-links';
 import { AccountMenu } from '@/components/site/account-menu';
 import { firstNameOf } from '@/components/site/first-name';
 import { InstallButton } from '@/components/site/install-button';
@@ -30,7 +31,8 @@ import {
  */
 export function SiteHeader({
   user,
-}: Readonly<{ user: User | null }>): ReactElement {
+  state,
+}: Readonly<{ user: User | null; state?: AccountState }>): ReactElement {
   const links = user ? SIGNED_IN_LINKS : SIGNED_OUT_LINKS;
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface/85 backdrop-blur supports-backdrop-filter:bg-surface/70">
@@ -51,6 +53,7 @@ export function SiteHeader({
                 name={user.name ?? user.email}
                 email={user.email}
                 picture={user.picture ?? undefined}
+                {...(state ? { state } : {})}
               />
             </>
           ) : (
