@@ -2,7 +2,9 @@
  * Permissions-Policy parsing and the OWASP Secure Headers Project check.
  *
  * OSHP expects the header to switch off 28 features with an empty allowlist
- * (`feature=()`), and `sync-xhr` may also be limited to `(self)`.
+ * (`feature=()`). `sync-xhr` and `clipboard-write` may also be limited to
+ * `(self)`: both are first-party features (a copy button, a same-origin
+ * request), and `(self)` still keeps embedded third parties from using them.
  */
 import { finding, type Finding } from './finding.js';
 
@@ -98,7 +100,9 @@ export function permissionsPolicyFindings(value: string | null): Finding[] {
   }
   const policy = parsePermissionsPolicy(value);
   const failing: string[] = DISABLED_FEATURES.filter(
-    (feature) => policy.get(feature) !== '()',
+    (feature) =>
+      policy.get(feature) !== '()' &&
+      !(feature === 'clipboard-write' && policy.get(feature) === '(self)'),
   );
   const syncXhr = policy.get('sync-xhr');
   if (syncXhr !== '()' && syncXhr !== '(self)') {

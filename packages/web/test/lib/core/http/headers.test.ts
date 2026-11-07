@@ -253,25 +253,21 @@ describe('SECURITY_HEADERS', () => {
     expect(SECURITY_HEADERS['Origin-Agent-Cluster']).toBe('?1');
   });
 
-  it("switches off every feature of OWASP's list except the ones it needs or browsers removed", () => {
+  it("switches off every feature of OWASP's list, leaving only the clipboard for this origin", () => {
     const policy = SECURITY_HEADERS['Permissions-Policy'] ?? '';
-    const features = policy.split(', ').map((part) => part.replace('=()', ''));
-    expect(features).toHaveLength(26);
-    expect(features).not.toContain('clipboard-write');
-    expect(features).toEqual(
-      expect.arrayContaining(['camera', 'serial', 'hid']),
-    );
+    const parts = policy.split(', ');
+    expect(parts).toHaveLength(29);
+    expect(parts).toContain('clipboard-write=(self)');
+    expect(parts).toContain('interest-cohort=()');
+    expect(parts).toContain('sync-xhr=()');
+    expect(parts.filter((part) => !part.endsWith('=()'))).toEqual([
+      'clipboard-write=(self)',
+    ]);
   });
 
   it('turns off DNS prefetching and cross-domain policy files', () => {
     expect(SECURITY_HEADERS['X-DNS-Prefetch-Control']).toBe('off');
     expect(SECURITY_HEADERS['X-Permitted-Cross-Domain-Policies']).toBe('none');
-  });
-
-  it('names no permissions feature that browsers have removed', () => {
-    expect(SECURITY_HEADERS['Permissions-Policy']).not.toContain(
-      'interest-cohort',
-    );
   });
 });
 

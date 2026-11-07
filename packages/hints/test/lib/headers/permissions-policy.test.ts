@@ -50,6 +50,21 @@ describe('permissionsPolicyFindings', () => {
     ).toEqual([]);
   });
 
+  it('accepts clipboard-write=(self)', () => {
+    expect(
+      permissionsPolicyFindings(
+        full.replace('clipboard-write=()', 'clipboard-write=(self)'),
+      ),
+    ).toEqual([]);
+  });
+
+  it('flags clipboard-write that is neither () nor (self)', () => {
+    const [f] = permissionsPolicyFindings(
+      full.replace('clipboard-write=()', 'clipboard-write=*'),
+    );
+    expect(f?.message).toContain('clipboard-write');
+  });
+
   it('errors when the header is missing', () => {
     expect(permissionsPolicyFindings(null)[0]?.message).toContain(
       'not specified',
