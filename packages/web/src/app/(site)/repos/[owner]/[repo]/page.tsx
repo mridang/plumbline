@@ -67,7 +67,7 @@ export default async function RepoPage({
   // Only this repository's sites are read, and the pause flag is asked for in
   // the same round trip.
   const [overview, paused] = await Promise.all([
-    overviewOf(db, user.id, Date.now(), repo),
+    overviewOf(db, user.id, serverNow(), repo),
     isRepoDisabled(db, repo),
   ]);
   const entry = overview.find((r) => r.repo === repo);
