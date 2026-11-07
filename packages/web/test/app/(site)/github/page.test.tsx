@@ -73,8 +73,8 @@ async function page(error?: string): Promise<string> {
 }
 
 describe('GitHubPage', () => {
-  it('is titled GitHub', () => {
-    expect(metadata.title).toBe('GitHub');
+  it('is titled Manage GitHub', () => {
+    expect(metadata.title).toBe('Manage GitHub');
   });
 
   it('sends someone not signed in to sign in and back here', async () => {

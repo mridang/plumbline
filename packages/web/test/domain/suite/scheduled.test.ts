@@ -188,4 +188,27 @@ describe('resyncStaleInstallation', () => {
       ),
     ).resolves.toBeUndefined();
   });
+
+  it('does not try the same failing installation at every trigger', async () => {
+    const db = createDatabase(sqliteD1(...APP_MIGRATIONS).d1);
+    await saveInstallation(db, 7, 99, 'acme');
+    await saveInstallation(db, 7, 100, 'beta');
+    await touchInstallation(db, 99, start.toISOString());
+    await touchInstallation(
+      db,
+      100,
+      new Date(start.getTime() + 1).toISOString(),
+    );
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const sync = jest
+      .fn<(user: number, installation: number) => Promise<void>>()
+      .mockRejectedValueOnce(new Error('down'))
+      .mockResolvedValue(undefined);
+    await resyncStaleInstallation(db, sync, () => later);
+    await resyncStaleInstallation(db, sync, () => later);
+    expect(sync.mock.calls).toEqual([
+      [7, 99],
+      [7, 100],
+    ]);
+  });
 });

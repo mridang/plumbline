@@ -10,6 +10,13 @@ jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
 }));
 
+jest.unstable_mockModule('@/domain/db/client', () => ({
+  getDatabase: () => ({}),
+}));
+jest.unstable_mockModule('@/domain/db/account-state', () => ({
+  connectionState: async () => ({ github: false, assistants: false }),
+}));
+
 const { SiteShell } = await import('@/components/site/shell');
 
 /** The shell around a page, rendered as the server would. */

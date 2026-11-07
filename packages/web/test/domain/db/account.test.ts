@@ -49,6 +49,31 @@ function seeded() {
         "INSERT INTO live_events (id, user_id, payload, created_at) VALUES (?, ?, '{}', 'now')",
       )
       .run(uid, uid);
+    raw
+      .prepare(
+        "INSERT INTO github_links (user_id, github_id, login, created_at, updated_at) VALUES (?, ?, 'octo', 'now', 'now')",
+      )
+      .run(uid, 1000 + uid);
+    raw
+      .prepare(
+        "INSERT INTO github_installations (installation_id, user_id, account_login, created_at, updated_at) VALUES (?, ?, 'acme', 'now', 'now')",
+      )
+      .run(500 + uid, uid);
+    raw
+      .prepare(
+        "INSERT INTO github_repos (installation_id, full_name, user_id, default_branch, hosts, analysed_at) VALUES (?, ?, ?, 'master', '[]', 'now')",
+      )
+      .run(500 + uid, `acme/r${uid}`, uid);
+    raw
+      .prepare(
+        "INSERT INTO user_repositories (user_id, repo, granted_at) VALUES (?, ?, 'now')",
+      )
+      .run(uid, `acme/r${uid}`);
+    raw
+      .prepare(
+        "INSERT INTO suite_runs (user_id, host, status, ran_at, findings) VALUES (?, 'example.com', 0, 'now', '[]')",
+      )
+      .run(uid);
   }
   return made;
 }
@@ -74,6 +99,11 @@ const TABLES = [
   ['oauth_codes', 'code_hash', ['k2']],
   ['push_subscriptions', 'endpoint', ['https://push.test/2']],
   ['live_events', 'id', ['2']],
+  ['github_links', 'user_id', ['2']],
+  ['github_installations', 'installation_id', ['502']],
+  ['github_repos', 'full_name', ['acme/r2']],
+  ['user_repositories', 'repo', ['acme/r2']],
+  ['suite_runs', 'user_id', ['2']],
 ] as const;
 
 describe('deleteAccountData', () => {
