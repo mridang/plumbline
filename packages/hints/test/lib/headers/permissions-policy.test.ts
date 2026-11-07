@@ -58,6 +58,24 @@ describe('permissionsPolicyFindings', () => {
     ).toEqual([]);
   });
 
+  it.each(['microphone', 'fullscreen', 'camera'])(
+    'accepts %s=(self)',
+    (feature) => {
+      expect(
+        permissionsPolicyFindings(
+          full.replace(`${feature}=()`, `${feature}=(self)`),
+        ),
+      ).toEqual([]);
+    },
+  );
+
+  it('flags a feature opened to other origins', () => {
+    const [f] = permissionsPolicyFindings(
+      full.replace('microphone=()', 'microphone=(self "https://x.test")'),
+    );
+    expect(f?.message).toContain('microphone');
+  });
+
   it('flags clipboard-write that is neither () nor (self)', () => {
     const [f] = permissionsPolicyFindings(
       full.replace('clipboard-write=()', 'clipboard-write=*'),
@@ -72,9 +90,7 @@ describe('permissionsPolicyFindings', () => {
   });
 
   it('lists features that are missing or enabled', () => {
-    const value = full
-      .replace('camera=()', 'camera=(self)')
-      .replace(', usb=()', '');
+    const value = full.replace('camera=()', 'camera=*').replace(', usb=()', '');
     const [f] = permissionsPolicyFindings(value);
     expect(f?.message).toContain('camera, usb.');
   });

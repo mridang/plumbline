@@ -30,10 +30,10 @@ describe('permissions-policy', () => {
   });
 
   it('lists features that are not disabled', async () => {
-    const problems = await runHint(hint, page('camera=(), microphone=(self)'));
+    const problems = await runHint(hint, page('camera=(), microphone=*'));
     expect(problems).toHaveLength(1);
     expect(problems[0]?.sourceCode).toBe(
-      'Permissions-Policy: camera=(), microphone=(self)',
+      'Permissions-Policy: camera=(), microphone=*',
     );
     expect(problems[0]?.message).toContain('microphone');
     expect(problems[0]?.message).toContain('geolocation');

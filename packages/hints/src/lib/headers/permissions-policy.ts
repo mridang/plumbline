@@ -2,9 +2,10 @@
  * Permissions-Policy parsing and the OWASP Secure Headers Project check.
  *
  * OSHP expects the header to switch off 28 features with an empty allowlist
- * (`feature=()`). `sync-xhr` and `clipboard-write` may also be limited to
- * `(self)`: both are first-party features (a copy button, a same-origin
- * request), and `(self)` still keeps embedded third parties from using them.
+ * (`feature=()`). Any of them may also be limited to `(self)`: a site that
+ * needs one of its own features (a copy button, voice input, fullscreen) keeps
+ * it, and `(self)` still keeps embedded third parties from using it. An
+ * allowlist that names other origins, or `*`, or is missing, still fails.
  */
 import { finding, type Finding } from './finding.js';
 
@@ -91,6 +92,11 @@ export function parsePermissionsPolicy(value: string): Map<string, string> {
   return policy;
 }
 
+/** Whether an allowlist keeps a feature from third parties: empty, or this origin only. */
+function isClosed(allowlist: string | undefined): boolean {
+  return allowlist === '()' || allowlist === '(self)';
+}
+
 /** Findings for the OWASP rule; `value` is null when no header was sent. */
 export function permissionsPolicyFindings(value: string | null): Finding[] {
   if (value === null) {
@@ -100,12 +106,9 @@ export function permissionsPolicyFindings(value: string | null): Finding[] {
   }
   const policy = parsePermissionsPolicy(value);
   const failing: string[] = DISABLED_FEATURES.filter(
-    (feature) =>
-      policy.get(feature) !== '()' &&
-      !(feature === 'clipboard-write' && policy.get(feature) === '(self)'),
+    (feature) => !isClosed(policy.get(feature)),
   );
-  const syncXhr = policy.get('sync-xhr');
-  if (syncXhr !== '()' && syncXhr !== '(self)') {
+  if (!isClosed(policy.get('sync-xhr'))) {
     failing.push('sync-xhr');
   }
   if (failing.length === 0) {
@@ -114,7 +117,7 @@ export function permissionsPolicyFindings(value: string | null): Finding[] {
   return [
     finding(
       'error',
-      `The 'Permissions-Policy' header should disable these features with an empty allowlist (for example 'camera=()'; 'sync-xhr' may also be '(self)'): ${failing.join(', ')}.`,
+      `The 'Permissions-Policy' header should disable these features with an empty allowlist (for example 'camera=()'), or limit them to this origin with '(self)': ${failing.join(', ')}.`,
     ),
   ];
 }
