@@ -55,6 +55,27 @@ const RETRY_MS = 250;
 /** How long a container that has finished its job may stay up, in milliseconds. */
 export const AFTER_JOB_IDLE_MS = 5_000;
 
+/** A probe call that takes longer than this is logged, with what it was about, in milliseconds. */
+export const SLOW_PROBE_MS = 3_000;
+
+/** What a probe request is about, for a log: the route and the host, port and path it names. */
+export function aboutRequest(path: string, body: string): string {
+  // For a batch, the first item stands for it.
+  const fields = Object.fromEntries(
+    (body.split('--\n')[0] ?? '')
+      .split('\n')
+      .map((line) => line.split(/=(.*)/s).slice(0, 2))
+      .filter(([key]) =>
+        ['host', 'port', 'ip', 'path', 'starttls'].includes(key ?? ''),
+      ),
+  );
+  const items =
+    path === '/v1/handshakes' ? ` x${body.split('--\n').length}` : '';
+  return `${path}${items} ${Object.entries(fields)
+    .map(([key, value]) => `${key}=${String(value)}`)
+    .join(' ')}`;
+}
+
 /** The media type of the stream a scan answers with. */
 const NDJSON = 'application/x-ndjson; charset=utf-8';
 
@@ -65,10 +86,16 @@ export class ProbeScanner extends DurableObject<CloudflareEnv> {
     path: string,
     body: string,
   ): Promise<{ status: number; text: string }> {
+    const started = Date.now();
     const answer = await this.forward(
       new Request(`https://probe.internal${path}`, { method: 'POST', body }),
     );
-    return { status: answer.status, text: await answer.text() };
+    const text = await answer.text();
+    const took = Date.now() - started;
+    if (took > SLOW_PROBE_MS) {
+      console.warn(`slow probe call ${took} ms: ${aboutRequest(path, body)}`);
+    }
+    return { status: answer.status, text };
   }
 
   /**

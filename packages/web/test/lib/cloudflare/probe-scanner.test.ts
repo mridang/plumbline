@@ -23,8 +23,14 @@ jest.unstable_mockModule('cloudflare:workers', cloudflareWorkersStub, {
   virtual: true,
 } as never);
 
-const { ProbeScanner, AFTER_JOB_IDLE_MS, IDLE_MS, START_TIMEOUT_MS } =
-  await import('@/lib/cloudflare/probe-scanner');
+const {
+  ProbeScanner,
+  AFTER_JOB_IDLE_MS,
+  IDLE_MS,
+  SLOW_PROBE_MS,
+  START_TIMEOUT_MS,
+  aboutRequest,
+} = await import('@/lib/cloudflare/probe-scanner');
 
 /** The answer of the probe's `/v1/http` for a response. */
 const httpAnswer = (
@@ -209,6 +215,58 @@ describe('ProbeScanner, a scan', () => {
       }),
     );
     expect(response.status).toBe(400);
+  });
+});
+
+describe('ProbeScanner, slow probe calls', () => {
+  it('says what a request is about: the route and the host, port, address and path it names, never a header', () => {
+    expect(
+      aboutRequest(
+        '/v1/http',
+        'host=example.com\nport=443\ntls=1\nip=2606:4700::1\nmethod=GET\npath=/a?b=1\nheader=Cookie: secret\n',
+      ),
+    ).toBe('/v1/http host=example.com port=443 ip=2606:4700::1 path=/a?b=1');
+    expect(
+      aboutRequest(
+        '/v1/handshakes',
+        'host=a.test\nport=25\nstarttls=smtp\n--\nhost=b.test\nport=25\n',
+      ),
+    ).toBe('/v1/handshakes x2 host=a.test port=25 starttls=smtp');
+  });
+
+  it('logs a call that took long, and nothing for the quick ones', async () => {
+    const warn = jest
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined);
+    const { container } = probe();
+    const inner = container.getTcpPort(8080).fetch;
+    container.getTcpPort = () => ({
+      fetch: async (input: string, init?: RequestInit) => {
+        if (new URL(input).pathname === '/v1/connect') {
+          await new Promise((resolve) =>
+            setTimeout(resolve, SLOW_PROBE_MS + 100),
+          );
+        }
+        return inner(input, init);
+      },
+    });
+    await (await made(container).fetch(run())).text();
+    const logged = warn.mock.calls.map((call) => String(call[0]));
+    expect(logged.length).toBeGreaterThan(0);
+    expect(
+      logged.every((line) =>
+        /^slow probe call \d+ ms: \/v1\/connect /.test(line),
+      ),
+    ).toBe(true);
+  });
+
+  it('logs nothing when every call is quick', async () => {
+    const warn = jest
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined);
+    const { container } = probe();
+    await (await made(container).fetch(run())).text();
+    expect(warn).not.toHaveBeenCalled();
   });
 });
 
