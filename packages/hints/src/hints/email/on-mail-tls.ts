@@ -25,24 +25,39 @@ function onMailTls(
   check: (site: TlsSite) => void | Promise<void>,
 ): void {
   onMailDomain(context, async (mail) => {
-    for (const host of mail.hosts) {
-      const target = mailTargetFor(host);
-      await check({
-        target,
-        subject: MAIL_SUBJECT,
-        report: (message, codeSnippet, severity = Severity.error) =>
-          mail.report(`${host}: ${message}`, { severity, codeSnippet }),
-        couldNotTest: (reason) =>
-          mail.report(`${host}: Could not test: ${reason}.`, {
-            severity: Severity.hint,
-            codeSnippet: `${target.host}:${target.port}`,
-          }),
-      });
+    // The mail servers are tested at once, not one after another: a session with a mail
+    // server takes seconds to open and a check opens many. What each says is kept and
+    // reported in the order of the servers.
+    const said = await Promise.all(
+      mail.hosts.map(async (host) => {
+        const target = mailTargetFor(host);
+        const reports: (() => void)[] = [];
+        await check({
+          target,
+          subject: MAIL_SUBJECT,
+          report: (message, codeSnippet, severity = Severity.error) =>
+            reports.push(() =>
+              mail.report(`${host}: ${message}`, { severity, codeSnippet }),
+            ),
+          couldNotTest: (reason) =>
+            reports.push(() =>
+              mail.report(`${host}: Could not test: ${reason}.`, {
+                severity: Severity.hint,
+                codeSnippet: `${target.host}:${target.port}`,
+              }),
+            ),
+        });
+        return reports;
+      }),
+    );
+    for (const reports of said) {
+      for (const report of reports) {
+        report();
+      }
     }
   });
 }
 
-/** What a mail TLS hint adds to the shared defaults. */
 interface MailTlsHintSpec {
   id: string;
   name: string;
