@@ -189,11 +189,13 @@
     {
       "class_name": "ProbeScanner",
       // The probe: one static binary on an empty image (probe/Dockerfile), about
-      // 5 MB, idling at a few MB of memory, so the smallest instance type is
-      // enough. The checks run in the Durable Object, not here.
+      // 5 MB, idling at a few MB of memory. Memory is not the limit, CPU is: a
+      // scan makes hundreds of TLS handshakes, and "lite" (1/16 of a vCPU) made
+      // scans take minutes and checks time out, so it is "basic" (1/4 of a vCPU).
+      // The checks run in the Durable Object, not here.
       "image": "../../probe/Dockerfile",
       "image_build_context": "../../probe",
-      "instance_type": "lite",
+      "instance_type": "basic",
       // Same rule as above for the scans that use it: the queue consumer's
       // max_concurrency + INTERACTIVE_SHARDS <= max_instances.
       "max_instances": 10,

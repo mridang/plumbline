@@ -67,8 +67,8 @@ describe('wrangler.jsonc, the probe scanner', () => {
     (entry) => entry.class_name === 'ProbeScanner',
   );
 
-  it('keeps the probe on the smallest instance type, built from the probe image', () => {
-    expect(probe?.instance_type).toBe('lite');
+  it('keeps the probe on a small instance type (CPU, not memory, is its limit), built from the probe image', () => {
+    expect(probe?.instance_type).toBe('basic');
     expect(probe?.image).toBe('../../probe/Dockerfile');
   });
 
