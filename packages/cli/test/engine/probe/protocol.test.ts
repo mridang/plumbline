@@ -247,6 +247,20 @@ describe('parseStarttls', () => {
     expect(parseStarttls(JSON.stringify(base))).toEqual(base);
   });
 
+  it('reads the reason a dialog did not get to a handshake as part of the answer, not as a complaint', () => {
+    const refused = {
+      ...base,
+      reachable: false,
+      starttls: false,
+      tlsVersion: null,
+      trusted: false,
+      hostnameMatches: false,
+      certificates: [],
+      error: 'not a public address',
+    };
+    expect(parseStarttls(JSON.stringify(refused))).toEqual(refused);
+  });
+
   it('refuses a flag that is not true or false', () => {
     expect(() =>
       parseStarttls(JSON.stringify({ ...base, trusted: 1 })),

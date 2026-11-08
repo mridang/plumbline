@@ -181,8 +181,8 @@ export function toBase64(value: string): string {
   return btoa(value);
 }
 
-/** The object in the JSON `body`, or an error that names the probe's own complaint. */
-export function parseBody(body: string): Json {
+/** The object in the JSON `body`. */
+function parseObject(body: string): Json {
   let value: unknown;
   try {
     value = JSON.parse(body);
@@ -192,6 +192,12 @@ export function parseBody(body: string): Json {
   if (!isObject(value)) {
     throw new ProbeError('the probe answered something that is not an object');
   }
+  return value;
+}
+
+/** The object in the JSON `body`, or an error that names the probe's own complaint. */
+export function parseBody(body: string): Json {
+  const value = parseObject(body);
   if (typeof value['error'] === 'string') {
     throw new ProbeError(value['error']);
   }
@@ -334,7 +340,9 @@ export function parseHttp(body: string): HttpAnswer {
 
 /** A STARTTLS answer, checked. */
 export function parseStarttls(body: string): StarttlsAnswer {
-  const value = parseBody(body);
+  // Its `error` is part of the answer (why the dialog did not get to a handshake), not the
+  // probe's complaint about the request.
+  const value = parseObject(body);
   return {
     reachable: flag(value['reachable'], 'reachable'),
     starttls: flag(value['starttls'], 'STARTTLS'),
