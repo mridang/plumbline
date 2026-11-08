@@ -75,37 +75,3 @@ USER node
 
 EXPOSE 8080
 ENTRYPOINT ["node", "packages/docker/dist/server.js"]
-
-# --- Scanner: Node + the built server, no browser ----------------------------
-# The streaming scan (`POST /run`) runs the checks as a webhint-free engine in
-# Node (see packages/cli/src/engine), so it needs no Chromium: the page is
-# fetched with Node itself, and the TLS checks use Node's `tls` and the
-# `openssl` program, so the image carries the `openssl` binary. This is the
-# image the Cloudflare container runs. It is stated before `runtime` so a plain
-# `docker build .` still builds `runtime`, the last stage.
-FROM node:24-bookworm-slim AS scanner
-
-RUN apt-get update \
- && apt-get install -y --no-install-recommends openssl ca-certificates \
- && rm -rf /var/lib/apt/lists/*
-
-LABEL org.opencontainers.image.source="https://github.com/mridang/plumbline"
-LABEL org.opencontainers.image.url="https://github.com/mridang/plumbline"
-LABEL org.opencontainers.image.licenses="Apache-2.0"
-LABEL org.opencontainers.image.title="plumbline-scanner"
-LABEL org.opencontainers.image.description="HTTP server that streams the plumbline checks of a URL as JSON lines, without a browser"
-
-ARG SCANNER_VERSION=dev
-ENV SCANNER_VERSION=$SCANNER_VERSION
-ENV HOST=0.0.0.0
-ENV PORT=8080
-
-WORKDIR /app
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/packages ./packages
-
-USER node
-
-EXPOSE 8080
-ENTRYPOINT ["node", "packages/docker/dist/server.js"]

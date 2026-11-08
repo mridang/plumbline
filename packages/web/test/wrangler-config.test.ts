@@ -15,8 +15,11 @@ interface Wrangler {
     image: string;
   }[];
   durable_objects: { bindings: { name: string; class_name: string }[] };
-  migrations: { tag: string; new_sqlite_classes?: string[] }[];
-  vars: Record<string, string>;
+  migrations: {
+    tag: string;
+    new_sqlite_classes?: string[];
+    deleted_classes?: string[];
+  }[];
   queues: {
     producers: { binding: string; queue: string }[];
     consumers: {
@@ -33,6 +36,10 @@ const config = ts.parseConfigFileTextToJson(
   readFileSync(path.join(process.cwd(), 'wrangler.jsonc'), 'utf8'),
 ).config as Wrangler;
 
+const probe = config.containers.find(
+  (entry) => entry.class_name === 'ProbeScanner',
+);
+
 const consumer = config.queues.consumers.find(
   (entry) => entry.queue === SCAN_QUEUE_NAME,
 );
@@ -45,7 +52,7 @@ describe('wrangler.jsonc, the scan queue', () => {
   });
 
   it('runs no more jobs at once, with the page scans, than containers may run', () => {
-    const max = config.containers[0]?.max_instances ?? 0;
+    const max = probe?.max_instances ?? 0;
     expect(
       (consumer?.max_concurrency ?? Infinity) + INTERACTIVE_SHARDS,
     ).toBeLessThanOrEqual(max);
@@ -62,23 +69,17 @@ describe('wrangler.jsonc, the scan queue', () => {
   });
 });
 
-describe('wrangler.jsonc, the probe scanner', () => {
-  const probe = config.containers.find(
-    (entry) => entry.class_name === 'ProbeScanner',
-  );
-
-  it('keeps the probe on a small instance type (CPU, not memory, is its limit), built from the probe image', () => {
+describe('wrangler.jsonc, the scanner', () => {
+  it('has one container, the probe, on a small instance type (CPU, not memory, is its limit), built from the probe image', () => {
+    expect(config.containers).toHaveLength(1);
     expect(probe?.instance_type).toBe('basic');
     expect(probe?.image).toBe('../../probe/Dockerfile');
   });
 
-  it('runs no more jobs at once, with the page scans, than probe containers may run', () => {
+  it('binds the object the code uses, creates its class and deletes the class of the old scanner container', () => {
     expect(
-      (consumer?.max_concurrency ?? Infinity) + INTERACTIVE_SHARDS,
-    ).toBeLessThanOrEqual(probe?.max_instances ?? 0);
-  });
-
-  it('binds the object the code picks and creates its class', () => {
+      config.durable_objects.bindings.map((entry) => entry.name).sort(),
+    ).toEqual(['PROBE', 'USER_HUB']);
     expect(config.durable_objects.bindings).toContainEqual({
       name: 'PROBE',
       class_name: 'ProbeScanner',
@@ -88,9 +89,10 @@ describe('wrangler.jsonc, the probe scanner', () => {
         entry.new_sqlite_classes?.includes('ProbeScanner'),
       ),
     ).toBe(true);
-  });
-
-  it('picks the engine by a setting that is one of the two it knows', () => {
-    expect(['container', 'worker']).toContain(config.vars['SCAN_ENGINE']);
+    expect(
+      config.migrations.some((entry) =>
+        entry.deleted_classes?.includes('ScannerContainer'),
+      ),
+    ).toBe(true);
   });
 });

@@ -290,7 +290,7 @@ describe('handleScanQueue', () => {
     let named = '';
     const env = {
       DB: made.d1,
-      SCANNER: {
+      PROBE: {
         idFromName: (name: string) => {
           named = name;
           return name;

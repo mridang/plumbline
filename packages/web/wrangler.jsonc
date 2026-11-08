@@ -144,12 +144,10 @@
   "durable_objects": {
     "bindings": [
       { "name": "USER_HUB", "class_name": "UserHub" },
-      // The scanner: every check of a scan runs in this container (Node, the
-      // hints package and the engine, no browser) and streams its results.
-      { "name": "SCANNER", "class_name": "ScannerContainer" },
-      // The scanner that runs the checks in the Durable Object itself and asks
-      // a small probe container only for what needs real sockets (probe/README.md).
-      // SCAN_ENGINE below picks which of the two the scans use.
+      // The scanner: every check of a scan runs in this Durable Object (the
+      // hints package) and asks a small probe container only for what needs
+      // real sockets (probe/README.md); it streams the results
+      // (src/lib/cloudflare/probe-scanner.ts).
       { "name": "PROBE", "class_name": "ProbeScanner" },
     ],
   },
@@ -160,20 +158,23 @@
     // The TLS prober is gone: the scanner makes its own handshakes.
     { "tag": "v4", "deleted_classes": ["ProbeContainer"] },
     { "tag": "v5", "new_sqlite_classes": ["ProbeScanner"] },
+    // The scanner container that ran every check in Node is gone: the checks
+    // run in ProbeScanner.
+    { "tag": "v6", "deleted_classes": ["ScannerContainer"] },
   ],
-  // The scanner's container. The deploy builds the image and registers it
+  // The probe's container. The deploy builds the image and registers it
   // through Cloudflare's containers API, so the API token needs the
   // Containers permission (Account, Containers, Edit).
   "containers": [
     {
-      "class_name": "ScannerContainer",
-      // The repository's Dockerfile: wrangler builds its last stage, which is
-      // the scanner (the image without a browser). The build context is the
-      // repository, as the Dockerfile copies every workspace.
-      "image": "../../Dockerfile",
-      "image_build_context": "../..",
-      // 4 GiB: a scan keeps the hints package, the engine and a page in memory.
-      "instance_type": "standard-1",
+      "class_name": "ProbeScanner",
+      // The probe: one static binary on an empty image (probe/Dockerfile), about
+      // 5 MB, idling at a few MB of memory. Memory is not the limit, CPU is: a
+      // scan makes hundreds of TLS handshakes, and "lite" (1/16 of a vCPU) made
+      // scans take minutes and checks time out, so it is "basic" (1/4 of a vCPU).
+      "image": "../../probe/Dockerfile",
+      "image_build_context": "../../probe",
+      "instance_type": "basic",
       // THE LIMIT ON SCANS AT ONCE: the containers that may run together.
       // Every queued job and every page scan has a scanner Durable Object of
       // its own with a container of its own, so this bounds all of them: the
@@ -183,27 +184,12 @@
       //   consumer max_concurrency + INTERACTIVE_SHARDS <= max_instances
       // (test/wrangler-config.test.ts holds the file to it). A start that
       // would pass this limit fails, the job is retried with a delay.
-      // Containers are billed while they run (4 GiB, half a vCPU each).
-      "max_instances": 10,
-    },
-    {
-      "class_name": "ProbeScanner",
-      // The probe: one static binary on an empty image (probe/Dockerfile), about
-      // 5 MB, idling at a few MB of memory. Memory is not the limit, CPU is: a
-      // scan makes hundreds of TLS handshakes, and "lite" (1/16 of a vCPU) made
-      // scans take minutes and checks time out, so it is "basic" (1/4 of a vCPU).
-      // The checks run in the Durable Object, not here.
-      "image": "../../probe/Dockerfile",
-      "image_build_context": "../../probe",
-      "instance_type": "basic",
-      // Same rule as above for the scans that use it: the queue consumer's
-      // max_concurrency + INTERACTIVE_SHARDS <= max_instances.
       "max_instances": 10,
     },
   ],
   // The scan queue (src/domain/suite/queue.ts). The GitHub webhook and the cron
   // trigger only send a message; this Worker's consumer runs each job in a
-  // scanner container of its own. Create both queues once (wrangler queues
+  // scanner object of its own, with a probe container of its own. Create both queues once (wrangler queues
   // create plumbline-scans; plumbline-scans-dlq): see README.md.
   "queues": {
     "producers": [{ "binding": "SCAN_QUEUE", "queue": "plumbline-scans" }],
@@ -230,10 +216,6 @@
   "vars": {
     // The Cloudflare plan: sets the limits of the server-side checks.
     "WORKERS_PLAN": "paid",
-    // Where the checks run: "container" is the scanner container (Node, the
-    // hints package, every check), "worker" is the ProbeScanner object with a
-    // small probe container (lib/cloudflare/scanner-namespace.ts).
-    "SCAN_ENGINE": "worker",
     // Web Push (VAPID). The public key is what browsers subscribe with; the
     // subject is the contact address push services may write to.
     "VAPID_PUBLIC_KEY": "BJdkLBZFH5nzIA-EaaNWM9jOnEeRYZ4YNYtGXis1WJFe4_HpDFWzVNipsIRv5GPKqvZPvRuxjX67fwsCzdcK-OY",

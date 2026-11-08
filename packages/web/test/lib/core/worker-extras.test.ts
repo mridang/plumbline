@@ -11,7 +11,7 @@ jest.unstable_mockModule('cloudflare:workers', cloudflareWorkersStub, {
 
 const {
   default: extraHandlers,
-  ScannerContainer,
+  ProbeScanner,
   UserHub,
 } = await import('@/lib/core/worker-extras');
 
@@ -21,7 +21,7 @@ describe('extraHandlers', () => {
   });
 
   it('exports the Durable Object classes the Worker must name', () => {
-    expect(typeof ScannerContainer).toBe('function');
+    expect(typeof ProbeScanner).toBe('function');
     expect(typeof UserHub).toBe('function');
   });
 });

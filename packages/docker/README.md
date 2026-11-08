@@ -66,7 +66,7 @@ docker run --rm -p 8080:8080 -e OUTPUT_DIR=/reports -v "$PWD/reports:/reports" m
 
 ## Streaming scan
 
-`POST /run` is what the Cloudflare container behind the web app runs. It needs no Chromium: the page is fetched with Node, and the TLS, certificate, DNS and mail checks run for real. It answers with `application/x-ndjson`, one JSON object per line:
+`POST /run` is the streaming scan, as the Node command line runs it. It needs no Chromium: the page is fetched with Node, and the TLS, certificate, DNS and mail checks run for real. It answers with `application/x-ndjson`, one JSON object per line:
 
 | Line                                                 | When                                                              |
 | ---------------------------------------------------- | ----------------------------------------------------------------- |
@@ -78,8 +78,8 @@ docker run --rm -p 8080:8080 -e OUTPUT_DIR=/reports -v "$PWD/reports:/reports" m
 The server fetches whatever address it is given, so every fetch and name lookup is kept on the public internet: private, loopback, link-local (the cloud metadata address included) and other reserved addresses are refused on the address actually connected to and on every redirect, and only the default ports and 80, 443, 8080 and 8443 are allowed. The `openssl` programs the TLS checks run are not covered by that guard; run the image where it cannot reach a private network.
 
 ```sh
-docker buildx bake scanner-local    # plumbline-scanner:local, without a browser
-docker run --rm -p 8080:8080 plumbline-scanner:local
+docker buildx bake local    # plumbline:local
+docker run --rm -p 8080:8080 plumbline:local
 curl -sN localhost:8080/run -d '{"url":"https://example.com/"}'
 ```
 
