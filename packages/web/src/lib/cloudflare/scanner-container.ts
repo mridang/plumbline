@@ -173,7 +173,7 @@ export class ScannerContainer extends DurableObject<CloudflareEnv> {
   }
 
   /** Forward `request` to the scanner, starting it first when it is not running. */
-  private async forward(request: Request): Promise<Response> {
+  protected async forward(request: Request): Promise<Response> {
     const container = this.ctx.container;
     if (!container) {
       return new Response('No container is bound.', { status: 503 });

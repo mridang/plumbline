@@ -18,6 +18,9 @@ export { UserHub } from '@/lib/cloudflare/user-hub';
 /** The Durable Object that runs the scanner container (see `lib/cloudflare/scanner-container.ts`). */
 export { ScannerContainer } from '@/lib/cloudflare/scanner-container';
 
+/** The Durable Object that runs the checks itself and asks a small probe container for the rest (see `lib/cloudflare/probe-scanner.ts`). */
+export { ProbeScanner } from '@/lib/cloudflare/probe-scanner';
+
 /** The handlers this app adds to the Worker, besides `fetch`. */
 const extraHandlers: Partial<ExportedHandler<CloudflareEnv>> = {
   scheduled,

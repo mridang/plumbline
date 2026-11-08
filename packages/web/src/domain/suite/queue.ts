@@ -35,8 +35,8 @@ import {
   runJobThrough,
   ScanFailed,
   type ScanJob,
-  type ScannerNamespace,
 } from '@/domain/suite/scanner';
+import { scannerNamespace } from '@/lib/cloudflare/scanner-namespace';
 
 /** The queue the scans go through; create it with `wrangler queues create`. */
 export const SCAN_QUEUE_NAME = 'plumbline-scans';
@@ -215,7 +215,7 @@ export const handleScanQueue: ExportedHandlerQueueHandler<
     logDeadLetters(batch);
     return;
   }
-  const namespace = env.SCANNER as unknown as ScannerNamespace | undefined;
+  const namespace = scannerNamespace(env);
   await consumeScans(batch, {
     db: createDatabase(env.DB),
     run: (name, job) => runJobThrough(namespace, name, job),

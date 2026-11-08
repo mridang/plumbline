@@ -147,6 +147,10 @@
       // The scanner: every check of a scan runs in this container (Node, the
       // hints package and the engine, no browser) and streams its results.
       { "name": "SCANNER", "class_name": "ScannerContainer" },
+      // The scanner that runs the checks in the Durable Object itself and asks
+      // a small probe container only for what needs real sockets (probe/README.md).
+      // SCAN_ENGINE below picks which of the two the scans use.
+      { "name": "PROBE", "class_name": "ProbeScanner" },
     ],
   },
   "migrations": [
@@ -155,6 +159,7 @@
     { "tag": "v3", "new_sqlite_classes": ["ScannerContainer"] },
     // The TLS prober is gone: the scanner makes its own handshakes.
     { "tag": "v4", "deleted_classes": ["ProbeContainer"] },
+    { "tag": "v5", "new_sqlite_classes": ["ProbeScanner"] },
   ],
   // The scanner's container. The deploy builds the image and registers it
   // through Cloudflare's containers API, so the API token needs the
@@ -179,6 +184,18 @@
       // (test/wrangler-config.test.ts holds the file to it). A start that
       // would pass this limit fails, the job is retried with a delay.
       // Containers are billed while they run (4 GiB, half a vCPU each).
+      "max_instances": 10,
+    },
+    {
+      "class_name": "ProbeScanner",
+      // The probe: one static binary on an empty image (probe/Dockerfile), about
+      // 5 MB, idling at a few MB of memory, so the smallest instance type is
+      // enough. The checks run in the Durable Object, not here.
+      "image": "../../probe/Dockerfile",
+      "image_build_context": "../../probe",
+      "instance_type": "lite",
+      // Same rule as above for the scans that use it: the queue consumer's
+      // max_concurrency + INTERACTIVE_SHARDS <= max_instances.
       "max_instances": 10,
     },
   ],
@@ -211,6 +228,10 @@
   "vars": {
     // The Cloudflare plan: sets the limits of the server-side checks.
     "WORKERS_PLAN": "paid",
+    // Where the checks run: "container" is the scanner container (Node, the
+    // hints package, every check), "worker" is the ProbeScanner object with a
+    // small probe container (lib/cloudflare/scanner-namespace.ts).
+    "SCAN_ENGINE": "container",
     // Web Push (VAPID). The public key is what browsers subscribe with; the
     // subject is the contact address push services may write to.
     "VAPID_PUBLIC_KEY": "BJdkLBZFH5nzIA-EaaNWM9jOnEeRYZ4YNYtGXis1WJFe4_HpDFWzVNipsIRv5GPKqvZPvRuxjX67fwsCzdcK-OY",

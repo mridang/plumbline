@@ -26,12 +26,14 @@ interface __BaseEnv_Env {
   SCAN_SECRET: string;
   USER_HUB: DurableObjectNamespace /* UserHub */;
   SCANNER: DurableObjectNamespace /* ScannerContainer */;
+  PROBE: DurableObjectNamespace /* ProbeScanner */;
+  SCAN_ENGINE: 'container';
   SCAN_QUEUE: Queue;
 }
 declare namespace Cloudflare {
   interface GlobalProps {
     mainModule: typeof import('./src/worker');
-    durableNamespaces: 'UserHub' | 'ScannerContainer';
+    durableNamespaces: 'UserHub' | 'ScannerContainer' | 'ProbeScanner';
   }
   interface Env extends __BaseEnv_Env {}
 }

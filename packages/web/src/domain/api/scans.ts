@@ -16,6 +16,7 @@
  * checked, and only until the id ends.
  */
 
+import { scannerNamespace } from '@/lib/cloudflare/scanner-namespace';
 import {
   readJsonObject,
   problem,
@@ -157,7 +158,7 @@ interface RunContext extends ScanContext {
 export function createScanRun(
   secret: SecretSource = secretFromEnv,
   namespace: () => ScannerNamespace | undefined = () =>
-    getEnv().SCANNER as unknown as ScannerNamespace | undefined,
+    scannerNamespace(getEnv()),
   cooldown: () => CooldownDeps = liveCooldownDeps,
 ): ApiController<RunContext> {
   return new ApiController<RunContext>({

@@ -8,7 +8,15 @@ import { INTERACTIVE_SHARDS } from '@/domain/scan/run';
 import { SCAN_DEAD_LETTER_NAME, SCAN_QUEUE_NAME } from '@/domain/suite/queue';
 
 interface Wrangler {
-  containers: { max_instances: number }[];
+  containers: {
+    class_name: string;
+    max_instances: number;
+    instance_type?: string;
+    image: string;
+  }[];
+  durable_objects: { bindings: { name: string; class_name: string }[] };
+  migrations: { tag: string; new_sqlite_classes?: string[] }[];
+  vars: Record<string, string>;
   queues: {
     producers: { binding: string; queue: string }[];
     consumers: {
@@ -51,5 +59,38 @@ describe('wrangler.jsonc, the scan queue', () => {
         (entry) => entry.queue === SCAN_DEAD_LETTER_NAME,
       ),
     ).toBe(true);
+  });
+});
+
+describe('wrangler.jsonc, the probe scanner', () => {
+  const probe = config.containers.find(
+    (entry) => entry.class_name === 'ProbeScanner',
+  );
+
+  it('keeps the probe on the smallest instance type, built from the probe image', () => {
+    expect(probe?.instance_type).toBe('lite');
+    expect(probe?.image).toBe('../../probe/Dockerfile');
+  });
+
+  it('runs no more jobs at once, with the page scans, than probe containers may run', () => {
+    expect(
+      (consumer?.max_concurrency ?? Infinity) + INTERACTIVE_SHARDS,
+    ).toBeLessThanOrEqual(probe?.max_instances ?? 0);
+  });
+
+  it('binds the object the code picks and creates its class', () => {
+    expect(config.durable_objects.bindings).toContainEqual({
+      name: 'PROBE',
+      class_name: 'ProbeScanner',
+    });
+    expect(
+      config.migrations.some((entry) =>
+        entry.new_sqlite_classes?.includes('ProbeScanner'),
+      ),
+    ).toBe(true);
+  });
+
+  it('picks the engine by a setting that is one of the two it knows', () => {
+    expect(['container', 'worker']).toContain(config.vars['SCAN_ENGINE']);
   });
 });
