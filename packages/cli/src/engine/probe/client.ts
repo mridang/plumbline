@@ -90,10 +90,26 @@ export interface BatchOptions {
   readonly size?: number;
   /** How long to wait for more before sending what there is, in milliseconds. */
   readonly waitMs?: number;
-  /** The most requests on their way to the probe at once (it serves a few at a time). */
+  /** The most web requests on their way to the probe at once (it serves a few at a time). */
   readonly inFlight?: number;
+  /** The most mail requests on their way at once; a mail server may take seconds to answer. */
+  readonly mailInFlight?: number;
   /** How many times a request is sent again when the probe says it is busy. */
   readonly retries?: number;
+}
+
+/**
+ * Web requests and mail requests are kept apart: a mail server may take many seconds to
+ * answer (it holds its greeting back, or tars a connection it does not like), and a web
+ * request or a batch of handshakes must not wait behind it.
+ */
+type Lane = 'web' | 'mail';
+
+/** The requests of a lane on their way, and those waiting for a place. */
+interface Pool {
+  readonly limit: number;
+  active: number;
+  readonly queue: (() => void)[];
 }
 
 /** One handshake waiting to be sent, with the way to answer it. */
@@ -112,12 +128,16 @@ function lineBase64(value: string): string {
 export class ProbeClient {
   private readonly size: number;
   private readonly waitMs: number;
-  private readonly inFlight: number;
   private readonly retries: number;
-  private active = 0;
-  private readonly queue: (() => void)[] = [];
-  private waiting: Waiting[] = [];
-  private timer: ReturnType<typeof setTimeout> | undefined;
+  private readonly lanes: Record<Lane, Pool>;
+  private readonly waiting: Record<Lane, Waiting[]> = { web: [], mail: [] };
+  private readonly timers: Record<
+    Lane,
+    ReturnType<typeof setTimeout> | undefined
+  > = {
+    web: undefined,
+    mail: undefined,
+  };
 
   public constructor(
     private readonly transport: ProbeTransport,
@@ -125,27 +145,35 @@ export class ProbeClient {
   ) {
     this.size = options.size ?? 64;
     this.waitMs = options.waitMs ?? 5;
-    this.inFlight = options.inFlight ?? 20;
     this.retries = options.retries ?? 40;
+    this.lanes = {
+      web: { limit: options.inFlight ?? 20, active: 0, queue: [] },
+      mail: { limit: options.mailInFlight ?? 6, active: 0, queue: [] },
+    };
   }
 
-  /** Waits for a place among the requests on their way, and gives it back when `work` is done. */
-  private async turn<T>(work: () => Promise<T>): Promise<T> {
-    if (this.active >= this.inFlight) {
-      await new Promise<void>((resolve) => this.queue.push(resolve));
+  /** Waits for a place among the requests of its lane on their way, and gives it back when `work` is done. */
+  private async turn<T>(lane: Lane, work: () => Promise<T>): Promise<T> {
+    const pool = this.lanes[lane];
+    if (pool.active >= pool.limit) {
+      await new Promise<void>((resolve) => pool.queue.push(resolve));
     }
-    this.active += 1;
+    pool.active += 1;
     try {
       return await work();
     } finally {
-      this.active -= 1;
-      this.queue.shift()?.();
+      pool.active -= 1;
+      pool.queue.shift()?.();
     }
   }
 
   /** Sends a request and gives back the text of a 200 answer; anything else is a {@link ProbeError}. */
-  private async send(path: string, body: string): Promise<string> {
-    return this.turn(async () => {
+  private async send(
+    path: string,
+    body: string,
+    lane: Lane = 'web',
+  ): Promise<string> {
+    return this.turn(lane, async () => {
       for (let attempt = 0; ; attempt += 1) {
         let answer;
         try {
@@ -197,23 +225,28 @@ export class ProbeClient {
       curves: request.curves,
       ocsp: request.ocsp,
     });
+    const lane: Lane = request.starttls ? 'mail' : 'web';
     return new Promise((resolve, reject) => {
-      this.waiting.push({ request: item, resolve, reject });
-      if (this.waiting.length >= this.size) {
-        void this.flush();
-      } else if (this.timer === undefined) {
-        this.timer = setTimeout(() => void this.flush(), this.waitMs);
+      this.waiting[lane].push({ request: item, resolve, reject });
+      if (this.waiting[lane].length >= this.size) {
+        void this.flush(lane);
+      } else if (this.timers[lane] === undefined) {
+        this.timers[lane] = setTimeout(
+          () => void this.flush(lane),
+          this.waitMs,
+        );
       }
     });
   }
 
-  /** Sends the handshakes waiting, as one request, and answers each. */
-  private async flush(): Promise<void> {
-    if (this.timer !== undefined) {
-      clearTimeout(this.timer);
-      this.timer = undefined;
+  /** Sends the handshakes waiting in a lane, as one request, and answers each. */
+  private async flush(lane: Lane): Promise<void> {
+    const timer = this.timers[lane];
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      this.timers[lane] = undefined;
     }
-    const batch = this.waiting.splice(0, this.size);
+    const batch = this.waiting[lane].splice(0, this.size);
     if (batch.length === 0) {
       return;
     }
@@ -221,6 +254,7 @@ export class ProbeClient {
       const text = await this.send(
         '/v1/handshakes',
         encodeBatch(batch.map((entry) => entry.request)),
+        lane,
       );
       const answers = parseBatch(text);
       if (answers.length !== batch.length) {
@@ -243,8 +277,8 @@ export class ProbeClient {
         entry.reject(failure);
       }
     }
-    if (this.waiting.length > 0) {
-      void this.flush();
+    if (this.waiting[lane].length > 0) {
+      void this.flush(lane);
     }
   }
 
@@ -271,7 +305,9 @@ export class ProbeClient {
 
   /** The SMTP STARTTLS dialog of a mail server on port 25. */
   public async starttls(host: string): Promise<StarttlsAnswer> {
-    return parseStarttls(await this.send('/v1/starttls', encodeItem({ host })));
+    return parseStarttls(
+      await this.send('/v1/starttls', encodeItem({ host }), 'mail'),
+    );
   }
 
   /** Whether a TCP connection to `host` (a name or an address) on `port` succeeds. */
@@ -285,6 +321,7 @@ export class ProbeClient {
         await this.send(
           '/v1/connect',
           encodeItem({ host, port, timeout: timeoutMs }),
+          port === 25 ? 'mail' : 'web',
         ),
       );
     } catch (error) {
@@ -337,7 +374,13 @@ export class ProbeClient {
       delay: request.delayMs,
       timeout: request.timeoutMs,
     };
-    return parseOpenssl(await this.send('/v1/openssl', encodeItem(fields)));
+    return parseOpenssl(
+      await this.send(
+        '/v1/openssl',
+        encodeItem(fields),
+        request.port === 25 ? 'mail' : 'web',
+      ),
+    );
   }
 }
 

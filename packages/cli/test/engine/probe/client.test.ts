@@ -17,7 +17,7 @@ const batchOf = (count: number): string =>
 
 describe('handshake', () => {
   it('sends the handshakes asked for together as one batch and answers each', async () => {
-    const { client, sent } = fakeProbe((path, body) =>
+    const { client, sent } = fakeProbe((_path, body) =>
       ok(batchOf(body.split('--\n').length)),
     );
     const [a, b, c] = await Promise.all([
@@ -28,12 +28,7 @@ describe('handshake', () => {
         min: 'TLSv1.2',
         ciphers: 'AES128-SHA',
       }),
-      client.handshake({
-        host: 'c.test',
-        port: 25,
-        starttls: 'smtp',
-        ocsp: true,
-      }),
+      client.handshake({ host: 'c.test', port: 443, ocsp: true }),
     ]);
     expect([a, b, c].every((answer) => answer.protocol === 'TLSv1.3')).toBe(
       true,
@@ -47,7 +42,19 @@ describe('handshake', () => {
       'c.test',
     ]);
     expect(items[1]).toMatchObject({ min: 'TLSv1.2', ciphers: 'AES128-SHA' });
-    expect(items[2]).toMatchObject({ starttls: 'smtp', ocsp: '1' });
+    expect(items[2]).toMatchObject({ ocsp: '1' });
+  });
+
+  it('asks for STARTTLS on a mail server in the handshake it sends', async () => {
+    const { client, sent } = fakeProbe((_path, body) =>
+      ok(batchOf(body.split('--\n').length)),
+    );
+    await client.handshake({ host: 'mx.test', port: 25, starttls: 'smtp' });
+    expect(linesOf(sent[0]?.body ?? '')).toMatchObject({
+      host: 'mx.test',
+      port: '25',
+      starttls: 'smtp',
+    });
   });
 
   it('sends a full batch at once and the rest in the next', async () => {
@@ -128,6 +135,76 @@ describe('handshake', () => {
       client.handshakeNow({ host: 'a.test', port: 443 }),
     ).resolves.toMatchObject({ protocol: 'TLSv1.3' });
     expect(sent[0]?.path).toBe('/handshake');
+  });
+});
+
+describe('web and mail lanes', () => {
+  it('sends the handshakes of mail servers apart from the others, so a slow mail server holds nothing else up', async () => {
+    const { client, sent } = fakeProbe((_path, body) =>
+      ok(batchOf(body.split('--\n').length)),
+    );
+    await Promise.all([
+      client.handshake({ host: 'a.test', port: 443 }),
+      client.handshake({ host: 'mx.test', port: 25, starttls: 'smtp' }),
+      client.handshake({ host: 'b.test', port: 443 }),
+      client.handshake({ host: 'mx2.test', port: 25, starttls: 'smtp' }),
+    ]);
+    const hosts = sent.map((request) =>
+      request.body.split('--\n').map((item) => linesOf(item)['host']),
+    );
+    expect(hosts.map((list) => list.join(',')).sort()).toEqual([
+      'a.test,b.test',
+      'mx.test,mx2.test',
+    ]);
+  });
+
+  it('does not make a web request wait for a mail request that takes long', async () => {
+    let release: () => void = () => undefined;
+    const slow = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const { transport } = fakeProbe(async (path) => {
+      if (path === '/v1/starttls') {
+        await slow;
+      }
+      return ok(
+        path === '/v1/starttls'
+          ? JSON.stringify({
+              reachable: true,
+              starttls: false,
+              tlsVersion: null,
+              trusted: false,
+              trustError: null,
+              hostnameMatches: false,
+              certificates: [],
+              error: null,
+            })
+          : '{"reachable":true}',
+      );
+    });
+    const client = new ProbeClient(transport, { mailInFlight: 1 });
+    const mail = [client.starttls('mx1.test'), client.starttls('mx2.test')];
+    // Both mail requests are waiting (one on its way, one for a place), and a web request still goes through.
+    await expect(client.reachable('1.1.1.1', 443)).resolves.toBe(true);
+    release();
+    await Promise.all(mail);
+  });
+
+  it('keeps mail connection tests with the mail requests', async () => {
+    let running = 0;
+    let most = 0;
+    const { transport } = fakeProbe(async () => {
+      running += 1;
+      most = Math.max(most, running);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      running -= 1;
+      return ok('{"reachable":true}');
+    });
+    const client = new ProbeClient(transport, { mailInFlight: 2 });
+    await Promise.all(
+      Array.from({ length: 8 }, (_v, n) => client.reachable(`10.0.0.${n}`, 25)),
+    );
+    expect(most).toBe(2);
   });
 });
 
