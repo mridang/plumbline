@@ -29,19 +29,23 @@ import { compression } from '@mridang/webhint-hint-plumbline/dist/lib/network/co
 import { tls as dane } from '@mridang/webhint-hint-plumbline/dist/lib/network/dane.js';
 import { network } from '@mridang/webhint-hint-plumbline/dist/lib/network/ipv6.js';
 import { mailNet } from '@mridang/webhint-hint-plumbline/dist/lib/email/net.js';
-import { tlsProbe } from '@mridang/webhint-hint-plumbline/dist/lib/tls/client.js';
+import {
+  tlsProbe,
+  type ProbeResult,
+} from '@mridang/webhint-hint-plumbline/dist/lib/tls/client.js';
 import { openssl } from '@mridang/webhint-hint-plumbline/dist/lib/tls/openssl.js';
 import { remoteConnect } from '@mridang/webhint-hint-plumbline/dist/lib/tls/remote.js';
 
 import type { ProbeClient } from './client.js';
 import { unchunk } from './fetch.js';
-import { fromBase64, ProbeError } from './protocol.js';
+import { fromBase64, ProbeError, ProbeUnavailable } from './protocol.js';
 
 /** What the scan that is running here uses: its probe, and the DNS answers it has already had. */
 interface ScanScope {
   readonly client: ProbeClient;
   readonly answers: Map<string, Promise<DnsResponse>>;
   readonly routes: Map<string, Promise<RpkiResult>>;
+  readonly handshakes: Map<string, Promise<ProbeResult>>;
 }
 
 /** The scan that is running here, if one is. */
@@ -50,7 +54,10 @@ const scope = new AsyncLocalStorage<ScanScope>();
 /** Runs `work` with `client` as the probe every network client of the checks uses. */
 export function withProbe<T>(client: ProbeClient, work: () => T): T {
   install();
-  return scope.run({ client, answers: new Map(), routes: new Map() }, work);
+  return scope.run(
+    { client, answers: new Map(), routes: new Map(), handshakes: new Map() },
+    work,
+  );
 }
 
 /** The newest `fetch` before the first scan replaced it, for calls outside a scan. */
@@ -181,47 +188,64 @@ function install(): void {
     },
   };
 
+  // Several checks enumerate the same server's versions and cipher suites with the same
+  // handshakes, one after another (a mail handshake opens a session that takes seconds), and
+  // what a server answers to the same offer does not change within a scan: an identical
+  // handshake is made once. A handshake the server would not complete is an answer and is
+  // kept; one the probe could not make (it was not there) is not.
   const connectWithNode = tlsProbe.connect;
   tlsProbe.connect = (target, options) => {
-    const client = scope.getStore()?.client;
-    if (!client) {
+    const scanned = scope.getStore();
+    if (!scanned) {
       return connectWithNode(target, options);
     }
-    return remoteConnect((request) =>
-      client
-        .handshake({
-          host: request.host,
-          port: request.port,
-          ...(request.starttls ? { starttls: request.starttls } : {}),
-          ...(request.minVersion ? { min: request.minVersion } : {}),
-          ...(request.maxVersion ? { max: request.maxVersion } : {}),
-          ...(request.ciphers ? { ciphers: request.ciphers } : {}),
-          ...(request.sigalgs ? { sigalgs: request.sigalgs } : {}),
-          ...(request.ecdhCurve ? { curves: request.ecdhCurve } : {}),
-          ...(request.requestOCSP ? { ocsp: true } : {}),
-        })
-        .then((answer) => ({
-          ...answer,
-          chain: [...answer.chain],
-          certificates: answer.certificates.map(
-            ({ infoAccess, ...certificate }) => ({
-              ...certificate,
-              subject: { ...certificate.subject },
-              issuer: { ...certificate.issuer },
-              ...(infoAccess
-                ? {
-                    infoAccess: Object.fromEntries(
-                      Object.entries(infoAccess).map(([name, urls]) => [
-                        name,
-                        [...urls],
-                      ]),
-                    ),
-                  }
-                : {}),
-            }),
-          ),
-        })),
-    )(target, options);
+    const key = JSON.stringify([target, options]);
+    let handshake = scanned.handshakes.get(key);
+    if (!handshake) {
+      const { client } = scanned;
+      handshake = remoteConnect((request) =>
+        client
+          .handshake({
+            host: request.host,
+            port: request.port,
+            ...(request.starttls ? { starttls: request.starttls } : {}),
+            ...(request.minVersion ? { min: request.minVersion } : {}),
+            ...(request.maxVersion ? { max: request.maxVersion } : {}),
+            ...(request.ciphers ? { ciphers: request.ciphers } : {}),
+            ...(request.sigalgs ? { sigalgs: request.sigalgs } : {}),
+            ...(request.ecdhCurve ? { curves: request.ecdhCurve } : {}),
+            ...(request.requestOCSP ? { ocsp: true } : {}),
+          })
+          .then((answer) => ({
+            ...answer,
+            chain: [...answer.chain],
+            certificates: answer.certificates.map(
+              ({ infoAccess, ...certificate }) => ({
+                ...certificate,
+                subject: { ...certificate.subject },
+                issuer: { ...certificate.issuer },
+                ...(infoAccess
+                  ? {
+                      infoAccess: Object.fromEntries(
+                        Object.entries(infoAccess).map(([name, urls]) => [
+                          name,
+                          [...urls],
+                        ]),
+                      ),
+                    }
+                  : {}),
+              }),
+            ),
+          })),
+      )(target, options);
+      scanned.handshakes.set(key, handshake);
+      handshake.catch((error: unknown) => {
+        if (error instanceof ProbeUnavailable) {
+          scanned.handshakes.delete(key);
+        }
+      });
+    }
+    return handshake;
   };
 
   const nodeMail = mailNet.client;

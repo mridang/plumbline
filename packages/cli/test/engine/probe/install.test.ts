@@ -103,6 +103,66 @@ describe('the TLS handshake', () => {
     });
   });
 
+  it('makes an identical handshake once within a scan, however many checks ask, and again in the next scan', async () => {
+    const { client, sent } = probeFor({
+      '/v1/handshakes': (body) =>
+        JSON.stringify({
+          results: body.split('--\n').map(() => handshakeAnswer()),
+        }),
+    });
+    const ask = (ciphers: string) =>
+      tlsProbe.connect({ host: 'same.test', port: 443 }, { ciphers });
+    const [a, b, c] = await withProbe(client, () =>
+      Promise.all([ask('AES128'), ask('AES128'), ask('AES256')]),
+    );
+    expect(a).toBe(b);
+    expect(c).not.toBe(a);
+    expect(sent.flatMap((request) => request.body.split('--\n'))).toHaveLength(
+      2,
+    );
+    await withProbe(client, () => ask('AES128'));
+    expect(sent.flatMap((request) => request.body.split('--\n'))).toHaveLength(
+      3,
+    );
+  });
+
+  it('keeps the answer of a server that would not complete a handshake, but not a handshake the probe could not make', async () => {
+    let calls = 0;
+    const refusing = probeFor({
+      '/v1/handshakes': () => {
+        calls += 1;
+        return JSON.stringify({
+          results: [{ error: 'handshake failed: no cipher' }],
+        });
+      },
+    });
+    await withProbe(refusing.client, async () => {
+      await expect(
+        tlsProbe.connect({ host: 'refuses.test', port: 443 }, {}),
+      ).rejects.toThrow('no cipher');
+      await expect(
+        tlsProbe.connect({ host: 'refuses.test', port: 443 }, {}),
+      ).rejects.toThrow('no cipher');
+    });
+    expect(calls).toBe(1);
+
+    let tries = 0;
+    const flaky = fakeProbe(() => {
+      tries += 1;
+      return tries === 1
+        ? { status: 500, text: '' }
+        : ok(JSON.stringify({ results: [handshakeAnswer()] }));
+    });
+    await withProbe(flaky.client, async () => {
+      await expect(
+        tlsProbe.connect({ host: 'down.test', port: 443 }, {}),
+      ).rejects.toThrow('answered 500');
+      await expect(
+        tlsProbe.connect({ host: 'down.test', port: 443 }, {}),
+      ).resolves.toMatchObject({ protocol: 'TLSv1.3' });
+    });
+  });
+
   it('fails the handshake the way a refused connection fails, so the check says it could not test', async () => {
     const { client } = probeFor({
       '/v1/handshakes': () =>
