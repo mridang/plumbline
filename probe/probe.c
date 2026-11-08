@@ -14,6 +14,8 @@
  *   POST /v1/http         one raw HTTP/1.1 exchange (headers exactly as sent, body
  *                         not decoded), optionally to a fixed address
  *   POST /v1/connect      whether a TCP connection to an address and port succeeds
+ *   POST /v1/roots        the trusted roots, as a PEM bundle
+ *   POST /v1/openssl      one `openssl s_client` run (a short list of flags) and what it printed
  *   GET  /healthz         "ok"
  *
  * It is only reachable from the Worker that owns it, and even so it only
@@ -51,9 +53,9 @@
 #include <unistd.h>
 
 #define MAX_REQUEST 262144
-#define MAX_CHILDREN 6
+#define MAX_CHILDREN 24
 #define MAX_BATCH 128
-#define WINDOW 12 /* handshakes of one batch at a time */
+#define WINDOW 8 /* handshakes of one batch at a time */
 #define MAX_BODY (10L * 1024 * 1024)
 #define MAX_HEADERS 24
 #define STEP_SECONDS 6 /* one connect, read or write */
@@ -74,6 +76,16 @@ struct request {
   int tls, nobody, nheaders;
   long maxbody;
   char headers[MAX_HEADERS][600];
+  /* /v1/openssl */
+  char servername[256], sess_out[96], sess_in[96];
+  char flags[8][16];
+  int nflags;
+  unsigned char early[4096];
+  size_t early_len;
+  int has_early;
+  unsigned char inputs[64][64];
+  size_t input_len[64];
+  int ninputs, delay, timeout;
 };
 
 /* ---- addresses ------------------------------------------------------- */
@@ -167,10 +179,13 @@ void fail(int fd, const char *message) {
 
 /* ---- the connection -------------------------------------------------- */
 
+/* How long a connection attempt may take, in milliseconds. */
+static int connect_ms = STEP_SECONDS * 1000;
+
 /* Waits for `fd` to be ready for `events`; false on timeout. */
 int ready(int fd, short events) {
   struct pollfd p = {fd, events, 0};
-  return poll(&p, 1, STEP_SECONDS * 1000) > 0;
+  return poll(&p, 1, connect_ms) > 0;
 }
 
 /* Connects to a public address of `host`; -1 and a message in `*why` on failure. */
@@ -345,6 +360,31 @@ void cert_json(FILE *out, X509 *cert) {
   }
   fputs(",\"signatureAlgorithm\":", out);
   js(out, OBJ_nid2ln(X509_get_signature_nid(cert)));
+  /* where the issuer's certificate and an OCSP answer can be had, as Node names them */
+  AUTHORITY_INFO_ACCESS *aia = X509_get_ext_d2i(cert, NID_info_access, NULL, NULL);
+  static const struct { int nid; const char *key; } methods[] = {{NID_ad_OCSP, "OCSP - URI"}, {NID_ad_ca_issuers, "CA Issuers - URI"}};
+  fputs(",\"infoAccess\":{", out);
+  int first_method = 1;
+  for (int m = 0; m < 2; m++) {
+    int first_url = 1;
+    for (int i = 0; aia && i < sk_ACCESS_DESCRIPTION_num(aia); i++) {
+      ACCESS_DESCRIPTION *ad = sk_ACCESS_DESCRIPTION_value(aia, i);
+      if (OBJ_obj2nid(ad->method) != methods[m].nid || ad->location->type != GEN_URI) continue;
+      const unsigned char *u = ASN1_STRING_get0_data(ad->location->d.uniformResourceIdentifier);
+      int ulen = ASN1_STRING_length(ad->location->d.uniformResourceIdentifier);
+      char url[512];
+      snprintf(url, sizeof url, "%.*s", ulen < 511 ? ulen : 511, (const char *)u);
+      if (first_url) {
+        fprintf(out, "%s\"%s\":[", first_method ? "" : ",", methods[m].key);
+        first_method = 0;
+      } else fputc(',', out);
+      js(out, url);
+      first_url = 0;
+    }
+    if (!first_url) fputc(']', out);
+  }
+  fputc('}', out);
+  AUTHORITY_INFO_ACCESS_free(aia);
   fputc('}', out);
 }
 
@@ -506,7 +546,7 @@ void http_exchange(int fd, const struct request *r) {
   size_t limit = (size_t)maxbody + 65536;
   size_t cap = 65536, used = 0;
   char *buf = malloc(cap + 1);
-  char *split = NULL;
+  long split_at = -1; /* an offset: the buffer moves when it grows */
   int truncated = 0;
   for (;;) {
     if (used + 16384 > cap) {
@@ -518,10 +558,14 @@ void http_exchange(int fd, const struct request *r) {
     if (n <= 0) break;
     used += (size_t)n;
     buf[used] = 0;
-    if (!split) split = memmem(buf, used, "\r\n\r\n", 4);
-    if (split && r->nobody) break;
+    if (split_at < 0) {
+      char *found = memmem(buf, used, "\r\n\r\n", 4);
+      if (found) split_at = found - buf;
+    }
+    if (split_at >= 0 && r->nobody) break;
   }
-  if (!split) fail(fd, "no complete response");
+  if (split_at < 0) fail(fd, "no complete response");
+  char *split = buf + split_at;
 
   /* the status line */
   char *line_end = memmem(buf, (size_t)(split - buf) + 2, "\r\n", 2);
@@ -575,6 +619,7 @@ void http_exchange(int fd, const struct request *r) {
 /* Whether a TCP connection to the address succeeds. */
 void connect_probe(int fd, const struct request *r) {
   const char *why = NULL;
+  if (r->timeout >= 500 && r->timeout <= 10000) connect_ms = r->timeout;
   int s = connect_public(r->host, r->port, &why);
   if (s >= 0) close(s);
   const char *answer = s >= 0 ? "{\"reachable\":true}" : "{\"reachable\":false}";
@@ -646,6 +691,171 @@ void starttls_probe(int fd, const struct request *r) {
   reply(fd, 200, "application/json", buf, len);
 }
 
+/* ---- openssl s_client, for the checks that read its output ----------- */
+
+/* The first public address of `host` as text (IPv6 in brackets), or NULL. */
+const char *public_address(const char *host, char *text, size_t size) {
+  struct addrinfo hints = {0}, *list = NULL;
+  hints.ai_socktype = SOCK_STREAM;
+  if (getaddrinfo(host, NULL, &hints, &list) != 0) return NULL;
+  const char *found = NULL;
+  for (struct addrinfo *a = list; a && !found; a = a->ai_next) {
+    if (!public_addr(a->ai_addr)) continue;
+    char plain[INET6_ADDRSTRLEN];
+    if (a->ai_family == AF_INET) {
+      inet_ntop(AF_INET, &((struct sockaddr_in *)a->ai_addr)->sin_addr, plain, sizeof plain);
+      snprintf(text, size, "%s", plain);
+    } else {
+      inet_ntop(AF_INET6, &((struct sockaddr_in6 *)a->ai_addr)->sin6_addr, plain, sizeof plain);
+      snprintf(text, size, "[%s]", plain);
+    }
+    found = text;
+  }
+  freeaddrinfo(list);
+  return found;
+}
+
+/* A growing buffer of what a program printed, capped. */
+struct capture { char *data; size_t used, cap; };
+
+void capture_add(struct capture *c, const char *chunk, size_t n) {
+  if (c->used + n > 1024 * 1024) n = c->used < 1024 * 1024 ? 1024 * 1024 - c->used : 0;
+  if (c->used + n + 1 > c->cap) {
+    c->cap = (c->used + n + 1) * 2;
+    c->data = realloc(c->data, c->cap);
+  }
+  memcpy(c->data + c->used, chunk, n);
+  c->used += n;
+}
+
+/* The flags `s_client` may be given besides the ones this builds itself. */
+int flag_ok(const char *f) {
+  static const char *allowed[] = {"-tls1_2", "-tls1_3", "-comp", "-trace", "-state", NULL};
+  for (int i = 0; allowed[i]; i++) if (!strcmp(f, allowed[i])) return 1;
+  return 0;
+}
+
+/* Whether a session name is made of letters, digits and underscores only. */
+int name_ok(const char *s) {
+  if (!*s) return 1;
+  for (; *s; s++) if (!isalnum((unsigned char)*s) && *s != '_') return 0;
+  return 1;
+}
+
+/* Runs `openssl s_client` against a public address and answers what it printed. */
+void openssl_exec(int fd, const struct request *r) {
+  char ip[80];
+  if (!(r->port == 443 || r->port == 25) || !r->host[0] || !only(r->host, ".-:") ||
+      !only(r->servername, ".-") || !name_ok(r->sess_out) || !name_ok(r->sess_in))
+    reply(fd, 400, "text/plain", "bad request", 11);
+  for (int i = 0; i < r->nflags; i++) if (!flag_ok(r->flags[i])) reply(fd, 400, "text/plain", "bad flag", 8);
+  if (!public_address(r->host, ip, sizeof ip)) fail(fd, "not a public address");
+
+  char connect[128], out_file[160] = "", in_file[160] = "", early_file[64] = "";
+  snprintf(connect, sizeof connect, "%s:%d", ip, r->port);
+  if (r->sess_out[0]) snprintf(out_file, sizeof out_file, "/tmp/s-%s.pem", r->sess_out);
+  if (r->sess_in[0]) snprintf(in_file, sizeof in_file, "/tmp/s-%s.pem", r->sess_in);
+  if (r->has_early) {
+    snprintf(early_file, sizeof early_file, "/tmp/e-%d.txt", (int)getpid());
+    FILE *e = fopen(early_file, "w");
+    if (e) { fwrite(r->early, 1, r->early_len, e); fclose(e); }
+  }
+
+  signal(SIGCHLD, SIG_DFL); /* this process waits for its own child */
+  int in[2], out[2], err[2];
+  if (pipe(in) < 0 || pipe(out) < 0 || pipe(err) < 0) fail(fd, "no pipes");
+  pid_t pid = fork();
+  if (pid == 0) {
+    dup2(in[0], 0); dup2(out[1], 1); dup2(err[1], 2);
+    close(in[1]); close(out[0]); close(err[0]);
+    char *argv[40];
+    int n = 0;
+    argv[n++] = "openssl"; argv[n++] = "s_client";
+    argv[n++] = "-CAfile"; argv[n++] = CA_FILE;
+    argv[n++] = "-connect"; argv[n++] = connect;
+    if (r->servername[0]) { argv[n++] = "-servername"; argv[n++] = (char *)r->servername; }
+    if (r->smtp) { argv[n++] = "-starttls"; argv[n++] = "smtp"; }
+    for (int i = 0; i < r->nflags; i++) argv[n++] = (char *)r->flags[i];
+    if (out_file[0]) { argv[n++] = "-sess_out"; argv[n++] = out_file; }
+    if (in_file[0]) { argv[n++] = "-sess_in"; argv[n++] = in_file; }
+    if (early_file[0]) { argv[n++] = "-early_data"; argv[n++] = early_file; }
+    argv[n] = NULL;
+    execv("/openssl", argv);
+    _exit(127);
+  }
+  close(in[0]); close(out[1]); close(err[1]);
+  struct capture so = {0}, se = {0};
+  int next = 0, stdin_open = 1;
+  int timeout_ms = r->timeout > 0 && r->timeout <= 40000 ? r->timeout : 15000;
+  struct timeval start, now;
+  gettimeofday(&start, NULL);
+  long next_write = 0;
+  int status = 0, exited = 0;
+  while (!exited) {
+    gettimeofday(&now, NULL);
+    long elapsed = (now.tv_sec - start.tv_sec) * 1000 + (now.tv_usec - start.tv_usec) / 1000;
+    if (elapsed >= timeout_ms) { kill(pid, SIGKILL); break; }
+    if (stdin_open && elapsed >= next_write) {
+      if (next < r->ninputs) {
+        if (r->input_len[next] && write(in[1], r->inputs[next], r->input_len[next]) < 0) { /* it has gone */ }
+        next++;
+        next_write = elapsed + (r->delay > 0 && r->delay <= 2000 ? r->delay : 0);
+      } else {
+        close(in[1]);
+        stdin_open = 0;
+      }
+      continue;
+    }
+    struct pollfd p[2] = {{out[0], POLLIN, 0}, {err[0], POLLIN, 0}};
+    long wait = stdin_open ? next_write - elapsed : timeout_ms - elapsed;
+    if (wait > timeout_ms - elapsed) wait = timeout_ms - elapsed;
+    if (wait < 0) wait = 0;
+    poll(p, 2, (int)(wait > 100 ? 100 : wait));
+    char chunk[4096];
+    for (int i = 0; i < 2; i++) {
+      if (p[i].revents & (POLLIN | POLLHUP)) {
+        ssize_t got = read(i ? err[0] : out[0], chunk, sizeof chunk);
+        if (got > 0) capture_add(i ? &se : &so, chunk, (size_t)got);
+      }
+    }
+    if (waitpid(pid, &status, WNOHANG) == pid) exited = 1;
+  }
+  if (!exited) waitpid(pid, &status, 0);
+  for (int i = 0; i < 2; i++) {
+    char chunk[4096];
+    ssize_t got;
+    while ((got = read(i ? err[0] : out[0], chunk, sizeof chunk)) > 0) capture_add(i ? &se : &so, chunk, (size_t)got);
+  }
+  if (early_file[0]) unlink(early_file);
+
+  char *buf = NULL;
+  size_t len = 0;
+  FILE *res = open_memstream(&buf, &len);
+  fputs("{\"stdout\":", res);
+  b64(res, (unsigned char *)(so.data ? so.data : ""), so.used);
+  fputs(",\"stderr\":", res);
+  b64(res, (unsigned char *)(se.data ? se.data : ""), se.used);
+  if (WIFEXITED(status)) fprintf(res, ",\"code\":%d", WEXITSTATUS(status)); else fputs(",\"code\":null", res);
+  fputs(",\"files\":{}}", res);
+  fclose(res);
+  reply(fd, 200, "application/json", buf, len);
+}
+
+/* The trusted roots, as the PEM bundle the chains are judged against. */
+void roots_reply(int fd) {
+  FILE *f = fopen(CA_FILE, "r");
+  if (!f) reply(fd, 500, "text/plain", "no roots", 8);
+  char *buf = NULL;
+  size_t len = 0;
+  FILE *out = open_memstream(&buf, &len);
+  char chunk[4096];
+  size_t got;
+  while ((got = fread(chunk, 1, sizeof chunk, f)) > 0) fwrite(chunk, 1, got, out);
+  fclose(f);
+  fclose(out);
+  reply(fd, 200, "text/plain", buf, len);
+}
+
 /* ---- requests -------------------------------------------------------- */
 
 /* Copies `value` into `dst` when it is no longer than `size` and has no control characters. */
@@ -663,6 +873,33 @@ int only(const char *s, const char *allowed) {
   for (; *s; s++)
     if (!isalnum((unsigned char)*s) && !strchr(allowed, *s)) return 0;
   return 1;
+}
+
+/* Decodes standard base64 into `out` (at most `size` bytes); the length, or -1 when it is not base64. */
+long unb64(const char *in, unsigned char *out, size_t size) {
+  static signed char table[256];
+  static int ready;
+  if (!ready) {
+    memset(table, -1, sizeof table);
+    const char *a = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    for (int i = 0; i < 64; i++) table[(unsigned char)a[i]] = (signed char)i;
+    ready = 1;
+  }
+  size_t n = 0;
+  uint32_t acc = 0;
+  int bits = 0;
+  for (; *in && *in != '='; in++) {
+    signed char v = table[(unsigned char)*in];
+    if (v < 0) return -1;
+    acc = acc << 6 | (uint32_t)v;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      if (n >= size) return -1;
+      out[n++] = (unsigned char)(acc >> bits & 0xff);
+    }
+  }
+  return (long)n;
 }
 
 /* Reads the `key=value` lines of one item; false when anything is not a key we know. */
@@ -691,6 +928,23 @@ int parse_item(char *body, struct request *r) {
     else if (!strcmp(line, "tls")) r->tls = !strcmp(value, "1");
     else if (!strcmp(line, "nobody")) r->nobody = !strcmp(value, "1");
     else if (!strcmp(line, "maxbody")) r->maxbody = atol(value);
+    else if (!strcmp(line, "servername")) ok = take(r->servername, sizeof r->servername, value);
+    else if (!strcmp(line, "sess_out")) ok = take(r->sess_out, sizeof r->sess_out, value);
+    else if (!strcmp(line, "sess_in")) ok = take(r->sess_in, sizeof r->sess_in, value);
+    else if (!strcmp(line, "flag")) {
+      ok = r->nflags < 8 && take(r->flags[r->nflags], sizeof r->flags[0], value);
+      r->nflags++;
+    } else if (!strcmp(line, "early_data")) {
+      long n = unb64(value, r->early, sizeof r->early);
+      ok = n >= 0;
+      r->early_len = n >= 0 ? (size_t)n : 0;
+      r->has_early = 1;
+    } else if (!strcmp(line, "input")) {
+      long n = r->ninputs < 64 ? unb64(value, r->inputs[r->ninputs], sizeof r->inputs[0]) : -1;
+      ok = n >= 0;
+      if (ok) r->input_len[r->ninputs++] = (size_t)n;
+    } else if (!strcmp(line, "delay")) r->delay = atoi(value);
+    else if (!strcmp(line, "timeout")) r->timeout = atoi(value);
     else if (!strcmp(line, "header")) {
       ok = r->nheaders < MAX_HEADERS && take(r->headers[r->nheaders], sizeof r->headers[0], value);
       r->nheaders++;
@@ -745,8 +999,9 @@ int valid_connect(const struct request *r) {
   return r->host[0] && only(r->host, ".-:") && allowed_port(r->port);
 }
 
-/* Runs the handshakes of a batch, WINDOW at a time, each in its own process, and
- * answers {"results":[...]} in order. A bad item is an error entry, not a failed batch. */
+/* Runs the handshakes of a batch, WINDOW at a time (a new one starts as soon as one ends),
+ * each in its own process, and answers {"results":[...]} in order. A bad item is an error
+ * entry, not a failed batch. */
 void batch(int fd, char *body) {
   char *items[MAX_BATCH];
   int count = 0;
@@ -756,17 +1011,16 @@ void batch(int fd, char *body) {
     if (sep) { *sep = 0; p = sep + 4; } else p = NULL;
   }
   signal(SIGCHLD, SIG_DFL);
-  char *buf = NULL;
-  size_t len = 0;
-  FILE *out = open_memstream(&buf, &len);
-  fputs("{\"results\":[", out);
-  for (int from = 0; from < count; from += WINDOW) {
-    int to = from + WINDOW < count ? from + WINDOW : count;
-    int pipes[WINDOW];
-    pid_t pids[WINDOW];
-    for (int i = from; i < to; i++) {
-      int p[2];
-      if (pipe(p) < 0) { pipes[i - from] = -1; continue; }
+  int rd[MAX_BATCH];
+  pid_t pids[MAX_BATCH];
+  char *answers[MAX_BATCH];
+  size_t used[MAX_BATCH];
+  for (int i = 0; i < count; i++) { rd[i] = -1; pids[i] = 0; answers[i] = NULL; used[i] = 0; }
+  int started = 0, running = 0, finished = 0;
+  while (finished < count) {
+    while (started < count && running < WINDOW) {
+      int p[2], i = started++;
+      if (pipe(p) < 0) { finished++; continue; }
       pid_t pid = fork();
       if (pid == 0) {
         close(p[0]);
@@ -776,26 +1030,41 @@ void batch(int fd, char *body) {
         handshake(p[1], &r);
       }
       close(p[1]);
-      pipes[i - from] = pid < 0 ? -1 : p[0];
-      pids[i - from] = pid;
+      if (pid < 0) { close(p[0]); finished++; continue; }
+      rd[i] = p[0];
+      pids[i] = pid;
+      answers[i] = malloc(65536);
+      running++;
     }
-    for (int i = from; i < to; i++) {
-      if (i) fputc(',', out);
-      int rd = pipes[i - from];
-      char answer[65536];
-      size_t used = 0;
-      while (rd >= 0 && used < sizeof answer - 1) {
-        ssize_t n = read(rd, answer + used, sizeof answer - 1 - used);
-        if (n <= 0) break;
-        used += (size_t)n;
-      }
-      if (rd >= 0) { close(rd); waitpid(pids[i - from], NULL, 0); }
-      answer[used] = 0;
-      char *json = strstr(answer, "\r\n\r\n");
-      if (used > 12 && json && !strncmp(answer, "HTTP/1.1 200", 12)) fputs(json + 4, out);
-      else if (json && !strncmp(answer, "HTTP/1.1 502", 12)) fputs(json + 4, out);
-      else fputs("{\"error\":\"no answer\"}", out);
+    struct pollfd polls[MAX_BATCH];
+    int which[MAX_BATCH], n = 0;
+    for (int i = 0; i < started; i++)
+      if (rd[i] >= 0) { polls[n].fd = rd[i]; polls[n].events = POLLIN; polls[n].revents = 0; which[n++] = i; }
+    if (n == 0) continue;
+    poll(polls, (nfds_t)n, 1000);
+    for (int k = 0; k < n; k++) {
+      if (!(polls[k].revents & (POLLIN | POLLHUP))) continue;
+      int i = which[k];
+      ssize_t got = used[i] < 65535 ? read(rd[i], answers[i] + used[i], 65535 - used[i]) : 0;
+      if (got > 0) { used[i] += (size_t)got; continue; }
+      close(rd[i]);
+      rd[i] = -1;
+      waitpid(pids[i], NULL, 0);
+      answers[i][used[i]] = 0;
+      running--;
+      finished++;
     }
+  }
+  char *buf = NULL;
+  size_t len = 0;
+  FILE *out = open_memstream(&buf, &len);
+  fputs("{\"results\":[", out);
+  for (int i = 0; i < count; i++) {
+    if (i) fputc(',', out);
+    char *json = answers[i] ? strstr(answers[i], "\r\n\r\n") : NULL;
+    if (json && (!strncmp(answers[i], "HTTP/1.1 200", 12) || !strncmp(answers[i], "HTTP/1.1 502", 12))) fputs(json + 4, out);
+    else fputs("{\"error\":\"no answer\"}", out);
+    free(answers[i]);
   }
   fputs("]}", out);
   fclose(out);
@@ -849,6 +1118,12 @@ void serve(int fd) {
   if (!strncmp(in, "POST /v1/connect ", 17)) {
     if (!parse_item(body, &r) || !valid_connect(&r)) reply(fd, 400, "text/plain", "bad request", 11);
     connect_probe(fd, &r);
+  }
+  if (!strncmp(in, "POST /v1/roots ", 15)) roots_reply(fd);
+  if (!strncmp(in, "POST /v1/openssl ", 17)) {
+    alarm(60);
+    if (!parse_item(body, &r)) reply(fd, 400, "text/plain", "bad request", 11);
+    openssl_exec(fd, &r);
   }
   if (!strncmp(in, "POST /v1/http ", 14)) {
     alarm(40);
@@ -962,6 +1237,14 @@ int main(void) {
   char probe_connect_port[] = "host=1.1.1.1\nport=22\n";
   CHECK(parse_item(probe_connect_port, &r) && !valid_connect(&r));
   CHECK(is_ip("1.2.3.4") && is_ip("::1") && !is_ip("example.com"));
+  char sclient[] = "host=example.com\nport=443\nservername=example.com\nflag=-tls1_3\nsess_out=abc_1\ninput=UQo=\ninput=\ndelay=500\ntimeout=30000\nearly_data=R0VUIC8=\n";
+  CHECK(parse_item(sclient, &r) && r.nflags == 1 && r.ninputs == 2 && r.input_len[0] == 2 && r.input_len[1] == 0);
+  CHECK(r.has_early && r.early_len == 5 && !memcmp(r.early, "GET /", 5) && r.delay == 500 && r.timeout == 30000);
+  CHECK(flag_ok("-tls1_2") && flag_ok("-trace") && !flag_ok("-cert") && !flag_ok("-connect") && !flag_ok("-key"));
+  CHECK(name_ok("abc_1") && !name_ok("../x") && !name_ok("a b") && name_ok(""));
+  unsigned char decoded[8];
+  CHECK(unb64("YWI=", decoded, sizeof decoded) == 2 && decoded[0] == 'a' && decoded[1] == 'b');
+  CHECK(unb64("!!!!", decoded, sizeof decoded) == -1 && unb64("YWJjZGVmZ2hp", decoded, 4) == -1);
 
   char *buf = NULL; size_t len = 0;
   FILE *out = open_memstream(&buf, &len);
