@@ -1,5 +1,5 @@
 import type { HintContext, NetworkData, ReportOptions } from 'hint';
-import { createHTMLDocument } from '@hint/utils-dom';
+import { createHTMLDocument } from '@hint/utils-dom/dist/src/create-html-document.js';
 import { Severity } from '@hint/utils-types';
 
 import type { CatalogueEntry, HintInfo } from './catalogue.js';

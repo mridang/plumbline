@@ -6,6 +6,8 @@ import { Transform, Writable, type TransformCallback } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import zlib from 'node:zlib';
 
+import { ALLOWED_PORTS, ScanRefused } from './scannable.js';
+
 /**
  * The scan server fetches whatever address a visitor types, from inside the
  * container. This file keeps those fetches on the public internet: it refuses
@@ -19,9 +21,6 @@ import zlib from 'node:zlib';
 /** The user agent sent with every request, so site owners can tell what called. */
 export const USER_AGENT =
   'Mozilla/5.0 (compatible; plumbline/1.0; +https://plumbline.apps.mrida.ng)';
-
-/** The ports a scan may be pointed at, besides the default of the scheme. */
-const ALLOWED_PORTS: ReadonlySet<number> = new Set([80, 443, 8080, 8443]);
 
 /** The IPv4 ranges that are not the public internet, as `address/prefix`. */
 const RESERVED_V4: readonly (readonly [string, number])[] = [
@@ -116,7 +115,7 @@ export interface GuardOptions {
 }
 
 /** A request the guard refused, or that went wrong on the way. */
-export class GuardError extends Error {
+export class GuardError extends ScanRefused {
   public constructor(message: string) {
     super(message);
     this.name = 'GuardError';
