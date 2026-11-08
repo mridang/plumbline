@@ -181,6 +181,9 @@ void fail(int fd, const char *message) {
 
 /* How long a connection attempt may take, in milliseconds. */
 static int connect_ms = STEP_SECONDS * 1000;
+/* How long one read or write on the connection may take, in seconds. A mail server may
+ * hold its greeting back for several seconds (greet delay) before it says anything. */
+static int io_seconds = STEP_SECONDS;
 
 /* Waits for `fd` to be ready for `events`; false on timeout. */
 int ready(int fd, short events) {
@@ -215,7 +218,7 @@ int connect_public(const char *host, int port, const char **why) {
   }
   freeaddrinfo(list);
   if (fd >= 0) {
-    struct timeval tv = {STEP_SECONDS, 0};
+    struct timeval tv = {io_seconds, 0};
     int blocking = fcntl(fd, F_GETFL) & ~O_NONBLOCK;
     fcntl(fd, F_SETFL, blocking);
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof tv);
@@ -391,6 +394,7 @@ void cert_json(FILE *out, X509 *cert) {
 /* Makes the handshake and writes what it showed as JSON. */
 void handshake(int fd, const struct request *r) {
   const char *why = NULL;
+  if (r->smtp) { io_seconds = 20; alarm(45); }
   int s = connect_public(r->host, r->port, &why);
   if (s < 0) fail(fd, why);
   if (r->smtp && (why = smtp_starttls(s)) != NULL) fail(fd, why);
@@ -629,6 +633,8 @@ void connect_probe(int fd, const struct request *r) {
 /* The SMTP STARTTLS dialog and the handshake that follows it, as the mail checks read them. */
 void starttls_probe(int fd, const struct request *r) {
   const char *why = NULL;
+  io_seconds = 20;
+  alarm(45);
   char *buf = NULL;
   size_t len = 0;
   FILE *out = open_memstream(&buf, &len);
