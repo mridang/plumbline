@@ -32,58 +32,9 @@ import extraHandlers from './lib/core/worker-extras';
 
 export * from './lib/core/worker-extras';
 
-// SPIKE (temporary, removed after the measurement): fetches an allowlisted
-// site from the Worker so its response can be compared with curl's.
-const SPIKE_HOSTS = new Set([
-  'plumbline.apps.mrida.ng',
-  'broadsheet.apps.mrida.ng',
-  'chowdown.apps.mrida.ng',
-  'scenery.apps.mrida.ng',
-  'marshall.apps.mrida.ng',
-  'mrida.ng',
-  'railcross.apps.mrida.ng',
-  'birdlittle.apps.mrida.ng',
-]);
-
-async function spikeFetch(request) {
-  const url = new URL(request.url);
-  const target = new URL(url.searchParams.get('url') ?? '');
-  if (!SPIKE_HOSTS.has(target.hostname)) {
-    return new Response('no', { status: 403 });
-  }
-  const started = Date.now();
-  const res = await fetch(target, {
-    method: url.searchParams.get('method') ?? 'GET',
-    redirect: 'manual',
-    headers: {
-      accept: '*/*',
-      'accept-encoding': 'gzip, deflate, br',
-      'user-agent':
-        'Mozilla/5.0 (compatible; plumbline/1.0; +https://plumbline.apps.mrida.ng)',
-    },
-  });
-  const body = await res.arrayBuffer();
-  const digest = await crypto.subtle.digest('SHA-256', body);
-  return Response.json({
-    status: res.status,
-    ms: Date.now() - started,
-    headers: [...res.headers].map(([k, v]) => k + ': ' + v),
-    setCookie: res.headers.getSetCookie(),
-    bodyBytes: body.byteLength,
-    sha256: [...new Uint8Array(digest)]
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join(''),
-    colo: request.cf?.colo,
-    cf: res.cf ?? null,
-  });
-}
-
 /** The Worker itself. */
 const handler: ExportedHandler<CloudflareEnv> = {
   async fetch(request, env, ctx) {
-    if (new URL(request.url).pathname === '/__spike') {
-      return spikeFetch(request);
-    }
     return serve(request, env, ctx, { app: openNextHandler });
   },
   ...extraHandlers,
