@@ -231,7 +231,7 @@
     // Where the checks run: "container" is the scanner container (Node, the
     // hints package, every check), "worker" is the ProbeScanner object with a
     // small probe container (lib/cloudflare/scanner-namespace.ts).
-    "SCAN_ENGINE": "container",
+    "SCAN_ENGINE": "worker",
     // Web Push (VAPID). The public key is what browsers subscribe with; the
     // subject is the contact address push services may write to.
     "VAPID_PUBLIC_KEY": "BJdkLBZFH5nzIA-EaaNWM9jOnEeRYZ4YNYtGXis1WJFe4_HpDFWzVNipsIRv5GPKqvZPvRuxjX67fwsCzdcK-OY",
