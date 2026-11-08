@@ -1,6 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import {
+  neutralWhenUntested,
   runScanWith,
   type ScanEnvironment,
   type ScanEvent,
@@ -128,5 +129,52 @@ describe('runScanWith', () => {
     expect(seen.filter((url) => url === 'https://example.com/')).toHaveLength(
       1,
     );
+  });
+});
+
+describe('neutralWhenUntested', () => {
+  const outcome = (
+    status: 'passed' | 'failed',
+    findings: { level: string; message: string }[],
+  ) =>
+    ({ id: 'x', status, findings }) as unknown as Parameters<
+      typeof neutralWhenUntested
+    >[0];
+
+  it('skips a check that only said it could not test, and keeps what it said', () => {
+    const result = neutralWhenUntested(
+      outcome('passed', [
+        {
+          level: 'hint',
+          message:
+            'mx.example.com: Could not test: no TLS connection to mx.example.com:25.',
+        },
+        {
+          level: 'hint',
+          message: 'Could not connect to at least one mail server on port 25.',
+        },
+      ]),
+    );
+    expect(result.status).toBe('skipped');
+    expect(result.reason).toContain('could not be tested');
+    expect(result.findings).toHaveLength(2);
+  });
+
+  it('leaves a check alone that found something, passed cleanly, or failed', () => {
+    const real = outcome('passed', [
+      { level: 'hint', message: 'Could not test one, and the other is old.' },
+      { level: 'warning', message: 'Something is wrong.' },
+    ]);
+    expect(neutralWhenUntested(real)).toBe(real);
+    const clean = outcome('passed', []);
+    expect(neutralWhenUntested(clean)).toBe(clean);
+    const failed = outcome('failed', [
+      { level: 'hint', message: 'Could not test it.' },
+    ]);
+    expect(neutralWhenUntested(failed)).toBe(failed);
+    const other = outcome('passed', [
+      { level: 'hint', message: 'Consider preloading.' },
+    ]);
+    expect(neutralWhenUntested(other)).toBe(other);
   });
 });

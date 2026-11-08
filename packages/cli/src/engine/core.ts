@@ -68,6 +68,30 @@ export interface ScanEnvironment {
   isFault?(error: unknown): boolean;
 }
 
+/**
+ * A check that only said it could not test (a mail server that would not answer, a
+ * connection that was refused) did not run: it is skipped, so the last result stands
+ * and an open issue is not closed because the check could not look this time.
+ */
+export function neutralWhenUntested(outcome: HintOutcome): HintOutcome {
+  if (
+    outcome.status === 'passed' &&
+    outcome.findings.length > 0 &&
+    outcome.findings.every(
+      (finding) =>
+        finding.level === 'hint' &&
+        /\bcould not (test|connect)\b/i.test(finding.message),
+    )
+  ) {
+    return skipped(
+      outcome,
+      'It could not be tested this time (a server did not answer or refused the connection).',
+      outcome.findings,
+    );
+  }
+  return outcome;
+}
+
 /** A fetch of a resource that asks the target once for an address however a check asks for it. */
 function cachedFetchContent(fetcher: typeof fetch): FetchContent {
   const cache = new Map<string, Promise<NetworkData>>();
@@ -138,7 +162,7 @@ export async function runScanWith(
                 'The scan ran out of time before this check started.',
               )
             : await runHint(entry, page, fetchContent, options.hintTimeoutMs);
-        emit({ type: 'done', outcome });
+        emit({ type: 'done', outcome: neutralWhenUntested(outcome) });
       }
     };
     await Promise.all(

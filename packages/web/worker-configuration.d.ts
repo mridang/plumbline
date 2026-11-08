@@ -27,7 +27,7 @@ interface __BaseEnv_Env {
   USER_HUB: DurableObjectNamespace /* UserHub */;
   SCANNER: DurableObjectNamespace /* ScannerContainer */;
   PROBE: DurableObjectNamespace /* ProbeScanner */;
-  SCAN_ENGINE: 'container';
+  SCAN_ENGINE: 'worker';
   SCAN_QUEUE: Queue;
 }
 declare namespace Cloudflare {
