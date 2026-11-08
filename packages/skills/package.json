@@ -1,6 +1,6 @@
 {
   "name": "@mridang/plumbline-skills",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "description": "Agent skills and a Claude Code plugin that audit a website with the plumbline CLI and explain how to fix what fails",
   "type": "module",
   "keywords": [
