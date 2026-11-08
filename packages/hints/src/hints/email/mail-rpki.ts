@@ -39,40 +39,51 @@ export default defineHint({
       const notFound: string[] = [];
       const invalid: string[] = [];
 
-      for (const host of mail.hosts) {
-        const addresses = new Set<string>();
-        for (const type of ['A', 'AAAA'] as const) {
-          try {
-            const response = await dns.client.query(host, type);
-            for (const record of response.answers) {
-              if (ADDRESS_TYPES.has(record.type)) {
-                addresses.add(record.data);
+      // Every mail server is looked up at once, and so is every one of its
+      // addresses: each lookup is two round trips to a web service. The lines
+      // keep the order of the servers and addresses.
+      const lines = await Promise.all(
+        mail.hosts.map(async (host) => {
+          const addresses = new Set<string>();
+          for (const type of ['A', 'AAAA'] as const) {
+            try {
+              const response = await dns.client.query(host, type);
+              for (const record of response.answers) {
+                if (ADDRESS_TYPES.has(record.type)) {
+                  addresses.add(record.data);
+                }
               }
+            } catch {
+              // A failed lookup leaves that family unchecked.
             }
-          } catch {
-            // A failed lookup leaves that family unchecked.
           }
-        }
-        for (const ip of addresses) {
-          try {
-            const result = await rpki.client.check(ip);
-            if (result.asn === null) {
-              // Not routed: there is nothing to validate.
-              continue;
-            }
-            const line =
-              `${host} ${ip} ${result.prefix ?? ''} AS${result.asn}`.replace(
-                / +/gu,
-                ' ',
-              );
-            if (result.status === 'invalid') {
-              invalid.push(line);
-            } else if (result.status === 'unknown') {
-              notFound.push(line);
-            }
-          } catch {
-            // The validation service is unavailable for this address.
-          }
+          return Promise.all(
+            [...addresses].map(async (ip) => {
+              try {
+                const result = await rpki.client.check(ip);
+                if (result.asn === null) {
+                  // Not routed: there is nothing to validate.
+                  return null;
+                }
+                const line =
+                  `${host} ${ip} ${result.prefix ?? ''} AS${result.asn}`.replace(
+                    / +/gu,
+                    ' ',
+                  );
+                return { line, status: result.status };
+              } catch {
+                // The validation service is unavailable for this address.
+                return null;
+              }
+            }),
+          );
+        }),
+      );
+      for (const found of lines.flat()) {
+        if (found?.status === 'invalid') {
+          invalid.push(found.line);
+        } else if (found?.status === 'unknown') {
+          notFound.push(found.line);
         }
       }
 

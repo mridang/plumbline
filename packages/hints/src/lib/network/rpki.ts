@@ -14,24 +14,30 @@ export interface IpRpki {
 
 /** Every A and AAAA address of the given hosts with its RPKI result. */
 export async function collectRpki(hosts: string[]): Promise<IpRpki[]> {
-  const out: IpRpki[] = [];
-  for (const host of hosts) {
-    const ips = [
-      ...(await ipv4Addresses(host)),
-      ...(await ipv6Addresses(host)),
-    ];
-    for (const ip of ips) {
-      try {
-        out.push({ host, ip, result: await rpki.client.check(ip) });
-      } catch {
-        // A validator that is down is not the site's fault: skip the address.
-      }
-    }
-  }
-  return out;
+  // Every host is looked up at once, and so is every one of its addresses: the
+  // validator is a web service, a lookup is two round trips, and a mail setup
+  // has a dozen addresses, so one after another is the slowest part of a scan.
+  // The answers keep the order of the hosts and addresses.
+  const perHost = await Promise.all(
+    hosts.map(async (host) => {
+      const ips = [
+        ...(await ipv4Addresses(host)),
+        ...(await ipv6Addresses(host)),
+      ];
+      return Promise.all(
+        ips.map((ip) =>
+          rpki.client.check(ip).then(
+            (result): IpRpki | null => ({ host, ip, result }),
+            // A validator that is down is not the site's fault: skip the address.
+            () => null,
+          ),
+        ),
+      );
+    }),
+  );
+  return perHost.flat().filter((entry): entry is IpRpki => entry !== null);
 }
 
-/** The addresses of the site's own web server. */
 export const webRpki = (host: string): Promise<IpRpki[]> => collectRpki([host]);
 
 /** The addresses of the site's name servers. */

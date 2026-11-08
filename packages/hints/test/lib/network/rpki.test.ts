@@ -66,6 +66,54 @@ describe('collectRpki', () => {
     ]);
   });
 
+  it('asks about every address at once and keeps the order of the answers', async () => {
+    restore = installDns({
+      'example.test': {
+        A: { data: ['192.0.2.1', '192.0.2.2'] },
+        AAAA: { data: ['2001:db8::1'] },
+      },
+    });
+    let running = 0;
+    let most = 0;
+    const finished: string[] = [];
+    rpki.client = {
+      async check(ip) {
+        running += 1;
+        most = Math.max(most, running);
+        // The first address is the slowest, so a lookup that waited its turn would come out in another order.
+        await new Promise((resolve) =>
+          setTimeout(resolve, ip === '192.0.2.1' ? 30 : 1),
+        );
+        running -= 1;
+        finished.push(ip);
+        return { asn: 1, prefix: 'p', status: 'valid' };
+      },
+    };
+    const found = await collectRpki(['example.test']);
+    expect(found.map((e) => e.ip)).toEqual([
+      '192.0.2.1',
+      '192.0.2.2',
+      '2001:db8::1',
+    ]);
+    expect(most).toBe(3);
+    expect(finished[finished.length - 1]).toBe('192.0.2.1');
+  });
+
+  it('skips only the addresses the validator fails on', async () => {
+    restore = installDns({
+      'example.test': { A: { data: ['192.0.2.1', '192.0.2.2'] } },
+    });
+    rpki.client = {
+      check: (ip) =>
+        ip === '192.0.2.1'
+          ? Promise.reject(new Error('down'))
+          : Promise.resolve({ asn: 1, prefix: 'p', status: 'valid' }),
+    };
+    expect((await collectRpki(['example.test'])).map((e) => e.ip)).toEqual([
+      '192.0.2.2',
+    ]);
+  });
+
   it('skips addresses when the validator fails', async () => {
     restore = installDns({ 'example.test': { A: { data: ['192.0.2.1'] } } });
     rpki.client = { check: () => Promise.reject(new Error('down')) };

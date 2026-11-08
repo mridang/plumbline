@@ -21,6 +21,10 @@ import {
   dns,
   type DnsResponse,
 } from '@mridang/webhint-hint-plumbline/dist/core/dns.js';
+import {
+  rpki,
+  type RpkiResult,
+} from '@mridang/webhint-hint-plumbline/dist/core/rpki.js';
 import { compression } from '@mridang/webhint-hint-plumbline/dist/lib/network/compression.js';
 import { tls as dane } from '@mridang/webhint-hint-plumbline/dist/lib/network/dane.js';
 import { network } from '@mridang/webhint-hint-plumbline/dist/lib/network/ipv6.js';
@@ -37,6 +41,7 @@ import { fromBase64, ProbeError } from './protocol.js';
 interface ScanScope {
   readonly client: ProbeClient;
   readonly answers: Map<string, Promise<DnsResponse>>;
+  readonly routes: Map<string, Promise<RpkiResult>>;
 }
 
 /** The scan that is running here, if one is. */
@@ -45,7 +50,7 @@ const scope = new AsyncLocalStorage<ScanScope>();
 /** Runs `work` with `client` as the probe every network client of the checks uses. */
 export function withProbe<T>(client: ProbeClient, work: () => T): T {
   install();
-  return scope.run({ client, answers: new Map() }, work);
+  return scope.run({ client, answers: new Map(), routes: new Map() }, work);
 }
 
 /** The newest `fetch` before the first scan replaced it, for calls outside a scan. */
@@ -152,6 +157,25 @@ function install(): void {
         answer = resolver.query(name, type);
         answers.set(key, answer);
         answer.catch(() => answers.delete(key));
+      }
+      return answer;
+    },
+  };
+
+  // The four routing checks ask about the same addresses (a web server is also a name server),
+  // and each answer is two round trips to a web service: within one scan, one lookup per address.
+  const validator = rpki.client;
+  rpki.client = {
+    check: (ip) => {
+      const routes = scope.getStore()?.routes;
+      if (!routes) {
+        return validator.check(ip);
+      }
+      let answer = routes.get(ip);
+      if (!answer) {
+        answer = validator.check(ip);
+        routes.set(ip, answer);
+        answer.catch(() => routes.delete(ip));
       }
       return answer;
     },

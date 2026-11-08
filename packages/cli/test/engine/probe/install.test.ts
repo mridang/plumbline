@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net';
 
 import { describe, expect, it } from '@jest/globals';
 import { dns } from '@mridang/webhint-hint-plumbline/dist/core/dns.js';
+import { rpki } from '@mridang/webhint-hint-plumbline/dist/core/rpki.js';
 import { mailNet } from '@mridang/webhint-hint-plumbline/dist/lib/email/net.js';
 import { compression } from '@mridang/webhint-hint-plumbline/dist/lib/network/compression.js';
 import { tls as dane } from '@mridang/webhint-hint-plumbline/dist/lib/network/dane.js';
@@ -43,6 +44,21 @@ dns.client = {
       throw new Error('timed out');
     }
     return { status: 0, authenticated: false, answers: [], authority: [] };
+  },
+};
+
+/** What reaches the route validator behind the scan's cache. */
+const looked: string[] = [];
+rpki.client = {
+  check: async (ip) => {
+    looked.push(ip);
+    if (
+      ip === '192.0.2.99' &&
+      looked.filter((seen) => seen === ip).length === 1
+    ) {
+      throw new Error('down');
+    }
+    return { asn: 64500, prefix: '192.0.2.0/24', status: 'valid' };
   },
 };
 
@@ -304,6 +320,32 @@ describe('DNS answers', () => {
   it('asks the resolver directly outside a scan', async () => {
     await dns.client.query('outside.test', 'A');
     expect(asked).toContain('A outside.test');
+  });
+});
+
+describe('route validation', () => {
+  it('looks an address up once within a scan, however many checks ask, and again in the next scan', async () => {
+    const { client } = probeFor({});
+    const [a, b] = await withProbe(client, () =>
+      Promise.all([
+        rpki.client.check('192.0.2.1'),
+        rpki.client.check('192.0.2.1'),
+      ]),
+    );
+    expect(a).toBe(b);
+    expect(looked.filter((ip) => ip === '192.0.2.1')).toHaveLength(1);
+    await withProbe(client, () => rpki.client.check('192.0.2.1'));
+    expect(looked.filter((ip) => ip === '192.0.2.1')).toHaveLength(2);
+  });
+
+  it('does not keep a lookup that failed', async () => {
+    const { client } = probeFor({});
+    await withProbe(client, async () => {
+      await expect(rpki.client.check('192.0.2.99')).rejects.toThrow('down');
+      await expect(rpki.client.check('192.0.2.99')).resolves.toMatchObject({
+        status: 'valid',
+      });
+    });
   });
 });
 
