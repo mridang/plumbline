@@ -265,9 +265,12 @@ int smtp_reply(int fd, char *text, size_t size) {
 const char *smtp_starttls(int fd) {
   char text[2048];
   static const char ehlo[] = "EHLO probe.invalid\r\n", start[] = "STARTTLS\r\n";
-  if (smtp_reply(fd, text, sizeof text) != 220) {
-    static char message[220];
-    snprintf(message, sizeof message, "no SMTP greeting (%s)", smtp_trouble[0] ? smtp_trouble : "not a 220");
+  int greeting = smtp_reply(fd, text, sizeof text);
+  if (greeting != 220) {
+    static char message[260];
+    for (char *p = text; *p; p++) if (*p == '\r' || *p == '\n') *p = ' ';
+    if (greeting) snprintf(message, sizeof message, "no SMTP greeting (%s answered %d: \"%.80s\")", last_address, greeting, text);
+    else snprintf(message, sizeof message, "no SMTP greeting (%s)", smtp_trouble);
     return message;
   }
   if (write(fd, ehlo, sizeof ehlo - 1) < 0 || smtp_reply(fd, text, sizeof text) != 250)
