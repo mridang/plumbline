@@ -191,6 +191,9 @@ int ready(int fd, short events) {
   return poll(&p, 1, connect_ms) > 0;
 }
 
+/* The address the last connection was made to, as text, for the messages. */
+static char last_address[64];
+
 /* Connects to a public address of `host`; -1 and a message in `*why` on failure. */
 int connect_public(const char *host, int port, const char **why) {
   struct addrinfo hints = {0}, *list = NULL;
@@ -212,7 +215,12 @@ int connect_public(const char *host, int port, const char **why) {
       int err = 0;
       socklen_t n = sizeof err;
       getsockopt(s, SOL_SOCKET, SO_ERROR, &err, &n);
-      if (err == 0) fd = s;
+      if (err == 0) {
+        fd = s;
+        void *raw = a->ai_family == AF_INET ? (void *)&((struct sockaddr_in *)a->ai_addr)->sin_addr
+                                            : (void *)&((struct sockaddr_in6 *)a->ai_addr)->sin6_addr;
+        inet_ntop(a->ai_family, raw, last_address, sizeof last_address);
+      }
     } 
     if (fd < 0) close(s);
   }
@@ -227,12 +235,22 @@ int connect_public(const char *host, int port, const char **why) {
   return fd;
 }
 
+/* What the last SMTP read saw, for the messages: how it ended and the bytes before that. */
+static char smtp_trouble[160];
+
 /* Reads one SMTP reply (possibly several lines) and returns its code, or 0. */
 int smtp_reply(int fd, char *text, size_t size) {
   size_t used = 0;
   for (;;) {
     char c;
-    if (read(fd, &c, 1) != 1) return 0;
+    if (read(fd, &c, 1) != 1) {
+      text[used < size ? used : size - 1] = 0;
+      for (char *p = text; *p; p++) if (*p == '\r' || *p == '\n') *p = ' ';
+      snprintf(smtp_trouble, sizeof smtp_trouble, "%s; %zu bytes read from %s: \"%.40s\"",
+               errno == EAGAIN || errno == EWOULDBLOCK ? "timed out" : errno ? strerror(errno) : "closed", used,
+               last_address, text);
+      return 0;
+    }
     if (used + 1 < size) text[used++] = c;
     if (c == '\n') {
       size_t start = used;
@@ -247,7 +265,11 @@ int smtp_reply(int fd, char *text, size_t size) {
 const char *smtp_starttls(int fd) {
   char text[2048];
   static const char ehlo[] = "EHLO probe.invalid\r\n", start[] = "STARTTLS\r\n";
-  if (smtp_reply(fd, text, sizeof text) != 220) return "no SMTP greeting";
+  if (smtp_reply(fd, text, sizeof text) != 220) {
+    static char message[220];
+    snprintf(message, sizeof message, "no SMTP greeting (%s)", smtp_trouble[0] ? smtp_trouble : "not a 220");
+    return message;
+  }
   if (write(fd, ehlo, sizeof ehlo - 1) < 0 || smtp_reply(fd, text, sizeof text) != 250)
     return "EHLO refused";
   for (char *p = text; *p; p++) *p = toupper((unsigned char)*p);
@@ -484,6 +506,8 @@ void handshake(int fd, const struct request *r) {
   reply(fd, 200, "application/json", buf, len);
 }
 
+int only(const char *s, const char *allowed);
+
 /* ---- raw HTTP and the other operations ------------------------------ */
 
 /* Whether `s` is an IPv4 or IPv6 address literal. */
@@ -649,7 +673,7 @@ void starttls_probe(int fd, const struct request *r) {
   }
   why = smtp_starttls(s);
   if (why != NULL) {
-    int reached = strcmp(why, "no SMTP greeting") != 0;
+    int reached = strncmp(why, "no SMTP greeting", 16) != 0;
     fprintf(out, "{\"reachable\":%s,\"starttls\":false,\"tlsVersion\":null,\"trusted\":false,"
                  "\"trustError\":null,\"hostnameMatches\":false,\"certificates\":[],\"error\":",
             reached ? "true" : "false");
