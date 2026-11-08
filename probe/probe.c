@@ -53,9 +53,9 @@
 #include <unistd.h>
 
 #define MAX_REQUEST 262144
-#define MAX_CHILDREN 24
+#define MAX_CHILDREN 32
 #define MAX_BATCH 128
-#define WINDOW 8 /* handshakes of one batch at a time */
+#define WINDOW 24 /* handshakes of one batch at a time */
 #define MAX_BODY (10L * 1024 * 1024)
 #define MAX_HEADERS 24
 #define STEP_SECONDS 6 /* one connect, read or write */

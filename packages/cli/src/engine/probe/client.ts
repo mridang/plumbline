@@ -148,7 +148,7 @@ export class ProbeClient {
     this.retries = options.retries ?? 40;
     this.lanes = {
       web: { limit: options.inFlight ?? 20, active: 0, queue: [] },
-      mail: { limit: options.mailInFlight ?? 6, active: 0, queue: [] },
+      mail: { limit: options.mailInFlight ?? 12, active: 0, queue: [] },
     };
   }
 
