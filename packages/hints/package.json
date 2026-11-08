@@ -17,6 +17,7 @@
   },
   "imports": {
     "#hint": {
+      "workerd": "./dist/worker/hint.js",
       "default": "hint"
     },
     "#net": {
