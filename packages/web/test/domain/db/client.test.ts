@@ -14,6 +14,14 @@ describe('createDatabase', () => {
     expect(createDatabase(d1).$client).toBe(d1);
   });
 
+  it('knows every table the schema exports', async () => {
+    const { d1 } = sqliteD1();
+    const exported = Object.keys(await import('@/domain/db/schema'));
+    expect(Object.keys(createDatabase(d1).query).toSorted()).toEqual(
+      exported.toSorted(),
+    );
+  });
+
   it('knows the app’s tables for relational queries', async () => {
     const { d1 } = sqliteD1(...APP_MIGRATIONS);
     expect(await createDatabase(d1).query.domains.findMany()).toEqual([]);

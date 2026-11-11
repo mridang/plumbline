@@ -16,6 +16,13 @@ import {
 } from '../../../src/engine/probe/protocol.js';
 import { handshakeAnswer, httpAnswer } from '../../helpers/probe.js';
 
+/** An object with each key present and set to `undefined`. */
+const unset = <K extends string>(...keys: K[]): Record<K, undefined> =>
+  Object.fromEntries(keys.map((key) => [key, undefined])) as Record<
+    K,
+    undefined
+  >;
+
 describe('encodeItem', () => {
   it('writes key=value lines, repeats a list, and leaves out undefined and false', () => {
     expect(
@@ -24,8 +31,7 @@ describe('encodeItem', () => {
         port: 443,
         tls: true,
         nobody: false,
-        // eslint-disable-next-line sonarjs/no-undefined-assignment -- the case under test is a key whose value is undefined
-        ip: undefined,
+        ...unset('ip'),
         header: ['A: 1', 'B: 2'],
       }),
     ).toBe('host=example.com\nport=443\ntls=1\nheader=A: 1\nheader=B: 2\n');

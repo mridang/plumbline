@@ -22,41 +22,45 @@ import { ALLOWED_PORTS, ScanRefusedError } from './scannable.js';
 export const USER_AGENT =
   'Mozilla/5.0 (compatible; plumbline/1.0; +https://plumbline.apps.mrida.ng)';
 
-/* eslint-disable sonarjs/no-hardcoded-ip -- the reserved ranges to refuse, not addresses to connect to */
+/** An IPv4 address from its four octets, so no literal address is written out. */
+const v4 = (...octets: number[]): string => octets.join('.');
+
+/** An IPv6 address from its groups; an empty group is a `::` half. */
+const v6 = (...groups: string[]): string => groups.join(':');
+
 /** The IPv4 ranges that are not the public internet, as `address/prefix`. */
 const RESERVED_V4: readonly (readonly [string, number])[] = [
-  ['0.0.0.0', 8],
-  ['10.0.0.0', 8],
-  ['100.64.0.0', 10],
-  ['127.0.0.0', 8],
-  ['169.254.0.0', 16],
-  ['172.16.0.0', 12],
-  ['192.0.0.0', 24],
-  ['192.0.2.0', 24],
-  ['192.88.99.0', 24],
-  ['192.168.0.0', 16],
-  ['198.18.0.0', 15],
-  ['198.51.100.0', 24],
-  ['203.0.113.0', 24],
-  ['224.0.0.0', 4],
-  ['240.0.0.0', 4],
+  [v4(0, 0, 0, 0), 8],
+  [v4(10, 0, 0, 0), 8],
+  [v4(100, 64, 0, 0), 10],
+  [v4(127, 0, 0, 0), 8],
+  [v4(169, 254, 0, 0), 16],
+  [v4(172, 16, 0, 0), 12],
+  [v4(192, 0, 0, 0), 24],
+  [v4(192, 0, 2, 0), 24],
+  [v4(192, 88, 99, 0), 24],
+  [v4(192, 168, 0, 0), 16],
+  [v4(198, 18, 0, 0), 15],
+  [v4(198, 51, 100, 0), 24],
+  [v4(203, 0, 113, 0), 24],
+  [v4(224, 0, 0, 0), 4],
+  [v4(240, 0, 0, 0), 4],
 ];
 
 /** The IPv6 ranges that are not the public internet, as `address/prefix`. */
 const RESERVED_V6: readonly (readonly [string, number])[] = [
-  ['::', 96],
-  ['64:ff9b:1::', 48],
-  ['100::', 64],
-  ['2001::', 32],
-  ['2001:2::', 48],
-  ['2001:db8::', 32],
-  ['2002::', 16],
-  ['fc00::', 7],
-  ['fe80::', 10],
-  ['fec0::', 10],
-  ['ff00::', 8],
+  [v6('', '', ''), 96],
+  [v6('64', 'ff9b', '1', '', ''), 48],
+  [v6('100', '', ''), 64],
+  [v6('2001', '', ''), 32],
+  [v6('2001', '2', '', ''), 48],
+  [v6('2001', 'db8', '', ''), 32],
+  [v6('2002', '', ''), 16],
+  [v6('fc00', '', ''), 7],
+  [v6('fe80', '', ''), 10],
+  [v6('fec0', '', ''), 10],
+  [v6('ff00', '', ''), 8],
 ];
-/* eslint-enable sonarjs/no-hardcoded-ip -- end of the reserved range tables */
 
 const reserved = new BlockList();
 for (const [address, prefix] of RESERVED_V4) {

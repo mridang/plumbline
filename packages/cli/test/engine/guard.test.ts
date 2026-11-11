@@ -49,6 +49,42 @@ describe('isPublicAddress', () => {
     expect(isPublicAddress(ip)).toBe(false);
   });
 
+  it.each([
+    [0, 0, 0, 0],
+    [10, 0, 0, 0],
+    [100, 64, 0, 0],
+    [127, 0, 0, 0],
+    [169, 254, 0, 0],
+    [172, 16, 0, 0],
+    [192, 0, 0, 0],
+    [192, 0, 2, 0],
+    [192, 88, 99, 0],
+    [192, 168, 0, 0],
+    [198, 18, 0, 0],
+    [198, 51, 100, 0],
+    [203, 0, 113, 0],
+    [224, 0, 0, 0],
+    [240, 0, 0, 0],
+  ])('refuses the start of the reserved IPv4 range %j', (...octets) => {
+    expect(isPublicAddress(octets.join('.'))).toBe(false);
+  });
+
+  it.each([
+    ['', '', ''],
+    ['64', 'ff9b', '1', '', ''],
+    ['100', '', ''],
+    ['2001', '', ''],
+    ['2001', '2', '', ''],
+    ['2001', 'db8', '', ''],
+    ['2002', '', ''],
+    ['fc00', '', ''],
+    ['fe80', '', ''],
+    ['fec0', '', ''],
+    ['ff00', '', ''],
+  ])('refuses the start of the reserved IPv6 range %j', (...groups) => {
+    expect(isPublicAddress(groups.join(':'))).toBe(false);
+  });
+
   it('refuses what is not an address', () => {
     expect(isPublicAddress('example.com')).toBe(false);
     expect(isPublicAddress('')).toBe(false);

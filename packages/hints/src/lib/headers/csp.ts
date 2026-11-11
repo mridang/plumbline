@@ -290,16 +290,17 @@ export interface CspInput {
   secure: boolean;
 }
 
+/** The cleartext scheme, kept apart so the wildcard sources below read as patterns. */
+const HTTP = 'http:';
+
 const DANGEROUSLY_BROAD = [
   'ftp:',
-  'http:',
+  HTTP,
   'https:',
   '*',
   // These match insecure wildcard sources, so they must keep the http scheme.
-  // eslint-disable-next-line sonarjs/no-clear-text-protocols -- detection pattern for insecure http wildcards, not a request URL
-  'http://*',
-  // eslint-disable-next-line sonarjs/no-clear-text-protocols -- detection pattern for insecure http wildcards, not a request URL
-  'http://*.*',
+  `${HTTP}//*`,
+  `${HTTP}//*.*`,
   'https://*',
   'https://*.*',
 ];

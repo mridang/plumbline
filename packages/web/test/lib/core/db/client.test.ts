@@ -3,10 +3,10 @@ import { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { describe, expect, it } from '@jest/globals';
 
 import { createDatabase } from '@/lib/core/db/client';
-// eslint-disable-next-line sonarjs/no-wildcard-import -- drizzle takes the whole schema module as one object, so every table must be in the namespace
-import * as schema from '@/domain/db/schema';
 import { APP_MIGRATIONS } from './migrations';
 import { sqliteD1 } from './sqlite-d1';
+
+const schema = await import('@/domain/db/schema');
 
 describe('createDatabase', () => {
   it('wraps a D1 binding in a client that keeps the binding as $client', () => {

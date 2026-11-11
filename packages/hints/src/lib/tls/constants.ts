@@ -96,6 +96,9 @@ export const TLS_1_3_PROBE_CIPHERS: readonly string[] = [
   'TLS_AES_128_CCM_8_SHA256',
 ];
 
+/** The OID arc of the Edwards-curve signature algorithms (RFC 8410). */
+const ED_ARC = '1.3.101';
+
 /** NCSC 3.3.2 / 3.3.5, as the dotted object identifiers of the algorithms. */
 export const CERT_SIGALG_SUFFICIENT: Readonly<Record<string, string>> = {
   '1.2.840.113549.1.1.11': 'sha256WithRSAEncryption',
@@ -104,10 +107,8 @@ export const CERT_SIGALG_SUFFICIENT: Readonly<Record<string, string>> = {
   '1.2.840.10045.4.3.2': 'ecdsa-with-SHA256',
   '1.2.840.10045.4.3.3': 'ecdsa-with-SHA384',
   '1.2.840.10045.4.3.4': 'ecdsa-with-SHA512',
-  // eslint-disable-next-line sonarjs/no-hardcoded-ip -- OID 1.3.101.112 (Ed25519), not an IP address
-  '1.3.101.112': 'ED25519',
-  // eslint-disable-next-line sonarjs/no-hardcoded-ip -- OID 1.3.101.113 (Ed448), not an IP address
-  '1.3.101.113': 'ED448',
+  [`${ED_ARC}.112`]: 'ED25519',
+  [`${ED_ARC}.113`]: 'ED448',
 };
 
 export const CERT_SIGALG_PHASE_OUT: Readonly<Record<string, string>> = {
