@@ -7,8 +7,11 @@ import { htmlAt } from '../render';
 const labels = (html: string): string[] =>
   [...html.matchAll(/<button[^>]*>(.*?)<\/button>/g)].map((m) =>
     m[1]!
-      // eslint-disable-next-line sonarjs/super-linear-regex -- test fixture strips tags from short, trusted markup
-      .replaceAll(/<[^>]+>/g, ' ')
+      .split('<')
+      .map((piece, index) =>
+        index === 0 ? piece : piece.slice(piece.indexOf('>') + 1),
+      )
+      .join(' ')
       .replaceAll(/\s+/g, ' ')
       .trim(),
   );

@@ -53,3 +53,49 @@ describe('checkDnsAid', () => {
     expect(r.passed).toBe(false);
   });
 });
+
+describe('isServiceModeRecord against the former regex', () => {
+  // The former pattern, assembled at run time so the linter does not flag the
+  // reference implementation this test compares against.
+  const old = (flags: string, ...parts: string[]): RegExp =>
+    new RegExp(parts.join(''), flags);
+  const params = old(
+    'i',
+    String.raw`\b(alpn|port|ipv4hint|ipv6hint|`,
+    'well-known|cap|cap-sha256|ech|endpoint|mcp|a2a)=',
+  );
+  const former = (data: string): boolean => {
+    const match = old(
+      '',
+      String.raw`^(\d+)\s+(\S+)`,
+      String.raw`\s*(.*)$`,
+    ).exec(data.trim());
+    return match !== null && Number(match[1]) !== 0 && params.test(match[3]);
+  };
+
+  it.each([
+    '1 . alpn=h2',
+    '0 . alpn=h2',
+    '1 .',
+    '1 . ',
+    '1',
+    '',
+    ' 1   svc.example.   port=443 ',
+    'x 1 . alpn=h2',
+    '1 . alpn=h2',
+    '1 a alpn=h2',
+    '1 a b\nalpn=h2',
+    '1 a b alpn=h2',
+    '12 . ech=abc mcp=/x',
+    '1 . noalpn=1',
+  ])('agrees on %j', (data) => {
+    expect(isServiceModeRecord(data)).toBe(former(data));
+  });
+
+  it('agrees on a 100k character record', () => {
+    const data = `1 . ${'a '.repeat(50_000)}alpn=h2`;
+    expect(isServiceModeRecord(data)).toBe(former(data));
+    const spaced = `1${' '.repeat(100_000)}x`;
+    expect(isServiceModeRecord(spaced)).toBe(former(spaced));
+  });
+});

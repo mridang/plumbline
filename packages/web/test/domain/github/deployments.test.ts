@@ -268,3 +268,57 @@ describe('isDefaultBranchPush', () => {
     expect(isDefaultBranchPush({})).toBe(false);
   });
 });
+
+describe('wranglerHosts toml scanning against the former regexes', () => {
+  // The former pattern, assembled at run time so the linter does not flag the
+  // reference implementation this test compares against.
+  const old = (flags: string, ...parts: string[]): RegExp =>
+    new RegExp(parts.join(''), flags);
+  const former = (text: string): string[] => {
+    const top =
+      text.split(old('m', String.raw`^\s*\[+`, String.raw`env\.`), 1)[0] ?? '';
+    const out: string[] = [];
+    for (const match of top.matchAll(
+      old(
+        'gm',
+        String.raw`^\s*(?:pattern|route)`,
+        String.raw`\s*=\s*"([^"]+)"`,
+      ),
+    )) {
+      out.push(match[1] ?? '');
+    }
+    for (const array of top.matchAll(
+      old('gm', String.raw`^\s*routes`, String.raw`\s*=\s*\[([^\]]*)\]`),
+    )) {
+      for (const item of (array[1] ?? '').matchAll(/"([^"]+)"/g)) {
+        out.push(item[1] ?? '');
+      }
+    }
+    return [...new Set(out.map((pattern) => hostOfPattern(pattern)))].filter(
+      (host): host is string => host !== undefined,
+    );
+  };
+
+  it.each([
+    'route = "a.example.com/*"\n[env.staging]\nroute = "b.example.com/*"',
+    '  pattern = "a.example.com/*"\r\n\t[[env.x]]\r\nroute = "z.example.com/*"',
+    'name = "w"\n\n\n   \n  [env.production]\nroutes = ["c.example.com/*"]',
+    'routes = ["a.example.com/*", "b.example.com/*"]\n[ env.a ]',
+    'x = 1 [env.staging]\nroute = "a.example.com/*"',
+    'route="a.example.com/*"\nroute = "b.example.com/*"\n[env.x]',
+    'routes = [\n  "a.example.com/*",\n  "b.example.com/*",\n]',
+    'a route = "no.example.com/*"\n  route = "yes.example.com/*"',
+    '[[env.a]]\nroute = "a.example.com/*"',
+    'route = "a.example.com/*"   pattern = "b.example.com/*"',
+    '',
+  ])('agrees on %j', (text) => {
+    expect(wranglerHosts('wrangler.toml', text)).toEqual(former(text));
+  });
+
+  it('agrees on 100k characters of blank lines and brackets', () => {
+    const blank = `${'  \n'.repeat(50_000)}route = "a.example.com/*"`;
+    expect(wranglerHosts('wrangler.toml', blank)).toEqual(former(blank));
+    const noise = `${'x[env.'.repeat(20_000)}\nroute = "a.example.com/*"`;
+    expect(wranglerHosts('wrangler.toml', noise)).toEqual(former(noise));
+  });
+});

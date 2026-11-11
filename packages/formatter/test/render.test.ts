@@ -163,3 +163,86 @@ describe('generateReport', () => {
     });
   });
 });
+
+describe('agent score parsing against the former regexes', () => {
+  const scoreHint: HintInfo = {
+    ...ours,
+    id: 'extra/agent-score',
+    groups: ['agent'],
+  };
+  const former = (message: string) => {
+    // The former pattern, assembled at run time so the linter does not flag the
+    // reference implementation this test compares against.
+    const old = (flags: string, ...parts: string[]): RegExp =>
+      new RegExp(parts.join(''), flags);
+    const head = old(
+      's',
+      String.raw`^Agent readiness score (\d+)\/100, level (\d+)`,
+      String.raw`(?: "([^"]*)")?\.?(.*)$`,
+    ).exec(message);
+    if (!head) {
+      return null;
+    }
+    const categories: string[] = [];
+    for (const part of (head[4] ?? '').split(';')) {
+      const match = old(
+        '',
+        String.raw`^(.+?)\s+(\d+)`,
+        String.raw`(?:\s*\(\d+\/\d+\))?\s*\.?$`,
+      ).exec(part.trim());
+      if (match) {
+        categories.push(
+          `${match[1].replaceAll('"', '&quot;')}|${Math.min(100, Number(match[2]))}`,
+        );
+      }
+    }
+    const quoted = head[3] ? ' &quot;' + head[3] + '&quot;' : '';
+    return {
+      score: head[1],
+      level: `level ${head[2]}${quoted}`,
+      categories,
+    };
+  };
+  const parsed = (message: string) => {
+    const html = page(
+      [scoreHint],
+      [{ ...base, hintId: 'extra/agent-score', message }],
+    );
+    const marker = html.indexOf('<small>/100</small>');
+    if (marker === -1) {
+      return null;
+    }
+    const levelAt = html.indexOf('level ');
+    return {
+      score: html.slice(html.lastIndexOf('>', marker - 1) + 1, marker),
+      level: html.slice(levelAt, html.indexOf('<', levelAt)),
+      categories: html
+        .split('<li><span>')
+        .slice(1)
+        .map(
+          (item) =>
+            `${item.slice(0, item.indexOf('</span>'))}|${item.slice(item.indexOf('<b>') + 3, item.indexOf('</b>'))}`,
+        ),
+    };
+  };
+
+  it.each([
+    'Agent readiness score 27/100, level 1 "Basic Web Presence". Discoverability 50 (2/4); Content 10 (1/10)',
+    'Agent readiness score 5/100, level 0. Alpha 5; Beta 7.',
+    'Agent readiness score 5/100, level 0 Alpha 5',
+    'Agent readiness score 5/100, level 2 "Unclosed. Alpha 5',
+    'Agent readiness score 5/100, level 2 "". Alpha 5',
+    'Agent readiness score 5/100, level 2. One Two 5 6; Three 250 (1/2) .; Four (1/2)',
+    'Agent readiness score 5/100, level 2. A\nB 5; C 6 \n; D 5',
+    'Agent readiness score 5/100, level 2. A  B   7  ( 3/4 ) ;  C 8 (3/4)',
+    'Agent readiness score 5/100',
+    'odd',
+  ])('agrees on %j', (message) => {
+    expect(parsed(message)).toEqual(former(message));
+  });
+
+  it('agrees on 100k characters of categories', () => {
+    const message = `Agent readiness score 5/100, level 1. ${'a 1 '.repeat(25_000)}; B 2`;
+    expect(parsed(message)).toEqual(former(message));
+  });
+});

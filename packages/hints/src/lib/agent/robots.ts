@@ -8,6 +8,19 @@ import {
   urlOf,
 } from './util.js';
 
+/**
+ * Drops a trailing comment: from the first `#` that has no line terminator
+ * after it, scanning once from the end.
+ */
+function stripComment(line: string): string {
+  let from = line.length;
+  while (from > 0 && !/[\n\r\u2028\u2029]/.test(line[from - 1])) {
+    from -= 1;
+  }
+  const hash = line.indexOf('#', from);
+  return hash === -1 ? line : line.slice(0, hash);
+}
+
 /** The directives of a robots.txt file that the agent checks care about. */
 export interface Robots {
   /** Every `User-agent` value, in order. */
@@ -30,8 +43,7 @@ export function parseRobots(body: string): Robots {
   };
   for (const raw of body.split(/\r?\n/)) {
     // Comments start at `#` and run to the end of the line.
-    // eslint-disable-next-line sonarjs/super-linear-regex -- robots.txt lines are short, so repeated scans from each `#` are bounded
-    const line = raw.replace(/#.*$/, '').trim();
+    const line = stripComment(raw).trim();
     const match = /^([A-Za-z-]+)\s*:(.*)$/.exec(line);
     if (!match) {
       continue;

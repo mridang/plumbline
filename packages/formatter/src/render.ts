@@ -44,6 +44,44 @@ interface AgentScore {
   categories: ScoreCategory[];
 }
 
+/** True when `text` is `<digits>`, an optional `(<n>/<n>)` and an optional dot. */
+function isScoreTail(text: string): string | null {
+  const digits = text.search(/\D/);
+  const length = digits === -1 ? text.length : digits;
+  if (length === 0) {
+    return null;
+  }
+  let rest = text.slice(length).trimStart();
+  const paren = /^\(\d+\/\d+\)/.exec(rest);
+  if (paren) {
+    rest = rest.slice(paren[0].length).trimStart();
+  }
+  if (rest.startsWith('.')) {
+    rest = rest.slice(1);
+  }
+  return rest === '' ? text.slice(0, length) : null;
+}
+
+/**
+ * Splits `<name> <score>[ (a/b)][.]` at the first whitespace run whose rest
+ * is a score; the name is one line.
+ */
+function splitCategory(text: string): { name: string; score: string } | null {
+  for (let at = 1; at < text.length; at += 1) {
+    if (/[\n\r\u2028\u2029]/.test(text[at - 1])) {
+      return null;
+    }
+    if (!/\s/.test(text[at]) || /\s/.test(text[at - 1])) {
+      continue;
+    }
+    const score = isScoreTail(text.slice(at).trimStart());
+    if (score !== null) {
+      return { name: text.slice(0, at), score };
+    }
+  }
+  return null;
+}
+
 /**
  * Parses 'Agent readiness score 27/100, level 1 "Basic Web Presence".
  * Discoverability 50 (2/4); ...'.
@@ -51,22 +89,28 @@ interface AgentScore {
  * @returns The score, or `undefined` when the message has another shape.
  */
 function parseAgentScore(message: string): AgentScore | undefined {
-  const head =
-    // eslint-disable-next-line sonarjs/super-linear-regex -- fixed-format hint message; a simpler pattern would change the captured title or category text
-    /^Agent readiness score (\d+)\/100, level (\d+)(?: "([^"]*)")?\.?(.*)$/s.exec(
-      message,
-    );
-  if (!head) {
+  const lead = /^Agent readiness score (\d+)\/100, level (\d+)/.exec(message);
+  if (!lead) {
     return undefined;
   }
+  let rest = message.slice(lead[0].length);
+  let quoted = '';
+  const close = rest.startsWith(' "') ? rest.indexOf('"', 2) : -1;
+  if (close !== -1) {
+    quoted = rest.slice(2, close);
+    rest = rest.slice(close + 1);
+  }
+  if (rest.startsWith('.')) {
+    rest = rest.slice(1);
+  }
+  const head = [lead[0], lead[1], lead[2], quoted, rest];
   const categories: ScoreCategory[] = [];
   for (const part of (head[4] ?? '').split(';')) {
-    // eslint-disable-next-line sonarjs/super-linear-regex -- one short category part of a fixed-format message; the name and score split cannot be expressed without this overlap
-    const match = /^(.+?)\s+(\d+)(?:\s*\(\d+\/\d+\))?\s*\.?$/.exec(part.trim());
+    const match = splitCategory(part.trim());
     if (match) {
       categories.push({
-        name: match[1] ?? '',
-        value: Math.min(100, Number(match[2])),
+        name: match.name,
+        value: Math.min(100, Number(match.score)),
       });
     }
   }

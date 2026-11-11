@@ -47,20 +47,33 @@ function trimEnd(value: string, drop: RegExp): string {
   return value.slice(0, end);
 }
 
+/** Replaces every `<...>` (up to the first `>`) with a space; a lone `<` stays. */
+function stripTags(html: string): string {
+  let out = '';
+  let kept = 0;
+  let open = html.indexOf('<');
+  while (open !== -1) {
+    const close = html.indexOf('>', open + 1);
+    if (close === -1) {
+      break;
+    }
+    out += `${html.slice(kept, open)} `;
+    kept = close + 1;
+    open = html.indexOf('<', kept);
+  }
+  return out + html.slice(kept);
+}
+
 /** Returns the text a visitor reads in `html`, with whitespace collapsed. */
 export function visibleText(html: string): string {
-  return (
-    html
-      .replaceAll(/<!--[\s\S]*?-->/g, ' ')
-      .replaceAll(NON_TEXT, ' ')
-      // eslint-disable-next-line sonarjs/super-linear-regex -- tag stripping of a fetched page; only long runs of unclosed '<' are slow
-      .replaceAll(/<[^>]*>/g, ' ')
-      .replaceAll(/&(?:nbsp|amp|lt|gt|quot|#39);/gi, (entity) => {
-        return ENTITIES[entity.toLowerCase()] ?? ' ';
-      })
-      .replaceAll(/\s+/g, ' ')
-      .trim()
-  );
+  return stripTags(
+    html.replaceAll(/<!--[\s\S]*?-->/g, ' ').replaceAll(NON_TEXT, ' '),
+  )
+    .replaceAll(/&(?:nbsp|amp|lt|gt|quot|#39);/gi, (entity) => {
+      return ENTITIES[entity.toLowerCase()] ?? ' ';
+    })
+    .replaceAll(/\s+/g, ' ')
+    .trim();
 }
 
 /** Splits text into words; apostrophes and hyphens stay inside a word. */

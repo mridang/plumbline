@@ -91,6 +91,73 @@ function closeElement(stack: XmlElement[], name: string): void {
   }
 }
 
+type Token =
+  | { kind: 'skip'; next: number }
+  | {
+      kind: 'token';
+      next: number;
+      closing: string;
+      rawName: string;
+      rawAttrs: string;
+      selfClose: string;
+      textRun: string;
+    };
+
+const TAG_NAME = /<(\/?)([a-zA-Z][\w:.-]*)/y;
+
+/**
+ * Reads the next token at `start`: a tag (its inner source up to the first
+ * `>` outside quotes) or a run of text between tags. A `<` that does not open
+ * a complete tag is skipped on its own.
+ */
+function nextToken(source: string, start: number): Token {
+  if (source[start] !== '<') {
+    const stop = source.indexOf('<', start);
+    const end = stop === -1 ? source.length : stop;
+    return {
+      kind: 'token',
+      next: end,
+      closing: '',
+      rawName: '',
+      rawAttrs: '',
+      selfClose: '',
+      textRun: source.slice(start, end),
+    };
+  }
+  TAG_NAME.lastIndex = start;
+  const head = TAG_NAME.exec(source);
+  if (!head) {
+    return { kind: 'skip', next: start + 1 };
+  }
+  const nameEnd = start + head[0].length;
+  let at = nameEnd;
+  while (at < source.length && source[at] !== '>') {
+    const quote = source[at];
+    if (quote === '"' || quote === "'") {
+      const close = source.indexOf(quote, at + 1);
+      if (close === -1) {
+        return { kind: 'skip', next: start + 1 };
+      }
+      at = close + 1;
+    } else {
+      at += 1;
+    }
+  }
+  if (at >= source.length) {
+    return { kind: 'skip', next: start + 1 };
+  }
+  const selfClose = at > nameEnd && source[at - 1] === '/' ? '/' : '';
+  return {
+    kind: 'token',
+    next: at + 1,
+    closing: head[1],
+    rawName: head[2],
+    rawAttrs: source.slice(nameEnd, selfClose ? at - 1 : at),
+    selfClose,
+    textRun: '',
+  };
+}
+
 /**
  * Parses `source` into a tree and returns its root element, or `null` when the
  * document contains no element. A mismatched or unclosed tag is handled
@@ -108,13 +175,14 @@ export function parseXml(source: string): XmlElement | null {
     text: '',
   };
   const stack: XmlElement[] = [root];
-  // Matches a tag (capturing its inner source) or a run of text between tags.
-  const token =
-    // eslint-disable-next-line sonarjs/super-linear-regex, sonarjs/regex-complexity -- backtracking is bounded to one tag; a simpler grammar would change self-closing detection
-    /<(\/?)([a-zA-Z][\w:.-]*)((?:[^>"']|"[^"]*"|'[^']*')*?)(\/?)>|([^<]+)/g;
-  let match: RegExpExecArray | null;
-  while ((match = token.exec(cleaned)) !== null) {
-    const [, closing, rawName, rawAttrs, selfClose, textRun] = match;
+  let position = 0;
+  while (position < cleaned.length) {
+    const token = nextToken(cleaned, position);
+    position = token.next;
+    if (token.kind === 'skip') {
+      continue;
+    }
+    const { closing, rawName, rawAttrs, selfClose, textRun } = token;
     const current = stack.at(-1) ?? root;
     if (textRun) {
       // Text belongs to whichever element is currently open.

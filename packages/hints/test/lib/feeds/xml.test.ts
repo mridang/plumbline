@@ -65,3 +65,60 @@ describe('childByName / descendantsByName', () => {
     expect(descendantsByName(root, 'title')).toHaveLength(2);
   });
 });
+
+describe('parseXml tag scanning', () => {
+  const shape = (xml: string): unknown => {
+    const root = parseXml(xml);
+    const dump = (node: NonNullable<typeof root>): unknown => ({
+      name: node.name,
+      attrs: node.attrs,
+      text: node.text,
+      children: node.children.map((child) => dump(child)),
+    });
+    return root ? dump(root) : null;
+  };
+
+  it('ends a tag at the first `>` outside quotes', () => {
+    expect(shape(`<a b="x>y" c='1>2'>t</a>`)).toEqual({
+      name: 'a',
+      attrs: { b: 'x>y', c: '1>2' },
+      text: 't',
+      children: [],
+    });
+  });
+
+  it('treats a `/` right before `>` as self-closing', () => {
+    expect(shape('<a><b c="/"/><d/></a>')).toEqual({
+      name: 'a',
+      attrs: {},
+      text: '',
+      children: [
+        { name: 'b', attrs: { c: '/' }, text: '', children: [] },
+        { name: 'd', attrs: {}, text: '', children: [] },
+      ],
+    });
+  });
+
+  it('skips a `<` that does not open a complete tag', () => {
+    expect(shape('<a>1 < 2</a>')).toEqual({
+      name: 'a',
+      attrs: {},
+      text: '1 2',
+      children: [],
+    });
+    expect(shape('<a>x <b c="d></a>')).toEqual({
+      name: 'a',
+      attrs: {},
+      text: 'x b c="d>',
+      children: [],
+    });
+    expect(shape('<a b="x></a>')).toBeNull();
+    expect(shape('<>x</>')).toBeNull();
+  });
+
+  it('scans a 100k character tag', () => {
+    const attrs = 'x="1" '.repeat(20_000);
+    const root = parseXml(`<a ${attrs}/>`);
+    expect(root?.attrs['x']).toBe('1');
+  });
+});

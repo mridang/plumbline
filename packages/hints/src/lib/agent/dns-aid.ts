@@ -25,12 +25,30 @@ const PARAMS =
  * that carries parameters such as `alpn` or an endpoint.
  */
 export function isServiceModeRecord(data: string): boolean {
-  // eslint-disable-next-line sonarjs/super-linear-regex -- DNS presentation data is one short line, so backtracking is bounded
-  const match = /^(\d+)\s+(\S+)\s*(.*)$/.exec(data.trim());
-  if (!match || Number(match[1]) === 0) {
-    return false;
+  const params = serviceParams(data.trim());
+  return params !== null && PARAMS.test(params);
+}
+
+/**
+ * Splits `<priority> <target> <params>` and returns the params, or null when
+ * the priority is not a number, is 0 (AliasMode) or the record is not one
+ * line.
+ */
+function serviceParams(text: string): string | null {
+  const space = text.search(/\s/);
+  if (space === -1 || !/^\d+$/.test(text.slice(0, space))) {
+    return null;
   }
-  return PARAMS.test(match[3]);
+  if (Number(text.slice(0, space)) === 0) {
+    return null;
+  }
+  const afterPriority = text.slice(space).trimStart();
+  const end = afterPriority.search(/\s/);
+  if (afterPriority === '') {
+    return null;
+  }
+  const params = end === -1 ? '' : afterPriority.slice(end).trimStart();
+  return /[\n\r\u2028\u2029]/.test(params) ? null : params;
 }
 
 /**

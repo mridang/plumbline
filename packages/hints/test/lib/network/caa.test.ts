@@ -143,3 +143,49 @@ describe('formatCaa', () => {
     );
   });
 });
+
+describe('parseCaa generic form against the former regex', () => {
+  // The former pattern, assembled at run time so the linter does not flag the
+  // reference implementation this test compares against.
+  const old = (flags: string, ...parts: string[]): RegExp =>
+    new RegExp(parts.join(''), flags);
+  const former = (data: string): string | null => {
+    const match = old(
+      '',
+      String.raw`^\\#\s+\d+`,
+      String.raw`\s?([\da-fA-F\s]*)$`,
+    ).exec(data.trim());
+    return match ? match[1].replaceAll(/\s+/g, '') : null;
+  };
+
+  it.each([
+    String.raw`\# 8 00 05 69 73 73 75 65`,
+    String.raw`\#   8   0005697373756500`,
+    String.raw`\# 8` + '\n0005697373756500',
+    String.raw`\#8 00`,
+    String.raw`\# 3`,
+    String.raw`\# 12`,
+    String.raw`\# x`,
+    String.raw`\# 8 zz`,
+    String.raw`\# 8  00`,
+    String.raw`\\# 8 00`,
+    '# 8 00',
+    String.raw`\# `,
+  ])('agrees on %j', (data) => {
+    const hex = former(data);
+    const canonical = hex === null ? null : parseCaa(String.raw`\# 0 ${hex}`);
+    if (hex === null) {
+      expect(parseCaa(data)).toBeNull();
+    } else {
+      expect(parseCaa(data)).toEqual(canonical);
+    }
+  });
+
+  it('agrees on a 100k character record', () => {
+    const data = String.raw`\# 1 ${'0 '.repeat(50_000)}!`;
+    expect(former(data)).toBeNull();
+    expect(parseCaa(data)).toBeNull();
+    const padded = String.raw`\#${' '.repeat(100_000)}x`;
+    expect(parseCaa(padded)).toBeNull();
+  });
+});

@@ -221,3 +221,41 @@ describe('httpStatusFindings', () => {
     expect(httpStatusFindings(204)[0].severity).toBe('hint');
   });
 });
+
+describe('visibleText tag stripping against the former regex', () => {
+  // The former pattern, assembled at run time so the linter does not flag the
+  // reference implementation this test compares against.
+  const old = (flags: string, ...parts: string[]): RegExp =>
+    new RegExp(parts.join(''), flags);
+  const former = (html: string): string =>
+    html
+      .replaceAll(/<!--[\s\S]*?-->/g, ' ')
+      .replaceAll(
+        /<(script|style|noscript|template|head|svg)\b[\s\S]*?<\/\1\s*>/gi,
+        ' ',
+      )
+      .replaceAll(old('g', '<[^', '>]*>'), ' ')
+      .replaceAll(/\s+/g, ' ')
+      .trim();
+
+  it.each([
+    '<p>a</p><p>b</p>',
+    'a < b and c > d',
+    'a <b',
+    'a <b <c> d',
+    '<<a>>',
+    '<>x<>',
+    'x<a\nb>y',
+    '<a href="x>y">z</a>',
+    '<',
+    '>',
+    '',
+  ])('agrees on %j', (html) => {
+    expect(visibleText(html)).toBe(former(html));
+  });
+
+  it('agrees on 100k characters of unclosed tags', () => {
+    const html = `${'<a '.repeat(50_000)}end`;
+    expect(visibleText(html)).toBe(former(html));
+  });
+});

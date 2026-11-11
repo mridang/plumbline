@@ -196,13 +196,88 @@ export async function unreachableWebAddresses(v6: string[]): Promise<string[]> {
 
 /** Removes the parts of a page that legitimately differ between requests. */
 export function stripIrrelevantHtml(html: string): string {
-  return html
-    .replaceAll(
-      // eslint-disable-next-line sonarjs/super-linear-regex -- input is capped at 500 KB and a rewrite would change the captured group
-      /(<(?:script|style)\b[^>]*?)\s+nonce\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi,
-      '$1',
-    )
-    .replaceAll(/<input\b[^>]*name\s*=\s*["']?__VIEWSTATE["']?[^>]*>/gi, '');
+  return stripNonceAttributes(html).replaceAll(
+    /<input\b[^>]*name\s*=\s*["']?__VIEWSTATE["']?[^>]*>/gi,
+    '',
+  );
+}
+
+const SCRIPT_OR_STYLE = /<(?:script|style)\b/gi;
+
+function skipSpace(html: string, index: number): number {
+  let next = index;
+  while (next < html.length && /\s/.test(html[next])) {
+    next += 1;
+  }
+  return next;
+}
+
+/** The end of `nonce\s*=\s*<value>` starting at `at`, or null if it is not one. */
+function nonceEnd(html: string, at: number): number | null {
+  if (html.slice(at, at + 5).toLowerCase() !== 'nonce') {
+    return null;
+  }
+  const equals = skipSpace(html, at + 5);
+  if (html[equals] !== '=') {
+    return null;
+  }
+  const value = skipSpace(html, equals + 1);
+  const quote = html[value];
+  const close =
+    quote === '"' || quote === "'" ? html.indexOf(quote, value + 1) : -1;
+  if (close !== -1) {
+    return close + 1;
+  }
+  let end = value;
+  while (end < html.length && !/[\s>]/.test(html[end])) {
+    end += 1;
+  }
+  return end > value ? end : null;
+}
+
+/**
+ * Where a `nonce=` attribute (with its leading whitespace and value) starts
+ * and ends in the open tag whose body begins at `from`, or null when it has
+ * none. `limit` is the first `>` of the tag.
+ */
+function findNonce(
+  html: string,
+  from: number,
+  limit: number,
+): { start: number; end: number } | null {
+  let at = from;
+  while (at < limit) {
+    if (/\s/.test(html[at])) {
+      const start = at;
+      at = skipSpace(html, at);
+      const end = nonceEnd(html, at);
+      if (end !== null) {
+        return { start, end };
+      }
+    } else {
+      at += 1;
+    }
+  }
+  return null;
+}
+
+/** Removes the `nonce` attribute from `<script>` and `<style>` tags. */
+function stripNonceAttributes(html: string): string {
+  let out = '';
+  let kept = 0;
+  SCRIPT_OR_STYLE.lastIndex = 0;
+  let open: RegExpExecArray | null;
+  while ((open = SCRIPT_OR_STYLE.exec(html)) !== null) {
+    const from = open.index + open[0].length;
+    const gt = html.indexOf('>', from);
+    const found = findNonce(html, from, gt === -1 ? html.length : gt);
+    if (found) {
+      out += html.slice(kept, found.start);
+      kept = found.end;
+      SCRIPT_OR_STYLE.lastIndex = found.end;
+    }
+  }
+  return out + html.slice(kept);
 }
 
 /**

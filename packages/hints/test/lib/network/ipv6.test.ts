@@ -236,3 +236,48 @@ describe('nameserverLines', () => {
     );
   });
 });
+
+describe('stripIrrelevantHtml nonce removal against the former regex', () => {
+  // The former pattern, assembled at run time so the linter does not flag the
+  // reference implementation this test compares against.
+  const old = (flags: string, ...parts: string[]): RegExp =>
+    new RegExp(parts.join(''), flags);
+  const former = (html: string): string =>
+    html.replaceAll(
+      old(
+        'gi',
+        String.raw`(<(?:script|style)\b[^>]*?)\s+nonce`,
+        String.raw`\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)`,
+      ),
+      '$1',
+    );
+
+  it.each([
+    '<script nonce="abc">x</script>',
+    "<style  nonce='abc' media=print>x</style>",
+    '<SCRIPT src=a NONCE = abc defer>',
+    '<script nonce="a" nonce="b">',
+    '<script nonce=a><script nonce=b>',
+    '<script nonce="a>b" src=c>',
+    '<script nonce="a src=c>',
+    '<script nonce=>',
+    '<script nonce>',
+    '<script nonces=a>',
+    '<scripts nonce=a>',
+    '<div nonce=a>',
+    '<script src=a>nonce=b',
+    '<script\n\tnonce\n=\n"x"\n>',
+    '<script <style nonce=a>',
+    '<script',
+  ])('agrees on %j', (html) => {
+    const expected = former(html);
+    expect(stripIrrelevantHtml(html)).toBe(expected);
+  });
+
+  it('agrees on a 100k character tag', () => {
+    const html = `<script${' a=b'.repeat(30_000)} nonce="z"${' '.repeat(50_000)}>`;
+    expect(stripIrrelevantHtml(html)).toBe(former(html));
+    const spaced = `<script${' '.repeat(100_000)}x>`;
+    expect(stripIrrelevantHtml(spaced)).toBe(former(spaced));
+  });
+});

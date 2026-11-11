@@ -35,9 +35,26 @@ export function formatCaa(record: CaaRecord, name: string): string {
 
 /** Decodes the hex of a generic `\# n hex` record into bytes. */
 function fromGeneric(data: string): Buffer | null {
-  // eslint-disable-next-line sonarjs/super-linear-regex -- the input is one DNS record, bounded by the DNS message size
-  const m = /^\\#\s+\d+\s?([\da-fA-F\s]*)$/.exec(data.trim());
-  return m ? Buffer.from(m[1].replaceAll(/\s+/g, ''), 'hex') : null;
+  const text = data.trim();
+  if (!text.startsWith(String.raw`\#`)) {
+    return null;
+  }
+  const afterMarker = text.slice(2).trimStart();
+  if (afterMarker.length === text.length - 2) {
+    return null;
+  }
+  const digits = afterMarker.search(/\D/);
+  const length = digits === -1 ? afterMarker.length : digits;
+  if (length === 0) {
+    return null;
+  }
+  let hex = afterMarker.slice(length);
+  if (/^\s/.test(hex)) {
+    hex = hex.slice(1);
+  }
+  return /^[\da-fA-F\s]*$/.test(hex)
+    ? Buffer.from(hex.replaceAll(/\s+/g, ''), 'hex')
+    : null;
 }
 
 /** Parses a CAA record in presentation (`0 issue "ca.example"`) or generic form. */

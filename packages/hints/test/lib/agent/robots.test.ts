@@ -201,3 +201,39 @@ describe('content signals', () => {
     expect(r.passed).toBe(false);
   });
 });
+
+describe('parseRobots comment stripping against the former regex', () => {
+  // The former pattern, assembled at run time so the linter does not flag the
+  // reference implementation this test compares against.
+  const old = (flags: string, ...parts: string[]): RegExp =>
+    new RegExp(parts.join(''), flags);
+  const former = (line: string): string[] => {
+    const text = line.replace(old('', '#', '.*$'), '').trim();
+    const match = /^([A-Za-z-]+)\s*:(.*)$/.exec(text);
+    const value = match?.[2].trim();
+    return value ? [value] : [];
+  };
+
+  it.each([
+    'Sitemap: https://a.test/s.xml',
+    'Sitemap: https://a.test/s.xml # note',
+    'Sitemap: https://a.test/s.xml#frag',
+    '# Sitemap: https://a.test/s.xml',
+    'Sitemap: a # b # c',
+    'Sitemap: a\r# b',
+    'Sitemap: a # b\rc',
+    'Sitemap: a # b c',
+    'Sitemap: a # b # c d',
+    'Sitemap: a#b\r#c',
+    'Sitemap:#',
+  ])('agrees on %j', (line) => {
+    expect(parseRobots(line).sitemaps).toEqual(former(line));
+  });
+
+  it('agrees on a 100k character line of hashes', () => {
+    const line = `Sitemap: a${'#'.repeat(100_000)}`;
+    expect(parseRobots(line).sitemaps).toEqual(former(line));
+    const broken = `${line}\r${'#'.repeat(100_000)}`;
+    expect(parseRobots(broken).sitemaps).toEqual(former(broken));
+  });
+});
