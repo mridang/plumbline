@@ -81,10 +81,7 @@ export class UserHub extends DurableObject<CloudflareEnv> {
     this.clients.add(writer);
     // A client that goes away (a closed tab, a dropped connection) ends the
     // writer; let go of it at once, not at the next ping or event.
-    void writer.closed.then(
-      () => this.release(writer),
-      () => this.release(writer),
-    );
+    void writer.closed.catch(() => undefined).then(() => this.release(writer));
     this.startHeartbeat();
     return new Response(readable, { headers: SSE_HEADERS });
   }
@@ -171,7 +168,7 @@ export class UserHub extends DurableObject<CloudflareEnv> {
   }
 
   private startHeartbeat(): void {
-    this.timer ??= setInterval(() => void this.heartbeat(), HEARTBEAT_MS);
+    this.timer ??= setInterval(() => this.heartbeat(), HEARTBEAT_MS);
   }
 
   private stopHeartbeat(): void {

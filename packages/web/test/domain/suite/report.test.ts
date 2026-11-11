@@ -417,6 +417,7 @@ describe('safeText', () => {
 
   it('cannot make a link, an image, a tag or a code span', () => {
     const text = safeText(
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture: hostile plain-http link text that must be neutralised
       '[login](https://evil.test) <img src=x> `code` http://x.test',
     );
     expect(text).not.toMatch(/[<>[\]`]/);
@@ -425,7 +426,9 @@ describe('safeText', () => {
 
   it('cannot start a new line or block', () => {
     const text = safeText('a\n\n# heading\r\n- item\u0000');
-    expect([...text].filter((char) => char.charCodeAt(0) < 32)).toEqual([]);
+    expect([...text].filter((char) => (char.codePointAt(0) ?? 0) < 32)).toEqual(
+      [],
+    );
   });
 
   it('is no longer than a sentence', () => {
@@ -468,7 +471,7 @@ describe('what a hostile configuration can make the text hold', () => {
 
   it('never goes past what GitHub accepts in a summary', () => {
     const findings = Array.from({ length: MAX_LISTED }, (_, i) =>
-      found('error', 'x'.repeat(5000) + i),
+      found('error', `${'x'.repeat(5000)}${i}`),
     );
     const out = checkRunOutput({ ...base, findings, problems: [] });
     expect(out.summary.length).toBeLessThanOrEqual(MAX_TEXT + 20);

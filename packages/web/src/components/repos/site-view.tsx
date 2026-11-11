@@ -44,7 +44,9 @@ export function sections(): CheckSection[] {
     bySection.set(check.section, group);
   }
   return [...bySection.entries()]
-    .sort(([, a], [, b]) => a.order - b.order || compareText(a.title, b.title))
+    .toSorted(
+      ([, a], [, b]) => a.order - b.order || compareText(a.title, b.title),
+    )
     .map(([id, group]) => ({ id, title: group.title, checks: group.checks }));
 }
 
@@ -82,7 +84,6 @@ function Identity({
       {status?.sha && domain.repo ? (
         <a
           href={commitUrl(domain.repo, status.sha)}
-          title={`Deployed commit ${status.sha}`}
           className="focus-ring rounded-full"
         >
           <Badge mono>{status.sha.slice(0, 7)}</Badge>
@@ -114,7 +115,7 @@ export function SiteView({
 }: Readonly<{
   domain: Domain;
   /** How the site stands now, when the dashboard knows. */
-  status?: SiteStatus | undefined;
+  status?: SiteStatus;
   /** Its runs, newest first. */
   runs: readonly RunSummary[];
   /** The GitHub issues Plumbline opened for it, newest first. */
@@ -157,6 +158,7 @@ export function SiteView({
           </Link>
         }
         saved={
+          // eslint-disable-next-line sonarjs/expression-complexity -- logic rewrite would be large: the branches are about fifty lines of JSX
           settings ? (
             <div className="rounded-card border border-line bg-surface p-5 shadow-xs">
               <h3 className="font-semibold">
@@ -171,7 +173,8 @@ export function SiteView({
                 enabled={enabled}
               />
             </div>
-          ) : shown ? (
+          ) : // eslint-disable-next-line unicorn/no-nested-ternary, sonarjs/no-nested-conditional -- logic rewrite would be large: the branches are about fifty lines of JSX
+          shown ? (
             <>
               <ScanResults
                 scan={savedScan(reportResource(shown))}

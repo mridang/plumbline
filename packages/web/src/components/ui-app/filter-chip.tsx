@@ -5,6 +5,14 @@ import { Count } from '@/components/ui-app/count';
 import { Dot } from '@/components/ui-app/status-dot';
 import type { Tone } from '@/components/ui-app/tone';
 
+/** The colour of a chip's count: lighter when pressed, muted at zero. */
+function countTone(pressed: boolean, count: number): string {
+  if (pressed) {
+    return 'text-surface/80';
+  }
+  return count === 0 ? 'text-subtle' : 'text-muted';
+}
+
 /**
  * A button that turns one filter of a list on or off. `pressed` says it is on
  * (`aria-pressed`, and a filled look with a heavier edge, so it never relies on
@@ -44,14 +52,7 @@ export function FilterChip({
       {label}
       <Count
         value={count}
-        className={cn(
-          'text-xs',
-          pressed
-            ? 'text-surface/80'
-            : count === 0
-              ? 'text-subtle'
-              : 'text-muted',
-        )}
+        className={cn('text-xs', countTone(pressed, count))}
       />
     </button>
   );

@@ -53,9 +53,7 @@ export function RepoLabel({
         )}
       />
       {target === false ? (
-        <span className="min-w-0 truncate" title={repo}>
-          {text}
-        </span>
+        <span className="min-w-0 truncate">{text}</span>
       ) : (
         <Link
           href={target}

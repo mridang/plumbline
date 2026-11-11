@@ -48,7 +48,8 @@ describe('handleIssueEvent in a repository whose checks are off', () => {
     const { api, requests } = github();
     await handleIssueEvent(db, SLUG, event('closed'), async () => api);
     expect(requests).toEqual([]);
-    expect((await stored(db))?.state).toBe('open');
+    const issue = await stored(db);
+    expect(issue?.state).toBe('open');
   });
 });
 
@@ -77,8 +78,9 @@ describe('handleIssueEvent', () => {
     const { api, requests } = github();
     for (let n = 1; n <= MAX_REOPENS; n += 1) {
       await handleIssueEvent(db, SLUG, event('closed'), async () => api);
-      expect((await stored(db))?.reopens).toBe(n);
-      expect((await stored(db))?.state).toBe('open');
+      const issue = await stored(db);
+      expect(issue?.reopens).toBe(n);
+      expect(issue?.state).toBe('open');
     }
     const before = requests.length;
     await handleIssueEvent(db, SLUG, event('closed'), async () => api);
@@ -95,12 +97,8 @@ describe('handleIssueEvent', () => {
     const db = await setup();
     const { api } = github();
     await handleIssueEvent(db, SLUG, event('closed'), async () => api);
-    expect(
-      (await historyOf(db, 'acme/site', 'site.test')).map((i) => [
-        i.number,
-        i.state,
-      ]),
-    ).toEqual([[12, 'open']]);
+    const history = await historyOf(db, 'acme/site', 'site.test');
+    expect(history.map((i) => [i.number, i.state])).toEqual([[12, 'open']]);
   });
 
   it('asks GitHub for nothing when it has nothing to answer', async () => {
@@ -120,7 +118,8 @@ describe('handleIssueEvent', () => {
     const db = await setup('fixed');
     const { api, requests } = github();
     await handleIssueEvent(db, SLUG, event('closed'), async () => api);
-    expect((await stored(db))?.state).toBe('fixed');
+    const issue = await stored(db);
+    expect(issue?.state).toBe('fixed');
     expect(requests).toEqual([]);
   });
 
@@ -144,7 +143,8 @@ describe('handleIssueEvent', () => {
       event('closed', botLogin(SLUG)),
       async () => api,
     );
-    expect((await stored(db))?.state).toBe('open');
+    const issue = await stored(db);
+    expect(issue?.state).toBe('open');
     const closed = await setup('fixed');
     await handleIssueEvent(
       closed,
@@ -152,9 +152,8 @@ describe('handleIssueEvent', () => {
       event('reopened', botLogin(SLUG)),
       async () => api,
     );
-    expect(
-      (await issueOf(closed, 'acme/site', 'site.test', CHECK))?.state,
-    ).toBe('fixed');
+    const closedIssue = await issueOf(closed, 'acme/site', 'site.test', CHECK);
+    expect(closedIssue?.state).toBe('fixed');
     expect(requests).toEqual([]);
   });
 
@@ -187,7 +186,8 @@ describe('handleIssueEvent', () => {
       { ...event('closed'), repository: { full_name: 'acme/other' } },
       async () => api,
     );
-    expect((await stored(db))?.state).toBe('open');
+    const issue = await stored(db);
+    expect(issue?.state).toBe('open');
     expect(requests).toEqual([]);
   });
 
@@ -204,7 +204,8 @@ describe('handleIssueEvent', () => {
       { action: 'closed', issue: { number: 12 } },
       make,
     );
-    expect((await stored(db))?.state).toBe('open');
+    const issue = await stored(db);
+    expect(issue?.state).toBe('open');
     expect(requests).toEqual([]);
   });
 });

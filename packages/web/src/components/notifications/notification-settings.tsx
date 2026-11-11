@@ -77,11 +77,13 @@ export function NotificationSettings(): ReactElement {
 
   useEffect(() => {
     let current = true;
-    void detect().then((next) => {
+    const load = async (): Promise<void> => {
+      const next = await detect();
       if (current) {
         setStatus(next);
       }
-    });
+    };
+    void load();
     return () => {
       current = false;
     };
@@ -196,15 +198,18 @@ function Controls({
       </div>
     );
   }
+  let stateText: string;
+  if (status.blocked) {
+    stateText =
+      'Notifications are blocked for this site. Allow them in the browser settings, then turn them on here.';
+  } else if (status.subscribed) {
+    stateText = 'Notifications are on.';
+  } else {
+    stateText = 'Notifications are off.';
+  }
   return (
     <div className="mt-2 flex flex-col gap-4">
-      <p className="text-sm text-muted">
-        {status.blocked
-          ? 'Notifications are blocked for this site. Allow them in the browser settings, then turn them on here.'
-          : status.subscribed
-            ? 'Notifications are on.'
-            : 'Notifications are off.'}
-      </p>
+      <p className="text-sm text-muted">{stateText}</p>
       <div className="flex flex-wrap gap-3">
         {status.subscribed ? (
           <Button variant="outline" disabled={busy} onClick={onDisable}>

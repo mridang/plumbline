@@ -6,6 +6,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import type { DatabaseSync } from 'node:sqlite';
 import type { ReactElement } from 'react';
 
@@ -19,9 +20,10 @@ import { htmlAt } from '../../../components/render';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 
 /** What the page asked Next to redirect to; `redirect` throws, as the real one does. */
-class Redirected extends Error {
+class RedirectedError extends Error {
   constructor(readonly to: string) {
     super(`redirected to ${to}`);
+    this.name = 'RedirectedError';
   }
 }
 
@@ -39,7 +41,7 @@ const state: {
 
 jest.unstable_mockModule('next/navigation', () => ({
   redirect: (to: string) => {
-    throw new Redirected(to);
+    throw new RedirectedError(to);
   },
 }));
 jest.unstable_mockModule('next/headers', () => ({
@@ -126,7 +128,7 @@ async function visit(
     const element: ReactElement = await AuthorizePage({ searchParams });
     return { markup: htmlAt(element) };
   } catch (error) {
-    if (error instanceof Redirected) {
+    if (error instanceof RedirectedError) {
       return { redirectedTo: error.to };
     }
     throw error;

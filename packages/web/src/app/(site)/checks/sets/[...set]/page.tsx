@@ -29,7 +29,8 @@ export function generateStaticParams(): { set: string[] }[] {
 
 /** The page of a rule set is named for it. */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const id = setOfSegments((await params).set);
+  const routeParams = await params;
+  const id = setOfSegments(routeParams.set);
   if (!id) {
     return {};
   }
@@ -46,7 +47,8 @@ export default async function SetPage({
   params,
   searchParams,
 }: Props): Promise<ReactElement> {
-  const id = setOfSegments((await params).set);
+  const routeParams = await params;
+  const id = setOfSegments(routeParams.set);
   if (!id) {
     notFound();
   }

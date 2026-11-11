@@ -38,6 +38,8 @@ export function stripJsonComments(text: string): string {
         i += 1;
       } else if (char === '"') {
         inString = false;
+      } else {
+        // Any other character inside a string is copied as it is.
       }
     } else if (char === '"') {
       inString = true;
@@ -78,11 +80,9 @@ export function hostOfPattern(pattern: string): string | undefined {
 
 /** The route patterns of a parsed `routes`/`route` value. */
 function patternsOf(value: unknown): string[] {
-  const list = Array.isArray(value)
+  const list: unknown[] = Array.isArray(value)
     ? value
-    : (value === undefined
-      ? []
-      : [value]);
+    : [value].filter((item) => item !== undefined);
   return list.flatMap((entry): string[] => {
     if (typeof entry === 'string') {
       return [entry];
@@ -110,11 +110,14 @@ function jsonPatterns(text: string): string[] {
 
 /** The top-level routes of a `wrangler.toml`, before any `[env.*]` table. */
 function tomlPatterns(text: string): string[] {
+  // eslint-disable-next-line sonarjs/super-linear-regex -- wrangler.toml is a small local file, so the backtracking is bounded
   const top = text.split(/^\s*\[+env\./m, 1)[0] ?? '';
   const out: string[] = [];
+  // eslint-disable-next-line sonarjs/super-linear-regex -- wrangler.toml is a small local file, so the backtracking is bounded
   for (const match of top.matchAll(/^\s*(?:pattern|route)\s*=\s*"([^"]+)"/gm)) {
     out.push(match[1] ?? '');
   }
+  // eslint-disable-next-line sonarjs/super-linear-regex -- wrangler.toml is a small local file, so the backtracking is bounded
   for (const array of top.matchAll(/^\s*routes\s*=\s*\[([^\]]*)\]/gm)) {
     for (const item of (array[1] ?? '').matchAll(/"([^"]+)"/g)) {
       out.push(item[1] ?? '');
@@ -128,7 +131,7 @@ export function wranglerHosts(path: string, text: string): string[] {
   const patterns = path.endsWith('.toml')
     ? tomlPatterns(text)
     : jsonPatterns(text);
-  return unique(patterns.map(hostOfPattern));
+  return unique(patterns.map((pattern) => hostOfPattern(pattern)));
 }
 
 /**
@@ -201,7 +204,7 @@ export interface RepoFiles {
   /** The text of a file. */
   read(path: string): Promise<string>;
   /** The repository's website field. */
-  readonly homepage?: string | null | undefined;
+  readonly homepage?: string | null;
 }
 
 /**
@@ -213,7 +216,9 @@ export interface RepoFiles {
  * read is skipped.
  */
 export async function deploymentHosts(repo: RepoFiles): Promise<string[]> {
-  const files = repo.paths.filter(isWranglerPath).slice(0, MAX_WRANGLER_FILES);
+  const files = repo.paths
+    .filter((path) => isWranglerPath(path))
+    .slice(0, MAX_WRANGLER_FILES);
   const found = await Promise.all(
     files.map(async (path) => {
       try {
@@ -253,7 +258,7 @@ export function touchesWrangler(delivery: Readonly<Delivery>): boolean {
       ...(commit.added ?? []),
       ...(commit.modified ?? []),
       ...(commit.removed ?? []),
-    ].some(isWranglerPath),
+    ].some((path) => isWranglerPath(path)),
   );
 }
 

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
@@ -101,7 +101,8 @@ describe('addDomain', () => {
   it('lets two people keep the same host', async () => {
     const { db } = empty();
     await addDomain(db, 1, 'example.com');
-    expect((await addDomain(db, 2, 'example.com')).created).toBe(true);
+    const other = await addDomain(db, 2, 'example.com');
+    expect(other.created).toBe(true);
   });
 });
 
@@ -113,10 +114,8 @@ describe('listDomains and countDomains', () => {
     await addDomain(db, 2, 'other.example');
     at('2026-01-01T00:00:00.000Z');
     await addDomain(db, 1, 'a.example');
-    expect((await listDomains(db, 1)).map((d) => d.host)).toEqual([
-      'a.example',
-      'b.example',
-    ]);
+    const listed = await listDomains(db, 1);
+    expect(listed.map((d) => d.host)).toEqual(['a.example', 'b.example']);
   });
 
   it('counts only the person’s domains', async () => {
@@ -164,21 +163,24 @@ describe('setDomainChecks', () => {
     const { db } = empty();
     const { domain } = await addDomain(db, 1, 'example.com');
     await setDomainChecks(db, 1, domain.id, ['hsts']);
-    expect((await getDomain(db, 1, domain.id))?.checks).toEqual(['hsts']);
+    const stored = await getDomain(db, 1, domain.id);
+    expect(stored?.checks).toEqual(['hsts']);
   });
 
   it('goes back to every check for null', async () => {
     const { db } = empty();
     const { domain } = await addDomain(db, 1, 'example.com');
     await setDomainChecks(db, 1, domain.id, ['hsts']);
-    expect((await setDomainChecks(db, 1, domain.id, null))?.checks).toBeNull();
+    const reset = await setDomainChecks(db, 1, domain.id, null);
+    expect(reset?.checks).toBeNull();
   });
 
   it('changes nothing of another person’s domain', async () => {
     const { db } = empty();
     const { domain } = await addDomain(db, 1, 'example.com');
     expect(await setDomainChecks(db, 2, domain.id, ['hsts'])).toBeUndefined();
-    expect((await getDomain(db, 1, domain.id))?.checks).toBeNull();
+    const after = await getDomain(db, 1, domain.id);
+    expect(after?.checks).toBeNull();
   });
 });
 
@@ -227,18 +229,21 @@ describe('addDomain with a source', () => {
 
   it('records what found the site, and the environment of a deployment', async () => {
     const { db } = empty();
-    expect(
-      (
-        await addDomain(db, 1, 'a.example.com', 'o/a', {
-          source: 'deployment',
-          environment: 'prd_foo',
-        })
-      ).domain,
-    ).toMatchObject({ source: 'deployment', environment: 'prd_foo' });
-    expect(
-      (await addDomain(db, 1, 'b.example.com', 'o/a', { source: 'config' }))
-        .domain,
-    ).toMatchObject({ source: 'config', environment: null });
+    const deployed = await addDomain(db, 1, 'a.example.com', 'o/a', {
+      source: 'deployment',
+      environment: 'prd_foo',
+    });
+    expect(deployed.domain).toMatchObject({
+      source: 'deployment',
+      environment: 'prd_foo',
+    });
+    const configured = await addDomain(db, 1, 'b.example.com', 'o/a', {
+      source: 'config',
+    });
+    expect(configured.domain).toMatchObject({
+      source: 'config',
+      environment: null,
+    });
   });
 
   it('keeps no environment for a source that has none, even when one is given', async () => {
@@ -302,11 +307,12 @@ describe('addDomain with a source', () => {
 describe('deleteSites', () => {
   it('removes the sites by id and says how many, leaving the others and other people alone', async () => {
     const { db } = empty();
-    const a = (await addDomain(db, 1, 'a.example.com', 'o/a')).domain;
-    const b = (await addDomain(db, 1, 'b.example.com', 'o/a')).domain;
-    const theirs = (await addDomain(db, 2, 'a.example.com', 'o/a')).domain;
+    const { domain: a } = await addDomain(db, 1, 'a.example.com', 'o/a');
+    const { domain: b } = await addDomain(db, 1, 'b.example.com', 'o/a');
+    const { domain: theirs } = await addDomain(db, 2, 'a.example.com', 'o/a');
     expect(await deleteSites(db, 1, [a.id, theirs.id])).toBe(1);
-    expect((await listDomains(db, 1)).map((d) => d.id)).toEqual([b.id]);
+    const listed = await listDomains(db, 1);
+    expect(listed.map((d) => d.id)).toEqual([b.id]);
     expect(await getDomain(db, 2, theirs.id)).toBeDefined();
   });
 
@@ -321,7 +327,8 @@ describe('deleteSites', () => {
     const { db } = empty();
     const ids: string[] = [];
     for (let n = 0; n < 120; n += 1) {
-      ids.push((await addDomain(db, 1, `s${n}.example.com`)).domain.id);
+      const { domain } = await addDomain(db, 1, `s${n}.example.com`);
+      ids.push(domain.id);
     }
     expect(await deleteSites(db, 1, ids)).toBe(120);
     expect(await countDomains(db, 1)).toBe(0);
@@ -331,7 +338,7 @@ describe('deleteSites', () => {
 describe('migration 0020_site_sources', () => {
   it('marks the sites a repository supplied as fallback and the ones added by hand as manual', async () => {
     const before = APP_MIGRATIONS.filter(
-      (file) => file < '0020_site_sources.sql',
+      (file) => file.localeCompare('0020_site_sources.sql') < 0,
     );
     const { db, raw } = sqliteDatabase(...before);
     raw.exec(
@@ -340,14 +347,13 @@ describe('migration 0020_site_sources', () => {
         ('2', 1, 'hand.example.com', NULL, 't', 't')`,
     );
     raw.exec(
-      readFileSync(
+      await readFile(
         path.join(process.cwd(), 'migrations', '0020_site_sources.sql'),
         'utf8',
       ),
     );
-    expect(
-      (await listDomains(db, 1)).map((d) => [d.host, d.source, d.environment]),
-    ).toEqual([
+    const listed = await listDomains(db, 1);
+    expect(listed.map((d) => [d.host, d.source, d.environment])).toEqual([
       ['found.example.com', 'fallback', null],
       ['hand.example.com', 'manual', null],
     ]);
@@ -357,7 +363,7 @@ describe('migration 0020_site_sources', () => {
 describe('migration 0012_registry_domains', () => {
   it('removes registry hosts found in a repository, and keeps real sites and hosts added by hand', async () => {
     const before = APP_MIGRATIONS.filter(
-      (file) => file < '0012_registry_domains.sql',
+      (file) => file.localeCompare('0012_registry_domains.sql') < 0,
     );
     const { raw } = sqliteDatabase(...before);
     // The database is as it was before the migration, so the rows are written
@@ -370,7 +376,7 @@ describe('migration 0012_registry_domains', () => {
         ('4', 1, 'pypi.org', NULL, 't', 't')`,
     );
     raw.exec(
-      readFileSync(
+      await readFile(
         path.join(process.cwd(), 'migrations', '0012_registry_domains.sql'),
         'utf8',
       ),
@@ -393,10 +399,12 @@ describe('removeSitesOfMissingRepos', () => {
     expect(await removeSitesOfMissingRepos(db, 1, new Set(['o/a']))).toEqual([
       'o/gone',
     ]);
-    expect((await listDomains(db, 1)).map((d) => d.host).toSorted()).toEqual([
-      'a.example.com',
-      'by-hand.example.com',
-    ]);
+    const listed = await listDomains(db, 1);
+    expect(
+      listed
+        .map((d) => d.host)
+        .toSorted((a, b) => Number(a > b) - Number(a < b)),
+    ).toEqual(['a.example.com', 'by-hand.example.com']);
   });
 
   it("never touches another person's sites", async () => {
@@ -406,9 +414,8 @@ describe('removeSitesOfMissingRepos', () => {
     expect(await removeSitesOfMissingRepos(db, 1, new Set())).toEqual([
       'o/mine',
     ]);
-    expect((await listDomains(db, 2)).map((d) => d.host)).toEqual([
-      'theirs.example.com',
-    ]);
+    const listed = await listDomains(db, 2);
+    expect(listed.map((d) => d.host)).toEqual(['theirs.example.com']);
   });
 
   it('removes more repositories than one query can bind', async () => {

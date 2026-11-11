@@ -4,10 +4,9 @@ import { APP_STYLES, REQUEST_ARGUMENTS } from '@/views/app';
 
 /** The value of one rule's declaration, such as the padding of `.wrap`. */
 function declaration(selector: string, property: string): string {
-  const rule = APP_STYLES.match(
-    new RegExp(
-      String.raw`(?:^|\n)${selector.replace('.', String.raw`\.`)} \{([^}]*)\}`,
-    ),
+  const escaped = selector.replace('.', String.raw`\.`);
+  const rule = new RegExp(String.raw`(?:^|\n)${escaped} \{([^}]*)\}`).exec(
+    APP_STYLES,
   );
   const value = rule?.[1]?.match(
     new RegExp(String.raw`${property}:\s*([^;]*);`),

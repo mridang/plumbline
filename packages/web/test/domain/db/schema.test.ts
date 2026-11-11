@@ -1,11 +1,65 @@
 import { is } from 'drizzle-orm';
 import { SQLiteTable, getTableConfig } from 'drizzle-orm/sqlite-core';
 import { describe, expect, it } from '@jest/globals';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import type { DatabaseSync } from 'node:sqlite';
 
-import * as schema from '@/domain/db/schema';
+import {
+  configDisabledRepos,
+  deployUrlGaps,
+  disabledRepos,
+  domains,
+  githubInstallations,
+  githubLinks,
+  githubRepos,
+  liveEvents,
+  oauthAssertions,
+  oauthClients,
+  oauthCodes,
+  oauthGrants,
+  oauthTokens,
+  pendingScans,
+  previewReports,
+  pushSubscriptions,
+  reports,
+  suiteCheckIssues,
+  suiteIssueHistory,
+  suiteIssues,
+  suiteRuns,
+  userRepositories,
+  users,
+  webhookDeliveries,
+} from '@/domain/db/schema';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
+
+/** Every table the schema file declares. */
+const schema = {
+  configDisabledRepos,
+  deployUrlGaps,
+  disabledRepos,
+  domains,
+  githubInstallations,
+  githubLinks,
+  githubRepos,
+  liveEvents,
+  oauthAssertions,
+  oauthClients,
+  oauthCodes,
+  oauthGrants,
+  oauthTokens,
+  pendingScans,
+  previewReports,
+  pushSubscriptions,
+  reports,
+  suiteCheckIssues,
+  suiteIssueHistory,
+  suiteIssues,
+  suiteRuns,
+  userRepositories,
+  users,
+  webhookDeliveries,
+};
 
 /** The column names SQLite reports for a table, sorted. */
 function columnsOf(raw: DatabaseSync, table: string): readonly string[] {
@@ -13,7 +67,7 @@ function columnsOf(raw: DatabaseSync, table: string): readonly string[] {
     .prepare(`PRAGMA table_info(${table})`)
     .all()
     .map((row) => String(row['name']))
-    .toSorted();
+    .toSorted((a, b) => Number(a > b) - Number(a < b));
 }
 
 /** The names of the indexes SQLite reports for a table. */
@@ -56,7 +110,9 @@ describe('the schema file and the migrations', () => {
   });
 
   it('declares every table the migrations create for Drizzle', () => {
-    expect(namesOf(raw, 'table')).toEqual([...tables.keys()].toSorted());
+    expect(namesOf(raw, 'table')).toEqual(
+      [...tables.keys()].toSorted((a, b) => Number(a > b) - Number(a < b)),
+    );
   });
 
   it('declares every index the migrations create', () => {
@@ -66,7 +122,9 @@ describe('the schema file and the migrations', () => {
         getTableConfig(table).indexes.map((index) => index.config.name),
       )
       .filter((name) => !name.startsWith('sqlite_'));
-    expect(namesOf(raw, 'index')).toEqual(declared.toSorted());
+    expect(namesOf(raw, 'index')).toEqual(
+      declared.toSorted((a, b) => Number(a > b) - Number(a < b)),
+    );
   });
 
   it.each([...tables.keys()])(
@@ -76,7 +134,9 @@ describe('the schema file and the migrations', () => {
       expect(table).toBeDefined();
       const config = getTableConfig(table!);
       expect(columnsOf(raw, name)).toEqual(
-        config.columns.map((column) => column.name).toSorted(),
+        config.columns
+          .map((column) => column.name)
+          .toSorted((a, b) => Number(a > b) - Number(a < b)),
       );
       // Every index the schema names exists (the database also carries the
       // automatic ones SQLite makes for primary keys and unique constraints).

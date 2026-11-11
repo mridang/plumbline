@@ -34,6 +34,7 @@ export function SiteHeader({
   state,
 }: Readonly<{ user: User | null; state?: AccountState }>): ReactElement {
   const links = user ? SIGNED_IN_LINKS : SIGNED_OUT_LINKS;
+  const accountState = state ? { state } : {};
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface/85 backdrop-blur supports-backdrop-filter:bg-surface/70">
       <Container className="flex h-16 items-center justify-between gap-4">
@@ -53,7 +54,7 @@ export function SiteHeader({
                 name={user.name ?? user.email}
                 email={user.email}
                 picture={user.picture ?? undefined}
-                {...(state ? { state } : {})}
+                {...accountState}
               />
             </>
           ) : (

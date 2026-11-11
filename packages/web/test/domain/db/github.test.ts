@@ -36,7 +36,8 @@ describe('linkAccount', () => {
     const db = empty();
     await linkAccount(db, 1, { id: 10, login: 'a' });
     expect(await linkAccount(db, 1, { id: 11, login: 'b' })).toBe(true);
-    expect((await getLink(db, 1))?.github_id).toBe(11);
+    const link = await getLink(db, 1);
+    expect(link?.github_id).toBe(11);
   });
 });
 
@@ -46,9 +47,8 @@ describe('installations', () => {
     expect(await saveInstallation(db, 1, 100, 'acme')).toBe(true);
     expect(await saveInstallation(db, 1, 100, 'acme-renamed')).toBe(true);
     await saveInstallation(db, 2, 200, 'other');
-    expect(
-      (await listInstallations(db, 1)).map((i) => i.account_login),
-    ).toEqual(['acme-renamed']);
+    const installations = await listInstallations(db, 1);
+    expect(installations.map((i) => i.account_login)).toEqual(['acme-renamed']);
     expect(await ownerOfInstallation(db, 100)).toBe(1);
     expect(await ownerOfInstallation(db, 999)).toBeUndefined();
   });
@@ -83,19 +83,19 @@ describe('repositories', () => {
     const db = empty();
     await saveRepos(db, 1, 100, [repo('a/z', ['z.example.com']), repo('a/b')]);
     await saveRepos(db, 1, 100, [repo('a/z', ['z2.example.com']), repo('a/b')]);
-    expect((await listRepos(db, 1)).map((r) => [r.full_name, r.hosts])).toEqual(
-      [
-        ['a/b', []],
-        ['a/z', ['z2.example.com']],
-      ],
-    );
+    const repos = await listRepos(db, 1);
+    expect(repos.map((r) => [r.full_name, r.hosts])).toEqual([
+      ['a/b', []],
+      ['a/z', ['z2.example.com']],
+    ]);
   });
 
   it('forgets those no longer given, and all of them for an empty list', async () => {
     const db = empty();
     await saveRepos(db, 1, 100, [repo('a/b'), repo('a/c')]);
     await saveRepos(db, 1, 100, [repo('a/b')]);
-    expect((await listRepos(db, 1)).map((r) => r.full_name)).toEqual(['a/b']);
+    const repos = await listRepos(db, 1);
+    expect(repos.map((r) => r.full_name)).toEqual(['a/b']);
     await saveRepos(db, 1, 100, []);
     expect(await listRepos(db, 1)).toEqual([]);
   });
@@ -129,7 +129,8 @@ describe('repositories', () => {
     const db = empty();
     await saveRepos(db, 1, 100, [repo('a/b')]);
     await saveRepos(db, 2, 200, [repo('c/d')]);
-    expect((await listRepos(db, 1)).map((r) => r.full_name)).toEqual(['a/b']);
+    const repos = await listRepos(db, 1);
+    expect(repos.map((r) => r.full_name)).toEqual(['a/b']);
   });
 
   it('reads hosts that are not a list of strings as none', async () => {
@@ -145,7 +146,8 @@ describe('repositories', () => {
         )
         .run(name!, hosts!);
     }
-    expect((await listRepos(db, 1)).map((r) => r.hosts)).toEqual([[], [], []]);
+    const repos = await listRepos(db, 1);
+    expect(repos.map((r) => r.hosts)).toEqual([[], [], []]);
   });
 
   it('says which of some names the person has', async () => {

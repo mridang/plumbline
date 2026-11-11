@@ -327,7 +327,13 @@ export async function overviewOf(
       sites,
       open_issues: repo === null ? 0 : (issues.get(repo) ?? 0),
     }))
-    .toSorted((a, b) =>
-      a.repo === null ? 1 : (b.repo === null ? -1 : a.repo.localeCompare(b.repo)),
-    );
+    .toSorted((a, b) => {
+      if (a.repo === null) {
+        return 1;
+      }
+      if (b.repo === null) {
+        return -1;
+      }
+      return a.repo.localeCompare(b.repo);
+    });
 }

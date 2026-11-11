@@ -6,6 +6,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import type { DatabaseSync } from 'node:sqlite';
 
 import { handleConsent } from '@/app/oauth/consent/handler';
@@ -35,6 +36,7 @@ const resolver: CurrentUserResolver = {
 
 const ORIGIN = 'https://app.test';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
+const SAME_ORIGIN_HEADERS = { 'sec-fetch-site': 'same-origin' };
 
 quietSecurityLogs();
 
@@ -60,6 +62,7 @@ beforeEach(async () => {
       JSON.stringify([
         'https://app.example/cb',
         'http://localhost:6274/oauth/callback',
+        // eslint-disable-next-line unicorn/prefer-https -- test fixture
         'http://example.com/old',
       ]),
       '2026-01-01T00:00:00.000Z',
@@ -71,7 +74,7 @@ afterEach(() => restore());
 /** A consent form post with the usual fields, overridable. */
 function consent(
   fields: Record<string, string | undefined> = {},
-  headers: Record<string, string> = { 'sec-fetch-site': 'same-origin' },
+  headers: Record<string, string> = SAME_ORIGIN_HEADERS,
 ): Promise<Response> {
   const form = new URLSearchParams(
     Object.entries({
@@ -83,7 +86,7 @@ function consent(
       state: 'xyz',
       decision: 'approve',
       ...fields,
-    }).flatMap(([k, v]): [string, string][] =>
+    }).flatMap(([k, v]: [string, string | undefined]): [string, string][] =>
       v === undefined ? [] : [[k, v]],
     ),
   );
@@ -152,6 +155,7 @@ describe('POST /oauth/consent', () => {
   });
 
   it('shows an error, with no redirect, for a stored address the rules no longer allow', async () => {
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     const res = await consent({ redirect_uri: 'http://example.com/old' });
     expect(res.status).toBe(400);
     expect(res.headers.get('location')).toBeNull();
@@ -186,6 +190,7 @@ describe('POST /oauth/consent', () => {
     const res = await handleConsent(
       new Request(`${ORIGIN}/oauth/consent`, {
         method: 'POST',
+        // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
         body: new Uint8Array([0xff, 0xfe]),
         headers: { 'sec-fetch-site': 'same-origin' },
       }),

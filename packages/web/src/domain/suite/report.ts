@@ -30,7 +30,7 @@ export const MAX_TEXT = 60_000;
 export function safeText(text: string): string {
   // Control characters and line breaks would start a new block.
   const flat = Array.from(text, (char) => {
-    const code = char.charCodeAt(0);
+    const code = char.codePointAt(0) ?? 0;
     return code < 32 || code === 127 ? ' ' : char;
   })
     .join('')
@@ -319,11 +319,13 @@ export function checkRunOutput(report: Readonly<RunReport>): {
 } {
   const host = new URL(report.url).host;
   const { errors, warnings, hints } = countsOf(report.findings);
+  const foundTitle =
+    report.findings.length === 0
+      ? `No problems found on ${host}`
+      : `${amount(errors, 'error')}, ${amount(warnings, 'warning')} and ${amount(hints, 'hint')} on ${host}`;
   const title = report.comparison
     ? comparedTitle(report.comparison, host)
-    : (report.findings.length === 0
-      ? `No problems found on ${host}`
-      : `${amount(errors, 'error')}, ${amount(warnings, 'warning')} and ${amount(hints, 'hint')} on ${host}`);
+    : foundTitle;
   const parts = [`Checked ${report.url}`];
   if (report.reportUrl) {
     parts.push(`[Open the full report](${report.reportUrl})`);
@@ -341,6 +343,8 @@ export function checkRunOutput(report: Readonly<RunReport>): {
         ...(more > 0 ? [`- ...and ${more} more in the report.`] : []),
       ].join('\n'),
     );
+  } else {
+    // With no finding and no comparison there is nothing more to list.
   }
   parts.push(rulesNote(report.source, report.problems));
   const text = [

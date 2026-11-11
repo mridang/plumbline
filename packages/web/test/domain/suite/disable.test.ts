@@ -67,7 +67,11 @@ describe('pauseRepo', () => {
     expect(calls).toEqual([]);
     expect(jobs).toHaveLength(1);
     await Promise.all(jobs);
-    expect(calls.filter((c) => c.startsWith('PATCH')).toSorted()).toEqual([
+    expect(
+      calls
+        .filter((c) => c.startsWith('PATCH'))
+        .toSorted((a, b) => Number(a > b) - Number(a < b)),
+    ).toEqual([
       'PATCH /repos/acme/site/issues/12',
       'PATCH /repos/acme/site/issues/13',
     ]);
@@ -84,12 +88,12 @@ describe('pauseRepo', () => {
       fetcher,
       pause: async () => undefined,
     });
-    expect(calls.filter((c) => /check-runs|issues$/.test(c))).toEqual([]);
-    expect(
-      [...(await issuesOfHost(db, 'acme/site', 'site.test')).values()].map(
-        (issue) => issue.state,
-      ),
-    ).toEqual(['fixed', 'fixed']);
+    expect(calls.filter((c) => /(?:check-runs|issues$)/.test(c))).toEqual([]);
+    const issues = await issuesOfHost(db, 'acme/site', 'site.test');
+    expect([...issues.values()].map((issue) => issue.state)).toEqual([
+      'fixed',
+      'fixed',
+    ]);
   });
 
   it('does nothing more when the checks were already off', async () => {

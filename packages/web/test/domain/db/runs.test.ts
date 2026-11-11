@@ -113,7 +113,7 @@ describe('listRuns', () => {
       ...counts,
       openable: true,
     });
-    expect(runs[3]?.id).toMatch(/^s[0-9]+$/);
+    expect(runs[3]?.id).toMatch(/^s\d+$/);
     expect(runs[3]).toMatchObject({ sha: 'a'.repeat(40), ...counts });
   });
 

@@ -77,7 +77,9 @@ export function sectionsOf(
     groups.set(hint.section, group);
   }
   return [...groups.entries()]
-    .sort(([, a], [, b]) => a.order - b.order || compareText(a.title, b.title))
+    .toSorted(
+      ([, a], [, b]) => a.order - b.order || compareText(a.title, b.title),
+    )
     .map(([id, group]) => ({
       id,
       title: group.title,
@@ -139,7 +141,9 @@ export function issuesByCheck(
   const grouped: Record<string, IssueRef[]> = {};
   for (const issue of issues) {
     for (const id of issue.checks) {
-      (grouped[id] ??= []).push(issue);
+      const list = grouped[id] ?? [];
+      list.push(issue);
+      grouped[id] = list;
     }
   }
   return grouped;

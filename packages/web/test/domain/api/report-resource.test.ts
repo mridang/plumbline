@@ -60,12 +60,15 @@ describe('parseReportInput', () => {
 
   it('takes an address on a subdomain', () => {
     expect(
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       parseReportInput(body({ url: 'http://www.example.com/x' }), HOST).ok,
     ).toBe(true);
   });
 
   it('requires an address', () => {
-    expect(errorsOf(body({ url: undefined }))).toEqual(['url: required.']);
+    const withoutUrl: Record<string, unknown> = body();
+    delete withoutUrl['url'];
+    expect(errorsOf(withoutUrl)).toEqual(['url: required.']);
   });
 
   it('refuses text that is not an address', () => {

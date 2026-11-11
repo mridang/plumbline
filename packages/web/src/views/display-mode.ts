@@ -29,9 +29,15 @@ export interface DisplayModeHostContext {
   readonly availableDisplayModes?: readonly string[];
 }
 
+const DISPLAY_MODES: ReadonlySet<unknown> = new Set<unknown>([
+  'inline',
+  'fullscreen',
+  'pip',
+]);
+
 /** Whether the value is one of the three modes the spec defines. */
 export function isDisplayMode(value: unknown): value is DisplayMode {
-  return value === 'inline' || value === 'fullscreen' || value === 'pip';
+  return DISPLAY_MODES.has(value);
 }
 
 /**

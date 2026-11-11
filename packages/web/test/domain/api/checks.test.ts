@@ -23,9 +23,8 @@ describe('GET /api/checks', () => {
   });
 
   it('may be cached, since it is the same for everyone', async () => {
-    expect((await list()).headers.get('cache-control')).toBe(
-      'public, max-age=300',
-    );
+    const res = await list();
+    expect(res.headers.get('cache-control')).toBe('public, max-age=300');
   });
 
   it('lists only the checks of a group', async () => {
@@ -35,21 +34,19 @@ describe('GET /api/checks', () => {
   });
 
   it('carries on from where the last page stopped', async () => {
-    const first = (await (await list('?limit=2')).json()) as { next: string };
+    const page = await list('?limit=2');
+    const first = (await page.json()) as { next: string };
     expect(await idsOf(await list(new URL(first.next).search))).toEqual(
       CHECKS.slice(2, 4).map((check) => check.id),
     );
   });
 
-  it('answers 400 for a group that does not exist', async () => {
-    expect((await list('?group=nope')).status).toBe(400);
-  });
-
-  it('answers 400 for a limit out of range', async () => {
-    expect((await list('?limit=-1')).status).toBe(400);
-  });
-
-  it('answers 400 for a cursor it did not hand out', async () => {
-    expect((await list('?cursor=nope')).status).toBe(400);
+  it.each([
+    ['a group that does not exist', '?group=nope'],
+    ['a limit out of range', '?limit=-1'],
+    ['a cursor it did not hand out', '?cursor=nope'],
+  ])('answers 400 for %s', async (_case, query) => {
+    const res = await list(query);
+    expect(res.status).toBe(400);
   });
 });

@@ -24,7 +24,10 @@ describe('readGitHubConfig', () => {
   });
 
   it.each(Object.keys(ALL))('is null without %s', (name) => {
-    expect(readGitHubConfig({ ...ALL, [name]: undefined })).toBeNull();
+    const without = Object.fromEntries(
+      Object.entries(ALL).filter(([key]) => key !== name),
+    );
+    expect(readGitHubConfig(without)).toBeNull();
     expect(readGitHubConfig({ ...ALL, [name]: '' })).toBeNull();
   });
 });

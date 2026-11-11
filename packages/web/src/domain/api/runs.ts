@@ -84,10 +84,11 @@ export function createRunsCollection(
   resolver: CurrentUserResolver = requestCookieResolver,
 ): ApiController<DomainContext> {
   return new ApiController<DomainContext>({
-    context: async (request, route) => ({
-      uid: await liveUid(request, resolver),
-      domainId: (await route.params)?.['id'] ?? '',
-    }),
+    context: async (request, route) => {
+      const uid = await liveUid(request, resolver);
+      const params = await route.params;
+      return { uid, domainId: params?.['id'] ?? '' };
+    },
   }).on<
     { readonly limit: number; readonly after?: CursorPosition },
     {

@@ -227,7 +227,7 @@ interface Selector {
 /** A selector written with its kind (`tag:seo`), or undefined. */
 function prefixed(name: string): Selector | undefined {
   const colon = name.indexOf(':');
-  if (colon < 0) {
+  if (colon === -1) {
     return undefined;
   }
   const kind = name.slice(0, colon);
@@ -264,37 +264,42 @@ function selectorsOf(name: string): readonly Selector[] | undefined {
 /** Whether a selector picks a check. */
 function picks(selector: Selector, check: Check): boolean {
   switch (selector.kind) {
-    case 'section':
+    case 'section': {
       return check.section === selector.value;
-    case 'tag':
+    }
+    case 'tag': {
       return check.tags.includes(selector.value);
-    case 'target':
+    }
+    case 'target': {
       return check.target === selector.value;
-    case 'control':
+    }
+    case 'control': {
       return check.control === selector.value;
-    case 'tier':
+    }
+    case 'tier': {
       return check.tier === selector.value;
+    }
     case 'source':
-    case 'group':
+    case 'group': {
       return check.groups.includes(selector.value);
+    }
   }
 }
 
+const GROUP_NAMES = new Set(KINDS.section)
+  .union(new Set(KINDS.tag))
+  .union(new Set(KINDS.target))
+  .union(new Set(KINDS.tier))
+  .union(CHECK_GROUPS)
+  .union(new Set(Object.keys(ALIASES)));
 /**
  * Every name that selects checks: the sections, tags, targets, tiers, controls,
  * sources and old topic groups, and the aliases of old names. A name may also be
  * written with its kind, such as `tag:seo`.
  */
-export const GROUPS: readonly string[] = [
-  ...new Set([
-    ...KINDS.section,
-    ...KINDS.tag,
-    ...KINDS.target,
-    ...KINDS.tier,
-    ...CHECK_GROUPS,
-    ...Object.keys(ALIASES),
-  ]),
-].toSorted();
+export const GROUPS: readonly string[] = [...GROUP_NAMES].toSorted(
+  (a, b) => Number(a > b) - Number(a < b),
+);
 
 /** The check with this id, or undefined. */
 export function findCheck(id: string): Check | undefined {
@@ -327,7 +332,7 @@ export function checksInGroup(group: string): readonly Check[] {
 export function enabledChecks(chosen: readonly string[] | null): string[] {
   return chosen === null
     ? CHECKS.map((check) => check.id)
-    : chosen.filter(isCheckId);
+    : chosen.filter((id) => isCheckId(id));
 }
 
 /**

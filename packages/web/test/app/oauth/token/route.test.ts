@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import type { DatabaseSync } from 'node:sqlite';
 
 import { OPTIONS, POST } from '@/app/oauth/token/route';
@@ -49,9 +50,11 @@ async function newCode(): Promise<string> {
 }
 
 /** A token request with the given form fields. */
+const CONNECTING_IP_HEADERS = { 'cf-connecting-ip': '203.0.113.7' };
+
 const token = (
   fields: Record<string, string>,
-  headers: Record<string, string> = { 'cf-connecting-ip': '203.0.113.7' },
+  headers: Record<string, string> = CONNECTING_IP_HEADERS,
 ) =>
   POST(
     new Request(`${ORIGIN}/oauth/token`, {
@@ -214,6 +217,7 @@ describe('POST /oauth/token', () => {
     const res = await POST(
       new Request(`${ORIGIN}/oauth/token`, {
         method: 'POST',
+        // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
         body: new Uint8Array([0xff, 0xfe]),
         headers: { 'content-type': 'application/x-www-form-urlencoded' },
       }),
@@ -296,7 +300,8 @@ describe('POST /oauth/token', () => {
         { 'cf-connecting-ip': ip },
       );
     for (let i = 0; i < 120; i += 1) {
-      expect((await hit('203.0.113.7')).status).toBe(400);
+      const response = await hit('203.0.113.7');
+      expect(response.status).toBe(400);
     }
     const limited = await hit('203.0.113.7');
     expect(limited.status).toBe(429);
@@ -304,7 +309,8 @@ describe('POST /oauth/token', () => {
     expect(await limited.json()).toMatchObject({
       error: 'temporarily_unavailable',
     });
-    expect((await hit('198.51.100.9')).status).toBe(400);
+    const otherAddress = await hit('198.51.100.9');
+    expect(otherAddress.status).toBe(400);
   });
 });
 

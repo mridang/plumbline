@@ -159,8 +159,18 @@ export interface Deps {
   readonly kind?: SuiteRunKind;
 }
 
+/** The most recent stored run of a site, if there is one. */
+async function latestRunOf(
+  db: Database,
+  userId: number,
+  host: string,
+): Promise<StoredRun | undefined> {
+  const [run] = await latestRuns(db, userId, host, 1);
+  return run;
+}
+
 /** Stands in for the scanner where none is given: a site cannot be scanned. */
-const NO_SCANNER = (): Promise<SuiteRun> =>
+const noScanner = (): Promise<SuiteRun> =>
   Promise.reject(new Error('No scanner is available.'));
 
 /**
@@ -175,14 +185,14 @@ export async function checkSite(
   deps: Deps = {},
   last?: StoredRun | null,
 ): Promise<SiteOutcome> {
-  const run = deps.run ?? NO_SCANNER;
+  const run = deps.run ?? noScanner;
   const now = deps.now ?? (() => new Date());
   const levels = deps.levels ?? DEFAULT_LEVELS;
   const rules = await fingerprintOf(levels);
   // The caller may have read the previous run already; read it only if not.
   const previous =
     last === undefined
-      ? (await latestRuns(db, userId, site.host, 1))[0]
+      ? await latestRunOf(db, userId, site.host)
       : (last ?? undefined);
   const url = `https://${site.host}/`;
   // The previous run is only a basis for this one if the rules are the same.
@@ -264,10 +274,8 @@ export async function checkDeployment(
   deps: Deps = {},
 ): Promise<SiteOutcome[]> {
   const limits = deps.limits ?? FREE_LIMITS;
-  const sites = (await listDomainsOfRepo(db, userId, deployed.repo)).slice(
-    0,
-    limits.maxSites,
-  );
+  const domains = await listDomainsOfRepo(db, userId, deployed.repo);
+  const sites = domains.slice(0, limits.maxSites);
   // The sites are checked together: most of a check is waiting for the site.
   return await inBatches(
     sites,

@@ -12,6 +12,13 @@ export const dynamic = 'force-dynamic';
 /** The tab title of the sign-in page. */
 export const metadata: Metadata = { title: 'Sign in' };
 
+/** What the sign-in page says for each failure the callback can flag. */
+const SIGN_IN_FAILURES: ReadonlyMap<string, string> = new Map([
+  ['auth', 'Signing in did not go through. Please try again.'],
+  ['denied', 'Signing in was cancelled.'],
+  ['github', 'Signing in with GitHub is not set up here.'],
+]);
+
 /**
  * The sign-in page: GitHub first and primary, since the sites come from GitHub
  * (`/auth/github`, when the app is set up), then Google as the second way in
@@ -37,13 +44,9 @@ export default async function LoginPage({
         each site, keep their reports and connect an assistant. Scanning a page
         needs no account.
       </p>
-      {error === 'auth' || error === 'denied' || error === 'github' ? (
+      {error && SIGN_IN_FAILURES.has(error) ? (
         <p role="alert" className="mt-4 text-failed">
-          {error === 'denied'
-            ? 'Signing in was cancelled.'
-            : error === 'github'
-              ? 'Signing in with GitHub is not set up here.'
-              : 'Signing in did not go through. Please try again.'}
+          {SIGN_IN_FAILURES.get(error)}
         </p>
       ) : null}
       {githubConfig() ? (

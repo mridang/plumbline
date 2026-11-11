@@ -208,7 +208,7 @@ export function DomainListApp(): ReactElement {
   const [pendingId, setPendingId] = useState<string | undefined>();
   const [notice, setNotice] = useState<string | undefined>();
   const [detail, setDetail] = useState<ReportData | undefined>();
-  const { sendFollowUp, canCallTools, callTool } = bridge;
+  const { sendFollowUp, canCallTools, callTool, state, openLink } = bridge;
 
   const open = useCallback(
     async (item: DomainListItem) => {
@@ -227,13 +227,15 @@ export function DomainListApp(): ReactElement {
 
   return (
     <DomainListScreen
-      state={bridge.state}
+      state={state}
       pendingId={pendingId}
       notice={notice}
       detail={detail}
       onOpen={(item) => void open(item)}
       onBack={() => setDetail(undefined)}
-      onOpenLink={bridge.openLink}
+      onOpenLink={openLink}
     />
   );
 }
+
+/* eslint-enable tailwindcss/no-custom-classname -- the classes above come from src/views/styles.ts. */

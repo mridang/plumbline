@@ -29,16 +29,11 @@ export function Commit({
   sha,
 }: Readonly<{ repo: string; sha: string | null }>): ReactElement {
   if (sha === null) {
-    return (
-      <span className="text-subtle" title="No commit is known for this run">
-        –
-      </span>
-    );
+    return <span className="text-subtle">–</span>;
   }
   return (
     <a
       href={`https://github.com/${repo}/commit/${encodeURIComponent(sha)}`}
-      title={sha}
       className="focus-ring rounded-sm font-mono text-sm underline underline-offset-4 hover:text-accent"
     >
       {sha.slice(0, 7)}
@@ -65,7 +60,7 @@ export function RunList({
   runs: readonly RunSummary[];
   /** Where a run's report is shown. */
   hrefFor: (runId: string) => string;
-  shownId?: string | undefined;
+  shownId?: string;
   now: number;
 }>): ReactElement {
   if (runs.length === 0) {

@@ -4,8 +4,8 @@ import {
   useEffect,
   useRef,
   useState,
-  type FormEvent,
   type ReactElement,
+  type SubmitEvent,
 } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -163,7 +163,7 @@ export function Scanner({
     }
   }, []);
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>): void => {
+  const onSubmit = (event: SubmitEvent<HTMLFormElement>): void => {
     event.preventDefault();
     void scan(input.current?.value ?? '');
   };

@@ -33,6 +33,7 @@ interface Wrangler {
 
 const config = ts.parseConfigFileTextToJson(
   'wrangler.jsonc',
+  // eslint-disable-next-line n/no-sync -- sync is fine in a test bootstrap, read once at load
   readFileSync(path.join(process.cwd(), 'wrangler.jsonc'), 'utf8'),
 ).config as Wrangler;
 
@@ -78,7 +79,9 @@ describe('wrangler.jsonc, the scanner', () => {
 
   it('binds the object the code uses, creates its class and deletes the class of the old scanner container', () => {
     expect(
-      config.durable_objects.bindings.map((entry) => entry.name).sort(),
+      config.durable_objects.bindings
+        .map((entry) => entry.name)
+        .toSorted((a, b) => Number(a > b) - Number(a < b)),
     ).toEqual(['PROBE', 'USER_HUB']);
     expect(config.durable_objects.bindings).toContainEqual({
       name: 'PROBE',

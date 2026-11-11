@@ -126,7 +126,7 @@ export async function reconcileSites(
   }
 
   const now = await listDomainsOfRepo(db, userId, repo);
-  if (now.some(isReal)) {
+  if (now.some((site) => isReal(site))) {
     await drop(now.filter((site) => site.source === 'fallback'));
   } else if (known.fallback) {
     for (const host of known.fallback) {
@@ -138,6 +138,8 @@ export async function reconcileSites(
           site.source === 'fallback' && !known.fallback?.includes(site.host),
       ),
     );
+  } else {
+    // Without a known fallback there is nothing to add or drop.
   }
   return { added, removed };
 }

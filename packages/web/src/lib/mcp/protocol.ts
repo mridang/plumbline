@@ -93,10 +93,8 @@ export function isPlainObject(
  * only ids JSON-RPC in MCP allows), otherwise null.
  */
 export function replyIdOf(value: unknown): ReplyId {
-  if (typeof value === 'string') {
-    return value;
-  }
-  return typeof value === 'number' && Number.isSafeInteger(value)
+  return typeof value === 'string' ||
+    (typeof value === 'number' && Number.isSafeInteger(value))
     ? value
     : null;
 }
@@ -157,9 +155,12 @@ export function isModernRequest(message: ProtocolMessage): boolean {
   return declaredVersion(message) === MODERN_VERSION;
 }
 
+/** The HTTP statuses a refusal may carry. */
+type RefusalStatus = 400 | 403 | 404 | 413 | 429;
+
 /** What to send when a request is refused: an HTTP status plus a JSON-RPC error body. */
 export interface ProtocolRefusal {
-  readonly status: 400 | 403 | 404 | 413 | 429;
+  readonly status: RefusalStatus;
   /** Extra response headers (`Retry-After`, `WWW-Authenticate`). */
   readonly headers?: Readonly<Record<string, string>>;
   readonly body: {
@@ -348,7 +349,7 @@ export function parseMessage(raw: unknown): ParsedMessage {
 /** The protocol version a request's `MCP-Protocol-Version` header names, if it sends one. */
 export function headerVersion(headers: Headers): string | undefined {
   const value = headers.get('mcp-protocol-version')?.trim();
-  return value ? value : undefined;
+  return value || undefined;
 }
 
 /**
@@ -362,7 +363,7 @@ export function checkBatch(
   messages: readonly ProtocolMessage[],
 ): ProtocolRefusal | null {
   return headerVersion(headers) === MODERN_VERSION ||
-    messages.some(isModernRequest)
+    messages.some((message) => isModernRequest(message))
     ? protocolRefusal({
         status: 400,
         code: ERROR_INVALID_REQUEST,
@@ -432,8 +433,9 @@ export function checkRequestHeaders(
     );
   }
   if (fromHeader !== fromBody) {
+    const shownHeader = fromHeader ? `"${fromHeader}"` : 'missing';
     return mismatch(
-      `Header mismatch: MCP-Protocol-Version is ${fromHeader ? `"${fromHeader}"` : 'missing'} but the body says "${fromBody}".`,
+      `Header mismatch: MCP-Protocol-Version is ${shownHeader} but the body says "${fromBody}".`,
       id,
     );
   }
@@ -556,7 +558,7 @@ export function isAllowedOrigin(
   if (url.origin !== origin) {
     return false; // an origin has no path
   }
-  if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') {
+  if (['localhost', '127.0.0.1', '[::1]'].includes(host)) {
     return true;
   }
   return (

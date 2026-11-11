@@ -112,10 +112,7 @@ export function RunPicker({
                       <Counts run={run} />
                     </Link>
                   ) : (
-                    <p
-                      className="flex min-h-10 items-center justify-between gap-3 px-3 py-2 text-sm text-subtle"
-                      title="This run kept no report"
-                    >
+                    <p className="flex min-h-10 items-center justify-between gap-3 px-3 py-2 text-sm text-subtle">
                       <span className="flex items-center gap-2">
                         <RelativeTime at={run.ran_at} now={now} />
                         <Badge>{KINDS[run.kind].label}</Badge>

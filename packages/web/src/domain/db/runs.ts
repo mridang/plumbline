@@ -61,7 +61,7 @@ export function suiteRunId(id: number): string {
 
 /** The number in a server run's listed id, or undefined when it is not one. */
 export function suiteRunNumber(id: string): number | undefined {
-  return /^s[1-9][0-9]{0,15}$/.test(id) ? Number(id.slice(1)) : undefined;
+  return /^s[1-9]\d{0,15}$/.test(id) ? Number(id.slice(1)) : undefined;
 }
 
 /** The outcomes in stored JSON (anything unreadable counts as none). */
@@ -87,7 +87,13 @@ function newestFirst(a: RunSummary, b: RunSummary): number {
   if (a.ran_at !== b.ran_at) {
     return a.ran_at < b.ran_at ? 1 : -1;
   }
-  return a.id < b.id ? 1 : a.id > b.id ? -1 : 0;
+  if (a.id < b.id) {
+    return 1;
+  }
+  if (a.id > b.id) {
+    return -1;
+  }
+  return 0;
 }
 
 /**
@@ -113,6 +119,24 @@ export async function listRuns(
     eq(suiteRuns.host, site.host),
   );
   const afterNumber = after ? suiteRunNumber(after.id) : undefined;
+  const manualPast = (cursor: Readonly<RunCursor>) => {
+    if (afterNumber !== undefined) {
+      return lt(reports.created_at, cursor.ran_at);
+    }
+    return or(
+      lt(reports.created_at, cursor.ran_at),
+      and(eq(reports.created_at, cursor.ran_at), lt(reports.id, cursor.id)),
+    );
+  };
+  const serverPast = (cursor: Readonly<RunCursor>) => {
+    if (afterNumber === undefined) {
+      return lt(suiteRuns.ran_at, cursor.ran_at);
+    }
+    return or(
+      lt(suiteRuns.ran_at, cursor.ran_at),
+      and(eq(suiteRuns.ran_at, cursor.ran_at), lt(suiteRuns.id, afterNumber)),
+    );
+  };
   const manual = await db
     .select({
       id: reports.id,
@@ -124,22 +148,7 @@ export async function listRuns(
       skipped: reports.skipped,
     })
     .from(reports)
-    .where(
-      after
-        ? and(
-            manualScope,
-            afterNumber === undefined
-              ? or(
-                  lt(reports.created_at, after.ran_at),
-                  and(
-                    eq(reports.created_at, after.ran_at),
-                    lt(reports.id, after.id),
-                  ),
-                )
-              : lt(reports.created_at, after.ran_at),
-          )
-        : manualScope,
-    )
+    .where(after ? and(manualScope, manualPast(after)) : manualScope)
     .orderBy(desc(reports.created_at), desc(reports.id))
     .limit(limit);
   const server = await db
@@ -155,22 +164,7 @@ export async function listRuns(
       openable: sql<number>`${suiteRuns.outcomes} IS NOT NULL`,
     })
     .from(suiteRuns)
-    .where(
-      after
-        ? and(
-            serverScope,
-            afterNumber === undefined
-              ? lt(suiteRuns.ran_at, after.ran_at)
-              : or(
-                  lt(suiteRuns.ran_at, after.ran_at),
-                  and(
-                    eq(suiteRuns.ran_at, after.ran_at),
-                    lt(suiteRuns.id, afterNumber),
-                  ),
-                ),
-          )
-        : serverScope,
-    )
+    .where(after ? and(serverScope, serverPast(after)) : serverScope)
     .orderBy(desc(suiteRuns.ran_at), desc(suiteRuns.id))
     .limit(limit);
   const runs: RunSummary[] = [

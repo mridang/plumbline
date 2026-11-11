@@ -217,7 +217,8 @@ describe('handleDeployment of the live site', () => {
       number: 21,
       state: 'open',
     });
-    expect((await latestRuns(db, 7, 'site.test'))[0]?.findings).toHaveLength(1);
+    const runs = await latestRuns(db, 7, 'site.test');
+    expect(runs[0]?.findings).toHaveLength(1);
   });
 
   it('applies the rules of the repository file, and says where they came from', async () => {
@@ -274,7 +275,8 @@ describe('handleDeployment of the live site', () => {
     const { fetcher, calls } = github({ 'plumbline.yaml': 'issues: off\n' });
     await deploy(db, config, 5, 7, live, { fetcher, run: failing() });
     expect(calls.some((c) => c.path.endsWith('/issues'))).toBe(false);
-    expect((await latestRuns(db, 7, 'site.test'))[0]?.findings).toHaveLength(1);
+    const runs = await latestRuns(db, 7, 'site.test');
+    expect(runs[0]?.findings).toHaveLength(1);
   });
 
   it('reports the mistakes in the file on the issue', async () => {
@@ -359,9 +361,13 @@ describe('handleDeployment of the live site', () => {
     expect(later.calls.at(-1)?.path).toBe(
       '/repos/acme/site/issues/21/comments',
     );
-    expect(
-      (await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'))?.state,
-    ).toBe('fixed');
+    const issueRow = await issueOf(
+      db,
+      'acme/site',
+      'site.test',
+      'seo-viewport',
+    );
+    expect(issueRow?.state).toBe('fixed');
   });
 
   it('opens the issue again for a site that looks the same when a person deleted it', async () => {
@@ -491,9 +497,13 @@ describe('handleDeployment of a repository whose plumbline.yaml turns checks off
     expect(String(note?.body['body'])).toContain(
       'turned off in `plumbline.yaml`',
     );
-    expect(
-      (await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'))?.state,
-    ).toBe('fixed');
+    const issueRow = await issueOf(
+      db,
+      'acme/site',
+      'site.test',
+      'seo-viewport',
+    );
+    expect(issueRow?.state).toBe('fixed');
   });
 
   it('closes the issues once: a second push of the same file writes nothing more', async () => {
@@ -646,9 +656,13 @@ describe('handleDeployment, the life of the issues', () => {
     expect(String(note?.body['body'])).toContain(
       '[`plumbline.yaml`](https://github.com/acme/site/blob/rules99/plumbline.yaml)',
     );
-    expect(
-      (await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'))?.state,
-    ).toBe('fixed');
+    const issueRow = await issueOf(
+      db,
+      'acme/site',
+      'site.test',
+      'seo-viewport',
+    );
+    expect(issueRow?.state).toBe('fixed');
   });
 
   it('closes the issues of a site the repository no longer deploys', async () => {
@@ -658,9 +672,13 @@ describe('handleDeployment, the life of the issues', () => {
       fetcher: github().fetcher,
       run: failing(),
     });
-    expect(
-      (await issueOf(db, 'acme/site', 'other.test', 'seo-viewport'))?.state,
-    ).toBe('open');
+    const otherRow = await issueOf(
+      db,
+      'acme/site',
+      'other.test',
+      'seo-viewport',
+    );
+    expect(otherRow?.state).toBe('open');
     await deleteDomain(db, 7, other.domain.id);
     const next = github();
     await deploy(
@@ -671,12 +689,15 @@ describe('handleDeployment, the life of the issues', () => {
       { ...live, sha: 'drop456' },
       { fetcher: next.fetcher, now: later('').now, run: failing() },
     );
-    expect(
-      (await issueOf(db, 'acme/site', 'other.test', 'seo-viewport'))?.state,
-    ).toBe('fixed');
-    expect(
-      (await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'))?.state,
-    ).toBe('open');
+    const otherFixed = await issueOf(
+      db,
+      'acme/site',
+      'other.test',
+      'seo-viewport',
+    );
+    expect(otherFixed?.state).toBe('fixed');
+    const siteRow = await issueOf(db, 'acme/site', 'site.test', 'seo-viewport');
+    expect(siteRow?.state).toBe('open');
     expect(
       next.calls.find((c) => c.path.endsWith('/comments'))?.body['body'],
     ).toContain('other.test is no longer deployed from this repository');
@@ -691,7 +712,9 @@ describe('handleDeployment, the life of the issues', () => {
       (c) => c.method === 'POST' && c.path.endsWith('/issues'),
     );
     expect(
-      opened.map((c) => String(c.body['body']).split('\n', 1)[0]).toSorted(),
+      opened
+        .map((c) => String(c.body['body']).split('\n', 1)[0])
+        .toSorted((a, b) => String(a).localeCompare(String(b))),
     ).toEqual([
       '<!-- plumbline:other.test:seo-viewport -->',
       '<!-- plumbline:site.test:seo-viewport -->',
@@ -701,8 +724,9 @@ describe('handleDeployment, the life of the issues', () => {
   it('opens a few issues on a first run with many problems, and says more will follow', async () => {
     const db = await setup();
     const ids = CHECKS.slice(0, MAX_NEW_ISSUES + 4).map((check) => check.id);
+    const ruleLines = ids.map((id) => `  ${id}: error`).join('\n');
     const { fetcher, calls } = github({
-      'plumbline.yaml': `rules:\n${ids.map((id) => `  ${id}: error`).join('\n')}\n`,
+      'plumbline.yaml': `rules:\n${ruleLines}\n`,
     });
     await deploy(db, config, 5, 7, live, {
       fetcher,
@@ -1060,10 +1084,12 @@ describe('handleDeployment of a preview', () => {
 });
 
 describe('handleDeployment, the sites a deployment names', () => {
-  const sitesOf = async (db: Awaited<ReturnType<typeof setup>>) =>
-    (await listDomainsOfRepo(db, 7, 'acme/site'))
+  const sitesOf = async (db: Awaited<ReturnType<typeof setup>>) => {
+    const domains = await listDomainsOfRepo(db, 7, 'acme/site');
+    return domains
       .map((d) => [d.host, d.source, d.environment] as const)
       .toSorted(([a], [b]) => a.localeCompare(b));
+  };
 
   it('adds the address a deployment reports as a site of its environment, and checks it', async () => {
     const db = await setup();
@@ -1087,7 +1113,7 @@ describe('handleDeployment, the sites a deployment names', () => {
       ['foo.site.test', 'deployment', 'prd_foo'],
       ['site.test', 'manual', null],
     ]);
-    expect(urls.toSorted()).toEqual([
+    expect(urls.toSorted((a, b) => Number(a > b) - Number(a < b))).toEqual([
       'https://foo.site.test/',
       'https://site.test/',
     ]);
@@ -1103,7 +1129,8 @@ describe('handleDeployment, the sites a deployment names', () => {
     ] as const) {
       await deploy(db, config, 5, 7, { ...live, name, url }, { fetcher, run });
     }
-    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
+    const sites = await sitesOf(db);
+    expect(sites.map(([host]) => host)).toEqual([
       'foo.site.test',
       'site.test',
       'svc.site.test',
@@ -1123,10 +1150,8 @@ describe('handleDeployment, the sites a deployment names', () => {
       fetcher,
       run,
     });
-    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
-      'new.site.test',
-      'site.test',
-    ]);
+    const sites = await sitesOf(db);
+    expect(sites.map(([host]) => host)).toEqual(['new.site.test', 'site.test']);
   });
 
   it('adds nothing for a deployment with no address, and notes it for the repository page', async () => {
@@ -1202,10 +1227,8 @@ describe('handleDeployment, the sites a deployment names', () => {
       { ...live, name: 'prd_foo', url: 'https://foo.site.test/' },
       { fetcher, run },
     );
-    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
-      'foo.site.test',
-      'site.test',
-    ]);
+    const sites = await sitesOf(db);
+    expect(sites.map(([host]) => host)).toEqual(['foo.site.test', 'site.test']);
     expect(await listGaps(db, 'acme/site')).toEqual([]);
   });
 
@@ -1218,10 +1241,8 @@ describe('handleDeployment, the sites a deployment names', () => {
       run: failing(),
       force: true,
     });
-    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
-      'a.site.test',
-      'site.test',
-    ]);
+    const sites = await sitesOf(db);
+    expect(sites.map(([host]) => host)).toEqual(['a.site.test', 'site.test']);
     expect(await listGaps(db, 'acme/site')).toEqual([]);
     const later = github({ 'plumbline.yaml': 'sites: [b.site.test]\n' });
     await deploy(db, config, 5, 7, push, {
@@ -1229,7 +1250,8 @@ describe('handleDeployment, the sites a deployment names', () => {
       run: failing(),
       force: true,
     });
-    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
+    const laterSites = await sitesOf(db);
+    expect(laterSites.map(([host]) => host)).toEqual([
       'b.site.test',
       'site.test',
     ]);
@@ -1240,10 +1262,8 @@ describe('handleDeployment, the sites a deployment names', () => {
     await addDomain(db, 7, 'a.site.test', 'acme/site', { source: 'config' });
     const { fetcher } = github({ 'plumbline.yaml': 500 });
     await deploy(db, config, 5, 7, live, { fetcher, run: failing() });
-    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
-      'a.site.test',
-      'site.test',
-    ]);
+    const sites = await sitesOf(db);
+    expect(sites.map(([host]) => host)).toEqual(['a.site.test', 'site.test']);
   });
 
   it('settles nothing for a preview', async () => {

@@ -103,7 +103,8 @@ export async function saveReport(
     created_at: new Date().toISOString(),
     sha,
   };
-  await db.insert(reports).values(row);
+  const inserted = db.insert(reports).values(row);
+  await inserted;
   // The oldest report to keep, found through the index (one row read); only
   // what is older than it is deleted, so nothing else is read or sorted.
   const [oldestKept] = await db
@@ -169,7 +170,7 @@ export async function listReports(
     )
     .orderBy(desc(reports.created_at), desc(reports.id))
     .limit(limit);
-  return rows.map(summaryOf);
+  return rows.map((row) => summaryOf(row));
 }
 
 /** The domain's newest report with its outcomes, or undefined when it has none. */

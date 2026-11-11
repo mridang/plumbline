@@ -23,6 +23,7 @@ describe('appOriginFromHeaders', () => {
       appOriginFromHeaders(
         new Headers({ host: 'app.test', 'x-forwarded-proto': 'http' }),
       ),
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture: asserts the origin built for a plain http request
     ).toBe('http://app.test');
   });
 

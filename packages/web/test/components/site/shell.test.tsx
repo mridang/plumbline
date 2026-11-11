@@ -41,7 +41,7 @@ describe('SiteShell', () => {
       '<footer',
     ].map((marker) => out.indexOf(marker));
     expect(order.every((at) => at >= 0)).toBe(true);
-    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect([...order].toSorted((a, b) => a - b)).toEqual(order);
   });
 
   it('offers to sign in when nobody is signed in', async () => {

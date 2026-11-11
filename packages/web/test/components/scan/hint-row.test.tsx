@@ -338,8 +338,13 @@ describe('the GitHub issues of a check', () => {
   const issue = (
     number: number,
     state: IssueRef['state'],
-    opened_at = '2026-01-01T00:00:00.000Z',
-  ): IssueRef => ({ number, state, opened_at, checks: ['hsts-header'] });
+    openedAt = '2026-01-01T00:00:00.000Z',
+  ): IssueRef => ({
+    number,
+    state,
+    opened_at: openedAt,
+    checks: ['hsts-header'],
+  });
 
   it('builds the address of an issue from the repository', () => {
     expect(issueUrl('acme/site', issue(12, 'open'))).toBe(

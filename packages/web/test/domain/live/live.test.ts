@@ -93,7 +93,10 @@ describe('createLive, for everyone who can see the repository', () => {
     await replaceAccess(db, 3, ['acme/other']);
     const hub = hubs();
     await createLive(db, { USER_HUB: hub.namespace }).started(1, site, 'now');
-    expect(hub.told.toSorted()).toEqual(['1', '2']);
+    expect(hub.told.toSorted((a, b) => Number(a > b) - Number(a < b))).toEqual([
+      '1',
+      '2',
+    ]);
     const users = raw
       .prepare('SELECT DISTINCT user_id FROM live_events ORDER BY user_id')
       .all()
@@ -124,7 +127,9 @@ describe('createLive, for everyone who can see the repository', () => {
       at: 'now',
     });
     expect(
-      fetched.mock.calls.map((call) => String(call[0])).toSorted(),
+      fetched.mock.calls
+        .map((call) => String(call[0]))
+        .toSorted((a, b) => Number(a > b) - Number(a < b)),
     ).toEqual(['https://push.test/device', 'https://push.test/member']);
   });
 });
@@ -196,7 +201,8 @@ describe('createLive', () => {
       after: found(3, 1),
       at: 'now',
     });
-    expect((await overviewOf(db, 1))[0]?.sites[0]).toMatchObject({
+    const overview = await overviewOf(db, 1);
+    expect(overview[0]?.sites[0]).toMatchObject({
       state: 'failing',
       errors: 3,
       warnings: 1,
@@ -225,7 +231,8 @@ describe('createLive', () => {
       at: 'now',
     });
     expect(fetched).not.toHaveBeenCalled();
-    expect((await overviewOf(db, 1))[0]?.sites[0]?.state).toBe('failing');
+    const overview = await overviewOf(db, 1);
+    expect(overview[0]?.sites[0]?.state).toBe('failing');
   });
 
   it('records a site that did not answer', async () => {
@@ -238,7 +245,8 @@ describe('createLive', () => {
       after: null,
       at: 'now',
     });
-    expect((await overviewOf(db, 1))[0]?.sites[0]?.state).toBe('unreachable');
+    const overview = await overviewOf(db, 1);
+    expect(overview[0]?.sites[0]?.state).toBe('unreachable');
   });
 
   it('never fails the check when the hub or the push service is down', async () => {

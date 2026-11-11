@@ -12,6 +12,7 @@ describe('siteAddress', () => {
   });
 
   it('refuses an address that is not https', () => {
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture: a plain-http address that must be refused
     expect(siteAddress('http://site.example.com')).toEqual({
       ok: false,
       reason: 'is not an https address',

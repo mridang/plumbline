@@ -40,13 +40,13 @@ describe('/api/domains', () => {
         "INSERT INTO domains (id, user_id, host, created_at, updated_at) VALUES ('00000000-0000-4000-8000-000000000009', 7, 'example.com', 'now', 'now')",
       )
       .run();
-    const body = (await (
-      await GET(new Request(URL, { headers: { cookie } }))
-    ).json()) as { items: { host: string }[] };
+    const res = await GET(new Request(URL, { headers: { cookie } }));
+    const body = (await res.json()) as { items: { host: string }[] };
     expect(body.items.map((d) => d.host)).toEqual(['example.com']);
   });
 
   it('answers 401 to a GET without a session cookie', async () => {
-    expect((await GET(new Request(URL))).status).toBe(401);
+    const res = await GET(new Request(URL));
+    expect(res.status).toBe(401);
   });
 });

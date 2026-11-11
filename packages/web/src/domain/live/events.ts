@@ -38,7 +38,8 @@ export function parseEvent(data: string): LiveEvent | null {
       return null;
     }
     const event = value as Partial<LiveEvent> & Record<string, unknown>;
-    return (event.type === 'started' || event.type === 'finished') &&
+    const isKnownType = event.type === 'started' || event.type === 'finished';
+    return isKnownType &&
       typeof event.host === 'string' &&
       typeof event.at === 'string'
       ? (event as unknown as LiveEvent)

@@ -45,6 +45,14 @@ const CHATGPT_DOCUMENT = {
   jwks_uri: 'https://chatgpt.com/oauth/jwks.json',
 };
 
+// A field the document leaves out: its key stays present, so an override can drop it.
+let notProvided: undefined;
+
+const respond = (body: string, status = 200) =>
+  jest.fn(
+    async () => new Response(body, { status }),
+  ) as unknown as typeof fetch;
+
 describe('isMetadataDocumentUrl', () => {
   it('accepts an https URL with a path', () => {
     expect(isMetadataDocumentUrl(URL_ID)).toBe(true);
@@ -52,6 +60,7 @@ describe('isMetadataDocumentUrl', () => {
 
   it('rejects plain ids, http, bare hosts, IPs, localhost and dot segments', () => {
     expect(isMetadataDocumentUrl('dcr_abc123')).toBe(false);
+    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
     expect(isMetadataDocumentUrl('http://chatgpt.com/client.json')).toBe(false);
     expect(isMetadataDocumentUrl('https://chatgpt.com')).toBe(false);
     expect(isMetadataDocumentUrl('https://chatgpt.com/')).toBe(false);
@@ -123,15 +132,16 @@ describe('parseClientMetadataDocument', () => {
   });
 
   it.each([
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     ['an http address', 'http://example.com/logo.png'],
     ['an address with a login', 'https://user:pw@example.com/logo.png'],
     ['an address on a private network', 'https://192.168.0.1/logo.png'],
     ['an address that is not normalised', 'https://EXAMPLE.com/a/../logo.png'],
     ['text that is not an address', 'not a url'],
     ['something that is not text', 42],
-  ])('leaves the logo out for %s', (_label, logo_uri) => {
+  ])('leaves the logo out for %s', (_label, logoUri) => {
     const result = parseClientMetadataDocument(
-      { ...goodDoc, logo_uri },
+      { ...goodDoc, logo_uri: logoUri },
       URL_ID,
     );
     expect(result.ok && result.client).not.toHaveProperty('logoUri');
@@ -144,7 +154,8 @@ describe('parseClientMetadataDocument', () => {
   });
 
   it.each([
-    ['no jwks_uri', { jwks_uri: undefined }],
+    ['no jwks_uri', { jwks_uri: notProvided }],
+    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
     ['an http jwks_uri', { jwks_uri: 'http://chatgpt.com/oauth/jwks.json' }],
     ['a jwks_uri with credentials', { jwks_uri: 'https://u:p@chatgpt.com/k' }],
     ['a jwks_uri that is not a URL', { jwks_uri: 'keys' }],
@@ -165,20 +176,20 @@ describe('parseClientMetadataDocument', () => {
   it('accepts a private_key_jwt client that names no algorithm', () => {
     const document = {
       ...CHATGPT_DOCUMENT,
-      token_endpoint_auth_signing_alg: undefined,
+      token_endpoint_auth_signing_alg: notProvided,
     };
     expect(parseClientMetadataDocument(document, URL_ID).ok).toBe(true);
   });
 
   it('treats a document that names no method as a public client', () => {
-    const document = { ...goodDoc, token_endpoint_auth_method: undefined };
+    const document = { ...goodDoc, token_endpoint_auth_method: notProvided };
     const result = parseClientMetadataDocument(document, URL_ID);
     expect(result.ok && result.client.auth).toBeUndefined();
   });
 
   it('falls back to the host as the name and caps its length', () => {
     const { client } = parseClientMetadataDocument(
-      { ...goodDoc, client_name: undefined },
+      { ...goodDoc, client_name: notProvided },
       URL_ID,
     ) as { client: { name: string } };
     expect(client.name).toBe('chatgpt.com');
@@ -196,11 +207,6 @@ describe('parseClientMetadataDocument', () => {
 });
 
 describe('fetchClientMetadata', () => {
-  const respond = (body: string, status = 200) =>
-    jest.fn(
-      async () => new Response(body, { status }),
-    ) as unknown as typeof fetch;
-
   it('fetches without following redirects and validates the document', async () => {
     const fetchImpl = respond(JSON.stringify(goodDoc));
     const result = await fetchClientMetadata(URL_ID, fetchImpl);
@@ -211,26 +217,26 @@ describe('fetchClientMetadata', () => {
   });
 
   it('fails on an HTTP error, bad JSON, an oversized body or a network error', async () => {
-    expect((await fetchClientMetadata(URL_ID, respond('', 404))).ok).toBe(
-      false,
+    const notFound = await fetchClientMetadata(URL_ID, respond('', 404));
+    expect(notFound.ok).toBe(false);
+    const badJson = await fetchClientMetadata(URL_ID, respond('not json'));
+    expect(badJson.ok).toBe(false);
+    const oversized = await fetchClientMetadata(
+      URL_ID,
+      respond(' '.repeat(20_000)),
     );
-    expect((await fetchClientMetadata(URL_ID, respond('not json'))).ok).toBe(
-      false,
-    );
-    expect(
-      (await fetchClientMetadata(URL_ID, respond(' '.repeat(20_000)))).ok,
-    ).toBe(false);
+    expect(oversized.ok).toBe(false);
     const throwing = jest.fn(async () => {
       throw new Error('down');
     }) as unknown as typeof fetch;
-    expect((await fetchClientMetadata(URL_ID, throwing)).ok).toBe(false);
+    const failed = await fetchClientMetadata(URL_ID, throwing);
+    expect(failed.ok).toBe(false);
   });
 
   it('never fetches a client_id that is not a usable URL', async () => {
     const fetchImpl = respond('{}');
-    expect(
-      (await fetchClientMetadata('http://localhost/x', fetchImpl)).ok,
-    ).toBe(false);
+    const result = await fetchClientMetadata('http://localhost/x', fetchImpl);
+    expect(result.ok).toBe(false);
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 });
@@ -251,13 +257,14 @@ describe('parseRegistration', () => {
   });
 
   it('rejects missing, unsafe or too many redirect URIs', () => {
-    for (const redirect_uris of [
+    for (const redirectUris of [
       undefined,
       [],
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       ['http://example.com/cb'],
       Array.from({ length: 21 }, (_, i) => `https://a.com/${i}`),
     ]) {
-      expect(parseRegistration({ redirect_uris })).toMatchObject({
+      expect(parseRegistration({ redirect_uris: redirectUris })).toMatchObject({
         ok: false,
         error: 'invalid_redirect_uri',
       });
@@ -407,11 +414,6 @@ describe('isMetadataDocumentUrl, own site, trailing dot and length', () => {
 });
 
 describe('fetchClientMetadata details', () => {
-  const respond = (body: string, status = 200) =>
-    jest.fn(
-      async () => new Response(body, { status }),
-    ) as unknown as typeof fetch;
-
   it('introduces itself with a User-Agent that says whom to ask', async () => {
     const fetchImpl = respond(JSON.stringify(goodDoc));
     await fetchClientMetadata(URL_ID, fetchImpl);
@@ -464,6 +466,7 @@ describe('fetchClientMetadata details', () => {
 
 describe('redirect rules in client metadata', () => {
   it('rejects a document whose redirect URIs include a disallowed scheme', () => {
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     for (const uri of ['http://example.com/cb', 'mailto:a@b.c', 'myapp://cb']) {
       expect(
         parseClientMetadataDocument(
@@ -606,7 +609,8 @@ describe('fetchClientMetadata streaming and caching', () => {
       ...goodDoc,
       client_name: 'x'.repeat(MAX_DOCUMENT_BYTES),
     });
-    expect((await fetchClientMetadata(URL_ID, serve({}, big))).ok).toBe(false);
+    const result = await fetchClientMetadata(URL_ID, serve({}, big));
+    expect(result.ok).toBe(false);
   });
 
   it('refuses a document whose Content-Length is over the cap', async () => {
@@ -628,7 +632,8 @@ describe('fetchClientMetadata streaming and caching', () => {
           }),
         ),
     ) as unknown as typeof fetch;
-    expect((await fetchClientMetadata(URL_ID, broken)).ok).toBe(false);
+    const outcome = await fetchClientMetadata(URL_ID, broken);
+    expect(outcome.ok).toBe(false);
   });
 });
 
@@ -780,6 +785,7 @@ describe('error_description is printable ASCII without quotes or backslashes (RF
   it.each([
     ['a body that is not an object', 'x'],
     ['no redirect_uris', {}],
+    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
     ['redirect_uris that are not acceptable', { redirect_uris: ['ftp://a/b'] }],
     ['a non-text auth method', { ...base, token_endpoint_auth_method: 7 }],
     ['grant types without authorization_code', { ...base, grant_types: ['x'] }],

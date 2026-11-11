@@ -144,48 +144,57 @@ export async function consumeScans(
 ): Promise<void> {
   const now = deps.now ?? (() => new Date());
   for (const message of batch.messages) {
-    const { key } = message.body;
-    const at = now();
-    const claimed = await claimPending(
-      deps.db,
+    await consumeScan(message, deps, now);
+  }
+}
+
+/** Runs the job of one message, and acks, retries or drops the message. */
+async function consumeScan(
+  message: MessageBatch<ScanMessage>['messages'][number],
+  deps: ConsumerDeps,
+  now: () => Date,
+): Promise<void> {
+  const { key } = message.body;
+  const at = now();
+  const claimed = await claimPending(
+    deps.db,
+    key,
+    at.toISOString(),
+    new Date(at.getTime() - LEASE_MS).toISOString(),
+  );
+  if (claimed.state === 'gone') {
+    // A newer message already ran the newest job for this key.
+    message.ack();
+    return;
+  }
+  if (claimed.state === 'busy') {
+    message.retry({ delaySeconds: backoffSeconds(message.attempts) });
+    return;
+  }
+  const { seq, job: text } = claimed.claim;
+  let job: ScanJob;
+  try {
+    job = JSON.parse(text) as ScanJob;
+  } catch (error) {
+    console.error('scan job unreadable, dropped', key, error);
+    await finishPending(deps.db, key, seq);
+    message.ack();
+    return;
+  }
+  try {
+    await deps.run(`${key}#${seq}`, job);
+    await finishPending(deps.db, key, seq);
+    message.ack();
+  } catch (error) {
+    console.error('scan job failed', {
       key,
-      at.toISOString(),
-      new Date(at.getTime() - LEASE_MS).toISOString(),
+      attempt: message.attempts,
+      error,
+    });
+    await releasePending(deps.db, key, seq).catch((error: unknown) =>
+      console.error('scan job lease not released', key, error),
     );
-    if (claimed.state === 'gone') {
-      // A newer message already ran the newest job for this key.
-      message.ack();
-      continue;
-    }
-    if (claimed.state === 'busy') {
-      message.retry({ delaySeconds: backoffSeconds(message.attempts) });
-      continue;
-    }
-    const { seq, job: text } = claimed.claim;
-    let job: ScanJob;
-    try {
-      job = JSON.parse(text) as ScanJob;
-    } catch (error) {
-      console.error('scan job unreadable, dropped', key, error);
-      await finishPending(deps.db, key, seq);
-      message.ack();
-      continue;
-    }
-    try {
-      await deps.run(`${key}#${seq}`, job);
-      await finishPending(deps.db, key, seq);
-      message.ack();
-    } catch (error) {
-      console.error('scan job failed', {
-        key,
-        attempt: message.attempts,
-        error,
-      });
-      await releasePending(deps.db, key, seq).catch((error_: unknown) =>
-        console.error('scan job lease not released', key, error_),
-      );
-      message.retry({ delaySeconds: backoffSeconds(message.attempts) });
-    }
+    message.retry({ delaySeconds: backoffSeconds(message.attempts) });
   }
 }
 

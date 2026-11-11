@@ -58,5 +58,7 @@ export async function handleIssueEvent(
     await reopenIssue(await makeApi(), db, { repo, host, check, issue });
   } else if (delivery.action === 'reopened' && stored.state !== 'open') {
     await saveIssue(db, repo, host, check, { ...issue, state: 'open' });
+  } else {
+    // Any other change leaves the stored issue as it is.
   }
 }

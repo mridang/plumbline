@@ -51,7 +51,7 @@ function given(
   name: string,
 ): string | undefined {
   const value = args[name]?.trim();
-  return value ? value : undefined;
+  return value || undefined;
 }
 
 /** Every prompt the server offers, in the order a host should list them. */
@@ -148,9 +148,10 @@ export function getPrompt(name: unknown, rawArguments: unknown): PromptResult {
     (argument) => argument.required && given(args, argument.name) === undefined,
   );
   if (missing.length > 0) {
+    const names = missing.map((m) => `\`${m.name}\``).join(' and ');
     throw new RpcError(
       ERROR_INVALID_PARAMS,
-      `Prompt ${prompt.definition.name} needs ${missing.map((m) => `\`${m.name}\``).join(' and ')}.`,
+      `Prompt ${prompt.definition.name} needs ${names}.`,
       { prompt: prompt.definition.name, missing: missing.map((m) => m.name) },
     );
   }

@@ -28,7 +28,8 @@ describe('connectionState', () => {
   it('sees a linked GitHub account and an approved assistant', async () => {
     const { db } = sqliteDatabase(...APP_MIGRATIONS);
     await linkAccount(db, 1, { id: 10, login: 'ada' });
-    await db.insert(oauthGrants).values(grant('g1', null));
+    const active = db.insert(oauthGrants).values(grant('g1', null));
+    await active;
     expect(await connectionState(db, 1)).toEqual({
       github: true,
       assistants: true,
@@ -37,8 +38,11 @@ describe('connectionState', () => {
 
   it('ignores a revoked assistant and other people', async () => {
     const { db } = sqliteDatabase(...APP_MIGRATIONS);
-    await db.insert(oauthGrants).values(grant('g1', '2026-02-01'));
-    expect((await connectionState(db, 1)).assistants).toBe(false);
-    expect((await connectionState(db, 2)).assistants).toBe(false);
+    const revoked = db.insert(oauthGrants).values(grant('g1', '2026-02-01'));
+    await revoked;
+    const first = await connectionState(db, 1);
+    expect(first.assistants).toBe(false);
+    const second = await connectionState(db, 2);
+    expect(second.assistants).toBe(false);
   });
 });

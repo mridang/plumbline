@@ -145,7 +145,7 @@ export function useWidgetData<T>(
   const pending = isPending(state);
   useEffect(() => {
     if (!pending) {
-      return;
+      return undefined;
     }
     const timer = setTimeout(
       () => dispatch({ type: 'timeout' }),

@@ -125,24 +125,21 @@ describe('suiteRunOf', () => {
   it('hashes what was found the same whatever order the checks finished in', async () => {
     const a = outcome('a', 'warned', ['x']);
     const b = outcome('b', 'passed');
-    expect((await suiteRunOf(scan(a, b))).hash).toBe(
-      (await suiteRunOf(scan(b, a))).hash,
-    );
+    const forward = await suiteRunOf(scan(a, b));
+    const backward = await suiteRunOf(scan(b, a));
+    expect(forward.hash).toBe(backward.hash);
   });
 
   it('hashes differently when a finding or the status differs', async () => {
-    const base = (await suiteRunOf(scan(outcome('a', 'warned', ['x'])))).hash;
-    expect(
-      (await suiteRunOf(scan(outcome('a', 'warned', ['y'])))).hash,
-    ).not.toBe(base);
-    expect(
-      (
-        await suiteRunOf({
-          ...scan(outcome('a', 'warned', ['x'])),
-          status: 500,
-        })
-      ).hash,
-    ).not.toBe(base);
+    const baseRun = await suiteRunOf(scan(outcome('a', 'warned', ['x'])));
+    const base = baseRun.hash;
+    const changedRun = await suiteRunOf(scan(outcome('a', 'warned', ['y'])));
+    expect(changedRun.hash).not.toBe(base);
+    const statusRun = await suiteRunOf({
+      ...scan(outcome('a', 'warned', ['x'])),
+      status: 500,
+    });
+    expect(statusRun.hash).not.toBe(base);
   });
 
   it('refuses a scan where every check was skipped, which found nothing out', async () => {
@@ -203,7 +200,9 @@ describe('restrictRun', () => {
   });
 
   it('returns a run without statuses as it is', async () => {
-    const bare: SuiteRun = { ...(await made()), statuses: undefined };
+    const { statuses, ...rest } = await made();
+    expect(statuses).toHaveLength(3);
+    const bare: SuiteRun = rest;
     expect(restrictRun(bare, new Set())).toBe(bare);
   });
 

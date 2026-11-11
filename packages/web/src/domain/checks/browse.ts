@@ -88,7 +88,7 @@ export function setPath(id: string): string {
 
 /** The rule set a page address stands for, or undefined. */
 export function setOfSegments(segments: readonly string[]): string | undefined {
-  const id = `plumbline:${segments.map(decodeURIComponent).join('/')}`;
+  const id = `plumbline:${segments.map((segment) => decodeURIComponent(segment)).join('/')}`;
   return findRuleSet(id)?.id;
 }
 
@@ -158,7 +158,7 @@ export function bySubsection(
 ): readonly { subsection: string; rules: readonly Check[] }[] {
   const names = [
     ...new Set(rules.map((check) => check.subsection || 'other')),
-  ].toSorted();
+  ].toSorted((a, b) => Number(a > b) - Number(a < b));
   return names.map((subsection) => ({
     subsection,
     rules: rules.filter(

@@ -21,7 +21,8 @@ async function etagOf(text: string): Promise<string> {
     'SHA-256',
     new TextEncoder().encode(text),
   );
-  const hex = [...new Uint8Array(digest).slice(0, 16)]
+  const hex = [...new Uint8Array(digest)]
+    .slice(0, 16)
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('');
   return `"${hex}"`;

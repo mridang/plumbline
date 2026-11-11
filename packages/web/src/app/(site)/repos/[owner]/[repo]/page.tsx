@@ -155,7 +155,8 @@ export default async function RepoPage({
             </p>
           </Callout>
         ) : null}
-        {domain && current && loaded ? (
+        {/* eslint-disable-next-line sonarjs/expression-complexity -- logic rewrite would be large: the panels need the narrowed domain, current and loaded */}
+        {domain && current && loaded && (
           <>
             {mine.length > 1 ? (
               <TabList
@@ -178,7 +179,7 @@ export default async function RepoPage({
               />
             ) : null}
             {(() => {
-              const view_ = (
+              const siteView = (
                 <SiteView
                   domain={domain}
                   status={current}
@@ -199,14 +200,14 @@ export default async function RepoPage({
               );
               return mine.length > 1 ? (
                 <TabPanel panelId={PANEL} current={current.host}>
-                  {view_}
+                  {siteView}
                 </TabPanel>
               ) : (
-                view_
+                siteView
               );
             })()}
           </>
-        ) : null}
+        )}
 
         {others.length > 0 ? (
           <Section

@@ -44,25 +44,26 @@ describe('MCP tool scopes', () => {
     const readTools = TOOLS.filter(
       (t) => scopeForTool(t.name) === SCOPE_READ,
     ).map((t) => t.name);
-    expect(readTools.toSorted()).toEqual([
-      'get_domain',
-      'get_report',
-      'list_checks',
-      'list_domains',
-      'list_reports',
-      'list_repositories',
-      'scan_domain',
-    ]);
+    expect(readTools.toSorted((a, b) => Number(a > b) - Number(a < b))).toEqual(
+      [
+        'get_domain',
+        'get_report',
+        'list_checks',
+        'list_domains',
+        'list_reports',
+        'list_repositories',
+        'scan_domain',
+      ],
+    );
   });
 
   it('treats every other tool as a write, so new tools are protected by default', () => {
     const writeTools = TOOLS.filter(
       (t) => scopeForTool(t.name) === SCOPE_WRITE,
     ).map((t) => t.name);
-    expect(writeTools.toSorted()).toEqual([
-      'configure_checks',
-      'remove_domain',
-    ]);
+    expect(
+      writeTools.toSorted((a, b) => Number(a > b) - Number(a < b)),
+    ).toEqual(['configure_checks', 'remove_domain']);
     expect(scopeForTool('a_tool_added_next_year')).toBe(SCOPE_WRITE);
   });
 
@@ -275,11 +276,10 @@ describe('the tool catalogue', () => {
         return error instanceof UnknownTool;
       }
     };
-    const unknown = (
-      await Promise.all(
-        TOOLS.map(async (t) => ((await isUnknown(t.name)) ? t.name : '')),
-      )
-    ).filter(Boolean);
+    const results = await Promise.all(
+      TOOLS.map(async (t) => ((await isUnknown(t.name)) ? t.name : '')),
+    );
+    const unknown = results.filter(Boolean);
     expect(unknown).toEqual([]);
   });
 });

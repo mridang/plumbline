@@ -111,20 +111,24 @@ export class ProbeScanner extends DurableObject<CloudflareEnv> {
     const writer = writable.getWriter();
     const encoder = new TextEncoder();
     const client = new ProbeClient((path, text) => this.callProbe(path, text));
-    void runWorkerScan(
-      client,
-      url,
-      (event) => {
-        void writer.write(encoder.encode(`${JSON.stringify(event)}\n`));
-      },
-      {
-        diagnose: (error) =>
-          console.error('the page of a scan could not be loaded', error),
-      },
-    ).then(
-      () => writer.close(),
-      (error: unknown) => writer.abort(error),
-    );
+    void (async () => {
+      try {
+        await runWorkerScan(
+          client,
+          url,
+          (event) => {
+            void writer.write(encoder.encode(`${JSON.stringify(event)}\n`));
+          },
+          {
+            diagnose: (error) =>
+              console.error('the page of a scan could not be loaded', error),
+          },
+        );
+        await writer.close();
+      } catch (error) {
+        await writer.abort(error);
+      }
+    })();
     return readable;
   }
 

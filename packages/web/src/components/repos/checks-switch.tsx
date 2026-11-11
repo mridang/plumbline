@@ -39,16 +39,18 @@ export function useRepoChecks(
   const router = useRouter();
   const [asking, setAsking] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
-  const apply = (on: boolean): void => {
+  const apply = async (on: boolean): Promise<void> => {
     if (repo === null) {
       return;
     }
     setProblem(null);
-    setRepoChecks(repo, on).then(
-      () => router.refresh(),
-      (error: unknown) =>
-        setProblem(problemText(error, 'Could not change that.')),
-    );
+    try {
+      await setRepoChecks(repo, on);
+    } catch (error: unknown) {
+      setProblem(problemText(error, 'Could not change that.'));
+      return;
+    }
+    router.refresh();
   };
   return {
     request: () => {
@@ -56,7 +58,7 @@ export function useRepoChecks(
         return;
       }
       if (paused) {
-        apply(true);
+        void apply(true);
       } else {
         setAsking(true);
       }

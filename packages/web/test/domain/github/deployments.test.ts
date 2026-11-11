@@ -92,11 +92,11 @@ describe('wranglerHosts', () => {
       '[env.staging]',
       'route = "s.example.com/*"',
     ].join('\n');
-    expect(wranglerHosts('wrangler.toml', text).toSorted()).toEqual([
-      'a.example.com',
-      'b.example.com',
-      'c.example.com',
-    ]);
+    expect(
+      wranglerHosts('wrangler.toml', text).toSorted(
+        (a, b) => Number(a > b) - Number(a < b),
+      ),
+    ).toEqual(['a.example.com', 'b.example.com', 'c.example.com']);
   });
 
   it('finds nothing in a configuration without routes or that cannot be read', () => {

@@ -9,5 +9,5 @@ export async function signOut(): Promise<void> {
   } catch {
     // Nothing to do about it here: the front page below shows what is true.
   }
-  globalThis.location.assign('/');
+  window.location.assign('/');
 }

@@ -1,4 +1,3 @@
-/* eslint-disable tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes. */
 import { describe, expect, it } from '@jest/globals';
 
 import { Card } from '@/components/ui/card';
@@ -30,6 +29,7 @@ describe('Card', () => {
 
   it('can be another element, and passes attributes through', () => {
     const out = html(
+      // eslint-disable-next-line tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes.
       <Card as="section" aria-label="Steps" className="extra">
         x
       </Card>,

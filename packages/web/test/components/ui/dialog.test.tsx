@@ -1,4 +1,3 @@
-/* eslint-disable tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes. */
 import { describe, expect, it, jest } from '@jest/globals';
 
 import {
@@ -21,6 +20,7 @@ import { html } from '../render';
 const sample = (open: boolean, props: { showClose?: boolean } = {}) =>
   html(
     <Dialog open={open}>
+      {/* eslint-disable-next-line tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes. */}
       <DialogTrigger className="opener">Open</DialogTrigger>
       <DialogContent closeLabel="Close filters" {...props}>
         <DialogTitle>Filters</DialogTitle>

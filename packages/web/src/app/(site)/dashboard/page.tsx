@@ -49,9 +49,15 @@ export default async function DashboardPage({
     manageableRepos(db, user.id),
     fileDisabledRepos(db, user.id),
   ]);
-  const pausedList = [...pausedRepos].toSorted();
-  const manageableList = [...manageable].toSorted();
-  const fileOffList = [...fileOff].toSorted();
+  const pausedList = [...pausedRepos].toSorted(
+    (a, b) => Number(a > b) - Number(a < b),
+  );
+  const manageableList = [...manageable].toSorted(
+    (a, b) => Number(a > b) - Number(a < b),
+  );
+  const fileOffList = [...fileOff].toSorted(
+    (a, b) => Number(a > b) - Number(a < b),
+  );
   return (
     <>
       <PageHeading

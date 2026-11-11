@@ -41,12 +41,24 @@ const scanOf = (
   ...extra,
 });
 
+/** The same scan while it still runs: no finish time yet. */
+const running = (scan: Scan): Scan => {
+  const rest = { ...scan };
+  delete rest.finishedAt;
+  return rest;
+};
+
+/** The same scan with no status recorded. */
+const unknownStatus = (scan: Scan): Scan => {
+  const rest = { ...scan };
+  delete rest.status;
+  return rest;
+};
+
 describe('progressLine', () => {
   it('counts the checks done while a scan runs', () => {
     expect(
-      progressLine(
-        scanOf([hint('a', 'passed')], { total: 5, finishedAt: undefined }),
-      ),
+      progressLine(running(scanOf([hint('a', 'passed')], { total: 5 }))),
     ).toBe('HTTP 200 · 1 of 5 checks done…');
   });
 
@@ -57,9 +69,9 @@ describe('progressLine', () => {
   });
 
   it('leaves out the status when it is not known', () => {
-    expect(
-      progressLine(scanOf([hint('a', 'passed')], { status: undefined })),
-    ).toBe('1 check in 2.5s');
+    expect(progressLine(unknownStatus(scanOf([hint('a', 'passed')])))).toBe(
+      '1 check in 2.5s',
+    );
   });
 
   it('dates a saved report in UTC, to the minute', () => {
@@ -138,10 +150,7 @@ describe('ScanResults', () => {
     expect(
       html(
         <ScanResults
-          scan={scanOf([hint('a', 'passed')], {
-            total: 3,
-            finishedAt: undefined,
-          })}
+          scan={running(scanOf([hint('a', 'passed')], { total: 3 }))}
         />,
       ),
     ).toMatch(/<progress[^>]*max="3" value="1"/);

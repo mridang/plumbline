@@ -60,15 +60,18 @@ describe('claimPending', () => {
   it('gives a job to one consumer only while its lease is fresh', async () => {
     const { db } = made();
     await putPending(db, 'k', 'job', T0, ALWAYS);
-    expect((await claimPending(db, 'k', T1, T0)).state).toBe('claimed');
-    expect((await claimPending(db, 'k', T1, T0)).state).toBe('busy');
+    const first = await claimPending(db, 'k', T1, T0);
+    expect(first.state).toBe('claimed');
+    const second = await claimPending(db, 'k', T1, T0);
+    expect(second.state).toBe('busy');
   });
 
   it('takes a job whose holder has gone quiet', async () => {
     const { db } = made();
     await putPending(db, 'k', 'job', T0, ALWAYS);
     await claimPending(db, 'k', T0, T0);
-    expect((await claimPending(db, 'k', T2, T1)).state).toBe('claimed');
+    const taken = await claimPending(db, 'k', T2, T1);
+    expect(taken.state).toBe('claimed');
   });
 
   it('says gone for a key with no job', async () => {
@@ -83,7 +86,8 @@ describe('claimPending', () => {
     await putPending(db, 'k', 'job', T0, ALWAYS);
     await claimPending(db, 'k', T1, T0);
     await releasePending(db, 'k', 1);
-    expect((await claimPending(db, 'k', T1, T0)).state).toBe('claimed');
+    const claim = await claimPending(db, 'k', T1, T0);
+    expect(claim.state).toBe('claimed');
   });
 
   it('is not released for a job that was replaced meanwhile', async () => {
@@ -104,7 +108,8 @@ describe('finishPending', () => {
     const { db } = made();
     await putPending(db, 'k', 'job', T0, ALWAYS);
     await finishPending(db, 'k', 1);
-    expect((await claimPending(db, 'k', T1, T0)).state).toBe('gone');
+    const gone = await claimPending(db, 'k', T1, T0);
+    expect(gone.state).toBe('gone');
   });
 
   it('does not forget a newer job that replaced it while it ran', async () => {
@@ -112,7 +117,8 @@ describe('finishPending', () => {
     await putPending(db, 'k', 'job', T0, ALWAYS);
     await putPending(db, 'k', 'newer', T1, ALWAYS);
     await finishPending(db, 'k', 1);
-    expect((await claimPending(db, 'k', T1, T0)).state).toBe('claimed');
+    const claim = await claimPending(db, 'k', T1, T0);
+    expect(claim.state).toBe('claimed');
   });
 });
 
@@ -123,7 +129,11 @@ describe('revivePending', () => {
     await putPending(db, 'older', 'x', '2025-12-31T00:00:00.000Z', ALWAYS);
     await putPending(db, 'fresh', 'x', T2, ALWAYS);
     const revived = await revivePending(db, T1, T2, 10);
-    expect(revived.map((job) => job.key).toSorted()).toEqual(['old', 'older']);
+    expect(
+      revived
+        .map((job) => job.key)
+        .toSorted((a, b) => Number(a > b) - Number(a < b)),
+    ).toEqual(['old', 'older']);
     expect(await revivePending(db, T1, T2, 10)).toEqual([]);
   });
 

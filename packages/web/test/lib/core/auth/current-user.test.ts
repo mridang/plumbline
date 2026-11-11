@@ -97,7 +97,8 @@ describe('getCurrentUser', () => {
   it('is the person a valid cookie names', async () => {
     account(1, 0, 'ada@b.com');
     await signIn({ id: 1 });
-    expect((await getCurrentUser())?.email).toBe('ada@b.com');
+    const user = await getCurrentUser();
+    expect(user?.email).toBe('ada@b.com');
   });
 
   it('is null for a cookie signed with another secret', async () => {
@@ -147,7 +148,8 @@ describe('getSession and getSessionUid', () => {
   it('read the claims from the cookie alone, with no database read', async () => {
     // No such account at all.
     await signIn({ id: 9 });
-    expect((await getSession())?.uid).toBe(9);
+    const session = await getSession();
+    expect(session?.uid).toBe(9);
     expect(await getSessionUid()).toBe(9);
     expect(getUserById).not.toHaveBeenCalled();
     expect(getSessionEpoch).not.toHaveBeenCalled();

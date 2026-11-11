@@ -10,7 +10,7 @@ import { createRoot } from 'react-dom/client';
 
 import { ReportApp } from '@/views/report-view';
 
-const root = document.querySelector('#root');
+const root = document.getElementById('root');
 if (root) {
   createRoot(root).render(<ReportApp />);
 }

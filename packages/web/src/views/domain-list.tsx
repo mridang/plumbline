@@ -11,7 +11,7 @@ import { createRoot } from 'react-dom/client';
 
 import { DomainListApp } from '@/views/domain-list-view';
 
-const root = document.querySelector('#root');
+const root = document.getElementById('root');
 if (root) {
   createRoot(root).render(<DomainListApp />);
 }

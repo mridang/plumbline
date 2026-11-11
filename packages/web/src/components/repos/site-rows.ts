@@ -198,7 +198,9 @@ export function clusterRows(rows: readonly SiteRow[]): SiteRow[] {
   for (const row of rows) {
     if (row.repo === null) {
       out.push(row);
-    } else if (!placed.has(row.repo)) {
+    } else if (placed.has(row.repo)) {
+      // The repository's rows were placed with its first row.
+    } else {
       placed.add(row.repo);
       out.push(...rows.filter((other) => other.repo === row.repo));
     }

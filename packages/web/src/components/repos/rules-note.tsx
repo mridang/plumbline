@@ -20,7 +20,7 @@ export function RulesNote({
   /** `owner/name` of the repository whose rules apply. */
   repo: string;
   /** How many checks the results shown cover, when a report is shown. */
-  checks?: number | undefined;
+  checks?: number;
 }>): ReactElement {
   return (
     <aside

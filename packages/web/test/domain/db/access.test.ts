@@ -68,9 +68,8 @@ describe('peopleWithAccess', () => {
     await replaceAccess(db, 1, ['acme/a', 'acme/b'], at);
     await replaceAccess(db, 2, ['acme/a'], at);
     await replaceAccess(db, 3, ['acme/other'], at);
-    expect((await peopleWithAccess(db, 'acme/a', NOW)).toSorted()).toEqual([
-      1, 2,
-    ]);
+    const people = await peopleWithAccess(db, 'acme/a', NOW);
+    expect(people.toSorted((a, b) => a - b)).toEqual([1, 2]);
     expect(await peopleWithAccess(db, 'acme/none', NOW)).toEqual([]);
   });
 

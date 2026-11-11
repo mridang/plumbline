@@ -69,14 +69,14 @@ export interface IssueBudget {
   /** Issues that may still be opened. */
   remaining: number;
   /** The number of the issue opened last, to say on it that more will follow. */
-  last: number | undefined;
+  last?: number;
   /** Problems that found no room. */
   deferred: number;
 }
 
 /** A budget of {@link MAX_NEW_ISSUES} new issues, or `max`. */
 export function newBudget(max = MAX_NEW_ISSUES): IssueBudget {
-  return { remaining: max, last: undefined, deferred: 0 };
+  return { remaining: max, deferred: 0 };
 }
 
 /** Waits {@link WRITE_PAUSE_MS}. */
@@ -137,7 +137,7 @@ export async function signatureOf(
       (found) =>
         `${found.id}\n${found.message.replaceAll(/\d+(\.\d+)?/g, '#')}`,
     )
-    .toSorted()
+    .toSorted((a, b) => (a < b ? -1 : Number(a > b)))
     .join('\n\n');
   const digest = await crypto.subtle.digest(
     'SHA-256',
@@ -213,7 +213,7 @@ async function closeIssue(
   stored: Readonly<StoredIssue>,
   reason: CloseReason,
 ): Promise<void> {
-  const { api, db, repo, host } = context;
+  const { api, db, repo, host, source, sha } = context;
   let closed = true;
   await context.pause();
   try {
@@ -242,8 +242,8 @@ async function closeIssue(
       closingComment(reason, {
         repo,
         host,
-        source: context.source,
-        sha: context.sha,
+        source,
+        sha,
         where: reason === 'fixed' ? await context.origin() : '',
       }),
     );
@@ -324,17 +324,17 @@ export async function syncIssues(
   report: Readonly<SiteReport>,
   now = new Date(),
 ): Promise<Map<string, IssueAction>> {
-  const { repo, host } = report;
+  const { repo, host, sha, source, level, findings, notRun } = report;
   const pause = report.pause ?? (() => Promise.resolve());
-  const origin = report.origin ?? originOf(api, repo, report.sha);
+  const origin = report.origin ?? originOf(api, repo, sha);
   const budget = report.budget ?? newBudget();
   const context: CloseContext = {
     api,
     db,
     repo,
     host,
-    sha: report.sha,
-    source: report.source,
+    sha,
+    source,
     origin,
     pause,
   };
@@ -345,10 +345,10 @@ export async function syncIssues(
     await retireLegacy(context, legacy);
   }
 
-  const reported = byCheck(reportedFindings(report.findings, report.level));
-  const all = byCheck(report.findings);
+  const reported = byCheck(reportedFindings(findings, level));
+  const all = byCheck(findings);
   const stored = await issuesOfHost(db, repo, host);
-  const notRun = new Set(report.notRun);
+  const notRunChecks = new Set(notRun);
 
   for (const [check, found] of reported) {
     try {
@@ -373,7 +373,11 @@ export async function syncIssues(
   }
 
   for (const [check, issue] of stored) {
-    if (issue.state !== 'open' || reported.has(check) || notRun.has(check)) {
+    if (
+      issue.state !== 'open' ||
+      reported.has(check) ||
+      notRunChecks.has(check)
+    ) {
       continue;
     }
     try {
@@ -417,13 +421,13 @@ async function syncCheck(
     problems: report.problems,
     ...(report.pageUrl ? { pageUrl: report.pageUrl } : {}),
   });
-  let current = stored;
-  if (current?.state === 'opening') {
-    if (now.getTime() - Date.parse(current.signature) < CLAIM_MS) {
-      return 'none';
-    }
-    current = undefined;
+  if (
+    stored?.state === 'opening' &&
+    now.getTime() - Date.parse(stored.signature) < CLAIM_MS
+  ) {
+    return 'none';
   }
+  const current = stored?.state === 'opening' ? null : stored;
 
   if (current) {
     const left = current.state === 'dismissed';
@@ -531,12 +535,12 @@ export async function closeUndeployed(
     reason?: 'undeployed' | 'disabled' | 'config';
   }>,
 ): Promise<void> {
-  const { repo } = input;
+  const { repo, hosts, sha, source } = input;
   const reason = input.reason ?? 'undeployed';
   const pause = input.pause ?? (() => Promise.resolve());
-  const origin = originOf(api, repo, input.sha);
+  const origin = originOf(api, repo, sha);
   for (const issue of await openIssuesOf(db, repo)) {
-    if (input.hosts.has(issue.host)) {
+    if (hosts.has(issue.host)) {
       continue;
     }
     try {
@@ -546,8 +550,8 @@ export async function closeUndeployed(
           db,
           repo,
           host: issue.host,
-          sha: input.sha,
-          source: input.source,
+          sha,
+          source,
           origin,
           pause,
         },
@@ -563,27 +567,28 @@ export async function closeUndeployed(
     }
   }
   for (const legacy of await legacyIssuesOf(db, repo)) {
-    if (!input.hosts.has(legacy.host)) {
-      try {
-        await retireLegacy(
-          {
-            api,
-            db,
-            repo,
-            host: legacy.host,
-            sha: input.sha,
-            source: input.source,
-            origin,
-            pause,
-          },
-          legacy,
-        );
-      } catch (error) {
-        if (isThrottled(error)) {
-          throw error;
-        }
-        console.error('issue retire failed', repo, legacy.host, error);
+    if (hosts.has(legacy.host)) {
+      continue;
+    }
+    try {
+      await retireLegacy(
+        {
+          api,
+          db,
+          repo,
+          host: legacy.host,
+          sha,
+          source,
+          origin,
+          pause,
+        },
+        legacy,
+      );
+    } catch (error) {
+      if (isThrottled(error)) {
+        throw error;
       }
+      console.error('issue retire failed', repo, legacy.host, error);
     }
   }
 }

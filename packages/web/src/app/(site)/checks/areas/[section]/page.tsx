@@ -39,7 +39,8 @@ export default async function AreaPage({
   params,
   searchParams,
 }: Props): Promise<ReactElement> {
-  const id = (await params).section;
+  const routeParams = await params;
+  const id = routeParams.section;
   if (!SECTIONS.some((section) => section.id === id)) {
     notFound();
   }

@@ -48,7 +48,8 @@ export async function verifyRepo(
   }
   let difference = 0;
   for (let at = 0; at < expected.length; at += 1) {
-    difference |= expected.charCodeAt(at) ^ signature.charCodeAt(at);
+    difference |=
+      (expected.codePointAt(at) ?? 0) ^ (signature.codePointAt(at) ?? 0);
   }
   return difference === 0;
 }

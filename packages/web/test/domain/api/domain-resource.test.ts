@@ -143,7 +143,10 @@ describe('parseCheckNames', () => {
 
   it('refuses more than 500 names', () => {
     expect(
-      parseCheckNames(Array.from({ length: 501 }).fill('accept-ch'), 'checks'),
+      parseCheckNames(
+        Array.from({ length: 501 }, () => 'accept-ch'),
+        'checks',
+      ),
     ).toEqual({
       ok: false,
       errors: ['checks: at most 500 entries.'],

@@ -61,9 +61,7 @@ export function formatCountdown(seconds: number): string {
 export function waitMessage(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
   const rest = seconds % 60;
-  const wait =
-    minutes === 0
-      ? `${rest} s`
-      : `${minutes} min${rest === 0 ? '' : ` ${rest} s`}`;
+  const restPart = rest === 0 ? '' : ` ${rest} s`;
+  const wait = minutes === 0 ? `${rest} s` : `${minutes} min${restPart}`;
   return `The checks were run by hand less than ${MANUAL_RUN_INTERVAL_SECONDS / 60} minutes ago. A site can be run once every ${MANUAL_RUN_INTERVAL_SECONDS / 60} minutes; try again in ${wait}.`;
 }

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import type { DatabaseSync } from 'node:sqlite';
 
 import type { CurrentUserResolver } from '@/domain/api/auth';
@@ -52,8 +53,8 @@ beforeEach(() => {
 
 afterEach(() => restore());
 
-const params = (id = DOMAIN, run_id = '') => ({
-  params: Promise.resolve({ id, run_id }),
+const params = (id = DOMAIN, runId = '') => ({
+  params: Promise.resolve({ id, run_id: runId }),
 });
 
 /** Store a server run of the host. */
@@ -123,31 +124,34 @@ describe('GET /api/domains/{id}/runs', () => {
   it('pages with a cursor and ends with no next link', async () => {
     seedRun('2026-01-01T12:00:00.000Z');
     seedRun('2026-01-01T11:00:00.000Z');
-    const first = (await (await list('?limit=2')).json()) as {
+    const firstPage = await list('?limit=2');
+    const first = (await firstPage.json()) as {
       items: { id: string }[];
       next?: string;
     };
     expect(first.items.map((r) => r.id)).toEqual(['s1', 's2']);
     expect(first.next).toEqual(expect.any(String));
-    const second = (await (
-      await list(new URL(first.next ?? '').search)
-    ).json()) as { items: { id: string }[] };
+    const secondPage = await list(new URL(first.next ?? '').search);
+    const second = (await secondPage.json()) as { items: { id: string }[] };
     expect(second.items.map((r) => r.id)).toEqual([REPORT]);
     expect(second).not.toHaveProperty('next');
   });
 
   it('answers 400 for a cursor it did not hand out and a limit out of range', async () => {
-    expect((await list('?cursor=nope')).status).toBe(400);
-    expect((await list('?limit=0')).status).toBe(400);
+    const badCursor = await list('?cursor=nope');
+    expect(badCursor.status).toBe(400);
+    const badLimit = await list('?limit=0');
+    expect(badLimit.status).toBe(400);
   });
 
   it('answers 404 for a domain that is not the caller’s or not an id, 401 without a session', async () => {
-    expect(
-      (await list('', '00000000-0000-4000-8000-000000000002')).status,
-    ).toBe(404);
-    expect((await list('', 'nope')).status).toBe(404);
+    const otherDomain = await list('', '00000000-0000-4000-8000-000000000002');
+    expect(otherDomain.status).toBe(404);
+    const notAnId = await list('', 'nope');
+    expect(notAnId.status).toBe(404);
     session.uid = 8;
-    expect((await list()).status).toBe(404);
+    const otherPerson = await list();
+    expect(otherPerson.status).toBe(404);
     session.uid = null;
     const refused = await list();
     expect(refused.status).toBe(401);
@@ -173,7 +177,8 @@ describe('GET /api/domains/{id}/runs/{run_id}', () => {
 
   it('reads a server run by its s id', async () => {
     seedRun('2026-01-01T12:00:00.000Z');
-    expect(await (await read('s1')).json()).toMatchObject({
+    const response = await read('s1');
+    expect(await response.json()).toMatchObject({
       id: 's1',
       kind: 'scheduled',
       sha: 'def5678',
@@ -183,16 +188,22 @@ describe('GET /api/domains/{id}/runs/{run_id}', () => {
 
   it('answers 404 for a run with no outcomes kept, one that is not there and an id that is not one', async () => {
     seedRun('2026-01-01T12:00:00.000Z', null);
-    expect((await read('s1')).status).toBe(404);
-    expect((await read('s77')).status).toBe(404);
-    expect((await read('nope')).status).toBe(404);
-    expect(
-      (await read(REPORT, '00000000-0000-4000-8000-000000000002')).status,
-    ).toBe(404);
+    const first = await read('s1');
+    expect(first.status).toBe(404);
+    const second = await read('s77');
+    expect(second.status).toBe(404);
+    const third = await read('nope');
+    expect(third.status).toBe(404);
+    const otherDomain = await read(
+      REPORT,
+      '00000000-0000-4000-8000-000000000002',
+    );
+    expect(otherDomain.status).toBe(404);
   });
 
   it('answers 401 without a session', async () => {
     session.uid = null;
-    expect((await read(REPORT)).status).toBe(401);
+    const response = await read(REPORT);
+    expect(response.status).toBe(401);
   });
 });

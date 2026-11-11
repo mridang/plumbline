@@ -168,7 +168,7 @@ function outcomeOf(raw: unknown, index: number): Parsed<StoredOutcome> {
   }
   const findings = rawFindings
     .slice(0, MAX_FINDINGS)
-    .map(findingOf)
+    .map((finding) => findingOf(finding))
     .filter((f): f is StoredFinding => f !== undefined);
   const reason = textOf(record['reason']);
   return {
@@ -268,7 +268,7 @@ export function outcomeResources(
   outcomes: readonly unknown[],
 ): OutcomeResource[] {
   return outcomes
-    .map(storedOutcomeOf)
+    .map((outcome) => storedOutcomeOf(outcome))
     .filter((o): o is StoredOutcome => o !== undefined)
     .map((o) => ({ ...o, name: findCheck(o.id)?.name ?? o.id }));
 }

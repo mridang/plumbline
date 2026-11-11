@@ -130,6 +130,9 @@ function sameSite(a: string, b: string): boolean {
   return a === b || a.endsWith(`.${b}`) || b.endsWith(`.${a}`);
 }
 
+/** The identity used when a caller does not say who published the app. */
+const UNVERIFIED_CLIENT: Readonly<ClientIdentity> = { kind: 'unverified' };
+
 /**
  * Describe the address approving will send the person to: the full text in its
  * safe form, how it reaches the client, a short form for headlines and a
@@ -140,21 +143,21 @@ function sameSite(a: string, b: string): boolean {
  */
 export function describeRedirect(
   redirectUri: string,
-  identity: Readonly<ClientIdentity> = { kind: 'unverified' },
+  identity: Readonly<ClientIdentity> = UNVERIFIED_CLIENT,
 ): RedirectDescription {
   const kind = redirectKind(redirectUri);
   const url = parseUrl(redirectUri);
   const short = url ? url.host || url.protocol : asciiOnly(redirectUri);
-  const warnings: Readonly<Record<RedirectKind, string | undefined>> = {
-    web: undefined,
+  const warnings: Readonly<Partial<Record<RedirectKind, string>>> = {
     loopback: LOOPBACK_WARNING,
     private: PRIVATE_WARNING,
     app: APP_SCHEME_WARNING,
   };
+  const webOrPrivate = kind === 'web' || kind === 'private';
   const elsewhere =
     identity.kind === 'domain' &&
     url !== undefined &&
-    (kind === 'web' || kind === 'private') &&
+    webOrPrivate &&
     !sameSite(
       url.hostname,
       parseUrl(`https://${identity.domain}`)?.hostname ?? '',

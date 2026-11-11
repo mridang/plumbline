@@ -27,19 +27,23 @@ describe('GET /schemas/plumbline.schema.json', () => {
   });
 
   it('may be kept by a shared cache for an hour and then reused while it is checked', async () => {
-    expect((await get()).headers.get('cache-control')).toBe(
+    const response = await get();
+    expect(response.headers.get('cache-control')).toBe(
       'public, max-age=3600, stale-while-revalidate=86400',
     );
   });
 
   it('carries an ETag that is the same every time', async () => {
-    const first = (await get()).headers.get('etag');
+    const firstResponse = await get();
+    const first = firstResponse.headers.get('etag');
     expect(first).toMatch(/^"[0-9a-f]{32}"$/);
-    expect((await get()).headers.get('etag')).toBe(first);
+    const secondResponse = await get();
+    expect(secondResponse.headers.get('etag')).toBe(first);
   });
 
   it('answers 304 with no body when the ETag is still current', async () => {
-    const etag = (await get()).headers.get('etag') ?? '';
+    const current = await get();
+    const etag = current.headers.get('etag') ?? '';
     for (const header of [etag, `W/${etag}`, `"other", ${etag}`, '*']) {
       const res = await get({ 'if-none-match': header });
       expect(res.status).toBe(304);
@@ -49,7 +53,8 @@ describe('GET /schemas/plumbline.schema.json', () => {
   });
 
   it('answers 200 again when the ETag is a different one', async () => {
-    expect((await get({ 'if-none-match': '"stale"' })).status).toBe(200);
+    const response = await get({ 'if-none-match': '"stale"' });
+    expect(response.status).toBe(200);
   });
 
   it('is left open and cacheable once the site adds its own headers', async () => {

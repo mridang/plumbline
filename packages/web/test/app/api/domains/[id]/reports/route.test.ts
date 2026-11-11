@@ -58,22 +58,24 @@ describe('/api/domains/:id/reports', () => {
   });
 
   it('saves a report for the person the session cookie names', async () => {
-    expect((await save({ cookie })).status).toBe(201);
+    const res = await save({ cookie });
+    expect(res.status).toBe(201);
   });
 
   it('lists the saved reports', async () => {
     await save({ cookie });
-    const body = (await (
-      await GET(new Request(URL, { headers: { cookie } }), params)
-    ).json()) as { items: unknown[] };
+    const res = await GET(new Request(URL, { headers: { cookie } }), params);
+    const body = (await res.json()) as { items: unknown[] };
     expect(body.items).toHaveLength(1);
   });
 
   it('answers 401 to a GET without a session cookie', async () => {
-    expect((await GET(new Request(URL), params)).status).toBe(401);
+    const res = await GET(new Request(URL), params);
+    expect(res.status).toBe(401);
   });
 
   it('answers 401 to a POST without a session cookie', async () => {
-    expect((await save({})).status).toBe(401);
+    const res = await save({});
+    expect(res.status).toBe(401);
   });
 });

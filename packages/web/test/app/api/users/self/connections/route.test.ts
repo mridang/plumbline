@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import type { DatabaseSync } from 'node:sqlite';
 
 import { makeConnectionsCollection } from '@/domain/api/connections';
@@ -90,7 +91,8 @@ describe('GET /api/users/self/connections', () => {
         `INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g1-edit', 7, 'c1', '${SCOPE_WRITE}', 'r', '2026-01-15T00:00:00.000Z')`,
       )
       .run();
-    const body = (await (await GET(new Request(URL))).json()) as {
+    const res = await GET(new Request(URL));
+    const body = (await res.json()) as {
       items: { id: string; scopes: string[]; installs: number }[];
     };
     expect(body.items[0]).toMatchObject({
@@ -111,7 +113,8 @@ describe('GET /api/users/self/connections', () => {
         `INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g4', 7, 'https://claude.ai/meta.json', '${SCOPE_READ}', 'r', '2026-04-01T00:00:00.000Z')`,
       )
       .run();
-    const body = (await (await GET(new Request(URL))).json()) as {
+    const res = await GET(new Request(URL));
+    const body = (await res.json()) as {
       items: { id: string; domain?: string }[];
     };
     expect(body.items.find((a) => a.id === 'g4')?.domain).toBe('claude.ai');
@@ -120,11 +123,13 @@ describe('GET /api/users/self/connections', () => {
 
   it('answers 401 for a session that was ended everywhere', async () => {
     session.ended = true;
-    expect((await GET(new Request(URL))).status).toBe(401);
+    const res = await GET(new Request(URL));
+    expect(res.status).toBe(401);
   });
 
   it('answers 401 when nobody is signed in', async () => {
     session.uid = null;
-    expect((await GET(new Request(URL))).status).toBe(401);
+    const res = await GET(new Request(URL));
+    expect(res.status).toBe(401);
   });
 });

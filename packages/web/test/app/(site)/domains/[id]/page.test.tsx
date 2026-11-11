@@ -20,24 +20,27 @@ import {
 import { htmlAt } from '../../../../components/render';
 
 /** What the page asked Next to redirect to; `redirect` throws, as the real one does. */
-class Redirected extends Error {
+class RedirectedError extends Error {
+  override name = 'RedirectedError';
   constructor(readonly to: string) {
     super(`redirected to ${to}`);
   }
 }
 
 /** Thrown by `notFound`, as the real one throws. */
-class NotFound extends Error {}
+class NotFoundError extends Error {
+  override name = 'NotFoundError';
+}
 
 /** The signed-in user, or null for nobody. */
 const state: { user: { id: number } | null } = { user: null };
 
 jest.unstable_mockModule('next/navigation', () => ({
   redirect: (to: string) => {
-    throw new Redirected(to);
+    throw new RedirectedError(to);
   },
   notFound: () => {
-    throw new NotFound();
+    throw new NotFoundError();
   },
   useRouter: () => ({ push: () => undefined, refresh: () => undefined }),
   usePathname: () => '/',
@@ -116,20 +119,19 @@ describe('DomainPage', () => {
 
   it('sends someone not signed in to sign in and back to this domain', async () => {
     state.user = null;
+    const back = `/domains/${domain.id}`;
     await expect(render(domain.id)).rejects.toEqual(
-      new Redirected(
-        `/auth/login?returnTo=${encodeURIComponent(`/domains/${domain.id}`)}`,
-      ),
+      new RedirectedError(`/auth/login?returnTo=${encodeURIComponent(back)}`),
     );
   });
 
   it('is not found for an id that is not a domain id', async () => {
-    await expect(render('not-an-id')).rejects.toBeInstanceOf(NotFound);
+    await expect(render('not-an-id')).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it('is not found for someone else’s domain', async () => {
     state.user = { id: 2 };
-    await expect(render(domain.id)).rejects.toBeInstanceOf(NotFound);
+    await expect(render(domain.id)).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it('is headed with the domain', async () => {
@@ -169,7 +171,7 @@ describe('DomainPage', () => {
     const saved = await report(2);
     expect(await page()).toMatch(
       new RegExp(
-        `aria-current="true"[^>]*href="/domains/${domain.id}\\?report=${saved.id}"|href="/domains/${domain.id}\\?report=${saved.id}"[^>]*aria-current="true"`,
+        String.raw`aria-current="true"[^>]*href="/domains/${domain.id}\?report=${saved.id}"|href="/domains/${domain.id}\?report=${saved.id}"[^>]*aria-current="true"`,
       ),
     );
   });
@@ -212,7 +214,7 @@ describe('DomainPage', () => {
       'acme/site',
     );
     await expect(render(found.id)).rejects.toEqual(
-      new Redirected('/repos/acme/site?site=found.example.com'),
+      new RedirectedError('/repos/acme/site?site=found.example.com'),
     );
   });
 
@@ -225,7 +227,7 @@ describe('DomainPage', () => {
     );
     const picked = crypto.randomUUID();
     await expect(render(found.id, picked)).rejects.toEqual(
-      new Redirected(
+      new RedirectedError(
         `/repos/acme/site?site=found.example.com&report=${picked}`,
       ),
     );

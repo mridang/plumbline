@@ -128,7 +128,7 @@ export async function collectScan(
     buffer += decoder.decode(value, { stream: !done });
     const lines = buffer.split('\n');
     buffer = lines.pop() ?? '';
-    lines.forEach(take);
+    lines.forEach((line) => take(line));
     if (done) {
       break;
     }
@@ -233,8 +233,9 @@ export async function runJobThrough(
     }),
   );
   if (!answer.ok) {
+    const body = await answer.text();
     throw new ScanFailed(
-      `The scanner did not run the job (${answer.status}): ${(await answer.text()).slice(0, 200)}`,
+      `The scanner did not run the job (${answer.status}): ${body.slice(0, 200)}`,
     );
   }
 }

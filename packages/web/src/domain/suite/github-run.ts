@@ -173,7 +173,8 @@ async function settleSites(
       matchesAny(rules.siteEnvironments, deployed.name));
   const address = named && deployed.url ? siteAddress(deployed.url) : null;
   if (isDeployment) {
-    await (!named || address?.ok || (rules.read && rules.sites.length > 0)
+    const declaresSites = rules.read && rules.sites.length > 0;
+    await (!named || address?.ok || declaresSites
       ? clearGap(db, deployed.repo, deployed.name)
       : noteGap(db, deployed.repo, deployed.name));
   }
@@ -207,6 +208,28 @@ async function baselineOf(
   return run ? { host, findings: run.findings } : null;
 }
 
+/** Closes the issues of a repository whose file turns its checks off; a failure is logged. */
+async function closeDisabledIssues(
+  api: GitHubApi,
+  db: Database,
+  deployed: Readonly<Deployment>,
+  rules: DeploymentRules,
+  deps: RunDeps,
+): Promise<void> {
+  try {
+    await closeUndeployed(api, db, {
+      repo: deployed.repo,
+      hosts: new Set(),
+      sha: deployed.sha,
+      source: rules.source,
+      pause: deps.pause ?? pauseBetweenWrites,
+      reason: 'config',
+    });
+  } catch (error) {
+    console.error('closing issues of a disabled repository failed', error);
+  }
+}
+
 /**
  * Applies the `enabled` flag of the repository's file to a live deployment or a
  * push of the file. Returns true when checks are off and the run must stop.
@@ -231,21 +254,7 @@ async function applyEnabledFlag(
     if (added) {
       await stopChecking(db, deployed.repo);
       if (api) {
-        try {
-          await closeUndeployed(api, db, {
-            repo: deployed.repo,
-            hosts: new Set(),
-            sha: deployed.sha,
-            source: rules.source,
-            pause: deps.pause ?? pauseBetweenWrites,
-            reason: 'config',
-          });
-        } catch (error) {
-          console.error(
-            'closing issues of a disabled repository failed',
-            error,
-          );
-        }
+        await closeDisabledIssues(api, db, deployed, rules, deps);
       }
     }
     return true;
@@ -323,11 +332,8 @@ async function checkLive(
   try {
     await noteDeferred(api, deployed.repo, budget);
     // The sites the repository still deploys; the issues of any other are closed.
-    const hosts = new Set(
-      (await listDomainsOfRepo(db, userId, deployed.repo)).map(
-        (site) => site.host,
-      ),
-    );
+    const sites = await listDomainsOfRepo(db, userId, deployed.repo);
+    const hosts = new Set(sites.map((site) => site.host));
     await closeUndeployed(api, db, {
       repo: deployed.repo,
       hosts,
@@ -380,13 +386,13 @@ async function checkPreview(
   rules: DeploymentRules,
   deps: RunDeps,
 ): Promise<void> {
-  const { url, sha } = deployed;
+  const { url, sha, repo } = deployed;
   if (!api || !url || !sha || !parseHost(url).ok) {
     return;
   }
   // A report is kept by commit: the same commit of the same preview is checked
   // once, however often its deployment is reported (unless the rules changed).
-  if (!deps.force && (await reportOfCommit(db, deployed.repo, sha, url))) {
+  if (!deps.force && (await reportOfCommit(db, repo, sha, url))) {
     return;
   }
   let checks;
@@ -394,11 +400,12 @@ async function checkPreview(
     if (!deps.run) {
       throw new Error('No scanner is available.');
     }
-    checks = (await deps.run(url)).checks;
+    const outcome = await deps.run(url);
+    checks = outcome.checks;
   } catch (error) {
-    console.error('preview run failed', deployed.repo, url, error);
-    await publishUnreachable(api, deployed.repo, sha, url).catch(
-      (error_: unknown) => console.error('check run failed', error_),
+    console.error('preview run failed', repo, url, error);
+    await publishUnreachable(api, repo, sha, url).catch((error: unknown) =>
+      console.error('check run failed', error),
     );
     return;
   }
@@ -415,17 +422,17 @@ async function checkPreview(
       : undefined;
   } catch (error) {
     // Without a baseline the preview is judged on its own, as it was before.
-    console.error('baseline not read', deployed.repo, error);
+    console.error('baseline not read', repo, error);
   }
   const stored = await keepReport(db, deps.appUrl, {
-    repo: deployed.repo,
+    repo: repo,
     sha,
     url,
     findings,
   });
   try {
     await publishCheckRun(api, {
-      repo: deployed.repo,
+      repo: repo,
       sha,
       url,
       findings,
@@ -435,11 +442,11 @@ async function checkPreview(
       problems: rules.problems,
     });
   } catch (error) {
-    console.error('check run failed', deployed.repo, error);
+    console.error('check run failed', repo, error);
   }
   if (rules.dispatch) {
     await dispatchRun(api, {
-      repo: deployed.repo,
+      repo: repo,
       environment: 'preview',
       url,
       sha,

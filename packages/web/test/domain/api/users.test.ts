@@ -53,18 +53,19 @@ describe('userResource', () => {
 
 describe('GET /api/users/self', () => {
   it('answers the signed-in person’s account', async () => {
-    expect(await (await read()).json()).toEqual(userResource(person));
+    const response = await read();
+    expect(await response.json()).toEqual(userResource(person));
   });
 
   it('is private to the person', async () => {
-    expect((await read()).headers.get('cache-control')).toBe(
-      'private, no-cache',
-    );
+    const response = await read();
+    expect(response.headers.get('cache-control')).toBe('private, no-cache');
   });
 
   it('answers 401 when nobody is signed in', async () => {
     session.user = null;
-    expect((await read()).status).toBe(401);
+    const response = await read();
+    expect(response.status).toBe(401);
   });
 });
 

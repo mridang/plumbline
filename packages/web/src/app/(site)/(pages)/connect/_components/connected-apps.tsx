@@ -8,15 +8,19 @@ import { Card } from '@/components/ui/card';
 import { accessLabel, type ConnectedApp } from '@/domain/connected-apps';
 import { relativeTime } from '@/lib/intl';
 
+/** Whether an object has a string member called `key`. */
+function hasString(value: object, key: string): boolean {
+  return key in value && typeof Reflect.get(value, key) === 'string';
+}
+
 /** Whether a value has the members of a {@link ConnectedApp} that this list shows. */
 function isConnectedApp(value: unknown): value is ConnectedApp {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
   return (
-    typeof value === 'object' &&
-    value !== null &&
-    'id' in value &&
-    typeof value.id === 'string' &&
-    'name' in value &&
-    typeof value.name === 'string' &&
+    hasString(value, 'id') &&
+    hasString(value, 'name') &&
     'scopes' in value &&
     Array.isArray(value.scopes)
   );
@@ -24,12 +28,10 @@ function isConnectedApp(value: unknown): value is ConnectedApp {
 
 /** The apps in the answer of `GET /api/users/self/connections`; anything unreadable is left out. */
 function appsOf(body: unknown): readonly ConnectedApp[] {
-  return typeof body === 'object' &&
-    body !== null &&
-    'items' in body &&
-    Array.isArray(body.items)
-    ? body.items.filter(isConnectedApp)
-    : [];
+  if (typeof body !== 'object' || body === null || !('items' in body)) {
+    return [];
+  }
+  return Array.isArray(body.items) ? body.items.filter(isConnectedApp) : [];
 }
 
 /**
@@ -120,6 +122,7 @@ export function ConnectedApps(): ReactElement {
         if (!controller.signal.aborted) {
           setApps(items);
         }
+        return items;
       })
       .catch(() => {
         if (!controller.signal.aborted) {

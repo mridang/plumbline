@@ -65,7 +65,7 @@ function idsOf(
       (sections === undefined || sections.has(check.section)),
   )
     .map((check) => check.id)
-    .toSorted();
+    .toSorted((a, b) => Number(a > b) - Number(a < b));
 }
 
 /** The sections the default sets cover. */
@@ -85,7 +85,9 @@ function membersOf(set: SetInfo): string[] {
     return idsOf(TIERS_OF.experimental);
   }
   if (set.id === 'plumbline:all') {
-    return CHECKS.map((check) => check.id).toSorted();
+    return CHECKS.map((check) => check.id).toSorted(
+      (a, b) => Number(a > b) - Number(a < b),
+    );
   }
   const tier = set.id.slice(set.id.lastIndexOf('/') + 1) as Tier;
   return idsOf(TIERS_OF[tier], new Set(set.section ? [set.section] : []));
@@ -96,7 +98,9 @@ export const RULE_SET_DEFS: readonly RuleSetDef[] = [
   ...SET_INFOS.map((set): RuleSetDef => ({ ...set, members: membersOf(set) })),
   ...PROFILES.map((profile): RuleSetDef => ({
     ...profile,
-    members: [...profile.members].toSorted(),
+    members: [...profile.members].toSorted(
+      (a, b) => Number(a > b) - Number(a < b),
+    ),
   })),
 ];
 

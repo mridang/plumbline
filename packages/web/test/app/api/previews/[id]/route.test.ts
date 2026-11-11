@@ -58,7 +58,8 @@ describe('GET /api/previews/{id}', () => {
 
   it('answers 404 for anything that is not an id, without asking the database', async () => {
     for (const id of ['x', '../etc/passwd', "' or 1=1", '']) {
-      expect((await get(id)).status).toBe(404);
+      const res = await get(id);
+      expect(res.status).toBe(404);
     }
   });
 

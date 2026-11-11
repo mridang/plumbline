@@ -20,13 +20,17 @@ describe('the rule sets', () => {
       expect(set.members.filter((id) => !known.has(id))).toEqual([]);
       expect(set.title).toBeTruthy();
       expect(set.description).toBeTruthy();
-      expect(set.members).toEqual(set.members.toSorted());
+      expect(set.members).toEqual(
+        set.members.toSorted((a, b) => Number(a > b) - Number(a < b)),
+      );
     }
   });
 
   it('hold every check in plumbline:all', () => {
     expect(members('plumbline:all')).toEqual(
-      CHECKS.map((check) => check.id).toSorted(),
+      CHECKS.map((check) => check.id).toSorted(
+        (a, b) => Number(a > b) - Number(a < b),
+      ),
     );
   });
 
@@ -39,7 +43,7 @@ describe('the rule sets', () => {
     expect(experimental).toEqual(
       CHECKS.filter((check) => check.tier === 'experimental')
         .map((check) => check.id)
-        .toSorted(),
+        .toSorted((a, b) => Number(a > b) - Number(a < b)),
     );
     for (const id of experimental) {
       expect(advanced.has(id)).toBe(false);
@@ -49,7 +53,7 @@ describe('the rule sets', () => {
   it('make recommended the union of the recommended sets of the default sections', () => {
     const expected = SECTIONS.filter((section) => section.default_on)
       .flatMap((section) => members(`plumbline:${section.id}/recommended`))
-      .toSorted();
+      .toSorted((a, b) => Number(a > b) - Number(a < b));
     expect(members('plumbline:recommended')).toEqual(expected);
   });
 
@@ -63,12 +67,12 @@ describe('the rule sets', () => {
         own
           .filter((c) => c.tier === 'recommended')
           .map((c) => c.id)
-          .toSorted(),
+          .toSorted((a, b) => Number(a > b) - Number(a < b)),
       );
-      expect(advanced.length).toBe(
+      expect(advanced).toHaveLength(
         own.filter((c) => c.tier !== 'experimental').length,
       );
-      expect(experimental.length).toBe(
+      expect(experimental).toHaveLength(
         own.filter((c) => c.tier === 'experimental').length,
       );
       expect(findRuleSet(`plumbline:${section.id}/advanced`)?.section).toBe(
@@ -80,7 +84,9 @@ describe('the rule sets', () => {
   it('make each profile the union of the sets it extends', () => {
     for (const profile of PROFILES) {
       const union = new Set(profile.extends.flatMap((part) => members(part)));
-      expect(members(profile.id)).toEqual([...union].toSorted());
+      expect(members(profile.id)).toEqual(
+        [...union].toSorted((a, b) => Number(a > b) - Number(a < b)),
+      );
     }
   });
 
@@ -93,7 +99,9 @@ describe('the rule sets', () => {
 
   it('list the profiles by hand', () => {
     for (const profile of PROFILES) {
-      expect(members(profile.id)).toEqual(profile.members.toSorted());
+      expect(members(profile.id)).toEqual(
+        profile.members.toSorted((a, b) => Number(a > b) - Number(a < b)),
+      );
       expect(findRuleSet(profile.id)?.kind).toBe('profile');
     }
   });

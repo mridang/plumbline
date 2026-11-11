@@ -32,7 +32,8 @@ describe('GET /health', () => {
   });
 
   it('is never cached', async () => {
-    expect((await GET()).headers.get('cache-control')).toBe('no-store');
+    const response = await GET();
+    expect(response.headers.get('cache-control')).toBe('no-store');
   });
 
   it('reports the database as missing, without failing', async () => {
@@ -44,7 +45,9 @@ describe('GET /health', () => {
 
   it('adds what the app reports about itself to the body', async () => {
     app.health = { ok: true, details: { movies: 3 } };
-    expect(((await (await GET()).json()) as { movies: number }).movies).toBe(3);
+    const response = await GET();
+    const body = (await response.json()) as { movies: number };
+    expect(body.movies).toBe(3);
   });
 
   it('answers 503 when the app says it is not healthy', async () => {

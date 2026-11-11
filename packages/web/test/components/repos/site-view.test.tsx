@@ -52,7 +52,12 @@ const SHOWN = {
   ],
 } as unknown as Report;
 
-const draw = (over: Partial<Parameters<typeof SiteView>[0]> = {}): string =>
+const draw = ({
+  noReport,
+  ...over
+}: Partial<Parameters<typeof SiteView>[0]> & {
+  noReport?: boolean;
+} = {}): string =>
   htmlAt(
     <SiteView
       domain={DOMAIN}
@@ -70,7 +75,7 @@ const draw = (over: Partial<Parameters<typeof SiteView>[0]> = {}): string =>
       }}
       runs={[RUN]}
       issues={[]}
-      shown={SHOWN}
+      shown={noReport ? undefined : SHOWN}
       view="results"
       hrefFor={(id) => `/r?site=site.example.com&report=${id}`}
       settingsHref="/r?site=site.example.com&view=settings"
@@ -120,7 +125,7 @@ describe('SiteView', () => {
       'No CSP',
     ].map((text) => out.indexOf(text));
     expect(order.every((at) => at >= 0)).toBe(true);
-    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(order).toEqual([...order].toSorted((a, b) => a - b));
   });
 
   it('keeps the whole history closed under the choice of report', () => {
@@ -142,7 +147,7 @@ describe('SiteView', () => {
   });
 
   it('says there is no report yet, and still offers to run', () => {
-    const out = draw({ shown: undefined, runs: [] });
+    const out = draw({ noReport: true, runs: [] });
     expect(out).toContain('No report yet');
     expect(out).toMatch(/Run \d+ checks/);
   });
@@ -157,7 +162,7 @@ describe('SiteView', () => {
   });
 
   it('explains the rules, and what to do, when there is no report yet', () => {
-    const out = draw({ shown: undefined, runs: [] });
+    const out = draw({ noReport: true, runs: [] });
     expect(out).toContain('aria-label="Rules"');
     expect(out).toContain('Only the checks your rules turn on are shown');
     expect(out).toContain('the first report covers');

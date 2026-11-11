@@ -70,38 +70,42 @@ describe('GET /auth/github/link/callback', () => {
       github_id: 9,
       login: 'mridang',
     });
-    expect(
-      (await listInstallations(db, 7)).map((i) => i.installation_id),
-    ).toEqual([5]);
-    expect((await listRepos(db, 7)).map((r) => r.hosts)).toEqual([
-      ['site.example.com'],
-    ]);
-    expect((await listDomains(db, 7)).map((d) => [d.host, d.repo])).toEqual([
+    const installations = await listInstallations(db, 7);
+    expect(installations.map((i) => i.installation_id)).toEqual([5]);
+    const repos = await listRepos(db, 7);
+    expect(repos.map((r) => r.hosts)).toEqual([['site.example.com']]);
+    const domains = await listDomains(db, 7);
+    expect(domains.map((d) => [d.host, d.repo])).toEqual([
       ['site.example.com', 'acme/site'],
     ]);
   });
 
   it('refuses a state that does not match the cookie, or has no cookie', async () => {
-    expect(
-      (await call('?code=c1&state=github.other')).headers.get('location'),
-    ).toBe('https://plumbline.test/github?error=state');
-    expect(
-      (await call('?code=c1&state=github.abc', null)).headers.get('location'),
-    ).toBe('https://plumbline.test/github?error=state');
-    expect((await call('?code=c1')).headers.get('location')).toBe(
+    const mismatch = await call('?code=c1&state=github.other');
+    expect(mismatch.headers.get('location')).toBe(
+      'https://plumbline.test/github?error=state',
+    );
+    const noCookie = await call('?code=c1&state=github.abc', null);
+    expect(noCookie.headers.get('location')).toBe(
+      'https://plumbline.test/github?error=state',
+    );
+    const noState = await call('?code=c1');
+    expect(noState.headers.get('location')).toBe(
       'https://plumbline.test/github?error=state',
     );
   });
 
   it('sends someone who is not signed in to sign in', async () => {
     state.user = null;
-    expect(
-      (await call('?code=c1&state=github.abc')).headers.get('location'),
-    ).toBe('https://plumbline.test/auth/login?returnTo=%2Fgithub');
+    const response = await call('?code=c1&state=github.abc');
+    expect(response.headers.get('location')).toBe(
+      'https://plumbline.test/auth/login?returnTo=%2Fgithub',
+    );
   });
 
   it('asks to try again when GitHub sent no code', async () => {
-    expect((await call('?state=github.abc')).headers.get('location')).toBe(
+    const response = await call('?state=github.abc');
+    expect(response.headers.get('location')).toBe(
       'https://plumbline.test/github?error=code',
     );
   });
@@ -113,9 +117,10 @@ describe('GET /auth/github/link/callback', () => {
         "INSERT INTO github_links VALUES (3, 9, 'mridang', 'now', 'now')",
       )
       .run();
-    expect(
-      (await call('?code=c1&state=github.abc')).headers.get('location'),
-    ).toBe('https://plumbline.test/github?error=taken');
+    const response = await call('?code=c1&state=github.abc');
+    expect(response.headers.get('location')).toBe(
+      'https://plumbline.test/github?error=taken',
+    );
   });
 
   it('reports a failure to reach GitHub without details', async () => {
@@ -124,9 +129,10 @@ describe('GET /auth/github/link/callback', () => {
       'https://github.com/login/oauth/access_token': () =>
         new Response('no', { status: 500 }),
     });
-    expect(
-      (await call('?code=c1&state=github.abc')).headers.get('location'),
-    ).toBe('https://plumbline.test/github?error=failed');
+    const response = await call('?code=c1&state=github.abc');
+    expect(response.headers.get('location')).toBe(
+      'https://plumbline.test/github?error=failed',
+    );
   });
 
   it('says so when the connection worked but no installation could be read', async () => {
@@ -136,16 +142,18 @@ describe('GET /auth/github/link/callback', () => {
       'https://api.github.com/app/installations/5/access_tokens': () =>
         new Response('{}', { status: 401 }),
     });
-    expect(
-      (await call('?code=c1&state=github.abc')).headers.get('location'),
-    ).toBe('https://plumbline.test/github?error=read');
+    const response = await call('?code=c1&state=github.abc');
+    expect(response.headers.get('location')).toBe(
+      'https://plumbline.test/github?error=read',
+    );
   });
 
   it('says so when GitHub is not set up', async () => {
     restore();
     restore = installCloudflareContext(made.d1, {});
-    expect(
-      (await call('?code=c1&state=github.abc')).headers.get('location'),
-    ).toBe('https://plumbline.test/github?error=unavailable');
+    const response = await call('?code=c1&state=github.abc');
+    expect(response.headers.get('location')).toBe(
+      'https://plumbline.test/github?error=unavailable',
+    );
   });
 });

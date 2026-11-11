@@ -94,26 +94,25 @@ export function sliceAfter<T>(
     : sorted;
   const items = rest.slice(0, limit);
   const last = items.at(-1);
-  return rest.length > limit && last
-    ? { items, next: positionOf(last) }
-    : { items };
+  const next = rest.length > limit && last ? positionOf(last) : undefined;
+  return { items, next };
 }
 
 /** Base64url-encode bytes (RFC 4648 §5: `+/` → `-_`, no padding). */
 function bytesToBase64Url(bytes: Uint8Array): string {
   let binary = '';
   for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
+    binary += String.fromCodePoint(byte);
   }
   return btoa(binary)
     .replaceAll('+', '-')
     .replaceAll('/', '_')
-    .replace(/=+$/, '');
+    .replaceAll('=', '');
 }
 
 /** Decode base64url bytes, the inverse of {@link bytesToBase64Url}. */
 function base64UrlToBytes(text: string): Uint8Array {
   const base64 = text.replaceAll('-', '+').replaceAll('_', '/');
   const binary = atob(base64);
-  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return Uint8Array.from(binary, (char) => char.codePointAt(0) ?? 0);
 }

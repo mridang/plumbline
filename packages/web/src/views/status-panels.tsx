@@ -89,3 +89,5 @@ export function Announcer({
     </div>
   );
 }
+
+/* eslint-enable tailwindcss/no-custom-classname -- the classes above come from src/views/styles.ts. */

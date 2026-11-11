@@ -94,7 +94,7 @@ export async function recordRun(
   }>,
   timestamp = new Date().toISOString(),
 ): Promise<void> {
-  await db.insert(suiteRuns).values({
+  const inserted = db.insert(suiteRuns).values({
     user_id: run.userId,
     host: run.host,
     repo: run.repo,
@@ -113,6 +113,7 @@ export async function recordRun(
     skipped: run.counts?.skipped ?? null,
     outcomes: run.outcomes ?? null,
   });
+  await inserted;
   // So the scheduled re-check can find the sites that are due without reading
   // every stored run.
   await db
@@ -294,14 +295,12 @@ export interface IssueOfCheck extends StoredIssue {
   readonly check: string;
 }
 
+/** The states a stored issue can have besides open. */
+const STORED_STATES: readonly IssueState[] = ['fixed', 'dismissed', 'opening'];
+
 /** A stored row as an issue; a state it does not know counts as open. */
 function toIssue(row: typeof suiteCheckIssues.$inferSelect): IssueOfCheck {
-  const state =
-    row.state === 'fixed' ||
-    row.state === 'dismissed' ||
-    row.state === 'opening'
-      ? row.state
-      : 'open';
+  const state = STORED_STATES.find((known) => known === row.state) ?? 'open';
   return {
     number: row.number,
     state,
@@ -368,7 +367,7 @@ export async function openIssuesOf(
       and(eq(suiteCheckIssues.repo, repo), eq(suiteCheckIssues.state, 'open')),
     )
     .orderBy(asc(suiteCheckIssues.host), asc(suiteCheckIssues.check_id));
-  return rows.map(toIssue);
+  return rows.map((row) => toIssue(row));
 }
 
 /** The issue of a repository with this number, with the host and check it is about. */

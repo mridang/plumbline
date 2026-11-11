@@ -69,8 +69,14 @@ describe('parseLevel', () => {
 describe('with no configuration file', () => {
   it('uses the recommended rules and opens issues for errors', () => {
     const rules = resolve(null);
-    expect([...rules.levels.keys()].toSorted()).toEqual(
-      Object.keys(RULE_SETS['plumbline:recommended']!).toSorted(),
+    expect(
+      [...rules.levels.keys()].toSorted(
+        (a, b) => Number(a > b) - Number(a < b),
+      ),
+    ).toEqual(
+      Object.keys(RULE_SETS['plumbline:recommended']!).toSorted(
+        (a, b) => Number(a > b) - Number(a < b),
+      ),
     );
     expect(rules).toMatchObject({
       issues: 'error',
@@ -96,8 +102,14 @@ describe('a configuration file', () => {
 
   it('can start from the advanced set', () => {
     const rules = resolve('extends: plumbline:advanced\n');
-    expect([...rules.levels.keys()].toSorted()).toEqual(
-      Object.keys(RULE_SETS['plumbline:advanced']!).toSorted(),
+    expect(
+      [...rules.levels.keys()].toSorted(
+        (a, b) => Number(a > b) - Number(a < b),
+      ),
+    ).toEqual(
+      Object.keys(RULE_SETS['plumbline:advanced']!).toSorted(
+        (a, b) => Number(a > b) - Number(a < b),
+      ),
     );
   });
 
@@ -207,8 +219,14 @@ describe('rules that name a group', () => {
 
   it('sets the rules of a tier', () => {
     const rules = resolve('extends: []\nrules:\n  "tier:experimental": warn\n');
-    expect([...rules.levels.keys()].toSorted()).toEqual(
-      Object.keys(RULE_SETS['plumbline:experimental']!).toSorted(),
+    expect(
+      [...rules.levels.keys()].toSorted(
+        (a, b) => Number(a > b) - Number(a < b),
+      ),
+    ).toEqual(
+      Object.keys(RULE_SETS['plumbline:experimental']!).toSorted(
+        (a, b) => Number(a > b) - Number(a < b),
+      ),
     );
   });
 
@@ -323,10 +341,12 @@ describe('sites', () => {
 
   it('ignores an address that cannot be a site and says why', () => {
     const rules = resolve(
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       'sites:\n  - http://plain.example.com\n  - https://github.com/acme/site\n  - localhost\n  - ok.example.com\n',
     );
     expect(rules.sites).toEqual(['ok.example.com']);
     expect(rules.problems).toEqual([
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       'plumbline.yaml: "http://plain.example.com" in sites is not an https address, so it was ignored.',
       'plumbline.yaml: "https://github.com/acme/site" in sites is not a site (GitHub or a registry), so it was ignored.',
       'plumbline.yaml: "localhost" in sites is not a public domain name, so it was ignored.',
@@ -379,10 +399,12 @@ describe('previews', () => {
 
   it('ignores a target that cannot be a site and says why', () => {
     const rules = resolve(
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       'previews:\n  "pr-*": http://app.example.com\n  ok: app.example.com\n',
     );
     expect(rules.previews).toEqual([['ok', 'app.example.com']]);
     expect(rules.problems).toEqual([
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       'plumbline.yaml: "http://app.example.com" for "pr-*" in previews is not an https address, so it was ignored.',
     ]);
   });

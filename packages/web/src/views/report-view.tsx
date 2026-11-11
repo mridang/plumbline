@@ -182,3 +182,5 @@ export function ReportApp(): ReactElement {
   const bridge = useWidgetData('plumbline-report', isReportData);
   return <ReportScreen state={bridge.state} onOpenLink={bridge.openLink} />;
 }
+
+/* eslint-enable tailwindcss/no-custom-classname -- the classes above come from src/views/styles.ts. */

@@ -39,8 +39,6 @@ describe('accountLinks', () => {
   it('keeps notifications neutral, with no status, as they are per device', () => {
     expect(accountLinks(NOTHING_CONNECTED).notifications).toEqual({
       label: 'Manage notifications',
-      connected: undefined,
-      status: undefined,
     });
   });
 });

@@ -101,7 +101,9 @@ describe('the rules of a view', () => {
     );
     const subs = bySubsection(rulesOfArea(SECTIONS[0]!.id));
     expect(subs.map((g) => g.subsection)).toEqual(
-      subs.map((g) => g.subsection).toSorted(),
+      subs
+        .map((g) => g.subsection)
+        .toSorted((a, b) => Number(a > b) - Number(a < b)),
     );
     expect(subs.flatMap((g) => g.rules)).toHaveLength(
       rulesOfArea(SECTIONS[0]!.id).length,

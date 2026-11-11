@@ -29,7 +29,8 @@ function fake(visible = true) {
       return () => show.splice(show.indexOf(handler), 1);
     },
     setTimeout: (handler, ms) => {
-      const id = next++;
+      const id = next;
+      next += 1;
       timers.set(id, { at: state.now + ms, handler });
       return id;
     },

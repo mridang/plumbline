@@ -45,13 +45,13 @@ describe('/api/domains/:id/reports/:report_id', () => {
   });
 
   it('reads the report of the person the session cookie names', async () => {
-    const body = (await (
-      await GET(new Request(URL, { headers: { cookie } }), params)
-    ).json()) as { id: string };
+    const res = await GET(new Request(URL, { headers: { cookie } }), params);
+    const body = (await res.json()) as { id: string };
     expect(body.id).toBe(REPORT);
   });
 
   it('answers 401 without a session cookie', async () => {
-    expect((await GET(new Request(URL), params)).status).toBe(401);
+    const res = await GET(new Request(URL), params);
+    expect(res.status).toBe(401);
   });
 });

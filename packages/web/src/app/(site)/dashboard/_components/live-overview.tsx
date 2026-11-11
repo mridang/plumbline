@@ -79,10 +79,12 @@ export function LiveOverview({
   const [sort, setSort] = useState<Sort>(DEFAULT_SORT);
 
   useEffect(() => {
+    // eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose: browser EventSource
     if (typeof EventSource === 'undefined') {
       return undefined;
     }
-    let source: EventSource | undefined;
+    // eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose: browser EventSource
+    let source: EventSource | null = null;
     let timer: ReturnType<typeof setTimeout> | undefined;
     // What the page was drawn with is read again by the server, not by a call
     // of ours: the page is the one place that knows how to read it.
@@ -95,6 +97,7 @@ export function LiveOverview({
     const stopKeeping = keepStreamWhileVisible(
       {
         open: () => {
+          // eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose: browser EventSource
           const opened = new EventSource('/events');
           source = opened;
           // A fresh stream starts from now, so read once on every (re)connection to
@@ -114,7 +117,7 @@ export function LiveOverview({
         },
         close: () => {
           source?.close();
-          source = undefined;
+          source = null;
           setConnection('offline');
         },
       },
@@ -194,7 +197,8 @@ export function LiveOverview({
             ? 'No site is shown with these filters.'
             : `Nothing here has “${query.trim()}” in its repository or address.`}
         </EmptyState>
-      ) : (view === 'cards' ? (
+      ) : null}
+      {rows.length > 0 && view === 'cards' ? (
         <SiteCards
           repos={groupRows(rows)}
           paused={pausedSet}
@@ -202,14 +206,15 @@ export function LiveOverview({
           fileOff={fileOffSet}
           now={now}
         />
-      ) : (
+      ) : null}
+      {rows.length > 0 && view !== 'cards' ? (
         <SitesTable
           rows={rows}
           sort={sort}
           onSort={(key) => setSort((current) => nextSort(current, key))}
           now={now}
         />
-      ))}
+      ) : null}
     </div>
   );
 }

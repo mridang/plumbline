@@ -195,7 +195,9 @@ describe('ProbeScanner, a scan', () => {
     ).toBe('passed');
     // Only the network is asked of the probe: pages and files, handshakes, connection tests.
     expect(
-      [...new Set(log.map((line) => line.split(' ', 3)[2]))].sort(),
+      [...new Set(log.map((line) => line.split(' ', 3)[2]))].toSorted((a, b) =>
+        (a ?? '').localeCompare(b ?? ''),
+      ),
     ).toEqual(['/healthz', '/v1/connect', '/v1/handshakes', '/v1/http']);
   });
 
@@ -252,7 +254,8 @@ describe('ProbeScanner, slow probe calls', () => {
         return inner(input, init);
       },
     });
-    await (await made(container).fetch(run())).text();
+    const response = await made(container).fetch(run());
+    await response.text();
     const logged = warn.mock.calls.map((call) => String(call[0]));
     expect(logged.length).toBeGreaterThan(0);
     expect(
@@ -267,7 +270,8 @@ describe('ProbeScanner, slow probe calls', () => {
       .spyOn(console, 'warn')
       .mockImplementation(() => undefined);
     const { container } = probe();
-    await (await made(container).fetch(run())).text();
+    const response = await made(container).fetch(run());
+    await response.text();
     expect(warn).not.toHaveBeenCalled();
   });
 });
@@ -287,7 +291,8 @@ describe('ProbeScanner, the container', () => {
 
   it('does not start a container that is already running, but renews its idle time', async () => {
     const { container, log } = probe({ running: true });
-    await (await made(container).fetch(run())).text();
+    const response = await made(container).fetch(run());
+    await response.text();
     expect(log.some((line) => line.startsWith('start'))).toBe(false);
     expect(log).toContain(`idle ${IDLE_MS}`);
   });
@@ -310,20 +315,18 @@ describe('ProbeScanner, the container', () => {
         new Request('https://scanner.internal/healthz'),
       );
       await jest.advanceTimersByTimeAsync(START_TIMEOUT_MS + 1000);
-      expect((await pending).status).toBe(503);
+      const response = await pending;
+      expect(response.status).toBe(503);
     } finally {
       jest.useRealTimers();
     }
   });
 
   it('answers 503 when no container is bound', async () => {
-    expect(
-      (
-        await made(undefined).fetch(
-          new Request('https://scanner.internal/healthz'),
-        )
-      ).status,
-    ).toBe(503);
+    const response = await made(undefined).fetch(
+      new Request('https://scanner.internal/healthz'),
+    );
+    expect(response.status).toBe(503);
   });
 
   it('forwards anything that is not a scan or a job to the container', async () => {
@@ -349,7 +352,9 @@ const JOB: SuiteJob = {
   appUrl: 'https://plumbline.test',
 };
 
-const post = (job: unknown = { kind: 'deployment', ...JOB }) =>
+const DEPLOYMENT_JOB = { kind: 'deployment', ...JOB };
+
+const post = (job: unknown = DEPLOYMENT_JOB) =>
   new Request('https://scanner.internal/jobs', {
     method: 'POST',
     body: typeof job === 'string' ? job : JSON.stringify(job),
@@ -406,7 +411,8 @@ describe('ProbeScanner, the job of the queue', () => {
   it('refuses a job that is not JSON', async () => {
     const { make } = await setup();
     const { container, asked } = probe();
-    expect((await make(container).fetch(post('nope'))).status).toBe(400);
+    const response = await make(container).fetch(post('nope'));
+    expect(response.status).toBe(400);
     expect(asked).toEqual([]);
   });
 
@@ -426,7 +432,8 @@ describe('ProbeScanner, the job of the queue', () => {
       page: () =>
         new Response('{"error":"the name does not resolve"}', { status: 502 }),
     });
-    expect((await make(container).fetch(post())).status).toBe(200);
+    const response = await make(container).fetch(post());
+    expect(response.status).toBe(200);
     expect(requested).not.toContain(
       'POST https://api.github.com/repos/acme/site/issues',
     );
@@ -447,14 +454,16 @@ describe('ProbeScanner, the job of the queue', () => {
     const { container } = probe({
       page: () => new Response('busy', { status: 500 }),
     });
-    expect((await make(container).fetch(post())).status).toBe(500);
+    const response = await make(container).fetch(post());
+    expect(response.status).toBe(500);
   });
 
   it('drops a deployment job when GitHub is not set up', async () => {
     const { make } = await setup({});
     const { container, asked } = probe();
     jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    expect((await make(container).fetch(post())).status).toBe(200);
+    const response = await make(container).fetch(post());
+    expect(response.status).toBe(200);
     expect(asked).toEqual([]);
   });
 
@@ -462,7 +471,8 @@ describe('ProbeScanner, the job of the queue', () => {
     const { db, make } = await setup();
     const { domain } = await addDomain(db, 7, 'site.test', 'acme/site');
     const { container, asked } = probe();
-    expect((await make(container).fetch(post(RECHECK))).status).toBe(200);
+    const response = await make(container).fetch(post(RECHECK));
+    expect(response.status).toBe(200);
     expect([...new Set(asked)]).toEqual(['site.test']);
     expect(
       await listRuns(db, 7, { domainId: domain.id, host: 'site.test' }, 10),
@@ -473,7 +483,8 @@ describe('ProbeScanner, the job of the queue', () => {
     const { db, make } = await setup();
     await disableRepo(db, 7, 'acme/site');
     const { container, asked } = probe();
-    expect((await make(container).fetch(post(RECHECK))).status).toBe(200);
+    const response = await make(container).fetch(post(RECHECK));
+    expect(response.status).toBe(200);
     expect(asked).toEqual([]);
   });
 
@@ -481,7 +492,8 @@ describe('ProbeScanner, the job of the queue', () => {
     const { db, make } = await setup();
     jest.spyOn(console, 'error').mockImplementation(() => undefined);
     const { container } = probe({ down: true });
-    expect((await make(container).fetch(post(RECHECK))).status).toBe(500);
+    const response = await make(container).fetch(post(RECHECK));
+    expect(response.status).toBe(500);
     expect(await latestRuns(db, 7, 'site.test', 1)).toEqual([]);
   });
 });

@@ -125,14 +125,14 @@ export function SideNav({ here }: Readonly<{ here: Here }>): ReactElement {
         Overview
       </Item>
       <Head>Rule sets</Head>
-      {TOP.map(setItem)}
+      {TOP.map((id) => setItem(id))}
       {folded.length > 0 ? (
         <Fold
           title="Add-ons and audiences"
-          open={folded.some(isSet)}
+          open={folded.some((id) => isSet(id))}
           count={folded.length}
         >
-          {folded.map(setItem)}
+          {folded.map((id) => setItem(id))}
         </Fold>
       ) : null}
       <Head>Rules by area</Head>

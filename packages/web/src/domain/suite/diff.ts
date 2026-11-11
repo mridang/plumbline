@@ -41,8 +41,8 @@ export function diffFindings(
   before: readonly StoredFinding[],
   after: readonly StoredFinding[],
 ): Changes {
-  const was = new Set(before.map(keyOf));
-  const is = new Set(after.map(keyOf));
+  const was = new Set(before.map((found) => keyOf(found)));
+  const is = new Set(after.map((found) => keyOf(found)));
   return {
     added: after.filter((found) => !was.has(keyOf(found))),
     fixed: before.filter((found) => !is.has(keyOf(found))),

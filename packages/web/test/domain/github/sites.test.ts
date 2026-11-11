@@ -17,9 +17,16 @@ type Db = ReturnType<typeof empty>['db'];
 
 /** The sites of a person as host, repository, source and environment, in host order. */
 async function sitesOf(db: Db, user = 1) {
-  return (await listDomains(db, user))
+  const domains = await listDomains(db, user);
+  return domains
     .map((d) => [d.host, d.repo, d.source, d.environment] as const)
     .toSorted(([a], [b]) => a.localeCompare(b));
+}
+
+/** The hosts of a person's sites, in host order. */
+async function hostsOf(db: Db, user = 1) {
+  const sites = await sitesOf(db, user);
+  return sites.map(([host]) => host);
 }
 
 const seed = (
@@ -54,9 +61,7 @@ describe('reconcileSites, the sites a file declares', () => {
       declared: ['a.example.com'],
     });
     expect(changes.removed).toEqual(['b.example.com']);
-    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
-      'a.example.com',
-    ]);
+    expect(await hostsOf(db)).toEqual(['a.example.com']);
   });
 
   it('leaves the config sites alone when the file could not be read', async () => {
@@ -64,9 +69,7 @@ describe('reconcileSites, the sites a file declares', () => {
     await seed(db, 'a.example.com', 'config');
     await reconcileSites(db, 1, 'o/site', { declared: null });
     await reconcileSites(db, 1, 'o/site', {});
-    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
-      'a.example.com',
-    ]);
+    expect(await hostsOf(db)).toEqual(['a.example.com']);
   });
 
   it('never drops a site a person added, not even one the file used to declare', async () => {
@@ -99,10 +102,7 @@ describe('reconcileSites, the address a deployment reports', () => {
     await reconcileSites(db, 1, 'o/site', {
       deployed: { environment: 'micro_svc', host: 'svc.example.com' },
     });
-    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
-      'foo.example.com',
-      'svc.example.com',
-    ]);
+    expect(await hostsOf(db)).toEqual(['foo.example.com', 'svc.example.com']);
   });
 
   it('replaces the address of an environment that now reports another', async () => {
@@ -120,10 +120,7 @@ describe('reconcileSites, the address a deployment reports', () => {
       added: ['new.example.com'],
       removed: ['old.example.com'],
     });
-    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
-      'foo.example.com',
-      'new.example.com',
-    ]);
+    expect(await hostsOf(db)).toEqual(['foo.example.com', 'new.example.com']);
   });
 
   it('does not drop the old address of an environment when the file declares it', async () => {
@@ -135,10 +132,7 @@ describe('reconcileSites, the address a deployment reports', () => {
       declared: ['old.example.com'],
       deployed: { environment: 'production', host: 'new.example.com' },
     });
-    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
-      'new.example.com',
-      'old.example.com',
-    ]);
+    expect(await hostsOf(db)).toEqual(['new.example.com', 'old.example.com']);
   });
 
   it('does not drop a site a person added when the environment moves on', async () => {
@@ -150,10 +144,7 @@ describe('reconcileSites, the address a deployment reports', () => {
     await reconcileSites(db, 1, 'o/site', {
       deployed: { environment: 'production', host: 'new.example.com' },
     });
-    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
-      'hand.example.com',
-      'new.example.com',
-    ]);
+    expect(await hostsOf(db)).toEqual(['hand.example.com', 'new.example.com']);
   });
 });
 
@@ -176,9 +167,7 @@ describe('reconcileSites, the fallback', () => {
       declared: [],
       fallback: ['marshall.apps.mrida.ng'],
     });
-    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
-      'marshall.apps.mrida.ng',
-    ]);
+    expect(await hostsOf(db)).toEqual(['marshall.apps.mrida.ng']);
   });
 
   it('is dropped, and not added, once a deployment has named a site', async () => {
@@ -187,16 +176,12 @@ describe('reconcileSites, the fallback', () => {
     await reconcileSites(db, 1, 'o/site', {
       deployed: { environment: 'production', host: 'live.example.com' },
     });
-    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
-      'live.example.com',
-    ]);
+    expect(await hostsOf(db)).toEqual(['live.example.com']);
     await reconcileSites(db, 1, 'o/site', {
       declared: [],
       fallback: ['stale.example.com'],
     });
-    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
-      'live.example.com',
-    ]);
+    expect(await hostsOf(db)).toEqual(['live.example.com']);
   });
 
   it('is dropped, and not added, once the file declares a site', async () => {
@@ -206,18 +191,14 @@ describe('reconcileSites, the fallback', () => {
       declared: ['declared.example.com'],
       fallback: ['stale.example.com'],
     });
-    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
-      'declared.example.com',
-    ]);
+    expect(await hostsOf(db)).toEqual(['declared.example.com']);
   });
 
   it('is left alone when the repository could not be read', async () => {
     const { db } = empty();
     await seed(db, 'a.example.com', 'fallback');
     await reconcileSites(db, 1, 'o/site', { declared: null, fallback: null });
-    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
-      'a.example.com',
-    ]);
+    expect(await hostsOf(db)).toEqual(['a.example.com']);
   });
 
   it('becomes the deployment site when a deployment reports the same address', async () => {
@@ -240,12 +221,8 @@ describe('reconcileSites, whose sites it touches', () => {
       source: 'config',
     });
     await reconcileSites(db, 1, 'o/site', { declared: [], fallback: [] });
-    expect((await sitesOf(db)).map(([host]) => host)).toEqual([
-      'other.example.com',
-    ]);
-    expect((await sitesOf(db, 2)).map(([host]) => host)).toEqual([
-      'theirs.example.com',
-    ]);
+    expect(await hostsOf(db)).toEqual(['other.example.com']);
+    expect(await hostsOf(db, 2)).toEqual(['theirs.example.com']);
   });
 
   it('stops adding at the number of domains a person may keep', async () => {
@@ -267,8 +244,10 @@ describe('reconcileSites, whose sites it touches', () => {
     }
     await addDomain(db, 1, 'full.example.com');
     await reconcileSites(db, 1, 'o/site', { declared: ['full.example.com'] });
-    expect(
-      (await listDomains(db, 1)).find((d) => d.host === 'full.example.com'),
-    ).toMatchObject({ repo: 'o/site', source: 'manual' });
+    const domains = await listDomains(db, 1);
+    expect(domains.find((d) => d.host === 'full.example.com')).toMatchObject({
+      repo: 'o/site',
+      source: 'manual',
+    });
   });
 });

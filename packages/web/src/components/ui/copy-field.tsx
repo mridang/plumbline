@@ -31,12 +31,16 @@ export function CopyField({
         {value}
       </code>
       <Button
-        onClick={() => {
+        onClick={async () => {
           // `clipboard` is missing on insecure pages; then there is nothing to confirm.
-          void navigator.clipboard?.writeText(value).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), CONFIRMATION_MS);
-          });
+          // eslint-disable-next-line n/no-unsupported-features/node-builtins -- browser navigator global, not the Node builtin; used on purpose
+          const clipboard = navigator.clipboard;
+          if (!clipboard) {
+            return;
+          }
+          await clipboard.writeText(value);
+          setCopied(true);
+          setTimeout(() => setCopied(false), CONFIRMATION_MS);
         }}
       >
         {copied ? <CheckIcon size="sm" /> : <CopyIcon size="sm" />}

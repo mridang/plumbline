@@ -47,7 +47,7 @@ export function keepStreamWhileVisible(
   graceMs: number = HIDDEN_GRACE_MS,
 ): () => void {
   let isOpen = false;
-  let timer: unknown;
+  let timer: unknown = null;
   const open = (): void => {
     if (!isOpen) {
       isOpen = true;
@@ -61,9 +61,9 @@ export function keepStreamWhileVisible(
     }
   };
   const cancelGrace = (): void => {
-    if (timer !== undefined) {
+    if (timer !== null) {
       environment.clearTimeout(timer);
-      timer = undefined;
+      timer = null;
     }
   };
   const changed = (): void => {
@@ -72,9 +72,11 @@ export function keepStreamWhileVisible(
       open();
     } else if (isOpen) {
       timer = environment.setTimeout(() => {
-        timer = undefined;
+        timer = null;
         close();
       }, graceMs);
+    } else {
+      // The stream is already closed, so there is nothing to wait for.
     }
   };
   const stops = [

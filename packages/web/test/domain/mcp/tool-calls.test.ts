@@ -171,9 +171,8 @@ describe('callTool — the request', () => {
   it('accepts a host given under its other spelling', async () => {
     const { db, call } = setup();
     await addDomain(db, USER.id, 'example.com');
-    expect((await call('get_domain', { host: 'example.com' })).isError).toBe(
-      undefined,
-    );
+    const result = await call('get_domain', { host: 'example.com' });
+    expect(result.isError).toBeUndefined();
   });
 });
 
@@ -322,7 +321,8 @@ describe('list_repositories', () => {
 
   it('takes no arguments and changes nothing', async () => {
     const { call } = setup();
-    expect((await call('list_repositories')).isError).not.toBe(true);
+    const result = await call('list_repositories');
+    expect(result.isError).not.toBe(true);
   });
 });
 
@@ -351,7 +351,8 @@ describe('list_domains', () => {
 
   it('gives the view the list', async () => {
     const { call, domain } = await scanned();
-    expect((await call('list_domains')).structuredContent).toMatchObject({
+    const result = await call('list_domains');
+    expect(result.structuredContent).toMatchObject({
       total_checks: TOTAL,
       domains: [{ id: domain.id, host: 'example.com', checks: TOTAL }],
     });
@@ -431,16 +432,14 @@ describe('get_domain', () => {
     ['a trailing dot', 'example.com.'],
   ])('finds the domain by %s', async (_label, given) => {
     const { call } = await scanned();
-    expect(
-      (await call('get_domain', { domain: given })).isError,
-    ).toBeUndefined();
+    const result = await call('get_domain', { domain: given });
+    expect(result.isError).toBeUndefined();
   });
 
   it('finds the domain by its id', async () => {
     const { call, domain } = await scanned();
-    expect(
-      (await call('get_domain', { domain: domain.id })).isError,
-    ).toBeUndefined();
+    const result = await call('get_domain', { domain: domain.id });
+    expect(result.isError).toBeUndefined();
   });
 
   it('refuses a domain the user does not have, and says how to add it', async () => {
@@ -453,19 +452,22 @@ describe('get_domain', () => {
 
   it('refuses another user’s domain, by host', async () => {
     const { call } = await scanned();
-    expect(
-      (await call('get_domain', { domain: 'example.com' }, STRANGER)).isError,
-    ).toBe(true);
+    const result = await call(
+      'get_domain',
+      { domain: 'example.com' },
+      STRANGER,
+    );
+    expect(result.isError).toBe(true);
   });
 
   it('refuses another user’s domain, by id', async () => {
     const { call, domain } = await scanned();
-    expect(
-      (await call('get_domain', { domain: domain.id }, STRANGER)).isError,
-    ).toBe(true);
+    const result = await call('get_domain', { domain: domain.id }, STRANGER);
+    expect(result.isError).toBe(true);
   });
 
   it('refuses an address that is not a public domain, saying why', async () => {
+    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
     const result = await setup().call('get_domain', { domain: '192.168.1.1' });
     expect(textOf(result)).toBe(
       'domain: Enter a domain name, not an IP address.',
@@ -476,17 +478,21 @@ describe('get_domain', () => {
 describe('get_report', () => {
   it('reads the newest report by default', async () => {
     const { call } = await scanned();
-    expect(
-      (await call('get_report', { domain: 'example.com' })).structuredContent,
-    ).toMatchObject({ created_at: '2026-10-01T00:00:00.000Z' });
+    const result = await call('get_report', { domain: 'example.com' });
+    expect(result.structuredContent).toMatchObject({
+      created_at: '2026-10-01T00:00:00.000Z',
+    });
   });
 
   it('reads an older report by its id', async () => {
     const { call } = await scanned();
-    expect(
-      (await call('get_report', { domain: 'example.com', report: OLD_REPORT }))
-        .structuredContent,
-    ).toMatchObject({ created_at: '2026-09-01T00:00:00.000Z' });
+    const result = await call('get_report', {
+      domain: 'example.com',
+      report: OLD_REPORT,
+    });
+    expect(result.structuredContent).toMatchObject({
+      created_at: '2026-09-01T00:00:00.000Z',
+    });
   });
 
   it('tells the model what failed', async () => {
@@ -527,20 +533,16 @@ describe('get_report', () => {
       '00000000-0000-4000-8000-0000000000cc',
       '2026-10-02T00:00:00.000Z',
     );
-    expect(
-      (
-        await call('get_report', {
-          domain: 'example.com',
-          report: '00000000-0000-4000-8000-0000000000cc',
-        })
-      ).isError,
-    ).toBe(true);
+    const result = await call('get_report', {
+      domain: 'example.com',
+      report: '00000000-0000-4000-8000-0000000000cc',
+    });
+    expect(result.isError).toBe(true);
   });
 
   it('refuses a domain the user does not have', async () => {
-    expect(
-      (await setup().call('get_report', { domain: 'example.com' })).isError,
-    ).toBe(true);
+    const result = await setup().call('get_report', { domain: 'example.com' });
+    expect(result.isError).toBe(true);
   });
 });
 
@@ -565,9 +567,10 @@ describe('list_reports', () => {
   });
 
   it('refuses a domain the user does not have', async () => {
-    expect(
-      (await setup().call('list_reports', { domain: 'example.com' })).isError,
-    ).toBe(true);
+    const result = await setup().call('list_reports', {
+      domain: 'example.com',
+    });
+    expect(result.isError).toBe(true);
   });
 });
 
@@ -595,9 +598,8 @@ describe('scan_domain', () => {
   });
 
   it('refuses a domain the user does not have', async () => {
-    expect(
-      (await setup().call('scan_domain', { domain: 'example.com' })).isError,
-    ).toBe(true);
+    const result = await setup().call('scan_domain', { domain: 'example.com' });
+    expect(result.isError).toBe(true);
   });
 });
 
@@ -666,7 +668,8 @@ describe('remove_domain', () => {
 describe('configure_checks', () => {
   /** The checks stored for example.com. */
   async function stored(db: Database, id: string) {
-    return (await getDomain(db, USER.id, id))?.checks;
+    const found = await getDomain(db, USER.id, id);
+    return found?.checks;
   }
 
   it('switches a group off', async () => {
@@ -763,13 +766,10 @@ describe('configure_checks', () => {
   });
 
   it('refuses a domain the user does not have', async () => {
-    expect(
-      (
-        await setup().call('configure_checks', {
-          domain: 'example.com',
-          all: true,
-        })
-      ).isError,
-    ).toBe(true);
+    const result = await setup().call('configure_checks', {
+      domain: 'example.com',
+      all: true,
+    });
+    expect(result.isError).toBe(true);
   });
 });

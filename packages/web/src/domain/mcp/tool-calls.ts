@@ -145,11 +145,13 @@ function listChecks(args: Args): ToolResult {
   );
   const offset = offsetArg(args['offset']);
   const page = pool.slice(offset, offset + limit);
+  const groupText = group ? ` in ${group}` : '';
+  const queryText = query ? ` matching "${query}"` : '';
   const lines = [
     ...(group === '' && query === '' && offset === 0
       ? [`Groups: ${GROUPS.join(', ')}.`, '']
       : []),
-    `${countOf(pool.length, 'check')}${group ? ` in ${group}` : ''}${query ? ` matching "${query}"` : ''}; showing ${page.length} from ${offset}.`,
+    `${countOf(pool.length, 'check')}${groupText}${queryText}; showing ${page.length} from ${offset}.`,
     ...page.map(
       (check) =>
         `- ${check.id}: ${check.name} [${check.groups.join(', ')}] ${check.description}`,
@@ -209,6 +211,7 @@ async function getDomainTool(
 ): Promise<ToolResult> {
   const on = enabledChecks(domain.checks);
   const off = CHECKS.filter((check) => !on.includes(check.id));
+  const offMore = off.length > 100 ? `, and ${off.length - 100} more` : '';
   const [latest] = await listReports(db, user.id, domain.id, 1);
   return textResult(
     [
@@ -221,9 +224,7 @@ async function getDomainTool(
             `Switched off: ${off
               .slice(0, 100)
               .map((check) => check.id)
-              .join(
-                ', ',
-              )}${off.length > 100 ? `, and ${off.length - 100} more` : ''}.`,
+              .join(', ')}${offMore}.`,
           ]
         : []),
       latest
@@ -234,6 +235,19 @@ async function getDomainTool(
   );
 }
 
+/** The newest report when no id is given, otherwise the one the id names. */
+async function namedReport(
+  db: Database,
+  userId: number,
+  domainId: string,
+  id: string,
+) {
+  if (id === '') {
+    return latestReport(db, userId, domainId);
+  }
+  return isReportId(id) ? getReport(db, userId, domainId, id) : undefined;
+}
+
 /** `get_report`: the newest report, or the one `report` names. */
 async function getReportTool(
   db: Database,
@@ -242,12 +256,7 @@ async function getReportTool(
   args: Args,
 ): Promise<ToolResult> {
   const id = stringArg(args['report']);
-  const report =
-    id === ''
-      ? await latestReport(db, user.id, domain.id)
-      : isReportId(id)
-        ? await getReport(db, user.id, domain.id, id)
-        : undefined;
+  const report = await namedReport(db, user.id, domain.id, id);
   if (!report) {
     return id === ''
       ? errorResult(
@@ -331,9 +340,15 @@ async function configureChecksTool(
     ...enable.ids.slice(0, 5).map((id) => `on: ${checkName(id)}`),
     ...disable.ids.slice(0, 5).map((id) => `off: ${checkName(id)}`),
   ];
-  return textResult(
-    `${domain.host} now runs ${chosen === null ? `every check (${count})` : `${count} of ${CHECKS.length} checks`}.${changed.length > 0 ? ` Changed ${changed.join('; ')}${enable.ids.length + disable.ids.length > changed.length ? ', and more' : ''}.` : ''}`,
-  );
+  const scope =
+    chosen === null
+      ? `every check (${count})`
+      : `${count} of ${CHECKS.length} checks`;
+  const more =
+    enable.ids.length + disable.ids.length > changed.length ? ', and more' : '';
+  const changedText =
+    changed.length > 0 ? ` Changed ${changed.join('; ')}${more}.` : '';
+  return textResult(`${domain.host} now runs ${scope}.${changedText}`);
 }
 
 /** The tools that act on one of the user's existing domains. */
@@ -353,6 +368,7 @@ const DOMAIN_TOOLS: Readonly<
   get_domain: getDomainTool,
   get_report: getReportTool,
   list_reports: listReportsTool,
+  // eslint-disable-next-line sonarjs/function-name -- the key is the scan_domain tool name the assistant calls
   scan_domain: (_db, _user, domain) => scanDomainTool(domain),
   remove_domain: removeDomainTool,
   configure_checks: configureChecksTool,

@@ -348,12 +348,19 @@ export function AreaFolds({
   }
   const context = { view, path, showTier };
   const filtered = view.q !== '' || view.tier !== undefined;
-  const open = (entry: { rules: readonly Check[] }): boolean =>
-    view.open === 'all' ||
-    (view.open !== 'none' &&
-      (!foldedByDefault ||
-        filtered ||
-        entry.rules.some((check) => check.id === view.rule)));
+  const open = (entry: { rules: readonly Check[] }): boolean => {
+    if (view.open === 'all') {
+      return true;
+    }
+    if (view.open === 'none') {
+      return false;
+    }
+    return (
+      !foldedByDefault ||
+      filtered ||
+      entry.rules.some((check) => check.id === view.rule)
+    );
+  };
   return (
     <div className="space-y-3">
       {groups.map((entry) => (

@@ -30,9 +30,10 @@ export function CopyButton({
       aria-label={copied ? `${label}: copied` : `Copy ${label}`}
       title={copied ? 'Copied' : `Copy ${label}`}
       onClick={() => {
+        // eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose: the browser's global, not Node's
         void navigator.clipboard?.writeText(value).then(() => {
           setCopied(true);
-          setTimeout(() => setCopied(false), COPIED_MS);
+          return setTimeout(() => setCopied(false), COPIED_MS);
         });
       }}
       className={cn(

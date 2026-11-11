@@ -136,6 +136,8 @@ export function syncModal(
     dialog.showModal();
   } else if (!open && dialog.open) {
     dialog.close();
+  } else {
+    // Already in the requested state: nothing to do.
   }
 }
 
@@ -223,7 +225,7 @@ function useMounted(open: boolean): boolean {
   }
   useEffect(() => {
     if (!leaving) {
-      return;
+      return undefined;
     }
     const timer = setTimeout(() => setLeaving(false), LEAVE_MS);
     return () => clearTimeout(timer);
@@ -303,7 +305,7 @@ export function DialogContent({
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog || !dismissable || supportsLightDismiss(dialog)) {
-      return;
+      return undefined;
     }
     const onClick = backdropClickHandler(dialog, () => setOpen(false));
     dialog.addEventListener('click', onClick);

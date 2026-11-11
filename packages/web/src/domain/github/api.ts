@@ -281,7 +281,10 @@ export class GitHubApi {
     branch: string,
     maxBytes?: number,
   ): Promise<string> {
-    const encoded = path.split('/').map(encodeURIComponent).join('/');
+    const encoded = path
+      .split('/')
+      .map((segment) => encodeURIComponent(segment))
+      .join('/');
     return this.text(
       `/repos/${fullName}/contents/${encoded}?ref=${encodeURIComponent(branch)}`,
       maxBytes,

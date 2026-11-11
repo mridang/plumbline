@@ -10,8 +10,7 @@ import { base64ToBytes, bytesToBase64 } from '@/utils/base64';
 
 /** The DER header of an `rsaEncryption` algorithm identifier. */
 const RSA_ALGORITHM = new Uint8Array([
-  0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x01,
-  0x05, 0x00,
+  48, 13, 6, 9, 42, 134, 72, 134, 247, 13, 1, 1, 1, 5, 0,
 ]);
 
 /** The DER length bytes for a body of `size` bytes. */
@@ -19,10 +18,12 @@ function lengthOf(size: number): number[] {
   if (size < 0x80) {
     return [size];
   }
-  if (size <= 0xFF) {
+  // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+  if (size <= 0xff) {
     return [0x81, size];
   }
-  return [0x82, size >> 8, size & 0xFF];
+  // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+  return [0x82, size >> 8, size & 0xff];
 }
 
 /** A DER element: the tag, the length and the body. */

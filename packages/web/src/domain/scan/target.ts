@@ -73,7 +73,7 @@ function isTrackingParam(name: string): boolean {
 export function canonicalUrl(input: URL): URL {
   const url = new URL(input.href);
   url.hash = '';
-  url.hostname = url.hostname.replace(/\.+$/, '');
+  url.hostname = stripTrailingDots(url.hostname);
   url.pathname = url.pathname.replaceAll(/\/{2,}/g, '/');
   // The pairs are kept as they were written, not decoded and encoded again,
   // so a server that reads `+` and `%20` differently gets what was typed.
@@ -84,10 +84,22 @@ export function canonicalUrl(input: URL): URL {
     .filter((pair) => !isTrackingParam(nameOf(pair)));
   kept.sort((a, b) => {
     const [x, y] = [nameOf(a), nameOf(b)];
-    return x < y ? -1 : (x > y ? 1 : 0);
+    if (x < y) {
+      return -1;
+    }
+    return x > y ? 1 : 0;
   });
   url.search = kept.join('&');
   return url;
+}
+
+/** The name without any dots at its end. */
+function stripTrailingDots(name: string): string {
+  let end = name.length;
+  while (end > 0 && name[end - 1] === '.') {
+    end -= 1;
+  }
+  return name.slice(0, end);
 }
 
 /** Whether a hostname is an IPv4 or IPv6 literal. */
@@ -128,7 +140,7 @@ export function readTarget(input: string): Target {
   if (url.username !== '' || url.password !== '') {
     return { ok: false, reason: 'Leave the user name and password out.' };
   }
-  const hostname = url.hostname.toLowerCase().replace(/\.+$/, '');
+  const hostname = stripTrailingDots(url.hostname.toLowerCase());
   if (isIpLiteral(hostname)) {
     return { ok: false, reason: 'Enter a domain name, not an IP address.' };
   }

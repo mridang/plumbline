@@ -103,7 +103,6 @@ function SiteBlock({
           <Fact label="Commit">
             <a
               href={commitUrl(repo, site.sha)}
-              title={site.sha}
               className="focus-ring rounded-sm font-mono hover:text-accent"
             >
               {site.sha.slice(0, 7)}
@@ -164,7 +163,6 @@ export function SiteCard({
               <a
                 href={issuesUrl(repo.repo)}
                 className="focus-ring rounded-full"
-                title="Issues Plumbline has open on GitHub"
               >
                 <Badge tone="bad">{repo.open_issues} open</Badge>
               </a>

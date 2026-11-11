@@ -38,7 +38,7 @@ export function siteScore(site: Readonly<ScoredSite>): number | null {
 /** The score of a repository, or null when none of its sites has been checked. */
 export function repoScore(sites: readonly ScoredSite[]): number | null {
   const scores = sites
-    .map(siteScore)
+    .map((site) => siteScore(site))
     .filter((score): score is number => score !== null);
   return scores.length === 0
     ? null

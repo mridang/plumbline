@@ -54,11 +54,9 @@ describe('upsertUser', () => {
     const { db, calls } = fakeDb({ insert: [[saved]] });
     await upsertUser(db, { google_sub: 's', email: 'a@b.com', name: 'Ann' });
     const set = updateOf(calls);
-    expect(Object.keys(set).toSorted()).toEqual([
-      'email',
-      'name',
-      'updated_at',
-    ]);
+    expect(
+      Object.keys(set).toSorted((a, b) => Number(a > b) - Number(a < b)),
+    ).toEqual(['email', 'name', 'updated_at']);
   });
 
   it('throws if the database returns no row', async () => {

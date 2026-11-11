@@ -110,6 +110,7 @@ describe('classifyDeployment', () => {
     ).toBe('https://pr-3.site.test/');
     expect(
       classifyDeployment(
+        // eslint-disable-next-line unicorn/prefer-https -- test fixture
         status('success', 'Preview', { environment_url: 'http://plain.test/' }),
       )?.url,
     ).toBeNull();
@@ -193,7 +194,10 @@ describe('checkDeployment', () => {
       },
     });
     // The sites are checked together, so which request comes first is not fixed.
-    expect(urls.toSorted()).toEqual(['https://a.test/', 'https://b.test/']);
+    expect(urls.toSorted((a, b) => Number(a > b) - Number(a < b))).toEqual([
+      'https://a.test/',
+      'https://b.test/',
+    ]);
     expect(outcomes.map((o) => o.host)).toEqual(['a.test', 'b.test']);
     const [stored] = await latestRuns(db, 1, 'a.test');
     expect(stored).toMatchObject({
@@ -416,7 +420,8 @@ describe('checkSite and the history', () => {
   it('records a run forced by a change to the rules as a config run', async () => {
     const { db, domainId } = await withDomain();
     await checkSite(db, 1, site, { run, force: true });
-    expect((await history(db, domainId))[0]?.kind).toBe('config');
+    const runs = await history(db, domainId);
+    expect(runs[0]?.kind).toBe('config');
   });
 
   it('records the kind it is given, and a run without counts or outcomes as one that cannot be opened', async () => {
@@ -649,8 +654,10 @@ describe('checkSite, telling the live dashboard', () => {
 
 describe('checkSite, when the scheduled re-check comes round', () => {
   const site = { host: 'a.test', repo: 'acme/site', sha: 'abc' };
-  const dueAt = async (db: Awaited<ReturnType<typeof setup>>) =>
-    (await dueSites(db, '9999-01-01T00:00:00.000Z', 10)).map((due) => due.host);
+  const dueAt = async (db: Awaited<ReturnType<typeof setup>>) => {
+    const rows = await dueSites(db, '9999-01-01T00:00:00.000Z', 10);
+    return rows.map((due) => due.host);
+  };
   const dueBefore = (db: Awaited<ReturnType<typeof setup>>) =>
     dueSites(db, '2026-11-06T00:00:00.000Z', 10).then((rows) =>
       rows.map((due) => due.host),

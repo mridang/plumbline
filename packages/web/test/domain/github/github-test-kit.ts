@@ -2,6 +2,7 @@ import { createHmac, generateKeyPairSync } from 'node:crypto';
 
 import { jest } from '@jest/globals';
 
+// eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap: one test key generated at load
 const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
 
 /** The GitHub App's settings in the Worker environment. */
