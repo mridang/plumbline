@@ -1,6 +1,6 @@
 # @mridang/plumbline-skills
 
-Agent skills that audit a website with the [plumbline CLI](../cli/README.md) and explain how to fix what fails, packaged both in the open [Agent Skills](https://agentskills.io) format and as a [Claude Code plugin](https://docs.claude.com/en/docs/claude-code/plugins). They work in Claude Code, Codex, Cursor, GitHub Copilot and any other agent that reads `SKILL.md` folders.
+Agent skills that audit a website with the [plumbline CLI](../cli/readme.md) and explain how to fix what fails, packaged both in the open [Agent Skills](https://agentskills.io) format and as a [Claude Code plugin](https://docs.claude.com/en/docs/claude-code/plugins). They work in Claude Code, Codex, Cursor, GitHub Copilot and any other agent that reads `SKILL.md` folders.
 
 | Skill or command                                 | What it does                                                                                                                                                                                                    |
 | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -45,7 +45,7 @@ That installs the skill and the `/plumbline:audit` command. The command asks to 
 
 ## Use it
 
-Ask in plain words, for example "audit the security headers of example.com", "is our TLS and email setup right?" or "why does our site fail Observatory?". The skill scans, groups the findings, leads with errors, and gives the fix for each. For a CI gate rather than an audit, see the [CLI](../cli/README.md#in-ci).
+Ask in plain words, for example "audit the security headers of example.com", "is our TLS and email setup right?" or "why does our site fail Observatory?". The skill scans, groups the findings, leads with errors, and gives the fix for each. For a CI gate rather than an audit, see the [CLI](../cli/readme.md#in-ci).
 
 Without a local browser, connect the agent to the plumbline MCP server instead, at `https://plumbline.apps.mrida.ng/mcp` (see [`packages/web`](../web/README.md)).
 

@@ -45,5 +45,13 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/plugin.d.ts",
+      "default": "./dist/plugin.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": true
 }

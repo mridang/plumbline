@@ -14,7 +14,7 @@
 
 import {
   ProbeError,
-  ProbeUnavailable,
+  ProbeUnavailableError,
   encodeBatch,
   encodeItem,
   parseBatch,
@@ -177,7 +177,7 @@ export class ProbeClient {
         try {
           answer = await this.transport(path, body);
         } catch (error) {
-          throw new ProbeUnavailable(
+          throw new ProbeUnavailableError(
             `the probe could not be reached: ${error instanceof Error ? error.message : String(error)}`,
           );
         }
@@ -203,7 +203,7 @@ export class ProbeClient {
       throw new ProbeError(parseComplaint(answer.text));
     }
     if (answer.status !== 200) {
-      throw new ProbeUnavailable(
+      throw new ProbeUnavailableError(
         `the probe answered ${answer.status}${answer.status === 503 ? ' (it is busy)' : ''}`,
       );
     }

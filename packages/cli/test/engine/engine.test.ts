@@ -45,7 +45,7 @@ const data = (html: string): NetworkData =>
     request: { headers: {}, url: 'https://example.com/' },
     response: {
       body: { content: html, rawContent: Buffer.from(html) },
-      charset: 'utf-8',
+      charset: new TextDecoder().encoding,
       headers: { server: 'x' },
       hops: [],
       mediaType: 'text/html',

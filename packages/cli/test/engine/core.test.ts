@@ -6,7 +6,7 @@ import {
   type ScanEnvironment,
   type ScanEvent,
 } from '../../src/engine/core.js';
-import { ScanRefused } from '../../src/engine/scannable.js';
+import { ScanRefusedError } from '../../src/engine/scannable.js';
 
 const page = (): Response =>
   new Response('<html><head><title>x</title></head><body>hi</body></html>', {
@@ -72,7 +72,7 @@ describe('runScanWith', () => {
   it('says why a page could not be scanned when the address is refused, and still ends and removes what it installed', async () => {
     const { env, installed } = environment({
       assertScannable: () =>
-        Promise.reject(new ScanRefused('Port 22 cannot be fetched')),
+        Promise.reject(new ScanRefusedError('Port 22 cannot be fetched')),
     });
     const out = await events(env, 'https://example.com:22/');
     expect(out).toEqual([

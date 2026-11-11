@@ -1,8 +1,7 @@
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 
 const packageJson = JSON.parse(
-  // eslint-disable-next-line n/no-sync -- sync is fine in a config file read once at load
-  readFileSync(new URL('package.json', import.meta.url), 'utf8'),
+  await readFile(new URL('package.json', import.meta.url), 'utf8'),
 );
 
 const packages = ['cli', 'formatter', 'hints', 'lighthouse', 'skills'];

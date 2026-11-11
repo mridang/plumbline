@@ -13,7 +13,8 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./dist/*": "./dist/*"
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
   },
   "imports": {
     "#hint": {
@@ -29,7 +30,7 @@
       "default": "./dist/node/tls.js"
     },
     "#child_process": {
-      "types": "./types/child_process.d.ts",
+      "types": "./types/child-process.d.ts",
       "default": "./dist/node/child-process.js"
     },
     "#crypto": {
@@ -105,5 +106,6 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "sideEffects": true
 }

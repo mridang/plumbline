@@ -2,7 +2,7 @@
 
 An HTTP server that scans a URL with every [plumbline](../hints/README.md) check, with a real Chromium, and answers with the findings as JSON. It lets a project in any language run the checks from its end-to-end tests without a Node toolchain.
 
-The package is private and never published to npm. It is shipped only as the Docker image `mridang/plumbline`, multi-arch (`linux/amd64` and `linux/arm64`) and released in lockstep with the npm packages. The scan itself is the one in [`@mridang/plumbline`](../cli/README.md), so it runs every check, TLS, DNS and mail included.
+The package is private and never published to npm. It is shipped only as the Docker image `mridang/plumbline`, multi-arch (`linux/amd64` and `linux/arm64`) and released in lockstep with the npm packages. The scan itself is the one in [`@mridang/plumbline`](../cli/readme.md), so it runs every check, TLS, DNS and mail included.
 
 ## Run
 

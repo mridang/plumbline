@@ -9,11 +9,12 @@
  * hand so each hop can be checked.
  */
 
-import { brotliDecompressSync, gunzipSync, inflateSync } from 'node:zlib';
+import { promisify } from 'node:util';
+import { brotliDecompress, gunzip, inflate } from 'node:zlib';
 
 import { ProbeError } from './protocol.js';
 import type { HttpRequest, ProbeClient } from './client.js';
-import { ScanRefused, assertScannable } from '../scannable.js';
+import { ScanRefusedError, assertScannable } from '../scannable.js';
 
 /** The user agent sent with every request, so site owners can tell what called. */
 export const USER_AGENT =
@@ -82,28 +83,32 @@ export function unchunk(bytes: Uint8Array): Uint8Array {
   return out;
 }
 
+const gunzipAsync = promisify(gunzip);
+const inflateAsync = promisify(inflate);
+const brotliDecompressAsync = promisify(brotliDecompress);
+
 /** The body with its content coding undone. A coding this does not know is left alone. */
-export function decode(
+export async function decode(
   bytes: Uint8Array,
   encoding: string | undefined,
-): Uint8Array {
+): Promise<Uint8Array> {
   const coding = (encoding ?? '').trim().toLowerCase();
   try {
     switch (coding) {
       case 'gzip':
       case 'x-gzip': {
         return new Uint8Array(
-          gunzipSync(bytes, { maxOutputLength: MAX_BYTES }),
+          await gunzipAsync(bytes, { maxOutputLength: MAX_BYTES }),
         );
       }
       case 'deflate': {
         return new Uint8Array(
-          inflateSync(bytes, { maxOutputLength: MAX_BYTES }),
+          await inflateAsync(bytes, { maxOutputLength: MAX_BYTES }),
         );
       }
       case 'br': {
         return new Uint8Array(
-          brotliDecompressSync(bytes, { maxOutputLength: MAX_BYTES }),
+          await brotliDecompressAsync(bytes, { maxOutputLength: MAX_BYTES }),
         );
       }
       default: {
@@ -162,9 +167,11 @@ async function once(
   if (method !== 'HEAD' && !bodyless(answer.status)) {
     const chunked = /chunked/i.test(lines.get('transfer-encoding') ?? '');
     const raw = chunked ? unchunk(answer.body) : answer.body;
-    body = decode(raw, lines.get('content-encoding') ?? undefined);
+    body = await decode(raw, lines.get('content-encoding') ?? undefined);
     if (body.byteLength > MAX_BYTES) {
-      throw new ScanRefused(`The response is larger than ${MAX_BYTES} bytes`);
+      throw new ScanRefusedError(
+        `The response is larger than ${MAX_BYTES} bytes`,
+      );
     }
   }
   return new Response(body as ConstructorParameters<typeof Response>[0], {
@@ -183,7 +190,9 @@ export function probeFetch(
     const first = new URL(input instanceof Request ? input.url : String(input));
     const method = (init.method ?? 'GET').toUpperCase();
     if (init.body !== undefined && init.body !== null) {
-      throw new ScanRefused('A request body cannot be sent through the probe');
+      throw new ScanRefusedError(
+        'A request body cannot be sent through the probe',
+      );
     }
     const redirect = init.redirect ?? 'follow';
     const headers = requestHeaders(init.headers);
@@ -195,10 +204,10 @@ export function probeFetch(
       const location = response.headers.get('location');
       if (REDIRECTS.has(response.status) && location && redirect !== 'manual') {
         if (redirect === 'error') {
-          throw new ScanRefused(`${current.href} redirected`);
+          throw new ScanRefusedError(`${current.href} redirected`);
         }
         if (hops >= maxRedirects) {
-          throw new ScanRefused('Too many redirects');
+          throw new ScanRefusedError('Too many redirects');
         }
         current = new URL(location, current);
         redirected = true;

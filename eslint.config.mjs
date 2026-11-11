@@ -10,4 +10,12 @@ export default [
     ignores: ['packages/web/**'],
   },
   ...mridangPlugin.configs.recommended,
+  {
+    // Large data or adapter file kept as one module.
+    files: [
+      'packages/hints/src/core/origins.ts',
+      'packages/hints/src/core/taxonomy-data.ts',
+    ],
+    rules: { 'sonarjs/max-lines': 'off' },
+  },
 ];

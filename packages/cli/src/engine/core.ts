@@ -9,7 +9,7 @@ import {
   type HintOutcome,
 } from './engine.js';
 import { fetchResource } from './network.js';
-import { ScanRefused } from './scannable.js';
+import { ScanRefusedError } from './scannable.js';
 
 /**
  * Running every check against a site and reporting as they finish. The server
@@ -110,7 +110,7 @@ function cachedFetchContent(fetcher: typeof fetch): FetchContent {
 
 /** Why the page could not be fetched, in words for the person who asked. */
 function unreachableDetail(url: URL, error: unknown): string {
-  return error instanceof ScanRefused
+  return error instanceof ScanRefusedError
     ? error.message
     : `${url.host} did not answer. Check the address and try again.`;
 }

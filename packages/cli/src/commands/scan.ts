@@ -141,7 +141,7 @@ Exit status: 0 ok, 1 findings at or above --fail-on, 2 a usage mistake, 3 the sc
 
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(Scan);
-    const deps = resolveDependencies(this.dependencies());
+    const deps = await resolveDependencies(this.dependencies());
     await this.finish(() =>
       runScan(
         scanCommandOf(args.target, flags),

@@ -6,7 +6,7 @@ import { Transform, Writable, type TransformCallback } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import zlib from 'node:zlib';
 
-import { ALLOWED_PORTS, ScanRefused } from './scannable.js';
+import { ALLOWED_PORTS, ScanRefusedError } from './scannable.js';
 
 /**
  * The scan server fetches whatever address a visitor types, from inside the
@@ -22,6 +22,7 @@ import { ALLOWED_PORTS, ScanRefused } from './scannable.js';
 export const USER_AGENT =
   'Mozilla/5.0 (compatible; plumbline/1.0; +https://plumbline.apps.mrida.ng)';
 
+/* eslint-disable sonarjs/no-hardcoded-ip -- the reserved ranges to refuse, not addresses to connect to */
 /** The IPv4 ranges that are not the public internet, as `address/prefix`. */
 const RESERVED_V4: readonly (readonly [string, number])[] = [
   ['0.0.0.0', 8],
@@ -55,6 +56,7 @@ const RESERVED_V6: readonly (readonly [string, number])[] = [
   ['fec0::', 10],
   ['ff00::', 8],
 ];
+/* eslint-enable sonarjs/no-hardcoded-ip -- end of the reserved range tables */
 
 const reserved = new BlockList();
 for (const [address, prefix] of RESERVED_V4) {
@@ -116,7 +118,7 @@ export interface GuardOptions {
 }
 
 /** A request the guard refused, or that went wrong on the way. */
-export class GuardError extends ScanRefused {
+export class GuardError extends ScanRefusedError {
   public constructor(message: string) {
     super(message);
     this.name = 'GuardError';

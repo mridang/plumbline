@@ -50,31 +50,39 @@ describe('unchunk', () => {
 });
 
 describe('decode', () => {
-  it('undoes gzip, deflate and brotli and leaves anything else alone', () => {
+  it('undoes gzip, deflate and brotli and leaves anything else alone', async () => {
     const text = Buffer.from('hello world');
     // eslint-disable-next-line n/no-sync -- sync is fine in a test fixture that builds encoded bodies
-    expect(Buffer.from(decode(gzipSync(text), 'gzip')).toString()).toBe(
-      'hello world',
-    );
+    const gzipped = gzipSync(text);
     // eslint-disable-next-line n/no-sync -- sync is fine in a test fixture that builds encoded bodies
-    expect(Buffer.from(decode(gzipSync(text), 'x-gzip')).toString()).toBe(
-      'hello world',
-    );
+    const deflated = deflateSync(text);
     // eslint-disable-next-line n/no-sync -- sync is fine in a test fixture that builds encoded bodies
-    expect(Buffer.from(decode(deflateSync(text), 'deflate')).toString()).toBe(
+    const brotlied = brotliCompressSync(text);
+    expect(Buffer.from(await decode(gzipped, 'gzip')).toString()).toBe(
       'hello world',
     );
-    // eslint-disable-next-line n/no-sync -- sync is fine in a test fixture that builds encoded bodies
-    expect(Buffer.from(decode(brotliCompressSync(text), 'br')).toString()).toBe(
+    expect(Buffer.from(await decode(gzipped, 'x-gzip')).toString()).toBe(
       'hello world',
     );
-    expect(Buffer.from(decode(text, undefined)).toString()).toBe('hello world');
-    expect(Buffer.from(decode(text, 'zstd')).toString()).toBe('hello world');
+    expect(Buffer.from(await decode(deflated, 'deflate')).toString()).toBe(
+      'hello world',
+    );
+    expect(Buffer.from(await decode(brotlied, 'br')).toString()).toBe(
+      'hello world',
+    );
+    expect(Buffer.from(await decode(text, undefined)).toString()).toBe(
+      'hello world',
+    );
+    expect(Buffer.from(await decode(text, 'zstd')).toString()).toBe(
+      'hello world',
+    );
   });
 
-  it('says which coding a body that does not decode was in', () => {
-    expect(() => decode(Buffer.from('not gzip'), 'gzip')).toThrow(ProbeError);
-    expect(() => decode(Buffer.from('not gzip'), 'gzip')).toThrow(
+  it('says which coding a body that does not decode was in', async () => {
+    await expect(decode(Buffer.from('not gzip'), 'gzip')).rejects.toThrow(
+      ProbeError,
+    );
+    await expect(decode(Buffer.from('not gzip'), 'gzip')).rejects.toThrow(
       'decoded as gzip',
     );
   });

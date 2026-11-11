@@ -1,6 +1,7 @@
 {
   "name": "@mridang/plumbline-workspace",
   "version": "0.1.0",
+  "description": "Workspace for plumbline, about 280 checks for a website and the services around it, run as webhint hints",
   "type": "module",
   "private": true,
   "workspaces": [

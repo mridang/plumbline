@@ -52,7 +52,7 @@ export default class Checks extends PlumblineCommand {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(Checks);
-    const deps = resolveDependencies(this.dependencies());
+    const deps = await resolveDependencies(this.dependencies());
     await this.finish(() =>
       runChecks(
         {

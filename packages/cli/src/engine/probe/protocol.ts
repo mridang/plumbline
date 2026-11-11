@@ -20,10 +20,10 @@ export class ProbeError extends Error {
  * answered with a status that is not part of the protocol. A scan that meets one has not
  * learned anything about the site, so it must be tried again, not recorded.
  */
-export class ProbeUnavailable extends ProbeError {
+export class ProbeUnavailableError extends ProbeError {
   public constructor(message: string) {
     super(message);
-    this.name = 'ProbeUnavailable';
+    this.name = 'ProbeUnavailableError';
   }
 }
 

@@ -7,6 +7,6 @@ describe('packageVersion', () => {
     const manifest = JSON.parse(
       await readFile(new URL('../package.json', import.meta.url), 'utf8'),
     ) as { version: string };
-    expect(packageVersion()).toBe(manifest.version);
+    expect(await packageVersion()).toBe(manifest.version);
   });
 });

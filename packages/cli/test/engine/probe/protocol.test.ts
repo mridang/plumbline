@@ -24,6 +24,7 @@ describe('encodeItem', () => {
         port: 443,
         tls: true,
         nobody: false,
+        // eslint-disable-next-line sonarjs/no-undefined-assignment -- the case under test is a key whose value is undefined
         ip: undefined,
         header: ['A: 1', 'B: 2'],
       }),

@@ -2,7 +2,7 @@
 
 A [Lighthouse](https://developer.chrome.com/docs/lighthouse) plugin that runs the [plumbline](../hints/README.md) checks whose data Lighthouse already gathers: security headers, cookies and CORS, Open Graph and link previews, SEO, hreflang and structured data, privacy and agent discovery.
 
-Each audit reuses the check logic of the matching webhint hint, so it reports the same findings. A Lighthouse plugin cannot add gatherers, so every audit reads only the artifacts Lighthouse collects by default (the DevTools log, the URL, and the page's meta and link elements). Checks that need DNS, TLS, mail servers or other URLs are not here; use the [`plumbline` CLI](../cli/README.md) for those.
+Each audit reuses the check logic of the matching webhint hint, so it reports the same findings. A Lighthouse plugin cannot add gatherers, so every audit reads only the artifacts Lighthouse collects by default (the DevTools log, the URL, and the page's meta and link elements). Checks that need DNS, TLS, mail servers or other URLs are not here; use the [`plumbline` CLI](../cli/readme.md) for those.
 
 The plugin adds one category, "Webhint extra", with 143 audits grouped by the same sections as the hints (Security headers, SEO, Link previews and so on). Audits whose hint is context-specific are shown but weigh 0 in the score.
 

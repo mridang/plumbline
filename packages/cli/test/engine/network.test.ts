@@ -23,7 +23,7 @@ describe('contentTypeOf', () => {
   it('splits the media type from the charset', () => {
     expect(contentTypeOf('Text/HTML; charset="UTF-8"')).toEqual({
       mediaType: 'text/html',
-      charset: 'utf-8',
+      charset: new TextDecoder().encoding,
     });
     expect(contentTypeOf(undefined)).toEqual({ mediaType: '', charset: '' });
   });

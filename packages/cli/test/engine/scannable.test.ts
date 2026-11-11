@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   ALLOWED_PORTS,
-  ScanRefused,
+  ScanRefusedError,
   assertScannable,
 } from '../../src/engine/scannable.js';
 
@@ -25,10 +25,10 @@ describe('assertScannable', () => {
 
   it('refuses any other scheme, with the scheme in the message', () => {
     expect(() => assertScannable(new URL('ftp://example.com/'))).toThrow(
-      new ScanRefused('Only http and https can be fetched, not ftp:'),
+      new ScanRefusedError('Only http and https can be fetched, not ftp:'),
     );
     expect(() => assertScannable(new URL('file:///etc/passwd'))).toThrow(
-      ScanRefused,
+      ScanRefusedError,
     );
   });
 
@@ -44,6 +44,6 @@ describe('assertScannable', () => {
     );
     expect(() =>
       assertScannable(new URL('https://user:secret@example.com/')),
-    ).toThrow(ScanRefused);
+    ).toThrow(ScanRefusedError);
   });
 });

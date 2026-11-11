@@ -32,5 +32,9 @@
   "bugs": "https://github.com/mridang/plumbline/issues",
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "sideEffects": true
 }

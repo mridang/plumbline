@@ -41,7 +41,7 @@ import { unchunk } from './fetch.js';
 import {
   fromBase64,
   ProbeError,
-  ProbeUnavailable,
+  ProbeUnavailableError,
   type RemoteCertificate,
 } from './protocol.js';
 
@@ -175,7 +175,18 @@ function install(): void {
     return;
   }
   installed = true;
+  installDnsCache();
+  installRpkiCache();
+  installTlsHandshakeCache();
+  installMailClient();
+  installNetworkClient();
+  installCompressionClient();
+  installDaneClient();
+  installOpensslClient();
+}
 
+/** Caches the DNS answers within one scan. */
+function installDnsCache(): void {
   // The checks ask the same names again and again (a scan makes 160 queries for 60 names), so
   // within one scan an answer already had is reused; a Worker may have only a few requests
   // open at once, and each query is one.
@@ -196,7 +207,10 @@ function install(): void {
       return answer;
     },
   };
+}
 
+/** Caches the routing lookups within one scan. */
+function installRpkiCache(): void {
   // The four routing checks ask about the same addresses (a web server is also a name server),
   // and each answer is two round trips to a web service: within one scan, one lookup per address.
   const validator = rpki.client;
@@ -215,7 +229,10 @@ function install(): void {
       return answer;
     },
   };
+}
 
+/** Makes each identical TLS handshake once within one scan. */
+function installTlsHandshakeCache(): void {
   // Several checks enumerate the same server's versions and cipher suites with the same
   // handshakes, one after another (a mail handshake opens a session that takes seconds), and
   // what a server answers to the same offer does not change within a scan: an identical
@@ -255,14 +272,17 @@ function install(): void {
       handshakes.set(key, handshake);
       // eslint-disable-next-line promise/prefer-await-to-callbacks -- a promise catch handler, not a callback; it only forgets an unavailable probe's answer
       handshake.catch((error: unknown) => {
-        if (error instanceof ProbeUnavailable) {
+        if (error instanceof ProbeUnavailableError) {
           handshakes.delete(key);
         }
       });
     }
     return handshake;
   };
+}
 
+/** Sends the mail checks through the probe. */
+function installMailClient(): void {
   const nodeMail = mailNet.client;
   mailNet.client = {
     tcpReachable: (ip, port) => {
@@ -304,7 +324,10 @@ function install(): void {
       }
     },
   };
+}
 
+/** Sends the raw connect and GET calls through the probe. */
+function installNetworkClient(): void {
   const nodeConnect = network.connect;
   network.connect = async (ip, port, timeoutMs) => {
     const client = scope.getStore()?.client;
@@ -350,7 +373,10 @@ function install(): void {
       return null;
     }
   };
+}
 
+/** Sends the compression probe through the probe. */
+function installCompressionClient(): void {
   const nodeProbe = compression.probe;
   compression.probe = async (url) => {
     const client = scope.getStore()?.client;
@@ -384,7 +410,10 @@ function install(): void {
       return null;
     }
   };
+}
 
+/** Fetches the DANE certificate chain through the probe. */
+function installDaneClient(): void {
   const nodeChain = dane.fetchChain;
   dane.fetchChain = async (host, port) => {
     const client = scope.getStore()?.client;
@@ -403,7 +432,10 @@ function install(): void {
       return null;
     }
   };
+}
 
+/** Runs the `openssl s_client` calls through the probe. */
+function installOpensslClient(): void {
   const nodeExec = openssl.exec;
   openssl.exec = async (args, options = {}) => {
     const client = scope.getStore()?.client;
