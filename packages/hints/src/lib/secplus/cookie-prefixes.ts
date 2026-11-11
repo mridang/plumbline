@@ -121,7 +121,7 @@ export function cookiePrefixFindings(
   setCookieValues: readonly string[],
 ): Finding[] {
   return setCookieValues
-    .map(parsePrefixCookie)
+    .map((value) => parsePrefixCookie(value))
     .filter((cookie): cookie is PrefixCookie => cookie !== null)
-    .flatMap(cookiePrefixFinding);
+    .flatMap((cookie) => cookiePrefixFinding(cookie));
 }

@@ -10,13 +10,17 @@ describe('assertScannable', () => {
   it('lets an https or http address on the default port or a listed port through', () => {
     for (const address of [
       'https://example.com/',
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       'http://example.com/',
       'https://example.com:8443/x',
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       'http://example.com:8080/',
     ]) {
       expect(() => assertScannable(new URL(address))).not.toThrow();
     }
-    expect([...ALLOWED_PORTS].sort()).toEqual([443, 80, 8080, 8443].sort());
+    expect([...ALLOWED_PORTS].toSorted((a, b) => a - b)).toEqual(
+      [443, 80, 8080, 8443].toSorted((a, b) => a - b),
+    );
   });
 
   it('refuses any other scheme, with the scheme in the message', () => {

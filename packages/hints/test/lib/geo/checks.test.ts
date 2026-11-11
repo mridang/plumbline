@@ -20,6 +20,7 @@ import {
 // Build the shared checks' inputs from a real parse, the way both the webhint
 // hint and the Lighthouse check do, rather than hand-rolling the shapes.
 const require = createRequire(import.meta.url);
+// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CommonJS only, loaded through createRequire
 const { createHTMLDocument } = require('@hint/utils-dom') as {
   createHTMLDocument: (
     html: string,
@@ -28,8 +29,10 @@ const { createHTMLDocument } = require('@hint/utils-dom') as {
 };
 
 const blocksOf = (html: string) =>
+  // eslint-disable-next-line unicorn/prefer-https -- test fixture
   readJsonLd(createHTMLDocument(html, 'http://x.test/'));
 const statsOf = (html: string): ContentStats | null =>
+  // eslint-disable-next-line unicorn/prefer-https -- test fixture
   measureContent(createHTMLDocument(html, 'http://x.test/'));
 
 /** Wraps a parsed object as one JSON-LD block of HTML. */

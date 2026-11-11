@@ -12,6 +12,7 @@ describe('classifyRequests', () => {
       req('https://cdn.example.com/a.js'),
       req('https://tracker.test/a.js'),
       req('https://tracker.test/b.png', 'image'),
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       req('http://ads.test/c.png', 'image'),
     ]);
     expect(result.pageDomain).toBe('example.com');
@@ -31,10 +32,13 @@ describe('classifyRequests', () => {
 
   it('finds insecure first-party requests on https and http pages', () => {
     const urls = [
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       req('http://static.example.com/a.js'),
       req('https://static.example.com/b.js'),
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       req('http://other.test/c.js'),
     ];
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     for (const page of ['https://example.com/', 'http://example.com/']) {
       expect(classifyRequests(page, urls).insecureFirstParty).toEqual([
         urls[0],
@@ -44,8 +48,11 @@ describe('classifyRequests', () => {
 
   it('splits mixed content into active and passive', () => {
     const result = classifyRequests('https://example.com/', [
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       req('http://other.test/a.js', 'script'),
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       req('http://other.test/b.css', 'css'),
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       req('http://other.test/c.png', 'image'),
       req('https://other.test/d.png', 'image'),
     ]);
@@ -54,7 +61,9 @@ describe('classifyRequests', () => {
   });
 
   it('reports no mixed content on an http page', () => {
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     const result = classifyRequests('http://example.com/', [
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       req('http://other.test/a.js'),
     ]);
     expect(result.mixedContent).toEqual({ active: [], passive: [] });
@@ -70,6 +79,7 @@ describe('classifyRequests', () => {
   });
 
   it('copes with an unparsable page URL', () => {
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     const result = classifyRequests('nonsense', [req('http://a.test/x.js')]);
     expect(result.pageSecure).toBe(false);
     expect(result.thirdParty).toHaveLength(1);

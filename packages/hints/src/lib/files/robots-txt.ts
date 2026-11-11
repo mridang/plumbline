@@ -24,7 +24,7 @@ export function validateContentSignal(value: string): string | null {
   }
   const seen = new Set<string>();
   for (const part of value.split(',')) {
-    const pair = part.trim().match(/^([a-z-]+)=([a-z]+)$/i);
+    const pair = /^([a-z-]+)=([a-z]+)$/i.exec(part.trim());
     if (!pair) {
       return `Invalid Content-Signal entry '${part.trim()}', expected name=yes or name=no.`;
     }
@@ -74,7 +74,7 @@ export function validateRobotsTxt(text: string): FileIssue[] {
 
   splitLines(text).forEach((raw, index) => {
     const line = index + 1;
-    const content = raw.replace(/#.*$/, '').trim();
+    const content = raw.split('#', 1)[0].trim();
     if (content === '') {
       return;
     }

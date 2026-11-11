@@ -4,6 +4,7 @@ import type { HTMLDocument } from '@hint/utils-dom';
 import type { HttpHeaders } from '@hint/utils-types';
 
 const require = createRequire(import.meta.url);
+// eslint-disable-next-line sonarjs/no-require-or-define -- CJS-only package, its named exports are read from module.exports via createRequire
 const { traverse, createHTMLDocument } = require('@hint/utils-dom');
 
 interface ParserEvents {
@@ -57,9 +58,11 @@ async function toNetworkData(
   };
 }
 
-let evaluateImpl: (code: string) => unknown = () => {
+const notConfigured: (code: string) => unknown = () => {
   throw new Error('evaluate is not configured for this test');
 };
+
+let evaluateImpl: (code: string) => unknown = notConfigured;
 
 /**
  * Sets what `context.evaluate(code)` returns for the next scans, so tests
@@ -80,7 +83,10 @@ export default class TestConnector implements IConnector {
   public headers?: HttpHeaders;
   private readonly engine: Engine;
 
-  public static schema = { additionalProperties: false, properties: {} };
+  public static readonly schema = {
+    additionalProperties: false,
+    properties: {},
+  };
 
   public constructor(engine: Engine) {
     this.engine = engine;

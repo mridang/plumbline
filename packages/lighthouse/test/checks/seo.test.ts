@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 import { describe, expect, it } from '@jest/globals';
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import { seoChecks } from '../../src/checks/seo.js';
 import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
@@ -17,6 +17,7 @@ import {
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/seo/read.js';
 
 const require = createRequire(import.meta.url);
+// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CJS-only with no ESM entry point
 const { createHTMLDocument } = require('@hint/utils-dom');
 
 /** Parses markup with the same DOM implementation the webhint hints use. */
@@ -31,13 +32,13 @@ const parse = (html: string): DocumentLike =>
 function meta(entry: {
   name?: string;
   content?: string;
-}): LH.Artifacts['MetaElements'][number] {
-  return entry as LH.Artifacts['MetaElements'][number];
+}): Artifacts['MetaElements'][number] {
+  return entry as Artifacts['MetaElements'][number];
 }
 
 /** A minimal link-element artifact entry (only `rel` and `href` are read). */
-function link(rel: string, href: string): LH.Artifacts['LinkElements'][number] {
-  return { rel, href } as LH.Artifacts['LinkElements'][number];
+function link(rel: string, href: string): Artifacts['LinkElements'][number] {
+  return { rel, href } as Artifacts['LinkElements'][number];
 }
 
 /**
@@ -47,11 +48,11 @@ function link(rel: string, href: string): LH.Artifacts['LinkElements'][number] {
  */
 function artifacts(overrides: {
   html?: string;
-  metas?: LH.Artifacts['MetaElements'];
-  links?: LH.Artifacts['LinkElements'];
+  metas?: Artifacts['MetaElements'];
+  links?: Artifacts['LinkElements'];
   url?: string;
   xRobotsTag?: string;
-}): LH.Artifacts {
+}): Artifacts {
   const url = overrides.url ?? 'https://x.test/';
   return {
     MainDocumentContent: overrides.html ?? '',
@@ -59,7 +60,7 @@ function artifacts(overrides: {
     LinkElements: overrides.links ?? [],
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
     DevtoolsLog: devtoolsLog(url, overrides.xRobotsTag),
-  } as unknown as LH.Artifacts;
+  } as unknown as Artifacts;
 }
 
 /**
@@ -70,7 +71,7 @@ function artifacts(overrides: {
 function devtoolsLog(
   url: string,
   xRobotsTag?: string,
-): LH.Artifacts['DevtoolsLog'] {
+): Artifacts['DevtoolsLog'] {
   const requestId = '1';
   const headers = xRobotsTag ? { 'x-robots-tag': xRobotsTag } : {};
   const events = [
@@ -115,7 +116,7 @@ function devtoolsLog(
       params: { requestId, timestamp: 3, encodedDataLength: 100 },
     },
   ];
-  return events as unknown as LH.Artifacts['DevtoolsLog'];
+  return events as unknown as Artifacts['DevtoolsLog'];
 }
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */
@@ -174,7 +175,7 @@ describe('the seo registry', () => {
     const numeric = seoChecks
       .filter((c) => c.scoreMode === 'numeric')
       .map((c) => c.id)
-      .sort();
+      .toSorted((a, b) => a.localeCompare(b));
     expect(numeric).toEqual([
       'seo-h1-missing',
       'seo-html-lang-missing',
@@ -246,9 +247,8 @@ describe('the title checks', () => {
 
 describe('the meta-description checks', () => {
   it('reports a missing description and passes a present one', async () => {
-    expect((await run('seo-meta-description-missing', {}))[0]?.severity).toBe(
-      'error',
-    );
+    const descriptionFindings = await run('seo-meta-description-missing', {});
+    expect(descriptionFindings[0]?.severity).toBe('error');
     expect(
       await run('seo-meta-description-missing', {
         metas: [meta({ name: 'description', content: 'A summary.' })],
@@ -279,11 +279,10 @@ describe('the meta-description checks', () => {
 
 describe('the heading checks', () => {
   it('warns when there is no h1 and passes with one', async () => {
-    expect(
-      (
-        await run('seo-h1-missing', { html: '<body><p>no heading</p></body>' })
-      )[0]?.severity,
-    ).toBe('warning');
+    const noHeadingFindings = await run('seo-h1-missing', {
+      html: '<body><p>no heading</p></body>',
+    });
+    expect(noHeadingFindings[0]?.severity).toBe('warning');
     expect(
       await run('seo-h1-missing', { html: '<body><h1>Topic</h1></body>' }),
     ).toEqual([]);
@@ -303,13 +302,10 @@ describe('the heading checks', () => {
 
 describe('the html-lang check', () => {
   it('warns when lang is absent and passes when present', async () => {
-    expect(
-      (
-        await run('seo-html-lang-missing', {
-          html: '<html><head></head></html>',
-        })
-      )[0]?.severity,
-    ).toBe('warning');
+    const noLangFindings = await run('seo-html-lang-missing', {
+      html: '<html><head></head></html>',
+    });
+    expect(noLangFindings[0]?.severity).toBe('warning');
     expect(
       await run('seo-html-lang-missing', {
         html: '<html lang="en"><head></head></html>',
@@ -342,7 +338,8 @@ describe('the robots checks', () => {
 
 describe('the canonical checks', () => {
   it('flags a missing canonical and passes when one is declared', async () => {
-    expect((await run('seo-canonical-missing', {}))[0]?.severity).toBe('hint');
+    const canonicalFindings = await run('seo-canonical-missing', {});
+    expect(canonicalFindings[0]?.severity).toBe('hint');
     expect(
       await run('seo-canonical-missing', {
         links: [link('canonical', 'https://x.test/')],
@@ -370,10 +367,10 @@ describe('the canonical checks', () => {
 
 describe('the structured-data check', () => {
   it('flags a page with no JSON-LD and passes one with it', async () => {
-    expect(
-      (await run('seo-structured-data-missing', { html: '<html></html>' }))[0]
-        ?.severity,
-    ).toBe('hint');
+    const structuredFindings = await run('seo-structured-data-missing', {
+      html: '<html></html>',
+    });
+    expect(structuredFindings[0]?.severity).toBe('hint');
     expect(
       await run('seo-structured-data-missing', {
         html: '<script type="application/ld+json">{"@type":"WebPage"}</script>',
@@ -384,10 +381,10 @@ describe('the structured-data check', () => {
 
 describe('the favicon checks', () => {
   it('flags a page that declares no icon at all', async () => {
-    expect(
-      (await run('icons-favicon-missing', { html: '<head></head>' }))[0]
-        ?.severity,
-    ).toBe('hint');
+    const faviconFindings = await run('icons-favicon-missing', {
+      html: '<head></head>',
+    });
+    expect(faviconFindings[0]?.severity).toBe('hint');
     expect(
       await run('icons-favicon-missing', {
         html: '<head><link rel="icon" href="/favicon.ico"></head>',
@@ -408,13 +405,10 @@ describe('the favicon checks', () => {
   });
 
   it('flags a missing 32x32 png icon and passes when present', async () => {
-    expect(
-      (
-        await run('icons-favicon-32-missing', {
-          html: '<head><link rel="icon" href="/favicon.ico"></head>',
-        })
-      )[0]?.severity,
-    ).toBe('hint');
+    const favicon32Findings = await run('icons-favicon-32-missing', {
+      html: '<head><link rel="icon" href="/favicon.ico"></head>',
+    });
+    expect(favicon32Findings[0]?.severity).toBe('hint');
     expect(
       await run('icons-favicon-32-missing', {
         html: '<head><link rel="icon" type="image/png" sizes="32x32" href="/f.png"></head>',
@@ -423,13 +417,10 @@ describe('the favicon checks', () => {
   });
 
   it('flags a missing svg icon and passes when present', async () => {
-    expect(
-      (
-        await run('icons-favicon-svg-missing', {
-          html: '<head><link rel="icon" href="/favicon.ico"></head>',
-        })
-      )[0]?.severity,
-    ).toBe('hint');
+    const faviconSvgFindings = await run('icons-favicon-svg-missing', {
+      html: '<head><link rel="icon" href="/favicon.ico"></head>',
+    });
+    expect(faviconSvgFindings[0]?.severity).toBe('hint');
     expect(
       await run('icons-favicon-svg-missing', {
         html: '<head><link rel="icon" href="/f.svg"></head>',

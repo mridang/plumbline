@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 import { describe, expect, it } from '@jest/globals';
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import { feedsChecks } from '../../src/checks/feeds.js';
 import type { AuditCheck } from '../../src/checks/types.js';
@@ -15,18 +15,19 @@ import {
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/feeds/read.js';
 
 const require = createRequire(import.meta.url);
+// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CJS-only with no ESM entry point
 const { createHTMLDocument } = require('@hint/utils-dom');
 
 const parse = (html: string): DocumentLike =>
   createHTMLDocument(html, 'https://x.test/') as DocumentLike;
 
 /** Builds the artifacts the feed-discovery checks read. */
-function artifacts(html: string): LH.Artifacts {
+function artifacts(html: string): Artifacts {
   const url = 'https://x.test/';
   return {
     MainDocumentContent: html,
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
-  } as unknown as LH.Artifacts;
+  } as unknown as Artifacts;
 }
 
 const context = {} as AuditNS.Context;
@@ -52,7 +53,7 @@ describe('feeds checks', () => {
 
   it('returns null when the main document is absent', async () => {
     expect(
-      await checkById('feed-discovery').run({} as LH.Artifacts, context),
+      await checkById('feed-discovery').run({} as Artifacts, context),
     ).toBeNull();
   });
 

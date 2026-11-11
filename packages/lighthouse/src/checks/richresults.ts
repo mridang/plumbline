@@ -16,7 +16,7 @@
  * in the `seo` section. A check that validates required fields is graded
  * (`numeric`); the recommended-only Article check is `informative`.
  */
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import { readJsonLd } from '@mridang/webhint-hint-plumbline/dist/lib/geo/json-ld.js';
 import type { JsonLdBlocks } from '@mridang/webhint-hint-plumbline/dist/lib/geo/json-ld.js';
@@ -53,7 +53,7 @@ import reviewHint from '@mridang/webhint-hint-plumbline/dist/hints/richresults/r
 import websiteSearchactionHint from '@mridang/webhint-hint-plumbline/dist/hints/richresults/richresults-website-searchaction.js';
 
 /** The page URL the document is parsed against (unused by these checks). */
-function pageUrl(artifacts: LH.Artifacts): string {
+function pageUrl(artifacts: Artifacts): string {
   return (
     artifacts.URL?.finalDisplayedUrl || artifacts.URL?.mainDocumentUrl || ''
   );

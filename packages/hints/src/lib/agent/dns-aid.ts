@@ -25,6 +25,7 @@ const PARAMS =
  * that carries parameters such as `alpn` or an endpoint.
  */
 export function isServiceModeRecord(data: string): boolean {
+  // eslint-disable-next-line sonarjs/super-linear-regex -- DNS presentation data is one short line, so backtracking is bounded
   const match = /^(\d+)\s+(\S+)\s*(.*)$/.exec(data.trim());
   if (!match || Number(match[1]) === 0) {
     return false;
@@ -37,23 +38,32 @@ export function isServiceModeRecord(data: string): boolean {
  * HTTPS records at `_index._agents`, `_a2a._agents` or `_mcp._agents` of the
  * site's host.
  */
+/** True when a lookup of `type` at `name` finds a ServiceMode record. */
+async function hasServiceModeRecord(
+  env: AgentEnv,
+  name: string,
+  type: DnsType,
+): Promise<boolean> {
+  try {
+    const response = await env.dns.query(name, type);
+    // TXT only documents the index; SVCB/HTTPS must be ServiceMode.
+    return response.answers.some((answer) =>
+      type === 'TXT' ? false : isServiceModeRecord(answer.data),
+    );
+  } catch {
+    // A failed lookup counts as "no record".
+    return false;
+  }
+}
+
 export async function checkDnsAid(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-dns-aid';
   const found: string[] = [];
   for (const { label, types } of QUERIES) {
     const name = `${label}._agents.${env.host}`;
     for (const type of types) {
-      try {
-        const response = await env.dns.query(name, type);
-        // TXT only documents the index; SVCB/HTTPS must be ServiceMode.
-        const hit = response.answers.some((answer) =>
-          type === 'TXT' ? false : isServiceModeRecord(answer.data),
-        );
-        if (hit) {
-          found.push(`${type} ${name}`);
-        }
-      } catch {
-        // A failed lookup counts as "no record".
+      if (await hasServiceModeRecord(env, name, type)) {
+        found.push(`${type} ${name}`);
       }
     }
   }

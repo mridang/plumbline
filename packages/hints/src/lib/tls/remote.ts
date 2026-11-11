@@ -107,7 +107,7 @@ export function remoteConnect(call: RemoteCall): TlsConnect {
       ...(options.ecdhCurve ? { ecdhCurve: options.ecdhCurve } : {}),
       ...(options.requestOCSP ? { requestOCSP: true } : {}),
     });
-    const chain = (answer.chain ?? []).map(bytesOf);
+    const chain = (answer.chain ?? []).map((cert) => bytesOf(cert));
     const protocol = (TLS_VERSIONS as readonly string[]).includes(
       answer.protocol,
     )

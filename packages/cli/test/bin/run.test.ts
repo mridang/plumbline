@@ -5,6 +5,7 @@ const PACKAGE = new URL('../../', import.meta.url);
 
 describe('bin/run.js', () => {
   const manifest = JSON.parse(
+    // eslint-disable-next-line n/no-sync -- sync is fine in a test helper reading the local manifest at describe time
     readFileSync(new URL('package.json', PACKAGE), 'utf8'),
   ) as { bin: Record<string, string> };
 
@@ -14,7 +15,9 @@ describe('bin/run.js', () => {
 
   it('exists and starts with a node shebang', () => {
     const file = new URL(manifest.bin['plumbline'], PACKAGE);
+    // eslint-disable-next-line n/no-sync -- sync is fine in a test helper checking the local bin file
     expect(existsSync(file)).toBe(true);
+    // eslint-disable-next-line n/no-sync -- sync is fine in a test helper checking the local bin file
     expect(readFileSync(file, 'utf8').startsWith('#!/usr/bin/env node')).toBe(
       true,
     );

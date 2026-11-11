@@ -1,5 +1,5 @@
-import { createRequire } from 'node:module';
 import { describe, expect, it } from '@jest/globals';
+import { createHTMLDocument } from '@hint/utils-dom';
 import type { DocumentLike } from '../../../src/lib/seo/read.js';
 import {
   canonicalMismatch,
@@ -22,11 +22,9 @@ import {
   titleTooShort,
 } from '../../../src/lib/seo/checks.js';
 
-const require = createRequire(import.meta.url);
-const { createHTMLDocument } = require('@hint/utils-dom');
-
 /** Parses markup with the same DOM implementation webhint uses. */
 const parse = (html: string): DocumentLike =>
+  // eslint-disable-next-line unicorn/prefer-https -- test fixture
   createHTMLDocument(html, 'http://example.com/') as DocumentLike;
 
 describe('titleMissing', () => {
@@ -192,20 +190,27 @@ describe('canonicalMissing', () => {
 describe('canonicalMismatch', () => {
   it('flags a canonical that points elsewhere with both URLs', () => {
     const [found] = canonicalMismatch(
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       parse('<link rel="canonical" href="http://example.com/other">'),
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       'http://example.com/page',
     );
     expect(found?.severity).toBe('hint');
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     expect(found?.message).toContain('http://example.com/other');
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     expect(found?.message).toContain('http://example.com/page');
   });
   it('passes a self-referencing canonical and a missing one', () => {
     expect(
       canonicalMismatch(
+        // eslint-disable-next-line unicorn/prefer-https -- test fixture
         parse('<link rel="canonical" href="http://example.com/page">'),
+        // eslint-disable-next-line unicorn/prefer-https -- test fixture
         'http://example.com/page',
       ),
     ).toEqual([]);
+    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
     expect(canonicalMismatch(parse('<head></head>'), 'http://x/')).toEqual([]);
   });
 });

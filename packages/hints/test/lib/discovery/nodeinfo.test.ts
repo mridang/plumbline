@@ -10,6 +10,7 @@ describe('nodeinfoFindings', () => {
   it('reports a valid links document', () => {
     const [f] = nodeinfoFindings({
       statusCode: 200,
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       body: '{"links":[{"rel":"http://nodeinfo.diaspora.software/ns/schema/2.1","href":"https://x.test/ni"}]}',
     });
     expect(f?.severity).toBe('hint');

@@ -70,6 +70,8 @@ export function validateAdsTxt(text: string): FileIssue[] {
           snippet: content,
           message: `The '${content.slice(0, eq).trim()}' variable has no value.`,
         });
+      } else {
+        // A known variable with a value is valid.
       }
       return;
     }

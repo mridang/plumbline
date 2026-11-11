@@ -58,6 +58,8 @@ export async function startSmtp(options: SmtpOptions = {}): Promise<FakeSmtp> {
           return;
         } else if (line === 'QUIT') {
           socket.end('221 Bye\r\n');
+        } else {
+          // Any other command gets no answer from this fake server.
         }
         end = buffer.indexOf('\r\n');
       }

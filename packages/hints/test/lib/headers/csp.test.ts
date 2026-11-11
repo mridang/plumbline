@@ -26,10 +26,11 @@ const run = (
 describe('parseCsp', () => {
   it('maps directives to sources, lower-cased', () => {
     const csp = parseCsp(["Default-Src 'SELF' https://A.example"]);
-    expect([...(csp.get('default-src') ?? [])].sort()).toEqual([
-      "'self'",
-      'https://a.example',
-    ]);
+    expect(
+      [...(csp.get('default-src') ?? [])].toSorted((a, b) =>
+        a.localeCompare(b),
+      ),
+    ).toEqual(["'self'", 'https://a.example']);
   });
 
   it('treats an empty source list as none', () => {
@@ -180,6 +181,7 @@ describe('analyzeCsp results', () => {
 
   it('insecure scheme in active content only on https', () => {
     const policy =
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       "default-src 'none'; script-src 'self'; connect-src http://a.example";
     expect(run(policy).result).toBe('csp-implemented-with-insecure-scheme');
     expect(run(policy, { secure: false }).result).toBe(
@@ -189,6 +191,7 @@ describe('analyzeCsp results', () => {
 
   it('insecure scheme in passive content passes with advice', () => {
     const a = run(
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       "default-src 'none'; script-src 'self'; img-src http://a.example",
     );
     expect(a.result).toBe(

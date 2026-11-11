@@ -455,8 +455,11 @@ export const ogImageDimensionsTooLarge: ImageCheck = ({ image }) => {
  * previewed there. Reported as a warning. Only a successfully-fetched (2xx)
  * image is weighed.
  */
-export const ogImageTooLarge: ImageCheck = ({ image }) =>
-  image && image.status >= 200 && image.status < 300 && image.size > 500 * 1024
+export const ogImageTooLarge: ImageCheck = ({ image }) => {
+  if (!image || !(image.status >= 200 && image.status < 300)) {
+    return [];
+  }
+  return image.size > 500 * 1024
     ? [
         finding(
           'warning',
@@ -464,6 +467,7 @@ export const ogImageTooLarge: ImageCheck = ({ image }) =>
         ),
       ]
     : [];
+};
 
 /**
  * `opengraph-image-non-optimal-size`: an og:image that is not 1200x630 (1.91:1)

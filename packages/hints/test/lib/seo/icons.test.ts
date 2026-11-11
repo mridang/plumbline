@@ -1,5 +1,5 @@
-import { createRequire } from 'node:module';
 import { describe, expect, it } from '@jest/globals';
+import { createHTMLDocument } from '@hint/utils-dom';
 import {
   getIconLinks,
   isIcoIcon,
@@ -9,9 +9,8 @@ import {
 } from '../../../src/lib/seo/icons.js';
 import type { DocumentLike } from '../../../src/lib/seo/read.js';
 
-const require = createRequire(import.meta.url);
-const { createHTMLDocument } = require('@hint/utils-dom');
 const parse = (html: string): DocumentLike =>
+  // eslint-disable-next-line unicorn/prefer-https -- test fixture
   createHTMLDocument(html, 'http://example.com/') as DocumentLike;
 
 describe('getIconLinks', () => {

@@ -11,6 +11,7 @@ import {
 } from '../../../src/lib/i18n/read.js';
 
 const require = createRequire(import.meta.url);
+// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CommonJS only, loaded through createRequire
 const { createHTMLDocument } = require('@hint/utils-dom');
 
 /** Parses markup with the same DOM implementation the webhint hints use. */
@@ -104,6 +105,7 @@ describe('isValidHreflang', () => {
 });
 
 describe('isAbsoluteHttpUrl', () => {
+  // eslint-disable-next-line unicorn/prefer-https -- test fixture
   it.each(['https://x.test/', 'http://x.test/a?b#c'])(
     'accepts absolute %s',
     (href) => {

@@ -188,6 +188,8 @@ export function evaluateKex(keys: readonly EphemeralKey[]): KexEvaluation {
       phaseOut.add(label);
     } else if (rating === 'bad') {
       bad.add(label);
+    } else {
+      // Good and sufficient keys are not reported.
     }
   }
   const sizes = (type: EphemeralKey['type']): number[] =>
@@ -250,7 +252,7 @@ export async function evaluateCipherOrder(
     return na;
   }
   // Internet.nl sorts CHACHA last in case the server prioritizes it (#461).
-  const lessPreferred = [...phaseOut].sort(
+  const lessPreferred = [...phaseOut].toSorted(
     (a, b) =>
       Number(a.standardName.includes('CHACHA')) -
       Number(b.standardName.includes('CHACHA')),
@@ -295,22 +297,25 @@ export function rateCertificateKey(key: CertKey): RatedKey {
   const bits = key.modulusLength ? `-${key.modulusLength}` : '';
   const curve = key.curve ? `, curve: ${key.curve}` : '';
   const description = `${key.type.toUpperCase()}${bits}${curve}`;
-  const good =
-    (key.type === 'rsa' &&
-      (key.modulusLength ?? 0) >= CERT_RSA_MIN_GOOD_KEY_SIZE) ||
-    CERT_CURVES_GOOD.includes(key.type) ||
-    (key.type === 'ec' &&
-      key.curve !== undefined &&
-      CERT_EC_CURVES_GOOD.includes(key.curve));
+  const rsaGood =
+    key.type === 'rsa' &&
+    (key.modulusLength ?? 0) >= CERT_RSA_MIN_GOOD_KEY_SIZE;
+  const ecGood =
+    key.type === 'ec' &&
+    key.curve !== undefined &&
+    CERT_EC_CURVES_GOOD.includes(key.curve);
+  const good = rsaGood || CERT_CURVES_GOOD.includes(key.type) || ecGood;
   if (good) {
     return { rating: 'good', description };
   }
-  const phaseOut =
-    (key.type === 'ec' &&
-      key.curve !== undefined &&
-      CERT_EC_CURVES_PHASE_OUT.includes(key.curve)) ||
-    (key.type === 'rsa' &&
-      (key.modulusLength ?? 0) >= CERT_RSA_MIN_PHASE_OUT_KEY_SIZE);
+  const ecPhaseOut =
+    key.type === 'ec' &&
+    key.curve !== undefined &&
+    CERT_EC_CURVES_PHASE_OUT.includes(key.curve);
+  const rsaPhaseOut =
+    key.type === 'rsa' &&
+    (key.modulusLength ?? 0) >= CERT_RSA_MIN_PHASE_OUT_KEY_SIZE;
+  const phaseOut = ecPhaseOut || rsaPhaseOut;
   return { rating: phaseOut ? 'phase-out' : 'bad', description };
 }
 

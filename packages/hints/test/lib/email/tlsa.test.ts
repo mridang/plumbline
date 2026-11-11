@@ -91,7 +91,12 @@ describe('isDaneUsage', () => {
         matching: 1,
         data: Buffer.alloc(0),
       });
-    expect([0, 1, 2, 3].map(usage)).toEqual([false, false, true, true]);
+    expect([0, 1, 2, 3].map((n) => usage(n))).toEqual([
+      false,
+      false,
+      true,
+      true,
+    ]);
   });
 });
 

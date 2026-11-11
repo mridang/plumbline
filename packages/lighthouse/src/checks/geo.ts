@@ -20,7 +20,7 @@
  * functions, so nothing is restated here. All five land in the seo section
  * per the taxonomy (the four AI-facing ones carry the `ai` tag). Every check is graded (`numeric`).
  */
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import { readJsonLd } from '@mridang/webhint-hint-plumbline/dist/lib/geo/json-ld.js';
 import { measureContent } from '@mridang/webhint-hint-plumbline/dist/lib/geo/content.js';
@@ -47,7 +47,7 @@ import speakableSchemaHint from '@mridang/webhint-hint-plumbline/dist/hints/geo/
 import structuredDataInvalidHint from '@mridang/webhint-hint-plumbline/dist/hints/geo/geo-structured-data-invalid.js';
 
 /** The page URL the document is parsed against (unused by these checks). */
-function pageUrl(artifacts: LH.Artifacts): string {
+function pageUrl(artifacts: Artifacts): string {
   return (
     artifacts.URL?.finalDisplayedUrl || artifacts.URL?.mainDocumentUrl || ''
   );

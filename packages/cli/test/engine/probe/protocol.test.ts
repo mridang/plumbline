@@ -74,6 +74,7 @@ describe('parseHandshake', () => {
       name: 'X25519',
     });
     expect(answer.certificates[0]?.infoAccess).toEqual({
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       'OCSP - URI': ['http://ocsp.example.com'],
     });
     expect(answer.compression).toBe(false);

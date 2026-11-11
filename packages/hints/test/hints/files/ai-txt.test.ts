@@ -48,7 +48,7 @@ describe('ai-txt', () => {
         'text/plain; charset=iso-8859-1',
       ),
     );
-    expect(problems.map((p) => p.message).join(',')).toContain('UTF-8');
+    expect(problems.map((p) => p.message).join(',')).toMatch(/UTF-8/);
   });
 
   it('reports an invalid file with a line number', async () => {

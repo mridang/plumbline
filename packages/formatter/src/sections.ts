@@ -255,7 +255,7 @@ export function buildSections(
   }
 
   const rank = (key: string): number => order.get(key) ?? order.size + 1;
-  const result = [...sections.values()].sort(
+  const result = [...sections.values()].toSorted(
     (a, b) => rank(a.key) - rank(b.key) || a.title.localeCompare(b.title),
   );
   for (const section of result) {

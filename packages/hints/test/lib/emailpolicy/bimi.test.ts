@@ -85,6 +85,7 @@ describe('checkBimi', () => {
   it('errors on a non-https logo url', () => {
     const findings = checkBimi(
       'example.test',
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       ok(['v=BIMI1; l=http://example.test/logo.svg']),
     );
     expect(findings[0].message).toContain(
@@ -104,6 +105,7 @@ describe('checkBimi', () => {
     const findings = checkBimi(
       'example.test',
       ok([
+        // eslint-disable-next-line unicorn/prefer-https -- test fixture
         'v=BIMI1; l=https://example.test/logo.svg; a=http://example.test/vmc.pem',
       ]),
     );

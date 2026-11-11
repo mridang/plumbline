@@ -41,6 +41,8 @@ export async function checkCertPubkey({
     } else if (rating === 'phase-out') {
       phaseOut.push(message);
       phaseOutEvidence.push(evidence);
+    } else {
+      // Any other rating needs no finding.
     }
   }
   if (bad.length > 0) {

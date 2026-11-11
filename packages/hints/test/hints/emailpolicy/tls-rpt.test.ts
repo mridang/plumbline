@@ -44,10 +44,12 @@ describe('tls-rpt', () => {
   it('reports an insecure destination', async () => {
     const problems = await run({
       '_smtp._tls.example.test TXT': [
+        // eslint-disable-next-line unicorn/prefer-https -- test fixture: the http destination is the input being rejected
         '"v=TLSRPTv1; rua=http://insecure.test/r"',
       ],
     });
     expect(problems[0].severity).toBe(Severity.error);
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture: the http destination is the input being rejected
     expect(problems[0].sourceCode).toBe('rua=http://insecure.test/r');
   });
 

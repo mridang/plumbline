@@ -68,7 +68,7 @@ export const tls: { fetchChain: ChainFetcher } = { fetchChain };
  * generic form some resolvers use (`\# 35 030101abcd...`).
  */
 export function parseTlsa(data: string): Tlsa | null {
-  const generic = /^\\#\s+\d+\s+([0-9a-fA-F\s]+)$/.exec(data.trim());
+  const generic = /^\\#\s+\d+\s([\da-fA-F\s]+)$/.exec(data.trim());
   if (generic) {
     const hex = generic[1].replaceAll(/\s+/g, '').toLowerCase();
     if (hex.length < 6) {
@@ -81,7 +81,7 @@ export function parseTlsa(data: string): Tlsa | null {
       data: hex.slice(6),
     };
   }
-  const m = /^(\d+)\s+(\d+)\s+(\d+)\s+([0-9a-fA-F\s]+)$/.exec(data.trim());
+  const m = /^(\d+)\s+(\d+)\s+(\d+)\s([\da-fA-F\s]+)$/.exec(data.trim());
   if (!m) {
     return null;
   }
@@ -190,15 +190,17 @@ export function tlsaMatches(
   presented: PresentedChain,
 ): boolean {
   const [leaf, ...issuers] = presented.chain;
-  return records.filter(usable).some((r) => {
-    if ((r.usage === 0 || r.usage === 1) && !presented.pkixValid) {
-      return false;
-    }
-    const candidates = r.usage === 1 || r.usage === 3 ? [leaf] : issuers;
-    return candidates.some(
-      (cert) => associationData(cert, r.selector, r.matching) === r.data,
-    );
-  });
+  return records
+    .filter((r) => usable(r))
+    .some((r) => {
+      if ((r.usage === 0 || r.usage === 1) && !presented.pkixValid) {
+        return false;
+      }
+      const candidates = r.usage === 1 || r.usage === 3 ? [leaf] : issuers;
+      return candidates.some(
+        (cert) => associationData(cert, r.selector, r.matching) === r.data,
+      );
+    });
 }
 
 export type DaneValidity = 'valid' | 'invalid' | 'untested';

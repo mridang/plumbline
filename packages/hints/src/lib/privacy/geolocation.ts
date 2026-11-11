@@ -35,7 +35,7 @@ export function stripCommentsAndStrings(source: string): string {
       const comment = source.slice(index, end === -1 ? source.length : end);
       index = end === -1 ? source.length : end + 2;
       out += ' ' + '\n'.repeat((comment.match(/\n/g) ?? []).length);
-    } else if (char === '"' || char === "'" || char === '`') {
+    } else if (['"', "'", '`'].includes(char)) {
       let end = index + 1;
       while (end < source.length && source[end] !== char) {
         end += source[end] === '\\' ? 2 : 1;

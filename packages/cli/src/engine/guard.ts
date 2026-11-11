@@ -77,6 +77,7 @@ function embeddedV4(ip: string): string | undefined {
   if (hex) {
     const high = Number.parseInt(hex[1] ?? '0', 16);
     const low = Number.parseInt(hex[2] ?? '0', 16);
+    // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting, which writes hex digits in lower case
     return `${high >> 8}.${high & 0xff}.${low >> 8}.${low & 0xff}`;
   }
   return undefined;
@@ -181,14 +182,18 @@ export function guardedLookup(
       address?: string | dns.LookupAddress[],
       family?: number,
     ) => void;
-    const lookupOptions =
-      typeof optionsOrCallback === 'object' && optionsOrCallback !== null
-        ? (optionsOrCallback as dns.LookupOptions)
-        : typeof optionsOrCallback === 'number'
-          ? { family: optionsOrCallback }
-          : {};
+    let lookupOptions: dns.LookupOptions = {};
+    if (typeof optionsOrCallback === 'object' && optionsOrCallback !== null) {
+      lookupOptions = optionsOrCallback as dns.LookupOptions;
+    } else if (typeof optionsOrCallback === 'number') {
+      lookupOptions = { family: optionsOrCallback };
+    } else {
+      // No options were given, so the defaults stand.
+    }
+    // eslint-disable-next-line promise/prefer-await-to-callbacks -- the lookup hook Node calls is callback-based
     lookup(hostname, { ...lookupOptions, all: true }, (error, addresses) => {
       if (error) {
+        // eslint-disable-next-line promise/prefer-await-to-callbacks -- the lookup hook Node calls is callback-based
         callback(error);
         return;
       }
@@ -197,6 +202,7 @@ export function guardedLookup(
         ? undefined
         : list.find((entry) => !isPublicAddress(entry.address));
       if (refused) {
+        // eslint-disable-next-line promise/prefer-await-to-callbacks -- the lookup hook Node calls is callback-based
         callback(
           new GuardError(
             `${hostname} resolves to ${refused.address}, which is not a public address`,
@@ -205,14 +211,17 @@ export function guardedLookup(
         return;
       }
       if (lookupOptions.all) {
+        // eslint-disable-next-line promise/prefer-await-to-callbacks -- the lookup hook Node calls is callback-based
         callback(null, list);
         return;
       }
       const first = list[0];
       if (!first) {
+        // eslint-disable-next-line promise/prefer-await-to-callbacks -- the lookup hook Node calls is callback-based
         callback(new GuardError(`${hostname} did not resolve`));
         return;
       }
+      // eslint-disable-next-line promise/prefer-await-to-callbacks -- the lookup hook Node calls is callback-based
       callback(null, first.address, first.family);
     });
   };
@@ -325,7 +334,7 @@ function responseHeaders(response: IncomingMessage): Headers {
 
 /** Whether a status carries no body. */
 function bodyless(status: number): boolean {
-  return status === 101 || status === 204 || status === 205 || status === 304;
+  return [101, 204, 205, 304].includes(status);
 }
 
 /** Sends one request, without following a redirect. */
@@ -378,13 +387,20 @@ export function guardedFetch(options: GuardOptions = {}): typeof fetch {
       'user-agent': USER_AGENT,
       ...headersOf(init.headers),
     };
-    let body = bodyOf(init.body);
+    let body: Buffer | null = bodyOf(init.body) ?? null;
     let current = first;
     let verb = method;
     let redirected = false;
     for (let hops = 0; ; hops += 1) {
       assertAllowed(current, options);
-      const sent = await once(current, verb, headers, body, signal, lookup);
+      const sent = await once(
+        current,
+        verb,
+        headers,
+        body ?? undefined,
+        signal,
+        lookup,
+      );
       const status = sent.statusCode ?? 0;
       const location = sent.headers.location;
       if (REDIRECTS.has(status) && location && redirect !== 'manual') {
@@ -409,7 +425,7 @@ export function guardedFetch(options: GuardOptions = {}): typeof fetch {
           ((status === 301 || status === 302) && verb === 'POST')
         ) {
           verb = verb === 'HEAD' ? 'HEAD' : 'GET';
-          body = undefined;
+          body = null;
         }
         current = next;
         redirected = true;
@@ -436,7 +452,7 @@ export function guardedFetch(options: GuardOptions = {}): typeof fetch {
 
 /** How many scans have the guard installed. */
 let installed = 0;
-let saved: { fetch: typeof fetch; lookup: Lookup } | undefined;
+let saved: { fetch: typeof fetch; lookup: Lookup } | null = null;
 
 /**
  * Puts the guard under every fetch and every name lookup in the process for as
@@ -464,7 +480,7 @@ export function installGuard(options: GuardOptions = {}): () => void {
     if (installed === 0 && saved) {
       globalThis.fetch = saved.fetch;
       (dns as { lookup: Lookup }).lookup = saved.lookup;
-      saved = undefined;
+      saved = null;
     }
   };
 }

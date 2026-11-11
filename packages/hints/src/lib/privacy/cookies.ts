@@ -145,7 +145,7 @@ export function cookiesFromHeaders(
   }
   const values = Array.isArray(setCookie) ? setCookie : [setCookie];
   return values
-    .flatMap(splitSetCookie)
+    .flatMap((value) => splitSetCookie(value))
     .map((value) => parseSetCookie(value, host))
     .filter((cookie): cookie is CookieRecord => cookie !== null);
 }
@@ -203,27 +203,32 @@ export function summarizeCookies(
   ];
   for (const cookie of ordered) {
     const key = `${cookie.domain}|${cookie.path}|${cookie.name}`;
-    if (seen.has(key)) {
-      continue;
-    }
-    if (
-      cookie.fromScript &&
-      [...seen].some((other) => {
-        const [domain, , name] = other.split('|');
-        return name === cookie.name && domainMatches(page, domain);
-      })
-    ) {
-      continue;
-    }
-    seen.add(key);
-    if (isSameParty(cookie.domain, pageHost)) {
-      firstParty.push(cookie);
-    } else {
-      thirdParty.push(cookie);
-      keep.add(cookie.domain);
+    if (!seen.has(key) && !heldByHeader(cookie, page, seen)) {
+      seen.add(key);
+      if (isSameParty(cookie.domain, pageHost)) {
+        firstParty.push(cookie);
+      } else {
+        thirdParty.push(cookie);
+        keep.add(cookie.domain);
+      }
     }
   }
   return { firstParty, thirdParty, thirdPartyDomains: [...keep] };
+}
+
+/** True when a script cookie is already held under a domain that covers the page. */
+function heldByHeader(
+  cookie: CookieRecord,
+  page: string,
+  seen: ReadonlySet<string>,
+): boolean {
+  return (
+    cookie.fromScript &&
+    [...seen].some((other) => {
+      const [domain, , name] = other.split('|');
+      return name === cookie.name && domainMatches(page, domain);
+    })
+  );
 }
 
 /**
@@ -236,11 +241,13 @@ export function describeCookie(cookie: CookieRecord): string {
     cookie.lifetime === 'persistent'
       ? `expires ${cookie.expires}`
       : cookie.lifetime;
+  const sameSite = cookie.sameSite
+    ? `SameSite=${cookie.sameSite}`
+    : 'no SameSite';
   return (
     `${cookie.domain} ${truncate(cookie.name, COOKIE_NAME_LENGTH)} (${lifetime}, ` +
     `${cookie.secure ? 'Secure' : 'not Secure'}, ` +
-    `${cookie.httpOnly ? 'HttpOnly' : 'not HttpOnly'}, ` +
-    `${cookie.sameSite ? `SameSite=${cookie.sameSite}` : 'no SameSite'})`
+    `${cookie.httpOnly ? 'HttpOnly' : 'not HttpOnly'}, ${sameSite})`
   );
 }
 

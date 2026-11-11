@@ -46,6 +46,7 @@ export default defineHint({
       const invalid: string[] = [];
       const unchecked: string[] = [];
 
+      // eslint-disable-next-line sonarjs/too-many-break-or-continue-in-loop -- four early exits; restructuring them would reindent the whole per-host check
       for (const host of mail.hosts) {
         let records: TlsaRecord[] = [];
         try {

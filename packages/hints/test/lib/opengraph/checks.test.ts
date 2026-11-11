@@ -241,6 +241,7 @@ describe('ogImageMissing', () => {
 describe('ogImageNotHttps', () => {
   it('warns on http:// only', () => {
     expect(
+      // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
       ogImageNotHttps({ meta: meta({ 'og:image': 'http://x/og.png' }) })[0]
         .severity,
     ).toBe('warning');

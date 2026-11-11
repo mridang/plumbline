@@ -135,7 +135,9 @@ export function hstsFindings({
     const normalised = header
       .trim()
       .toLowerCase()
-      .replaceAll(/\s*;\s*/g, '; ');
+      .split(';')
+      .map((part) => part.trim())
+      .join('; ');
     return OWASP_VALUES.has(normalised)
       ? []
       : [

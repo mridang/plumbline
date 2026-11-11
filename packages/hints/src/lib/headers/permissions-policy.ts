@@ -54,6 +54,8 @@ function splitTopLevel(value: string): string[] {
       depth++;
     } else if (!quoted && char === ')') {
       depth = Math.max(0, depth - 1);
+    } else {
+      // Any other character leaves the nesting depth and quoting unchanged.
     }
     if (char === ',' && depth === 0 && !quoted) {
       parts.push(current);
@@ -82,7 +84,8 @@ export function parsePermissionsPolicy(value: string): Map<string, string> {
     let allowlist = member.slice(equals + 1).trim();
     if (allowlist.startsWith('(')) {
       const close = allowlist.indexOf(')');
-      const inner = allowlist.slice(1, close === -1 ? undefined : close);
+      const inner =
+        close === -1 ? allowlist.slice(1) : allowlist.slice(1, close);
       allowlist = `(${inner.trim().split(/\s+/).filter(Boolean).join(' ')})`;
     }
     if (!policy.has(feature)) {

@@ -12,6 +12,7 @@ import type { HintDefinition } from '../../src/core/define-hint.js';
 import TestConnector from './test-connector.js';
 
 const require = createRequire(import.meta.url);
+// eslint-disable-next-line sonarjs/no-require-or-define -- CJS-only package, its default export is read from module.exports via createRequire
 const { default: HTMLParser } = require('@hint/parser-html');
 
 /** What the test server answers for one path. */
@@ -27,20 +28,22 @@ export type Routes = Record<string, Route | ((req: IncomingMessage) => Route)>;
 const DEFAULT_PAGE =
   '<!doctype html><html lang="en"><head><title>t</title></head><body></body></html>';
 
+function fallbackRoute(path: string): Route {
+  if (path !== '/') {
+    return { status: 404, body: 'not found' };
+  }
+  return {
+    headers: { 'content-type': 'text/html; charset=utf-8' },
+    body: DEFAULT_PAGE,
+  };
+}
+
 function listen(routes: Routes): Promise<Server> {
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     const path = (req.url ?? '/').split('?', 1)[0];
     const entry = routes[path];
     const route =
-      typeof entry === 'function'
-        ? entry(req)
-        : (entry ??
-          (path === '/'
-            ? {
-                headers: { 'content-type': 'text/html; charset=utf-8' },
-                body: DEFAULT_PAGE,
-              }
-            : { status: 404, body: 'not found' }));
+      typeof entry === 'function' ? entry(req) : (entry ?? fallbackRoute(path));
     res.writeHead(route.status ?? 200, {
       'content-type': 'text/html; charset=utf-8',
       ...route.headers,

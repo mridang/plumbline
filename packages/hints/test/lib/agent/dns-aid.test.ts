@@ -39,14 +39,17 @@ describe('checkDnsAid', () => {
         dnsAnswers: { 'TXT _index._agents.example.com': ['"v=1"'] },
       },
     );
-    expect((await checkDnsAid(env)).passed).toBe(false);
+    const r = await checkDnsAid(env);
+    expect(r.passed).toBe(false);
   });
   it('fails when nothing is published', async () => {
-    expect((await checkDnsAid(fakeEnv())).passed).toBe(false);
+    const r = await checkDnsAid(fakeEnv());
+    expect(r.passed).toBe(false);
   });
   it('treats a failing resolver as no record', async () => {
     const env = fakeEnv();
     env.dns = { query: () => Promise.reject(new Error('down')) };
-    expect((await checkDnsAid(env)).passed).toBe(false);
+    const r = await checkDnsAid(env);
+    expect(r.passed).toBe(false);
   });
 });

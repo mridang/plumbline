@@ -47,7 +47,7 @@ const HEADINGS: AuditNS.Details.TableColumnHeading[] = [
 
 /** The worst (most serious) finding, used for the one-line summary. */
 function worstFinding(findings: readonly Finding[]): Finding | undefined {
-  return [...findings].sort(
+  return [...findings].toSorted(
     (a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity],
   )[0];
 }

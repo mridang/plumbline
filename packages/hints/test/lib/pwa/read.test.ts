@@ -1,5 +1,5 @@
-import { createRequire } from 'node:module';
 import { describe, expect, it } from '@jest/globals';
+import { createHTMLDocument } from '@hint/utils-dom';
 import type { DocumentLike } from '../../../src/lib/pwa/read.js';
 import {
   getManifestHref,
@@ -7,11 +7,9 @@ import {
   isAbsoluteHref,
 } from '../../../src/lib/pwa/read.js';
 
-const require = createRequire(import.meta.url);
-const { createHTMLDocument } = require('@hint/utils-dom');
-
 /** Parses markup with the same DOM implementation webhint uses. */
 const parse = (html: string): DocumentLike =>
+  // eslint-disable-next-line unicorn/prefer-https -- test fixture
   createHTMLDocument(html, 'http://example.com/') as DocumentLike;
 
 describe('getManifestHref', () => {

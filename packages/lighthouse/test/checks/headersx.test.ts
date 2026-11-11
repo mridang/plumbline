@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import { headersxChecks } from '../../src/checks/headersx.js';
 import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
@@ -13,7 +13,7 @@ import type { AuditCheck } from '../../src/checks/types.js';
 function devtoolsLog(
   url: string,
   headers: Record<string, string>,
-): LH.Artifacts['DevtoolsLog'] {
+): Artifacts['DevtoolsLog'] {
   const requestId = '1';
   const events = [
     {
@@ -57,15 +57,15 @@ function devtoolsLog(
       params: { requestId, timestamp: 3, encodedDataLength: 100 },
     },
   ];
-  return events as unknown as LH.Artifacts['DevtoolsLog'];
+  return events as unknown as Artifacts['DevtoolsLog'];
 }
 
-function artifacts(url: string, headers: Record<string, string>): LH.Artifacts {
+function artifacts(url: string, headers: Record<string, string>): Artifacts {
   return {
     DevtoolsLog: devtoolsLog(url, headers),
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
     MetaElements: [],
-  } as unknown as LH.Artifacts;
+  } as unknown as Artifacts;
 }
 
 function context(): AuditNS.Context {
@@ -93,7 +93,7 @@ describe('the headersx registry', () => {
     const informative = headersxChecks
       .filter((c) => c.scoreMode === 'informative')
       .map((c) => c.id)
-      .sort();
+      .toSorted((a, b) => a.localeCompare(b));
     expect(informative).toEqual([
       'attribution-reporting',
       'observe-browsing-topics',
@@ -122,7 +122,7 @@ describe('the set-login check run()', () => {
 
   it('is not applicable when the document is missing', async () => {
     const findings = await setLogin.run(
-      { DevtoolsLog: [], URL: {} } as unknown as LH.Artifacts,
+      { DevtoolsLog: [], URL: {} } as unknown as Artifacts,
       context(),
     );
     expect(findings).toBeNull();

@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 import { describe, expect, it } from '@jest/globals';
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import { pwaChecks } from '../../src/checks/pwa.js';
 import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
@@ -15,20 +15,21 @@ import {
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/pwa/read.js';
 
 const require = createRequire(import.meta.url);
+// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CJS-only with no ESM entry point
 const { createHTMLDocument } = require('@hint/utils-dom');
 
 const parse = (html: string): DocumentLike =>
   createHTMLDocument(html, 'https://x.test/') as DocumentLike;
 
 /** Builds the artifacts a PWA check reads: the raw HTML and the page URL. */
-function artifacts(html: string): LH.Artifacts {
+function artifacts(html: string): Artifacts {
   return {
     MainDocumentContent: html,
     URL: {
       mainDocumentUrl: 'https://x.test/',
       finalDisplayedUrl: 'https://x.test/',
     },
-  } as unknown as LH.Artifacts;
+  } as unknown as Artifacts;
 }
 
 const context = {} as AuditNS.Context;

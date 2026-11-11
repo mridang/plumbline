@@ -27,6 +27,11 @@ export interface Filters {
   targets?: readonly string[];
 }
 
+/** The taxonomy placement of a hint; undefined for an id the taxonomy does not place. */
+function placementOf(id: string): (typeof PLACEMENT)[string] | undefined {
+  return PLACEMENT[id];
+}
+
 /**
  * Findings and webhint's own config name hints `extra/<id>`, so a user may
  * paste that form back into `--only`; it means the same bare id.
@@ -87,15 +92,17 @@ export function filterByGroups(
   );
   return catalogue.filter((hint) => {
     const subject = { id: hint.id, groups: hint.groups };
-    const placement = PLACEMENT[hint.id];
-    return (
-      (groups.length === 0 ||
-        selectors.some((selector) => matches(selector, subject))) &&
-      (!filters.tiers?.length ||
-        (placement !== undefined && filters.tiers.includes(placement.tier))) &&
-      (!filters.targets?.length ||
-        (placement !== undefined && filters.targets.includes(placement.target)))
-    );
+    const placement = placementOf(hint.id);
+    const inGroup =
+      groups.length === 0 ||
+      selectors.some((selector) => matches(selector, subject));
+    const inTier =
+      !filters.tiers?.length ||
+      (placement !== undefined && filters.tiers.includes(placement.tier));
+    const inTarget =
+      !filters.targets?.length ||
+      (placement !== undefined && filters.targets.includes(placement.target));
+    return inGroup && inTier && inTarget;
   });
 }
 
@@ -113,8 +120,8 @@ export function selectHints(
   selection: Selection,
 ): string[] {
   const ids = new Set(catalogue.map((hint) => hint.id));
-  const only = selection.only.map(bare);
-  const skip = new Set(selection.skip.map(bare));
+  const only = selection.only.map((id) => bare(id));
+  const skip = new Set(selection.skip.map((id) => bare(id)));
   requireKnown('check', only, (name) => ids.has(name));
   requireKnown('check', [...skip], (name) => ids.has(name));
   const chosen = filterByGroups(catalogue, selection.groups, selection)

@@ -15,12 +15,12 @@ const serve = async (
     res.writeHead(200, headers);
     res.end('x');
   });
-  await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const { port } = server.address() as AddressInfo;
   return {
     url: new URL(`http://127.0.0.1:${port}/`),
     seen: () => accept,
-    close: () => new Promise((r) => server.close(() => r())),
+    close: () => new Promise((resolve) => server.close(() => resolve())),
   };
 };
 

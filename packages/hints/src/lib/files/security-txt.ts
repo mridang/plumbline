@@ -89,7 +89,8 @@ export function validateSecurityTxt(
     const name = trimmed.slice(0, colon).trim().toLowerCase();
     // Dash-escaped lines in signed files start with "- ".
     const value = trimmed.slice(colon + 1).trim();
-    (fields[name] ??= []).push({ value, line });
+    fields[name] ??= [];
+    fields[name].push({ value, line });
   });
 
   for (const required of ['contact', 'expires']) {
@@ -135,6 +136,8 @@ export function validateSecurityTxt(
         snippet,
         message: "'Expires' should be less than one year in the future.",
       });
+    } else {
+      // An expiry within one year is acceptable.
     }
   }
 
@@ -177,6 +180,8 @@ export function validateSecurityTxt(
           snippet,
           message: `'${value}' is not a valid URL.`,
         });
+      } else {
+        // A URI that passes every check needs no finding.
       }
     }
   }

@@ -34,10 +34,7 @@ export interface ReportingInput {
 const CLOUDFLARE_NEL = /(^|\.)nel\.cloudflare\.com$/i;
 
 /** Whether an endpoint is Cloudflare's injected collector on a site served by Cloudflare. */
-function isPlatformEndpoint(
-  url: string,
-  cloudflare: boolean | undefined,
-): boolean {
+function isPlatformEndpoint(url: string, cloudflare = false): boolean {
   if (!cloudflare) {
     return false;
   }
@@ -72,7 +69,7 @@ function thirdPartyEndpoints(
   groups: Group[],
   name: unknown,
   registrable: string,
-  cloudflare?: boolean,
+  cloudflare = false,
 ): string[] {
   const urls: string[] = [];
   for (const group of groups) {
@@ -90,6 +87,27 @@ function thirdPartyEndpoints(
     }
   }
   return urls;
+}
+
+/** Third-party endpoints of the report group named by the NEL header. */
+function nelEndpoints(input: ReportingInput, groups: Group[]): string[] {
+  if (input.nel === null) {
+    return [];
+  }
+  try {
+    const nel = JSON.parse(input.nel) as { report_to?: unknown };
+    if (nel && typeof nel === 'object' && 'report_to' in nel) {
+      return thirdPartyEndpoints(
+        groups,
+        nel.report_to,
+        input.registrable,
+        input.cloudflare,
+      );
+    }
+  } catch {
+    // An NEL header that is not JSON is ignored by browsers too.
+  }
+  return [];
 }
 
 /** Finds the reporting endpoints on other registrable domains. */
@@ -139,23 +157,9 @@ export function externalReports(input: ReportingInput): ExternalReports {
         found.cspReportOnlyReportTo = urls;
       }
     }
-    if (input.nel !== null) {
-      try {
-        const nel = JSON.parse(input.nel) as { report_to?: unknown };
-        if (nel && typeof nel === 'object' && 'report_to' in nel) {
-          const urls = thirdPartyEndpoints(
-            groups,
-            nel.report_to,
-            input.registrable,
-            input.cloudflare,
-          );
-          if (urls.length > 0) {
-            found.nel = urls;
-          }
-        }
-      } catch {
-        // An NEL header that is not JSON is ignored by browsers too.
-      }
+    const nelUrls = nelEndpoints(input, groups);
+    if (nelUrls.length > 0) {
+      found.nel = nelUrls;
     }
   }
   return found;

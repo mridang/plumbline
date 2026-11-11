@@ -6,15 +6,15 @@
  * {@link HeaderBag} and the "served over HTTPS" flag the checks take.
  */
 import { NetworkRecords } from 'lighthouse';
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type { HeaderBag } from '@mridang/webhint-hint-plumbline/dist/lib/headers/http-headers.js';
 import { findMainDocument, headerBagFromRecord } from './adapt.js';
 
 /** The artifacts a header audit requires: the devtools log and the URL set. */
 export interface HeaderArtifacts {
-  DevtoolsLog: LH.Artifacts['DevtoolsLog'];
-  URL: LH.Artifacts['URL'];
+  DevtoolsLog: Artifacts['DevtoolsLog'];
+  URL: Artifacts['URL'];
 }
 
 /** The main document's headers, HTTP status, and whether it used HTTPS. */

@@ -11,6 +11,7 @@ describe('nodeinfo', () => {
     const problems = await runHint(hint, {
       '/.well-known/nodeinfo': {
         headers: { 'content-type': 'application/json' },
+        // eslint-disable-next-line unicorn/prefer-https -- test fixture: the NodeInfo rel identifier is an http:// URL by specification
         body: '{"links":[{"rel":"http://nodeinfo.diaspora.software/ns/schema/2.1","href":"https://x.test/ni"}]}',
       },
     });

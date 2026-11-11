@@ -71,12 +71,13 @@ function mcpIdentity(
 
 /** Collects the cards of a document: a single card or a list of them. */
 function cardsOf(root: Record<string, unknown>): Record<string, unknown>[] {
-  const list = Array.isArray(root.servers)
-    ? root.servers
-    : Array.isArray(root.cards)
-      ? root.cards
-      : [root];
-  return list.filter(isRecord);
+  if (Array.isArray(root.servers)) {
+    return root.servers.filter(isRecord);
+  }
+  if (Array.isArray(root.cards)) {
+    return root.cards.filter(isRecord);
+  }
+  return [root].filter(isRecord);
 }
 
 /** Finds the first valid card in a document; returns a description. */
@@ -119,11 +120,14 @@ export async function checkMcpServerCard(env: AgentEnv): Promise<CheckResult> {
     const entries = Array.isArray(catalog?.entries) ? catalog.entries : [];
     for (const entry of entries) {
       if (!isRecord(entry) || entry.type !== MCP_CARD_TYPE) continue;
-      const doc = isRecord(entry.data)
-        ? entry.data
-        : isText(entry.url)
-          ? parseJsonObject(await env.probe(entry.url))
-          : undefined;
+      let doc: Record<string, unknown> | undefined;
+      if (isRecord(entry.data)) {
+        doc = entry.data;
+      } else if (isText(entry.url)) {
+        doc = parseJsonObject(await env.probe(entry.url));
+      } else {
+        // Without embedded data or a url there is no card to check.
+      }
       const card = doc && validCard(doc);
       if (card) {
         return result(id, 'discovery', true, `${path} lists ${card}.`);
@@ -209,7 +213,9 @@ export async function checkA2aAgentCard(env: AgentEnv): Promise<CheckResult> {
       missing.push(
         'supportedInterfaces (url, protocolBinding, protocolVersion)',
       );
-  } else if (!isText(card.url)) {
+  } else if (isText(card.url)) {
+    // A card that names its url directly needs no supportedInterfaces list.
+  } else {
     missing.push('supportedInterfaces');
   }
   return missing.length === 0

@@ -52,7 +52,8 @@ interface AgentScore {
  */
 function parseAgentScore(message: string): AgentScore | undefined {
   const head =
-    /^Agent readiness score (\d+)\/100, level (\d+)(?: "([^"]*)")?\.?\s*(.*)$/s.exec(
+    // eslint-disable-next-line sonarjs/super-linear-regex -- fixed-format hint message; a simpler pattern would change the captured title or category text
+    /^Agent readiness score (\d+)\/100, level (\d+)(?: "([^"]*)")?\.?(.*)$/s.exec(
       message,
     );
   if (!head) {
@@ -60,7 +61,8 @@ function parseAgentScore(message: string): AgentScore | undefined {
   }
   const categories: ScoreCategory[] = [];
   for (const part of (head[4] ?? '').split(';')) {
-    const match = /^\s*(.+?)\s+(\d+)(?:\s*\(\d+\/\d+\))?\s*\.?\s*$/.exec(part);
+    // eslint-disable-next-line sonarjs/super-linear-regex -- one short category part of a fixed-format message; the name and score split cannot be expressed without this overlap
+    const match = /^(.+?)\s+(\d+)(?:\s*\(\d+\/\d+\))?\s*\.?$/.exec(part.trim());
     if (match) {
       categories.push({
         name: match[1] ?? '',
@@ -121,12 +123,11 @@ function renderFinding(finding: Finding): string {
     finding.location && finding.location.line >= 0
       ? ` <span class="loc">${finding.location.line}:${finding.location.column}</span>`
       : '';
+  const language = finding.codeLanguage
+    ? `<span class="lang">${escapeHtml(finding.codeLanguage)}</span>`
+    : '';
   const code = finding.sourceCode
-    ? `<pre><code>${escapeHtml(finding.sourceCode)}</code>${
-        finding.codeLanguage
-          ? `<span class="lang">${escapeHtml(finding.codeLanguage)}</span>`
-          : ''
-      }</pre>`
+    ? `<pre><code>${escapeHtml(finding.sourceCode)}</code>${language}</pre>`
     : '';
   const docs =
     (finding.documentation ?? []).length > 0
@@ -184,11 +185,11 @@ function renderHintHead(block: HintBlock): string {
 
 /** Renders a hint that has findings as a collapsible block. */
 function renderHint(block: HintBlock): string {
-  const { info } = block;
+  const { info, counts, findings } = block;
   const badges = block.badges
     .map((b) => `<span class="badge">${escapeHtml(b)}</span>`)
     .join('');
-  return `<details class="hint" data-groups="${escapeHtml(info.groups.join(' '))}"><summary><span class="name">${escapeHtml(info.name)}</span> <code>${escapeHtml(info.id)}</code> ${badges}<span class="counts">${renderCounts(block.counts)}</span></summary>${renderHintHead(block)}<ul class="findings">${block.findings.map(renderFinding).join('')}</ul></details>`;
+  return `<details class="hint" data-groups="${escapeHtml(info.groups.join(' '))}"><summary><span class="name">${escapeHtml(info.name)}</span> <code>${escapeHtml(info.id)}</code> ${badges}<span class="counts">${renderCounts(counts)}</span></summary>${renderHintHead(block)}<ul class="findings">${findings.map((finding) => renderFinding(finding)).join('')}</ul></details>`;
 }
 
 /** Renders the collapsed list of hints that ran without findings. */
@@ -217,7 +218,10 @@ function renderSection(section: Section): string {
   const status = section.passed
     ? '<span class="ok" title="Passed">&#10003;</span>'
     : renderCounts(section.counts);
-  return `<section class="section" id="${anchor(section.key)}"><h2>${escapeHtml(section.title)} ${status}</h2>${section.description ? `<p class="section-desc">${escapeHtml(section.description)}</p>` : ''}${failing.map(renderHint).join('')}${renderPassed(passing)}</section>`;
+  const description = section.description
+    ? `<p class="section-desc">${escapeHtml(section.description)}</p>`
+    : '';
+  return `<section class="section" id="${anchor(section.key)}"><h2>${escapeHtml(section.title)} ${status}</h2>${description}${failing.map((hint) => renderHint(hint)).join('')}${renderPassed(passing)}</section>`;
 }
 
 /** Renders the sidebar navigation. */
@@ -335,7 +339,7 @@ export function generateReport(data: ReportData): string {
 <main><h1>${link(data.target)}</h1><p class="meta">${escapeHtml(data.date)}</p>
 <div class="totals">${renderCounts(totals) || '<span class="ok">No findings</span>'}</div>
 <p class="meta">${hintsRun} hints run, ${withFindings} with findings</p>
-${renderScoreCard(data.findings)}${renderFilter(data.hints)}${sections.map(renderSection).join('')}</main></div>
+${renderScoreCard(data.findings)}${renderFilter(data.hints)}${sections.map((section) => renderSection(section)).join('')}</main></div>
 <script>${SCRIPT}</script></body></html>
 `;
 }

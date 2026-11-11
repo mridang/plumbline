@@ -104,7 +104,9 @@ export const CERT_SIGALG_SUFFICIENT: Readonly<Record<string, string>> = {
   '1.2.840.10045.4.3.2': 'ecdsa-with-SHA256',
   '1.2.840.10045.4.3.3': 'ecdsa-with-SHA384',
   '1.2.840.10045.4.3.4': 'ecdsa-with-SHA512',
+  // eslint-disable-next-line sonarjs/no-hardcoded-ip -- OID 1.3.101.112 (Ed25519), not an IP address
   '1.3.101.112': 'ED25519',
+  // eslint-disable-next-line sonarjs/no-hardcoded-ip -- OID 1.3.101.113 (Ed448), not an IP address
   '1.3.101.113': 'ED448',
 };
 

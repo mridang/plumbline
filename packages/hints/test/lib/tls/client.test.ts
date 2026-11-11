@@ -93,7 +93,9 @@ describe('tryConnect', () => {
 
   it('reports a stapled OCSP response when asked', async () => {
     const server = await startServer();
+    // eslint-disable-next-line promise/prefer-await-to-callbacks -- Node's OCSPRequest event only accepts its response through this callback
     server.server.on('OCSPRequest', (_cert, _issuer, callback) =>
+      // eslint-disable-next-line promise/prefer-await-to-callbacks -- Node's OCSPRequest event only accepts its response through this callback
       callback(null, OCSP_STAPLE),
     );
     const result = await tryConnect(at(server.port), { requestOCSP: true });
@@ -152,7 +154,9 @@ describe('acceptedCiphers', () => {
     });
     const found = await acceptedCiphers(at(server.port), 'TLSv1.2');
     await server.close();
-    expect(found.map((c) => c.standardName).sort()).toEqual([
+    expect(
+      found.map((c) => c.standardName).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual([
       'TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256',
       'TLS_RSA_WITH_AES_128_CBC_SHA',
     ]);
@@ -189,6 +193,7 @@ describe('helpers', () => {
   });
 
   it('targets the host on the probe port', () => {
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     expect(targetFor(new URL('http://example.test:8080/x'))).toEqual({
       host: 'example.test',
       port: 443,

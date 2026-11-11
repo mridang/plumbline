@@ -69,20 +69,18 @@ export function parseDkim(record: string): DkimRecord {
   }
   const tags = new Map<string, string>();
   for (const [index, piece] of pieces.entries()) {
-    const match = /^([A-Za-z][A-Za-z0-9_]*)\s*=\s*([\s\S]*)$/u.exec(piece);
+    const match = /^([A-Za-z]\w*)\s*=([\s\S]*)$/u.exec(piece);
     if (!match) {
       errors.push(`'${piece}' is not a tag=value pair.`);
-      continue;
+    } else if (tags.has(match[1])) {
+      errors.push(`The '${match[1]}' tag appears more than once.`);
+    } else {
+      const name = match[1];
+      if (name === 'v' && index !== 0) {
+        errors.push("The 'v' tag must come first.");
+      }
+      tags.set(name, match[2].trim());
     }
-    const name = match[1];
-    if (tags.has(name)) {
-      errors.push(`The '${name}' tag appears more than once.`);
-      continue;
-    }
-    if (name === 'v' && index !== 0) {
-      errors.push("The 'v' tag must come first.");
-    }
-    tags.set(name, match[2].trim());
   }
   // Unknown tags are ignored by verifiers, so they are not an error.
 
@@ -111,6 +109,8 @@ export function parseDkim(record: string): DkimRecord {
     if (problem) {
       errors.push(problem);
     }
+  } else {
+    // An unsupported key type is already reported above.
   }
 
   const hashes = tags.get('h');

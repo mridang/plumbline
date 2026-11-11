@@ -45,5 +45,7 @@ export async function lookupMailServers(
     }
     hosts.add(host);
   }
-  return [...hosts].sort().slice(0, MAX_MAIL_SERVERS);
+  return [...hosts]
+    .toSorted((a, b) => a.localeCompare(b))
+    .slice(0, MAX_MAIL_SERVERS);
 }

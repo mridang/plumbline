@@ -63,7 +63,7 @@ describe('fetchResource', () => {
     expect(data.response.statusCode).toBe(200);
     expect(data.response.mediaType).toBe('text/html');
     expect(data.response.body.content).toBe('café');
-    expect(data.response.body.rawContent.length).toBe(4);
+    expect(data.response.body.rawContent).toHaveLength(4);
     expect(data.request).toEqual({
       headers: { accept: 'text/html' },
       url: 'https://b.example/page',

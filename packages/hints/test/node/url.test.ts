@@ -1,11 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
-import * as node from 'node:url';
+import { domainToASCII as nodeDomainToASCII } from 'node:url';
 
-import * as ours from '../../src/node/url.js';
+import { domainToASCII } from '../../src/node/url.js';
 
 describe('#url under Node', () => {
-  it.each(['domainToASCII'] as const)('is Node own %s', (name) => {
-    expect(ours[name]).toBeDefined();
-    expect(ours[name]).toBe(node[name]);
+  it('is Node own domainToASCII', () => {
+    expect(domainToASCII).toBeDefined();
+    expect(domainToASCII).toBe(nodeDomainToASCII);
   });
 });

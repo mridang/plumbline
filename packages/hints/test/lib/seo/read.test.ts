@@ -1,5 +1,5 @@
-import { createRequire } from 'node:module';
 import { describe, expect, it } from '@jest/globals';
+import { createHTMLDocument } from '@hint/utils-dom';
 import {
   countH1,
   findRobotsSource,
@@ -14,11 +14,9 @@ import {
   type DocumentLike,
 } from '../../../src/lib/seo/read.js';
 
-const require = createRequire(import.meta.url);
-const { createHTMLDocument } = require('@hint/utils-dom');
-
 /** Parses markup with the same DOM implementation webhint uses. */
 const parse = (html: string): DocumentLike =>
+  // eslint-disable-next-line unicorn/prefer-https -- test fixture
   createHTMLDocument(html, 'http://example.com/') as DocumentLike;
 
 describe('getTitle', () => {
@@ -108,16 +106,23 @@ describe('hasJsonLd', () => {
 
 describe('sameUrl', () => {
   it('matches equal, relative and fragment variants', () => {
+    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
     expect(sameUrl('http://e.com/a', 'http://e.com/a')).toBe(true);
+    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
     expect(sameUrl('/a', 'http://e.com/a')).toBe(true);
+    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
     expect(sameUrl('http://e.com/a#x', 'http://e.com/a')).toBe(true);
   });
   it('detects differences', () => {
+    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
     expect(sameUrl('http://e.com/b', 'http://e.com/a')).toBe(false);
+    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
     expect(sameUrl('https://e.com/a', 'http://e.com/a')).toBe(false);
+    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
     expect(sameUrl('http://e.com/a?x=1', 'http://e.com/a')).toBe(false);
   });
   it('returns false for unparsable input', () => {
+    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
     expect(sameUrl('http://', 'http://e.com/a')).toBe(false);
   });
 });

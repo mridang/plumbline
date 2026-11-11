@@ -17,6 +17,7 @@ describe('charLength', () => {
 describe('startsWithUrl', () => {
   it('detects http and https at the start', () => {
     expect(startsWithUrl('https://a.com')).toBe(true);
+    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
     expect(startsWithUrl('  HTTP://a.com')).toBe(true);
   });
   it('ignores URLs later in the text and bare domains', () => {

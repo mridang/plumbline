@@ -26,7 +26,7 @@ describe('weights and levels', () => {
   });
   it('levels are ordered and cover 0', () => {
     expect(LEVELS[0].min).toBe(0);
-    expect([...LEVELS].sort((a, b) => a.min - b.min)).toEqual(LEVELS);
+    expect([...LEVELS].toSorted((a, b) => a.min - b.min)).toEqual(LEVELS);
   });
   it('maps scores to levels', () => {
     expect(levelFor(0).level).toBe(0);

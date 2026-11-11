@@ -18,6 +18,9 @@ function splitLinks(header: string): string[] {
     if (char === '"' && !inUri) inQuote = !inQuote;
     else if (char === '<' && !inQuote) inUri = true;
     else if (char === '>' && !inQuote) inUri = false;
+    else {
+      // Other characters leave the quoting state unchanged.
+    }
     if (char === ',' && !inUri && !inQuote) {
       parts.push(current);
       current = '';

@@ -37,8 +37,10 @@ const BROAD_SOURCES = new Set([
   'http:',
   'https:',
   'ftp:',
+  // eslint-disable-next-line sonarjs/no-clear-text-protocols -- CSP source expression matched as text, not a URL requested
   'http://*',
   'https://*',
+  // eslint-disable-next-line sonarjs/no-clear-text-protocols -- CSP source expression matched as text, not a URL requested
   'http://*.*',
   'https://*.*',
   'data:',

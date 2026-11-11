@@ -25,7 +25,7 @@ describe('describeChain', () => {
     expect(leaf).toEqual({
       commonName: 'localhost',
       issuer: expect.any(String),
-      key: { type: 'rsa', modulusLength: 3072, curve: undefined },
+      key: { type: 'rsa', modulusLength: 3072 },
       signatureOid: '1.2.840.10045.4.3.2',
       isRoot: false,
     });

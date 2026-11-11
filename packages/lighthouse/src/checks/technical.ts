@@ -25,7 +25,7 @@
  * Lighthouse loads, so none is informative.
  */
 import { NetworkRecords } from 'lighthouse';
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import { finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import {
@@ -98,7 +98,7 @@ function fromHint(
 }
 
 /** The page URL the relative-URL and image checks resolve against. */
-function pageUrl(artifacts: LH.Artifacts): string {
+function pageUrl(artifacts: Artifacts): string {
   return (
     artifacts.URL?.finalDisplayedUrl || artifacts.URL?.mainDocumentUrl || ''
   );

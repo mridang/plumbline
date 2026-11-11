@@ -40,13 +40,13 @@ export default defineHint({
     onMailDomain(context, async (mail) => {
       for (const host of mail.hosts) {
         const existence = await daneExistence(host, 25);
-        if (existence.state !== 'exists') {
-          continue;
-        }
         // Receiving mail servers must not use the PKIX usages (RFC 7672).
-        const records = existence.records.filter(
-          (record) => record.usage === 2 || record.usage === 3,
-        );
+        const records =
+          existence.state === 'exists'
+            ? existence.records.filter(
+                (record) => record.usage === 2 || record.usage === 3,
+              )
+            : [];
         if (records.length === 0 || hasDaneRollover(records)) {
           continue;
         }

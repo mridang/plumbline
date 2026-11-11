@@ -43,6 +43,7 @@ describe('mail-ipv6', () => {
     const dns = fakeDns({
       ...MX,
       'mx1.example.test AAAA': ['2001:db8::1'],
+      // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture: an IPv4-mapped IPv6 address, not a real host
       'mx2.example.test AAAA': ['::ffff:192.0.2.1'],
     });
     const problems = await runMailHint(hint, {

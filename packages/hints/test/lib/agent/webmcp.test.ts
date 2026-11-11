@@ -7,29 +7,29 @@ const withPage = (value: unknown) =>
 
 describe('checkWebMcp', () => {
   it('passes with registered tools', async () => {
-    expect(
-      (await checkWebMcp(withPage({ api: true, tools: 2, forms: 0 }))).passed,
-    ).toBe(true);
+    const r = await checkWebMcp(withPage({ api: true, tools: 2, forms: 0 }));
+    expect(r.passed).toBe(true);
   });
   it('passes with declarative form tools', async () => {
-    expect(
-      (await checkWebMcp(withPage({ api: false, tools: 0, forms: 1 }))).passed,
-    ).toBe(true);
+    const r = await checkWebMcp(withPage({ api: false, tools: 0, forms: 1 }));
+    expect(r.passed).toBe(true);
   });
   it('fails when the API exists but no tool is registered', async () => {
-    expect(
-      (await checkWebMcp(withPage({ api: true, tools: 0, forms: 0 }))).passed,
-    ).toBe(false);
+    const r = await checkWebMcp(withPage({ api: true, tools: 0, forms: 0 }));
+    expect(r.passed).toBe(false);
   });
   it('fails for an unexpected result', async () => {
-    expect((await checkWebMcp(withPage('nope'))).passed).toBe(false);
+    const r = await checkWebMcp(withPage('nope'));
+    expect(r.passed).toBe(false);
   });
   it('fails without a browser', async () => {
-    expect((await checkWebMcp(fakeEnv())).detail).toContain('No browser');
+    const r = await checkWebMcp(fakeEnv());
+    expect(r.detail).toContain('No browser');
   });
   it('fails when evaluation throws', async () => {
     const env = fakeEnv({}, { evaluate: () => Promise.reject(new Error('x')) });
-    expect((await checkWebMcp(env)).detail).toContain('could not be evaluated');
+    const r = await checkWebMcp(env);
+    expect(r.detail).toContain('could not be evaluated');
   });
   it('looks for modelContext and toolname forms', () => {
     expect(WEBMCP_SCRIPT).toContain('document.modelContext');

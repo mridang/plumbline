@@ -30,10 +30,10 @@ const net = (probe: Partial<StarttlsProbe>): MailNetClient => ({
   probeStarttls: () => Promise.resolve({ ...GOOD, ...probe }),
 });
 
-let smtp: FakeSmtp | undefined;
+let smtp: FakeSmtp | null = null;
 afterEach(async () => {
   await smtp?.close();
-  smtp = undefined;
+  smtp = null;
 });
 
 describe('mail-starttls', () => {

@@ -31,35 +31,39 @@ export function attributionReportingFindings(
     if (value === null) {
       continue;
     }
-    try {
-      const parsed: unknown = JSON.parse(value);
-      if (
-        typeof parsed !== 'object' ||
-        parsed === null ||
-        Array.isArray(parsed)
-      ) {
-        findings.push(
-          finding('warning', `The '${name}' header must be a JSON object.`),
-        );
-        continue;
-      }
-    } catch {
+    const problem = registrationProblem(name, value);
+    if (problem) {
+      findings.push(problem);
+    } else {
       findings.push(
         finding(
-          'warning',
-          `The '${name}' header must be valid JSON, or the registration is ignored.`,
+          'hint',
+          `The '${name}' header registers this response with the Attribution Reporting API (ad measurement).`,
         ),
       );
-      continue;
     }
-    findings.push(
-      finding(
-        'hint',
-        `The '${name}' header registers this response with the Attribution Reporting API (ad measurement).`,
-      ),
-    );
   }
   return findings;
+}
+
+/** The warning for a registration that is not a JSON object, or null when it is one. */
+function registrationProblem(name: string, value: string): Finding | null {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
+      return finding('warning', `The '${name}' header must be a JSON object.`);
+    }
+    return null;
+  } catch {
+    return finding(
+      'warning',
+      `The '${name}' header must be valid JSON, or the registration is ignored.`,
+    );
+  }
 }
 
 /**

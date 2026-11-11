@@ -17,6 +17,7 @@ describe('opengraph-image-not-https', () => {
   it('reports http', async () => {
     const problems = await runHint(
       hint,
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       page('<meta property="og:image" content="http://example.com/i.png">'),
     );
     expect(problems).toHaveLength(1);

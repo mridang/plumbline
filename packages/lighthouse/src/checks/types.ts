@@ -14,7 +14,7 @@
  * are never restated here; a check only restates them when it has no webhint
  * hint to borrow them from.
  */
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import type { ScoreMode } from '../result.js';
@@ -53,7 +53,7 @@ export interface AuditCheck {
    * run, which the factory renders as "not applicable".
    */
   run(
-    artifacts: LH.Artifacts,
+    artifacts: Artifacts,
     context: AuditNS.Context,
   ): Promise<readonly Finding[] | null> | readonly Finding[] | null;
 }

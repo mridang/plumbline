@@ -89,6 +89,7 @@ describe('the TLS handshake', () => {
     );
     expect(result.protocol).toBe('TLSv1.2');
     expect(result.peerCertificate.infoAccess?.['OCSP - URI']).toEqual([
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       'http://ocsp.example.com',
     ]);
     expect(linesOf(sent[0]?.body ?? '')).toMatchObject({
@@ -182,12 +183,15 @@ describe('the connections of the mail and IPv6 checks', () => {
       '/v1/connect': () => '{"reachable":true}',
     });
     await expect(
+      // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
       withProbe(client, () => network.connect('2606:4700::1', 53, 4000)),
     ).resolves.toBe(true);
     await expect(
+      // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
       withProbe(client, () => mailNet.client.tcpReachable('1.2.3.4', 25)),
     ).resolves.toBe(true);
     expect(linesOf(sent[0]?.body ?? '')).toMatchObject({
+      // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
       host: '2606:4700::1',
       port: '53',
       timeout: '4000',
@@ -197,6 +201,7 @@ describe('the connections of the mail and IPv6 checks', () => {
   it('counts an address the probe will not connect to, or cannot be asked about, as not answering', async () => {
     const refused = probeFor({});
     await expect(
+      // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
       withProbe(refused.client, () => network.connect('10.0.0.1', 80, 4000)),
     ).resolves.toBe(false);
   });
@@ -238,11 +243,13 @@ describe('the connections of the mail and IPv6 checks', () => {
         httpAnswer(200, [['Content-Type', 'text/html']], 'hello'),
     });
     const web = await withProbe(client, () =>
+      // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
       network.get('example.com', '2606:4700::1', 443, true),
     );
     expect(web).toEqual({ status: 200, body: 'hello' });
     expect(linesOf(sent[0]?.body ?? '')).toMatchObject({
       host: 'example.com',
+      // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
       ip: '2606:4700::1',
       port: '443',
       tls: '1',
@@ -324,6 +331,7 @@ describe('the other checks', () => {
           'smtp',
           '-tls1_2',
           '-sess_out',
+          // eslint-disable-next-line sonarjs/publicly-writable-directories -- test fixture: a path string passed to a fake probe, nothing is written there
           '/tmp/webhint-0rtt-ab/session.pem',
         ],
         { input: ['', 'Q\n'], inputDelayMs: 500, timeoutMs: 20_000 },
@@ -336,6 +344,7 @@ describe('the other checks', () => {
     });
     const body = sent[0]?.body ?? '';
     expect(linesOf(body)).toMatchObject({
+      // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
       host: '2606:4700::1',
       port: '25',
       servername: 'mx.example.com',
@@ -344,7 +353,7 @@ describe('the other checks', () => {
       delay: '500',
       timeout: '20000',
     });
-    expect(linesOf(body)['sess_out']).toMatch(/^[A-Za-z0-9_]+$/);
+    expect(linesOf(body)['sess_out']).toMatch(/^\w+$/);
   });
 });
 

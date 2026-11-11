@@ -9,6 +9,7 @@ const REPOSITORY = path.join(PACKAGE, '..', '..');
 
 /** A JSON file of the package or the repository. */
 function json(...parts: string[]): Record<string, unknown> {
+  // eslint-disable-next-line n/no-sync -- sync is fine in a test helper that reads a small JSON file
   return JSON.parse(readFileSync(path.join(...parts), 'utf8')) as Record<
     string,
     unknown
@@ -17,6 +18,7 @@ function json(...parts: string[]): Record<string, unknown> {
 
 /** The front matter of a Markdown file, as `key: value` pairs. */
 function frontMatter(file: string): Record<string, string> {
+  // eslint-disable-next-line n/no-sync -- sync is fine in a test helper that reads a small Markdown file
   const text = readFileSync(file, 'utf8');
   const block = /^---\n([\s\S]*?)\n---\n/.exec(text)?.[1] ?? '';
   return Object.fromEntries(
@@ -29,6 +31,7 @@ function frontMatter(file: string): Record<string, string> {
   );
 }
 
+// eslint-disable-next-line n/no-sync -- sync is fine in a test helper: describe-time reads cannot await
 const SKILLS = readdirSync(path.join(PACKAGE, 'skills'));
 
 describe('the skills', () => {
@@ -47,6 +50,7 @@ describe('the skills', () => {
 
   it.each(SKILLS)('%s runs the published CLI', (name) => {
     expect(
+      // eslint-disable-next-line n/no-sync -- sync is fine in a test helper that reads a small Markdown file
       readFileSync(path.join(PACKAGE, 'skills', name, 'SKILL.md'), 'utf8'),
     ).toContain('npx @mridang/plumbline scan');
   });
@@ -70,6 +74,7 @@ describe('the Claude Code plugin', () => {
     expect(frontMatter(file)['allowed-tools']).toBe(
       'Bash(npx @mridang/plumbline:*)',
     );
+    // eslint-disable-next-line n/no-sync -- sync is fine in a test helper that reads a small Markdown file
     expect(readFileSync(file, 'utf8')).toContain(
       'npx @mridang/plumbline scan $ARGUMENTS --format json --fail-on none',
     );
@@ -92,6 +97,7 @@ describe('the marketplace', () => {
   it('points at a folder that holds the plugin', () => {
     for (const plugin of plugins) {
       expect(
+        // eslint-disable-next-line n/no-sync -- sync is fine in a test helper that checks a local folder
         existsSync(
           path.join(REPOSITORY, plugin.source, '.claude-plugin', 'plugin.json'),
         ),

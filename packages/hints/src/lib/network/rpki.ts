@@ -26,11 +26,11 @@ export async function collectRpki(hosts: string[]): Promise<IpRpki[]> {
       ];
       return Promise.all(
         ips.map((ip) =>
-          rpki.client.check(ip).then(
-            (result): IpRpki | null => ({ host, ip, result }),
+          rpki.client
+            .check(ip)
+            .then((result): IpRpki | null => ({ host, ip, result }))
             // A validator that is down is not the site's fault: skip the address.
-            () => null,
-          ),
+            .catch(() => null),
         ),
       );
     }),
@@ -42,7 +42,8 @@ export const webRpki = (host: string): Promise<IpRpki[]> => collectRpki([host]);
 
 /** The addresses of the site's name servers. */
 export async function nsRpki(host: string): Promise<IpRpki[]> {
-  return collectRpki((await findNameservers(host)).nameservers);
+  const { nameservers } = await findNameservers(host);
+  return collectRpki(nameservers);
 }
 
 /** A ROA exists when the announcement is valid or invalid, not "not found". */

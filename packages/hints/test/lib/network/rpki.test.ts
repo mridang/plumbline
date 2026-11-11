@@ -45,10 +45,8 @@ describe('collectRpki', () => {
         return { asn: 64_500, prefix: 'p', status: 'valid' };
       },
     };
-    expect((await webRpki('example.test')).map((e) => e.ip)).toEqual([
-      '192.0.2.1',
-      '2001:db8::1',
-    ]);
+    const entries = await webRpki('example.test');
+    expect(entries.map((e) => e.ip)).toEqual(['192.0.2.1', '2001:db8::1']);
     expect(seen).toHaveLength(2);
   });
 
@@ -109,9 +107,8 @@ describe('collectRpki', () => {
           ? Promise.reject(new Error('down'))
           : Promise.resolve({ asn: 1, prefix: 'p', status: 'valid' }),
     };
-    expect((await collectRpki(['example.test'])).map((e) => e.ip)).toEqual([
-      '192.0.2.2',
-    ]);
+    const entries = await collectRpki(['example.test']);
+    expect(entries.map((e) => e.ip)).toEqual(['192.0.2.2']);
   });
 
   it('skips addresses when the validator fails', async () => {

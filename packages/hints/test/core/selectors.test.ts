@@ -6,7 +6,7 @@ import hints from '../../src/index.js';
 
 const groupsOf = (id: string): readonly string[] =>
   (hints[id].meta.docs as { groups?: string[] }).groups ?? [];
-const known = new Set(Object.keys(hints).flatMap(groupsOf));
+const known = new Set(Object.keys(hints).flatMap((id) => groupsOf(id)));
 const pick = (name: string): string[] => {
   const selectors = resolve(name, known) ?? [];
   return Object.keys(PLACEMENT).filter((id) =>
@@ -73,7 +73,7 @@ describe('resolve', () => {
     const owasp = Object.keys(hints).filter((id) =>
       groupsOf(id).includes('owasp'),
     );
-    expect(pick('owasp')).toEqual(owasp.sort());
+    expect(pick('owasp')).toEqual(owasp.toSorted((a, b) => a.localeCompare(b)));
   });
 
   it('lets tag:seo reach at least everything in section:seo', () => {
@@ -90,7 +90,7 @@ describe('resolve', () => {
         ...pick('section:hardening'),
         ...pick('section:exposure'),
         ...pick('section:protocol'),
-      ].sort(),
+      ].toSorted((a, b) => a.localeCompare(b)),
     );
   });
 

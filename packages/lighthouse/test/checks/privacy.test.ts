@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import { privacyChecks } from '../../src/checks/privacy.js';
 import type { AuditCheck } from '../../src/checks/types.js';
@@ -20,7 +20,7 @@ interface RequestSpec {
  */
 function devtoolsLog(
   requests: readonly RequestSpec[],
-): LH.Artifacts['DevtoolsLog'] {
+): Artifacts['DevtoolsLog'] {
   const events = requests.flatMap((request, index) => {
     const requestId = String(index + 1);
     return [
@@ -66,16 +66,16 @@ function devtoolsLog(
       },
     ];
   });
-  return events as unknown as LH.Artifacts['DevtoolsLog'];
+  return events as unknown as Artifacts['DevtoolsLog'];
 }
 
 /** Builds the artifacts a privacy check reads over the given requests. */
-function artifacts(requests: readonly RequestSpec[]): LH.Artifacts {
+function artifacts(requests: readonly RequestSpec[]): Artifacts {
   const pageUrl = requests[0]?.url ?? '';
   return {
     DevtoolsLog: devtoolsLog(requests),
     URL: { mainDocumentUrl: pageUrl, finalDisplayedUrl: pageUrl },
-  } as unknown as LH.Artifacts;
+  } as unknown as Artifacts;
 }
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */
@@ -122,7 +122,7 @@ describe('the privacy registry', () => {
     const informative = privacyChecks
       .filter((c) => c.scoreMode === 'informative')
       .map((c) => c.id)
-      .sort();
+      .toSorted((a, b) => a.localeCompare(b));
     expect(informative).toEqual([
       'privacy-cookies',
       'privacy-third-party-requests',
@@ -130,7 +130,7 @@ describe('the privacy registry', () => {
     const numeric = privacyChecks
       .filter((c) => c.scoreMode === 'numeric')
       .map((c) => c.id)
-      .sort();
+      .toSorted((a, b) => a.localeCompare(b));
     expect(numeric).toEqual([
       'privacy-insecure-first-party',
       'privacy-mixed-content',
@@ -139,9 +139,9 @@ describe('the privacy registry', () => {
 
   it('is not applicable when the run captured no document', async () => {
     const empty = {
-      DevtoolsLog: [] as unknown as LH.Artifacts['DevtoolsLog'],
+      DevtoolsLog: [] as unknown as Artifacts['DevtoolsLog'],
       URL: { mainDocumentUrl: '', finalDisplayedUrl: '' },
-    } as unknown as LH.Artifacts;
+    } as unknown as Artifacts;
     for (const c of privacyChecks) {
       expect(await c.run(empty, context())).toBeNull();
     }
@@ -206,6 +206,7 @@ describe('the privacy-third-party-requests check run()', () => {
 
   it('warns when a third-party request is insecure', async () => {
     const findings = await thirdParty.run(
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       artifacts([doc(), { url: 'http://cdn.other.test/a.js', type: 'Script' }]),
       context(),
     );
@@ -229,7 +230,9 @@ describe('the privacy-mixed-content check run()', () => {
     const findings = await mixed.run(
       artifacts([
         doc(),
+        // eslint-disable-next-line unicorn/prefer-https -- test fixture
         { url: 'http://x.test/a.js', type: 'Script' },
+        // eslint-disable-next-line unicorn/prefer-https -- test fixture
         { url: 'http://x.test/a.png', type: 'Image' },
       ]),
       context(),
@@ -244,7 +247,9 @@ describe('the privacy-mixed-content check run()', () => {
   it('reports nothing when the page itself is http', async () => {
     const findings = await mixed.run(
       artifacts([
+        // eslint-disable-next-line unicorn/prefer-https -- test fixture
         { url: 'http://x.test/', type: 'Document' },
+        // eslint-disable-next-line unicorn/prefer-https -- test fixture
         { url: 'http://x.test/a.js', type: 'Script' },
       ]),
       context(),
@@ -258,11 +263,13 @@ describe('the privacy-insecure-first-party check run()', () => {
 
   it('errors on a plain-http request to the page’s own domain', async () => {
     const findings = await insecure.run(
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       artifacts([doc(), { url: 'http://x.test/a.js', type: 'Script' }]),
       context(),
     );
     expect(findings).toHaveLength(1);
     expect(findings?.[0]?.severity).toBe('error');
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     expect(findings?.[0]?.message).toContain('http://x.test/a.js');
   });
 

@@ -19,6 +19,7 @@ describe('the form-action-secure hint', () => {
     const problems = await runHint(formActionSecure, {
       '/': {
         headers: { 'content-type': 'text/html; charset=utf-8' },
+        // eslint-disable-next-line unicorn/prefer-https -- test fixture
         body: page('<form action="http://example.test/submit"></form>'),
       },
     });

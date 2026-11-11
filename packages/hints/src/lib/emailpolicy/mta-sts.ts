@@ -127,6 +127,8 @@ function parsePolicy(body: string): {
       result.maxAge = value;
     } else if (key === 'mx') {
       result.mx.push(value);
+    } else {
+      // Other keys are not used by the check.
     }
   }
   return result;
@@ -180,6 +182,8 @@ function checkPolicyFile(policy: PolicyFetch): Finding[] {
       severity: 'warning',
       codeSnippet: 'mode: testing',
     });
+  } else {
+    // An enforcing policy needs no finding.
   }
   // A policy that enforces or tests must list at least one MX pattern; a
   // `none` policy (decommissioning) need not (RFC 8461 3.2).

@@ -60,7 +60,10 @@ export async function checkPoppy(env: AgentEnv): Promise<CheckResult> {
   }
   const auth = doc.auth;
   if (isRecord(auth) && isText(auth.issuer)) {
-    const base = auth.issuer.replace(/\/+$/, '');
+    let base = auth.issuer;
+    while (base.endsWith('/')) {
+      base = base.slice(0, -1);
+    }
     const meta = parseJsonObject(
       await env.probe(`${base}/.well-known/oauth-authorization-server`),
     );

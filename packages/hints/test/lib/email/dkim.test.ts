@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { parseDkim } from '../../../src/lib/email/dkim.js';
 
 const rsa = (bits: number): string =>
+  // eslint-disable-next-line n/no-sync -- sync is fine in a test helper
   generateKeyPairSync('rsa', { modulusLength: bits })
     .publicKey.export({ type: 'spki', format: 'der' })
     .toString('base64');

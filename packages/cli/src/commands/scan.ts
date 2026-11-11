@@ -115,28 +115,29 @@ export function scanCommandOf(
  * at or above `--fail-on`.
  */
 export default class Scan extends PlumblineCommand {
-  static override id = 'scan';
+  static override readonly id = 'scan';
 
-  static override summary = 'Audit a website with every plumbline check.';
+  static override readonly summary =
+    'Audit a website with every plumbline check.';
 
-  static override description = `A bare domain is scanned over HTTPS. The checks run in real Node with a real Chrome, so the TLS, mail and socket checks work too.
+  static override readonly description = `A bare domain is scanned over HTTPS. The checks run in real Node with a real Chrome, so the TLS, mail and socket checks work too.
 
 Exit status: 0 ok, 1 findings at or above --fail-on, 2 a usage mistake, 3 the scan could not run.`;
 
-  static override examples = [
+  static override readonly examples = [
     '<%= config.bin %> <%= command.id %> example.com',
     '<%= config.bin %> <%= command.id %> example.com --format json --group tls,email --tier recommended --fail-on warning',
     '<%= config.bin %> <%= command.id %> https://example.com/blog --format html --out reports',
   ];
 
-  static override args = {
+  static override readonly args = {
     target: Args.string({
       required: true,
       description: 'The URL or domain to scan.',
     }),
   };
 
-  static override flags = SCAN_FLAGS;
+  static override readonly flags = SCAN_FLAGS;
 
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(Scan);

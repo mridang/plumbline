@@ -87,15 +87,18 @@ describe('daneExistence', () => {
   });
   it('does not exist without TLSA records', async () => {
     restore = installDns({});
-    expect((await daneExistence('example.test')).state).toBe('none');
+    const { state } = await daneExistence('example.test');
+    expect(state).toBe('none');
   });
   it('does not count TLSA records that are not DNSSEC secured', async () => {
     restore = installDns({ [name]: { TLSA: { data: ['3 1 1 abcd'] } } });
-    expect((await daneExistence('example.test')).state).toBe('none');
+    const { state } = await daneExistence('example.test');
+    expect(state).toBe('none');
   });
   it('is bogus on SERVFAIL', async () => {
     restore = installDns({ [name]: { TLSA: { status: 2 } } });
-    expect((await daneExistence('example.test')).state).toBe('bogus');
+    const { state } = await daneExistence('example.test');
+    expect(state).toBe('bogus');
   });
 });
 

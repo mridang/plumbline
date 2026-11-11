@@ -80,7 +80,7 @@ export function looksLikeEnvFile(content: string): boolean {
     }
     // Keys are letters, digits and underscores, must start with a letter or
     // underscore, and are conventionally upper case in dotenv files.
-    return /^(export\s+)?[A-Za-z_][A-Za-z0-9_]*=/.test(trimmed);
+    return /^(export\s+)?[A-Za-z_]\w*=/.test(trimmed);
   });
 }
 
@@ -117,10 +117,7 @@ export function looksLikeSqlite(content: string): boolean {
 export function looksLikeDsStore(content: string): boolean {
   return (
     content.length >= 8 &&
-    content.charCodeAt(0) === 0x00 &&
-    content.charCodeAt(1) === 0x00 &&
-    content.charCodeAt(2) === 0x00 &&
-    content.charCodeAt(3) === 0x01 &&
+    content.slice(0, 4) === '\u0000\u0000\u0000\u0001' &&
     content.slice(4, 8) === 'Bud1'
   );
 }
@@ -243,7 +240,7 @@ export function confirmsBackup(path: string, content: string): boolean {
   }
   if (/\.htaccess\.bak$/i.test(path)) {
     // Any one of the common Apache per-directory directives.
-    return /^\s*(RewriteEngine|RewriteRule|Options|AuthType|Require|Order|Deny|Allow|ErrorDocument|<Files|<Directory|AddHandler|DirectoryIndex)\b/im.test(
+    return /^[ \t]*(RewriteEngine|RewriteRule|Options|AuthType|Require|Order|Deny|Allow|ErrorDocument|<Files|<Directory|AddHandler|DirectoryIndex)\b/im.test(
       content,
     );
   }

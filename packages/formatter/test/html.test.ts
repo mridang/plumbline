@@ -16,6 +16,7 @@ describe('escapeHtml', () => {
 describe('safeUrl', () => {
   it('accepts http and https', () => {
     expect(safeUrl(' https://a.test/x ')).toBe('https://a.test/x');
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     expect(safeUrl('http://a.test')).toBe('http://a.test');
   });
 
@@ -24,6 +25,7 @@ describe('safeUrl', () => {
     'data:text/html,x',
     '/relative',
     '',
+    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
     'ftp://x',
   ])('refuses %s', (url) => {
     expect(safeUrl(url)).toBeUndefined();

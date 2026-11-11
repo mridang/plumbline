@@ -41,6 +41,7 @@ const TEXT: Readonly<Record<LegalPage, RegExp>> = {
   'privacy-policy':
     /\b(privacy|data protection|datenschutz|privacidad|privacidade|confidentialit[eé]|vie priv[eé]e|privacybeleid|riservatezza|integritet|personvern|tietosuoja|prywatno)/i,
   'terms-of-service':
+    // eslint-disable-next-line sonarjs/regex-complexity -- one flat list of translated link words; splitting it would change which words match
     /\b(terms|conditions|t\s*&\s*cs?\b|tos\b|agb\b|nutzungsbedingungen|condiciones|termos|gebruiksvoorwaarden|voorwaarden|termini|villkor|vilk[aå]r|k[aä]ytt[oö]ehdot|regulamin)/i,
 };
 
@@ -52,6 +53,7 @@ const PATH: Readonly<Record<LegalPage, RegExp>> = {
   'privacy-policy':
     /(privacy|datenschutz|privacidad|privacidade|confidentialite|privacybeleid|riservatezza|integritet|personvern|tietosuoja)/i,
   'terms-of-service':
+    // eslint-disable-next-line sonarjs/regex-complexity -- one flat list of translated address words; splitting it would change which addresses match
     /((^|[_.-])(terms|termos|termini|conditions)|^tos([_.-]|$)|(^|[_.-])agb([_.-]|$)|nutzungsbedingungen|condiciones|voorwaarden|villkor|vilkar)/i,
 };
 
@@ -110,21 +112,26 @@ export function findLegalLink(
   }
   for (const element of doc.querySelectorAll('a[href]')) {
     const href = (element.getAttribute('href') ?? '').trim();
-    if (!href || href === '#' || isNotAPage(href)) {
-      continue;
-    }
     const text = (element.textContent ?? '').replaceAll(/\s+/g, ' ').trim();
-    if (text.length > MAX_TEXT_LENGTH) {
-      continue;
-    }
-    if (
-      TEXT[page].test(text) ||
-      shortSegmentsOf(href).some((segment) => PATH[page].test(segment))
-    ) {
+    if (namesPage(href, text, page)) {
       return href;
     }
   }
   return undefined;
+}
+
+/** Whether a link with this address and text reads as the named page. */
+function namesPage(href: string, text: string, page: LegalPage): boolean {
+  if (!href || href === '#' || isNotAPage(href)) {
+    return false;
+  }
+  if (text.length > MAX_TEXT_LENGTH) {
+    return false;
+  }
+  return (
+    TEXT[page].test(text) ||
+    shortSegmentsOf(href).some((segment) => PATH[page].test(segment))
+  );
 }
 
 /** Warning when the page links to no privacy policy. */

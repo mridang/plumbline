@@ -12,7 +12,7 @@
  * `checks/index.ts` (`auditById`).
  */
 import { Audit } from 'lighthouse';
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import { notApplicable, productFromFindings } from './result.js';
 import type { AuditCheck } from './checks/types.js';
@@ -44,7 +44,7 @@ export function makeAudit(check: AuditCheck): typeof Audit {
     }
 
     static async audit(
-      artifacts: LH.Artifacts,
+      artifacts: Artifacts,
       context: AuditNS.Context,
     ): Promise<AuditNS.Product> {
       const findings = await check.run(artifacts, context);

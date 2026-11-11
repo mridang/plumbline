@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 import { describe, expect, it } from '@jest/globals';
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import { richresultsChecks } from '../../src/checks/richresults.js';
 import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
@@ -14,19 +14,20 @@ import { recipeFindings } from '@mridang/webhint-hint-plumbline/dist/lib/richres
 // The same DOM parser webhint feeds its hints: the equivalence test builds the
 // "webhint side" of the check with it, exactly as the hint does.
 const require = createRequire(import.meta.url);
+// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CJS-only with no ESM entry point
 const { createHTMLDocument } = require('@hint/utils-dom') as {
   createHTMLDocument: (html: string, url: string) => JsonLdDocument;
 };
 
 /** Builds the artifact bag a richresults check reads: only the served HTML. */
-function artifacts(html: string): LH.Artifacts {
+function artifacts(html: string): Artifacts {
   return {
     URL: {
       mainDocumentUrl: 'https://x.test/',
       finalDisplayedUrl: 'https://x.test/',
     },
     MainDocumentContent: html,
-  } as unknown as LH.Artifacts;
+  } as unknown as Artifacts;
 }
 
 /** A richresults check reads no computed artifact, but run() takes a context. */

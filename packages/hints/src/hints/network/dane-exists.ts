@@ -43,6 +43,8 @@ export default defineHint({
             codeSnippet: `_443._tcp.${host}. IN TLSA ; the DNSSEC proof of the answer did not validate (SERVFAIL)`,
           },
         );
+      } else {
+        // Any other state needs no finding.
       }
     });
   },

@@ -59,7 +59,8 @@ describe('redirection', () => {
   });
 
   it('reports a final destination that is not https', async () => {
-    fakeSite((url, hop) =>
+    fakeSite((_url, hop) =>
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       hop === 0 ? [302, 'http://other.example/'] : [200],
     );
     const problems = await runHint(hint, {});
@@ -69,8 +70,9 @@ describe('redirection', () => {
   });
 
   it('reports an initial redirect to another http URL', async () => {
-    fakeSite((url, hop) => {
+    fakeSite((_url, hop) => {
       if (hop === 0) {
+        // eslint-disable-next-line unicorn/prefer-https -- test fixture
         return [301, 'http://www.example.test/'];
       }
       return hop === 1 ? [301, 'https://www.example.test/'] : [200];
@@ -82,7 +84,7 @@ describe('redirection', () => {
   });
 
   it('warns about a first redirect to a different host', async () => {
-    fakeSite((url, hop) =>
+    fakeSite((_url, hop) =>
       hop === 0 ? [301, 'https://www.example.test/'] : [200],
     );
     const problems = await runHint(hint, {});
@@ -91,7 +93,7 @@ describe('redirection', () => {
   });
 
   it('reports an invalid certificate on the https hop', async () => {
-    fakeSite((url, hop) =>
+    fakeSite((_url, hop) =>
       hop === 0
         ? [301, 'https://127.0.0.1/']
         : Object.assign(new Error('bad'), {

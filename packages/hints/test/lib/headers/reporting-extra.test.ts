@@ -21,6 +21,7 @@ describe('reportingEndpointsFindings', () => {
 
   it('rejects a non-https or unquoted url', () => {
     expect(
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       reportingEndpointsFindings('csp="http://e.test/r"')[0]?.severity,
     ).toBe('warning');
     expect(reportingEndpointsFindings('csp=https://e.test')[0]?.severity).toBe(

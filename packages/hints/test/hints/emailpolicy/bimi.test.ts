@@ -44,6 +44,7 @@ describe('bimi', () => {
   it('reports a non-https logo', async () => {
     const problems = await run({
       'default._bimi.example.test TXT': [
+        // eslint-disable-next-line unicorn/prefer-https -- test fixture: the http logo URL is the input being rejected
         '"v=BIMI1; l=http://example.test/logo.svg"',
       ],
     });

@@ -27,7 +27,7 @@ const REDIRECTS: ReadonlySet<number> = new Set([301, 302, 303, 307, 308]);
 
 /** Whether a status carries no body. */
 function bodyless(status: number): boolean {
-  return status === 101 || status === 204 || status === 205 || status === 304;
+  return [101, 204, 205, 304].includes(status);
 }
 
 /** The body with its chunks put together (`Transfer-Encoding: chunked`). */
@@ -35,7 +35,8 @@ export function unchunk(bytes: Uint8Array): Uint8Array {
   const parts: Uint8Array[] = [];
   let at = 0;
   let total = 0;
-  for (;;) {
+  let more = true;
+  while (more) {
     let end = at;
     while (
       end + 1 < bytes.length &&
@@ -60,17 +61,17 @@ export function unchunk(bytes: Uint8Array): Uint8Array {
     }
     at = end + 2;
     if (size === 0) {
-      break;
-    }
-    if (at + size > bytes.length) {
+      more = false;
+    } else if (at + size > bytes.length) {
       // The probe cut the body at its limit; keep what came.
       parts.push(bytes.subarray(at));
       total += bytes.length - at;
-      break;
+      more = false;
+    } else {
+      parts.push(bytes.subarray(at, at + size));
+      total += size;
+      at += size + 2;
     }
-    parts.push(bytes.subarray(at, at + size));
-    total += size;
-    at += size + 2;
   }
   const out = new Uint8Array(total);
   let offset = 0;
@@ -137,9 +138,10 @@ async function once(
   headers: readonly (readonly [string, string])[],
 ): Promise<Response> {
   const tls = url.protocol === 'https:';
+  const defaultPort = tls ? 443 : 80;
   const request: HttpRequest = {
     host: url.hostname.replaceAll(/^\[|\]$/g, ''),
-    port: url.port === '' ? (tls ? 443 : 80) : Number(url.port),
+    port: url.port === '' ? defaultPort : Number(url.port),
     tls,
     method,
     path: `${url.pathname}${url.search}`,

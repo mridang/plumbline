@@ -28,12 +28,11 @@ function doc(elements: readonly FakeElement[]): DocumentLike {
         .filter((element) => selector.includes(`${element.tag}[href]`))
         .map((element) => ({
           textContent: element.text ?? '',
-          getAttribute: (name: string) =>
-            (name === 'href'
-              ? element.href
-              : name === 'rel'
-                ? element.rel
-                : undefined) ?? null,
+          getAttribute: (name: string) => {
+            if (name === 'href') return element.href ?? null;
+            if (name === 'rel') return element.rel ?? null;
+            return null;
+          },
         })),
   };
 }

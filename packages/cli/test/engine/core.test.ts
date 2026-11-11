@@ -64,7 +64,7 @@ describe('runScanWith', () => {
       out
         .filter((event) => event.type === 'done')
         .map((event) => (event as { outcome: { id: string } }).outcome.id)
-        .sort(),
+        .toSorted((a, b) => a.localeCompare(b)),
     ).toEqual(['alt-svc', 'x-powered-by']);
     expect(installed).toEqual(['on', 'off']);
   });

@@ -1,16 +1,31 @@
 import { describe, expect, it } from '@jest/globals';
-import * as node from 'node:tls';
+import {
+  checkServerIdentity as nodeCheckServerIdentity,
+  connect as nodeConnect,
+  rootCertificates as nodeRootCertificates,
+} from 'node:tls';
 
-import * as ours from '../../src/node/tls.js';
+import {
+  checkServerIdentity,
+  connect,
+  rootCertificates,
+} from '../../src/node/tls.js';
 
 describe('#tls under Node', () => {
-  it.each(['connect', 'checkServerIdentity', 'rootCertificates'] as const)(
-    'is Node own %s',
-    (name) => {
-      expect(ours[name]).toBeDefined();
-      expect(ours[name]).toBe(node[name]);
-    },
-  );
+  it('is Node own connect', () => {
+    expect(connect).toBeDefined();
+    expect(connect).toBe(nodeConnect);
+  });
+
+  it('is Node own checkServerIdentity', () => {
+    expect(checkServerIdentity).toBeDefined();
+    expect(checkServerIdentity).toBe(nodeCheckServerIdentity);
+  });
+
+  it('is Node own rootCertificates', () => {
+    expect(rootCertificates).toBeDefined();
+    expect(rootCertificates).toBe(nodeRootCertificates);
+  });
 });
 
 describe('the default export', () => {

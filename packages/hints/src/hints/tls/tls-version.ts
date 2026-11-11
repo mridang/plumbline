@@ -19,14 +19,14 @@ export async function checkTlsVersion({
   const { bad, phaseOut } = evaluateProtocols(accepted);
   if (bad.length > 0) {
     report(
-      `Your ${subject.server} supports *insufficiently* secure TLS versions: ${bad.map(formatVersion).join(', ')}.`,
-      bad.map(formatVersion).join('\n'),
+      `Your ${subject.server} supports *insufficiently* secure TLS versions: ${bad.map((version) => formatVersion(version)).join(', ')}.`,
+      bad.map((version) => formatVersion(version)).join('\n'),
     );
   }
   if (phaseOut.length > 0) {
     report(
-      `Your ${subject.server} supports TLS versions that should be *phased out* deliberately, because they are known to be fragile and at risk of becoming *insufficiently* secure: ${phaseOut.map(formatVersion).join(', ')}.`,
-      phaseOut.map(formatVersion).join('\n'),
+      `Your ${subject.server} supports TLS versions that should be *phased out* deliberately, because they are known to be fragile and at risk of becoming *insufficiently* secure: ${phaseOut.map((version) => formatVersion(version)).join(', ')}.`,
+      phaseOut.map((version) => formatVersion(version)).join('\n'),
       Severity.warning,
     );
   }

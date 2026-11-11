@@ -28,6 +28,7 @@ describe('seo-canonical-missing', () => {
       await runHint(
         hint,
         pageRoutes({
+          // eslint-disable-next-line unicorn/prefer-https -- test fixture
           head: '<link rel="canonical" href="http://example.com/">',
         }),
       ),

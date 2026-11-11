@@ -42,13 +42,14 @@ export function measureContent(doc: ContentDocument): ContentStats | null {
     return null;
   }
   const headingCount = root.querySelectorAll(HEADINGS).length;
-  const paragraphCount = Array.from(root.querySelectorAll('p, li')).filter(
-    (el) => el.textContent.trim().length > PARAGRAPH_MIN_LENGTH,
-  ).length;
+  const paragraphCount = Array.from(
+    root.querySelectorAll('p, li'),
+    (el) => el,
+  ).filter((el) => el.textContent.trim().length > PARAGRAPH_MIN_LENGTH).length;
 
   let maxUnstructuredLength = 0;
   let unstructuredIndex = -1;
-  const divs = Array.from(root.querySelectorAll('div'));
+  const divs = Array.from(root.querySelectorAll('div'), (div) => div);
   for (const [index, div] of divs.entries()) {
     // A div with headings or paragraphs inside is already structured.
     if (div.querySelectorAll(`${HEADINGS}, p, li`).length === 0) {

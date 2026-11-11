@@ -72,12 +72,17 @@ function candidates(
  * @param lookup - The platform, environment and a file-exists test.
  * @returns The binary to use, or `undefined` to let the connector search.
  */
-export function findBrowser(
-  lookup: BrowserLookup = {
+/** The lookup against the machine this runs on. */
+function systemLookup(): BrowserLookup {
+  return {
     platform: process.platform,
     env: process.env,
     exists: existsSync,
-  },
+  };
+}
+
+export function findBrowser(
+  lookup: BrowserLookup = systemLookup(),
 ): string | undefined {
   for (const name of ENV_NAMES) {
     const value = lookup.env[name];
@@ -87,5 +92,7 @@ export function findBrowser(
       return value;
     }
   }
-  return candidates(lookup.platform, lookup.env).find(lookup.exists);
+  return candidates(lookup.platform, lookup.env).find((file) =>
+    lookup.exists(file),
+  );
 }

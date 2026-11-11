@@ -22,6 +22,7 @@ const FIXTURES = new URL('../../fixtures/tls/', import.meta.url);
 
 /** Reads a fixture file by name. */
 export function fixture(name: string): Buffer {
+  // eslint-disable-next-line n/no-sync -- test helper reads fixtures synchronously at load; async would ripple into every caller
   return readFileSync(new URL(name, FIXTURES));
 }
 
@@ -163,6 +164,8 @@ export async function startMailServer(
           return;
         } else if (line === 'QUIT') {
           socket.end('221 Bye\r\n');
+        } else {
+          // Any other command gets no reply from this minimal server.
         }
         end = buffer.indexOf('\r\n');
       }
@@ -210,5 +213,5 @@ export function restoreProbe(): void {
   tlsProbe.connect = connectWithNode;
   tlsProbe.port = 443;
   tlsProbe.mailPort = 25;
-  tlsProbe.ca = undefined;
+  delete tlsProbe.ca;
 }

@@ -49,7 +49,7 @@ export const LEVELS: readonly Level[] = [
 
 /** The level a score reaches (the highest whose minimum it meets). */
 export function levelFor(score: number): Level {
-  return [...LEVELS].reverse().find((l) => score >= l.min) ?? LEVELS[0];
+  return LEVELS.findLast((l) => score >= l.min) ?? LEVELS[0];
 }
 
 /** Score and counts of one category. */

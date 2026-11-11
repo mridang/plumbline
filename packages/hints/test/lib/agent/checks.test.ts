@@ -73,7 +73,8 @@ describe('a site answering every missing path with a JSON 404', () => {
       'agent-oauth-discovery',
       'agent-web-bot-auth',
     ]) {
-      expect((await runCheck(checkById(id), e)).passed).toBe(false);
+      const r = await runCheck(checkById(id), e);
+      expect(r.passed).toBe(false);
     }
   });
 });

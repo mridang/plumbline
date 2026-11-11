@@ -30,8 +30,9 @@ export function parseRobots(body: string): Robots {
   };
   for (const raw of body.split(/\r?\n/)) {
     // Comments start at `#` and run to the end of the line.
+    // eslint-disable-next-line sonarjs/super-linear-regex -- robots.txt lines are short, so repeated scans from each `#` are bounded
     const line = raw.replace(/#.*$/, '').trim();
-    const match = /^([A-Za-z-]+)\s*:\s*(.*)$/.exec(line);
+    const match = /^([A-Za-z-]+)\s*:(.*)$/.exec(line);
     if (!match) {
       continue;
     }

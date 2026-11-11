@@ -83,6 +83,7 @@ import { buildReport, scan } from '@mridang/plumbline';
 
 const result = await scan('https://example.com/', { hints: ['csp', 'hsts'] });
 const report = buildReport('https://example.com/', result, '1.0.0');
+console.log(report);
 ```
 
 `scan` takes the URL and, optionally, `hints` (bare ids), `executablePath` (the browser) and `browserArgs` (Chromium launch arguments). `saveReport` writes the JSON and HTML reports to a directory, and `hintCatalogue` lists the checks.

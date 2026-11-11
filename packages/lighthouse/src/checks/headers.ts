@@ -30,7 +30,7 @@
  * The same applies to MDN headers that are advisory on a plugin run (`age`,
  * `alt-svc`, `server-timing`, `via`, `origin-agent-cluster` and `accept-ch`).
  */
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import { finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
@@ -208,7 +208,7 @@ function crossOriginRun(
   policy: CrossOriginPolicy,
   header: string,
 ): AuditCheck['run'] {
-  return async (artifacts: LH.Artifacts, context: AuditNS.Context) => {
+  return async (artifacts: Artifacts, context: AuditNS.Context) => {
     const main = await mainResponse(artifacts, context);
     if (!main) {
       return null;

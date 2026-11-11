@@ -1,5 +1,11 @@
 import { isIP, type Socket } from '#net';
-import * as tls from '#tls';
+import {
+  checkServerIdentity,
+  connect,
+  type ConnectionOptions,
+  type DetailedPeerCertificate,
+  type TLSSocket,
+} from '#tls';
 
 /** Opens a TCP connection; replaced in tests to reach a local server. */
 export type ConnectFn = (host: string, port: number, family?: 4 | 6) => Socket;
@@ -32,7 +38,7 @@ export interface ProbeOptions {
   ehloName?: string;
   connect: ConnectFn;
   /** Extra options for the TLS handshake, for example `ca`. */
-  tlsOptions?: tls.ConnectionOptions;
+  tlsOptions?: ConnectionOptions;
 }
 
 interface Reply {
@@ -164,10 +170,10 @@ const failed = (error: unknown): StarttlsProbe => ({
 });
 
 /** Collects the presented chain, leaf first, without looping on self-signed roots. */
-function chainOf(socket: tls.TLSSocket): Buffer[] {
+function chainOf(socket: TLSSocket): Buffer[] {
   const chain: Buffer[] = [];
   const seen = new Set<Buffer>();
-  let current: tls.DetailedPeerCertificate | undefined =
+  let current: DetailedPeerCertificate | undefined =
     socket.getPeerCertificate(true);
   while (current?.raw && !seen.has(current.raw)) {
     seen.add(current.raw);
@@ -256,7 +262,7 @@ export async function probeStarttls(
       return base;
     }
 
-    const secure = tls.connect({
+    const secure = connect({
       ...options.tlsOptions,
       socket,
       // An IP address is not a valid server name.
@@ -268,10 +274,12 @@ export async function probeStarttls(
     await waitFor(secure, 'secureConnect', timeout);
 
     const leaf = secure.getPeerCertificate();
+    // Node reports the verification error as a code, or leaves it undefined.
+    const rawAuthorizationError: unknown = secure.authorizationError;
     const authorizationError =
-      secure.authorizationError === undefined
+      rawAuthorizationError === undefined
         ? null
-        : String(secure.authorizationError);
+        : String(rawAuthorizationError);
     // Node folds the host name check into `authorized`; tell the two apart.
     const nameMismatch = authorizationError === 'ERR_TLS_CERT_ALTNAME_INVALID';
     const result: StarttlsProbe = {
@@ -281,7 +289,7 @@ export async function probeStarttls(
       trusted: secure.authorized || nameMismatch,
       trustError: secure.authorized || nameMismatch ? null : authorizationError,
       hostnameMatches:
-        !nameMismatch && tls.checkServerIdentity(host, leaf) === undefined,
+        !nameMismatch && checkServerIdentity(host, leaf) === undefined,
       certificates: chainOf(secure),
       error: null,
     };

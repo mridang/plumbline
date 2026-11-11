@@ -22,7 +22,8 @@ describe('checkSpfPolicy', () => {
   it.each(['v=spf1 -all', 'v=spf1 ~all', 'v=spf1 mx a ip4:192.0.2.1 -all'])(
     'accepts %s',
     async (record) => {
-      expect((await check(record)).status).toBe('valid');
+      const result = await check(record);
+      expect(result.status).toBe('valid');
     },
   );
 
@@ -37,16 +38,25 @@ describe('checkSpfPolicy', () => {
   it.each(['v=spf1 +all', 'v=spf1 all', 'v=spf1 ?all', 'v=spf1 mx'])(
     'rejects the weak policy %s',
     async (record) => {
-      expect((await check(record)).status).toBe('invalid_all');
+      const result = await check(record);
+      expect(result.status).toBe('invalid_all');
     },
   );
 
-  it('rejects a record without terms', async () => {
-    expect((await check('v=spf1')).status).toBe('invalid_all');
-  });
-
-  it('ignores terms after all', async () => {
-    expect((await check('v=spf1 -all +all')).status).toBe('valid');
+  it.each([
+    {
+      name: 'rejects a record without terms',
+      record: 'v=spf1',
+      status: 'invalid_all',
+    },
+    {
+      name: 'ignores terms after all',
+      record: 'v=spf1 -all +all',
+      status: 'valid',
+    },
+  ])('$name', async ({ record, status }) => {
+    const result = await check(record);
+    expect(result.status).toBe(status);
   });
 
   it('counts a, mx, ptr and exists as lookups', async () => {
@@ -102,9 +112,8 @@ describe('checkSpfPolicy', () => {
   });
 
   it('rejects an include that does not exist or fails', async () => {
-    expect((await check('v=spf1 include:gone.com -all')).status).toBe(
-      'invalid_include',
-    );
+    const missing = await check('v=spf1 include:gone.com -all');
+    expect(missing.status).toBe('invalid_include');
     const failing = await check('v=spf1 include:down.com -all', {
       'down.com': new Error('servfail'),
     });

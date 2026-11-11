@@ -6,10 +6,12 @@ import {
 } from '../../../src/lib/geo/content.js';
 
 const require = createRequire(import.meta.url);
+// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CommonJS only, loaded through createRequire
 const { createHTMLDocument } = require('@hint/utils-dom');
 
 const measure = (html: string) =>
   measureContent(
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     createHTMLDocument(html, 'http://example.com/') as ContentDocument,
   );
 

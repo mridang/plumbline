@@ -32,7 +32,7 @@ export function buildPresets(
         parsers: ['html'],
         hints: Object.fromEntries(
           [...byGroup[group]]
-            .sort()
+            .toSorted((a, b) => a.localeCompare(b))
             .map((id) => [`${PACKAGE_NAME}/${id}`, 'default']),
         ),
       },
@@ -53,7 +53,9 @@ function presetOf(ids: readonly string[]): Preset {
     connector: { name: 'puppeteer' },
     parsers: ['html'],
     hints: Object.fromEntries(
-      [...ids].sort().map((id) => [`${PACKAGE_NAME}/${id}`, 'default']),
+      [...ids]
+        .toSorted((a, b) => a.localeCompare(b))
+        .map((id) => [`${PACKAGE_NAME}/${id}`, 'default']),
     ),
   };
 }

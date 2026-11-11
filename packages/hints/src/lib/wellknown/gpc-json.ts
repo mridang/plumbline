@@ -7,6 +7,7 @@ import { isObject, parsedOrIssue } from './json.js';
  * or a full date-time is accepted.
  */
 const ISO_DATE =
+  // eslint-disable-next-line sonarjs/regex-complexity -- the RFC 3339 grammar is one anchored pattern; splitting it only moves the same complexity into two regexes
   /^\d{4}-\d{2}-\d{2}([Tt]\d{2}:\d{2}:\d{2}(\.\d+)?([Zz]|[+-]\d{2}:\d{2})?)?$/;
 
 /**
@@ -53,6 +54,8 @@ export function validateGpcJson(text: string): FileIssue[] {
       severity: 'error',
       message: "The 'lastUpdate' field must be an ISO 8601 date.",
     });
+  } else {
+    // A valid ISO 8601 date: nothing to report.
   }
 
   return issues;

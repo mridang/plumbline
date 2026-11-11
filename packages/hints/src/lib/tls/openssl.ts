@@ -287,7 +287,10 @@ export async function testClientRenegotiation(
 ): Promise<OpensslOutcome<number>> {
   const args = ['-tls1_2', '-state'];
   const outcome = await runSClient(target, args, {
-    input: [...new Array(SCAN_RENEGOTIATION_LIMIT).fill('R\n'), 'Q\n'],
+    input: [
+      ...Array.from({ length: SCAN_RENEGOTIATION_LIMIT }, () => 'R\n'),
+      'Q\n',
+    ],
     inputDelayMs: 300,
     timeoutMs: 30_000,
   });

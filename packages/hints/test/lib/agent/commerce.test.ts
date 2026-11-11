@@ -6,18 +6,16 @@ import {
   checkX402,
   detectCommerceSignals,
 } from '../../../src/lib/agent/commerce.js';
-import { fakeEnv } from './fake-env.js';
+import { fakeEnv, without } from './fake-env.js';
 
 describe('checkX402', () => {
   it('passes when a probed path answers 402', async () => {
-    expect((await checkX402(fakeEnv({ '/api': { status: 402 } }))).passed).toBe(
-      true,
-    );
+    const result = await checkX402(fakeEnv({ '/api': { status: 402 } }));
+    expect(result.passed).toBe(true);
   });
   it('fails otherwise', async () => {
-    expect((await checkX402(fakeEnv({ '/': { status: 200 } }))).passed).toBe(
-      false,
-    );
+    const result = await checkX402(fakeEnv({ '/': { status: 200 } }));
+    expect(result.passed).toBe(false);
   });
 });
 
@@ -26,13 +24,14 @@ describe('checkMpp', () => {
     const env = fakeEnv({
       '/openapi.json': '{"paths":{"/a":{"get":{"x-payment-info":{}}}}}',
     });
-    expect((await checkMpp(env)).passed).toBe(true);
+    const result = await checkMpp(env);
+    expect(result.passed).toBe(true);
   });
   it('fails without it', async () => {
-    expect((await checkMpp(fakeEnv({ '/openapi.json': '{}' }))).passed).toBe(
-      false,
-    );
-    expect((await checkMpp(fakeEnv())).passed).toBe(false);
+    const withoutInfo = await checkMpp(fakeEnv({ '/openapi.json': '{}' }));
+    expect(withoutInfo.passed).toBe(false);
+    const missing = await checkMpp(fakeEnv());
+    expect(missing.passed).toBe(false);
   });
 });
 
@@ -41,31 +40,32 @@ describe('checkMpp challenge', () => {
     const env = fakeEnv({
       '/': { status: 402, headers: { 'www-authenticate': 'Payment id="x"' } },
     });
-    expect((await checkMpp(env)).passed).toBe(true);
+    const result = await checkMpp(env);
+    expect(result.passed).toBe(true);
   });
   it('fails for a 402 with another scheme', async () => {
     const env = fakeEnv({
       '/': { status: 402, headers: { 'www-authenticate': 'Bearer' } },
     });
-    expect((await checkMpp(env)).passed).toBe(false);
+    const result = await checkMpp(env);
+    expect(result.passed).toBe(false);
   });
 });
 
 describe('checkUcp', () => {
   const ucp = { version: '2026-08-25', services: {}, payment_handlers: {} };
   it('passes with version, services and payment_handlers', async () => {
-    expect(
-      (await checkUcp(fakeEnv({ '/.well-known/ucp': { ucp } }))).passed,
-    ).toBe(true);
+    const result = await checkUcp(fakeEnv({ '/.well-known/ucp': { ucp } }));
+    expect(result.passed).toBe(true);
   });
   it('names what is missing', async () => {
     const env = fakeEnv({ '/.well-known/ucp': { ucp: { version: 'latest' } } });
-    expect((await checkUcp(env)).detail).toContain(
-      'version, services, payment_handlers',
-    );
+    const result = await checkUcp(env);
+    expect(result.detail).toContain('version, services, payment_handlers');
   });
   it('fails without a profile', async () => {
-    expect((await checkUcp(fakeEnv())).passed).toBe(false);
+    const result = await checkUcp(fakeEnv());
+    expect(result.passed).toBe(false);
   });
 });
 
@@ -77,13 +77,12 @@ describe('checkAcp', () => {
     capabilities: { services: ['checkout'] },
   };
   it('passes with a complete document', async () => {
-    expect(
-      (await checkAcp(fakeEnv({ '/.well-known/acp.json': acp }))).passed,
-    ).toBe(true);
+    const result = await checkAcp(fakeEnv({ '/.well-known/acp.json': acp }));
+    expect(result.passed).toBe(true);
   });
   it.each([
     ['protocol', { ...acp, protocol: { name: 'other', version: '1' } }],
-    ['api_base_url', { ...acp, api_base_url: undefined }],
+    ['api_base_url', without(acp, 'api_base_url')],
     ['transports', { ...acp, transports: ['mcp'] }],
     ['capabilities', { ...acp, capabilities: [] }],
   ])('fails without a valid %s', async (field, doc) => {
@@ -92,7 +91,8 @@ describe('checkAcp', () => {
     expect(r.detail).toContain(field);
   });
   it('fails without the document', async () => {
-    expect((await checkAcp(fakeEnv())).passed).toBe(false);
+    const result = await checkAcp(fakeEnv());
+    expect(result.passed).toBe(false);
   });
 });
 

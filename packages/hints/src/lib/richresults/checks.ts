@@ -221,6 +221,9 @@ export function productFindings(blocks: JsonLdBlocks): Finding[] {
     if (hasOffers) {
       const offer = firstObject(node, 'offers');
       if (offer) {
+        // The AggregateOffer and Offer branches mirror the schema.org shapes;
+        // flattening them would reindent the whole block for no gain.
+        // eslint-disable-next-line sonarjs/nested-control-flow -- offer shape branches mirror schema.org
         if (nodeHasAnyType(offer, ['AggregateOffer'])) {
           if (!hasValue(offer, 'lowPrice')) {
             findings.push(
@@ -256,13 +259,11 @@ export function productFindings(blocks: JsonLdBlocks): Finding[] {
 
     if (hasReview) {
       const review = firstObject(node, 'review');
-      if (review) {
-        const reviewRating = firstObject(review, 'reviewRating');
-        if (!reviewRating || !hasValue(reviewRating, 'ratingValue')) {
-          findings.push(
-            missingRequired(`${label} Review`, 'reviewRating.ratingValue', doc),
-          );
-        }
+      const reviewRating = review ? firstObject(review, 'reviewRating') : null;
+      if (review && (!reviewRating || !hasValue(reviewRating, 'ratingValue'))) {
+        findings.push(
+          missingRequired(`${label} Review`, 'reviewRating.ratingValue', doc),
+        );
       }
     }
   }
@@ -281,7 +282,9 @@ export function breadcrumbFindings(blocks: JsonLdBlocks): Finding[] {
   for (const node of nodesOfType(blocks, ['BreadcrumbList'])) {
     const label = typeLabel(node, 'BreadcrumbList');
     const value = node['itemListElement'];
-    const items = Array.isArray(value) ? value : asObject(value) ? [value] : [];
+    const items = Array.isArray(value)
+      ? value
+      : [value].filter((entry) => asObject(entry) !== null);
     if (items.length === 0) {
       findings.push(missingRequired(label, 'itemListElement', doc));
       continue;
@@ -409,7 +412,9 @@ export function websiteSearchActionFindings(blocks: JsonLdBlocks): Finding[] {
   for (const node of nodesOfType(blocks, ['WebSite'])) {
     const label = typeLabel(node, 'WebSite');
     const raw = node['potentialAction'];
-    const actions = Array.isArray(raw) ? raw : raw === undefined ? [] : [raw];
+    const actions = Array.isArray(raw)
+      ? raw
+      : [raw].filter((entry) => entry !== undefined);
     const search = actions
       .map((action) => asObject(action))
       .find((action) => action && nodeHasAnyType(action, ['SearchAction']));

@@ -8,6 +8,7 @@ import {
 } from '../../../src/lib/feeds/read.js';
 
 const require = createRequire(import.meta.url);
+// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CommonJS only, loaded through createRequire
 const { createHTMLDocument } = require('@hint/utils-dom');
 
 /** Parses markup with the same DOM implementation webhint uses. */

@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 import { describe, expect, it } from '@jest/globals';
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import { i18nChecks } from '../../src/checks/i18n.js';
 import type { AuditCheck } from '../../src/checks/types.js';
@@ -14,6 +14,7 @@ import {
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/i18n/read.js';
 
 const require = createRequire(import.meta.url);
+// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CJS-only with no ESM entry point
 const { createHTMLDocument } = require('@hint/utils-dom');
 
 /** Parses markup with the same DOM implementation the webhint hints use. */
@@ -26,12 +27,12 @@ function doc(head: string): string {
 }
 
 /** Builds the artifacts an i18n check reads. */
-function artifacts(overrides: { html?: string; url?: string }): LH.Artifacts {
+function artifacts(overrides: { html?: string; url?: string }): Artifacts {
   const url = overrides.url ?? 'https://x.test/';
   return {
     MainDocumentContent: overrides.html ?? '',
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
-  } as unknown as LH.Artifacts;
+  } as unknown as Artifacts;
 }
 
 /** A fresh audit context. */
@@ -73,7 +74,7 @@ describe('the i18n registry', () => {
     const numeric = i18nChecks
       .filter((c) => c.scoreMode === 'numeric')
       .map((c) => c.id)
-      .sort();
+      .toSorted((a, b) => a.localeCompare(b));
     expect(numeric).toEqual([
       'alternate-media',
       'hreflang-duplicate',
@@ -97,9 +98,9 @@ describe('the i18n registry', () => {
   });
 
   it('is not applicable when the main document is absent', async () => {
-    expect(await check('hreflang-return').run(artifacts({}), context())).toBe(
-      null,
-    );
+    expect(
+      await check('hreflang-return').run(artifacts({}), context()),
+    ).toBeNull();
   });
 });
 

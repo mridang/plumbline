@@ -49,7 +49,7 @@ function artifactsFor(required: readonly string[]): Record<string, unknown> {
 
 describe('audit artifact contract', () => {
   it('registers 143 checks', () => {
-    expect(checks.length).toBe(143);
+    expect(checks).toHaveLength(143);
   });
 
   it.each(checks.map((check) => [check.id, check] as const))(

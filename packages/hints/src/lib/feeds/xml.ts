@@ -39,7 +39,9 @@ function localName(name: string): string {
 function parseAttributes(source: string): Record<string, string> {
   const attributes: Record<string, string> = {};
   // name = "value" | name = 'value' | name (valueless, rare in XML)
-  const pattern = /([^\s"'>/=]+)(?:\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
+  const pattern =
+    // eslint-disable-next-line sonarjs/regex-complexity -- the name, optional value and three value forms are one grammar; splitting it would duplicate the parse
+    /([^\s"'>/=]+)(?:\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(source)) !== null) {
     const name = match[1];
@@ -52,17 +54,17 @@ function parseAttributes(source: string): Record<string, string> {
 /** Decodes the five predefined XML entities plus numeric character references. */
 function decodeEntities(text: string): string {
   return text
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex: string) =>
-      String.fromCodePoint(parseInt(hex, 16)),
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&apos;', "'")
+    .replaceAll(/&#x([0-9a-fA-F]+);/g, (_, hex: string) =>
+      String.fromCodePoint(Number.parseInt(hex, 16)),
     )
-    .replace(/&#(\d+);/g, (_, dec: string) =>
-      String.fromCodePoint(parseInt(dec, 10)),
+    .replaceAll(/&#(\d+);/g, (_, dec: string) =>
+      String.fromCodePoint(Number.parseInt(dec, 10)),
     )
-    .replace(/&amp;/g, '&');
+    .replaceAll('&amp;', '&');
 }
 
 /**
@@ -73,10 +75,20 @@ function decodeEntities(text: string): string {
  */
 function stripNonElements(source: string): string {
   return source
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/<!DOCTYPE[\s\S]*?>/gi, '')
-    .replace(/<\?[\s\S]*?\?>/g, '')
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (_, inner: string) => inner);
+    .replaceAll(/<!--[\s\S]*?-->/g, '')
+    .replaceAll(/<!DOCTYPE[\s\S]*?>/gi, '')
+    .replaceAll(/<\?[\s\S]*?\?>/g, '')
+    .replaceAll(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (_, inner: string) => inner);
+}
+
+/** Close tag: pops the stack up to the nearest open ancestor with this name, if any. */
+function closeElement(stack: XmlElement[], name: string): void {
+  for (let depth = stack.length - 1; depth >= 1; depth -= 1) {
+    if (stack[depth].name === name) {
+      stack.length = depth;
+      return;
+    }
+  }
 }
 
 /**
@@ -98,42 +110,35 @@ export function parseXml(source: string): XmlElement | null {
   const stack: XmlElement[] = [root];
   // Matches a tag (capturing its inner source) or a run of text between tags.
   const token =
+    // eslint-disable-next-line sonarjs/super-linear-regex, sonarjs/regex-complexity -- backtracking is bounded to one tag; a simpler grammar would change self-closing detection
     /<(\/?)([a-zA-Z][\w:.-]*)((?:[^>"']|"[^"]*"|'[^']*')*?)(\/?)>|([^<]+)/g;
   let match: RegExpExecArray | null;
   while ((match = token.exec(cleaned)) !== null) {
     const [, closing, rawName, rawAttrs, selfClose, textRun] = match;
-    const current = stack[stack.length - 1];
-    if (textRun !== undefined) {
+    const current = stack.at(-1) ?? root;
+    if (textRun) {
       // Text belongs to whichever element is currently open.
       const value = decodeEntities(textRun).trim();
       if (value !== '') {
         current.text = current.text === '' ? value : `${current.text} ${value}`;
       }
-      continue;
-    }
-    if (closing === '/') {
-      // Close tag: pop up to the nearest matching ancestor, if any.
-      for (let depth = stack.length - 1; depth >= 1; depth -= 1) {
-        if (stack[depth].name === rawName) {
-          stack.length = depth;
-          break;
-        }
+    } else if (closing === '/') {
+      closeElement(stack, rawName);
+    } else {
+      const element: XmlElement = {
+        name: rawName,
+        localName: localName(rawName),
+        attrs: parseAttributes(rawAttrs),
+        children: [],
+        text: '',
+      };
+      current.children.push(element);
+      if (selfClose !== '/') {
+        stack.push(element);
       }
-      continue;
-    }
-    const element: XmlElement = {
-      name: rawName,
-      localName: localName(rawName),
-      attrs: parseAttributes(rawAttrs),
-      children: [],
-      text: '',
-    };
-    current.children.push(element);
-    if (selfClose !== '/') {
-      stack.push(element);
     }
   }
-  return root.children[0] ?? null;
+  return root.children.at(0) ?? null;
 }
 
 /** Returns the first direct child of `element` whose local name matches. */

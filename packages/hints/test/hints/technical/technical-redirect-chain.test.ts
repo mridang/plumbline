@@ -29,11 +29,15 @@ describe('technical-redirect-chain', () => {
         options: Record<string, unknown>,
       ) => reports.push({ resource, options }),
     };
-    new hint.ctor(context as never);
+    const instance = new hint.ctor(context as never);
+    expect(instance).toBeInstanceOf(hint.ctor);
     handlers['fetch::end::html']({
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       resource: 'http://a.example/',
       response: {
+        // eslint-disable-next-line unicorn/prefer-https -- test fixture
         hops: ['http://a.example/', 'http://b.example/', 'http://c.example/'],
+        // eslint-disable-next-line unicorn/prefer-https -- test fixture
         url: 'http://d.example/',
         statusCode: 200,
       },
@@ -41,6 +45,7 @@ describe('technical-redirect-chain', () => {
     expect(reports).toHaveLength(1);
     expect(reports[0].options.codeLanguage).toBe('http');
     expect(reports[0].options.codeSnippet).toBe(
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       'http://a.example/\n-> http://b.example/\n-> http://c.example/\n-> http://d.example/ (HTTP 200)',
     );
   });

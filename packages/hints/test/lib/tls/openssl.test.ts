@@ -25,6 +25,7 @@ afterEach(() => {
 });
 
 /** The tests that run the real binary need openssl on the PATH. */
+// eslint-disable-next-line n/no-sync -- sync is fine in a bootstrap: openssl availability decides at collection time which tests exist
 const hasOpenssl = spawnSync(openssl.command, ['version']).status === 0;
 const realIt = hasOpenssl ? it : it.skip;
 
@@ -187,7 +188,8 @@ describe('probes with a fake openssl', () => {
 
   it('fails the compression test without a handshake', async () => {
     fake('connect:errno=61');
-    expect((await testCompression(target)).kind).toBe('failed');
+    const outcome = await testCompression(target);
+    expect(outcome.kind).toBe('failed');
   });
 
   it('finds missing secure renegotiation', async () => {
@@ -204,7 +206,8 @@ describe('probes with a fake openssl', () => {
 
   it('fails the secure renegotiation test without a handshake', async () => {
     fake('');
-    expect((await testSecureRenegotiation(target)).kind).toBe('failed');
+    const outcome = await testSecureRenegotiation(target);
+    expect(outcome.kind).toBe('failed');
   });
 
   it('counts accepted client renegotiations', async () => {
@@ -224,7 +227,8 @@ describe('probes with a fake openssl', () => {
 
   it('fails the client renegotiation test without a handshake', async () => {
     fake('');
-    expect((await testClientRenegotiation(target)).kind).toBe('failed');
+    const outcome = await testClientRenegotiation(target);
+    expect(outcome.kind).toBe('failed');
   });
 
   it('finds a missing extended master secret', async () => {
@@ -249,7 +253,8 @@ describe('probes with a fake openssl', () => {
 
   it('fails the EMS test without a handshake', async () => {
     fake('');
-    expect((await testExtendedMasterSecret(target)).kind).toBe('failed');
+    const outcome = await testExtendedMasterSecret(target);
+    expect(outcome.kind).toBe('failed');
   });
 
   it('finds accepted early data', async () => {
@@ -278,7 +283,8 @@ describe('probes with a fake openssl', () => {
 
   it('fails the 0-RTT test when the session cannot be resumed', async () => {
     fake('no resumption');
-    expect((await testZeroRtt(target)).kind).toBe('failed');
+    const outcome = await testZeroRtt(target);
+    expect(outcome.kind).toBe('failed');
   });
 
   it('stops the 0-RTT test when the second run cannot start', async () => {

@@ -44,7 +44,7 @@ export function contentTypeOf(value: string | undefined): {
 /** The bytes as text in `charset`, UTF-8 when it is unknown. */
 function decode(bytes: Uint8Array, charset: string): string {
   try {
-    return new TextDecoder(charset || 'utf-8').decode(bytes);
+    return new TextDecoder(charset || 'utf8').decode(bytes);
   } catch {
     return new TextDecoder('utf-8').decode(bytes);
   }

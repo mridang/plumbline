@@ -30,6 +30,7 @@ describe('ipv6-web-aaaa', () => {
 
   it('does not count IPv4-mapped addresses', async () => {
     const problems = await run({
+      // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
       'example.test': { AAAA: { data: ['::ffff:192.0.2.1'] } },
     });
     expect(problems).toHaveLength(1);

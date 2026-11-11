@@ -24,17 +24,15 @@ export function serviceWorkerAllowedFindings(value: string | null): Finding[] {
   if (scope.startsWith('/')) {
     return [];
   }
-  try {
-    // An absolute URL is also a valid scope; a relative one without a leading
-    // slash is ambiguous and the browser does not accept it.
-    void new URL(scope);
+  // An absolute URL is also a valid scope; a relative one without a leading
+  // slash is ambiguous and the browser does not accept it.
+  if (URL.canParse(scope)) {
     return [];
-  } catch {
-    return [
-      finding(
-        'warning',
-        `The 'Service-Worker-Allowed' header must be a path starting with '/' or an absolute URL, not '${value}'.`,
-      ),
-    ];
   }
+  return [
+    finding(
+      'warning',
+      `The 'Service-Worker-Allowed' header must be a path starting with '/' or an absolute URL, not '${value}'.`,
+    ),
+  ];
 }

@@ -171,7 +171,7 @@ export function fromBase64(value: string): Uint8Array {
   const raw = atob(value);
   const bytes = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i += 1) {
-    bytes[i] = raw.charCodeAt(i);
+    bytes[i] = raw.codePointAt(i) ?? 0;
   }
   return bytes;
 }
@@ -292,7 +292,7 @@ export function parseHandshake(value: unknown): HandshakeAnswer {
     ),
     ephemeral: ephemeralOf(value['ephemeral']),
     chain: listOfText(value['chain'], 'chain'),
-    certificates: certificates.map(certificateOf),
+    certificates: certificates.map((entry) => certificateOf(entry)),
     ocsp: textOrNull(value['ocsp'], 'OCSP response'),
     compression: value['compression'] === true,
   };

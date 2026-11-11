@@ -22,6 +22,7 @@ describe('reporting-endpoints', () => {
   it('warns on a non-https endpoint', async () => {
     const problems = await runHint(
       hint,
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       page({ 'reporting-endpoints': 'csp="http://e.test/r"' }),
     );
     expect(problems).toHaveLength(1);

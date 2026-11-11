@@ -10,11 +10,11 @@ export type FakeRoute = Partial<Omit<Probe, 'url'>> | string | object;
  * an unreachable URL (null). `dnsAnswers` maps `TYPE name` to record data.
  */
 export function fakeEnv(
-  routes: Record<string, FakeRoute> = {},
+  routes: Partial<Record<string, FakeRoute>> = {},
   options: {
     origin?: string;
     dnsAnswers?: Record<string, string[]>;
-    evaluate?: AgentEnv['evaluate'];
+    evaluate?: NonNullable<AgentEnv['evaluate']>;
     /** Answer for every path not in `routes` (default: unreachable). */
     fallback?: FakeRoute;
   } = {},
@@ -77,5 +77,7 @@ export function fakeEnv(
 
 /** Copy of an object without one key (to build "missing field" cases). */
 export function without<T extends object>(value: T, key: keyof T): object {
-  return Object.fromEntries(Object.entries(value).filter(([k]) => k !== key));
+  return Object.fromEntries(
+    Object.entries(value).filter(([k]) => k !== String(key)),
+  );
 }

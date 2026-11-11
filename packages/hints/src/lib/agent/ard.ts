@@ -33,7 +33,7 @@ export function entryProblems(entry: unknown): string[] {
   const identifier = entry.identifier ?? entry.id;
   if (
     !isText(identifier) ||
-    !/^urn:air:[^:]+\.[^:]+:([^:]+:)*[^:]+$/.test(identifier)
+    !/^urn:air:(?=[^:]+\.[^:])[^:]+:[^:]+(:[^:]+)*$/.test(identifier)
   ) {
     problems.push(
       'identifier must be urn:air:<publisher domain>:[<ns>:]<name>',

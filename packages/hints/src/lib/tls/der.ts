@@ -14,14 +14,15 @@ interface Tlv {
 
 /** Reads one tag-length-value header at `offset`. */
 function readTlv(buffer: Buffer, offset: number): Tlv {
+  if (offset < 0 || offset + 1 >= buffer.length) {
+    throw new Error('Truncated DER data');
+  }
   const tag = buffer[offset];
   let length = buffer[offset + 1];
   let start = offset + 2;
-  if (length === undefined || tag === undefined) {
-    throw new Error('Truncated DER data');
-  }
   if (length & 0x80) {
     // Long form: the low bits say how many length bytes follow.
+    // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
     const count = length & 0x7f;
     length = 0;
     for (let i = 0; i < count; i++) {
@@ -41,6 +42,7 @@ function decodeOid(bytes: Buffer): string {
   const parts: number[] = [];
   let value = 0;
   for (const byte of bytes) {
+    // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
     value = value * 128 + (byte & 0x7f);
     if (!(byte & 0x80)) {
       if (parts.length === 0) {

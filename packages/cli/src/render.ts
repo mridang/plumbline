@@ -45,7 +45,7 @@ function bySeverity(a: Finding, b: Finding): number {
  * @returns One entry per finding.
  */
 export function toJsonFindings(report: Report): JsonFinding[] {
-  return [...report.findings].sort(bySeverity).map((finding) => ({
+  return report.findings.toSorted(bySeverity).map((finding) => ({
     hint: bareId(finding.hintId),
     severity: finding.severity,
     message: finding.message,
@@ -94,7 +94,7 @@ export function formatFindings(
   hints: readonly HintMeta[],
 ): string {
   const groups = new Map<string, Finding[]>();
-  for (const finding of [...report.findings].sort(bySeverity)) {
+  for (const finding of report.findings.toSorted(bySeverity)) {
     const id = bareId(finding.hintId);
     groups.set(id, [...(groups.get(id) ?? []), finding]);
   }

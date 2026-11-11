@@ -129,9 +129,8 @@ describe('csp', () => {
   });
 
   it('owasp: reports a missing header and an unsafe one', async () => {
-    expect((await runHint(hint, page(), owasp))[0]?.message).toContain(
-      'not specified',
-    );
+    const missing = await runHint(hint, page(), owasp);
+    expect(missing[0]?.message).toContain('not specified');
     const unsafe = await runHint(
       hint,
       page({ 'content-security-policy': "script-src 'unsafe-inline'" }),

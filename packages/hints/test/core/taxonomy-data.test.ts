@@ -19,11 +19,13 @@ import {
   TIERS,
 } from '../../src/core/taxonomy-data.js';
 
-const ids = Object.keys(hints).sort();
+const ids = Object.keys(hints).toSorted((a, b) => a.localeCompare(b));
 
 describe('the taxonomy data', () => {
   it('places every hint, and only hints that exist', () => {
-    expect(Object.keys(PLACEMENT).sort()).toEqual(ids);
+    expect(
+      Object.keys(PLACEMENT).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(ids);
   });
 
   it('gives every hint a section, tier, target, control, month and version', () => {
@@ -96,8 +98,10 @@ describe('the taxonomy data', () => {
 
   it('lists every section in exactly one display group', () => {
     const listed = GROUP_DEFS.flatMap((group) => group.sections);
-    expect([...listed].sort()).toEqual(
-      SECTION_DEFS.map((section) => section.id).sort(),
+    expect([...listed].toSorted((a, b) => a.localeCompare(b))).toEqual(
+      SECTION_DEFS.map((section) => section.id).toSorted((a, b) =>
+        a.localeCompare(b),
+      ),
     );
     for (const section of SECTION_DEFS) {
       const group = GROUP_DEFS.find((g) => g.sections.includes(section.id));
@@ -191,7 +195,7 @@ describe('the taxonomy data', () => {
         expect(names.has(`plumbline:${section.id}/${tier}`)).toBe(true);
       }
     }
-    for (const set of [...SET_DEFS, ...PROFILES]) {
+    for (const set of [SET_DEFS, PROFILES].flat()) {
       expect(set.summary.length).toBeGreaterThan(10);
       expect(set.whenToUse.length).toBeGreaterThan(10);
     }

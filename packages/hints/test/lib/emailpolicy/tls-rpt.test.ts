@@ -87,11 +87,13 @@ describe('checkTlsRpt', () => {
   it('errors on a destination that is neither mailto nor https', () => {
     const findings = checkTlsRpt(
       'example.test',
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       ok(['v=TLSRPTv1; rua=http://insecure.test/r']),
     );
     expect(findings[0].message).toContain(
       'must be a `mailto:` or `https:` URI',
     );
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     expect(findings[0].codeSnippet).toBe('rua=http://insecure.test/r');
   });
 

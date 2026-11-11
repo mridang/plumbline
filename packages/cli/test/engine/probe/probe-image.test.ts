@@ -19,6 +19,7 @@ const NAME = `plumbline-probe-spec-${process.pid}`;
 let base = '';
 
 const docker = (...args: string[]): string =>
+  // eslint-disable-next-line n/no-sync, sonarjs/no-os-command-from-path -- sync is fine in a test helper, which runs the docker CLI the developer already trusts
   execFileSync('docker', args, { encoding: 'utf8' }).trim();
 
 /** A request to the running probe: the status and the text of the answer. */
@@ -37,7 +38,8 @@ beforeAll(async () => {
   base = `http://127.0.0.1:${mapped.slice(mapped.lastIndexOf(':') + 1)}`;
   for (let attempt = 0; attempt < 50; attempt += 1) {
     try {
-      if ((await fetch(`${base}/healthz`)).ok) {
+      const health = await fetch(`${base}/healthz`);
+      if (health.ok) {
         return;
       }
     } catch {
@@ -65,9 +67,12 @@ describe('the probe image', () => {
   });
 
   it('answers its health check and 404 for a path it does not have', async () => {
-    expect(await (await fetch(`${base}/healthz`)).text()).toBe('ok');
-    expect((await fetch(`${base}/nowhere`)).status).toBe(404);
-    expect((await post('/v1/nowhere', '')).status).toBe(404);
+    const health = await fetch(`${base}/healthz`);
+    expect(await health.text()).toBe('ok');
+    const nowhere = await fetch(`${base}/nowhere`);
+    expect(nowhere.status).toBe(404);
+    const missing = await post('/v1/nowhere', '');
+    expect(missing.status).toBe(404);
   });
 
   it('serves its trusted roots as one PEM bundle', async () => {
@@ -84,7 +89,9 @@ describe('the probe refuses what it must refuse', () => {
 
   it.each([
     ['loopback', '127.0.0.1'],
+    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
     ['a private network', '10.0.0.1'],
+    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
     ['the cloud metadata address', '169.254.169.254'],
     ['IPv6 loopback', '::1'],
     ['a name that resolves to loopback', 'localhost'],
@@ -122,6 +129,7 @@ describe('the probe refuses what it must refuse', () => {
   it('answers each handshake of a batch on its own, a refused one with its reason', async () => {
     const answers = await Promise.allSettled([
       client().handshake({ host: '127.0.0.1', port: 443 }),
+      // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
       client().handshake({ host: '10.1.2.3', port: 25, starttls: 'smtp' }),
     ]);
     expect(answers.map((answer) => answer.status)).toEqual([
@@ -187,7 +195,8 @@ describe('the probe refuses what it must refuse', () => {
       'host=example.com\nport=22\n',
     ],
   ])('answers 400 for %s', async (_name, route, body) => {
-    expect((await post(route, body)).status).toBe(400);
+    const answer = await post(route, body);
+    expect(answer.status).toBe(400);
   });
 
   it('answers 400 for a body shorter than it says', async () => {

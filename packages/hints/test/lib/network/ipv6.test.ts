@@ -40,7 +40,7 @@ describe('tcpConnect', () => {
     try {
       expect(await tcpConnect('127.0.0.1', port, 1000)).toBe(true);
     } finally {
-      await new Promise((r) => server.close(r));
+      await new Promise((resolve) => server.close(resolve));
     }
     expect(await tcpConnect('127.0.0.1', port, 1000)).toBe(false);
   });
@@ -66,7 +66,7 @@ describe('httpGetByIp', () => {
   it('returns null when nothing listens', async () => {
     const server = createServer();
     const port = await listen(server);
-    await new Promise((r) => server.close(r));
+    await new Promise((resolve) => server.close(resolve));
     expect(await httpGetByIp('site.test', '127.0.0.1', port, false)).toBeNull();
   });
 });

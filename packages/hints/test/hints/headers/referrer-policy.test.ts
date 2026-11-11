@@ -92,8 +92,7 @@ describe('referrer-policy', () => {
       owasp,
     );
     expect(strict[0]?.message).toContain("'no-referrer'");
-    expect((await runHint(hint, page(), owasp))[0]?.message).toContain(
-      'not specified',
-    );
+    const unspecified = await runHint(hint, page(), owasp);
+    expect(unspecified[0]?.message).toContain('not specified');
   });
 });

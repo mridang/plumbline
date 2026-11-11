@@ -11,6 +11,7 @@ import {
 } from '../../../src/lib/tls/openssl.js';
 
 /** Whether the real `openssl` binary is on the PATH. */
+// eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
 const hasOpenssl = spawnSync(openssl.command, ['version']).status === 0;
 
 /** `it` when the real binary exists, `it.skip` otherwise. */

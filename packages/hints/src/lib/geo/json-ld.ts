@@ -93,7 +93,7 @@ export function containsType(value: unknown, type: string): boolean {
  */
 export function containsSpeakable(value: unknown): boolean {
   if (Array.isArray(value)) {
-    return value.some(containsSpeakable);
+    return value.some((item) => containsSpeakable(item));
   }
   const node = asObject(value);
   if (node === null) {

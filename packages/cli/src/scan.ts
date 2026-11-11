@@ -5,7 +5,9 @@ import extraHints from '@mridang/webhint-hint-plumbline';
 
 // The connector and the parser are CommonJS packages with a default export.
 const require = createRequire(import.meta.url);
+// eslint-disable-next-line sonarjs/no-require-or-define -- the connector is a CommonJS-only package, loaded through createRequire
 const { default: PuppeteerConnector } = require('@hint/connector-puppeteer');
+// eslint-disable-next-line sonarjs/no-require-or-define -- the parser is a CommonJS-only package, loaded through createRequire
 const { default: HTMLParser } = require('@hint/parser-html');
 
 // The connector still calls `page.removeListener`, which newer Puppeteer
@@ -37,7 +39,7 @@ const hintMap = extraHints as unknown as Record<string, HintCtor>;
 
 /** Every hint id the package ships, without the `extra/` prefix. */
 export const allHintIds: readonly string[] = Object.freeze(
-  Object.keys(hintMap).sort(),
+  Object.keys(hintMap).toSorted((a, b) => a.localeCompare(b)),
 );
 
 /** The hint constructors for a list of ids, for the formatter's `resources`. */
@@ -88,7 +90,7 @@ function metaOf(id: string): HintMeta {
 
 /** The catalogue of every shipped hint. */
 export function hintCatalogue(): HintMeta[] {
-  return allHintIds.map(metaOf);
+  return allHintIds.map((id) => metaOf(id));
 }
 
 /**
@@ -184,5 +186,8 @@ export async function scan(
     [],
   ]) as Analyzer;
   const [result] = await analyzer.analyze(url);
-  return { problems: result?.problems ?? [], hints: ids.map(metaOf) };
+  return {
+    problems: result?.problems ?? [],
+    hints: ids.map((id) => metaOf(id)),
+  };
 }

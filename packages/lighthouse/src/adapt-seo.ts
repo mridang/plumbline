@@ -45,6 +45,7 @@ import type { MetaElementArtifact } from './adapt.js';
 // which does not resolve reliably against this CJS module. The signature is
 // narrowed to the one function this adapter needs.
 const require = createRequire(import.meta.url);
+// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CommonJS-only, loaded through createRequire as described above
 const { createHTMLDocument } = require('@hint/utils-dom') as {
   createHTMLDocument: (html: string, finalHref: string) => HTMLDocument;
 };

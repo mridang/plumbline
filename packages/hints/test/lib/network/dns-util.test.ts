@@ -50,6 +50,7 @@ describe('dns-util', () => {
   it('drops IPv4-mapped and invalid AAAA answers', async () => {
     restore = installDns({
       'a.test': {
+        // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
         AAAA: { data: ['2001:db8::1', '::ffff:192.0.2.1', 'nonsense'] },
         A: { data: ['192.0.2.7'] },
       },

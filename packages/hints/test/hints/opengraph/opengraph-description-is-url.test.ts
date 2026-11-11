@@ -36,6 +36,7 @@ describe('opengraph-description-is-url', () => {
   it('reports an http URL', async () => {
     const problems = await runHint(
       hint,
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       page('<meta property="og:description" content="http://example.com">'),
     );
     expect(problems).toHaveLength(1);

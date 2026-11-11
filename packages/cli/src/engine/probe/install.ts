@@ -38,7 +38,12 @@ import { remoteConnect } from '@mridang/webhint-hint-plumbline/dist/lib/tls/remo
 
 import type { ProbeClient } from './client.js';
 import { unchunk } from './fetch.js';
-import { fromBase64, ProbeError, ProbeUnavailable } from './protocol.js';
+import {
+  fromBase64,
+  ProbeError,
+  ProbeUnavailable,
+  type RemoteCertificate,
+} from './protocol.js';
 
 /** What the scan that is running here uses: its probe, and the DNS answers it has already had. */
 interface ScanScope {
@@ -148,6 +153,22 @@ function sessionName(path: string): string {
   return path.replaceAll(/[^A-Za-z0-9]/g, '_').slice(-80);
 }
 
+/** A copy of a certificate, with its own names and access URLs, so a cached answer is never shared. */
+function copyCertificate({ infoAccess, ...certificate }: RemoteCertificate) {
+  return {
+    ...certificate,
+    subject: { ...certificate.subject },
+    issuer: { ...certificate.issuer },
+    ...(infoAccess
+      ? {
+          infoAccess: Object.fromEntries(
+            Object.entries(infoAccess).map(([name, urls]) => [name, [...urls]]),
+          ),
+        }
+      : {}),
+  };
+}
+
 /** Replaces the network clients of the checks, once. */
 function install(): void {
   if (installed) {
@@ -209,7 +230,7 @@ function install(): void {
     const key = JSON.stringify([target, options]);
     let handshake = scanned.handshakes.get(key);
     if (!handshake) {
-      const { client } = scanned;
+      const { client, handshakes } = scanned;
       handshake = remoteConnect((request) =>
         client
           .handshake({
@@ -226,29 +247,16 @@ function install(): void {
           .then((answer) => ({
             ...answer,
             chain: [...answer.chain],
-            certificates: answer.certificates.map(
-              ({ infoAccess, ...certificate }) => ({
-                ...certificate,
-                subject: { ...certificate.subject },
-                issuer: { ...certificate.issuer },
-                ...(infoAccess
-                  ? {
-                      infoAccess: Object.fromEntries(
-                        Object.entries(infoAccess).map(([name, urls]) => [
-                          name,
-                          [...urls],
-                        ]),
-                      ),
-                    }
-                  : {}),
-              }),
+            certificates: answer.certificates.map((certificate) =>
+              copyCertificate(certificate),
             ),
           })),
       )(target, options);
-      scanned.handshakes.set(key, handshake);
+      handshakes.set(key, handshake);
+      // eslint-disable-next-line promise/prefer-await-to-callbacks -- a promise catch handler, not a callback; it only forgets an unavailable probe's answer
       handshake.catch((error: unknown) => {
         if (error instanceof ProbeUnavailable) {
-          scanned.handshakes.delete(key);
+          handshakes.delete(key);
         }
       });
     }
@@ -277,7 +285,9 @@ function install(): void {
           trusted: answer.trusted,
           trustError: answer.trustError,
           hostnameMatches: answer.hostnameMatches,
-          certificates: answer.certificates.map(bufferOf),
+          certificates: answer.certificates.map((certificate) =>
+            bufferOf(certificate),
+          ),
           error: answer.error,
         };
       } catch (error) {
@@ -349,9 +359,10 @@ function install(): void {
     }
     try {
       const tls = url.protocol === 'https:';
+      const defaultPort = tls ? 443 : 80;
       const answer = await client.http({
         host: url.hostname,
-        port: url.port === '' ? (tls ? 443 : 80) : Number(url.port),
+        port: url.port === '' ? defaultPort : Number(url.port),
         tls,
         method: 'GET',
         path: `${url.pathname}${url.search}`,
@@ -383,7 +394,10 @@ function install(): void {
     try {
       const answer = await client.handshake({ host, port });
       return answer.chain.length > 0
-        ? { chain: answer.chain.map(bufferOf), pkixValid: answer.authorized }
+        ? {
+            chain: answer.chain.map((link) => bufferOf(link)),
+            pkixValid: answer.authorized,
+          }
         : null;
     } catch {
       return null;

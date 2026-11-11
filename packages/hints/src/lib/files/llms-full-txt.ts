@@ -23,12 +23,14 @@ export function validateLlmsFullTxt(text: string): FileIssue[] {
   splitLines(text).forEach((raw, i) => {
     const line = i + 1;
     const t = raw.trim();
-    const f = t.match(/^(`{3,}|~{3,})/);
+    const f = /^(`{3,}|~{3,})/.exec(t);
     if (f) {
       if (!fence) {
         fence = { marker: f[1][0], line };
       } else if (f[1][0] === fence.marker) {
         fence = null;
+      } else {
+        // A fence of another marker inside a fence is just content.
       }
       body += 1;
       return;
@@ -37,10 +39,10 @@ export function validateLlmsFullTxt(text: string): FileIssue[] {
       body += 1;
       return;
     }
-    const h = t.match(/^(#{1,6})(\s+(.*))?$/);
+    const h = /^(#{1,6})(?:\s+(\S.*))?$/.exec(t);
     if (h) {
       const level = h[1].length;
-      if (!h[3]) {
+      if (!h[2]) {
         issues.push({
           severity: 'error',
           line,
@@ -68,7 +70,9 @@ export function validateLlmsFullTxt(text: string): FileIssue[] {
         });
       }
       previous = level;
-    } else if (t !== '') {
+    } else if (t === '') {
+      // A blank line is neither a heading nor content.
+    } else {
       body += 1;
     }
   });

@@ -40,15 +40,18 @@ const NON_TEXT =
 
 /** Returns the text a visitor reads in `html`, with whitespace collapsed. */
 export function visibleText(html: string): string {
-  return html
-    .replaceAll(/<!--[\s\S]*?-->/g, ' ')
-    .replaceAll(NON_TEXT, ' ')
-    .replaceAll(/<[^>]*>/g, ' ')
-    .replaceAll(/&(?:nbsp|amp|lt|gt|quot|#39);/gi, (entity) => {
-      return ENTITIES[entity.toLowerCase()] ?? ' ';
-    })
-    .replaceAll(/\s+/g, ' ')
-    .trim();
+  return (
+    html
+      .replaceAll(/<!--[\s\S]*?-->/g, ' ')
+      .replaceAll(NON_TEXT, ' ')
+      // eslint-disable-next-line sonarjs/super-linear-regex -- tag stripping of a fetched page; only long runs of unclosed '<' are slow
+      .replaceAll(/<[^>]*>/g, ' ')
+      .replaceAll(/&(?:nbsp|amp|lt|gt|quot|#39);/gi, (entity) => {
+        return ENTITIES[entity.toLowerCase()] ?? ' ';
+      })
+      .replaceAll(/\s+/g, ' ')
+      .trim()
+  );
 }
 
 /** Splits text into words; apostrophes and hyphens stay inside a word. */
@@ -94,6 +97,8 @@ export interface Keyword {
 export function topKeywords(text: string, limit = 5): Keyword[] {
   const counts = new Map<string, number>();
   for (const raw of wordsOf(text)) {
+    // Word tokens come from wordsOf, so a run of quote marks stays short.
+    // eslint-disable-next-line sonarjs/super-linear-regex -- word tokens are short, so the trailing trim is cheap
     const word = raw.toLowerCase().replaceAll(/^['’-]+|['’-]+$/g, '');
     if (
       word.length < 3 ||
@@ -107,7 +112,7 @@ export function topKeywords(text: string, limit = 5): Keyword[] {
   return [...counts.entries()]
     .filter(([, count]) => count >= 2)
     .map(([word, count]) => ({ word, count }))
-    .sort((a, b) => b.count - a.count || a.word.localeCompare(b.word))
+    .toSorted((a, b) => b.count - a.count || a.word.localeCompare(b.word))
     .slice(0, limit);
 }
 
@@ -219,12 +224,9 @@ export function linkFindings(
     }
     try {
       const target = new URL(trimmed, page);
-      if (!/^https?:$/.test(target.protocol)) {
-        continue;
-      }
-      total += 1;
-      if (bareHost(target.host) === bareHost(page.host)) {
-        internal += 1;
+      if (/^https?:$/.test(target.protocol)) {
+        total += 1;
+        internal += bareHost(target.host) === bareHost(page.host) ? 1 : 0;
       }
     } catch {
       // An unparseable href is not a link a crawler can follow.
@@ -295,6 +297,8 @@ export function anchorProblem(anchor: AnchorInfo): AnchorProblem | null {
   }
   const normal = shown
     .toLowerCase()
+    // Anchor text is a short label, so the trailing trim is cheap.
+    // eslint-disable-next-line sonarjs/super-linear-regex -- anchor labels are short
     .replace(/[\s.…»›→>]+$/u, '')
     .trim();
   return GENERIC_ANCHORS.has(normal) ? 'generic' : null;

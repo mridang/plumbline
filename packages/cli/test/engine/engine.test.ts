@@ -63,9 +63,7 @@ const page = () =>
 
 describe('findingOf', () => {
   it('drops a finding switched off', () => {
-    expect(
-      findingOf('r', 'm', { severity: Severity.off }, undefined),
-    ).toBeNull();
+    expect(findingOf('r', 'm', { severity: Severity.off })).toBeNull();
   });
 
   it('names the level of each severity', () => {
@@ -222,8 +220,8 @@ describe('runHint', () => {
       entry((context) =>
         context.on('scan::end', async () => {
           headers = context.pageHeaders;
-          body = (await context.fetchContent('https://example.com/x')).response
-            .body.content;
+          const fetched = await context.fetchContent('https://example.com/x');
+          body = fetched.response.body.content;
         }),
       ),
       await page(),

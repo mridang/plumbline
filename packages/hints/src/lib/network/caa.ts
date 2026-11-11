@@ -35,7 +35,8 @@ export function formatCaa(record: CaaRecord, name: string): string {
 
 /** Decodes the hex of a generic `\# n hex` record into bytes. */
 function fromGeneric(data: string): Buffer | null {
-  const m = /^\\#\s+\d+\s*([0-9a-fA-F\s]*)$/.exec(data.trim());
+  // eslint-disable-next-line sonarjs/super-linear-regex -- the input is one DNS record, bounded by the DNS message size
+  const m = /^\\#\s+\d+\s?([\da-fA-F\s]*)$/.exec(data.trim());
   return m ? Buffer.from(m[1].replaceAll(/\s+/g, ''), 'hex') : null;
 }
 
@@ -54,7 +55,7 @@ export function parseCaa(data: string): CaaRecord | null {
       value: generic.subarray(2 + tagLength).toString('utf8'),
     };
   }
-  const m = /^(\d+)\s+([A-Za-z0-9]+)\s+(.*)$/s.exec(data.trim());
+  const m = /^(\d+)\s+([A-Za-z0-9]+)\s(.*)$/s.exec(data.trim());
   if (!m) {
     return null;
   }
@@ -71,7 +72,7 @@ const PARAMETER = new RegExp(
   String.raw`^${LABEL}[ \t]*=[ \t]*[\x21-\x3A\x3C-\x7E]*$`,
 );
 const EMAIL = /^[^\s@;<>,"]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/;
-const PHONE = /^\+[0-9.()-]*[0-9][0-9.()-]*(?:;.*)?$/;
+const PHONE = /^\+(?=[\d.()-]*\d)[\d.()-]*(?:;.*)?$/;
 
 /** Https://www.iana.org/assignments/acme/acme.xhtml#acme-validation-methods */
 const ACME_METHODS = new Set([
@@ -98,23 +99,33 @@ function checkIssueValue(value: string): string | null {
   const parameters = rest.join(';').trim();
   if (rest.length > 0 && parameters !== '') {
     for (const parameter of parameters.split(';').map((p) => p.trim())) {
-      if (!PARAMETER.test(parameter)) {
-        return 'invalid-property-syntax';
+      const error = checkIssueParameter(parameter);
+      if (error !== null) {
+        return error;
       }
-      const [name, ...v] = parameter.split('=');
-      if (name.trim() === 'validationmethods') {
-        // RFC 8657 section 4: comma separated, known or `ca-` prefixed.
-        const methods = v.join('=').trim();
-        const labels = methods === '' ? [] : methods.split(',');
-        for (const label of labels) {
-          if (
-            !/^[A-Za-z0-9-]+$/.test(label) ||
-            (!ACME_METHODS.has(label) && !label.startsWith('ca-'))
-          ) {
-            return 'invalid-parameter-validation-methods';
-          }
-        }
-      }
+    }
+  }
+  return null;
+}
+
+/** Validates one `tag=value` parameter of an issue property. Returns an error id or null. */
+function checkIssueParameter(parameter: string): string | null {
+  if (!PARAMETER.test(parameter)) {
+    return 'invalid-property-syntax';
+  }
+  const [name, ...v] = parameter.split('=');
+  if (name.trim() !== 'validationmethods') {
+    return null;
+  }
+  // RFC 8657 section 4: comma separated, known or `ca-` prefixed.
+  const methods = v.join('=').trim();
+  const labels = methods === '' ? [] : methods.split(',');
+  for (const label of labels) {
+    if (
+      !/^[A-Za-z0-9-]+$/.test(label) ||
+      (!ACME_METHODS.has(label) && !label.startsWith('ca-'))
+    ) {
+      return 'invalid-parameter-validation-methods';
     }
   }
   return null;

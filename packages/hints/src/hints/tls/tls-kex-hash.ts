@@ -63,6 +63,8 @@ export async function checkTlsKexHash({
       `${legacy} accepts only: ${SIGNATURE_ALGORITHMS_PHASE_OUT_HASH.replaceAll(':', ', ')}`,
       Severity.warning,
     );
+  } else {
+    // Neither weak hash function is accepted, so nothing is reported.
   }
 }
 

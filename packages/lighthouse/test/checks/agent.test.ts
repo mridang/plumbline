@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import { agentChecks } from '../../src/checks/agent.js';
 import type { AuditCheck } from '../../src/checks/types.js';
@@ -13,7 +13,7 @@ import type { AuditCheck } from '../../src/checks/types.js';
 function devtoolsLog(
   url: string,
   headers: Record<string, string>,
-): LH.Artifacts['DevtoolsLog'] {
+): Artifacts['DevtoolsLog'] {
   const requestId = '1';
   const events = [
     {
@@ -57,15 +57,15 @@ function devtoolsLog(
       params: { requestId, timestamp: 3, encodedDataLength: 100 },
     },
   ];
-  return events as unknown as LH.Artifacts['DevtoolsLog'];
+  return events as unknown as Artifacts['DevtoolsLog'];
 }
 
 /** Builds the artifacts the agent check reads, over the given headers. */
-function artifacts(url: string, headers: Record<string, string>): LH.Artifacts {
+function artifacts(url: string, headers: Record<string, string>): Artifacts {
   return {
     DevtoolsLog: devtoolsLog(url, headers),
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
-  } as unknown as LH.Artifacts;
+  } as unknown as Artifacts;
 }
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */
@@ -130,9 +130,9 @@ describe('the agent-link-headers check run()', () => {
 
   it('is not applicable when the run captured no document', async () => {
     const empty = {
-      DevtoolsLog: [] as unknown as LH.Artifacts['DevtoolsLog'],
+      DevtoolsLog: [] as unknown as Artifacts['DevtoolsLog'],
       URL: { mainDocumentUrl: '', finalDisplayedUrl: '' },
-    } as unknown as LH.Artifacts;
+    } as unknown as Artifacts;
     expect(await linkHeaders.run(empty, context())).toBeNull();
   });
 });

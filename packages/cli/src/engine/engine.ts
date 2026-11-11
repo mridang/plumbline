@@ -215,7 +215,7 @@ export function statusOf(findings: readonly Finding[]): HintStatus {
 /** `promise`, or a {@link TimedOutError} once `ms` have passed. */
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
+  const timeout = new Promise<never>((_resolve, reject) => {
     timer = setTimeout(() => reject(new TimedOutError(ms)), ms);
   });
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
@@ -245,7 +245,6 @@ function contextFor(
 ): HintContext {
   const context = {
     engineKey: page,
-    hintOptions: undefined,
     pageContent: page.data.response.body.content,
     pageHeaders: page.data.response.headers,
     targetedBrowsers: [],

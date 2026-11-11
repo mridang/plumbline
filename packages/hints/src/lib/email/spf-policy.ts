@@ -18,6 +18,16 @@ export type SpfPolicyStatus =
 /** The most DNS lookups an SPF evaluation may need (RFC 7208 section 4.6.4). */
 const MAX_SPF_LOOKUPS = 10;
 
+/** The term kinds that each cost one DNS lookup. */
+const LOOKUP_KINDS = new Set([
+  'redirect',
+  'include',
+  'a',
+  'mx',
+  'ptr',
+  'exists',
+]);
+
 /**
  * Fetches the single SPF record of a domain. Resolves to null when the
  * domain has none or more than one, and rejects when the lookup fails.
@@ -35,6 +45,13 @@ export interface SpfPolicyResult {
 interface Walk {
   status: SpfPolicyStatus;
   left: number;
+}
+
+/** A bare `all` is `+all`; `?all` is only acceptable inside an include. */
+function isInvalidAll(qualifier: string | null, isInclude: boolean): boolean {
+  return (
+    qualifier === null || qualifier === '+' || (!isInclude && qualifier === '?')
+  );
 }
 
 /**
@@ -73,34 +90,24 @@ async function walk(
   } else {
     const includes = [];
     const redirects = [];
-    let allFound = false;
-    for (const term of parsed.terms) {
+    const allIndex = parsed.terms.findIndex((term) => term.kind === 'all');
+    const allFound = allIndex !== -1;
+    // Terms after the first `all` are never evaluated.
+    const evaluated = allFound ? parsed.terms.slice(0, allIndex) : parsed.terms;
+    for (const term of evaluated) {
       if (term.kind === 'redirect') {
         redirects.push(term);
-        left -= 1;
-      } else if (term.kind === 'include') {
-        includes.push(term);
-        left -= 1;
-      } else if (
-        term.kind === 'mx' ||
-        term.kind === 'ptr' ||
-        term.kind === 'exists' ||
-        term.kind === 'a'
-      ) {
-        left -= 1;
-      } else if (term.kind === 'all') {
-        allFound = true;
-        // A bare `all` is `+all`; `?all` is only acceptable inside an include.
-        if (
-          term.qualifier === null ||
-          term.qualifier === '+' ||
-          (!state.isInclude && term.qualifier === '?')
-        ) {
-          status = 'invalid_all';
-        }
-        // Terms after `all` are never evaluated.
-        break;
       }
+      if (term.kind === 'include') {
+        includes.push(term);
+      }
+      if (LOOKUP_KINDS.has(term.kind)) {
+        left -= 1;
+      }
+    }
+    const allTerm = allFound ? parsed.terms[allIndex] : null;
+    if (allTerm !== null && isInvalidAll(allTerm.qualifier, state.isInclude)) {
+      status = 'invalid_all';
     }
 
     if (
@@ -120,39 +127,21 @@ async function walk(
       status = 'max_dns_lookups';
     }
 
-    if (status === 'valid') {
-      // Redirects are followed after includes.
-      for (const term of [...includes, ...redirects]) {
-        if (status !== 'valid') {
-          break;
-        }
-        if (term.kind === 'redirect') {
-          if (!allFound) {
-            const followed = await follow(
-              term.value ?? '',
-              resolve,
-              records,
-              left,
-              'invalid_redirect',
-              false,
-            );
-            status = followed.status;
-            left = followed.left;
-            // Only one redirect is followed.
-            break;
-          }
-        } else {
-          const followed = await follow(
-            term.value ?? '',
-            resolve,
-            records,
-            left,
-            'invalid_include',
-            true,
-          );
-          status = followed.status;
-          left = followed.left;
-        }
+    // Redirects are followed after includes, but only the first one and never
+    // when `all` is present.
+    const targets = [...includes, ...(allFound ? [] : redirects.slice(0, 1))];
+    for (const term of targets) {
+      if (status === 'valid') {
+        const followed = await follow(
+          term.value ?? '',
+          resolve,
+          records,
+          left,
+          term.kind === 'redirect' ? 'invalid_redirect' : 'invalid_include',
+          term.kind !== 'redirect',
+        );
+        status = followed.status;
+        left = followed.left;
       }
     }
   }

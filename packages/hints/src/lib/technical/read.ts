@@ -166,7 +166,8 @@ export async function mapWithConcurrency<T, R>(
   let next = 0;
   const worker = async (): Promise<void> => {
     for (;;) {
-      const i = next++;
+      const i = next;
+      next += 1;
       if (i >= items.length) {
         return;
       }
@@ -221,7 +222,7 @@ export function canonicalHref(doc: TechDocumentLike): string | null {
     .querySelector('link[rel~="canonical" i]')
     ?.getAttribute('href')
     ?.trim();
-  return href ? href : null;
+  return href || null;
 }
 
 /**
@@ -252,5 +253,5 @@ export function twitterCardType(doc: TechDocumentLike): string | null {
     .querySelector('meta[name="twitter:card" i]')
     ?.getAttribute('content')
     ?.trim();
-  return value ? value : null;
+  return value || null;
 }

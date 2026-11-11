@@ -43,6 +43,7 @@ describe('validateSecurityTxt', () => {
     expect(i[0].severity).toBe('warning');
   });
   it('rejects http and invalid contact URIs', () => {
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     expect(msgs(`${ok}Contact: http://a.com`)[0]).toContain('HTTPS');
     expect(msgs(`${ok}Contact: not a uri`)[0]).toContain('not a valid URI');
     expect(msgs(`${ok}Contact: ftp://a.com`)[0]).toContain("scheme 'ftp'");
@@ -53,6 +54,7 @@ describe('validateSecurityTxt', () => {
     ).toEqual([]);
   });
   it('validates other URI fields', () => {
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     expect(msgs(`${ok}Policy: http://a.com/p`)[0]).toContain('HTTPS');
     expect(msgs(`${ok}Encryption: openpgp4fpr:abc`)).toEqual([]);
     expect(msgs(`${ok}Hiring: mailto:a@b.c`)[0]).toContain("scheme 'mailto'");

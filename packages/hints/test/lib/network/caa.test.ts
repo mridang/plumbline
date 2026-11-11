@@ -66,6 +66,7 @@ describe('validateCaaRecord', () => {
       'invalid-parameter-validation-methods',
     ],
     ['issuemail', 'bad domain', 'invalid-property-issuemail-value'],
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     ['iodef', 'http://example.org/', 'invalid-property-iodef-value'],
     ['iodef', 'mailto:nonsense', 'invalid-property-iodef-value'],
     ['iodef', 'not a url', 'invalid-property-iodef-value'],
@@ -103,6 +104,7 @@ describe('evaluateCaa', () => {
   });
   it('reports syntax errors with readable messages', () => {
     const e = evaluateCaa(
+      // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
       [rec('issue', 'ca.test'), rec('iodef', 'ftp://x')],
       'x',
     );

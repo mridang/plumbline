@@ -12,7 +12,7 @@
  * inputs, exactly as `adapt.ts` does for the header analysers.
  */
 import { NetworkRecords } from 'lighthouse';
-import type * as LH from 'lighthouse';
+import type { Artifacts as LhArtifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type { Artifacts } from 'lighthouse/types/artifacts.js';
 import type { RequestRecord } from '@mridang/webhint-hint-plumbline/dist/lib/privacy/requests.js';
@@ -24,8 +24,8 @@ type NetworkRequest = Artifacts.NetworkRequest;
 
 /** The artifacts a privacy check reads: the devtools log and the URL set. */
 export interface PrivacyArtifacts {
-  DevtoolsLog: LH.Artifacts['DevtoolsLog'];
-  URL: LH.Artifacts['URL'];
+  DevtoolsLog: LhArtifacts['DevtoolsLog'];
+  URL: LhArtifacts['URL'];
 }
 
 /**

@@ -62,6 +62,8 @@ export default defineHint({
           "Your email address domain is 'bogus', because the DNSSEC signature is *not* valid (the validating resolver answered SERVFAIL). Either someone manipulated the response from your name server, or your domain has a *serious DNSSEC configuration error*. The latter makes your domain unreachable for any user who validates DNSSEC signatures. You should contact your name server operator (often your registrar or hosting provider) as soon as possible.",
           { severity: Severity.error, codeSnippet: mail.domain },
         );
+      } else {
+        // Any other state needs no report.
       }
 
       const insecure: string[] = [];
@@ -72,6 +74,8 @@ export default defineHint({
           insecure.push(host);
         } else if (state === 'bogus') {
           bogus.push(host);
+        } else {
+          // Any other state needs no report.
         }
       }
       if (insecure.length > 0) {

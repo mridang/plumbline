@@ -22,7 +22,9 @@ export default defineHint({
           codeLanguage: 'http',
           codeSnippet: headerSnippet('X-DNS-Prefetch-Control', 'off'),
         });
-      } else if (value.toLowerCase() !== 'off') {
+      } else if (value.toLowerCase() === 'off') {
+        // The header is already 'off', so there is nothing to report.
+      } else {
         page.report("The 'X-DNS-Prefetch-Control' header should be 'off'.", {
           codeLanguage: 'http',
           codeSnippet: headerSnippet('X-DNS-Prefetch-Control', value),

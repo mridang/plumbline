@@ -52,15 +52,19 @@ describe('unchunk', () => {
 describe('decode', () => {
   it('undoes gzip, deflate and brotli and leaves anything else alone', () => {
     const text = Buffer.from('hello world');
+    // eslint-disable-next-line n/no-sync -- sync is fine in a test fixture that builds encoded bodies
     expect(Buffer.from(decode(gzipSync(text), 'gzip')).toString()).toBe(
       'hello world',
     );
+    // eslint-disable-next-line n/no-sync -- sync is fine in a test fixture that builds encoded bodies
     expect(Buffer.from(decode(gzipSync(text), 'x-gzip')).toString()).toBe(
       'hello world',
     );
+    // eslint-disable-next-line n/no-sync -- sync is fine in a test fixture that builds encoded bodies
     expect(Buffer.from(decode(deflateSync(text), 'deflate')).toString()).toBe(
       'hello world',
     );
+    // eslint-disable-next-line n/no-sync -- sync is fine in a test fixture that builds encoded bodies
     expect(Buffer.from(decode(brotliCompressSync(text), 'br')).toString()).toBe(
       'hello world',
     );
@@ -87,6 +91,7 @@ describe('probeFetch', () => {
           ['Set-Cookie', 'a=1'],
           ['Set-Cookie', 'b=2'],
         ],
+        // eslint-disable-next-line n/no-sync -- sync is fine in a test fixture that builds encoded bodies
         gzipSync('<html>hi</html>'),
       ),
     });
@@ -122,6 +127,7 @@ describe('probeFetch', () => {
         chunked('he', 'llo'),
       ),
     });
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     const response = await probeFetch(client)('http://example.com:8080/a?b=1');
     expect(await response.text()).toBe('hello');
     expect(linesOf(sent[0]?.body ?? '')).toMatchObject({
@@ -170,9 +176,8 @@ describe('probeFetch', () => {
       '/': httpAnswer(204, [], '', 'No Content'),
       '/h': httpAnswer(200, [['Content-Length', '5']], '', 'OK'),
     });
-    expect(
-      await (await probeFetch(client)('https://example.com/')).text(),
-    ).toBe('');
+    const first = await probeFetch(client)('https://example.com/');
+    expect(await first.text()).toBe('');
     const head = await probeFetch(client)('https://example.com/h', {
       method: 'HEAD',
     });
@@ -216,6 +221,7 @@ describe('probeFetch', () => {
   it('reads an IPv6 literal without its brackets', async () => {
     const { client, sent } = site({ '/': httpAnswer(200, [], 'x') });
     await probeFetch(client)('https://[2606:4700:4700::1111]/');
+    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
     expect(linesOf(sent[0]?.body ?? '')['host']).toBe('2606:4700:4700::1111');
   });
 });

@@ -42,7 +42,7 @@ export function firstHeader(
   headers: HeaderBag | undefined,
   name: string,
 ): string | null {
-  const [first] = headerValues(headers, name);
+  const first = headerValues(headers, name).at(0);
   return first === undefined ? null : first.trim();
 }
 
@@ -64,7 +64,8 @@ export function metaElements<
   attribute: 'http-equiv' | 'name',
   value: string,
 ): E[] {
-  return [...document.querySelectorAll(`meta[${attribute}]`)].filter(
+  const selector = attribute === 'name' ? 'meta[name]' : 'meta[http-equiv]';
+  return [...document.querySelectorAll(selector)].filter(
     (meta) => meta.getAttribute(attribute)?.trim().toLowerCase() === value,
   );
 }

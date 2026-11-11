@@ -8,6 +8,7 @@ import {
   type FakeAnswer,
 } from '../../lib/email/fakes.js';
 
+// eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap: the key is generated once at module load
 const KEY = generateKeyPairSync('rsa', { modulusLength: 2048 })
   .publicKey.export({ type: 'spki', format: 'der' })
   .toString('base64');

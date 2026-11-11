@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { createRequire } from 'node:module';
+import { createHTMLDocument } from '@hint/utils-dom';
 import {
   altCoverage,
   canonicalHref,
@@ -15,11 +15,10 @@ import {
   twitterCardType,
 } from '../../../src/lib/technical/read.js';
 
-const require = createRequire(import.meta.url);
-const { createHTMLDocument } = require('@hint/utils-dom');
 const doc = (body: string, head = '') =>
   createHTMLDocument(
     `<!doctype html><html><head>${head}</head><body>${body}</body></html>`,
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     'http://x.test/',
   );
 
@@ -78,6 +77,7 @@ describe('imageUrls', () => {
     const d = doc(
       '<img src="/a.png"><img src="/a.png"><img src="data:image/png;base64,AA"><img src="http://[bad"><img>',
     );
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     expect(imageUrls(d, 'http://x.test/p')).toEqual(['http://x.test/a.png']);
   });
 });
@@ -101,7 +101,7 @@ describe('mapWithConcurrency', () => {
     const out = await mapWithConcurrency([1, 2, 3, 4, 5, 6], 2, async (n) => {
       active++;
       peak = Math.max(peak, active);
-      await new Promise((r) => setTimeout(r, 5));
+      await new Promise((resolve) => setTimeout(resolve, 5));
       active--;
       return n * 2;
     });
@@ -115,16 +115,20 @@ describe('mapWithConcurrency', () => {
 
 describe('redirectVerdict', () => {
   it('is null without hops', () => {
+    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
     expect(redirectVerdict([], 'http://a/', 200)).toBeNull();
   });
   it('is null for up to two hops', () => {
     expect(
+      // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
       redirectVerdict(['http://a/', 'http://b/'], 'http://c/', 200),
     ).toBeNull();
   });
   it('warns for more than two hops', () => {
     const v = redirectVerdict(
+      // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
       ['http://a/', 'http://b/', 'http://c/'],
+      // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
       'http://d/',
       200,
     );
@@ -132,6 +136,7 @@ describe('redirectVerdict', () => {
     expect(v?.message).toContain('3 redirect hops');
   });
   it('errors when the chain ends in an error', () => {
+    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
     const v = redirectVerdict(['http://a/'], 'http://b/', 404);
     expect(v?.severity).toBe('error');
     expect(v?.message).toContain('HTTP 404');

@@ -42,6 +42,8 @@ export default defineHint({
           `At least one IP address of your web server has a NotFound validation state. There is no RPKI Route Origin Authorisation (ROA) published for the route announcement of each of the affected IP addresses: ${describe(offenders)}.`,
           { severity: Severity.error, codeSnippet: rpkiLines(offenders) },
         );
+      } else {
+        // Any other verdict needs no finding.
       }
     });
   },

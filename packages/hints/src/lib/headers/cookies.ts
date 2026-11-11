@@ -111,7 +111,7 @@ export function analyzeCookies(
   hstsProtected: boolean,
 ): CookiesResult {
   const cookies = setCookieValues
-    .map(parseSetCookie)
+    .map((raw) => parseSetCookie(raw))
     .filter((c): c is Cookie => c !== null && !IGNORED_COOKIES.has(c.name));
   if (cookies.length === 0) {
     return 'cookies-not-found';

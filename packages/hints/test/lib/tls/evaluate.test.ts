@@ -229,12 +229,14 @@ describe('signature algorithms', () => {
   it.each([
     ['1.2.840.113549.1.1.11', 'sufficient', 'sha256WithRSAEncryption'],
     ['1.2.840.10045.4.3.3', 'sufficient', 'ecdsa-with-SHA384'],
+    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
     ['1.3.101.112', 'sufficient', 'ED25519'],
     ['1.2.840.113549.1.1.14', 'phase-out', 'sha224WithRSAEncryption'],
     ['1.2.840.10045.4.3.1', 'phase-out', 'ecdsa-with-SHA224'],
     ['1.2.840.113549.1.1.5', 'bad', 'sha1WithRSAEncryption'],
     ['1.2.840.113549.1.1.4', 'bad', 'md5WithRSAEncryption'],
     ['1.2.840.113549.1.1.10', 'bad', 'rsassaPss'],
+    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
     ['1.2.3.4', 'bad', '1.2.3.4'],
   ] as const)('rates %s as %s', (oid, rating, name) => {
     expect(rateSignatureAlgorithm(oid)).toEqual({ rating, name });

@@ -50,20 +50,18 @@ export default defineHint({
         const probe = await mailNet.client.probeStarttls(host);
         if (!probe.reachable) {
           unreachable.push(`${host}: ${probe.error ?? 'no connection'}`);
-          continue;
-        }
-        if (!probe.starttls) {
+        } else if (probe.starttls) {
+          if (tlsVersionLevel(probe.tlsVersion) === 'insufficient') {
+            badVersion.push(`${host}: ${probe.tlsVersion ?? 'unknown'}`);
+          }
+          if (!probe.trusted) {
+            untrusted.push(`${host}: ${probe.trustError ?? 'untrusted'}`);
+          }
+          if (!probe.hostnameMatches) {
+            mismatched.push(host);
+          }
+        } else {
           noStarttls.push(host);
-          continue;
-        }
-        if (tlsVersionLevel(probe.tlsVersion) === 'insufficient') {
-          badVersion.push(`${host}: ${probe.tlsVersion ?? 'unknown'}`);
-        }
-        if (!probe.trusted) {
-          untrusted.push(`${host}: ${probe.trustError ?? 'untrusted'}`);
-        }
-        if (!probe.hostnameMatches) {
-          mismatched.push(host);
         }
       }
 

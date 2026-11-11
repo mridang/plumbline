@@ -20,7 +20,7 @@
  * `numeric` — each is a real security problem, so it is scored, not advisory.
  */
 import { createRequire } from 'node:module';
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type { HTMLDocument } from '@hint/utils-dom';
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import { headerValues } from '@mridang/webhint-hint-plumbline/dist/lib/headers/http-headers.js';
@@ -54,6 +54,7 @@ import formActionSecureHint from '@mridang/webhint-hint-plumbline/dist/hints/sec
 // named ESM import. This is the same DOM implementation the webhint connector
 // builds `page.document` with, so the readers see exactly what the hint sees.
 const require = createRequire(import.meta.url);
+// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CommonJS-only, loaded through createRequire as described above
 const { createHTMLDocument } = require('@hint/utils-dom') as {
   createHTMLDocument: (html: string, finalHref: string) => HTMLDocument;
 };
@@ -68,14 +69,14 @@ const HEADER_AND_META_ARTIFACTS = [
 ] as const;
 
 /** The page URL a DOM check resolves relative hrefs against. */
-function pageUrl(artifacts: LH.Artifacts): string {
+function pageUrl(artifacts: Artifacts): string {
   return (
     artifacts.URL?.finalDisplayedUrl || artifacts.URL?.mainDocumentUrl || ''
   );
 }
 
 /** Parses `MainDocumentContent` with webhint's DOM implementation. */
-function parsePage(artifacts: LH.Artifacts): HTMLDocument {
+function parsePage(artifacts: Artifacts): HTMLDocument {
   return createHTMLDocument(
     artifacts.MainDocumentContent ?? '',
     pageUrl(artifacts) || 'http://localhost/',
