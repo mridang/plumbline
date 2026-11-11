@@ -29,14 +29,13 @@ describe('Card', () => {
 
   it('can be another element, and passes attributes through', () => {
     const out = html(
-      // eslint-disable-next-line tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes.
-      <Card as="section" aria-label="Steps" className="extra">
+      <Card as="section" aria-label="Steps" className="shadow-sm">
         x
       </Card>,
     );
     expect(out.startsWith('<section')).toBe(true);
     expect(out).toContain('aria-label="Steps"');
-    expect(classOf(out, 'section')).toContain('extra');
+    expect(classOf(out, 'section')).toContain('shadow-sm');
   });
 
   it('can be a button and then takes the button’s props', () => {

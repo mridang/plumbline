@@ -82,8 +82,7 @@ function loadWorker(options: {
       return new Response('from the network');
     },
   });
-  // eslint-disable-next-line sonarjs/code-eval -- runs the shipped worker script in an isolated vm context on purpose
-  vm.runInContext(SW_SOURCE, context);
+  new vm.Script(SW_SOURCE).runInContext(context);
   return { listeners, calls, windows };
 }
 

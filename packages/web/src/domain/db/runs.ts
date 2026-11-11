@@ -85,14 +85,14 @@ function kindOf(value: string): SuiteRunKind {
 /** A list is in the order newest first, ties broken by id, descending. */
 function newestFirst(a: RunSummary, b: RunSummary): number {
   if (a.ran_at !== b.ran_at) {
-    // eslint-disable-next-line sonarjs/strings-comparison -- code-unit order on purpose: it must match the database ordering of ISO timestamps and ids, which localeCompare would not
+    // eslint-disable-next-line sonarjs/strings-comparison -- code-unit order on purpose: it must match the database ordering of ISO timestamps and ids; localeCompare and Intl.Collator order case and punctuation differently, and `<` is the only code-unit comparison in the standard library
     return a.ran_at < b.ran_at ? 1 : -1;
   }
-  // eslint-disable-next-line sonarjs/strings-comparison -- code-unit order on purpose: it must match the database ordering of ISO timestamps and ids, which localeCompare would not
+  // eslint-disable-next-line sonarjs/strings-comparison -- code-unit order on purpose: it must match the database ordering of ISO timestamps and ids; localeCompare and Intl.Collator order case and punctuation differently, and `<` is the only code-unit comparison in the standard library
   if (a.id < b.id) {
     return 1;
   }
-  // eslint-disable-next-line sonarjs/strings-comparison -- code-unit order on purpose: it must match the database ordering of ISO timestamps and ids, which localeCompare would not
+  // eslint-disable-next-line sonarjs/strings-comparison -- code-unit order on purpose: it must match the database ordering of ISO timestamps and ids; localeCompare and Intl.Collator order case and punctuation differently, and `<` is the only code-unit comparison in the standard library
   if (a.id > b.id) {
     return -1;
   }

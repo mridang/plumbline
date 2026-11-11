@@ -351,6 +351,13 @@ async function configureChecksTool(
   return textResult(`${domain.host} now runs ${scope}.${changedText}`);
 }
 
+/** `scan_domain` takes no more than the domain, whatever the other tools get. */
+const scanDomainFor = (
+  _db: Database,
+  _user: Readonly<User>,
+  domain: Readonly<Domain>,
+): ToolResult => scanDomainTool(domain);
+
 /** The tools that act on one of the user's existing domains. */
 const DOMAIN_TOOLS: Readonly<
   Partial<
@@ -368,8 +375,7 @@ const DOMAIN_TOOLS: Readonly<
   get_domain: getDomainTool,
   get_report: getReportTool,
   list_reports: listReportsTool,
-  // eslint-disable-next-line sonarjs/function-name -- the key is the scan_domain tool name the assistant calls
-  scan_domain: (_db, _user, domain) => scanDomainTool(domain),
+  scan_domain: scanDomainFor,
   remove_domain: removeDomainTool,
   configure_checks: configureChecksTool,
 };

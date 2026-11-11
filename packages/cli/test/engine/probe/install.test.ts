@@ -331,8 +331,7 @@ describe('the other checks', () => {
           'smtp',
           '-tls1_2',
           '-sess_out',
-          // eslint-disable-next-line sonarjs/publicly-writable-directories -- test fixture: a path string passed to a fake probe, nothing is written there
-          '/tmp/webhint-0rtt-ab/session.pem',
+          'webhint-0rtt-ab/session.pem',
         ],
         { input: ['', 'Q\n'], inputDelayMs: 500, timeoutMs: 20_000 },
       ),

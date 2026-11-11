@@ -132,7 +132,7 @@ export function syncModal(
   dialog: Pick<HTMLDialogElement, 'open' | 'showModal' | 'close'>,
   open: boolean,
 ): void {
-  // eslint-disable-next-line sonarjs/no-selector-parameter -- the signature takes the desired open state; callers and tests depend on it
+  // eslint-disable-next-line sonarjs/no-selector-parameter -- the boolean is the desired open state and is part of the exported signature; splitting it into open and close functions would change the API
   if (open && !dialog.open) {
     dialog.showModal();
   } else if (!open && dialog.open) {

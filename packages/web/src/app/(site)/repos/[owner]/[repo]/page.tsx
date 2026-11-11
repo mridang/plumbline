@@ -128,6 +128,7 @@ export default async function RepoPage({
   const now = serverNow();
   const settings = view === 'settings';
 
+  const ready = domain && current && loaded;
   return (
     <>
       <RepoHeader
@@ -155,8 +156,7 @@ export default async function RepoPage({
             </p>
           </Callout>
         ) : null}
-        {/* eslint-disable-next-line sonarjs/expression-complexity -- logic rewrite would be large: the panels need the narrowed domain, current and loaded */}
-        {domain && current && loaded && (
+        {ready && (
           <>
             {mine.length > 1 ? (
               <TabList

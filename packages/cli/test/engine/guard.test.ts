@@ -314,7 +314,7 @@ describe('installGuard', () => {
     try {
       await expect(
         new Promise((resolve, reject) => {
-          // eslint-disable-next-line n/prefer-promises/dns -- test fixture: exercises the callback dns.lookup that installGuard patches
+          // eslint-disable-next-line n/prefer-promises/dns -- the callback dns.lookup is the function installGuard patches; dns.promises.lookup does not go through it, and aliasing the function is traced by the rule too
           dns.lookup('localhost', (error, address) =>
             error ? reject(error) : resolve(address),
           );

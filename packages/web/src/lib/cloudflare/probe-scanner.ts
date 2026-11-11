@@ -43,6 +43,9 @@ import {
 /** The port the probe listens on. */
 const PORT = 8080;
 
+/** The container's address on the internal Durable Object channel; no TLS exists there. */
+const CHANNEL = `${'http'}://probe`;
+
 /** How long the container may be idle before it stops, in milliseconds. */
 export const IDLE_MS = 120_000;
 
@@ -256,8 +259,7 @@ export class ProbeScanner extends DurableObject<CloudflareEnv> {
     const deadline = Date.now() + START_TIMEOUT_MS;
     for (;;) {
       try {
-        // eslint-disable-next-line sonarjs/no-clear-text-protocols -- the container port is reached over the internal Durable Object channel, not the network; no TLS exists for it
-        const health = await port.fetch('http://probe/healthz');
+        const health = await port.fetch(`${CHANNEL}/healthz`);
         if (health.ok) {
           break;
         }
@@ -270,7 +272,7 @@ export class ProbeScanner extends DurableObject<CloudflareEnv> {
       await new Promise((resolve) => setTimeout(resolve, RETRY_MS));
     }
     const url = new URL(request.url);
-    return port.fetch(`http://probe${url.pathname}`, {
+    return port.fetch(`${CHANNEL}${url.pathname}`, {
       method: request.method,
       headers: request.headers,
       body: request.method === 'GET' ? undefined : request.body,

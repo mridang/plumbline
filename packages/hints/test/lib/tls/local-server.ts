@@ -124,7 +124,7 @@ export async function startMailServer(
     cert: await fixture(`${cert}.pem`),
     key: await fixture(`${cert}.key`),
     ciphers: 'ALL:@SECLEVEL=0',
-    // eslint-disable-next-line sonarjs/weak-ssl -- test fixture: the server must offer legacy TLS so the checks can report it
+    // eslint-disable-next-line sonarjs/weak-ssl -- the checks must see a server that still offers TLS 1.0; the rule also resolves a named constant, so there is no spelling of the version it accepts
     minVersion: 'TLSv1',
     ...rest,
   });

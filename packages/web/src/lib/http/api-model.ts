@@ -7,5 +7,4 @@
  */
 
 /** Base for every API request/response model. @public */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- the marker base is empty on purpose, see the file comment
-export interface ApiModel {}
+export type ApiModel = Record<never, never>;

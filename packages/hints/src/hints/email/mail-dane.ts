@@ -14,6 +14,54 @@ import {
   type TlsaRecord,
 } from '../../lib/email/tlsa.js';
 
+/** The mail hosts a DANE check reports on, by what is wrong with them. */
+interface DaneBuckets {
+  missing: string[];
+  bogus: string[];
+  invalid: string[];
+  unchecked: string[];
+}
+
+/** What the DANE check found for one mail host: the list it belongs on, if any. */
+interface DaneOutcome {
+  bucket: keyof DaneBuckets | null;
+  /** What to list for the host; the host name unless the outcome says more. */
+  entry?: string;
+}
+
+/** Looks up the host's TLSA records and matches them against its certificate. */
+async function daneOutcome(host: string): Promise<DaneOutcome> {
+  let records: TlsaRecord[] = [];
+  try {
+    const response = await dns.client.query(`_25._tcp.${host}`, 'TLSA');
+    if (response.status === 2) {
+      return { bucket: 'bogus' };
+    }
+    // DANE is only usable with DNSSEC; an unsigned answer is no answer.
+    if (response.authenticated) {
+      records = response.answers
+        .filter((record) => record.type === TLSA)
+        .flatMap((record) => parseTlsa(record.data) ?? [])
+        .filter(isDaneUsage);
+    }
+  } catch {
+    return { bucket: null };
+  }
+  if (records.length === 0) {
+    return { bucket: 'missing' };
+  }
+  const probe = await mailNet.client.probeStarttls(host);
+  if (!probe.starttls || probe.certificates.length === 0) {
+    return {
+      bucket: 'unchecked',
+      entry: `${host}: ${probe.error ?? 'no certificate presented'}`,
+    };
+  }
+  return records.some((record) => tlsaMatches(record, probe.certificates))
+    ? { bucket: null }
+    : { bucket: 'invalid' };
+}
+
 /**
  * Internet.nl, email test, DANE: every receiving mail server (MX) must
  * publish a DNSSEC-signed TLSA record at `_25._tcp.<mx>` (test "DANE
@@ -41,48 +89,20 @@ export default defineHint({
   ],
   setup(context) {
     onMailDomain(context, async (mail) => {
-      const missing: string[] = [];
-      const bogus: string[] = [];
-      const invalid: string[] = [];
-      const unchecked: string[] = [];
+      const buckets: DaneBuckets = {
+        missing: [],
+        bogus: [],
+        invalid: [],
+        unchecked: [],
+      };
 
-      // eslint-disable-next-line sonarjs/too-many-break-or-continue-in-loop -- four early exits; restructuring them would reindent the whole per-host check
       for (const host of mail.hosts) {
-        let records: TlsaRecord[] = [];
-        try {
-          const response = await dns.client.query(`_25._tcp.${host}`, 'TLSA');
-          if (response.status === 2) {
-            bogus.push(host);
-            continue;
-          }
-          // DANE is only usable with DNSSEC; an unsigned answer is no answer.
-          if (response.authenticated) {
-            records = response.answers
-              .filter((record) => record.type === TLSA)
-              .flatMap((record) => parseTlsa(record.data) ?? [])
-              .filter(isDaneUsage);
-          }
-        } catch {
-          continue;
-        }
-        if (records.length === 0) {
-          missing.push(host);
-          continue;
-        }
-
-        const probe = await mailNet.client.probeStarttls(host);
-        if (!probe.starttls || probe.certificates.length === 0) {
-          unchecked.push(
-            `${host}: ${probe.error ?? 'no certificate presented'}`,
-          );
-          continue;
-        }
-        if (
-          !records.some((record) => tlsaMatches(record, probe.certificates))
-        ) {
-          invalid.push(host);
+        const outcome = await daneOutcome(host);
+        if (outcome.bucket) {
+          buckets[outcome.bucket].push(outcome.entry ?? host);
         }
       }
+      const { missing, bogus, invalid, unchecked } = buckets;
 
       if (missing.length > 0) {
         mail.report(

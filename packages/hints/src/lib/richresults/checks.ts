@@ -186,6 +186,23 @@ export function articleFindings(blocks: JsonLdBlocks): Finding[] {
   );
 }
 
+/** The AggregateOffer and Offer branches mirror the schema.org shapes. */
+function offerFindings(
+  label: string,
+  offer: Record<string, unknown>,
+  doc: string,
+): Finding[] {
+  const kind = nodeHasAnyType(offer, ['AggregateOffer'])
+    ? `${label} AggregateOffer`
+    : `${label} Offer`;
+  const required = nodeHasAnyType(offer, ['AggregateOffer'])
+    ? ['lowPrice', 'priceCurrency']
+    : ['price', 'priceCurrency'];
+  return required
+    .filter((property) => !hasValue(offer, property))
+    .map((property) => missingRequired(kind, property, doc));
+}
+
 /**
  * Product: Google requires `name`. `image` is recommended. When an `offers`,
  * `review` or `aggregateRating` property is present it must itself be valid:
@@ -221,30 +238,7 @@ export function productFindings(blocks: JsonLdBlocks): Finding[] {
     if (hasOffers) {
       const offer = firstObject(node, 'offers');
       if (offer) {
-        // The AggregateOffer and Offer branches mirror the schema.org shapes;
-        // flattening them would reindent the whole block for no gain.
-        // eslint-disable-next-line sonarjs/nested-control-flow -- offer shape branches mirror schema.org
-        if (nodeHasAnyType(offer, ['AggregateOffer'])) {
-          if (!hasValue(offer, 'lowPrice')) {
-            findings.push(
-              missingRequired(`${label} AggregateOffer`, 'lowPrice', doc),
-            );
-          }
-          if (!hasValue(offer, 'priceCurrency')) {
-            findings.push(
-              missingRequired(`${label} AggregateOffer`, 'priceCurrency', doc),
-            );
-          }
-        } else {
-          if (!hasValue(offer, 'price')) {
-            findings.push(missingRequired(`${label} Offer`, 'price', doc));
-          }
-          if (!hasValue(offer, 'priceCurrency')) {
-            findings.push(
-              missingRequired(`${label} Offer`, 'priceCurrency', doc),
-            );
-          }
-        }
+        findings.push(...offerFindings(label, offer, doc));
       }
     }
 
