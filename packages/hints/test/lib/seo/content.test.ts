@@ -58,6 +58,16 @@ describe('topKeywords', () => {
     expect(topKeywords('one two three')).toEqual([]);
     expect(topKeywords('aaa aaa bbb bbb ccc ccc', 2)).toHaveLength(2);
   });
+
+  it('trims quote marks and hyphens from both ends of a word', () => {
+    expect(topKeywords("'apple- -apple’ 'apple'")).toEqual([
+      { word: 'apple', count: 3 },
+    ]);
+    expect(topKeywords("''' ''' '''")).toEqual([]);
+    const quotes = "'-’".repeat(100_000);
+    const long = `${quotes}abc${quotes}`;
+    expect(topKeywords(`${long} ${long}`)).toEqual([{ word: 'abc', count: 2 }]);
+  });
 });
 
 describe('frequentKeywordsFindings', () => {
@@ -163,6 +173,8 @@ describe('anchorProblem', () => {
   it('flags generic text, with trailing punctuation', () => {
     expect(anchorProblem(anchor('Click here'))).toBe('generic');
     expect(anchorProblem(anchor('Read more »'))).toBe('generic');
+    expect(anchorProblem(anchor('Click here . … › → >'))).toBe('generic');
+    expect(anchorProblem(anchor(`Pricing${' .'.repeat(100_000)}`))).toBeNull();
     expect(anchorProblem(anchor('Learn more...'))).toBe('generic');
   });
 

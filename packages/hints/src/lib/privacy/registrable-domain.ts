@@ -84,13 +84,18 @@ export function isIpAddress(host: string): boolean {
   return bare.includes(':') && /^[0-9a-f:.]+$/i.test(bare);
 }
 
+/** Removes every trailing dot, scanning once from the end. */
+function stripTrailingDots(value: string): string {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === '.') {
+    end -= 1;
+  }
+  return value.slice(0, end);
+}
+
 /** Lower cases a host and removes trailing dots and IPv6 brackets. */
 export function normalizeHost(host: string): string {
-  const cleaned = host
-    .trim()
-    .toLowerCase()
-    // eslint-disable-next-line sonarjs/super-linear-regex -- host names are bounded by URL length
-    .replace(/\.+$/, '')
+  const cleaned = stripTrailingDots(host.trim().toLowerCase())
     .replace(/^\.+/, '')
     .replaceAll(/^\[|\]$/g, '');
   // Hosts from URLs are already punycode; a `Domain` attribute may carry

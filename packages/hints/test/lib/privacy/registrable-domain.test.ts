@@ -59,5 +59,13 @@ describe('isIpAddress and normalizeHost', () => {
   });
   it('normalizes case, dots and brackets', () => {
     expect(normalizeHost(' .Example.COM. ')).toBe('example.com');
+    expect(normalizeHost('example.com...')).toBe('example.com');
+    expect(normalizeHost('...')).toBe('');
+    expect(normalizeHost('a.' + '.'.repeat(200_000) + 'b')).toBe(
+      'a.' + '.'.repeat(200_000) + 'b',
+    );
+    expect(normalizeHost('example.com' + '.'.repeat(200_000))).toBe(
+      'example.com',
+    );
   });
 });

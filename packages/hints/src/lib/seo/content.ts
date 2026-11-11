@@ -38,6 +38,15 @@ const ENTITIES: Readonly<Record<string, string>> = {
 const NON_TEXT =
   /<(script|style|noscript|template|head|svg)\b[\s\S]*?<\/\1\s*>/gi;
 
+/** Removes trailing characters matching `drop`, scanning once from the end. */
+function trimEnd(value: string, drop: RegExp): string {
+  let end = value.length;
+  while (end > 0 && drop.test(value[end - 1])) {
+    end -= 1;
+  }
+  return value.slice(0, end);
+}
+
 /** Returns the text a visitor reads in `html`, with whitespace collapsed. */
 export function visibleText(html: string): string {
   return (
@@ -97,9 +106,7 @@ export interface Keyword {
 export function topKeywords(text: string, limit = 5): Keyword[] {
   const counts = new Map<string, number>();
   for (const raw of wordsOf(text)) {
-    // Word tokens come from wordsOf, so a run of quote marks stays short.
-    // eslint-disable-next-line sonarjs/super-linear-regex -- word tokens are short, so the trailing trim is cheap
-    const word = raw.toLowerCase().replaceAll(/^['’-]+|['’-]+$/g, '');
+    const word = trimEnd(raw.toLowerCase().replace(/^['’-]+/, ''), /['’-]/);
     if (
       word.length < 3 ||
       STOP_WORDS.has(word) ||
@@ -295,12 +302,8 @@ export function anchorProblem(anchor: AnchorInfo): AnchorProblem | null {
   if (shown === undefined) {
     return 'empty';
   }
-  const normal = shown
-    .toLowerCase()
-    // Anchor text is a short label, so the trailing trim is cheap.
-    // eslint-disable-next-line sonarjs/super-linear-regex -- anchor labels are short
-    .replace(/[\s.…»›→>]+$/u, '')
-    .trim();
+  const lowered = shown.toLowerCase();
+  const normal = trimEnd(lowered, /[\s.…»›→>]/u).trim();
   return GENERIC_ANCHORS.has(normal) ? 'generic' : null;
 }
 
