@@ -15,11 +15,11 @@ const ascii = (b: Uint8Array, start: number, end: number): string =>
   String.fromCodePoint(...b.subarray(start, end));
 
 /** The 14 bit field mask of a WebP lossless or lossy size. */
-// eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
 const MASK_14_BITS = 0x3f_ff;
 
 /** SOF0..SOF15 without DHT (C4), JPG (C8) and DAC (CC), which carry no size. */
-// eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
 const SOF_EXCLUDED = new Set([0xc4, 0xc8, 0xcc]);
 
 function png(b: Uint8Array): ImageInfo | null {
@@ -50,13 +50,13 @@ function jpeg(b: Uint8Array): ImageInfo | null {
   // Walk the marker segments until a start-of-frame marker is found.
   while (i + 9 < b.length) {
     const marker = b[i + 1];
-    // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
     if (b[i] !== 0xff || marker === 0xff) {
       i += 1;
       continue;
     }
     // SOF0..SOF15 except DHT (C4), JPG (C8) and DAC (CC) carry the size.
-    // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
     if (marker >= 0xc0 && marker <= 0xcf && !SOF_EXCLUDED.has(marker)) {
       return {
         format: 'jpeg',
@@ -141,7 +141,7 @@ export function sniffImage(bytes: Uint8Array): ImageInfo | null {
   if (bytes[0] === 0x89 && ascii(bytes, 1, 4) === 'PNG') {
     return png(bytes);
   }
-  // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
   if (bytes[0] === 0xff && bytes[1] === 0xd8) {
     return jpeg(bytes);
   }

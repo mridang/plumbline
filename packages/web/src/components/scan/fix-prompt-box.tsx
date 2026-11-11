@@ -50,7 +50,7 @@ export function FixPromptBox({
           variant="accent"
           onClick={() => {
             // `clipboard` is missing on insecure pages; then there is nothing to confirm.
-            // eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose: the browser's global, not Node's
+
             void navigator.clipboard?.writeText(prompt).then(() => {
               setCopied(true);
               return setTimeout(() => setCopied(false), CONFIRMATION_MS);

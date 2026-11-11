@@ -16,9 +16,9 @@ describe('sniffImage', () => {
     const png = bytes(
       0x89,
       ...ascii('PNG\r\n'),
-      // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
       0x1a,
-      // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
       0x0a,
       0,
       0,
@@ -42,21 +42,20 @@ describe('sniffImage', () => {
 
   it('reads a JPEG, skipping earlier segments', () => {
     const jpeg = bytes(
-      // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
       0xff,
-      // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
       0xd8,
-      // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
       0xff,
-      // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
       0xe0,
       0,
       4,
       0,
       0, // APP0 segment of length 4
-      // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
       0xff,
-      // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
       0xc0,
       0,
       17,
@@ -64,7 +63,7 @@ describe('sniffImage', () => {
       0x02,
       0x76,
       0x04,
-      // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
       0xb0,
       3, // SOF0: 630 high, 1200 wide
       0,
@@ -84,7 +83,6 @@ describe('sniffImage', () => {
   });
 
   it('returns null for a truncated JPEG', () => {
-    // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
     expect(sniffImage(bytes(0xff, 0xd8, 0xff, 0xe0, 0, 4))).toBeNull();
   });
 
@@ -111,10 +109,10 @@ describe('sniffImage', () => {
       0,
       0,
       0,
-      // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
       0x9d,
       0x01,
-      // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
       0x2a,
       ...le16(1200),
       ...le16(630),
@@ -151,7 +149,6 @@ describe('sniffImage', () => {
     // Signature 0x2f at offset 20, then 14 bit width-1 and height-1.
     const bits = 1199 | (629 << 14);
     const webp = riff('VP8L', [
-      // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
       0x2f,
       bits & 255,
       (bits >> 8) & 255,

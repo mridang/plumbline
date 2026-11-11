@@ -207,7 +207,7 @@ export function browserHost(): PushHost {
   return {
     manager: async () => {
       // Development registers no worker, and `ready` would then never settle.
-      // eslint-disable-next-line n/no-unsupported-features/node-builtins -- navigator is the browser's own API; this code runs only in the browser
+
       const { serviceWorker } = globalThis.navigator;
       if (!(await serviceWorker.getRegistration())) {
         await serviceWorker.register(WORKER_URL, { scope: '/' });
@@ -223,7 +223,6 @@ export function browserHost(): PushHost {
 
 /** What the live browser can do. */
 export function browserCapabilities(): PushCapabilities {
-  // eslint-disable-next-line n/no-unsupported-features/node-builtins -- navigator is the browser's own API; this code runs only in the browser
   const { navigator: browser } = globalThis;
   return {
     userAgent: browser.userAgent,

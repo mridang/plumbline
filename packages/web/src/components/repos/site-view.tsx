@@ -173,7 +173,7 @@ export function SiteView({
                 enabled={enabled}
               />
             </div>
-          ) : // eslint-disable-next-line unicorn/no-nested-ternary, sonarjs/no-nested-conditional -- logic rewrite would be large: the branches are about fifty lines of JSX
+          ) : // eslint-disable-next-line sonarjs/no-nested-conditional -- logic rewrite would be large: the branches are about fifty lines of JSX
           shown ? (
             <>
               <ScanResults

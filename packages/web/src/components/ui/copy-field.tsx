@@ -34,7 +34,7 @@ export function CopyField({
       <Button
         onClick={async () => {
           // `clipboard` is missing on insecure pages; then there is nothing to confirm.
-          // eslint-disable-next-line n/no-unsupported-features/node-builtins -- browser navigator global, not the Node builtin; used on purpose
+
           const clipboard = navigator.clipboard;
           if (!clipboard) {
             return;

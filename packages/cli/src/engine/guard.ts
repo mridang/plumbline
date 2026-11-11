@@ -79,7 +79,7 @@ function embeddedV4(ip: string): string | undefined {
   if (hex) {
     const high = Number.parseInt(hex[1] ?? '0', 16);
     const low = Number.parseInt(hex[2] ?? '0', 16);
-    // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting, which writes hex digits in lower case
+
     return `${high >> 8}.${high & 0xff}.${low >> 8}.${low & 0xff}`;
   }
   return undefined;

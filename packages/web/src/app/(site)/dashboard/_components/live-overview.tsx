@@ -79,11 +79,10 @@ export function LiveOverview({
   const [sort, setSort] = useState<Sort>(DEFAULT_SORT);
 
   useEffect(() => {
-    // eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose: browser EventSource
     if (typeof EventSource === 'undefined') {
       return undefined;
     }
-    // eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose: browser EventSource
+
     let source: EventSource | null = null;
     let timer: ReturnType<typeof setTimeout> | undefined;
     // What the page was drawn with is read again by the server, not by a call
@@ -97,7 +96,6 @@ export function LiveOverview({
     const stopKeeping = keepStreamWhileVisible(
       {
         open: () => {
-          // eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose: browser EventSource
           const opened = new EventSource('/events');
           source = opened;
           // A fresh stream starts from now, so read once on every (re)connection to

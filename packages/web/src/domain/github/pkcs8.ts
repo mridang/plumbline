@@ -18,11 +18,11 @@ function lengthOf(size: number): number[] {
   if (size < 0x80) {
     return [size];
   }
-  // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
   if (size <= 0xff) {
     return [0x81, size];
   }
-  // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
   return [0x82, size >> 8, size & 0xff];
 }
 
