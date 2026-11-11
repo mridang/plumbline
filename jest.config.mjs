@@ -23,6 +23,14 @@ export default {
   ],
   // The web app has its own Jest config (its `@/` alias and JSX), and the
   // root `test` script runs it after this one.
+  /**
+   * Worktrees live under `.claude/` inside the checkout, so they fall inside
+   * `rootDir` and are crawled like any other source. Each holds a full copy of
+   * the workspace, which gives Jest several packages claiming the same name and
+   * leaves its module map unable to resolve any of them. This has to be a
+   * module path, not a test path: ignoring the tests still indexes the modules.
+   */
+  modulePathIgnorePatterns: ['<rootDir>/.claude/'],
   testPathIgnorePatterns: [
     '/node_modules/',
     '/frontend/',
