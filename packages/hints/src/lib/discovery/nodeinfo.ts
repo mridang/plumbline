@@ -5,7 +5,7 @@
  * and the `href` where that schema's document lives. The check validates the
  * links document when present and is silent when it is absent.
  *
- * Source: the NodeInfo protocol (http://nodeinfo.diaspora.software/protocol.html).
+ * Source: the NodeInfo protocol (https://nodeinfo.diaspora.software/protocol.html).
  */
 import { finding, type Finding } from '../headers/finding.js';
 
@@ -55,7 +55,7 @@ export function nodeinfoFindings(response: NodeinfoResponse | null): Finding[] {
       ),
     ];
   }
-  if (!links.every(isLink)) {
+  if (!links.every((link) => isLink(link))) {
     return [
       finding(
         'warning',

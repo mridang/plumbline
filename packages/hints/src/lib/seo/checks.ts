@@ -352,7 +352,7 @@ export function faviconIcoOrPngMissing(doc: DocumentLike): Finding[] {
 /** Hint when the page declares no 32x32 PNG favicon. */
 export function favicon32Missing(doc: DocumentLike): Finding[] {
   const icons = getIconLinks(doc);
-  if (!icons.some(isPng32Icon)) {
+  if (!icons.some((icon) => isPng32Icon(icon))) {
     return [
       finding(
         'hint',
@@ -366,7 +366,7 @@ export function favicon32Missing(doc: DocumentLike): Finding[] {
 /** Hint when the page declares no SVG favicon. */
 export function faviconSvgMissing(doc: DocumentLike): Finding[] {
   const icons = getIconLinks(doc);
-  if (!icons.some(isSvgIcon)) {
+  if (!icons.some((icon) => isSvgIcon(icon))) {
     return [
       finding(
         'hint',

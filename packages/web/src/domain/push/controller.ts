@@ -78,7 +78,6 @@ function checkSubscription(
 
 /**
  * The person's own subscription named by the `{id}` of the path.
- *
  * @throws The 404 problem for an id that is not a subscription of theirs.
  */
 async function ownSubscription(
@@ -105,10 +104,11 @@ async function ownSubscription(
 function contextOf(
   resolver: CurrentUserResolver,
 ): (request: Request, route: RouteContext) => Promise<PushContext> {
-  return async (request, route) => ({
-    uid: await liveUid(request, resolver),
-    id: (await route.params)?.['id'],
-  });
+  return async (request, route) => {
+    const uid = await liveUid(request, resolver);
+    const params = await route.params;
+    return { uid, id: params?.['id'] };
+  };
 }
 
 /** `GET /api/push/configuration`: the VAPID public key a browser subscribes with. 200, 401 without a session. */
@@ -158,7 +158,8 @@ export function createSubscriptionsCollection(
     },
     handle: async (subscription, { uid }) => {
       const repository = new PushSubscriptionRepository(getDatabase());
-      const existed = (await repository.listForUser(uid)).some(
+      const listed = await repository.listForUser(uid);
+      const existed = listed.some(
         (known) => known.endpoint === subscription.endpoint,
       );
       await repository.upsert(

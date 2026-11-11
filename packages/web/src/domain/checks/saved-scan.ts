@@ -44,7 +44,7 @@ export function savedScan(report: Readonly<ReportResource>): SavedScan {
         summary: origin.summary,
       })),
       status: outcome.status,
-      ...(outcome.reason !== undefined ? { reason: outcome.reason } : {}),
+      ...(outcome.reason === undefined ? {} : { reason: outcome.reason }),
       findings: outcome.findings,
     };
   });

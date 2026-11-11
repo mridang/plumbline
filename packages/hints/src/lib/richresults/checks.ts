@@ -186,6 +186,23 @@ export function articleFindings(blocks: JsonLdBlocks): Finding[] {
   );
 }
 
+/** The AggregateOffer and Offer branches mirror the schema.org shapes. */
+function offerFindings(
+  label: string,
+  offer: Record<string, unknown>,
+  doc: string,
+): Finding[] {
+  const kind = nodeHasAnyType(offer, ['AggregateOffer'])
+    ? `${label} AggregateOffer`
+    : `${label} Offer`;
+  const required = nodeHasAnyType(offer, ['AggregateOffer'])
+    ? ['lowPrice', 'priceCurrency']
+    : ['price', 'priceCurrency'];
+  return required
+    .filter((property) => !hasValue(offer, property))
+    .map((property) => missingRequired(kind, property, doc));
+}
+
 /**
  * Product: Google requires `name`. `image` is recommended. When an `offers`,
  * `review` or `aggregateRating` property is present it must itself be valid:
@@ -221,27 +238,7 @@ export function productFindings(blocks: JsonLdBlocks): Finding[] {
     if (hasOffers) {
       const offer = firstObject(node, 'offers');
       if (offer) {
-        if (nodeHasAnyType(offer, ['AggregateOffer'])) {
-          if (!hasValue(offer, 'lowPrice')) {
-            findings.push(
-              missingRequired(`${label} AggregateOffer`, 'lowPrice', doc),
-            );
-          }
-          if (!hasValue(offer, 'priceCurrency')) {
-            findings.push(
-              missingRequired(`${label} AggregateOffer`, 'priceCurrency', doc),
-            );
-          }
-        } else {
-          if (!hasValue(offer, 'price')) {
-            findings.push(missingRequired(`${label} Offer`, 'price', doc));
-          }
-          if (!hasValue(offer, 'priceCurrency')) {
-            findings.push(
-              missingRequired(`${label} Offer`, 'priceCurrency', doc),
-            );
-          }
-        }
+        findings.push(...offerFindings(label, offer, doc));
       }
     }
 
@@ -256,13 +253,11 @@ export function productFindings(blocks: JsonLdBlocks): Finding[] {
 
     if (hasReview) {
       const review = firstObject(node, 'review');
-      if (review) {
-        const reviewRating = firstObject(review, 'reviewRating');
-        if (!reviewRating || !hasValue(reviewRating, 'ratingValue')) {
-          findings.push(
-            missingRequired(`${label} Review`, 'reviewRating.ratingValue', doc),
-          );
-        }
+      const reviewRating = review ? firstObject(review, 'reviewRating') : null;
+      if (review && (!reviewRating || !hasValue(reviewRating, 'ratingValue'))) {
+        findings.push(
+          missingRequired(`${label} Review`, 'reviewRating.ratingValue', doc),
+        );
       }
     }
   }
@@ -281,7 +276,9 @@ export function breadcrumbFindings(blocks: JsonLdBlocks): Finding[] {
   for (const node of nodesOfType(blocks, ['BreadcrumbList'])) {
     const label = typeLabel(node, 'BreadcrumbList');
     const value = node['itemListElement'];
-    const items = Array.isArray(value) ? value : asObject(value) ? [value] : [];
+    const items = Array.isArray(value)
+      ? value
+      : [value].filter((entry) => asObject(entry) !== null);
     if (items.length === 0) {
       findings.push(missingRequired(label, 'itemListElement', doc));
       continue;
@@ -409,7 +406,9 @@ export function websiteSearchActionFindings(blocks: JsonLdBlocks): Finding[] {
   for (const node of nodesOfType(blocks, ['WebSite'])) {
     const label = typeLabel(node, 'WebSite');
     const raw = node['potentialAction'];
-    const actions = Array.isArray(raw) ? raw : raw === undefined ? [] : [raw];
+    const actions = Array.isArray(raw)
+      ? raw
+      : [raw].filter((entry) => entry !== undefined);
     const search = actions
       .map((action) => asObject(action))
       .find((action) => action && nodeHasAnyType(action, ['SearchAction']));

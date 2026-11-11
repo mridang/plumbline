@@ -185,7 +185,7 @@ export async function disabledRepos(
       ),
     fileDisabledRepos(db, userId, now),
   ]);
-  return new Set([...switched.map((row) => row.repo), ...byFile]);
+  return new Set(switched.map((row) => row.repo)).union(byFile);
 }
 
 /** Which of the repositories the person can see have their checks turned off by their own `plumbline.yaml`. */

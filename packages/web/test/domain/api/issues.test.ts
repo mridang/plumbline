@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+
 import type { DatabaseSync } from 'node:sqlite';
 
 import type { CurrentUserResolver } from '@/domain/api/auth';
@@ -78,7 +79,8 @@ describe('GET /api/domains/{id}/issues', () => {
   });
 
   it('lists none for a domain no repository serves', async () => {
-    expect(await (await list(NO_REPO)).json()).toMatchObject({ items: [] });
+    const response = await list(NO_REPO);
+    expect(await response.json()).toMatchObject({ items: [] });
   });
 
   it('answers 404 as a problem for a domain that is not the caller’s or does not exist', async () => {
@@ -89,11 +91,13 @@ describe('GET /api/domains/{id}/issues', () => {
       'application/problem+json',
     );
     session.uid = 7;
-    expect((await list('not-an-id')).status).toBe(404);
+    const malformed = await list('not-an-id');
+    expect(malformed.status).toBe(404);
   });
 
   it('answers 401 without a session', async () => {
     session.uid = null;
-    expect((await list()).status).toBe(401);
+    const response = await list();
+    expect(response.status).toBe(401);
   });
 });

@@ -120,17 +120,22 @@ export function sortRows(
   const sign = sort.direction === 'ascending' ? 1 : -1;
   const compare = (a: SiteRow, b: SiteRow): number => {
     switch (sort.key) {
-      case 'status':
+      case 'status': {
         return rank(a) - rank(b);
-      case 'site':
+      }
+      case 'site': {
         return nameOf(a).localeCompare(nameOf(b));
-      case 'deployed':
+      }
+      case 'deployed': {
         // Most recent first when ascending, as people read "latest".
         return timeOf(b.site.deployed_at) - timeOf(a.site.deployed_at);
-      case 'checked':
+      }
+      case 'checked': {
         return timeOf(b.site.checked_at) - timeOf(a.site.checked_at);
-      case 'issues':
+      }
+      case 'issues': {
         return b.openIssues - a.openIssues;
+      }
     }
   };
   return rows.toSorted(
@@ -193,7 +198,9 @@ export function clusterRows(rows: readonly SiteRow[]): SiteRow[] {
   for (const row of rows) {
     if (row.repo === null) {
       out.push(row);
-    } else if (!placed.has(row.repo)) {
+    } else if (placed.has(row.repo)) {
+      // The repository's rows were placed with its first row.
+    } else {
       placed.add(row.repo);
       out.push(...rows.filter((other) => other.repo === row.repo));
     }

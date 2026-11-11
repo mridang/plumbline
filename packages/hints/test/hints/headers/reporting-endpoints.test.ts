@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/headers/reporting-endpoints.js';
 import { runHint } from '../../helpers/run-hint.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const page = (headers: Record<string, string>) => ({
   '/': {
@@ -22,7 +23,7 @@ describe('reporting-endpoints', () => {
   it('warns on a non-https endpoint', async () => {
     const problems = await runHint(
       hint,
-      page({ 'reporting-endpoints': 'csp="http://e.test/r"' }),
+      page({ 'reporting-endpoints': `csp="${HTTP_SCHEME}e.test/r"` }),
     );
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('https');

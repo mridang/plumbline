@@ -12,7 +12,7 @@
  * inputs, exactly as `adapt.ts` does for the header analysers.
  */
 import { NetworkRecords } from 'lighthouse';
-import type * as LH from 'lighthouse';
+import type { Artifacts as LhArtifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type { Artifacts } from 'lighthouse/types/artifacts.js';
 import type { RequestRecord } from '@mridang/webhint-hint-plumbline/dist/lib/privacy/requests.js';
@@ -24,15 +24,15 @@ type NetworkRequest = Artifacts.NetworkRequest;
 
 /** The artifacts a privacy check reads: the devtools log and the URL set. */
 export interface PrivacyArtifacts {
-  DevtoolsLog: LH.Artifacts['DevtoolsLog'];
-  URL: LH.Artifacts['URL'];
+  DevtoolsLog: LhArtifacts['DevtoolsLog'];
+  URL: LhArtifacts['URL'];
 }
 
 /**
  * Maps Lighthouse's `resourceType` (a `RESOURCE_TYPES` value such as `Script`,
  * `Stylesheet`, `Image`) onto the lower-cased webhint resource type the privacy
  * library keys on. Only the types that matter to `classifyRequests` need an
- * explicit entry: its `ACTIVE_TYPES` set (which decides active vs. passive
+ * explicit entry: its `ACTIVE_TYPES` set (which decides active vs. Passive
  * mixed content) uses `script`, `css`, `html`, `font` and `manifest`. Anything
  * else is lower-cased as-is and treated as passive, which is the safe default
  * for an advisory hint.

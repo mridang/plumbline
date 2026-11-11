@@ -1,7 +1,7 @@
 import { agentHint } from './define-agent-hint.js';
 
 /**
- * isitagentready.com check. Discovery (not scored): organisation manifest for personal agents.
+ * Isitagentready.com check. Discovery (not scored): organisation manifest for personal agents.
  * The logic lives in `src/lib/agent`; failures are reported as advice.
  */
 export default agentHint({

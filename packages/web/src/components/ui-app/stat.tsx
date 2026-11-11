@@ -48,14 +48,15 @@ export function CountCell({
   tone,
 }: Readonly<{
   value: number | null;
-  /** What it counts, for the tooltip and for people who hear the page. */
+  /** What it counts, for people who hear the page. */
   word: string;
   tone: Tone;
 }>): ReactElement {
   if (value === null) {
     return (
-      <span className="text-subtle" title={`${word}: not kept for this run`}>
-        –
+      <span className="text-subtle">
+        <span aria-hidden="true">–</span>
+        <span className="sr-only">{word}: not kept for this run</span>
       </span>
     );
   }
@@ -65,7 +66,6 @@ export function CountCell({
         'tabular-nums',
         value === 0 ? 'text-subtle' : `font-semibold ${TONE_TEXT[tone]}`,
       )}
-      title={`${value} ${word}`}
     >
       <Count value={value} />
       <span className="sr-only"> {word}</span>

@@ -108,7 +108,8 @@ describe('POST /api/github/syncs', () => {
       'application/problem+json',
     );
     session.uid = 7;
-    expect((await post({ origin: 'https://evil.test' })).status).toBe(403);
+    const crossSite = await post({ origin: 'https://evil.test' });
+    expect(crossSite.status).toBe(403);
   });
 
   it('answers 503 as a problem when the site has no GitHub settings', async () => {
@@ -126,7 +127,8 @@ describe('DELETE /api/users/self/github', () => {
   it('forgets the connected account, with its installations', async () => {
     const db = createDatabase(made.d1);
     await linkAccount(db, 7, { id: 9, login: 'mridang' });
-    expect((await del()).status).toBe(204);
+    const response = await del();
+    expect(response.status).toBe(204);
     expect(
       made.raw.prepare('SELECT COUNT(*) AS n FROM github_links').get(),
     ).toEqual({
@@ -145,7 +147,8 @@ describe('DELETE /api/users/self/github', () => {
   it('forgets no one else’s account', async () => {
     const db = createDatabase(made.d1);
     await linkAccount(db, 8, { id: 10, login: 'other' });
-    expect((await del()).status).toBe(404);
+    const response = await del();
+    expect(response.status).toBe(404);
     expect(
       made.raw.prepare('SELECT COUNT(*) AS n FROM github_links').get(),
     ).toEqual({
@@ -155,8 +158,10 @@ describe('DELETE /api/users/self/github', () => {
 
   it('answers 401 without a session and 403 across sites', async () => {
     session.uid = null;
-    expect((await del()).status).toBe(401);
+    const refused = await del();
+    expect(refused.status).toBe(401);
     session.uid = 7;
-    expect((await del({ origin: 'https://evil.test' })).status).toBe(403);
+    const crossSite = await del({ origin: 'https://evil.test' });
+    expect(crossSite.status).toBe(403);
   });
 });

@@ -1,6 +1,6 @@
-import { createRequire } from 'node:module';
+import { createHTMLDocument } from '@hint/utils-dom';
 import { describe, expect, it } from '@jest/globals';
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import { technicalChecks } from '../../src/checks/technical.js';
 import type { AuditCheck } from '../../src/checks/types.js';
@@ -8,19 +8,13 @@ import {
   altCoverage,
   firstSkippedLevel,
   headingLevels,
-  type TechDocumentLike,
 } from '@mridang/webhint-hint-plumbline/dist/lib/technical/read.js';
 import {
   headingHierarchyFindings,
   imageAltCoverageFindings,
 } from '@mridang/webhint-hint-plumbline/dist/lib/technical/checks.js';
 
-// The same DOM parser webhint feeds its hints: the equivalence tests build the
-// "webhint side" of each check with it, exactly as the hint does.
-const require = createRequire(import.meta.url);
-const { createHTMLDocument } = require('@hint/utils-dom') as {
-  createHTMLDocument: (html: string, url: string) => TechDocumentLike;
-};
+// The same DOM parser webhint feeds its hints: the equivalence tests build the "webhint side" of each check with it, exactly as the hint does.
 
 /** One resource (besides the main document) to seed into the devtools log. */
 interface Resource {
@@ -39,7 +33,7 @@ interface Resource {
 function devtoolsLog(
   mainUrl: string,
   resources: readonly Resource[] = [],
-): LH.Artifacts['DevtoolsLog'] {
+): Artifacts['DevtoolsLog'] {
   const requestEvents = (
     id: string,
     url: string,
@@ -101,11 +95,11 @@ function devtoolsLog(
       ),
     ),
   ];
-  return events as unknown as LH.Artifacts['DevtoolsLog'];
+  return events as Artifacts['DevtoolsLog'];
 }
 
 /** Builds the artifact bag a technical check reads, over the given fields. */
-function artifacts(fields: Partial<LH.Artifacts>): LH.Artifacts {
+function artifacts(fields: Partial<Artifacts>): Artifacts {
   return {
     URL: {
       mainDocumentUrl: 'https://x.test/',
@@ -116,7 +110,7 @@ function artifacts(fields: Partial<LH.Artifacts>): LH.Artifacts {
     LinkElements: [],
     ImageElements: [],
     ...fields,
-  } as unknown as LH.Artifacts;
+  } as Artifacts;
 }
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */
@@ -220,7 +214,7 @@ describe('the technical-robots-meta-advanced check run()', () => {
     const findings = await robots.run(
       artifacts({
         MetaElements: [{ name: 'robots', content: 'index, follow' }],
-      } as Partial<LH.Artifacts>),
+      } as Partial<Artifacts>),
       context(),
     );
     expect(findings?.[0]?.severity).toBe('warning');
@@ -236,7 +230,7 @@ describe('the technical-robots-meta-advanced check run()', () => {
               'max-snippet:-1, max-image-preview:large, max-video-preview:-1',
           },
         ],
-      } as Partial<LH.Artifacts>),
+      } as Partial<Artifacts>),
       context(),
     );
     expect(findings).toEqual([]);
@@ -246,7 +240,7 @@ describe('the technical-robots-meta-advanced check run()', () => {
     const findings = await robots.run(
       artifacts({
         MetaElements: [{ name: 'robots', content: 'noindex' }],
-      } as Partial<LH.Artifacts>),
+      } as Partial<Artifacts>),
       context(),
     );
     expect(findings).toEqual([]);
@@ -260,7 +254,7 @@ describe('the technical-twitter-card-type check run()', () => {
     const findings = await twitter.run(
       artifacts({
         MetaElements: [{ name: 'twitter:card', content: 'bogus' }],
-      } as Partial<LH.Artifacts>),
+      } as Partial<Artifacts>),
       context(),
     );
     expect(findings?.[0]?.severity).toBe('error');
@@ -272,7 +266,7 @@ describe('the technical-twitter-card-type check run()', () => {
         MetaElements: [
           { name: 'twitter:card', content: 'summary_large_image' },
         ],
-      } as Partial<LH.Artifacts>),
+      } as Partial<Artifacts>),
       context(),
     );
     expect(findings).toEqual([]);
@@ -286,7 +280,7 @@ describe('the technical-canonical-invalid check run()', () => {
     const findings = await canonical.run(
       artifacts({
         LinkElements: [{ rel: 'canonical', href: null, hrefRaw: 'http://' }],
-      } as unknown as Partial<LH.Artifacts>),
+      } as Partial<Artifacts>),
       context(),
     );
     expect(findings?.[0]?.severity).toBe('error');
@@ -302,7 +296,7 @@ describe('the technical-canonical-invalid check run()', () => {
             hrefRaw: 'https://x.test/',
           },
         ],
-      } as unknown as Partial<LH.Artifacts>),
+      } as Partial<Artifacts>),
       context(),
     );
     expect(findings).toEqual([]);
@@ -322,7 +316,7 @@ describe('the technical-redirect-chain check run()', () => {
 
   it('is not applicable when the run captured no document', async () => {
     const findings = await redirect.run(
-      artifacts({ DevtoolsLog: [] as unknown as LH.Artifacts['DevtoolsLog'] }),
+      artifacts({ DevtoolsLog: [] as Artifacts['DevtoolsLog'] }),
       context(),
     );
     expect(findings).toBeNull();
@@ -336,9 +330,7 @@ describe('the technical-image-weight check run()', () => {
     const url = 'https://x.test/huge.png';
     const findings = await weight.run(
       artifacts({
-        ImageElements: [
-          { src: url },
-        ] as unknown as LH.Artifacts['ImageElements'],
+        ImageElements: [{ src: url }] as Artifacts['ImageElements'],
         DevtoolsLog: devtoolsLog('https://x.test/', [
           {
             url,
@@ -357,9 +349,7 @@ describe('the technical-image-weight check run()', () => {
     const url = 'https://x.test/small.png';
     const findings = await weight.run(
       artifacts({
-        ImageElements: [
-          { src: url },
-        ] as unknown as LH.Artifacts['ImageElements'],
+        ImageElements: [{ src: url }] as Artifacts['ImageElements'],
         DevtoolsLog: devtoolsLog('https://x.test/', [
           {
             url,

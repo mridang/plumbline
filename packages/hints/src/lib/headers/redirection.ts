@@ -81,6 +81,8 @@ export async function followRedirects(
         route.unreachable = true;
       } else if (isCertificateError(error)) {
         route.invalidCert = true;
+      } else {
+        // Any other failure after a redirect leaves the route as it is.
       }
       return route;
     }
@@ -116,8 +118,7 @@ export function analyzeRedirection(
   if (hops.length === 1) {
     return 'redirection-missing';
   }
-  const first = hops[0];
-  const second = hops[1];
+  const [first, second] = hops;
   if (hops.at(-1)?.url.protocol !== 'https:') {
     return 'redirection-not-to-https';
   }

@@ -1,11 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
-import * as node from 'node:os';
+import { tmpdir as nodeTmpdir } from 'node:os';
 
-import * as ours from '../../src/node/os.js';
+import { tmpdir } from '../../src/node/os.js';
 
 describe('#os under Node', () => {
-  it.each(['tmpdir'] as const)('is Node own %s', (name) => {
-    expect(ours[name]).toBeDefined();
-    expect(ours[name]).toBe(node[name]);
+  it('is Node own tmpdir', () => {
+    expect(tmpdir).toBeDefined();
+    expect(tmpdir).toBe(nodeTmpdir);
   });
 });

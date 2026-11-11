@@ -128,7 +128,9 @@ export function checkBimi(domain: string, txt: TxtLookup): Finding[] {
       severity: 'error',
       codeSnippet: `l=${logo}`,
     });
-  } else if (!/\.svg(\?|#|$)/iu.test(logo)) {
+  } else if (/\.svg(\?|#|$)/iu.test(logo)) {
+    // An HTTPS logo that points to an SVG file is acceptable.
+  } else {
     findings.push({
       message:
         'Your BIMI `l` logo URL must point to an SVG file (an SVG Tiny Portable/Secure logo).',

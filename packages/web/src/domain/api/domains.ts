@@ -115,7 +115,12 @@ export function createDomainsCollection(
         after,
         limit,
       ),
-    encode: ({ items, next }) => page(items.map(domainResource), next, PRIVATE),
+    encode: ({ items, next }) =>
+      page(
+        items.map((item) => domainResource(item)),
+        next,
+        PRIVATE,
+      ),
   });
 }
 
@@ -152,10 +157,11 @@ export function createDomainItem(
   resolver: CurrentUserResolver = requestCookieResolver,
 ): ApiController<DomainContext> {
   return new ApiController<DomainContext>({
-    context: async (request, route) => ({
-      uid: await liveUid(request, resolver),
-      id: (await route.params)?.['id'] ?? '',
-    }),
+    context: async (request, route) => {
+      const uid = await liveUid(request, resolver);
+      const params = await route.params;
+      return { uid, id: params?.['id'] ?? '' };
+    },
   })
     .on<null, Response>({
       method: 'GET',

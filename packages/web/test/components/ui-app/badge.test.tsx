@@ -41,13 +41,13 @@ describe('Badge', () => {
     expect(dotted).toContain('animate-pulse');
   });
 
-  it('can be set in the monospace face and carry a tooltip', () => {
+  it('can be set in the monospace face and carry a detail read out', () => {
     const out = html(
-      <Badge mono title="the full id">
+      <Badge mono detail="the full id">
         abc1234
       </Badge>,
     );
     expect(out).toContain('font-mono');
-    expect(out).toContain('title="the full id"');
+    expect(out).toContain('<span class="sr-only"> the full id</span>');
   });
 });

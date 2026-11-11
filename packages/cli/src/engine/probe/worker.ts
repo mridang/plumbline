@@ -13,7 +13,7 @@ import { assertScannable } from '../scannable.js';
 import type { ProbeClient } from './client.js';
 import { probeFetch } from './fetch.js';
 import { ensureRoots, withProbe } from './install.js';
-import { ProbeUnavailable } from './protocol.js';
+import { ProbeUnavailableError } from './protocol.js';
 
 /** Scan `address` with the checks running here and `client` doing the network work. */
 export async function runWorkerScan(
@@ -27,7 +27,7 @@ export async function runWorkerScan(
     runScanWith(
       {
         fetch: fetcher,
-        isFault: (error) => error instanceof ProbeUnavailable,
+        isFault: (error) => error instanceof ProbeUnavailableError,
         // The probe refuses an address that is not public when it connects.
         assertScannable: async (url) => {
           assertScannable(url);

@@ -68,9 +68,8 @@ describe('recordRun, the history columns and latestRuns', () => {
       skipped: 4,
       outcomes: '[{"id":"x"}]',
     });
-    expect((await latestRuns(db, 1, 'a.test'))[0]).not.toHaveProperty(
-      'outcomes',
-    );
+    const runs = await latestRuns(db, 1, 'a.test');
+    expect(runs[0]).not.toHaveProperty('outcomes');
   });
 
   it('stores a deployment with no counts or outcomes when none are given', async () => {
@@ -164,9 +163,8 @@ describe('dueSites', () => {
     await addDomain(db, 1, 'a.test', 'acme/a');
     await addDomain(db, 1, 'b.test', 'acme/b');
     await disableRepo(db, 1, 'acme/a');
-    expect((await dueSites(db, cutoff, 10)).map((s) => s.host)).toEqual([
-      'b.test',
-    ]);
+    const due = await dueSites(db, cutoff, 10);
+    expect(due.map((s) => s.host)).toEqual(['b.test']);
     await enableRepo(db, 'acme/a');
     expect(await dueSites(db, cutoff, 10)).toHaveLength(2);
   });
@@ -176,9 +174,8 @@ describe('dueSites', () => {
     await addDomain(db, 1, 'a.test', 'acme/a');
     await addDomain(db, 1, 'b.test', 'acme/b');
     await disableRepoByFile(db, 'acme/a');
-    expect((await dueSites(db, cutoff, 10)).map((s) => s.host)).toEqual([
-      'b.test',
-    ]);
+    const due = await dueSites(db, cutoff, 10);
+    expect(due.map((s) => s.host)).toEqual(['b.test']);
     await enableRepoByFile(db, 'acme/a');
     expect(await dueSites(db, cutoff, 10)).toHaveLength(2);
   });
@@ -208,8 +205,10 @@ describe('the fingerprint of the rules of a run', () => {
     const db = database();
     await recordRun(db, { ...run('a.test'), rules: 'abc123' });
     await recordRun(db, run('b.test'));
-    expect((await latestRuns(db, 1, 'a.test'))[0]?.rules).toBe('abc123');
-    expect((await latestRuns(db, 1, 'b.test'))[0]?.rules).toBeNull();
+    const aRuns = await latestRuns(db, 1, 'a.test');
+    expect(aRuns[0]?.rules).toBe('abc123');
+    const bRuns = await latestRuns(db, 1, 'b.test');
+    expect(bRuns[0]?.rules).toBeNull();
   });
 });
 
@@ -242,31 +241,32 @@ describe('the issue of a check: issueOf, saveIssue, issueNumbered and forgetIssu
     await saveIssue(db, SITE, A, 'seo-links', issue(2, 'open'));
     await saveIssue(db, SITE, 'b.test', 'seo-viewport', issue(3, 'open'));
     await saveIssue(db, 'acme/other', A, 'seo-viewport', issue(4, 'fixed'));
-    expect((await issueOf(db, SITE, A, 'seo-viewport'))?.number).toBe(1);
-    expect((await issueOf(db, SITE, A, 'seo-links'))?.number).toBe(2);
-    expect((await issueOf(db, SITE, 'b.test', 'seo-viewport'))?.number).toBe(3);
-    expect((await issueOf(db, 'acme/other', A, 'seo-viewport'))?.number).toBe(
-      4,
-    );
+    const viewport = await issueOf(db, SITE, A, 'seo-viewport');
+    expect(viewport?.number).toBe(1);
+    const links = await issueOf(db, SITE, A, 'seo-links');
+    expect(links?.number).toBe(2);
+    const hostViewport = await issueOf(db, SITE, 'b.test', 'seo-viewport');
+    expect(hostViewport?.number).toBe(3);
+    const otherRepo = await issueOf(db, 'acme/other', A, 'seo-viewport');
+    expect(otherRepo?.number).toBe(4);
     const ofHost = await issuesOfHost(db, SITE, A);
-    expect([...ofHost.keys()].toSorted()).toEqual([
-      'seo-links',
-      'seo-viewport',
-    ]);
+    expect(
+      [...ofHost.keys()].toSorted((a, b) => Number(a > b) - Number(a < b)),
+    ).toEqual(['seo-links', 'seo-viewport']);
   });
 
   it('replace the issue of a check when it gets another, and record each in the history', async () => {
     const db = database();
     await saveIssue(db, SITE, A, 'seo-viewport', issue(7, 'open'));
     await saveIssue(db, SITE, A, 'seo-viewport', issue(7, 'fixed'));
-    expect((await issueOf(db, SITE, A, 'seo-viewport'))?.state).toBe('fixed');
+    const fixed = await issueOf(db, SITE, A, 'seo-viewport');
+    expect(fixed?.state).toBe('fixed');
     await saveIssue(db, SITE, A, 'seo-viewport', issue(9, 'dismissed'));
     expect(await issueOf(db, SITE, A, 'seo-viewport')).toEqual(
       issue(9, 'dismissed'),
     );
-    expect(
-      (await historyOf(db, SITE, A)).map((i) => [i.number, i.state, i.checks]),
-    ).toEqual(
+    const history = await historyOf(db, SITE, A);
+    expect(history.map((i) => [i.number, i.state, i.checks])).toEqual(
       expect.arrayContaining([
         [7, 'fixed', ['seo-viewport']],
         [9, 'dismissed', ['seo-viewport']],
@@ -280,9 +280,8 @@ describe('the issue of a check: issueOf, saveIssue, issueNumbered and forgetIssu
     await saveIssue(db, SITE, A, 'seo-viewport', issue(1, 'open'));
     await saveIssue(db, SITE, A, 'seo-links', issue(3, 'fixed'));
     await saveIssue(db, 'acme/other', A, 'seo-links', issue(4, 'open'));
-    expect(
-      (await openIssuesOf(db, SITE)).map((i) => [i.host, i.check, i.number]),
-    ).toEqual([
+    const openIssues = await openIssuesOf(db, SITE);
+    expect(openIssues.map((i) => [i.host, i.check, i.number])).toEqual([
       [A, 'seo-viewport', 1],
       ['b.test', 'seo-links', 2],
     ]);
@@ -320,7 +319,8 @@ describe('the issue of a check: issueOf, saveIssue, issueNumbered and forgetIssu
         "INSERT INTO suite_check_issues (repo, host, check_id, number, state, signature) VALUES ('acme/site', 'a.test', 'x', 5, 'weird', '')",
       )
       .run();
-    expect((await issueOf(db, SITE, A, 'x'))?.state).toBe('open');
+    const found = await issueOf(db, SITE, A, 'x');
+    expect(found?.state).toBe('open');
   });
 });
 
@@ -332,7 +332,8 @@ describe('claimNewIssue and releaseIssueClaim', () => {
     const db = database();
     expect(await claimNewIssue(db, SITE, A, CHECK, then)).toBe(true);
     expect(await claimNewIssue(db, SITE, A, CHECK, then)).toBe(false);
-    expect((await issueOf(db, SITE, A, CHECK))?.state).toBe('opening');
+    const claimed = await issueOf(db, SITE, A, CHECK);
+    expect(claimed?.state).toBe('opening');
   });
 
   it('does not claim for a check that already has an issue', async () => {
@@ -344,7 +345,8 @@ describe('claimNewIssue and releaseIssueClaim', () => {
       reopens: 0,
     });
     expect(await claimNewIssue(db, SITE, A, CHECK, then)).toBe(false);
-    expect((await issueOf(db, SITE, A, CHECK))?.number).toBe(1);
+    const existing = await issueOf(db, SITE, A, CHECK);
+    expect(existing?.number).toBe(1);
   });
 
   it('keeps checks, hosts and repositories apart', async () => {
@@ -395,7 +397,8 @@ describe('claimNewIssue and releaseIssueClaim', () => {
       reopens: 0,
     });
     await releaseIssueClaim(db, SITE, A, CHECK);
-    expect((await issueOf(db, SITE, A, CHECK))?.number).toBe(3);
+    const kept = await issueOf(db, SITE, A, CHECK);
+    expect(kept?.number).toBe(3);
   });
 });
 
@@ -424,9 +427,8 @@ describe('the issues of the old kind, one for each host', () => {
       state: 'open',
     });
     expect(await legacyIssueOf(db, SITE, 'c.test')).toBeUndefined();
-    expect(
-      (await legacyIssuesOf(db, SITE)).map((i) => [i.host, i.number]),
-    ).toEqual([
+    const legacy = await legacyIssuesOf(db, SITE);
+    expect(legacy.map((i) => [i.host, i.number])).toEqual([
       [A, 12],
       ['b.test', 13],
     ]);

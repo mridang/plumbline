@@ -205,7 +205,7 @@ function IssueList({
 }: Readonly<{
   repository: string;
   issues: readonly IssueRef[];
-  now?: number | undefined;
+  now?: number;
 }>): ReactElement {
   return (
     <div>
@@ -253,7 +253,7 @@ export function HintRow({
   /** Called with the new state when the person opens or closes the check. */
   onToggle?: (open: boolean) => void;
   /** `owner/name` of the repository the issues are in. */
-  repository?: string | undefined;
+  repository?: string;
   /** The issues that report this check. */
   issues?: readonly IssueRef[];
   /** The server's clock when the page was made, in milliseconds, for the times shown. */

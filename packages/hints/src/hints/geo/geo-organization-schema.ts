@@ -41,7 +41,15 @@ export default defineHint({
       const [{ message, severity }] = findings;
       const reportSeverity =
         severity === 'error' ? Severity.error : Severity.warning;
-      if (!entity) {
+      if (entity) {
+        page.report(message, {
+          severity: reportSeverity,
+          // The block that holds the entity lacking sameAs.
+          element: page.document.querySelectorAll(
+            'script[type="application/ld+json" i]',
+          )[block],
+        });
+      } else {
         page.report(message, {
           severity: reportSeverity,
           element: page.document.querySelector('head'),
@@ -58,14 +66,6 @@ export default defineHint({
 }
 </script>`,
           codeLanguage: 'html',
-        });
-      } else {
-        page.report(message, {
-          severity: reportSeverity,
-          // The block that holds the entity lacking sameAs.
-          element: page.document.querySelectorAll(
-            'script[type="application/ld+json" i]',
-          )[block],
         });
       }
     });

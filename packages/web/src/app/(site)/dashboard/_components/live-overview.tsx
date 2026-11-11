@@ -82,7 +82,8 @@ export function LiveOverview({
     if (typeof EventSource === 'undefined') {
       return undefined;
     }
-    let source: EventSource | undefined;
+
+    let source: EventSource | null = null;
     let timer: ReturnType<typeof setTimeout> | undefined;
     // What the page was drawn with is read again by the server, not by a call
     // of ours: the page is the one place that knows how to read it.
@@ -114,7 +115,7 @@ export function LiveOverview({
         },
         close: () => {
           source?.close();
-          source = undefined;
+          source = null;
           setConnection('offline');
         },
       },
@@ -140,7 +141,7 @@ export function LiveOverview({
   const change = (next: Filter): void => {
     setFilter(next);
     // Keep the address in step so the view can be shared and survives a refresh.
-    window.history.replaceState(null, '', dashboardHref(view, next));
+    globalThis.history.replaceState(null, '', dashboardHref(view, next));
   };
   if (repos.length === 0) {
     return (
@@ -194,7 +195,8 @@ export function LiveOverview({
             ? 'No site is shown with these filters.'
             : `Nothing here has “${query.trim()}” in its repository or address.`}
         </EmptyState>
-      ) : view === 'cards' ? (
+      ) : null}
+      {rows.length > 0 && view === 'cards' ? (
         <SiteCards
           repos={groupRows(rows)}
           paused={pausedSet}
@@ -202,14 +204,15 @@ export function LiveOverview({
           fileOff={fileOffSet}
           now={now}
         />
-      ) : (
+      ) : null}
+      {rows.length > 0 && view !== 'cards' ? (
         <SitesTable
           rows={rows}
           sort={sort}
           onSort={(key) => setSort((current) => nextSort(current, key))}
           now={now}
         />
-      )}
+      ) : null}
     </div>
   );
 }

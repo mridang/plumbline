@@ -44,7 +44,9 @@ export function sections(): CheckSection[] {
     bySection.set(check.section, group);
   }
   return [...bySection.entries()]
-    .sort(([, a], [, b]) => a.order - b.order || compareText(a.title, b.title))
+    .toSorted(
+      ([, a], [, b]) => a.order - b.order || compareText(a.title, b.title),
+    )
     .map(([id, group]) => ({ id, title: group.title, checks: group.checks }));
 }
 
@@ -82,7 +84,6 @@ function Identity({
       {status?.sha && domain.repo ? (
         <a
           href={commitUrl(domain.repo, status.sha)}
-          title={`Deployed commit ${status.sha}`}
           className="focus-ring rounded-full"
         >
           <Badge mono>{status.sha.slice(0, 7)}</Badge>
@@ -114,7 +115,7 @@ export function SiteView({
 }: Readonly<{
   domain: Domain;
   /** How the site stands now, when the dashboard knows. */
-  status?: SiteStatus | undefined;
+  status?: SiteStatus;
   /** Its runs, newest first. */
   runs: readonly RunSummary[];
   /** The GitHub issues Plumbline opened for it, newest first. */
@@ -136,6 +137,66 @@ export function SiteView({
   const byCheck = issuesByCheck(issues);
   const repo = domain.repo ?? undefined;
   const settings = view === 'settings';
+  const savedPanel = (() => {
+    if (settings) {
+      return (
+        <div className="rounded-card border border-line bg-surface p-5 shadow-xs">
+          <h3 className="font-semibold">Checks that run for {domain.host}</h3>
+          <p className="mt-1 mb-5 max-w-2xl text-sm text-pretty text-muted">
+            With every check on, checks added to Plumbline later run too.
+          </p>
+          <CheckForm
+            domainId={domain.id}
+            sections={sections()}
+            enabled={enabled}
+          />
+        </div>
+      );
+    }
+    if (shown) {
+      return (
+        <>
+          <ScanResults
+            scan={savedScan(reportResource(shown))}
+            repository={repo}
+            issuesByCheck={byCheck}
+            now={now}
+            between={
+              <RunPicker
+                repo={domain.repo ?? ''}
+                host={domain.host}
+                runs={runs}
+                shownId={shown.id}
+                hrefFor={hrefFor}
+                now={now}
+              />
+            }
+          />
+          {repo ? (
+            <RulesNote repo={repo} checks={shown.outcomes.length} />
+          ) : null}
+        </>
+      );
+    }
+    return (
+      <>
+        <RunPicker
+          repo={domain.repo ?? ''}
+          host={domain.host}
+          runs={runs}
+          shownId={undefined}
+          hrefFor={hrefFor}
+          now={now}
+        />
+        <EmptyState title="No report yet">
+          Deploy the site or press Run checks: the first report covers the
+          checks your rules turn on.
+        </EmptyState>
+        {repo ? <RulesNote repo={repo} /> : null}
+      </>
+    );
+  })();
+
   return (
     <section aria-label={domain.host}>
       <SiteRunner
@@ -156,61 +217,7 @@ export function SiteView({
               : `Choose checks (${enabled.length}/${CHECKS.length})`}
           </Link>
         }
-        saved={
-          settings ? (
-            <div className="rounded-card border border-line bg-surface p-5 shadow-xs">
-              <h3 className="font-semibold">
-                Checks that run for {domain.host}
-              </h3>
-              <p className="mt-1 mb-5 max-w-2xl text-sm text-pretty text-muted">
-                With every check on, checks added to Plumbline later run too.
-              </p>
-              <CheckForm
-                domainId={domain.id}
-                sections={sections()}
-                enabled={enabled}
-              />
-            </div>
-          ) : shown ? (
-            <>
-              <ScanResults
-                scan={savedScan(reportResource(shown))}
-                repository={repo}
-                issuesByCheck={byCheck}
-                now={now}
-                between={
-                  <RunPicker
-                    repo={domain.repo ?? ''}
-                    host={domain.host}
-                    runs={runs}
-                    shownId={shown.id}
-                    hrefFor={hrefFor}
-                    now={now}
-                  />
-                }
-              />
-              {repo ? (
-                <RulesNote repo={repo} checks={shown.outcomes.length} />
-              ) : null}
-            </>
-          ) : (
-            <>
-              <RunPicker
-                repo={domain.repo ?? ''}
-                host={domain.host}
-                runs={runs}
-                shownId={undefined}
-                hrefFor={hrefFor}
-                now={now}
-              />
-              <EmptyState title="No report yet">
-                Deploy the site or press Run checks: the first report covers the
-                checks your rules turn on.
-              </EmptyState>
-              {repo ? <RulesNote repo={repo} /> : null}
-            </>
-          )
-        }
+        saved={savedPanel}
       />
     </section>
   );

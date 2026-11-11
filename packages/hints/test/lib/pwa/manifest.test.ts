@@ -35,7 +35,7 @@ describe('parseManifest', () => {
 describe('readString', () => {
   it('returns a trimmed non-empty string, else null', () => {
     expect(readString({ name: '  A  ' }, 'name')).toBe('A');
-    expect(readString({ name: '   ' }, 'name')).toBeNull();
+    expect(readString({ name: ' '.repeat(3) }, 'name')).toBeNull();
     expect(readString({ name: 5 }, 'name')).toBeNull();
     expect(readString({}, 'name')).toBeNull();
   });

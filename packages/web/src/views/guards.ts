@@ -14,14 +14,65 @@ function isCount(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0;
 }
 
-/** Whether the value carries the four counts of a report. */
-function isTally(value: unknown): boolean {
+/** Whether the record's four count fields are all counts. */
+function hasCounts(value: Readonly<Record<string, unknown>>): boolean {
   return (
-    isRecord(value) &&
     isCount(value['passed']) &&
     isCount(value['warned']) &&
     isCount(value['failed']) &&
     isCount(value['skipped'])
+  );
+}
+
+/** Whether the value carries the four counts of a report. */
+function isTally(value: unknown): boolean {
+  return isRecord(value) && hasCounts(value);
+}
+
+/** Whether the value is absent or a string. */
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || isString(value);
+}
+
+/** Whether the value is a problem status the report can show. */
+function isProblemStatus(value: unknown): boolean {
+  return value === 'failed' || value === 'warned';
+}
+
+/** Whether the record has the text fields of a report. */
+function hasReportText(value: Readonly<Record<string, unknown>>): boolean {
+  return (
+    isString(value['host']) &&
+    isString(value['url']) &&
+    isString(value['created_at']) &&
+    isString(value['link'])
+  );
+}
+
+/** Whether the value is a finding: a message and the resource it concerns. */
+function isFinding(value: unknown): boolean {
+  return (
+    isRecord(value) && isString(value['message']) && isString(value['resource'])
+  );
+}
+
+/** Whether the record has the id, name and optional fields of a problem. */
+function hasProblemText(value: Readonly<Record<string, unknown>>): boolean {
+  return (
+    isString(value['id']) &&
+    isString(value['name']) &&
+    isOptionalString(value['fixer']) &&
+    isOptionalString(value['reference'])
+  );
+}
+
+/** Whether the value is a problem the report lists, with its findings. */
+function isProblem(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasProblemText(value) &&
+    isProblemStatus(value['status']) &&
+    everyEntry(value['findings'], isFinding)
   );
 }
 
@@ -30,27 +81,24 @@ export function isReportData(value: unknown): value is ReportData {
   return (
     isRecord(value) &&
     isTally(value) &&
-    isString(value['host']) &&
-    isString(value['url']) &&
-    isString(value['created_at']) &&
-    isString(value['link']) &&
-    everyEntry(
-      value['problems'],
-      (entry) =>
-        isRecord(entry) &&
-        isString(entry['id']) &&
-        isString(entry['name']) &&
-        (entry['fixer'] === undefined || isString(entry['fixer'])) &&
-        (entry['reference'] === undefined || isString(entry['reference'])) &&
-        (entry['status'] === 'failed' || entry['status'] === 'warned') &&
-        everyEntry(
-          entry['findings'],
-          (finding) =>
-            isRecord(finding) &&
-            isString(finding['message']) &&
-            isString(finding['resource']),
-        ),
-    )
+    hasReportText(value) &&
+    everyEntry(value['problems'], isProblem)
+  );
+}
+
+/** Whether the record has the id, host and check count of a domain. */
+function hasDomainFields(value: Readonly<Record<string, unknown>>): boolean {
+  return (
+    isString(value['id']) && isString(value['host']) && isCount(value['checks'])
+  );
+}
+
+/** Whether the value is a domain the list shows, with its latest tally. */
+function isDomain(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasDomainFields(value) &&
+    (value['latest'] === undefined || isTally(value['latest']))
   );
 }
 
@@ -60,14 +108,6 @@ export function isDomainListData(value: unknown): value is DomainListData {
     isRecord(value) &&
     isCount(value['total_checks']) &&
     isString(value['link']) &&
-    everyEntry(
-      value['domains'],
-      (entry) =>
-        isRecord(entry) &&
-        isString(entry['id']) &&
-        isString(entry['host']) &&
-        isCount(entry['checks']) &&
-        (entry['latest'] === undefined || isTally(entry['latest'])),
-    )
+    everyEntry(value['domains'], isDomain)
   );
 }

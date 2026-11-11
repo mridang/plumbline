@@ -75,7 +75,7 @@ export function Toolbar({
           {[undefined, ...TIERS].map((tier) => (
             <Link
               key={tier ?? 'all'}
-              href={`${path}${queryOf(view, { tier, rule: undefined })}`}
+              href={`${path}${queryOf(view, { tier, rule: '' })}`}
               aria-current={view.tier === tier ? 'true' : undefined}
               className={segment(view.tier === tier)}
             >

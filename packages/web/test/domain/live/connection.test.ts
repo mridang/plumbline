@@ -29,7 +29,8 @@ function fake(visible = true) {
       return () => show.splice(show.indexOf(handler), 1);
     },
     setTimeout: (handler, ms) => {
-      const id = next++;
+      const id = next;
+      next += 1;
       timers.set(id, { at: state.now + ms, handler });
       return id;
     },
@@ -53,7 +54,7 @@ function fake(visible = true) {
     },
     advance(ms: number) {
       state.now += ms;
-      for (const [id, timer] of [...timers]) {
+      for (const [id, timer] of timers) {
         if (timer.at <= state.now) {
           timers.delete(id);
           timer.handler();

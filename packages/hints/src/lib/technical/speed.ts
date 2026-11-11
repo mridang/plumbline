@@ -113,7 +113,7 @@ export function assetFindings(counts: AssetCounts): Finding[] {
 /** How efficient an image URL's format is, from its file extension. */
 export function imageFormat(url: string): 'modern' | 'legacy' | 'other' {
   const extension = /\.([a-z0-9]+)(?:[?#]|$)/i.exec(url)?.[1]?.toLowerCase();
-  if (extension === 'webp' || extension === 'avif' || extension === 'jxl') {
+  if (['webp', 'avif', 'jxl'].includes(extension ?? '')) {
     return 'modern';
   }
   if (['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(extension ?? '')) {
@@ -137,11 +137,13 @@ export function imageFormatFindings(
   let legacy = 0;
   let modern = 0;
   for (const image of images) {
-    const formats = image.urls.map(imageFormat);
-    if (image.hasModernSource || formats.includes('modern')) {
+    const formats = new Set(image.urls.map((url) => imageFormat(url)));
+    if (image.hasModernSource || formats.has('modern')) {
       modern += 1;
-    } else if (formats.includes('legacy')) {
+    } else if (formats.has('legacy')) {
       legacy += 1;
+    } else {
+      // Images with no recognised raster format are not counted.
     }
   }
   if (legacy === 0) {

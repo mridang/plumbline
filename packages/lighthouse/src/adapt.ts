@@ -60,7 +60,7 @@ export function findMainDocument(
       (record) => record.url === mainDocumentUrl,
     );
     if (matching.length > 0) {
-      return matching[matching.length - 1] ?? null;
+      return matching.at(-1) ?? null;
     }
   }
   return documents[0] ?? records[0] ?? null;
@@ -107,16 +107,21 @@ function metaDocument(
   const elements = metaElements.map((meta) => ({
     getAttribute(attribute: string): string | null {
       switch (attribute.toLowerCase()) {
-        case 'property':
+        case 'property': {
           return meta.property ?? null;
-        case 'name':
+        }
+        case 'name': {
           return meta.name ?? null;
-        case 'content':
+        }
+        case 'content': {
           return meta.content ?? null;
-        case 'http-equiv':
+        }
+        case 'http-equiv': {
           return meta.httpEquiv ?? null;
-        default:
+        }
+        default: {
           return null;
+        }
       }
     },
   }));

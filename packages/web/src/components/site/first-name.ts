@@ -5,6 +5,6 @@
 export function firstNameOf(
   person: Readonly<{ name: string | null; email: string }>,
 ): string {
-  const first = person.name?.trim().split(/\s+/)[0];
-  return first || person.email.split('@')[0] || person.email;
+  const first = person.name?.trim().split(/\s+/, 1)[0];
+  return first || person.email.split('@', 1)[0] || person.email;
 }

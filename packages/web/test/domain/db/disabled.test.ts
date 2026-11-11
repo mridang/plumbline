@@ -53,10 +53,11 @@ describe('turning checks off', () => {
     await disableRepo(db, 2, 'o/mine');
     await disableRepo(db, 2, 'o/shared');
     await disableRepo(db, 2, 'o/private');
-    expect([...(await disabledRepos(db, 1))].toSorted()).toEqual([
-      'o/mine',
-      'o/shared',
-    ]);
+    expect(
+      [...(await disabledRepos(db, 1))].toSorted(
+        (a, b) => Number(a > b) - Number(a < b),
+      ),
+    ).toEqual(['o/mine', 'o/shared']);
   });
 
   it('stops the sites of the repository showing as checking', async () => {
@@ -99,8 +100,8 @@ describe('canSeeRepo', () => {
 });
 
 /** A repository as the analysis of an installation stores it. */
-const analysed = (full_name: string) => ({
-  full_name,
+const analysed = (fullName: string) => ({
+  full_name: fullName,
   default_branch: 'main',
   hosts: [],
 });
@@ -154,10 +155,11 @@ describe('manageableRepos', () => {
     await saveInstallation(db, 2, 20, 'other');
     await saveRepos(db, 1, 10, [analysed('acme/a'), analysed('acme/b')]);
     await saveRepos(db, 2, 20, [analysed('other/c')]);
-    expect([...(await manageableRepos(db, 1))].toSorted()).toEqual([
-      'acme/a',
-      'acme/b',
-    ]);
+    expect(
+      [...(await manageableRepos(db, 1))].toSorted(
+        (a, b) => Number(a > b) - Number(a < b),
+      ),
+    ).toEqual(['acme/a', 'acme/b']);
     expect([...(await manageableRepos(db, 3))]).toEqual([]);
   });
 });
@@ -199,13 +201,15 @@ describe('turning checks off in plumbline.yaml', () => {
     for (const repo of ['o/mine', 'o/shared', 'o/private']) {
       await disableRepoByFile(db, repo);
     }
-    expect([...(await fileDisabledRepos(db, 1))].toSorted()).toEqual([
-      'o/mine',
-      'o/shared',
-    ]);
-    expect([...(await disabledRepos(db, 1))].toSorted()).toEqual([
-      'o/mine',
-      'o/shared',
-    ]);
+    expect(
+      [...(await fileDisabledRepos(db, 1))].toSorted(
+        (a, b) => Number(a > b) - Number(a < b),
+      ),
+    ).toEqual(['o/mine', 'o/shared']);
+    expect(
+      [...(await disabledRepos(db, 1))].toSorted(
+        (a, b) => Number(a > b) - Number(a < b),
+      ),
+    ).toEqual(['o/mine', 'o/shared']);
   });
 });

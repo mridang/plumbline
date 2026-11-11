@@ -66,7 +66,7 @@ describe('mail-dane', () => {
     expect(
       await run({
         authenticated: true,
-        data: [`\\# ${hex.length / 2} ${hex}`],
+        data: [String.raw`\# ${hex.length / 2} ${hex}`],
       }),
     ).toEqual([]);
   });

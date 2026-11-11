@@ -8,8 +8,8 @@ The checks are [webhint](https://webhint.io) hints, and everything else in this 
 | ----------------------------------------------------------------------- | ------------------------------------------------------------ |
 | [`@mridang/webhint-hint-plumbline`](packages/hints/README.md)           | The hints, the group presets and the full list of checks     |
 | [`@mridang/webhint-formatter-plumbline`](packages/formatter/README.md)  | An HTML report for webhint, sectioned and filterable         |
-| [`@mridang/lighthouse-plugin-plumbline`](packages/lighthouse/README.md) | A Lighthouse plugin with the checks Lighthouse can run       |
-| [`@mridang/plumbline`](packages/cli/README.md)                          | The `plumbline` CLI, which runs every check                  |
+| [`@mridang/lighthouse-plugin-plumbline`](packages/lighthouse/readme.md) | A Lighthouse plugin with the checks Lighthouse can run       |
+| [`@mridang/plumbline`](packages/cli/readme.md)                          | The `plumbline` CLI, which runs every check                  |
 | [`@mridang/plumbline-skills`](packages/skills/README.md)                | The agent skill and the Claude Code plugin that run the CLI  |
 | [`@mridang/plumbline-docker`](packages/docker/README.md)                | A scan server, shipped only as the `mridang/plumbline` image |
 | [`@mridang/plumbline-web`](packages/web/README.md)                      | The plumbline website, on Cloudflare Workers (private)       |
@@ -34,7 +34,7 @@ npx @mridang/plumbline scan example.com --group tls,email --fail-on warning
 npx @mridang/plumbline checks --group owasp
 ```
 
-It runs every check from Node with a real Chrome, exits 1 when a finding is at or above `--fail-on` so it can gate a CI job, and prints text, JSON or the HTML report. A Chrome-family browser must be installed. See [`packages/cli`](packages/cli/README.md).
+It runs every check from Node with a real Chrome, exits 1 when a finding is at or above `--fail-on` so it can gate a CI job, and prints text, JSON or the HTML report. A Chrome-family browser must be installed. See [`packages/cli`](packages/cli/readme.md).
 
 ### With a coding agent
 
@@ -105,7 +105,7 @@ npm install --save-dev lighthouse @mridang/lighthouse-plugin-plumbline
 npx lighthouse https://example.com/ --plugins=@mridang/lighthouse-plugin-plumbline
 ```
 
-The plugin adds a "Webhint extra" category with the 143 checks whose data Lighthouse already gathers (headers, Open Graph, SEO, structured data, privacy). See [`packages/lighthouse`](packages/lighthouse/README.md).
+The plugin adds a "Webhint extra" category with the 143 checks whose data Lighthouse already gathers (headers, Open Graph, SEO, structured data, privacy). See [`packages/lighthouse`](packages/lighthouse/readme.md).
 
 ### With Docker
 

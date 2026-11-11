@@ -4,7 +4,8 @@ import type { ReactElement } from 'react';
 import { html } from '../../../../components/render';
 
 /** What the page asked Next to redirect to; `redirect` throws, as the real one does. */
-class Redirected extends Error {
+class RedirectedError extends Error {
+  override name = 'RedirectedError';
   constructor(readonly to: string) {
     super(`redirected to ${to}`);
   }
@@ -15,7 +16,7 @@ const state: { user: { id: number } | null } = { user: null };
 
 jest.unstable_mockModule('next/navigation', () => ({
   redirect: (to: string) => {
-    throw new Redirected(to);
+    throw new RedirectedError(to);
   },
 }));
 jest.unstable_mockModule('next/headers', () => ({
@@ -52,7 +53,7 @@ describe('ConnectPage', () => {
   it('sends someone not signed in to sign in and back here', async () => {
     state.user = null;
     await expect(ConnectPage()).rejects.toEqual(
-      new Redirected('/auth/login?returnTo=%2Fconnect'),
+      new RedirectedError('/auth/login?returnTo=%2Fconnect'),
     );
   });
 

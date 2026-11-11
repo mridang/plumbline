@@ -53,7 +53,9 @@ describe('site settings', () => {
   });
 
   it('lets the icons be cached for a day', () => {
-    expect([...RARELY_CHANGING].sort()).toEqual(['/favicon.ico', '/icon.svg']);
+    expect(
+      [...RARELY_CHANGING].toSorted((a, b) => Number(a > b) - Number(a < b)),
+    ).toEqual(['/favicon.ico', '/icon.svg']);
   });
 
   it("lets pages load the signed-in person's Google profile picture, and nothing else outside", () => {

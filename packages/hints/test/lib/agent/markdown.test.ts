@@ -18,13 +18,16 @@ describe('checkMarkdownNegotiation', () => {
     const env = fakeEnv({
       '/ text/markdown': { contentType: 'text/markdown' },
     });
-    expect((await checkMarkdownNegotiation(env)).passed).toBe(true);
+    const r = await checkMarkdownNegotiation(env);
+    expect(r.passed).toBe(true);
   });
   it('fails when HTML is returned', async () => {
     const env = fakeEnv({ '/ text/markdown': { contentType: 'text/html' } });
-    expect((await checkMarkdownNegotiation(env)).passed).toBe(false);
+    const r = await checkMarkdownNegotiation(env);
+    expect(r.passed).toBe(false);
   });
   it('fails when unreachable', async () => {
-    expect((await checkMarkdownNegotiation(fakeEnv())).passed).toBe(false);
+    const r = await checkMarkdownNegotiation(fakeEnv());
+    expect(r.passed).toBe(false);
   });
 });

@@ -72,8 +72,10 @@ const call = (
 
 describe('PUT /api/users/self/repositories/disabled/{owner}/{repo}', () => {
   it('turns the checks off with 204, also the second time, and closes issues once', async () => {
-    expect((await call('PUT', 'acme', 'site')).status).toBe(204);
-    expect((await call('PUT', 'acme', 'site')).status).toBe(204);
+    const first = await call('PUT', 'acme', 'site');
+    expect(first.status).toBe(204);
+    const second = await call('PUT', 'acme', 'site');
+    expect(second.status).toBe(204);
     expect(await isRepoDisabled(db, 'acme/site')).toBe(true);
     expect(jobs).toHaveLength(1);
     await Promise.all(jobs);
@@ -104,17 +106,19 @@ describe('PUT /api/users/self/repositories/disabled/{owner}/{repo}', () => {
   });
 
   it('answers 404 for a name that cannot be a repository', async () => {
-    expect((await call('PUT', 'acme', '..')).status).toBe(404);
+    const res = await call('PUT', 'acme', '..');
+    expect(res.status).toBe(404);
   });
 
   it('answers 401 without a session and 403 across sites', async () => {
     session.uid = null;
-    expect((await call('PUT', 'acme', 'site')).status).toBe(401);
+    const signedOut = await call('PUT', 'acme', 'site');
+    expect(signedOut.status).toBe(401);
     session.uid = 7;
-    expect(
-      (await call('PUT', 'acme', 'site', { origin: 'https://evil.test' }))
-        .status,
-    ).toBe(403);
+    const crossSite = await call('PUT', 'acme', 'site', {
+      origin: 'https://evil.test',
+    });
+    expect(crossSite.status).toBe(403);
     expect(await isRepoDisabled(db, 'acme/site')).toBe(false);
   });
 });
@@ -122,17 +126,20 @@ describe('PUT /api/users/self/repositories/disabled/{owner}/{repo}', () => {
 describe('DELETE /api/users/self/repositories/disabled/{owner}/{repo}', () => {
   it('turns the checks on with 204', async () => {
     await disableRepo(db, 7, 'acme/site');
-    expect((await call('DELETE', 'acme', 'site')).status).toBe(204);
+    const res = await call('DELETE', 'acme', 'site');
+    expect(res.status).toBe(204);
     expect(await isRepoDisabled(db, 'acme/site')).toBe(false);
   });
 
   it('answers 404 when the checks were not off', async () => {
-    expect((await call('DELETE', 'acme', 'site')).status).toBe(404);
+    const res = await call('DELETE', 'acme', 'site');
+    expect(res.status).toBe(404);
   });
 
   it('answers 404 for a repository the person cannot see, and leaves it off', async () => {
     await disableRepo(db, 9, 'acme/other');
-    expect((await call('DELETE', 'acme', 'other')).status).toBe(404);
+    const res = await call('DELETE', 'acme', 'other');
+    expect(res.status).toBe(404);
     expect(await isRepoDisabled(db, 'acme/other')).toBe(true);
   });
 
@@ -147,11 +154,13 @@ describe('DELETE /api/users/self/repositories/disabled/{owner}/{repo}', () => {
   });
 
   it('answers 403 before 404 for a repository the person sees but did not install, even when its checks are on', async () => {
-    expect((await call('DELETE', 'acme', 'theirs')).status).toBe(403);
+    const res = await call('DELETE', 'acme', 'theirs');
+    expect(res.status).toBe(403);
   });
 
   it('answers 401 without a session', async () => {
     session.uid = null;
-    expect((await call('DELETE', 'acme', 'site')).status).toBe(401);
+    const res = await call('DELETE', 'acme', 'site');
+    expect(res.status).toBe(401);
   });
 });

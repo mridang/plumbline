@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { GROUPS } from '../src/core/groups.js';
 import {
   buildPresets,
@@ -10,13 +11,17 @@ import {
 import { PLACEMENT, SECTION_DEFS } from '../src/core/taxonomy-data.js';
 import registry, { hintsByGroup } from '../src/index.js';
 
-const CONFIGS = join(import.meta.dirname, '..', 'configs');
+const CONFIGS = fileURLToPath(new URL('../configs', import.meta.url));
+
+/** Returns an alphabetically sorted copy of the strings. */
+const sorted = (values: readonly string[]): string[] =>
+  values.toSorted((a, b) => a.localeCompare(b));
 
 describe('buildPresets', () => {
   const presets = buildPresets(hintsByGroup);
 
   it('creates a preset for every group', () => {
-    expect(Object.keys(presets).sort()).toEqual([...GROUPS].sort());
+    expect(sorted(Object.keys(presets))).toEqual(sorted([...GROUPS]));
   });
 
   it('names hints by their package id and keeps their own severity', () => {
@@ -32,28 +37,30 @@ describe('buildPresets', () => {
 
   it('lists the hints of a group sorted', () => {
     const ids = Object.keys(presets.owasp.hints);
-    expect(ids).toEqual([...ids].sort());
+    expect(ids).toEqual(sorted(ids));
   });
 
   it('only lists hints that belong to the group', () => {
     for (const group of GROUPS) {
       const expected = hintsByGroup[group].map((id) => `${PACKAGE_NAME}/${id}`);
-      expect(Object.keys(presets[group].hints).sort()).toEqual(expected.sort());
+      expect(sorted(Object.keys(presets[group].hints))).toEqual(
+        sorted(expected),
+      );
     }
   });
 });
 
 describe('configs/*.json', () => {
-  it('matches the registry (run with UPDATE_CONFIGS=1 to rewrite)', () => {
+  it('matches the registry (run with UPDATE_CONFIGS=1 to rewrite)', async () => {
     const presets = buildPresets(hintsByGroup);
     for (const group of GROUPS) {
-      const file = join(CONFIGS, `${group}.json`);
+      const file = path.join(CONFIGS, `${group}.json`);
       const wanted = `${JSON.stringify(presets[group], null, 2)}\n`;
       if (process.env.UPDATE_CONFIGS === '1') {
-        mkdirSync(CONFIGS, { recursive: true });
-        writeFileSync(file, wanted);
+        await mkdir(CONFIGS, { recursive: true });
+        await writeFile(file, wanted);
       }
-      expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual(presets[group]);
+      expect(JSON.parse(await readFile(file, 'utf8'))).toEqual(presets[group]);
     }
   });
 });
@@ -67,18 +74,18 @@ describe('buildTaxonomyPresets', () => {
     );
 
   it('makes the tier presets from the tiers of the placements', () => {
-    expect(names('plumbline-recommended').toSorted()).toEqual(
-      ids
-        .filter(
+    expect(sorted(names('plumbline-recommended'))).toEqual(
+      sorted(
+        ids.filter(
           (id) =>
             PLACEMENT[id]!.tier === 'recommended' &&
             SECTION_DEFS.find((s) => s.id === PLACEMENT[id]!.section)
               ?.defaultOn !== false,
-        )
-        .toSorted(),
+        ),
+      ),
     );
-    expect(names('plumbline-experimental').toSorted()).toEqual(
-      ids.filter((id) => PLACEMENT[id]!.tier === 'experimental').toSorted(),
+    expect(sorted(names('plumbline-experimental'))).toEqual(
+      sorted(ids.filter((id) => PLACEMENT[id]!.tier === 'experimental')),
     );
     expect(names('plumbline-all')).toHaveLength(ids.length);
   });
@@ -105,14 +112,14 @@ describe('buildTaxonomyPresets', () => {
 });
 
 describe('configs/*.json of the taxonomy', () => {
-  it('matches the registry (run with UPDATE_CONFIGS=1 to rewrite)', () => {
+  it('matches the registry (run with UPDATE_CONFIGS=1 to rewrite)', async () => {
     const presets = buildTaxonomyPresets(Object.keys(registry));
     for (const [name, preset] of Object.entries(presets)) {
-      const file = join(CONFIGS, `${name}.json`);
+      const file = path.join(CONFIGS, `${name}.json`);
       if (process.env.UPDATE_CONFIGS === '1') {
-        writeFileSync(file, `${JSON.stringify(preset, null, 2)}\n`);
+        await writeFile(file, `${JSON.stringify(preset, null, 2)}\n`);
       }
-      expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual(preset);
+      expect(JSON.parse(await readFile(file, 'utf8'))).toEqual(preset);
     }
   });
 });

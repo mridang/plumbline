@@ -59,7 +59,7 @@ function toLink(element: ElementLike): DiscoveredLink {
 export function getFeedLinks(doc: DocumentLike): DiscoveredLink[] {
   return doc
     .querySelectorAll('link[rel~="alternate" i][type]')
-    .map(toLink)
+    .map((element) => toLink(element))
     .filter((link) => (FEED_TYPES as readonly string[]).includes(link.type));
 }
 
@@ -70,7 +70,7 @@ export function getFeedLinks(doc: DocumentLike): DiscoveredLink[] {
 export function getOembedLinks(doc: DocumentLike): DiscoveredLink[] {
   return doc
     .querySelectorAll('link[rel~="alternate" i][type]')
-    .map(toLink)
+    .map((element) => toLink(element))
     .filter((link) => (OEMBED_TYPES as readonly string[]).includes(link.type));
 }
 
@@ -81,6 +81,6 @@ export function getOembedLinks(doc: DocumentLike): DiscoveredLink[] {
 export function getOpenSearchLinks(doc: DocumentLike): DiscoveredLink[] {
   return doc
     .querySelectorAll('link[rel~="search" i][type]')
-    .map(toLink)
+    .map((element) => toLink(element))
     .filter((link) => link.type === OPENSEARCH_TYPE);
 }

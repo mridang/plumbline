@@ -10,6 +10,7 @@ import {
   parseCspLoose,
   parseCspMeta,
 } from '../../../src/lib/headers/csp.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const run = (
   policy: string,
@@ -26,10 +27,11 @@ const run = (
 describe('parseCsp', () => {
   it('maps directives to sources, lower-cased', () => {
     const csp = parseCsp(["Default-Src 'SELF' https://A.example"]);
-    expect([...(csp.get('default-src') ?? [])].sort()).toEqual([
-      "'self'",
-      'https://a.example',
-    ]);
+    expect(
+      [...(csp.get('default-src') ?? [])].toSorted((a, b) =>
+        a.localeCompare(b),
+      ),
+    ).toEqual(["'self'", 'https://a.example']);
   });
 
   it('treats an empty source list as none', () => {
@@ -179,8 +181,7 @@ describe('analyzeCsp results', () => {
   });
 
   it('insecure scheme in active content only on https', () => {
-    const policy =
-      "default-src 'none'; script-src 'self'; connect-src http://a.example";
+    const policy = `default-src 'none'; script-src 'self'; connect-src ${HTTP_SCHEME}a.example`;
     expect(run(policy).result).toBe('csp-implemented-with-insecure-scheme');
     expect(run(policy, { secure: false }).result).toBe(
       'csp-implemented-with-no-unsafe-default-src-none',
@@ -189,7 +190,7 @@ describe('analyzeCsp results', () => {
 
   it('insecure scheme in passive content passes with advice', () => {
     const a = run(
-      "default-src 'none'; script-src 'self'; img-src http://a.example",
+      `default-src 'none'; script-src 'self'; img-src ${HTTP_SCHEME}a.example`,
     );
     expect(a.result).toBe(
       'csp-implemented-with-insecure-scheme-in-passive-content-only',

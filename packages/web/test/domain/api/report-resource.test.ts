@@ -60,12 +60,14 @@ describe('parseReportInput', () => {
 
   it('takes an address on a subdomain', () => {
     expect(
-      parseReportInput(body({ url: 'http://www.example.com/x' }), HOST).ok,
+      parseReportInput(body({ url: 'https://www.example.com/x' }), HOST).ok,
     ).toBe(true);
   });
 
   it('requires an address', () => {
-    expect(errorsOf(body({ url: undefined }))).toEqual(['url: required.']);
+    const withoutUrl: Record<string, unknown> = body();
+    delete withoutUrl['url'];
+    expect(errorsOf(withoutUrl)).toEqual(['url: required.']);
   });
 
   it('refuses text that is not an address', () => {
@@ -183,7 +185,9 @@ describe('parseReportInput', () => {
     );
     expect(parsed.ok && parsed.value.outcomes[0]?.findings).toEqual([finding]);
   });
+});
 
+describe('parseReportInput, the findings of a check', () => {
   it('keeps the detail of a finding and drops a position that is not a whole number', () => {
     const detailed = {
       ...finding,

@@ -4,6 +4,21 @@ import type { DnsClient } from '../../core/dns.js';
 const TXT = 16;
 
 /**
+ * Decodes the character at `index` of a quoted string, which is a backslash
+ * escape (`\X` or `\DDD`) or a plain character. Returns the text and its width.
+ */
+function decodeChar(text: string, index: number): [string, number] {
+  if (text[index] !== '\\' || index + 1 >= text.length) {
+    return [text[index], 1];
+  }
+  const decimal = /^\d{3}/u.exec(text.slice(index + 1));
+  if (decimal) {
+    return [String.fromCodePoint(Number(decimal[0])), 4];
+  }
+  return [text[index + 1], 2];
+}
+
+/**
  * Turns the presentation form of a TXT record into its text. A record is one
  * or more quoted character strings that are concatenated without a
  * separator (RFC 7208 section 3.3); an unquoted value is returned as is.
@@ -23,19 +38,9 @@ export function decodeTxt(data: string): string {
     }
     index += 1;
     while (index < trimmed.length && trimmed[index] !== '"') {
-      if (trimmed[index] === '\\' && index + 1 < trimmed.length) {
-        const decimal = /^\d{3}/u.exec(trimmed.slice(index + 1));
-        if (decimal) {
-          result += String.fromCharCode(Number(decimal[0]));
-          index += 4;
-        } else {
-          result += trimmed[index + 1];
-          index += 2;
-        }
-      } else {
-        result += trimmed[index];
-        index += 1;
-      }
+      const [char, width] = decodeChar(trimmed, index);
+      result += char;
+      index += width;
     }
     // Skip the closing quote.
     index += 1;

@@ -86,9 +86,8 @@ describe('UserHub', () => {
 
   it('refuses a request that names no person', async () => {
     const { hub } = setup();
-    expect((await hub.fetch(new Request('https://hub.internal/'))).status).toBe(
-      400,
-    );
+    const res = await hub.fetch(new Request('https://hub.internal/'));
+    expect(res.status).toBe(400);
   });
 
   it('replays what was missed after the resume position, then streams new events', async () => {
@@ -128,7 +127,8 @@ describe('UserHub', () => {
     append(2, 2);
     await hub.notify(PERSON);
     await hub.notify(PERSON);
-    expect((await readSome(response, 1)).match(/^id: /gm)).toHaveLength(1);
+    const text = await readSome(response, 1);
+    expect(text.match(/^id: /gm)).toHaveLength(1);
   });
 
   it('does not stream another person’s events', async () => {

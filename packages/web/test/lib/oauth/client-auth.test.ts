@@ -29,11 +29,14 @@ const AUTH = { method: 'private_key_jwt', jwksUri: JWKS_URI } as const;
 let privateKey: CryptoKey;
 let otherKey: CryptoKey;
 let jwks: { keys: JWK[] };
+// A claim the assertion leaves out: its key stays present, so an override can drop it.
+let notProvided: undefined;
 
 beforeAll(async () => {
   const pair = await generateKeyPair('RS256', { extractable: true });
   privateKey = pair.privateKey;
-  otherKey = (await generateKeyPair('RS256')).privateKey;
+  const other = await generateKeyPair('RS256');
+  otherKey = other.privateKey;
   jwks = {
     keys: [{ ...(await exportJWK(pair.publicKey)), kid: 'k1', alg: 'RS256' }],
   };
@@ -143,8 +146,8 @@ describe('verifyClientAssertion', () => {
     ['for another audience', () => sign({ aud: 'https://evil.example/token' })],
     ['expired', () => sign({ exp: NOW - 120 })],
     ['not yet valid', () => sign({ nbf: NOW + 600 })],
-    ['without an expiry', () => sign({ exp: undefined })],
-    ['without a jti', () => sign({ jti: undefined })],
+    ['without an expiry', () => sign({ exp: notProvided })],
+    ['without a jti', () => sign({ jti: notProvided })],
     ['with an empty jti', () => sign({ jti: '' })],
     ['with a jti that is too long', () => sign({ jti: 'j'.repeat(300) })],
     [
@@ -193,7 +196,8 @@ describe('verifyClientAssertion', () => {
     const d = deps();
     const assertion = await sign();
     expect(await verify(assertion, d)).toBeUndefined();
-    expect((await verify(assertion, d))?.description).toMatch(/already used/);
+    const replay = await verify(assertion, d);
+    expect(replay?.description).toMatch(/already used/);
     expect(await verify(await sign({ jti: 'jti-2' }), d)).toBeUndefined();
   });
 

@@ -21,7 +21,8 @@ export default defineHint({
       if (!host) {
         return;
       }
-      if ((await ipv6Addresses(host)).length === 0) {
+      const addresses = await ipv6Addresses(host);
+      if (addresses.length === 0) {
         site.report(
           site.url.href,
           'None of your web servers has an IPv6 address.',

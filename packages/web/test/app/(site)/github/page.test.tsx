@@ -20,7 +20,8 @@ import { GITHUB_ENV } from '../../../domain/github/github-test-kit';
 import { htmlAt } from '../../../components/render';
 
 /** What the page asked Next to redirect to; `redirect` throws, as the real one does. */
-class Redirected extends Error {
+class RedirectedError extends Error {
+  override name = 'RedirectedError';
   constructor(readonly to: string) {
     super(`redirected to ${to}`);
   }
@@ -33,7 +34,7 @@ const state: {
 
 jest.unstable_mockModule('next/navigation', () => ({
   redirect: (to: string) => {
-    throw new Redirected(to);
+    throw new RedirectedError(to);
   },
   useRouter: () => ({ push: () => undefined, refresh: () => undefined }),
 }));
@@ -62,13 +63,20 @@ beforeEach(() => {
 
 afterEach(() => restore());
 
+/** The search params Next hands the page, as a promise. */
+function searchParamsOf(
+  error?: string,
+): Promise<{ error: string | undefined }> {
+  return Promise.resolve({ error });
+}
+
 /** The page as it renders for the current user. */
 async function page(error?: string): Promise<string> {
   return htmlAt(
-    (await GitHubPage({
-      searchParams: Promise.resolve({ error }),
-    })) as ReactElement,
-    { pathname: '/github' },
+    (await GitHubPage({ searchParams: searchParamsOf(error) })) as ReactElement,
+    {
+      pathname: '/github',
+    },
   );
 }
 
@@ -80,7 +88,7 @@ describe('GitHubPage', () => {
   it('sends someone not signed in to sign in and back here', async () => {
     state.user = null;
     await expect(page()).rejects.toEqual(
-      new Redirected('/auth/login?returnTo=%2Fgithub'),
+      new RedirectedError('/auth/login?returnTo=%2Fgithub'),
     );
   });
 

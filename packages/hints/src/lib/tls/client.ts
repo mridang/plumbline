@@ -21,6 +21,7 @@ import type { CipherInfo, EphemeralKey } from './evaluate.js';
 export interface TlsTarget {
   host: string;
   port: number;
+
   /**
    * Set for a mail server: the connection starts as plain SMTP and is
    * upgraded with STARTTLS (RFC 3207) before the TLS handshake, as
@@ -182,15 +183,15 @@ export const tlsProbe: {
   port: number;
   /** The SMTP port of the mail servers. */
   mailPort: number;
-  /** Trusted roots; `undefined` uses Node's bundled Mozilla roots. */
-  ca: string | Buffer | undefined;
-} = { connect: connectWithNode, port: 443, mailPort: 25, ca: undefined };
+  /** Trusted roots; when absent Node's bundled Mozilla roots are used. */
+  ca?: string | Buffer;
+} = { connect: connectWithNode, port: 443, mailPort: 25 };
 
 /** The target for a scanned site: its host on the HTTPS port. */
 export function targetFor(url: URL): TlsTarget {
   // `hostname` of an IPv6 URL still carries the brackets.
   return {
-    host: url.hostname.replace(/^\[|\]$/g, ''),
+    host: url.hostname.replaceAll(/^\[|\]$/g, ''),
     port: tlsProbe.port,
   };
 }
@@ -273,14 +274,14 @@ export async function acceptedCiphers(
         ? // `DEFAULT` keeps the (unused) cipher list for older versions valid.
           `${TLS_1_3_OFFER.filter((n) => !removed.includes(n)).join(':')}:DEFAULT`
         : [all, ...removed].join(':');
-    if (version === 'TLSv1.3' && offer.startsWith(':')) {
-      break;
-    }
-    const result = await tryConnect(target, {
-      minVersion: version,
-      maxVersion: version,
-      ciphers: offer,
-    });
+    const exhausted = version === 'TLSv1.3' && offer.startsWith(':');
+    const result = exhausted
+      ? null
+      : await tryConnect(target, {
+          minVersion: version,
+          maxVersion: version,
+          ciphers: offer,
+        });
     if (result === null || found.some((c) => c.name === result.cipher.name)) {
       break;
     }
@@ -301,7 +302,8 @@ export function highestLegacyVersion(
 /** The resource a TLS finding is reported against. */
 export function resourceFor(target: TlsTarget): string {
   const host = target.host.includes(':') ? `[${target.host}]` : target.host;
-  return `https://${host}${target.port === 443 ? '' : `:${target.port}`}/`;
+  const portSuffix = target.port === 443 ? '' : `:${target.port}`;
+  return `https://${host}${portSuffix}/`;
 }
 
 /**

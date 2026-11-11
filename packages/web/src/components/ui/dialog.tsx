@@ -132,10 +132,13 @@ export function syncModal(
   dialog: Pick<HTMLDialogElement, 'open' | 'showModal' | 'close'>,
   open: boolean,
 ): void {
+  // eslint-disable-next-line sonarjs/no-selector-parameter -- the boolean is the desired open state and is part of the exported signature; splitting it into open and close functions would change the API
   if (open && !dialog.open) {
     dialog.showModal();
   } else if (!open && dialog.open) {
     dialog.close();
+  } else {
+    // Already in the requested state: nothing to do.
   }
 }
 
@@ -157,8 +160,7 @@ export function closedBy(dismissable: boolean): {
  * Whether this browser closes a dialog on a click outside it by itself, that
  * is, understands `closedby` (Chrome 134, Firefox 141, Safari 26). Where it does
  * not, the dialog has to watch for that click, with {@link backdropClickHandler}.
- *
- * @param dialog Any dialog element; the feature is looked for on its prototype.
+ * @param dialog - Any dialog element; the feature is looked for on its prototype.
  */
 export function supportsLightDismiss(dialog: object): boolean {
   return 'closedBy' in dialog;
@@ -211,8 +213,7 @@ export const LEAVE_MS = 250;
  * Whether a dialog's content should still be on the page: while it is open, and
  * for {@link LEAVE_MS} after it closes. Without the second part the content
  * would vanish the instant the dialog is closed and an empty panel would fade.
- *
- * @param open Whether the dialog is open now.
+ * @param open - Whether the dialog is open now.
  */
 function useMounted(open: boolean): boolean {
   const [leaving, setLeaving] = useState(false);
@@ -225,7 +226,7 @@ function useMounted(open: boolean): boolean {
   }
   useEffect(() => {
     if (!leaving) {
-      return;
+      return undefined;
     }
     const timer = setTimeout(() => setLeaving(false), LEAVE_MS);
     return () => clearTimeout(timer);
@@ -305,7 +306,7 @@ export function DialogContent({
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog || !dismissable || supportsLightDismiss(dialog)) {
-      return;
+      return undefined;
     }
     const onClick = backdropClickHandler(dialog, () => setOpen(false));
     dialog.addEventListener('click', onClick);

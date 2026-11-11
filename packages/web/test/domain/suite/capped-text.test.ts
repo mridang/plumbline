@@ -62,8 +62,7 @@ describe('readTextCapped', () => {
   });
 
   it('decodes multi-byte text', async () => {
-    expect((await readTextCapped(inPieces('héllo ✓'), 100)).text).toBe(
-      'héllo ✓',
-    );
+    const capped = await readTextCapped(inPieces('héllo ✓'), 100);
+    expect(capped.text).toBe('héllo ✓');
   });
 });

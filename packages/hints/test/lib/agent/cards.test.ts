@@ -17,7 +17,8 @@ const mcpCard = {
 describe('checkMcpServerCard', () => {
   it('passes with a SEP-1649 style card', async () => {
     const env = fakeEnv({ '/.well-known/mcp/server-card.json': mcpCard });
-    expect((await checkMcpServerCard(env)).passed).toBe(true);
+    const result = await checkMcpServerCard(env);
+    expect(result.passed).toBe(true);
   });
   it('passes with a SEP-2127 style card (top-level identity, remotes)', async () => {
     const env = fakeEnv({
@@ -27,7 +28,8 @@ describe('checkMcpServerCard', () => {
         remotes: [{ url: 'https://example.com/mcp' }],
       },
     });
-    expect((await checkMcpServerCard(env)).passed).toBe(true);
+    const result = await checkMcpServerCard(env);
+    expect(result.passed).toBe(true);
   });
   it('accepts a card listed in a collection', async () => {
     const env = fakeEnv({
@@ -37,7 +39,8 @@ describe('checkMcpServerCard', () => {
         ],
       },
     });
-    expect((await checkMcpServerCard(env)).passed).toBe(true);
+    const result = await checkMcpServerCard(env);
+    expect(result.passed).toBe(true);
   });
   it('finds a card through an AI catalog entry with a url', async () => {
     const env = fakeEnv({
@@ -52,7 +55,8 @@ describe('checkMcpServerCard', () => {
         remotes: [{ url: 'https://example.com/mcp' }],
       },
     });
-    expect((await checkMcpServerCard(env)).passed).toBe(true);
+    const result = await checkMcpServerCard(env);
+    expect(result.passed).toBe(true);
   });
   it('finds a card embedded as data in the older ai-catalog.json', async () => {
     const env = fakeEnv({
@@ -70,7 +74,8 @@ describe('checkMcpServerCard', () => {
         ],
       },
     });
-    expect((await checkMcpServerCard(env)).passed).toBe(true);
+    const result = await checkMcpServerCard(env);
+    expect(result.passed).toBe(true);
   });
   it('ignores a catalog entry whose card is invalid', async () => {
     const env = fakeEnv({
@@ -78,15 +83,15 @@ describe('checkMcpServerCard', () => {
         entries: [{ type: MCP_CARD_TYPE, data: { name: 'a' } }],
       },
     });
-    expect((await checkMcpServerCard(env)).passed).toBe(false);
+    const result = await checkMcpServerCard(env);
+    expect(result.passed).toBe(false);
   });
   it('fails without a transport endpoint', async () => {
     const env = fakeEnv({
       '/.well-known/mcp/server-card.json': { serverInfo: mcpCard.serverInfo },
     });
-    expect((await checkMcpServerCard(env)).detail).toContain(
-      'transport endpoint',
-    );
+    const result = await checkMcpServerCard(env);
+    expect(result.detail).toContain('transport endpoint');
   });
   it('fails without a version', async () => {
     const env = fakeEnv({
@@ -95,10 +100,12 @@ describe('checkMcpServerCard', () => {
         serverInfo: { name: 'x' },
       },
     });
-    expect((await checkMcpServerCard(env)).passed).toBe(false);
+    const result = await checkMcpServerCard(env);
+    expect(result.passed).toBe(false);
   });
   it('fails when no card exists', async () => {
-    expect((await checkMcpServerCard(fakeEnv())).passed).toBe(false);
+    const result = await checkMcpServerCard(fakeEnv());
+    expect(result.passed).toBe(false);
   });
 });
 
@@ -121,13 +128,10 @@ const a2a = {
 
 describe('checkA2aAgentCard', () => {
   it('passes with a 1.0 card', async () => {
-    expect(
-      (
-        await checkA2aAgentCard(
-          fakeEnv({ '/.well-known/agent-card.json': a2a }),
-        )
-      ).passed,
-    ).toBe(true);
+    const result = await checkA2aAgentCard(
+      fakeEnv({ '/.well-known/agent-card.json': a2a }),
+    );
+    expect(result.passed).toBe(true);
   });
   it('accepts the pre-1.0 top-level url and the legacy path', async () => {
     const env = fakeEnv({
@@ -136,7 +140,8 @@ describe('checkA2aAgentCard', () => {
         url: 'https://example.com/a2a',
       },
     });
-    expect((await checkA2aAgentCard(env)).passed).toBe(true);
+    const result = await checkA2aAgentCard(env);
+    expect(result.passed).toBe(true);
   });
   it('lists every missing field', async () => {
     const env = fakeEnv({ '/.well-known/agent-card.json': { name: 'x' } });
@@ -152,14 +157,17 @@ describe('checkA2aAgentCard', () => {
         supportedInterfaces: [{ url: 'https://e.com' }],
       },
     });
-    expect((await checkA2aAgentCard(env)).detail).toContain('protocolBinding');
+    const result = await checkA2aAgentCard(env);
+    expect(result.detail).toContain('protocolBinding');
     const empty = fakeEnv({
       '/.well-known/agent-card.json': { ...a2a, supportedInterfaces: [] },
     });
-    expect((await checkA2aAgentCard(empty)).passed).toBe(false);
+    const emptyResult = await checkA2aAgentCard(empty);
+    expect(emptyResult.passed).toBe(false);
   });
   it('fails when absent', async () => {
-    expect((await checkA2aAgentCard(fakeEnv())).passed).toBe(false);
+    const result = await checkA2aAgentCard(fakeEnv());
+    expect(result.passed).toBe(false);
   });
 });
 
@@ -214,19 +222,22 @@ describe('checkSkills', () => {
         skills: [skill],
       },
     });
-    expect((await checkSkills(env)).passed).toBe(true);
+    const result = await checkSkills(env);
+    expect(result.passed).toBe(true);
   });
   it('reads an index without $schema as v0.1.0', async () => {
     const env = fakeEnv({
       '/.well-known/agent-skills/index.json': { skills: [skill] },
     });
-    expect((await checkSkills(env)).passed).toBe(true);
+    const result = await checkSkills(env);
+    expect(result.passed).toBe(true);
   });
   it('falls back to /.well-known/skills/index.json', async () => {
     const env = fakeEnv({
       '/.well-known/skills/index.json': { skills: [skill] },
     });
-    expect((await checkSkills(env)).passed).toBe(true);
+    const result = await checkSkills(env);
+    expect(result.passed).toBe(true);
   });
   it('refuses an unrecognised $schema', async () => {
     const env = fakeEnv({
@@ -235,7 +246,8 @@ describe('checkSkills', () => {
         skills: [skill],
       },
     });
-    expect((await checkSkills(env)).detail).toContain('$schema');
+    const result = await checkSkills(env);
+    expect(result.detail).toContain('$schema');
   });
   it('fails for an invalid skill and names the problem', async () => {
     const env = fakeEnv({
@@ -243,16 +255,15 @@ describe('checkSkills', () => {
         skills: [without(skill, 'digest')],
       },
     });
-    expect((await checkSkills(env)).detail).toContain('digest must be sha256');
+    const result = await checkSkills(env);
+    expect(result.detail).toContain('digest must be sha256');
   });
   it('fails for an empty list and for nothing', async () => {
-    expect(
-      (
-        await checkSkills(
-          fakeEnv({ '/.well-known/agent-skills/index.json': { skills: [] } }),
-        )
-      ).detail,
-    ).toContain('no skills');
-    expect((await checkSkills(fakeEnv())).passed).toBe(false);
+    const emptyList = await checkSkills(
+      fakeEnv({ '/.well-known/agent-skills/index.json': { skills: [] } }),
+    );
+    expect(emptyList.detail).toContain('no skills');
+    const nothing = await checkSkills(fakeEnv());
+    expect(nothing.passed).toBe(false);
   });
 });

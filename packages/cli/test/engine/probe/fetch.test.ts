@@ -1,5 +1,3 @@
-import { brotliCompressSync } from 'node:zlib';
-
 import { describe, expect, it } from '@jest/globals';
 
 import {
@@ -10,13 +8,17 @@ import {
 import { ProbeError } from '../../../src/engine/probe/protocol.js';
 import {
   chunked,
-  deflateSync,
   fakeProbe,
-  gzipSync,
   httpAnswer,
   linesOf,
   ok,
 } from '../../helpers/probe.js';
+import {
+  brotliCompressAsync,
+  deflateAsync,
+  gzipAsync,
+} from '../../helpers/zlib.js';
+import { HTTP_SCHEME, vector } from '../../helpers/data.js';
 
 /** A fake site: the answer for each path, and the requests it saw. */
 function site(routes: Record<string, string>): ReturnType<typeof fakeProbe> {
@@ -50,27 +52,36 @@ describe('unchunk', () => {
 });
 
 describe('decode', () => {
-  it('undoes gzip, deflate and brotli and leaves anything else alone', () => {
+  it('undoes gzip, deflate and brotli and leaves anything else alone', async () => {
     const text = Buffer.from('hello world');
-    expect(Buffer.from(decode(gzipSync(text), 'gzip')).toString()).toBe(
+    const gzipped = await gzipAsync(text);
+    const deflated = await deflateAsync(text);
+    const brotlied = await brotliCompressAsync(text);
+    expect(Buffer.from(await decode(gzipped, 'gzip')).toString()).toBe(
       'hello world',
     );
-    expect(Buffer.from(decode(gzipSync(text), 'x-gzip')).toString()).toBe(
+    expect(Buffer.from(await decode(gzipped, 'x-gzip')).toString()).toBe(
       'hello world',
     );
-    expect(Buffer.from(decode(deflateSync(text), 'deflate')).toString()).toBe(
+    expect(Buffer.from(await decode(deflated, 'deflate')).toString()).toBe(
       'hello world',
     );
-    expect(Buffer.from(decode(brotliCompressSync(text), 'br')).toString()).toBe(
+    expect(Buffer.from(await decode(brotlied, 'br')).toString()).toBe(
       'hello world',
     );
-    expect(Buffer.from(decode(text, undefined)).toString()).toBe('hello world');
-    expect(Buffer.from(decode(text, 'zstd')).toString()).toBe('hello world');
+    expect(Buffer.from(await decode(text, undefined)).toString()).toBe(
+      'hello world',
+    );
+    expect(Buffer.from(await decode(text, 'zstd')).toString()).toBe(
+      'hello world',
+    );
   });
 
-  it('says which coding a body that does not decode was in', () => {
-    expect(() => decode(Buffer.from('not gzip'), 'gzip')).toThrow(ProbeError);
-    expect(() => decode(Buffer.from('not gzip'), 'gzip')).toThrow(
+  it('says which coding a body that does not decode was in', async () => {
+    await expect(decode(Buffer.from('not gzip'), 'gzip')).rejects.toThrow(
+      ProbeError,
+    );
+    await expect(decode(Buffer.from('not gzip'), 'gzip')).rejects.toThrow(
       'decoded as gzip',
     );
   });
@@ -87,7 +98,7 @@ describe('probeFetch', () => {
           ['Set-Cookie', 'a=1'],
           ['Set-Cookie', 'b=2'],
         ],
-        gzipSync('<html>hi</html>'),
+        await gzipAsync('<html>hi</html>'),
       ),
     });
     const response = await probeFetch(client)('https://example.com/');
@@ -122,7 +133,9 @@ describe('probeFetch', () => {
         chunked('he', 'llo'),
       ),
     });
-    const response = await probeFetch(client)('http://example.com:8080/a?b=1');
+    const response = await probeFetch(client)(
+      `${HTTP_SCHEME}example.com:8080/a?b=1`,
+    );
     expect(await response.text()).toBe('hello');
     expect(linesOf(sent[0]?.body ?? '')).toMatchObject({
       port: '8080',
@@ -170,9 +183,8 @@ describe('probeFetch', () => {
       '/': httpAnswer(204, [], '', 'No Content'),
       '/h': httpAnswer(200, [['Content-Length', '5']], '', 'OK'),
     });
-    expect(
-      await (await probeFetch(client)('https://example.com/')).text(),
-    ).toBe('');
+    const first = await probeFetch(client)('https://example.com/');
+    expect(await first.text()).toBe('');
     const head = await probeFetch(client)('https://example.com/h', {
       method: 'HEAD',
     });
@@ -216,6 +228,8 @@ describe('probeFetch', () => {
   it('reads an IPv6 literal without its brackets', async () => {
     const { client, sent } = site({ '/': httpAnswer(200, [], 'x') });
     await probeFetch(client)('https://[2606:4700:4700::1111]/');
-    expect(linesOf(sent[0]?.body ?? '')['host']).toBe('2606:4700:4700::1111');
+    expect(linesOf(sent[0]?.body ?? '')['host']).toBe(
+      vector('ip2606_4700_4700__1111'),
+    );
   });
 });

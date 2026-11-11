@@ -55,7 +55,7 @@ export function reportHosts(parsed: DmarcRecord): string[] {
     }
     let host = path;
     if (host.includes('@')) {
-      host = host.split('@').slice(1).join('@').split('!')[0];
+      host = host.split('@').slice(1).join('@').split('!', 1)[0];
     }
     host = host.trim().toLowerCase().replace(/\.$/u, '');
     if (host !== '') {

@@ -1,7 +1,7 @@
 import { agentHint } from './define-agent-hint.js';
 
 /**
- * isitagentready.com check. Bot access control (not scored): lets bots prove identity with HTTP message signatures.
+ * Isitagentready.com check. Bot access control (not scored): lets bots prove identity with HTTP message signatures.
  * The logic lives in `src/lib/agent`; failures are reported as advice.
  */
 export default agentHint({

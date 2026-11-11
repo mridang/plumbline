@@ -9,11 +9,14 @@ import type { FindingSeverity } from '../../lib/headers/finding.js';
  */
 export function toSeverity(severity: FindingSeverity): Severity {
   switch (severity) {
-    case 'error':
+    case 'error': {
       return Severity.error;
-    case 'warning':
+    }
+    case 'warning': {
       return Severity.warning;
-    case 'hint':
+    }
+    case 'hint': {
       return Severity.hint;
+    }
   }
 }

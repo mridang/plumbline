@@ -90,10 +90,11 @@ export function createReportsCollection(
   resolver: CurrentUserResolver = requestCookieResolver,
 ): ApiController<DomainContext> {
   return new ApiController<DomainContext>({
-    context: async (request, route) => ({
-      uid: await liveUid(request, resolver),
-      domainId: (await route.params)?.['id'] ?? '',
-    }),
+    context: async (request, route) => {
+      const uid = await liveUid(request, resolver);
+      const params = await route.params;
+      return { uid, domainId: params?.['id'] ?? '' };
+    },
   })
     .on<
       { readonly limit: number; readonly after?: CursorPosition },
@@ -166,7 +167,8 @@ export function createReportsCollection(
           throw problems.rateLimited(waitMessage(wait), wait);
         }
         // The report is for the commit the site was last known to be at.
-        const sha = (await latestRuns(db, uid, domain.host, 1))[0]?.sha ?? null;
+        const latest = await latestRuns(db, uid, domain.host, 1);
+        const sha = latest[0]?.sha ?? null;
         return saveReport(db, uid, domain.id, report, sha);
       },
       encode: (report) =>
@@ -193,7 +195,7 @@ export function createReportItem(
       return {
         uid: await liveUid(request, resolver),
         domainId: params?.['id'] ?? '',
-        reportId: params?.['report_id'] ?? '',
+        reportId: params?.['report-id'] ?? '',
       };
     },
   }).on<null, Report>({

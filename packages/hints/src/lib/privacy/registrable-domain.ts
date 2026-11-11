@@ -77,24 +77,30 @@ const GENERIC_SECOND_LEVEL: ReadonlySet<string> = new Set([
 
 /** True for dotted IPv4 and for IPv6 literals (with or without brackets). */
 export function isIpAddress(host: string): boolean {
-  const bare = host.replace(/^\[|\]$/g, '');
+  const bare = host.replaceAll(/^\[|\]$/g, '');
   if (/^\d{1,3}(\.\d{1,3}){3}$/.test(bare)) {
     return true;
   }
   return bare.includes(':') && /^[0-9a-f:.]+$/i.test(bare);
 }
 
+/** Removes every trailing dot, scanning once from the end. */
+function stripTrailingDots(value: string): string {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === '.') {
+    end -= 1;
+  }
+  return value.slice(0, end);
+}
+
 /** Lower cases a host and removes trailing dots and IPv6 brackets. */
 export function normalizeHost(host: string): string {
-  const cleaned = host
-    .trim()
-    .toLowerCase()
-    .replace(/\.+$/, '')
+  const cleaned = stripTrailingDots(host.trim().toLowerCase())
     .replace(/^\.+/, '')
-    .replace(/^\[|\]$/g, '');
+    .replaceAll(/^\[|\]$/g, '');
   // Hosts from URLs are already punycode; a `Domain` attribute may carry
   // Unicode, which must compare equal to its punycode form.
-  return /[^\u0020-\u007e]/.test(cleaned)
+  return /[^\u0020-\u007E]/.test(cleaned)
     ? domainToASCII(cleaned) || cleaned
     : cleaned;
 }
@@ -114,8 +120,8 @@ export function registrableDomain(host: string): string {
   if (labels.length <= 2) {
     return labels.join('.');
   }
-  const top = labels[labels.length - 1];
-  const second = labels[labels.length - 2];
+  const top = labels.at(-1) ?? '';
+  const second = labels.at(-2) ?? '';
   // Longest known suffix wins: a listed suffix may have any number of labels
   // (`s3.amazonaws.com` has three), so every tail of the host is tried.
   let suffixLength = 1;

@@ -15,12 +15,13 @@ describe('robots.txt', () => {
    * wins, `Allow` wins a tie, `$` anchors the end and `*` matches anything.
    */
   const allowed = (target: string): boolean => {
+    const escaped = String.raw`\$&`;
     const matches = (pattern: string): boolean =>
       new RegExp(
-        `^${pattern.replace(/[.+?^{}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}`,
+        `^${pattern.replaceAll(/[.+?^{}()|[\]\\]/g, escaped).replaceAll('*', '.*')}`,
       ).test(target);
     const hit = (patterns: string[]): number =>
-      Math.max(-1, ...patterns.filter(matches).map((p) => p.length));
+      Math.max(-1, ...patterns.filter((p) => matches(p)).map((p) => p.length));
     return hit(rule.allow) >= hit(rule.disallow);
   };
 

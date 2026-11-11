@@ -5,4 +5,4 @@
  * `imports` in package.json).
  */
 
-export * from 'node:https';
+export { request } from 'node:https';

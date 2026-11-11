@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
@@ -33,7 +33,7 @@ interface Wrangler {
 
 const config = ts.parseConfigFileTextToJson(
   'wrangler.jsonc',
-  readFileSync(path.join(process.cwd(), 'wrangler.jsonc'), 'utf8'),
+  await readFile(path.join(process.cwd(), 'wrangler.jsonc'), 'utf8'),
 ).config as Wrangler;
 
 const probe = config.containers.find(
@@ -78,7 +78,9 @@ describe('wrangler.jsonc, the scanner', () => {
 
   it('binds the object the code uses, creates its class and deletes the class of the old scanner container', () => {
     expect(
-      config.durable_objects.bindings.map((entry) => entry.name).sort(),
+      config.durable_objects.bindings
+        .map((entry) => entry.name)
+        .toSorted((a, b) => Number(a > b) - Number(a < b)),
     ).toEqual(['PROBE', 'USER_HUB']);
     expect(config.durable_objects.bindings).toContainEqual({
       name: 'PROBE',

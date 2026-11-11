@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { validateSecurityTxt } from '../../../src/lib/files/security-txt.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const now = new Date('2026-01-01T00:00:00Z');
 const ok = 'Contact: mailto:s@a.com\nExpires: 2026-06-01T00:00:00Z\n';
@@ -43,7 +44,7 @@ describe('validateSecurityTxt', () => {
     expect(i[0].severity).toBe('warning');
   });
   it('rejects http and invalid contact URIs', () => {
-    expect(msgs(`${ok}Contact: http://a.com`)[0]).toContain('HTTPS');
+    expect(msgs(`${ok}Contact: ${HTTP_SCHEME}a.com`)[0]).toContain('HTTPS');
     expect(msgs(`${ok}Contact: not a uri`)[0]).toContain('not a valid URI');
     expect(msgs(`${ok}Contact: ftp://a.com`)[0]).toContain("scheme 'ftp'");
   });
@@ -53,7 +54,7 @@ describe('validateSecurityTxt', () => {
     ).toEqual([]);
   });
   it('validates other URI fields', () => {
-    expect(msgs(`${ok}Policy: http://a.com/p`)[0]).toContain('HTTPS');
+    expect(msgs(`${ok}Policy: ${HTTP_SCHEME}a.com/p`)[0]).toContain('HTTPS');
     expect(msgs(`${ok}Encryption: openpgp4fpr:abc`)).toEqual([]);
     expect(msgs(`${ok}Hiring: mailto:a@b.c`)[0]).toContain("scheme 'mailto'");
   });

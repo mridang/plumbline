@@ -33,9 +33,8 @@ describe('checkLinkHeaders', () => {
   });
   it('accepts the ard relation and the IANA service relations', async () => {
     for (const rel of ['ard', 'service-meta', 'describedby', 'status']) {
-      expect((await checkLinkHeaders(home(`</x>; rel="${rel}"`))).passed).toBe(
-        true,
-      );
+      const r = await checkLinkHeaders(home(`</x>; rel="${rel}"`));
+      expect(r.passed).toBe(true);
     }
   });
   it('fails with preconnect alone', async () => {
@@ -46,9 +45,11 @@ describe('checkLinkHeaders', () => {
     expect(r.detail).toContain('no agent-useful relation');
   });
   it('fails without a Link header', async () => {
-    expect((await checkLinkHeaders(home())).detail).toContain('no Link header');
+    const r = await checkLinkHeaders(home());
+    expect(r.detail).toContain('no Link header');
   });
   it('fails when the page is unreachable', async () => {
-    expect((await checkLinkHeaders(fakeEnv())).passed).toBe(false);
+    const r = await checkLinkHeaders(fakeEnv());
+    expect(r.passed).toBe(false);
   });
 });

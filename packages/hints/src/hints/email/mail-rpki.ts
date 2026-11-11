@@ -48,10 +48,11 @@ export default defineHint({
           for (const type of ['A', 'AAAA'] as const) {
             try {
               const response = await dns.client.query(host, type);
-              for (const record of response.answers) {
-                if (ADDRESS_TYPES.has(record.type)) {
-                  addresses.add(record.data);
-                }
+              const records = response.answers.filter((r) =>
+                ADDRESS_TYPES.has(r.type),
+              );
+              for (const record of records) {
+                addresses.add(record.data);
               }
             } catch {
               // A failed lookup leaves that family unchecked.
@@ -66,7 +67,7 @@ export default defineHint({
                   return null;
                 }
                 const line =
-                  `${host} ${ip} ${result.prefix ?? ''} AS${result.asn}`.replace(
+                  `${host} ${ip} ${result.prefix ?? ''} AS${result.asn}`.replaceAll(
                     / +/gu,
                     ' ',
                   );
@@ -84,6 +85,8 @@ export default defineHint({
           invalid.push(found.line);
         } else if (found?.status === 'unknown') {
           notFound.push(found.line);
+        } else {
+          // Any other status needs no report.
         }
       }
 

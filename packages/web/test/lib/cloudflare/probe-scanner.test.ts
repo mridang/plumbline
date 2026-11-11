@@ -93,10 +93,11 @@ function probe(options: ProbeOptions = {}) {
           ? await new Response(init.body as BodyInit).text()
           : '';
         switch (path) {
-          case '/v1/roots':
+          case '/v1/roots': {
             return new Response(
               '-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----\n',
             );
+          }
           case '/v1/http': {
             if (body.includes('path=/\n')) {
               asked.push(/host=(.*)/.exec(body)?.[1] ?? '');
@@ -118,18 +119,19 @@ function probe(options: ProbeOptions = {}) {
               httpAnswer(404, [['Content-Type', 'text/plain']], 'no'),
             );
           }
-          case '/v1/handshakes':
-            return new Response(
-              JSON.stringify({
-                results: body
-                  .split('--\n')
-                  .map(() => ({ error: 'handshake failed: no answer' })),
-              }),
-            );
-          case '/v1/connect':
+          case '/v1/handshakes': {
+            return Response.json({
+              results: body
+                .split('--\n')
+                .map(() => ({ error: 'handshake failed: no answer' })),
+            });
+          }
+          case '/v1/connect': {
             return new Response('{"reachable":false}');
-          default:
+          }
+          default: {
             return new Response('{"error":"not here"}', { status: 502 });
+          }
         }
       },
     }),
@@ -159,9 +161,12 @@ const realFetch = globalThis.fetch;
 beforeEach(() => {
   // The checks ask a DNS-over-HTTPS resolver for names; the tests never touch the internet.
   globalThis.fetch = (async () =>
-    new Response(JSON.stringify({ Status: 3, Answer: [] }), {
-      headers: { 'content-type': 'application/dns-json' },
-    })) as typeof fetch;
+    Response.json(
+      { Status: 3, Answer: [] },
+      {
+        headers: { 'content-type': 'application/dns-json' },
+      },
+    )) as typeof fetch;
 });
 
 afterEach(() => {
@@ -182,19 +187,18 @@ describe('ProbeScanner, a scan', () => {
     );
     const out = await lines(response);
     expect(out[0]).toMatchObject({ type: 'ready' });
-    expect(out[out.length - 1]).toEqual({ type: 'end' });
+    expect(out.at(-1)).toEqual({ type: 'end' });
     const done = out.filter((line) => line.type === 'done');
     expect(done.length).toBeGreaterThan(250);
     expect(
       done.find((line) => line.outcome?.id === 'alt-svc')?.outcome?.status,
     ).toBe('passed');
     // Only the network is asked of the probe: pages and files, handshakes, connection tests.
-    expect([...new Set(log.map((line) => line.split(' ')[2]))].sort()).toEqual([
-      '/healthz',
-      '/v1/connect',
-      '/v1/handshakes',
-      '/v1/http',
-    ]);
+    expect(
+      [...new Set(log.map((line) => line.split(' ', 3)[2]))].toSorted((a, b) =>
+        (a ?? '').localeCompare(b ?? ''),
+      ),
+    ).toEqual(['/healthz', '/v1/connect', '/v1/handshakes', '/v1/http']);
   });
 
   it('breaks the stream when the probe is down, so whoever reads it knows to try again', async () => {
@@ -250,7 +254,8 @@ describe('ProbeScanner, slow probe calls', () => {
         return inner(input, init);
       },
     });
-    await (await made(container).fetch(run())).text();
+    const response = await made(container).fetch(run());
+    await response.text();
     const logged = warn.mock.calls.map((call) => String(call[0]));
     expect(logged.length).toBeGreaterThan(0);
     expect(
@@ -265,7 +270,8 @@ describe('ProbeScanner, slow probe calls', () => {
       .spyOn(console, 'warn')
       .mockImplementation(() => undefined);
     const { container } = probe();
-    await (await made(container).fetch(run())).text();
+    const response = await made(container).fetch(run());
+    await response.text();
     expect(warn).not.toHaveBeenCalled();
   });
 });
@@ -285,7 +291,8 @@ describe('ProbeScanner, the container', () => {
 
   it('does not start a container that is already running, but renews its idle time', async () => {
     const { container, log } = probe({ running: true });
-    await (await made(container).fetch(run())).text();
+    const response = await made(container).fetch(run());
+    await response.text();
     expect(log.some((line) => line.startsWith('start'))).toBe(false);
     expect(log).toContain(`idle ${IDLE_MS}`);
   });
@@ -308,20 +315,18 @@ describe('ProbeScanner, the container', () => {
         new Request('https://scanner.internal/healthz'),
       );
       await jest.advanceTimersByTimeAsync(START_TIMEOUT_MS + 1000);
-      expect((await pending).status).toBe(503);
+      const response = await pending;
+      expect(response.status).toBe(503);
     } finally {
       jest.useRealTimers();
     }
   });
 
   it('answers 503 when no container is bound', async () => {
-    expect(
-      (
-        await made(undefined).fetch(
-          new Request('https://scanner.internal/healthz'),
-        )
-      ).status,
-    ).toBe(503);
+    const response = await made(undefined).fetch(
+      new Request('https://scanner.internal/healthz'),
+    );
+    expect(response.status).toBe(503);
   });
 
   it('forwards anything that is not a scan or a job to the container', async () => {
@@ -347,7 +352,9 @@ const JOB: SuiteJob = {
   appUrl: 'https://plumbline.test',
 };
 
-const post = (job: unknown = { kind: 'deployment', ...JOB }) =>
+const DEPLOYMENT_JOB = { kind: 'deployment', ...JOB };
+
+const post = (job: unknown = DEPLOYMENT_JOB) =>
   new Request('https://scanner.internal/jobs', {
     method: 'POST',
     body: typeof job === 'string' ? job : JSON.stringify(job),
@@ -385,7 +392,7 @@ describe('ProbeScanner, the job of the queue', () => {
       init?: RequestInit,
     ) =>
       String(input).includes('cloudflare-dns.com')
-        ? new Response(JSON.stringify({ Status: 3, Answer: [] }))
+        ? Response.json({ Status: 3, Answer: [] })
         : github(input, init)) as typeof fetch;
     return { db, make, requested };
   };
@@ -404,7 +411,8 @@ describe('ProbeScanner, the job of the queue', () => {
   it('refuses a job that is not JSON', async () => {
     const { make } = await setup();
     const { container, asked } = probe();
-    expect((await make(container).fetch(post('nope'))).status).toBe(400);
+    const response = await make(container).fetch(post('nope'));
+    expect(response.status).toBe(400);
     expect(asked).toEqual([]);
   });
 
@@ -412,7 +420,7 @@ describe('ProbeScanner, the job of the queue', () => {
     const { make } = await setup();
     const { container, log } = probe();
     await make(container).fetch(post());
-    expect(log.filter((line) => line.startsWith('idle')).at(-1)).toBe(
+    expect(log.findLast((line) => line.startsWith('idle'))).toBe(
       `idle ${AFTER_JOB_IDLE_MS}`,
     );
   });
@@ -424,7 +432,8 @@ describe('ProbeScanner, the job of the queue', () => {
       page: () =>
         new Response('{"error":"the name does not resolve"}', { status: 502 }),
     });
-    expect((await make(container).fetch(post())).status).toBe(200);
+    const response = await make(container).fetch(post());
+    expect(response.status).toBe(200);
     expect(requested).not.toContain(
       'POST https://api.github.com/repos/acme/site/issues',
     );
@@ -445,14 +454,16 @@ describe('ProbeScanner, the job of the queue', () => {
     const { container } = probe({
       page: () => new Response('busy', { status: 500 }),
     });
-    expect((await make(container).fetch(post())).status).toBe(500);
+    const response = await make(container).fetch(post());
+    expect(response.status).toBe(500);
   });
 
   it('drops a deployment job when GitHub is not set up', async () => {
     const { make } = await setup({});
     const { container, asked } = probe();
     jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    expect((await make(container).fetch(post())).status).toBe(200);
+    const response = await make(container).fetch(post());
+    expect(response.status).toBe(200);
     expect(asked).toEqual([]);
   });
 
@@ -460,7 +471,8 @@ describe('ProbeScanner, the job of the queue', () => {
     const { db, make } = await setup();
     const { domain } = await addDomain(db, 7, 'site.test', 'acme/site');
     const { container, asked } = probe();
-    expect((await make(container).fetch(post(RECHECK))).status).toBe(200);
+    const response = await make(container).fetch(post(RECHECK));
+    expect(response.status).toBe(200);
     expect([...new Set(asked)]).toEqual(['site.test']);
     expect(
       await listRuns(db, 7, { domainId: domain.id, host: 'site.test' }, 10),
@@ -471,7 +483,8 @@ describe('ProbeScanner, the job of the queue', () => {
     const { db, make } = await setup();
     await disableRepo(db, 7, 'acme/site');
     const { container, asked } = probe();
-    expect((await make(container).fetch(post(RECHECK))).status).toBe(200);
+    const response = await make(container).fetch(post(RECHECK));
+    expect(response.status).toBe(200);
     expect(asked).toEqual([]);
   });
 
@@ -479,7 +492,8 @@ describe('ProbeScanner, the job of the queue', () => {
     const { db, make } = await setup();
     jest.spyOn(console, 'error').mockImplementation(() => undefined);
     const { container } = probe({ down: true });
-    expect((await make(container).fetch(post(RECHECK))).status).toBe(500);
+    const response = await make(container).fetch(post(RECHECK));
+    expect(response.status).toBe(500);
     expect(await latestRuns(db, 7, 'site.test', 1)).toEqual([]);
   });
 });

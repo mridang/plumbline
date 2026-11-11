@@ -39,7 +39,7 @@ export interface PrefixCookie {
 export function parsePrefixCookie(raw: string): PrefixCookie | null {
   const [pair = '', ...attributes] = raw.trim().split(';');
   const equals = pair.indexOf('=');
-  const name = (equals < 0 ? '' : pair.slice(0, equals)).trim();
+  const name = (equals === -1 ? '' : pair.slice(0, equals)).trim();
   if (name === '') {
     return null;
   }
@@ -51,16 +51,27 @@ export function parsePrefixCookie(raw: string): PrefixCookie | null {
   };
   for (const attribute of attributes) {
     const at = attribute.indexOf('=');
-    const key = (at < 0 ? attribute : attribute.slice(0, at))
+    const key = (at === -1 ? attribute : attribute.slice(0, at))
       .trim()
       .toLowerCase();
-    const value = at < 0 ? '' : attribute.slice(at + 1).trim();
-    if (key === 'secure') {
-      cookie.secure = true;
-    } else if (key === 'path') {
-      cookie.path = value;
-    } else if (key === 'domain') {
-      cookie.domain = value;
+    const value = at === -1 ? '' : attribute.slice(at + 1).trim();
+    switch (key) {
+      case 'secure': {
+        cookie.secure = true;
+
+        break;
+      }
+      case 'path': {
+        cookie.path = value;
+
+        break;
+      }
+      case 'domain': {
+        cookie.domain = value;
+
+        break;
+      }
+      // No default
     }
   }
   return cookie;
@@ -93,15 +104,13 @@ function cookiePrefixFinding(cookie: PrefixCookie): Finding[] {
     return findings;
   }
 
-  if (lower.startsWith('__secure-')) {
-    if (!cookie.secure) {
-      findings.push(
-        finding(
-          'error',
-          `Cookie '${cookie.name}' uses the __Secure- prefix but is not Secure; the browser will reject it. Add the Secure attribute.`,
-        ),
-      );
-    }
+  if (lower.startsWith('__secure-') && !cookie.secure) {
+    findings.push(
+      finding(
+        'error',
+        `Cookie '${cookie.name}' uses the __Secure- prefix but is not Secure; the browser will reject it. Add the Secure attribute.`,
+      ),
+    );
   }
 
   return findings;
@@ -112,7 +121,7 @@ export function cookiePrefixFindings(
   setCookieValues: readonly string[],
 ): Finding[] {
   return setCookieValues
-    .map(parsePrefixCookie)
+    .map((value) => parsePrefixCookie(value))
     .filter((cookie): cookie is PrefixCookie => cookie !== null)
-    .flatMap(cookiePrefixFinding);
+    .flatMap((cookie) => cookiePrefixFinding(cookie));
 }

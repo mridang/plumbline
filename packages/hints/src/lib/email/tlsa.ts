@@ -20,9 +20,9 @@ export interface TlsaRecord {
  * resolvers use for types they do not know. Returns null when malformed.
  */
 export function parseTlsa(text: string): TlsaRecord | null {
-  const generic = /^\\#\s+(\d+)\s+([0-9a-fA-F\s]*)$/u.exec(text.trim());
+  const generic = /^\\#\s+(\d+)\s([0-9a-fA-F\s]*)$/u.exec(text.trim());
   if (generic) {
-    const bytes = Buffer.from(generic[2].replace(/\s+/gu, ''), 'hex');
+    const bytes = Buffer.from(generic[2].replaceAll(/\s+/gu, ''), 'hex');
     if (bytes.length !== Number(generic[1]) || bytes.length < 3) {
       return null;
     }
@@ -33,11 +33,11 @@ export function parseTlsa(text: string): TlsaRecord | null {
       data: bytes.subarray(3),
     };
   }
-  const match = /^(\d+)\s+(\d+)\s+(\d+)\s+([0-9a-fA-F\s]+)$/u.exec(text.trim());
+  const match = /^(\d+)\s+(\d+)\s+(\d+)\s([0-9a-fA-F\s]+)$/u.exec(text.trim());
   if (!match) {
     return null;
   }
-  const hex = match[4].replace(/\s+/gu, '');
+  const hex = match[4].replaceAll(/\s+/gu, '');
   if (hex.length % 2 !== 0) {
     return null;
   }
@@ -50,7 +50,7 @@ export function parseTlsa(text: string): TlsaRecord | null {
 }
 
 /** Digest lengths in bytes for the matching types that hash. */
-const DIGEST_LENGTH: Record<number, number> = { 1: 32, 2: 64 };
+const DIGEST_LENGTH: Record<number, number | undefined> = { 1: 32, 2: 64 };
 
 /**
  * Returns what is wrong with the record's fields, or null when it is well

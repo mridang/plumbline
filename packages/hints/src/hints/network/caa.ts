@@ -40,6 +40,8 @@ export async function checkCaa(
       `Your ${owner} has a valid, but insufficiently protective CAA (found on ${result.foundOn}): Required 'issue' property missing.`,
       `${found}\n${result.foundOn ?? host}. IN CAA 0 issue "ca.example.net"`,
     );
+  } else {
+    // Every record is valid and the issue property is present.
   }
 }
 

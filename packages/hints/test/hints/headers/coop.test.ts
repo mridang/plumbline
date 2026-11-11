@@ -55,9 +55,8 @@ describe('coop', () => {
         owasp,
       ),
     ).toEqual([]);
-    expect((await runHint(hint, page(), owasp))[0]?.message).toContain(
-      'not specified',
-    );
+    const missing = await runHint(hint, page(), owasp);
+    expect(missing[0]?.message).toContain('not specified');
     const other = await runHint(
       hint,
       page({ 'cross-origin-opener-policy': 'unsafe-none' }),

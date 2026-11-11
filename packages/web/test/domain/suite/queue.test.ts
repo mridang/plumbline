@@ -72,7 +72,7 @@ afterEach(() => {
 
 describe('backoffSeconds', () => {
   it('doubles from half a minute up to ten minutes', () => {
-    expect([1, 2, 3, 4, 5, 6, 20].map(backoffSeconds)).toEqual([
+    expect([1, 2, 3, 4, 5, 6, 20].map((n) => backoffSeconds(n))).toEqual([
       30, 60, 120, 240, 480, 600, 600,
     ]);
   });

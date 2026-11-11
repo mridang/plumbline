@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
-import { GET, dynamic } from '@/app/api/domains/[id]/reports/[report_id]/route';
+import { GET, dynamic } from '@/app/api/domains/[id]/reports/[report-id]/route';
 import { SESSION_COOKIE } from '@/domain/auth/app';
 import { APP_MIGRATIONS } from '../../../../../../lib/core/db/migrations';
 import {
@@ -15,7 +15,7 @@ import {
 const ID = '00000000-0000-4000-8000-000000000001';
 const REPORT = '00000000-0000-4000-8000-0000000000aa';
 const URL = `https://plumbline.test/api/domains/${ID}/reports/${REPORT}`;
-const params = { params: Promise.resolve({ id: ID, report_id: REPORT }) };
+const params = { params: Promise.resolve({ id: ID, 'report-id': REPORT }) };
 
 let restore: () => void;
 /** The Cookie header of the signed-in caller. */
@@ -45,13 +45,13 @@ describe('/api/domains/:id/reports/:report_id', () => {
   });
 
   it('reads the report of the person the session cookie names', async () => {
-    const body = (await (
-      await GET(new Request(URL, { headers: { cookie } }), params)
-    ).json()) as { id: string };
+    const res = await GET(new Request(URL, { headers: { cookie } }), params);
+    const body = (await res.json()) as { id: string };
     expect(body.id).toBe(REPORT);
   });
 
   it('answers 401 without a session cookie', async () => {
-    expect((await GET(new Request(URL), params)).status).toBe(401);
+    const res = await GET(new Request(URL), params);
+    expect(res.status).toBe(401);
   });
 });

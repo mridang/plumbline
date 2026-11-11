@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
@@ -102,9 +102,8 @@ describe('recordIssue and issuesOf', () => {
     await recordIssue(db, 'a/b', 'x.test', 'csp', { number: 1, state: 'open' });
     await recordIssue(db, 'a/b', 'y.test', 'csp', { number: 2, state: 'open' });
     await recordIssue(db, 'c/d', 'x.test', 'csp', { number: 3, state: 'open' });
-    expect((await issuesOf(db, 'a/b', 'x.test')).map((i) => i.number)).toEqual([
-      1,
-    ]);
+    const issues = await issuesOf(db, 'a/b', 'x.test');
+    expect(issues.map((i) => i.number)).toEqual([1]);
   });
 
   it('reads an issue of the old kind (no check of its own) from its list of checks, and a damaged list as none, and lists at most a page', async () => {
@@ -113,14 +112,14 @@ describe('recordIssue and issuesOf', () => {
     raw.exec(
       'UPDATE suite_issue_history SET check_id = \'\', checks = \'["a","b"]\'',
     );
-    expect((await issuesOf(db, 'a/b', 'x.test'))[0]?.checks).toEqual([
-      'a',
-      'b',
-    ]);
+    const old = await issuesOf(db, 'a/b', 'x.test');
+    expect(old[0]?.checks).toEqual(['a', 'b']);
     raw.exec("UPDATE suite_issue_history SET checks = 'not json'");
-    expect((await issuesOf(db, 'a/b', 'x.test'))[0]?.checks).toEqual([]);
+    const damaged = await issuesOf(db, 'a/b', 'x.test');
+    expect(damaged[0]?.checks).toEqual([]);
     raw.exec('UPDATE suite_issue_history SET checks = \'{"a":1}\'');
-    expect((await issuesOf(db, 'a/b', 'x.test'))[0]?.checks).toEqual([]);
+    const notList = await issuesOf(db, 'a/b', 'x.test');
+    expect(notList[0]?.checks).toEqual([]);
     for (let n = 2; n < ISSUES_LISTED + 5; n += 1) {
       await recordIssue(db, 'a/b', 'x.test', 'csp', {
         number: n,
@@ -136,7 +135,8 @@ describe('the history through saveIssue and forgetIssue', () => {
     const { db } = empty();
     await saveIssue(db, 'a/b', 'x.test', 'csp', issue(1, 'open'));
     await saveIssue(db, 'a/b', 'x.test', 'csp', issue(1, 'fixed'));
-    expect((await issuesOf(db, 'a/b', 'x.test'))[0]).toMatchObject({
+    const issues = await issuesOf(db, 'a/b', 'x.test');
+    expect(issues[0]).toMatchObject({
       number: 1,
       state: 'fixed',
       checks: ['csp'],
@@ -157,10 +157,11 @@ describe('the history through saveIssue and forgetIssue', () => {
     const { db } = empty();
     await saveIssue(db, 'a/b', 'x.test', 'csp', issue(1, 'open'));
     await saveIssue(db, 'a/b', 'x.test', 'hsts', issue(2, 'open'));
+    const issues = await issuesOf(db, 'a/b', 'x.test');
     expect(
-      (await issuesOf(db, 'a/b', 'x.test'))
+      issues
         .map((i) => [i.number, ...i.checks])
-        .toSorted(),
+        .toSorted((a, b) => a.join(',').localeCompare(b.join(','))),
     ).toEqual([
       [1, 'csp'],
       [2, 'hsts'],
@@ -194,9 +195,9 @@ describe('the history through saveIssue and forgetIssue', () => {
 });
 
 describe('migration 0017_issue_per_check', () => {
-  it('gives an issue that reported one check that check, leaves the others for the old kind, and drops claims', () => {
+  it('gives an issue that reported one check that check, leaves the others for the old kind, and drops claims', async () => {
     const before = APP_MIGRATIONS.filter(
-      (file) => file < '0017_issue_per_check.sql',
+      (file) => file.localeCompare('0017_issue_per_check.sql') < 0,
     );
     const { raw } = sqliteDatabase(...before);
     raw.exec(`
@@ -209,7 +210,7 @@ describe('migration 0017_issue_per_check', () => {
         ('a/b', 'none.test', 3, 'open', '2026-01-01T00:00:00.000Z', '[]');
     `);
     raw.exec(
-      readFileSync(
+      await readFile(
         path.join(process.cwd(), 'migrations', '0017_issue_per_check.sql'),
         'utf8',
       ),

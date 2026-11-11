@@ -1,7 +1,7 @@
 import { agentHint } from './define-agent-hint.js';
 
 /**
- * isitagentready.com check. Discovery: human and agent readable instructions for registering an agent.
+ * Isitagentready.com check. Discovery: human and agent readable instructions for registering an agent.
  * The logic lives in `src/lib/agent`; failures are reported as advice.
  */
 export default agentHint({

@@ -31,9 +31,7 @@ function When({
   now,
 }: Readonly<{ at: string | null; now: number }>): ReactElement {
   return at === null ? (
-    <span className="text-subtle" title="Not known yet">
-      —
-    </span>
+    <span className="text-subtle">—</span>
   ) : (
     <RelativeTime at={at} now={now} className="text-muted" />
   );
@@ -53,7 +51,6 @@ function Commit({
   ) : (
     <a
       href={commitUrl(repo, sha)}
-      title={sha}
       className="focus-ring rounded-sm font-mono text-xs text-muted underline-offset-4 hover:text-accent hover:underline"
     >
       {short}
@@ -70,11 +67,7 @@ function Issues({
     return <span className="text-subtle">—</span>;
   }
   return (
-    <a
-      href={issuesUrl(repo)}
-      title={`${count} open ${count === 1 ? 'issue' : 'issues'} on GitHub`}
-      className="focus-ring rounded-full"
-    >
+    <a href={issuesUrl(repo)} className="focus-ring rounded-full">
       <Badge tone="bad">{count} open</Badge>
     </a>
   );
@@ -84,9 +77,7 @@ function Issues({
 function Host({ host }: Readonly<{ host: string }>): ReactElement {
   return (
     <span className="flex min-w-0 items-center gap-1.5 text-muted">
-      <span className="truncate" title={host}>
-        {host}
-      </span>
+      <span className="truncate">{host}</span>
       <a
         href={`https://${host}`}
         target="_blank"

@@ -35,7 +35,7 @@ function stripSignature(
   const sig = lines.findIndex((l) =>
     l.startsWith('-----BEGIN PGP SIGNATURE-----'),
   );
-  if (blank < 0 || sig < 0) {
+  if (blank === -1 || sig === -1) {
     issues.push({
       severity: 'error',
       line: 1,
@@ -89,7 +89,8 @@ export function validateSecurityTxt(
     const name = trimmed.slice(0, colon).trim().toLowerCase();
     // Dash-escaped lines in signed files start with "- ".
     const value = trimmed.slice(colon + 1).trim();
-    (fields[name] ??= []).push({ value, line });
+    fields[name] ??= [];
+    fields[name].push({ value, line });
   });
 
   for (const required of ['contact', 'expires']) {
@@ -113,7 +114,7 @@ export function validateSecurityTxt(
   if (expires[0]) {
     const { value, line } = expires[0];
     const snippet = `Expires: ${value}`;
-    const time = RFC3339.test(value) ? Date.parse(value) : NaN;
+    const time = RFC3339.test(value) ? Date.parse(value) : Number.NaN;
     if (Number.isNaN(time)) {
       issues.push({
         severity: 'error',
@@ -135,6 +136,8 @@ export function validateSecurityTxt(
         snippet,
         message: "'Expires' should be less than one year in the future.",
       });
+    } else {
+      // An expiry within one year is acceptable.
     }
   }
 
@@ -177,6 +180,8 @@ export function validateSecurityTxt(
           snippet,
           message: `'${value}' is not a valid URL.`,
         });
+      } else {
+        // A URI that passes every check needs no finding.
       }
     }
   }

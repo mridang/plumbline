@@ -11,8 +11,13 @@
 
 const TOKEN = /^[A-Za-z*][A-Za-z0-9:/!#$%&'*+.^_`|~-]*$/;
 const PARAMETER_KEY = /^[a-z*][a-z0-9_.*-]*$/;
-const PARAMETER_VALUE =
-  /^(?:\?[01]|-?\d+(?:\.\d+)?|"(?:[^"\\]|\\["\\])*"|[A-Za-z*][A-Za-z0-9:/!#$%&'*+.^_`|~-]*)$/;
+/** The bare item shapes a parameter value may take: boolean, number, string, token. */
+const PARAMETER_VALUES = [
+  /^\?[01]$/,
+  /^-?\d+(?:\.\d+)?$/,
+  /^"(?:[^"\\]|\\["\\])*"$/,
+  TOKEN,
+];
 
 /** Returns the token of a structured field item, or null when invalid. */
 export function parseStructuredToken(value: string): string | null {
@@ -26,7 +31,11 @@ export function parseStructuredToken(value: string): string | null {
     if (!PARAMETER_KEY.test(key)) {
       return null;
     }
-    if (rest.length > 0 && !PARAMETER_VALUE.test(rest.join('='))) {
+    const parameterValue = rest.join('=');
+    if (
+      rest.length > 0 &&
+      !PARAMETER_VALUES.some((pattern) => pattern.test(parameterValue))
+    ) {
       return null;
     }
   }

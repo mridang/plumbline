@@ -27,6 +27,11 @@ export interface Filters {
   targets?: readonly string[];
 }
 
+/** The taxonomy placement of a hint; undefined for an id the taxonomy does not place. */
+function placementOf(id: string): (typeof PLACEMENT)[string] | undefined {
+  return PLACEMENT[id];
+}
+
 /**
  * Findings and webhint's own config name hints `extra/<id>`, so a user may
  * paste that form back into `--only`; it means the same bare id.
@@ -63,10 +68,9 @@ function requireKnown(
  * section, tag, target, tier, control or source, bare or written with its kind
  * such as `tag:seo`, or an old group name such as `tls`) that are also in one of
  * the given tiers and targets; every hint when none is given.
- *
- * @param catalogue Every shipped hint.
- * @param groups Selector names, for example `owasp`, `section:https` or `tls`.
- * @param filters Tiers and targets a hint must also be in.
+ * @param catalogue - Every shipped hint.
+ * @param groups - Selector names, for example `owasp`, `section:https` or `tls`.
+ * @param filters - Tiers and targets a hint must also be in.
  * @returns The matching catalogue entries, in catalogue order.
  * @throws UsageError when a name matches nothing.
  */
@@ -88,15 +92,17 @@ export function filterByGroups(
   );
   return catalogue.filter((hint) => {
     const subject = { id: hint.id, groups: hint.groups };
-    const placement = PLACEMENT[hint.id];
-    return (
-      (groups.length === 0 ||
-        selectors.some((selector) => matches(selector, subject))) &&
-      (!filters.tiers?.length ||
-        (placement !== undefined && filters.tiers.includes(placement.tier))) &&
-      (!filters.targets?.length ||
-        (placement !== undefined && filters.targets.includes(placement.target)))
-    );
+    const placement = placementOf(hint.id);
+    const inGroup =
+      groups.length === 0 ||
+      selectors.some((selector) => matches(selector, subject));
+    const inTier =
+      !filters.tiers?.length ||
+      (placement !== undefined && filters.tiers.includes(placement.tier));
+    const inTarget =
+      !filters.targets?.length ||
+      (placement !== undefined && filters.targets.includes(placement.target));
+    return inGroup && inTier && inTarget;
   });
 }
 
@@ -104,9 +110,8 @@ export function filterByGroups(
  * Works out the hint ids to run: the `--only` ids (or every hint), kept to
  * those in a `--group`, `--tier` or `--target` when given, less the `--skip`
  * ids.
- *
- * @param catalogue Every shipped hint.
- * @param selection The `--only`, `--skip`, `--group`, `--tier` and `--target` lists.
+ * @param catalogue - Every shipped hint.
+ * @param selection - The `--only`, `--skip`, `--group`, `--tier` and `--target` lists.
  * @returns The bare ids to run, in catalogue order.
  * @throws UsageError for an unknown id or name, or when nothing is left.
  */
@@ -115,8 +120,8 @@ export function selectHints(
   selection: Selection,
 ): string[] {
   const ids = new Set(catalogue.map((hint) => hint.id));
-  const only = selection.only.map(bare);
-  const skip = new Set(selection.skip.map(bare));
+  const only = selection.only.map((id) => bare(id));
+  const skip = new Set(selection.skip.map((id) => bare(id)));
   requireKnown('check', only, (name) => ids.has(name));
   requireKnown('check', [...skip], (name) => ids.has(name));
   const chosen = filterByGroups(catalogue, selection.groups, selection)

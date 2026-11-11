@@ -62,13 +62,27 @@ function rereadsInstallation(
     ].includes(delivery.action ?? '');
   }
   if (event === 'installation') {
-    return (
-      delivery.action === 'new_permissions_accepted' ||
-      delivery.action === 'unsuspend' ||
-      delivery.action === 'created'
+    return ['new_permissions_accepted', 'unsuspend', 'created'].includes(
+      delivery.action ?? '',
     );
   }
   return event === 'push' && touchesWrangler(delivery);
+}
+
+/**
+ * Whether a deployment's checks are to run for this delivery: its repository's
+ * checks are not turned off, and the delivery is not a retry already claimed.
+ */
+async function isNewCheck(
+  db: ReturnType<typeof getDatabase>,
+  repo: string,
+  deliveryId: string | null,
+): Promise<boolean> {
+  // A repository whose checks are turned off is not checked: the delivery is dropped.
+  return (
+    !(await isRepoDisabled(db, repo)) &&
+    (deliveryId === null || (await claimDelivery(db, deliveryId)))
+  );
 }
 
 /**
@@ -124,9 +138,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       deployed &&
       checkable &&
       owner !== undefined &&
-      // A repository whose checks are turned off is not checked: the delivery is dropped.
-      !(await isRepoDisabled(db, deployed.repo)) &&
-      (deliveryId === null || (await claimDelivery(db, deliveryId)))
+      (await isNewCheck(db, deployed.repo, deliveryId))
     ) {
       await leaveJob({
         installationId,
@@ -151,15 +163,13 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
       // New rules apply to the live site as soon as they are on the default branch.
       const repo = delivery.repository?.full_name;
-      if (
+      const pushesConfig =
         event === 'push' &&
-        repo &&
         touchesConfig(delivery) &&
-        isDefaultBranchPush(delivery) &&
-        // A repository whose file turns checks off still reads the push, to see
-        // whether the flag changed; one switched off by a person does not.
-        !(await isRepoSwitchedOff(db, repo))
-      ) {
+        isDefaultBranchPush(delivery);
+      // A repository whose file turns checks off still reads the push, to see
+      // whether the flag changed; one switched off by a person does not.
+      if (repo && pushesConfig && !(await isRepoSwitchedOff(db, repo))) {
         await leaveJob({
           installationId,
           userId: owner,

@@ -42,15 +42,12 @@ const row = (overrides: Record<string, unknown> = {}) => ({
 });
 
 /** A fetch that serves a valid metadata document for `CIMD`. */
-const serving = jest.fn(
-  async () =>
-    new Response(
-      JSON.stringify({
-        client_id: CIMD,
-        client_name: 'Fresh',
-        redirect_uris: ['https://app.example/cb'],
-      }),
-    ),
+const serving = jest.fn(async () =>
+  Response.json({
+    client_id: CIMD,
+    client_name: 'Fresh',
+    redirect_uris: ['https://app.example/cb'],
+  }),
 ) as unknown as typeof fetch;
 
 describe('resolveClient', () => {
@@ -65,7 +62,7 @@ describe('resolveClient', () => {
   });
 
   it('does not know a plain id that was never registered', async () => {
-    const { db } = fakeDb({ findFirst: { oauthClients: undefined } });
+    const { db } = fakeDb({ findFirst: {} });
     expect(await resolveClient(db, 'dcr_nope')).toBeUndefined();
   });
 
@@ -87,7 +84,7 @@ describe('resolveClient', () => {
   });
 
   it('fetches and saves a metadata document it has not seen', async () => {
-    const { db, calls } = fakeDb({ findFirst: { oauthClients: undefined } });
+    const { db, calls } = fakeDb({ findFirst: {} });
     const client = await resolveClient(db, CIMD, serving, unlimited);
     expect(client).toMatchObject({
       clientId: CIMD,
@@ -136,7 +133,7 @@ describe('resolveClient', () => {
     const down = jest.fn(async () => {
       throw new Error('down');
     }) as unknown as typeof fetch;
-    const { db } = fakeDb({ findFirst: { oauthClients: undefined } });
+    const { db } = fakeDb({ findFirst: {} });
     expect(await resolveClient(db, CIMD, down, unlimited)).toBeUndefined();
   });
 });
@@ -210,7 +207,7 @@ describe('D1OAuthStore', () => {
   });
 
   it('knows no code that is not stored', async () => {
-    const { db } = fakeDb({ findFirst: { oauthCodes: undefined } });
+    const { db } = fakeDb({ findFirst: {} });
     expect(await new D1OAuthStore(db).findCode('h')).toBeUndefined();
   });
 
@@ -475,6 +472,21 @@ function ids(
 
 const MIGRATIONS = ['0001_init.sql'] as const;
 
+const tokenRows = (...hashes: readonly string[]) =>
+  hashes.map((hash, i) => ({
+    hash,
+    kind: i === 0 ? ('access' as const) : ('refresh' as const),
+    grantId: 'new',
+    expiresAt: 9_999_999_999,
+  }));
+const grantRecord = (id: string, userId = 7, clientId = 'c1') => ({
+  id,
+  userId,
+  clientId,
+  scope: ['checks:read'],
+  resource: 'r',
+});
+
 describe('against a real SQLite database', () => {
   describe('client authentication', () => {
     const signed = {
@@ -498,14 +510,14 @@ describe('against a real SQLite database', () => {
 
     it('treats a client saved without a method as public, and updates it when the document changes', async () => {
       const { db } = sqliteDatabase(...MIGRATIONS);
-      await saveClient(db, { ...signed, auth: undefined }, 300);
-      expect(
-        (await new D1OAuthStore(db).findClient(signed.clientId))?.auth,
-      ).toBeUndefined();
+      const unsigned = { ...signed };
+      Reflect.deleteProperty(unsigned, 'auth');
+      await saveClient(db, unsigned, 300);
+      const stored = await new D1OAuthStore(db).findClient(signed.clientId);
+      expect(stored?.auth).toBeUndefined();
       await saveClient(db, signed, 300);
-      expect(
-        (await new D1OAuthStore(db).findClient(signed.clientId))?.auth,
-      ).toEqual(signed.auth);
+      const updated = await new D1OAuthStore(db).findClient(signed.clientId);
+      expect(updated?.auth).toEqual(signed.auth);
     });
 
     it('answers nothing for a client it does not know', async () => {
@@ -560,21 +572,6 @@ describe('against a real SQLite database', () => {
     });
   });
 
-  const tokenRows = (...hashes: readonly string[]) =>
-    hashes.map((hash, i) => ({
-      hash,
-      kind: i === 0 ? ('access' as const) : ('refresh' as const),
-      grantId: 'new',
-      expiresAt: 9_999_999_999,
-    }));
-  const grantRecord = (id: string, userId = 7, clientId = 'c1') => ({
-    id,
-    userId,
-    clientId,
-    scope: ['checks:read'],
-    resource: 'r',
-  });
-
   describe('createGrant', () => {
     it("keeps the user's other grants for the same client working, and other users' and clients' too", async () => {
       const { db, raw } = sqliteDatabase(...MIGRATIONS);
@@ -601,7 +598,8 @@ describe('against a real SQLite database', () => {
           .all(),
       ).toEqual([]);
       for (const token of ['o1', 'n1', 'u1', 'c1']) {
-        expect((await store.findToken(token))?.grant.revoked).toBe(false);
+        const found = await store.findToken(token);
+        expect(found?.grant.revoked).toBe(false);
       }
     });
 
@@ -650,7 +648,9 @@ describe('against a real SQLite database', () => {
       ).toBeNull();
     });
   });
+});
 
+describe('against a real SQLite database, refresh token rotation', () => {
   describe('rotateRefreshToken', () => {
     const setup = async () => {
       const made = sqliteDatabase(...MIGRATIONS);
@@ -669,7 +669,8 @@ describe('against a real SQLite database', () => {
     it('spends the old token and stores the new pair', async () => {
       const { store, raw } = await setup();
       expect(await store.rotateRefreshToken('rt', 500, replacement)).toBe(true);
-      expect((await store.findToken('rt'))?.usedAt).toBe(500);
+      const spent = await store.findToken('rt');
+      expect(spent?.usedAt).toBe(500);
       expect(ids(raw, 'oauth_tokens', 'token_hash')).toEqual([
         'at',
         'at2',
@@ -687,7 +688,8 @@ describe('against a real SQLite database', () => {
           { hash: 'rt3', kind: 'refresh', grantId: 'g', expiresAt: 1 },
         ]),
       ).toBe(false);
-      expect((await store.findToken('rt'))?.usedAt).toBe(500);
+      const spent = await store.findToken('rt');
+      expect(spent?.usedAt).toBe(500);
       expect(ids(raw, 'oauth_tokens', 'token_hash')).toEqual([
         'at',
         'at2',
@@ -703,10 +705,13 @@ describe('against a real SQLite database', () => {
           { hash: 'at', kind: 'access', grantId: 'g', expiresAt: 1 },
         ]),
       ).rejects.toThrow();
-      expect((await store.findToken('rt'))?.usedAt).toBeNull();
+      const spent = await store.findToken('rt');
+      expect(spent?.usedAt).toBeNull();
     });
   });
+});
 
+describe('against a real SQLite database, connected apps', () => {
   describe('listConnectedApps and revokeConnectedApp', () => {
     const seed = () => {
       const made = sqliteDatabase(...MIGRATIONS);
@@ -820,7 +825,7 @@ describe('against a real SQLite database', () => {
       seedClient(raw, CIMD, 'cimd', '2026-01-01T00:00:00.000Z');
       raw
         .prepare('UPDATE oauth_clients SET client_name = ?')
-        .run('Cl\u202eaude\n  Desktop');
+        .run('Cl\u202Eaude\n  Desktop');
       seedGrant(raw, 'g1', 7, CIMD, '2026-03-01T00:00:00.000Z');
       expect(await listConnectedApps(db, 7)).toEqual([
         expect.objectContaining({
@@ -840,9 +845,8 @@ describe('against a real SQLite database', () => {
         .all()
         .map((row) => row['id']);
       expect(live).toEqual(['g-other', 'g-theirs']);
-      expect((await listConnectedApps(db, 7)).map((a) => a.grantId)).toEqual([
-        'g-other',
-      ]);
+      const connected = await listConnectedApps(db, 7);
+      expect(connected.map((a) => a.grantId)).toEqual(['g-other']);
     });
 
     it("refuses a grant that is not the user's, and one that does not exist", async () => {
@@ -869,7 +873,9 @@ describe('against a real SQLite database', () => {
       expect(await revokeConnectedApp(db, 7, 'g-solo')).toBe(false);
     });
   });
+});
 
+describe('against a real SQLite database, purging OAuth data', () => {
   describe('purgeOAuthData', () => {
     const NOW = Date.parse('2026-06-01T00:00:00.000Z') / 1000;
     const day = (n: number) =>
@@ -974,7 +980,9 @@ describe('against a real SQLite database', () => {
       await expect(purgeOAuthData(db)).resolves.toBeUndefined();
     });
   });
+});
 
+describe('against a real SQLite database, resolving clients', () => {
   describe('resolveClient', () => {
     const NOW = Date.parse('2026-06-01T12:00:00.000Z');
     const ago = (seconds: number) =>
@@ -1006,7 +1014,7 @@ describe('against a real SQLite database', () => {
       expect(fetchImpl).not.toHaveBeenCalled();
       await resolveClient(db, CIMD, fetchImpl, {
         ...unlimited,
-        now: NOW + 3600_000,
+        now: NOW + 3_600_000,
       });
       expect(fetchImpl).toHaveBeenCalledTimes(1);
     });
@@ -1025,7 +1033,7 @@ describe('against a real SQLite database', () => {
       const span =
         Date.parse(String(row?.['expires_at'])) -
         Date.parse(String(row?.['fetched_at']));
-      expect(span).toBe(1800_000);
+      expect(span).toBe(1_800_000);
     });
 
     it('limits fetches per host and overall, counting them under their own names', async () => {
@@ -1171,7 +1179,9 @@ describe('against a real SQLite database', () => {
       ).toMatchObject({ clientId: 'dcr_x', kind: 'dcr' });
     });
   });
+});
 
+describe('against a real SQLite database, saving clients', () => {
   describe('saveClient', () => {
     it('records an expiry for a fetched document and none for a registered client', async () => {
       const { db, raw } = sqliteDatabase(...MIGRATIONS);

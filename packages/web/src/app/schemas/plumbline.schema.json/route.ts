@@ -1,7 +1,7 @@
 /**
  * The JSON Schema of `plumbline.yaml`.
  *
- *   GET /schemas/plumbline.schema.json → 200 the schema, 304 when `If-None-Match` is its ETag
+ *   GET /schemas/plumbline.schema.json → 200 the schema, 304 when `If-None-Match` is its ETag.
  *
  * A document for editors, not part of the REST contract, so it lives outside
  * `/api` (the `api-design` skill) and is not in `openapi.json`. The behaviour is
@@ -21,7 +21,8 @@ async function etagOf(text: string): Promise<string> {
     'SHA-256',
     new TextEncoder().encode(text),
   );
-  const hex = [...new Uint8Array(digest).slice(0, 16)]
+  const hex = [...new Uint8Array(digest)]
+    .slice(0, 16)
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('');
   return `"${hex}"`;

@@ -42,15 +42,21 @@ const MACRO_EXPAND =
 
 /** A `macro-string`: macro expansions and printable characters except `%`. */
 const MACRO_STRING =
-  /^(?:%\{[slodiphcrtvSLODIPHCRTV]\d*[rR]?[.\-+,/_=]*\}|%%|%_|%-|[\x21-\x24\x26-\x7e])*$/u;
+  /^(?:%\{[slodiphcrtvSLODIPHCRTV]\d*[rR]?[.\-+,/_=]*\}|%%|%_|%-|[\u0021-\u0024\u0026-\u007E])*$/u;
 
 /** `toplabel` of RFC 7208: must contain a letter or a hyphen between alphanum. */
-const TOPLABEL =
-  /^(?:[A-Za-z0-9]*[A-Za-z][A-Za-z0-9]*|[A-Za-z0-9]+-[A-Za-z0-9-]*[A-Za-z0-9])$/u;
+function isToplabel(label: string): boolean {
+  if (/^[A-Za-z0-9]+$/u.test(label)) {
+    return /[A-Za-z]/u.test(label);
+  }
+  return (
+    /^[A-Za-z0-9]+-[A-Za-z0-9-]*$/u.test(label) && /[A-Za-z0-9]$/u.test(label)
+  );
+}
 
 const IPV4_OCTET = '(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])';
 const IPV4 = new RegExp(
-  `^${IPV4_OCTET}\\.${IPV4_OCTET}\\.${IPV4_OCTET}\\.${IPV4_OCTET}(?:/(3[0-2]|[12][0-9]|[0-9]))?$`,
+  String.raw`^${IPV4_OCTET}\.${IPV4_OCTET}\.${IPV4_OCTET}\.${IPV4_OCTET}(?:/(3[0-2]|[12][0-9]|[0-9]))?$`,
   'u',
 );
 
@@ -61,12 +67,12 @@ export function isValidDomainSpec(spec: string): boolean {
   }
   const withoutDot = spec.endsWith('.') ? spec.slice(0, -1) : spec;
   const label = withoutDot.split('.').pop() ?? '';
-  return TOPLABEL.test(label) || MACRO_EXPAND.test(label);
+  return isToplabel(label) || MACRO_EXPAND.test(label);
 }
 
 /** `a` and `mx` accept an optional dual CIDR length: `/24`, `//64`, `/24//64`. */
 const DUAL_CIDR =
-  /^(?:\/(3[0-2]|[12][0-9]|[0-9]))?(?:\/\/(12[0-8]|1[01][0-9]|[1-9][0-9]|[0-9]))?$/u;
+  /^(?:\/(3[0-2]|[12]\d|\d))?(?:\/\/(12[0-8]|1[01]\d|[1-9]\d|\d))?$/u;
 
 /** Validates the argument of `a` / `mx`, which is `[:domain-spec][dual-cidr]`. */
 function isValidDomainWithCidr(argument: string): boolean {
@@ -82,7 +88,7 @@ function isValidDomainWithCidr(argument: string): boolean {
   const rest = argument.slice(1);
   // Printable characters include `/`, so the whole rest is also a domain
   // specification; try it without a trailing CIDR first, then as is.
-  const cidr = /(?:\/[0-9]{1,2})?(?:\/\/[0-9]{1,3})?$/u.exec(rest)?.[0] ?? '';
+  const cidr = /(?:\/\d{1,2})?(?:\/\/\d{1,3})?$/u.exec(rest)?.[0] ?? '';
   const stripped = rest.slice(0, rest.length - cidr.length);
   if (DUAL_CIDR.test(cidr) && isValidDomainSpec(stripped)) {
     return true;
@@ -91,13 +97,13 @@ function isValidDomainWithCidr(argument: string): boolean {
 }
 
 function isValidIp6(argument: string): boolean {
-  const [address, length, ...extra] = argument.split('/');
-  if (extra.length > 0 || !isIPv6(address)) {
+  const [address, ...lengthParts] = argument.split('/');
+  if (lengthParts.length > 1 || !isIPv6(address)) {
     return false;
   }
   return (
-    length === undefined ||
-    /^(?:12[0-8]|1[01][0-9]|[1-9][0-9]|[0-9])$/u.test(length)
+    lengthParts.length === 0 ||
+    /^(?:12[0-8]|1[01]\d|[1-9]\d|\d)$/u.test(lengthParts[0])
   );
 }
 

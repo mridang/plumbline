@@ -5,7 +5,7 @@
  *
  *   jest.unstable_mockModule('cloudflare:workers', cloudflareWorkersStub, {
  *     virtual: true,
- *   } as never);
+ *   } as never);.
  */
 class DurableObject {
   constructor(

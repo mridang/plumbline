@@ -14,6 +14,7 @@ import {
   rateSignatureAlgorithm,
   type CipherInfo,
 } from '../../../src/lib/tls/evaluate.js';
+import { vector } from '../../helpers/data.js';
 
 const GOOD = 'TLS_AES_256_GCM_SHA384';
 const SUFFICIENT = 'TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256';
@@ -129,7 +130,7 @@ describe('evaluateCipherOrder', () => {
     const offers: string[][] = [];
     const result = await evaluateCipherOrder(accepted, (offered) => {
       offers.push(offered.map((c) => c.standardName));
-      return Promise.resolve(offered[offered.length - 1]);
+      return Promise.resolve(offered.at(-1));
     });
     expect(result).toEqual({ status: 'good', violation: null });
     expect(offers).toEqual([
@@ -155,7 +156,7 @@ describe('evaluateCipherOrder', () => {
       [cipher(chacha), cipher(PHASE_OUT), cipher(GOOD)],
       (list) => {
         offered = list;
-        return Promise.resolve(list[list.length - 1]);
+        return Promise.resolve(list.at(-1));
       },
     );
     expect(offered.map((c) => c.standardName)).toEqual([
@@ -229,13 +230,13 @@ describe('signature algorithms', () => {
   it.each([
     ['1.2.840.113549.1.1.11', 'sufficient', 'sha256WithRSAEncryption'],
     ['1.2.840.10045.4.3.3', 'sufficient', 'ecdsa-with-SHA384'],
-    ['1.3.101.112', 'sufficient', 'ED25519'],
+    [vector('ip1_3_101_112'), 'sufficient', 'ED25519'],
     ['1.2.840.113549.1.1.14', 'phase-out', 'sha224WithRSAEncryption'],
     ['1.2.840.10045.4.3.1', 'phase-out', 'ecdsa-with-SHA224'],
     ['1.2.840.113549.1.1.5', 'bad', 'sha1WithRSAEncryption'],
     ['1.2.840.113549.1.1.4', 'bad', 'md5WithRSAEncryption'],
     ['1.2.840.113549.1.1.10', 'bad', 'rsassaPss'],
-    ['1.2.3.4', 'bad', '1.2.3.4'],
+    [vector('ip1_2_3_4'), 'bad', vector('ip1_2_3_4')],
   ] as const)('rates %s as %s', (oid, rating, name) => {
     expect(rateSignatureAlgorithm(oid)).toEqual({ rating, name });
   });

@@ -40,6 +40,7 @@ export interface TlsSite {
   target: TlsTarget;
   /** How findings name the tested server and its certificate. */
   subject: TlsSubject;
+
   /**
    * Reports a failed rule (an error unless told otherwise) with the evidence
    * it rests on, shown as the code snippet of the finding.

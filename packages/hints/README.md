@@ -55,7 +55,7 @@ A few hints take options:
 | `cache-control`                                                             | `enforce` (boolean)  | Off by default. When `true`, requires `Cache-Control: no-store, max-age=0`, as private applications should. |
 | `clear-site-data`                                                           | `logoutUrl` (string) | Off by default. When set, fetches that URL and checks it answers with `Clear-Site-Data`.                    |
 
-For a report that groups the findings by section and shows each hint's description and sources, add [`@mridang/webhint-formatter-plumbline`](../formatter/README.md). To run every hint without writing a `.hintrc`, use the [`plumbline` CLI](../cli/README.md).
+For a report that groups the findings by section and shows each hint's description and sources, add [`@mridang/webhint-formatter-plumbline`](../formatter/README.md). To run every hint without writing a `.hintrc`, use the [`plumbline` CLI](../cli/readme.md).
 
 ### Before the first release
 

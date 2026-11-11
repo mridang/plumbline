@@ -183,6 +183,6 @@ export function worstResult(states: readonly SiteState[]): SiteResult | null {
     'unchecked',
     'ok',
   ];
-  const results = states.map(resultOf);
-  return order.find((result) => results.includes(result)) ?? null;
+  const results = new Set(states.map((state) => resultOf(state)));
+  return order.find((result) => results.has(result)) ?? null;
 }

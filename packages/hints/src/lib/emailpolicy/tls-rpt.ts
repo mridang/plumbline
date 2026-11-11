@@ -57,13 +57,12 @@ function invalidRuaDestination(rua: string): string | null {
   }
   for (const destination of destinations) {
     const lower = destination.toLowerCase();
-    if (lower.startsWith('mailto:') && destination.includes('@')) {
-      continue;
+    const isValid =
+      (lower.startsWith('mailto:') && destination.includes('@')) ||
+      lower.startsWith('https://');
+    if (!isValid) {
+      return destination;
     }
-    if (lower.startsWith('https://')) {
-      continue;
-    }
-    return destination;
   }
   return null;
 }

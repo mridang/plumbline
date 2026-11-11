@@ -80,14 +80,16 @@ export async function claimScan(
     const decision = await rateLimit(store, SCAN_COOLDOWN, url, now);
     if (deps.random() < PURGE_PROBABILITY) {
       runInBackground(
-        purgeRateLimits(store, PURGE_IDLE_SECONDS, now).catch(
-          (error: unknown) => {
+        (async () => {
+          try {
+            await purgeRateLimits(store, PURGE_IDLE_SECONDS, now);
+          } catch (error) {
             logError({
               event: 'scan.cooldown.purge_failed',
               error: errorMessage(error),
             });
-          },
-        ),
+          }
+        })(),
       );
     }
     return decision;
@@ -104,10 +106,8 @@ export function cooldownMessage(
 ): string {
   const minutes = Math.floor(retryAfterSeconds / 60);
   const seconds = retryAfterSeconds % 60;
-  const wait =
-    minutes === 0
-      ? `${seconds} s`
-      : `${minutes} min${seconds === 0 ? '' : ` ${seconds} s`}`;
+  const secondsPart = seconds === 0 ? '' : ` ${seconds} s`;
+  const wait = minutes === 0 ? `${seconds} s` : `${minutes} min${secondsPart}`;
   return `${url} was checked less than ${SCAN_COOLDOWN.windowSeconds / 60} minutes ago. A page can be checked once every ${SCAN_COOLDOWN.windowSeconds / 60} minutes; try again in ${wait}.`;
 }
 

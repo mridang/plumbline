@@ -24,7 +24,7 @@ export function Badge({
   dot = false,
   pulse = false,
   mono = false,
-  title,
+  detail,
   className,
   children,
 }: Readonly<{
@@ -36,14 +36,13 @@ export function Badge({
   pulse?: boolean;
   /** Draw the text in the monospace face, for a commit or an id. */
   mono?: boolean;
-  /** What a pointer shows when it rests on the badge. */
-  title?: string;
+  /** Read out after the badge's text, when the text alone does not say enough. */
+  detail?: string;
   className?: string;
   children: ReactNode;
 }>): ReactElement {
   return (
     <span
-      title={title}
       className={cn(
         'inline-flex w-fit shrink-0 items-center rounded-full text-xs leading-none font-medium whitespace-nowrap tabular-nums ring-1 ring-inset',
         SIZES[size],
@@ -54,6 +53,7 @@ export function Badge({
     >
       {dot ? <Dot tone={tone} pulse={pulse} size="xs" /> : null}
       {children}
+      {detail ? <span className="sr-only"> {detail}</span> : null}
     </span>
   );
 }

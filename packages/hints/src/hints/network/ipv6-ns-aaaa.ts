@@ -46,6 +46,8 @@ export default defineHint({
           'Only one name server of your domain has an IPv6 address.',
           { severity: Severity.error, codeSnippet },
         );
+      } else {
+        // Any other verdict needs no finding.
       }
     });
   },

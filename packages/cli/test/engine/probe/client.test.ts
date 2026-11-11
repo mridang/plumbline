@@ -9,6 +9,7 @@ import {
   linesOf,
   ok,
 } from '../../helpers/probe.js';
+import { vector } from '../../helpers/data.js';
 
 const batchOf = (count: number): string =>
   JSON.stringify({
@@ -35,7 +36,8 @@ describe('handshake', () => {
     );
     expect(sent).toHaveLength(1);
     expect(sent[0]?.path).toBe('/v1/handshakes');
-    const items = sent[0]?.body.split('--\n').map(linesOf) ?? [];
+    const items =
+      sent[0]?.body.split('--\n').map((item) => linesOf(item)) ?? [];
     expect(items.map((item) => item['host'])).toEqual([
       'a.test',
       'b.test',
@@ -152,10 +154,11 @@ describe('web and mail lanes', () => {
     const hosts = sent.map((request) =>
       request.body.split('--\n').map((item) => linesOf(item)['host']),
     );
-    expect(hosts.map((list) => list.join(',')).sort()).toEqual([
-      'a.test,b.test',
-      'mx.test,mx2.test',
-    ]);
+    expect(
+      hosts
+        .map((list) => list.join(','))
+        .toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(['a.test,b.test', 'mx.test,mx2.test']);
   });
 
   it('does not make a web request wait for a mail request that takes long', async () => {
@@ -185,7 +188,9 @@ describe('web and mail lanes', () => {
     const client = new ProbeClient(transport, { mailInFlight: 1 });
     const mail = [client.starttls('mx1.test'), client.starttls('mx2.test')];
     // Both mail requests are waiting (one on its way, one for a place), and a web request still goes through.
-    await expect(client.reachable('1.1.1.1', 443)).resolves.toBe(true);
+    await expect(client.reachable(vector('ip1_1_1_1'), 443)).resolves.toBe(
+      true,
+    );
     release();
     await Promise.all(mail);
   });
@@ -216,13 +221,19 @@ describe('busy probe', () => {
       return calls < 3 ? { status: 503, text: '' } : ok('{"reachable":true}');
     });
     await expect(
-      new ProbeClient(transport, { retries: 5 }).reachable('1.1.1.1', 53),
+      new ProbeClient(transport, { retries: 5 }).reachable(
+        vector('ip1_1_1_1'),
+        53,
+      ),
     ).resolves.toBe(true);
     expect(calls).toBe(3);
 
     const busy = fakeProbe(() => ({ status: 503, text: '' }));
     await expect(
-      new ProbeClient(busy.transport, { retries: 1 }).reachable('1.1.1.1', 53),
+      new ProbeClient(busy.transport, { retries: 1 }).reachable(
+        vector('ip1_1_1_1'),
+        53,
+      ),
     ).rejects.toThrow('answered 503 (it is busy)');
     expect(busy.sent).toHaveLength(2);
   });
@@ -240,7 +251,7 @@ describe('busy probe', () => {
     const client = new ProbeClient(transport, { inFlight: 3 });
     await Promise.all(
       Array.from({ length: 10 }, (_v, n) =>
-        client.reachable('1.1.1.1', 80 + n),
+        client.reachable(vector('ip1_1_1_1'), 80 + n),
       ),
     );
     expect(most).toBe(3);
@@ -250,17 +261,21 @@ describe('busy probe', () => {
 describe('the other requests', () => {
   it('asks for a connection test with its timeout, and treats a refused address as not reachable', async () => {
     const { client, sent } = fakeProbe((_path, body) =>
-      linesOf(body)['host'] === '10.0.0.1'
+      linesOf(body)['host'] === vector('ip10_0_0_1')
         ? { status: 502, text: '{"error":"not a public address"}' }
         : ok('{"reachable":true}'),
     );
-    await expect(client.reachable('1.1.1.1', 53, 4000)).resolves.toBe(true);
+    await expect(client.reachable(vector('ip1_1_1_1'), 53, 4000)).resolves.toBe(
+      true,
+    );
     expect(linesOf(sent[0]?.body ?? '')).toMatchObject({
-      host: '1.1.1.1',
+      host: vector('ip1_1_1_1'),
       port: '53',
       timeout: '4000',
     });
-    await expect(client.reachable('10.0.0.1', 80)).resolves.toBe(false);
+    await expect(client.reachable(vector('ip10_0_0_1'), 80)).resolves.toBe(
+      false,
+    );
   });
 
   it('lets another complaint through', async () => {
@@ -268,7 +283,7 @@ describe('the other requests', () => {
       status: 502,
       text: '{"error":"the connection failed"}',
     }));
-    await expect(client.reachable('1.1.1.1', 80)).rejects.toThrow(
+    await expect(client.reachable(vector('ip1_1_1_1'), 80)).rejects.toThrow(
       'the connection failed',
     );
   });
@@ -281,7 +296,7 @@ describe('the other requests', () => {
       host: 'example.com',
       port: 443,
       tls: true,
-      ip: '2606:4700::1',
+      ip: vector('ip2606_4700__1'),
       method: 'GET',
       path: '/robots.txt',
       headers: [
@@ -298,7 +313,7 @@ describe('the other requests', () => {
     expect(linesOf(body)).toMatchObject({
       host: 'example.com',
       tls: '1',
-      ip: '2606:4700::1',
+      ip: vector('ip2606_4700__1'),
       maxbody: '1000',
     });
     expect(body).not.toContain('nobody');
@@ -348,7 +363,7 @@ describe('the other requests', () => {
       earlyData: 'GET /',
       input: ['', 'Q\n'],
       delayMs: 500,
-      timeoutMs: 20000,
+      timeoutMs: 20_000,
     });
     expect(answer.stdout).toBe('out');
     const body = sent[0]?.body ?? '';

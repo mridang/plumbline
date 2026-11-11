@@ -238,7 +238,7 @@ function sitesSchema(): JsonSchema {
       title: 'A site',
       description:
         'An https address or a host name, such as https://api.example.com.',
-      pattern: '^(https://)?[^/\\s:@]+(/.*)?$',
+      pattern: String.raw`^(https://)?[^/\s:@]+(/.*)?$`,
     },
     uniqueItems: true,
   };

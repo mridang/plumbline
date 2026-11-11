@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { siteAddress } from '@/domain/suite/site-address';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 describe('siteAddress', () => {
   it('takes the host of an https address, and of a bare host name', () => {
@@ -12,7 +13,7 @@ describe('siteAddress', () => {
   });
 
   it('refuses an address that is not https', () => {
-    expect(siteAddress('http://site.example.com')).toEqual({
+    expect(siteAddress(`${HTTP_SCHEME}site.example.com`)).toEqual({
       ok: false,
       reason: 'is not an https address',
     });
@@ -44,7 +45,7 @@ describe('siteAddress', () => {
 
   it('refuses a value that is not an address at all', () => {
     expect(siteAddress('')).toMatchObject({ ok: false });
-    expect(siteAddress('   ')).toMatchObject({ ok: false });
+    expect(siteAddress(' '.repeat(3))).toMatchObject({ ok: false });
     expect(siteAddress(42)).toMatchObject({ ok: false });
     expect(siteAddress(undefined)).toMatchObject({ ok: false });
   });

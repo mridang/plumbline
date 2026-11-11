@@ -5,7 +5,7 @@ import { altCoverage } from '../../lib/technical/read.js';
 import { imageAltCoverageFindings } from '../../lib/technical/checks.js';
 
 /**
- * Reports <img> elements without an alt attribute. alt="" is accepted (decorative). Coverage of 80% or more is a warning, less is an error. Source: LLMScout "image-alt".
+ * Reports <img> elements without an alt attribute. Alt="" is accepted (decorative). Coverage of 80% or more is a warning, less is an error. Source: LLMScout "image-alt".
  */
 export default defineHint({
   id: 'technical-image-alt-coverage',

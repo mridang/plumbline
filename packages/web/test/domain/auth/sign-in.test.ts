@@ -38,19 +38,30 @@ const { completeSignIn, missingSignInSettings } =
   await import('@/domain/auth/sign-in');
 const { SessionTokens } = await import('@/lib/session');
 
-const env = (overrides: Record<string, string | undefined> = {}) =>
+/** The settings, with `overrides` set and the `removed` names taken out. */
+const env = (
+  overrides: Record<string, string> = {},
+  removed: readonly string[] = [],
+) =>
   ({
-    SESSION_SECRET,
-    GOOGLE_OAUTH_CLIENT_ID: 'id',
-    GOOGLE_OAUTH_CLIENT_SECRET: 'secret',
-    ...overrides,
+    ...Object.fromEntries(
+      Object.entries({
+        SESSION_SECRET,
+        GOOGLE_OAUTH_CLIENT_ID: 'id',
+        GOOGLE_OAUTH_CLIENT_SECRET: 'secret',
+        ...overrides,
+      }).filter(([name]) => !removed.includes(name)),
+    ),
   }) as unknown as CloudflareEnv;
+
+/** No return address: a lookup that finds nothing yields `undefined`. */
+const NO_RETURN_TO = new Map<string, string>().get('returnTo');
 
 const context = (overrides: Record<string, unknown> = {}) => ({
   request: appRequest('GET', '/auth/callback'),
   env: env(),
   origin: 'https://app.test',
-  returnTo: undefined,
+  returnTo: NO_RETURN_TO,
   ...overrides,
 });
 
@@ -70,11 +81,10 @@ describe('missingSignInSettings', () => {
   it('names what is missing, in a fixed order, and treats empty as missing', () => {
     expect(
       missingSignInSettings(
-        env({
-          GOOGLE_OAUTH_CLIENT_ID: undefined,
-          GOOGLE_OAUTH_CLIENT_SECRET: '',
-          SESSION_SECRET: undefined,
-        }),
+        env({ GOOGLE_OAUTH_CLIENT_SECRET: '' }, [
+          'GOOGLE_OAUTH_CLIENT_ID',
+          'SESSION_SECRET',
+        ]),
       ),
     ).toEqual([
       'GOOGLE_OAUTH_CLIENT_ID',
@@ -112,7 +122,6 @@ describe('completeSignIn', () => {
       sub: 'g1',
       email: 'ada@example.com',
       name: 'Ada',
-      picture: undefined,
     });
     expect(afterSignIn).toHaveBeenCalledWith(person);
     expect(
@@ -147,7 +156,7 @@ describe('completeSignIn', () => {
 
   it('fails closed without a session secret, recording nobody', async () => {
     await expect(
-      completeSignIn(context({ env: env({ SESSION_SECRET: undefined }) }), {
+      completeSignIn(context({ env: env({}, ['SESSION_SECRET']) }), {
         sub: 'g1',
         email: 'ada@example.com',
       }),

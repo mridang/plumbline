@@ -2,6 +2,10 @@ import { describe, expect, it } from '@jest/globals';
 
 import { isDomainListData, isReportData } from '@/views/guards';
 
+/** A copy of a record without one key, so the key is missing rather than undefined. */
+const without = (record: object, key: string): Record<string, unknown> =>
+  Object.fromEntries(Object.entries(record).filter(([name]) => name !== key));
+
 /** A report payload the server would send. */
 const CARD = {
   host: 'example.com',
@@ -63,11 +67,11 @@ describe('isReportData', () => {
   });
 
   it.each([
-    ['no problems list', { ...CARD, problems: undefined }],
+    ['no problems list', without(CARD, 'problems')],
     ['a host that is not text', { ...CARD, host: 7 }],
     ['a negative count', { ...CARD, failed: -1 }],
     ['a count that is not whole', { ...CARD, passed: 1.5 }],
-    ['a missing count', { ...CARD, skipped: undefined }],
+    ['a missing count', without(CARD, 'skipped')],
     [
       'a problem that passed',
       { ...CARD, problems: [{ ...CARD.problems[0], status: 'passed' }] },
@@ -116,8 +120,8 @@ describe('isDomainListData', () => {
       { ...LIST, domains: [{ id: '1', host: 'a.com', checks: 1, latest: {} }] },
     ],
     ['domains that are not a list', { ...LIST, domains: 'many' }],
-    ['no link', { ...LIST, link: undefined }],
-    ['no total', { ...LIST, total_checks: undefined }],
+    ['no link', without(LIST, 'link')],
+    ['no total', without(LIST, 'total_checks')],
     ['undefined', undefined],
   ])('refuses %s', (_label, value) => {
     expect(isDomainListData(value)).toBe(false);

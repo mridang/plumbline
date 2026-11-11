@@ -31,7 +31,8 @@ describe('mail-tls-compression', () => {
 
   it('does not apply when the mail server cannot be reached', async () => {
     missingOpenssl();
-    expect((await scanClosedMail(hint)).problems).toEqual([]);
+    const closed = await scanClosedMail(hint);
+    expect(closed.problems).toEqual([]);
   });
 
   it('passes when compression is not negotiated', async () => {

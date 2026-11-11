@@ -7,11 +7,12 @@ import {
   type SafeFetcher,
   type SafeRequestInit,
 } from '@/lib/safe-fetch';
+import { FTP_SCHEME, HTTP_SCHEME } from '../helpers/data.js';
 
 describe('isPublicWebUrl', () => {
   it.each([
     'https://thewoksoflife.com/wp-content/uploads/a.jpg',
-    'http://www.site.co.uk/a.png',
+    `${HTTP_SCHEME}www.site.co.uk/a.png`,
     'https://cdn.example-food.com:443/a.webp',
     'https://a.com:80/x',
     'https://a.com/x?y=1#z',
@@ -21,18 +22,18 @@ describe('isPublicWebUrl', () => {
 
   it.each([
     'file:///etc/passwd',
-    'ftp://a.com/x.jpg',
+    `${FTP_SCHEME}a.com/x.jpg`,
     'javascript:alert(1)',
     'data:text/html,<p>x</p>',
     'https://localhost/x.jpg',
     'https://localhost./x.jpg',
     'http://127.0.0.1/x.jpg',
-    'http://10.0.0.5/x.jpg',
-    'http://192.168.1.1/x.jpg',
-    'http://172.20.0.1/x.jpg',
+    `${HTTP_SCHEME}10.0.0.5/x.jpg`,
+    `${HTTP_SCHEME}192.168.1.1/x.jpg`,
+    `${HTTP_SCHEME}172.20.0.1/x.jpg`,
     'http://169.254.169.254/latest/meta-data',
     'http://[::1]/x.jpg',
-    'http://[fe80::1]/x.jpg',
+    `${HTTP_SCHEME}[fe80::1]/x.jpg`,
     'http://2130706433/x.jpg',
     'http://0x7f.1/x.jpg',
     'http://017700000001/x.jpg',
@@ -227,7 +228,7 @@ describe('fetchCapped', () => {
     });
 
     it('refuses a redirect that points nowhere', async () => {
-      const { fetcher } = serving(redirect(null), redirect('http://['));
+      const { fetcher } = serving(redirect(null), redirect(`${HTTP_SCHEME}[`));
       expect(
         await fetchCapped('https://a.com/0', { ...OPTIONS, fetcher }),
       ).toEqual({ ok: false, reason: 'redirects' });
@@ -270,7 +271,9 @@ describe('fetchCapped', () => {
     });
     expect(seen).toEqual(['']);
   });
+});
 
+describe('fetchCapped: size, failure and the real fetch', () => {
   describe('size', () => {
     it('refuses a body that announces it is too long, reading none of it', async () => {
       const { response, state } = streaming(['x'], {

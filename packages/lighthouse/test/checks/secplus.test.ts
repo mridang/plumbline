@@ -1,9 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import { secplusChecks } from '../../src/checks/secplus.js';
 import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 import type { AuditCheck } from '../../src/checks/types.js';
+import { HTTP_SCHEME } from '../helpers/data.js';
 
 /**
  * Builds the minimal devtools log Lighthouse's `NetworkRecords` computed
@@ -13,7 +14,7 @@ import type { AuditCheck } from '../../src/checks/types.js';
 function devtoolsLog(
   url: string,
   headers: Record<string, string>,
-): LH.Artifacts['DevtoolsLog'] {
+): Artifacts['DevtoolsLog'] {
   const requestId = '1';
   const events = [
     {
@@ -57,27 +58,27 @@ function devtoolsLog(
       params: { requestId, timestamp: 3, encodedDataLength: 100 },
     },
   ];
-  return events as unknown as LH.Artifacts['DevtoolsLog'];
+  return events as Artifacts['DevtoolsLog'];
 }
 
 /** Header-check artifacts over the given response headers. */
 function headerArtifacts(
   url: string,
   headers: Record<string, string>,
-): LH.Artifacts {
+): Artifacts {
   return {
     DevtoolsLog: devtoolsLog(url, headers),
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
-    MetaElements: [],
-  } as unknown as LH.Artifacts;
+    MetaElements: [] as Artifacts['MetaElements'],
+  } as Artifacts;
 }
 
 /** DOM-check artifacts over the given HTML and page URL. */
-function domArtifacts(url: string, html: string): LH.Artifacts {
+function domArtifacts(url: string, html: string): Artifacts {
   return {
     MainDocumentContent: html,
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
-  } as unknown as LH.Artifacts;
+  } as Artifacts;
 }
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */
@@ -180,7 +181,7 @@ describe('form-action-secure check', () => {
     const findings = await check('form-action-secure').run(
       domArtifacts(
         'https://x.test/',
-        '<form action="http://x.test/submit"></form>',
+        `<form action="${HTTP_SCHEME}x.test/submit"></form>`,
       ),
       context(),
     );

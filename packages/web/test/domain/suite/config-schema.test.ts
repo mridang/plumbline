@@ -20,6 +20,7 @@ import {
 } from '@/domain/suite/config-schema';
 import { RULE_SET_DEFS } from '@/domain/checks/sets';
 import { DEFAULT_RULE_SET } from '@/domain/suite/rules';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const schema = buildSchema();
 const validate = new Ajv2020({ strict: true }).compile(schema);
@@ -103,7 +104,11 @@ const FILES: readonly [string, string, boolean][] = [
     true,
   ],
   ['sites that are not a list', 'sites: api.example.com', false],
-  ['a site that is not https', 'sites:\n  - http://api.example.com', false],
+  [
+    'a site that is not https',
+    `sites:\n  - ${HTTP_SCHEME}api.example.com`,
+    false,
+  ],
   ['a site that is not a string', 'sites:\n  - 5', false],
   [
     'a key deployments does not have',
@@ -174,7 +179,11 @@ describe('buildSchema', () => {
   });
 
   it('has every key of the reader, with the same names', () => {
-    expect(Object.keys(schema['properties'] as object).sort()).toEqual([
+    expect(
+      Object.keys(schema['properties'] as object).toSorted((a, b) =>
+        a.localeCompare(b),
+      ),
+    ).toEqual([
       'deployments',
       'dispatch',
       'enabled',
@@ -199,8 +208,10 @@ describe('buildSchema', () => {
   it('lists every check of the catalogue as a rule, with its name and what it looks at', () => {
     const rules = (schema['$defs'] as Record<string, JsonSchema>)['rules'];
     const properties = rules?.['properties'] as Record<string, JsonSchema>;
-    expect(Object.keys(properties).sort()).toEqual(
-      CHECKS.map((check) => check.id).sort(),
+    expect(
+      Object.keys(properties).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(
+      CHECKS.map((check) => check.id).toSorted((a, b) => a.localeCompare(b)),
     );
     for (const check of CHECKS) {
       expect(properties[check.id]).toMatchObject({
@@ -216,11 +227,15 @@ describe('buildSchema', () => {
     expect(
       ((name['anyOf'] as JsonSchema[])[0]!['oneOf'] as { const: string }[])
         .map((set) => set.const)
-        .sort(),
-    ).toEqual(RULE_SET_DEFS.map((set) => set.id).sort());
+        .toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(
+      RULE_SET_DEFS.map((set) => set.id).toSorted((a, b) => a.localeCompare(b)),
+    );
     expect(
-      Object.keys(defs['environments']?.['properties'] as object).sort(),
-    ).toEqual([...ENVIRONMENTS].sort());
+      Object.keys(defs['environments']?.['properties'] as object).toSorted(
+        (a, b) => a.localeCompare(b),
+      ),
+    ).toEqual([...ENVIRONMENTS].toSorted((a, b) => a.localeCompare(b)));
     expect(defs['extends']?.['default']).toBe(DEFAULT_RULE_SET);
   });
 
@@ -233,7 +248,8 @@ describe('buildSchema', () => {
   });
 
   it('serialises, so it can be served', () => {
-    expect(JSON.parse(JSON.stringify(schema))).toEqual(schema);
+    const served = JSON.stringify(schema);
+    expect(JSON.parse(served)).toEqual(schema);
   });
 });
 
@@ -245,9 +261,34 @@ describe('the schema and the reader', () => {
 
   it('agree on every value a level can be written as', () => {
     const values: unknown[] = [
-      ...['off', 'on', 'warn', 'warning', 'error', 'loud', 'ERROR', ''],
-      ...[true, false, 0, 1, 2, 3, -1, 1.5, '0', '1', '2', '3'],
-      ...[['error'], [0], [true], [], ['error', 'off'], [['error']], null, {}],
+      'off',
+      'on',
+      'warn',
+      'warning',
+      'error',
+      'loud',
+      'ERROR',
+      '',
+      true,
+      false,
+      0,
+      1,
+      2,
+      3,
+      -1,
+      1.5,
+      '0',
+      '1',
+      '2',
+      '3',
+      ['error'],
+      [0],
+      [true],
+      [],
+      ['error', 'off'],
+      [['error']],
+      null,
+      {},
     ];
     for (const value of values) {
       const accepted = validate({ rules: { 'seo-viewport': value } });

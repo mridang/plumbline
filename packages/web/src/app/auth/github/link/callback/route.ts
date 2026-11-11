@@ -28,9 +28,8 @@ import { appOrigin } from '@/lib/core/origin';
 
 /** Back to the GitHub page with the one-time cookie cleared. */
 function back(origin: string, flag: string | null): NextResponse {
-  const response = NextResponse.redirect(
-    `${origin}${GITHUB_PATH}${flag ? `?error=${flag}` : ''}`,
-  );
+  const suffix = flag ? `?error=${flag}` : '';
+  const response = NextResponse.redirect(`${origin}${GITHUB_PATH}${suffix}`);
   response.cookies.delete(GITHUB_STATE_COOKIE);
   return response;
 }

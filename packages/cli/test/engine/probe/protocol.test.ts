@@ -16,6 +16,13 @@ import {
 } from '../../../src/engine/probe/protocol.js';
 import { handshakeAnswer, httpAnswer } from '../../helpers/probe.js';
 
+/** An object with each key present and set to `undefined`. */
+const unset = <K extends string>(...keys: K[]): Record<K, undefined> =>
+  Object.fromEntries(keys.map((key) => [key, undefined])) as Record<
+    K,
+    undefined
+  >;
+
 describe('encodeItem', () => {
   it('writes key=value lines, repeats a list, and leaves out undefined and false', () => {
     expect(
@@ -24,7 +31,7 @@ describe('encodeItem', () => {
         port: 443,
         tls: true,
         nobody: false,
-        ip: undefined,
+        ...unset('ip'),
         header: ['A: 1', 'B: 2'],
       }),
     ).toBe('host=example.com\nport=443\ntls=1\nheader=A: 1\nheader=B: 2\n');
@@ -74,7 +81,7 @@ describe('parseHandshake', () => {
       name: 'X25519',
     });
     expect(answer.certificates[0]?.infoAccess).toEqual({
-      'OCSP - URI': ['http://ocsp.example.com'],
+      'OCSP - URI': ['https://ocsp.example.com'],
     });
     expect(answer.compression).toBe(false);
   });

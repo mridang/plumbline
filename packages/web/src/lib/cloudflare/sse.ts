@@ -16,8 +16,7 @@ export const SSE_HEADERS = {
 
 /**
  * Encode an event for the wire.
- *
- * @param frame The event to encode.
+ * @param frame - The event to encode.
  * @returns The `id:`, `event:` and `data:` lines followed by a blank line.
  */
 export function encodeFrame(frame: SseFrame): string {
@@ -36,7 +35,6 @@ export function encodeFrame(frame: SseFrame): string {
 
 /**
  * Encode a comment that keeps idle connections open.
- *
  * @returns A comment line followed by a blank line.
  */
 export function encodeHeartbeat(): string {
@@ -45,9 +43,8 @@ export function encodeHeartbeat(): string {
 
 /**
  * Read where a reconnecting client wants to resume.
- *
- * @param lastEventId The `Last-Event-ID` header, if any.
- * @param after The `after` query parameter, if any.
+ * @param lastEventId - The `Last-Event-ID` header, if any.
+ * @param after - The `after` query parameter, if any.
  * @returns The last sequence number the client has seen, or `null` for a client
  * that has seen none and wants only what happens from now on.
  */

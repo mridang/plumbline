@@ -30,16 +30,16 @@ export const NAMES = {
   notifications: 'notifications',
 } as const;
 
-const entry = (label: string, connected: boolean | undefined): AccountLink => ({
+const entry = ({
   label,
   connected,
-  status:
-    connected === undefined
-      ? undefined
-      : connected
-        ? 'Connected'
-        : 'Not connected',
-});
+}: Readonly<{ label: string; connected?: boolean }>): AccountLink => {
+  let status: AccountLink['status'];
+  if (connected !== undefined) {
+    status = connected ? 'Connected' : 'Not connected';
+  }
+  return { label, connected, status };
+};
 
 /** The three connection entries for the state. Notifications are per device, so never known here. */
 export function accountLinks(state: AccountState): {
@@ -48,17 +48,19 @@ export function accountLinks(state: AccountState): {
   notifications: AccountLink;
 } {
   return {
-    github: entry(
-      state.github ? `Manage ${NAMES.github}` : `Connect ${NAMES.github}`,
-      state.github,
-    ),
-    assistants: entry(
-      state.assistants
+    github: entry({
+      label: state.github
+        ? `Manage ${NAMES.github}`
+        : `Connect ${NAMES.github}`,
+      connected: state.github,
+    }),
+    assistants: entry({
+      label: state.assistants
         ? `Manage ${NAMES.assistants}`
         : `Connect ${NAMES.assistant}`,
-      state.assistants,
-    ),
-    notifications: entry(`Manage ${NAMES.notifications}`, undefined),
+      connected: state.assistants,
+    }),
+    notifications: entry({ label: `Manage ${NAMES.notifications}` }),
   };
 }
 

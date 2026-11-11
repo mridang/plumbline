@@ -47,9 +47,9 @@ export function SiteRunner({
   host: string;
   checks: readonly string[];
   /** When the checks were last run by hand, when they were. */
-  lastRunAt?: string | undefined;
+  lastRunAt?: string;
   /** `owner/name` of the repository that serves the domain, when known. */
-  repository?: string | undefined;
+  repository?: string;
   /** The GitHub issues that report each check, by check id. */
   issuesByCheck?: Readonly<Record<string, readonly IssueRef[]>>;
   /** The line that names the site: its address, how it stands, when it was checked. */
@@ -81,23 +81,33 @@ export function SiteRunner({
     }, 1000);
     return () => clearInterval(timer);
   }, [until]);
-  const save = (scan: Scan): void => {
+  const save = async (scan: Scan): Promise<void> => {
     setSaving({ kind: 'saving' });
-    saveReport(domainId, scan).then(
-      () => {
-        setSaving({ kind: 'saved' });
-        setSavedUntil(Date.now() + MANUAL_RUN_INTERVAL_SECONDS * 1000);
-        router.refresh();
-      },
-      (error: unknown) =>
-        setSaving({
-          kind: 'failed',
-          message: problemText(error, 'The report could not be saved.'),
-        }),
-    );
+    try {
+      await saveReport(domainId, scan);
+    } catch (error: unknown) {
+      setSaving({
+        kind: 'failed',
+        message: problemText(error, 'The report could not be saved.'),
+      });
+      return;
+    }
+    setSaving({ kind: 'saved' });
+    setSavedUntil(Date.now() + MANUAL_RUN_INTERVAL_SECONDS * 1000);
+    router.refresh();
   };
   const { state, run } = useScan({ only: checks, onFinished: save });
   const running = isRunning(state);
+  let label: ReactNode;
+  if (running) {
+    label = 'Running…';
+  } else if (wait > 0) {
+    label = (
+      <span suppressHydrationWarning>Run again in {formatCountdown(wait)}</span>
+    );
+  } else {
+    label = `Run ${countOf(checks.length, 'check')}`;
+  }
 
   return (
     <div className="space-y-5">
@@ -117,15 +127,7 @@ export function SiteRunner({
               void run(host);
             }}
           >
-            {running ? (
-              'Running…'
-            ) : wait > 0 ? (
-              <span suppressHydrationWarning>
-                Run again in {formatCountdown(wait)}
-              </span>
-            ) : (
-              `Run ${countOf(checks.length, 'check')}`
-            )}
+            {label}
           </Button>
         </div>
       </div>

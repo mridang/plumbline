@@ -82,7 +82,7 @@ describe('SitesTable', () => {
   it('names the repository with the Octocat, linked to the site’s tab, and the host under it', () => {
     expect(out).toContain('viewBox="0 0 16 16"');
     expect(out).toContain('href="/repos/acme/site?site=site.example.com"');
-    expect(out).toContain('title="site.example.com"');
+    expect(out).toContain('>site.example.com</span>');
     expect(out).toContain('href="https://site.example.com"');
     expect(out).toContain('opens in a new tab');
   });
@@ -102,8 +102,8 @@ describe('SitesTable', () => {
   });
 
   it('shows the counts under their headings, right-aligned, and a dash when never checked', () => {
-    expect(out).toContain('title="2 failed"');
-    expect(out).toContain('title="1 warned"');
+    expect(out).toContain('<span class="sr-only"> failed</span>');
+    expect(out).toContain('<span class="sr-only"> warned</span>');
     expect(out).toContain('failed: not kept for this run');
     expect(out.match(/text-right/g)?.length).toBeGreaterThanOrEqual(5);
   });

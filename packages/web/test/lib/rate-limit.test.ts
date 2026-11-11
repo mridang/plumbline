@@ -10,19 +10,17 @@ import {
 } from '@/lib/rate-limit';
 
 /** The statement the real store runs, read from the source so the test cannot drift from it. */
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { APP_MIGRATIONS } from './core/db/migrations';
+import { APP_MIGRATIONS, migrationSql } from './core/db/migrations';
 
-const SOURCE = readFileSync(
+const SOURCE = await readFile(
   path.join(process.cwd(), 'src/lib/rate-limit.ts'),
   'utf8',
 );
 const HIT_SQL = /const HIT_SQL = `([^`]*)`/.exec(SOURCE)?.[1] ?? '';
 /** The whole schema, every migration in order: the rate-limit table is one of them. */
-const SCHEMA = APP_MIGRATIONS.map((file) =>
-  readFileSync(path.join(process.cwd(), 'migrations', file), 'utf8'),
-).join('\n');
+const SCHEMA = APP_MIGRATIONS.map((file) => migrationSql(file)).join('\n');
 
 /** A store that runs the real SQL against an in-memory SQLite, as D1 would. */
 function sqliteStore(): RateLimitStore {
@@ -86,11 +84,15 @@ describe('rateLimit', () => {
     await Promise.all(
       [1, 2, 3, 4].map((t) => rateLimit(store, TOOLS, 'ann', 1000 + t)),
     );
-    expect((await rateLimit(store, TOOLS, 'bob', 1010)).allowed).toBe(true);
-    expect(
-      (await rateLimit(store, { ...TOOLS, name: 'register' }, 'ann', 1010))
-        .allowed,
-    ).toBe(true);
+    const bob = await rateLimit(store, TOOLS, 'bob', 1010);
+    expect(bob.allowed).toBe(true);
+    const register = await rateLimit(
+      store,
+      { ...TOOLS, name: 'register' },
+      'ann',
+      1010,
+    );
+    expect(register.allowed).toBe(true);
   });
 
   it('never tells a client to retry in less than a second', async () => {

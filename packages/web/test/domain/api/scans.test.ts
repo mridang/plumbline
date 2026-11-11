@@ -116,9 +116,10 @@ describe('POST /api/scans', () => {
       () => SECRET,
       make,
     ).handlers();
-    expect(
-      (await signed(post('/api/scans', { url: 'example.com' }))).status,
-    ).toBe(201);
+    const signedResponse = await signed(
+      post('/api/scans', { url: 'example.com' }),
+    );
+    expect(signedResponse.status).toBe(201);
   });
 
   it('answers 503 when the server has no secret to sign with', async () => {
@@ -183,7 +184,8 @@ describe('POST /api/scans/{id}/run', () => {
         }),
         routeFor(id),
       );
-    expect((await run()).status).toBe(200);
+    const first = await run();
+    expect(first.status).toBe(200);
     const again = await run();
     expect(again.status).toBe(429);
     expect(again.headers.get('content-type')).toBe('application/problem+json');

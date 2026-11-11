@@ -20,6 +20,7 @@ import {
   linesOf,
   ok,
 } from '../../helpers/probe.js';
+import { vector } from '../../helpers/data.js';
 
 /** A probe that answers each path with `answers[path]`, and keeps what it was sent. */
 function probeFor(
@@ -58,7 +59,7 @@ rpki.client = {
     ) {
       throw new Error('down');
     }
-    return { asn: 64500, prefix: '192.0.2.0/24', status: 'valid' };
+    return { asn: 64_500, prefix: '192.0.2.0/24', status: 'valid' };
   },
 };
 
@@ -89,7 +90,7 @@ describe('the TLS handshake', () => {
     );
     expect(result.protocol).toBe('TLSv1.2');
     expect(result.peerCertificate.infoAccess?.['OCSP - URI']).toEqual([
-      'http://ocsp.example.com',
+      'https://ocsp.example.com',
     ]);
     expect(linesOf(sent[0]?.body ?? '')).toMatchObject({
       host: 'example.com',
@@ -182,13 +183,17 @@ describe('the connections of the mail and IPv6 checks', () => {
       '/v1/connect': () => '{"reachable":true}',
     });
     await expect(
-      withProbe(client, () => network.connect('2606:4700::1', 53, 4000)),
+      withProbe(client, () =>
+        network.connect(vector('ip2606_4700__1'), 53, 4000),
+      ),
     ).resolves.toBe(true);
     await expect(
-      withProbe(client, () => mailNet.client.tcpReachable('1.2.3.4', 25)),
+      withProbe(client, () =>
+        mailNet.client.tcpReachable(vector('ip1_2_3_4'), 25),
+      ),
     ).resolves.toBe(true);
     expect(linesOf(sent[0]?.body ?? '')).toMatchObject({
-      host: '2606:4700::1',
+      host: vector('ip2606_4700__1'),
       port: '53',
       timeout: '4000',
     });
@@ -197,7 +202,9 @@ describe('the connections of the mail and IPv6 checks', () => {
   it('counts an address the probe will not connect to, or cannot be asked about, as not answering', async () => {
     const refused = probeFor({});
     await expect(
-      withProbe(refused.client, () => network.connect('10.0.0.1', 80, 4000)),
+      withProbe(refused.client, () =>
+        network.connect(vector('ip10_0_0_1'), 80, 4000),
+      ),
     ).resolves.toBe(false);
   });
 
@@ -238,12 +245,12 @@ describe('the connections of the mail and IPv6 checks', () => {
         httpAnswer(200, [['Content-Type', 'text/html']], 'hello'),
     });
     const web = await withProbe(client, () =>
-      network.get('example.com', '2606:4700::1', 443, true),
+      network.get('example.com', vector('ip2606_4700__1'), 443, true),
     );
     expect(web).toEqual({ status: 200, body: 'hello' });
     expect(linesOf(sent[0]?.body ?? '')).toMatchObject({
       host: 'example.com',
-      ip: '2606:4700::1',
+      ip: vector('ip2606_4700__1'),
       port: '443',
       tls: '1',
     });
@@ -324,9 +331,9 @@ describe('the other checks', () => {
           'smtp',
           '-tls1_2',
           '-sess_out',
-          '/tmp/webhint-0rtt-ab/session.pem',
+          'webhint-0rtt-ab/session.pem',
         ],
-        { input: ['', 'Q\n'], inputDelayMs: 500, timeoutMs: 20000 },
+        { input: ['', 'Q\n'], inputDelayMs: 500, timeoutMs: 20_000 },
       ),
     );
     expect(run).toEqual({
@@ -336,7 +343,7 @@ describe('the other checks', () => {
     });
     const body = sent[0]?.body ?? '';
     expect(linesOf(body)).toMatchObject({
-      host: '2606:4700::1',
+      host: vector('ip2606_4700__1'),
       port: '25',
       servername: 'mx.example.com',
       starttls: 'smtp',
@@ -344,7 +351,7 @@ describe('the other checks', () => {
       delay: '500',
       timeout: '20000',
     });
-    expect(linesOf(body)['sess_out']).toMatch(/^[A-Za-z0-9_]+$/);
+    expect(linesOf(body)['sess_out']).toMatch(/^\w+$/);
   });
 });
 

@@ -3,7 +3,9 @@ import { emailHints } from '../../../src/hints/email/index.js';
 
 describe('emailHints', () => {
   it('lists the twenty-seven mail hints', () => {
-    expect(emailHints.map((hint) => hint.id).sort()).toEqual([
+    expect(
+      emailHints.map((hint) => hint.id).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual([
       'mail-caa',
       'mail-cert-hostname',
       'mail-cert-pubkey',

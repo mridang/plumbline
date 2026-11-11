@@ -42,7 +42,7 @@ export function normalizeName(name: string): string {
  * IP literal (there is nothing to look up in DNS for those).
  */
 export function siteHost(url: URL): string | null {
-  const host = normalizeName(target.hostOf(url)).replace(/^\[|\]$/g, '');
+  const host = normalizeName(target.hostOf(url)).replaceAll(/^\[|\]$/g, '');
   return host === '' || isIP(host) !== 0 ? null : host;
 }
 

@@ -97,7 +97,9 @@ async function inBatches<T, R>(
   const out: R[] = [];
   for (let at = 0; at < items.length; at += CONCURRENCY) {
     out.push(
-      ...(await Promise.all(items.slice(at, at + CONCURRENCY).map(work))),
+      ...(await Promise.all(
+        items.slice(at, at + CONCURRENCY).map((item) => work(item)),
+      )),
     );
   }
   return out;
@@ -130,19 +132,20 @@ export async function syncInstallation(
     domainsAdded += changes.added.length;
     const sites = await listDomainsOfRepo(db, userId, repo.full_name);
     const declared = repo.declared ?? [];
-    const real = declared.length > 0 || sites.some(isReal);
+    const real = declared.length > 0 || sites.some((site) => isReal(site));
     // What the repository is deployed on, even where the limit on a person's
     // domains kept a site off the dashboard.
+    const deployedOn = new Set(sites.map((site) => site.host));
+    for (const host of declared) {
+      deployedOn.add(host);
+    }
+    for (const host of real ? [] : (repo.fallback ?? [])) {
+      deployedOn.add(host);
+    }
     settled.push({
       full_name: repo.full_name,
       default_branch: repo.default_branch,
-      hosts: [
-        ...new Set([
-          ...sites.map((site) => site.host),
-          ...declared,
-          ...(real ? [] : (repo.fallback ?? [])),
-        ]),
-      ],
+      hosts: [...deployedOn],
     });
   }
   await saveRepos(db, userId, installationId, settled);
@@ -150,14 +153,12 @@ export async function syncInstallation(
   // off the dashboard. An archived one still exists, so its sites stay, and a
   // listing cut short by the limit proves nothing about the rest.
   if (listed.length < MAX_REPOS) {
-    await removeSitesOfMissingRepos(
-      db,
-      userId,
-      new Set([
-        ...listed.map((repo) => repo.full_name),
-        ...(await listRepos(db, userId)).map((repo) => repo.full_name),
-      ]),
-    );
+    const stored = await listRepos(db, userId);
+    const names = new Set(listed.map((repo) => repo.full_name));
+    for (const repo of stored) {
+      names.add(repo.full_name);
+    }
+    await removeSitesOfMissingRepos(db, userId, names);
   }
   return {
     repositories: analysed.length,

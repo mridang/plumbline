@@ -21,19 +21,19 @@ const answer = (r: RpkiResult) => {
 describe('rpki-ns-exists', () => {
   it('passes when a ROA exists', async () => {
     restore = installDns(zone);
-    answer({ asn: 64500, prefix: '192.0.2.0/24', status: 'valid' });
+    answer({ asn: 64_500, prefix: '192.0.2.0/24', status: 'valid' });
     expect(await runHint(hint)).toEqual([]);
   });
 
   it('counts an invalid announcement as having a ROA', async () => {
     restore = installDns(zone);
-    answer({ asn: 64500, prefix: '192.0.2.0/24', status: 'invalid' });
+    answer({ asn: 64_500, prefix: '192.0.2.0/24', status: 'invalid' });
     expect(await runHint(hint)).toEqual([]);
   });
 
   it('warns when no ROA is published', async () => {
     restore = installDns(zone);
-    answer({ asn: 64500, prefix: '192.0.2.0/24', status: 'unknown' });
+    answer({ asn: 64_500, prefix: '192.0.2.0/24', status: 'unknown' });
     const problems = await runHint(hint);
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('ns.example.net (192.0.2.9)');

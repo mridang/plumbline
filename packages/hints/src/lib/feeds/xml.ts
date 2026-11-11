@@ -35,11 +35,23 @@ function localName(name: string): string {
   return (colon === -1 ? name : name.slice(colon + 1)).toLowerCase();
 }
 
+/** An attribute's name. */
+const ATTRIBUTE_NAME = String.raw`([^\s"'>/=]+)`;
+
+/** An attribute's value: double-quoted, single-quoted or bare. */
+const ATTRIBUTE_VALUE = String.raw`("([^"]*)"|'([^']*)'|([^\s"'>]+))`;
+
+/** One attribute: a name, then an optional `=` and value. */
+export const ATTRIBUTE_PATTERN = [
+  ATTRIBUTE_NAME,
+  String.raw`(?:\s*=\s*${ATTRIBUTE_VALUE})?`,
+].join('');
+
 /** Parses the attribute list of a start tag into a name→value map. */
 function parseAttributes(source: string): Record<string, string> {
   const attributes: Record<string, string> = {};
   // name = "value" | name = 'value' | name (valueless, rare in XML)
-  const pattern = /([^\s"'>/=]+)(?:\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
+  const pattern = new RegExp(ATTRIBUTE_PATTERN, 'g');
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(source)) !== null) {
     const name = match[1];
@@ -52,17 +64,17 @@ function parseAttributes(source: string): Record<string, string> {
 /** Decodes the five predefined XML entities plus numeric character references. */
 function decodeEntities(text: string): string {
   return text
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex: string) =>
-      String.fromCodePoint(parseInt(hex, 16)),
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&apos;', "'")
+    .replaceAll(/&#x([0-9a-fA-F]+);/g, (_, hex: string) =>
+      String.fromCodePoint(Number.parseInt(hex, 16)),
     )
-    .replace(/&#(\d+);/g, (_, dec: string) =>
-      String.fromCodePoint(parseInt(dec, 10)),
+    .replaceAll(/&#(\d+);/g, (_, dec: string) =>
+      String.fromCodePoint(Number.parseInt(dec, 10)),
     )
-    .replace(/&amp;/g, '&');
+    .replaceAll('&amp;', '&');
 }
 
 /**
@@ -73,10 +85,87 @@ function decodeEntities(text: string): string {
  */
 function stripNonElements(source: string): string {
   return source
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/<!DOCTYPE[\s\S]*?>/gi, '')
-    .replace(/<\?[\s\S]*?\?>/g, '')
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (_, inner: string) => inner);
+    .replaceAll(/<!--[\s\S]*?-->/g, '')
+    .replaceAll(/<!DOCTYPE[\s\S]*?>/gi, '')
+    .replaceAll(/<\?[\s\S]*?\?>/g, '')
+    .replaceAll(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (_, inner: string) => inner);
+}
+
+/** Close tag: pops the stack up to the nearest open ancestor with this name, if any. */
+function closeElement(stack: XmlElement[], name: string): void {
+  for (let depth = stack.length - 1; depth >= 1; depth -= 1) {
+    if (stack[depth].name === name) {
+      stack.length = depth;
+      return;
+    }
+  }
+}
+
+type Token =
+  | { kind: 'skip'; next: number }
+  | {
+      kind: 'token';
+      next: number;
+      closing: string;
+      rawName: string;
+      rawAttrs: string;
+      selfClose: string;
+      textRun: string;
+    };
+
+const TAG_NAME = /<(\/?)([a-zA-Z][\w:.-]*)/y;
+
+/**
+ * Reads the next token at `start`: a tag (its inner source up to the first
+ * `>` outside quotes) or a run of text between tags. A `<` that does not open
+ * a complete tag is skipped on its own.
+ */
+function nextToken(source: string, start: number): Token {
+  if (source[start] !== '<') {
+    const stop = source.indexOf('<', start);
+    const end = stop === -1 ? source.length : stop;
+    return {
+      kind: 'token',
+      next: end,
+      closing: '',
+      rawName: '',
+      rawAttrs: '',
+      selfClose: '',
+      textRun: source.slice(start, end),
+    };
+  }
+  TAG_NAME.lastIndex = start;
+  const head = TAG_NAME.exec(source);
+  if (!head) {
+    return { kind: 'skip', next: start + 1 };
+  }
+  const nameEnd = start + head[0].length;
+  let at = nameEnd;
+  while (at < source.length && source[at] !== '>') {
+    const quote = source[at];
+    if (quote === '"' || quote === "'") {
+      const close = source.indexOf(quote, at + 1);
+      if (close === -1) {
+        return { kind: 'skip', next: start + 1 };
+      }
+      at = close + 1;
+    } else {
+      at += 1;
+    }
+  }
+  if (at >= source.length) {
+    return { kind: 'skip', next: start + 1 };
+  }
+  const selfClose = at > nameEnd && source[at - 1] === '/' ? '/' : '';
+  return {
+    kind: 'token',
+    next: at + 1,
+    closing: head[1],
+    rawName: head[2],
+    rawAttrs: source.slice(nameEnd, selfClose ? at - 1 : at),
+    selfClose,
+    textRun: '',
+  };
 }
 
 /**
@@ -96,44 +185,38 @@ export function parseXml(source: string): XmlElement | null {
     text: '',
   };
   const stack: XmlElement[] = [root];
-  // Matches a tag (capturing its inner source) or a run of text between tags.
-  const token =
-    /<(\/?)([a-zA-Z][\w:.-]*)((?:[^>"']|"[^"]*"|'[^']*')*?)(\/?)>|([^<]+)/g;
-  let match: RegExpExecArray | null;
-  while ((match = token.exec(cleaned)) !== null) {
-    const [, closing, rawName, rawAttrs, selfClose, textRun] = match;
-    const current = stack[stack.length - 1];
-    if (textRun !== undefined) {
+  let position = 0;
+  while (position < cleaned.length) {
+    const token = nextToken(cleaned, position);
+    position = token.next;
+    if (token.kind === 'skip') {
+      continue;
+    }
+    const { closing, rawName, rawAttrs, selfClose, textRun } = token;
+    const current = stack.at(-1) ?? root;
+    if (textRun) {
       // Text belongs to whichever element is currently open.
       const value = decodeEntities(textRun).trim();
       if (value !== '') {
         current.text = current.text === '' ? value : `${current.text} ${value}`;
       }
-      continue;
-    }
-    if (closing === '/') {
-      // Close tag: pop up to the nearest matching ancestor, if any.
-      for (let depth = stack.length - 1; depth >= 1; depth -= 1) {
-        if (stack[depth].name === rawName) {
-          stack.length = depth;
-          break;
-        }
+    } else if (closing === '/') {
+      closeElement(stack, rawName);
+    } else {
+      const element: XmlElement = {
+        name: rawName,
+        localName: localName(rawName),
+        attrs: parseAttributes(rawAttrs),
+        children: [],
+        text: '',
+      };
+      current.children.push(element);
+      if (selfClose !== '/') {
+        stack.push(element);
       }
-      continue;
-    }
-    const element: XmlElement = {
-      name: rawName,
-      localName: localName(rawName),
-      attrs: parseAttributes(rawAttrs),
-      children: [],
-      text: '',
-    };
-    current.children.push(element);
-    if (selfClose !== '/') {
-      stack.push(element);
     }
   }
-  return root.children[0] ?? null;
+  return root.children.at(0) ?? null;
 }
 
 /** Returns the first direct child of `element` whose local name matches. */

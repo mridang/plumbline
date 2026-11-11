@@ -28,14 +28,16 @@ describe('sellers-json', () => {
 
   it('reports a wrong content type', async () => {
     const problems = await runHint(hint, serve(valid, 'text/plain'));
-    expect(problems.map((p) => p.message).join()).toContain(
+    expect(problems.map((p) => p.message).join(',')).toContain(
       "served as 'text/plain'",
     );
   });
 
   it('reports invalid JSON', async () => {
     const problems = await runHint(hint, serve('{ broken'));
-    expect(problems.map((p) => p.message).join()).toContain('not valid JSON');
+    expect(problems.map((p) => p.message).join(',')).toContain(
+      'not valid JSON',
+    );
   });
 
   it('reports a missing version', async () => {
@@ -43,7 +45,7 @@ describe('sellers-json', () => {
       hint,
       serve(JSON.stringify({ sellers: [] })),
     );
-    expect(problems.map((p) => p.message).join()).toContain(
+    expect(problems.map((p) => p.message).join(',')).toContain(
       "'version' field is missing",
     );
   });

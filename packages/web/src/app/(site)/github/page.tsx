@@ -81,14 +81,7 @@ export default async function GitHubPage({
             {ERRORS[error]}
           </Callout>
         ) : null}
-        {!configured ? (
-          <Callout tone="plain" shape="banner">
-            GitHub is not set up on this site. The app&apos;s settings
-            (GITHUB_APP_ID, GITHUB_APP_SLUG, GITHUB_CLIENT_ID,
-            GITHUB_CLIENT_SECRET, GITHUB_PRIVATE_KEY and GITHUB_WEBHOOK_SECRET)
-            are missing.
-          </Callout>
-        ) : link ? (
+        {configured && link ? (
           <Section
             id="account"
             title="Account"
@@ -127,7 +120,8 @@ export default async function GitHubPage({
               ]}
             />
           </Section>
-        ) : (
+        ) : null}
+        {configured && !link ? (
           <Section
             id="account"
             title="Connect your account"
@@ -142,6 +136,14 @@ export default async function GitHubPage({
               </LinkButton>
             </div>
           </Section>
+        ) : null}
+        {configured ? null : (
+          <Callout tone="plain" shape="banner">
+            GitHub is not set up on this site. The app&apos;s settings
+            (GITHUB_APP_ID, GITHUB_APP_SLUG, GITHUB_CLIENT_ID,
+            GITHUB_CLIENT_SECRET, GITHUB_PRIVATE_KEY and GITHUB_WEBHOOK_SECRET)
+            are missing.
+          </Callout>
         )}
 
         {link ? (
@@ -184,7 +186,7 @@ export default async function GitHubPage({
                                 {host}
                               </Link>
                             ) : (
-                              <span title="Not added: the limit of sites was reached">
+                              <span>
                                 {host} · not added (site limit reached)
                               </span>
                             )}

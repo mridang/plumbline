@@ -8,6 +8,9 @@ const state: { user: User | null } = { user: null };
 
 jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
+  getLiveSessionUid: async () => state.user?.id ?? null,
+  getSession: async () => null,
+  getSessionUid: async () => state.user?.id ?? null,
 }));
 
 jest.unstable_mockModule('@/domain/db/client', () => ({
@@ -41,7 +44,7 @@ describe('SiteShell', () => {
       '<footer',
     ].map((marker) => out.indexOf(marker));
     expect(order.every((at) => at >= 0)).toBe(true);
-    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect([...order].toSorted((a, b) => a - b)).toEqual(order);
   });
 
   it('offers to sign in when nobody is signed in', async () => {

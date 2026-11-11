@@ -101,7 +101,7 @@ export const ConfigSchema = OverlaySchema.extend({
 /** Rule sets and rules to add on top of what came before. */
 export interface Overlay {
   /** The rule sets, in order; undefined when the file does not say. */
-  readonly extends: readonly string[] | undefined;
+  readonly extends?: readonly string[];
   readonly rules: Readonly<Record<string, unknown>>;
 }
 
@@ -134,7 +134,6 @@ function namesOf(value: string | string[] | undefined): string[] | undefined {
 function empty(path: string, problems: readonly string[]): LoadedConfig {
   return {
     path,
-    extends: undefined,
     rules: {},
     environments: {},
     issues: 'error',
@@ -170,7 +169,7 @@ export function parseConfig(text: string, path: string): LoadedConfig {
   } catch (error) {
     const reason = String(error instanceof Error ? error.message : error);
     return empty(path, [
-      `${path} could not be read: ${reason.split('\n')[0] ?? reason}`,
+      `${path} could not be read: ${reason.split('\n', 1)[0] ?? reason}`,
     ]);
   }
   if (raw === null || raw === undefined) {
@@ -283,6 +282,20 @@ function previewsOf(
  * Like ESLint, a number (0, 1, 2) or a one-item list works too (not a list in
  * a list).
  */
+const OFF_LEVELS: ReadonlySet<unknown> = new Set<unknown>([
+  false,
+  0,
+  '0',
+  'off',
+]);
+const WARN_LEVELS: ReadonlySet<unknown> = new Set<unknown>([
+  1,
+  '1',
+  'warn',
+  'warning',
+]);
+const ERROR_LEVELS: ReadonlySet<unknown> = new Set<unknown>([2, '2', 'error']);
+
 export function parseLevel(value: unknown): Level | undefined {
   if (Array.isArray(value)) {
     // One level in a list, as ESLint writes `["error"]`; a list in a list is not one.
@@ -293,13 +306,13 @@ export function parseLevel(value: unknown): Level | undefined {
   if (value === true || value === 'on') {
     return 'on';
   }
-  if (value === false || value === 0 || value === '0' || value === 'off') {
+  if (OFF_LEVELS.has(value)) {
     return 'off';
   }
-  if (value === 1 || value === '1' || value === 'warn' || value === 'warning') {
+  if (WARN_LEVELS.has(value)) {
     return 'warn';
   }
-  if (value === 2 || value === '2' || value === 'error') {
+  if (ERROR_LEVELS.has(value)) {
     return 'error';
   }
   return undefined;
@@ -338,33 +351,36 @@ export function resolveRules(
 ): ResolvedRules {
   const levels = new Map<string, Level>();
   const problems = [...(loaded?.problems ?? [])];
+  const extendWith = (named: string, where: string): void => {
+    const [name = named, pin] = named.split('@');
+    const set = Object.hasOwn(RULE_SETS, name) ? RULE_SETS[name] : undefined;
+    if (!set) {
+      problems.push(`Unknown rule set "${name}" in ${where}.`);
+      return;
+    }
+    const version = pin === undefined ? undefined : Number(pin);
+    if (version !== undefined && !Number.isInteger(version)) {
+      problems.push(
+        `Rule set "${named}" in ${where} has a version that is not a whole number.`,
+      );
+      return;
+    }
+    for (const [id, level] of Object.entries(set)) {
+      // A pinned set drops the checks added to the catalogue after the pin.
+      if (version === undefined || (findCheck(id)?.since ?? 0) <= version) {
+        levels.set(id, level);
+      }
+    }
+  };
   const apply = (overlay: Overlay, where: string): void => {
     for (const named of overlay.extends ?? []) {
-      const [name = named, pin] = named.split('@');
-      const set = Object.hasOwn(RULE_SETS, name) ? RULE_SETS[name] : undefined;
-      if (!set) {
-        problems.push(`Unknown rule set "${name}" in ${where}.`);
-        continue;
-      }
-      const version = pin === undefined ? undefined : Number(pin);
-      if (version !== undefined && !Number.isInteger(version)) {
-        problems.push(
-          `Rule set "${named}" in ${where} has a version that is not a whole number.`,
-        );
-        continue;
-      }
-      for (const [id, level] of Object.entries(set)) {
-        // A pinned set drops the checks added to the catalogue after the pin.
-        if (version === undefined || (findCheck(id)?.since ?? 0) <= version) {
-          levels.set(id, level);
-        }
-      }
+      extendWith(named, where);
     }
     // Groups first, then single checks, so a check always beats its group.
     const entries = Object.entries(overlay.rules);
     const groups = entries.filter(([id]) => !isCheckId(id));
     const checks = entries.filter(([id]) => isCheckId(id));
-    for (const [id, value] of [...groups, ...checks]) {
+    for (const [id, value] of [groups, checks].flat()) {
       const level = parseLevel(value);
       if (level === undefined) {
         problems.push(

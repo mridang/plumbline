@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import type { TxtLookup } from '../../../src/lib/email/txt.js';
 import { checkTlsRpt } from '../../../src/lib/emailpolicy/tls-rpt.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const ok = (records: string[]): TxtLookup => ({ status: 'ok', records });
 
@@ -87,12 +88,12 @@ describe('checkTlsRpt', () => {
   it('errors on a destination that is neither mailto nor https', () => {
     const findings = checkTlsRpt(
       'example.test',
-      ok(['v=TLSRPTv1; rua=http://insecure.test/r']),
+      ok([`v=TLSRPTv1; rua=${HTTP_SCHEME}insecure.test/r`]),
     );
     expect(findings[0].message).toContain(
       'must be a `mailto:` or `https:` URI',
     );
-    expect(findings[0].codeSnippet).toBe('rua=http://insecure.test/r');
+    expect(findings[0].codeSnippet).toBe(`rua=${HTTP_SCHEME}insecure.test/r`);
   });
 
   it('errors on a mailto without an address', () => {

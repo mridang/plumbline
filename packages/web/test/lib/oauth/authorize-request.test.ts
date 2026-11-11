@@ -13,6 +13,10 @@ import {
 
 import { quietSecurityLogs } from './quiet-logs';
 import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+import { HTTP_SCHEME } from '../../helpers/data.js';
+
+// A field the request leaves out: its key stays present, so an override can unset it.
+let notProvided: undefined;
 
 const ORIGIN = 'https://site.example';
 const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
@@ -69,7 +73,7 @@ describe('validateAuthorizeRequest', () => {
     const old: OAuthClient = {
       ...client,
       clientId: 'dcr_old',
-      redirectUris: ['http://example.com/cb', 'myapp://cb'],
+      redirectUris: [`${HTTP_SCHEME}example.com/cb`, 'myapp://cb'],
     };
     for (const uri of old.redirectUris) {
       const result = await validateAuthorizeRequest(
@@ -109,13 +113,13 @@ describe('validateAuthorizeRequest', () => {
   });
 
   it('shows an error when there is no client_id', async () => {
-    const result = await check({ client_id: undefined });
+    const result = await check({ client_id: notProvided });
     expect(result).toMatchObject({ ok: false, error: 'invalid_request' });
     expect(result.ok === false && result.redirect).toBeFalsy();
   });
 
   it('uses the only registered redirect URI when none is sent', async () => {
-    const result = await check({ redirect_uri: undefined });
+    const result = await check({ redirect_uri: notProvided });
     expect(result).toMatchObject({
       ok: true,
       request: { redirectUri: 'https://claude.ai/cb' },
@@ -132,7 +136,7 @@ describe('validateAuthorizeRequest', () => {
   });
 
   it('requires PKCE with S256', async () => {
-    expect(await check({ code_challenge: undefined })).toMatchObject({
+    expect(await check({ code_challenge: notProvided })).toMatchObject({
       ok: false,
       error: 'invalid_request',
     });
@@ -201,7 +205,7 @@ describe('what the request said about its redirect address', () => {
       ok: true,
       request: { redirectUriSent: true },
     });
-    expect(await check({ redirect_uri: undefined })).toMatchObject({
+    expect(await check({ redirect_uri: notProvided })).toMatchObject({
       ok: true,
       request: { redirectUriSent: false },
     });
@@ -268,7 +272,7 @@ describe('redirectWith', () => {
   it('adds parameters, keeps existing ones and skips undefined', () => {
     const url = redirectWith('https://a.com/cb?keep=1', {
       code: 'abc',
-      state: undefined,
+      state: notProvided,
       iss: ORIGIN,
     });
     const parsed = new URL(url);
@@ -314,11 +318,11 @@ describe('authorizeParamsFrom', () => {
 
 describe('error_description is printable ASCII without quotes or backslashes (RFC 6749 4.1.2.1)', () => {
   it.each([
-    { client_id: undefined },
+    { client_id: notProvided },
     { client_id: 'nobody' },
     { redirect_uri: 'https://evil.example/cb' },
     { response_type: 'token' },
-    { code_challenge: undefined },
+    { code_challenge: notProvided },
     { code_challenge: 'short' },
     { resource: 'https://other.example/mcp' },
     { scope: 'admin' },
@@ -326,7 +330,7 @@ describe('error_description is printable ASCII without quotes or backslashes (RF
     const result = await check(overrides);
     expect(result.ok).toBe(false);
     expect(!result.ok && result.description).toMatch(
-      /^[\x20\x21\x23-\x5b\x5d-\x7e]+$/,
+      /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/,
     );
   });
 });

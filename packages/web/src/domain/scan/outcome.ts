@@ -16,6 +16,9 @@ export interface HintOrigin {
 }
 
 /** What the page shows about one hint. */
+/** Who a hint's fix is for: a deployer, the platform, DNS or mail. */
+type HintControl = 'deployer' | 'platform' | 'dns' | 'mail';
+
 export interface HintInfo {
   readonly id: string;
   readonly name: string;
@@ -34,7 +37,7 @@ export interface HintInfo {
   readonly tags?: readonly string[];
   readonly tier?: 'recommended' | 'advanced' | 'experimental';
   readonly target?: 'web' | 'mail' | 'site';
-  readonly control?: 'deployer' | 'platform' | 'dns' | 'mail';
+  readonly control?: HintControl;
   /** The month the hint was added, `YYYY-MM`. */
   readonly added?: string;
   /** Who usually makes the fix, from the hint's section. */

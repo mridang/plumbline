@@ -31,6 +31,7 @@ export const users = sqliteTable('users', {
   email: text('email').notNull(),
   name: text('name'),
   picture: text('picture'),
+
   /**
    * Which generation of sessions is valid. A session cookie carries the epoch
    * it was issued under and is honoured only while it equals this value, so
@@ -54,6 +55,7 @@ export const domains = sqliteTable(
     checks: text('checks'),
     /** `owner/name` of the repository the domain was found in; null when added by hand. */
     repo: text('repo'),
+
     /**
      * Where the site came from: `manual` (a person added it), `config` (the
      * sites list of plumbline.yaml), `deployment` (a deployment's address) or

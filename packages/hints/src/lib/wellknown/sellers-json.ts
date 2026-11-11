@@ -53,12 +53,7 @@ export function validateSellersJson(text: string): FileIssue[] {
   }
   // `identifiers` is optional; when present it is an array of {name, value}.
   if (root['identifiers'] !== undefined) {
-    if (!Array.isArray(root['identifiers'])) {
-      issues.push({
-        severity: 'error',
-        message: "The 'identifiers' field must be an array.",
-      });
-    } else {
+    if (Array.isArray(root['identifiers'])) {
       root['identifiers'].forEach((entry, i) => {
         if (
           !isObject(entry) ||
@@ -70,6 +65,11 @@ export function validateSellersJson(text: string): FileIssue[] {
             message: `identifiers[${i}] must have string 'name' and 'value' fields.`,
           });
         }
+      });
+    } else {
+      issues.push({
+        severity: 'error',
+        message: "The 'identifiers' field must be an array.",
       });
     }
   }

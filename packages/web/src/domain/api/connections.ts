@@ -36,8 +36,10 @@ export function makeConnectionsCollection(
     }),
   }).on({
     method: 'GET',
-    handle: async (_input, { uid }) =>
-      (await listConnectedApps(getDatabase(), uid)).map(connectedAppResource),
+    handle: async (_input, { uid }) => {
+      const apps = await listConnectedApps(getDatabase(), uid);
+      return apps.map((app) => connectedAppResource(app));
+    },
     encode: (apps) =>
       page(apps, undefined, { 'Cache-Control': 'private, no-cache' }),
   });
@@ -61,10 +63,11 @@ export function makeConnectionItem(
   resolver: CurrentUserResolver = requestCookieResolver,
 ): ApiController<GrantContext> {
   return new ApiController<GrantContext>({
-    context: async (request, route) => ({
-      uid: await liveUid(request, resolver),
-      grantId: (await route.params)?.['grant_id'] ?? '',
-    }),
+    context: async (request, route) => {
+      const uid = await liveUid(request, resolver);
+      const params = await route.params;
+      return { uid, grantId: params?.['grant-id'] ?? '' };
+    },
   }).on({
     method: 'DELETE',
     handle: async (_input, { uid, grantId }) => {

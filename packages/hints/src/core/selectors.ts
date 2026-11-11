@@ -47,30 +47,35 @@ export interface Subject {
 export function matches(selector: Selector, subject: Subject): boolean {
   const placement = PLACEMENT[subject.id];
   switch (selector.kind) {
-    case 'section':
+    case 'section': {
       return placement?.section === selector.value;
-    case 'tag':
+    }
+    case 'tag': {
       return placement?.tags.includes(selector.value) ?? false;
-    case 'target':
+    }
+    case 'target': {
       return placement?.target === selector.value;
-    case 'control':
+    }
+    case 'control': {
       return placement?.control === selector.value;
-    case 'tier':
+    }
+    case 'tier': {
       return placement?.tier === selector.value;
+    }
     case 'source':
-    case 'group':
+    case 'group': {
       return subject.groups.includes(selector.value);
+    }
   }
 }
 
 /**
  * Reads a selector written with its kind (`tag:seo`).
- *
  * @returns The selector, or undefined when the kind or the name is unknown.
  */
 function prefixed(name: string): Selector | undefined {
   const colon = name.indexOf(':');
-  if (colon < 0) {
+  if (colon === -1) {
     return undefined;
   }
   const kind = name.slice(0, colon);
@@ -88,9 +93,8 @@ function prefixed(name: string): Selector | undefined {
  * nothing. A bare name is read as a tag first (a section that is also a tag is
  * a twin, and the tag is the larger set), then as a section, target, tier,
  * control or source, then as an old alias, and last as an old group.
- *
- * @param name A selector, with or without its kind, or an old group name.
- * @param groups Every group name hints list, for the old groups.
+ * @param name - A selector, with or without its kind, or an old group name.
+ * @param groups - Every group name hints list, for the old groups.
  */
 export function resolve(
   name: string,

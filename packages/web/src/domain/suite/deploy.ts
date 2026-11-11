@@ -29,7 +29,7 @@ import { countsOf } from '@/domain/suite/report';
 import { restrictRun, type SuiteRun } from '@/domain/suite/run';
 import { resolveRules } from '@/domain/suite/config';
 import { FREE_LIMITS, inBatches, type Limits } from '@/domain/suite/limits';
-import { SiteUnreachable } from '@/domain/suite/scanner';
+import { SiteUnreachableError } from '@/domain/suite/scanner';
 import { siteAddress } from '@/domain/suite/site-address';
 import { applyLevels, fingerprintOf, type Level } from '@/domain/suite/rules';
 
@@ -159,8 +159,18 @@ export interface Deps {
   readonly kind?: SuiteRunKind;
 }
 
+/** The most recent stored run of a site, if there is one. */
+async function latestRunOf(
+  db: Database,
+  userId: number,
+  host: string,
+): Promise<StoredRun | undefined> {
+  const [run] = await latestRuns(db, userId, host, 1);
+  return run;
+}
+
 /** Stands in for the scanner where none is given: a site cannot be scanned. */
-const NO_SCANNER = (): Promise<SuiteRun> =>
+const noScanner = (): Promise<SuiteRun> =>
   Promise.reject(new Error('No scanner is available.'));
 
 /**
@@ -175,14 +185,14 @@ export async function checkSite(
   deps: Deps = {},
   last?: StoredRun | null,
 ): Promise<SiteOutcome> {
-  const run = deps.run ?? NO_SCANNER;
+  const run = deps.run ?? noScanner;
   const now = deps.now ?? (() => new Date());
   const levels = deps.levels ?? DEFAULT_LEVELS;
   const rules = await fingerprintOf(levels);
   // The caller may have read the previous run already; read it only if not.
   const previous =
     last === undefined
-      ? (await latestRuns(db, userId, site.host, 1))[0]
+      ? await latestRunOf(db, userId, site.host)
       : (last ?? undefined);
   const url = `https://${site.host}/`;
   // The previous run is only a basis for this one if the rules are the same.
@@ -195,7 +205,7 @@ export async function checkSite(
     result = await run(url);
   } catch (error) {
     console.error('suite run failed', site.host, error);
-    if (error instanceof SiteUnreachable) {
+    if (error instanceof SiteUnreachableError) {
       await markTried(db, userId, site.host, now().toISOString());
     }
     // Only a site that did not answer the scanner is told as down; a scanner
@@ -204,7 +214,7 @@ export async function checkSite(
       before,
       after: null,
       at: now().toISOString(),
-      ...(error instanceof SiteUnreachable ? {} : { failed: true }),
+      ...(error instanceof SiteUnreachableError ? {} : { failed: true }),
     });
     return { host: site.host, skipped: 'unreachable' };
   }
@@ -264,16 +274,14 @@ export async function checkDeployment(
   deps: Deps = {},
 ): Promise<SiteOutcome[]> {
   const limits = deps.limits ?? FREE_LIMITS;
-  const sites = (await listDomainsOfRepo(db, userId, deployed.repo)).slice(
-    0,
-    limits.maxSites,
-  );
+  const domains = await listDomainsOfRepo(db, userId, deployed.repo);
+  const sites = domains.slice(0, limits.maxSites);
   // The sites are checked together: most of a check is waiting for the site.
-  const outcomes = await inBatches(
+  return await inBatches(
     sites,
     limits.concurrency,
     async (site): Promise<SiteOutcome> => {
-      const previous = (await latestRuns(db, userId, site.host, 1))[0];
+      const [previous] = await latestRuns(db, userId, site.host, 1);
       // A report is kept by commit: a commit that has been checked is not
       // checked again, however long ago, unless the rules changed (force). A
       // new commit is checked as soon as it is deployed.
@@ -293,5 +301,4 @@ export async function checkDeployment(
       );
     },
   );
-  return outcomes;
 }

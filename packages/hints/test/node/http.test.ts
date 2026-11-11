@@ -1,11 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
-import * as node from 'node:http';
+import { request as nodeRequest } from 'node:http';
 
-import * as ours from '../../src/node/http.js';
+import { request } from '../../src/node/http.js';
 
 describe('#http under Node', () => {
-  it.each(['request'] as const)('is Node own %s', (name) => {
-    expect(ours[name]).toBeDefined();
-    expect(ours[name]).toBe(node[name]);
+  it('is Node own request', () => {
+    expect(request).toBeDefined();
+    expect(request).toBe(nodeRequest);
   });
 });

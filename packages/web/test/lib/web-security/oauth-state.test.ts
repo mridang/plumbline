@@ -15,7 +15,7 @@ describe('newState', () => {
     'names its purpose (%s) and is different every time',
     (purpose) => {
       expect(newState(purpose)).toMatch(
-        new RegExp(`^${purpose}\\.[0-9a-f-]{36}$`),
+        new RegExp(String.raw`^${purpose}\.[0-9a-f-]{36}$`),
       );
       expect(newState(purpose)).not.toBe(newState(purpose));
     },
@@ -51,7 +51,6 @@ describe('checkState', () => {
     const state = newState(SIGN_IN_PURPOSE);
     expect(checkState(null, state, PURPOSES)).toEqual({
       ok: false,
-      claimed: undefined,
     });
     expect(checkState(state, undefined, PURPOSES)).toEqual({
       ok: false,
@@ -59,7 +58,6 @@ describe('checkState', () => {
     });
     expect(checkState('', '', PURPOSES)).toEqual({
       ok: false,
-      claimed: undefined,
     });
   });
 
@@ -76,7 +74,6 @@ describe('checkState', () => {
   it('stops for a matching state that is not one of the valid labels', () => {
     expect(checkState('admin.123', 'admin.123', PURPOSES)).toEqual({
       ok: false,
-      claimed: undefined,
     });
   });
 });

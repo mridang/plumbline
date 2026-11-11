@@ -61,21 +61,32 @@ export function parseHsts(header: string): Hsts {
       return invalid(`duplicate directive ${name}`);
     }
     seen.add(name);
-    if (name === 'max-age') {
-      const value = rest
-        .join('=')
-        .trim()
-        .replace(/^"(.*)"$/, '$1');
-      if (!/^\d+$/.test(value)) {
-        return invalid('max-age is not a number');
+    switch (name) {
+      case 'max-age': {
+        const value = rest
+          .join('=')
+          .trim()
+          .replace(/^"(.*)"$/, '$1');
+        if (!/^\d+$/.test(value)) {
+          return invalid('max-age is not a number');
+        }
+        result.maxAge = Number.parseInt(value.slice(0, 128), 10);
+
+        break;
       }
-      result.maxAge = Number.parseInt(value.slice(0, 128), 10);
-    } else if (name === 'includesubdomains') {
-      result.includeSubDomains = true;
-    } else if (name === 'preload') {
-      result.preload = true;
-    } else {
-      result.unknown.push(name);
+      case 'includesubdomains': {
+        result.includeSubDomains = true;
+
+        break;
+      }
+      case 'preload': {
+        result.preload = true;
+
+        break;
+      }
+      default: {
+        result.unknown.push(name);
+      }
     }
   }
   if (result.maxAge === null) {
@@ -93,10 +104,10 @@ export function hstsProtects(header: string | null, secure: boolean): boolean {
   return parsed.valid && (parsed.maxAge ?? 0) >= SIX_MONTHS;
 }
 
-const OWASP_VALUES = [
+const OWASP_VALUES = new Set([
   'max-age=63072000; includesubdomains',
   'max-age=63072000; includesubdomains; preload',
-];
+]);
 
 export interface HstsInput {
   /** The header value, or null when it was not sent. */
@@ -124,8 +135,10 @@ export function hstsFindings({
     const normalised = header
       .trim()
       .toLowerCase()
-      .replace(/\s*;\s*/g, '; ');
-    return OWASP_VALUES.includes(normalised)
+      .split(';')
+      .map((part) => part.trim())
+      .join('; ');
+    return OWASP_VALUES.has(normalised)
       ? []
       : [
           finding(

@@ -31,7 +31,7 @@
  * backtracking, no mis-parsing of nested or unusual markup, and the readers see
  * precisely the elements a browser would.
  */
-import { createRequire } from 'node:module';
+import { createHTMLDocument } from '@hint/utils-dom';
 import type { HTMLDocument } from '@hint/utils-dom';
 // The library's readers consume the compiled JavaScript under `@mridang/webhint-hint-plumbline/dist/**`
 // (the root build runs before this package builds), exactly as `adapt.ts` and
@@ -39,15 +39,6 @@ import type { HTMLDocument } from '@hint/utils-dom';
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/seo/read.js';
 import type { HeaderBag } from '@mridang/webhint-hint-plumbline/dist/lib/headers/http-headers.js';
 import type { MetaElementArtifact } from './adapt.js';
-
-// `@hint/utils-dom` ships as CommonJS, so it is loaded through `createRequire`
-// (the pattern the parent package's tests use) rather than a named ESM import,
-// which does not resolve reliably against this CJS module. The signature is
-// narrowed to the one function this adapter needs.
-const require = createRequire(import.meta.url);
-const { createHTMLDocument } = require('@hint/utils-dom') as {
-  createHTMLDocument: (html: string, finalHref: string) => HTMLDocument;
-};
 
 /** Lighthouse's `LinkElement` artifact entry, narrowed to what we read. */
 export interface LinkElementArtifact {

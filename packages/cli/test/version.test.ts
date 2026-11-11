@@ -1,12 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { packageVersion } from '../src/version.js';
 
 describe('packageVersion', () => {
-  it('reads the version from the package manifest', () => {
+  it('reads the version from the package manifest', async () => {
     const manifest = JSON.parse(
-      readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+      await readFile(new URL('../package.json', import.meta.url), 'utf8'),
     ) as { version: string };
-    expect(packageVersion()).toBe(manifest.version);
+    expect(await packageVersion()).toBe(manifest.version);
   });
 });

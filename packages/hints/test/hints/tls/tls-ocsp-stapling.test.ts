@@ -15,8 +15,8 @@ afterEach(restoreProbe);
 async function scan(cert: string, staple: boolean) {
   const server = await startServer({ cert });
   if (staple) {
-    server.server.on('OCSPRequest', (_cert, _issuer, callback) =>
-      callback(null, OCSP_STAPLE),
+    server.server.on('OCSPRequest', (_cert, _issuer, respond) =>
+      respond(null, OCSP_STAPLE),
     );
   }
   pointAt(server.port);

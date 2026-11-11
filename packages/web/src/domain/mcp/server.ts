@@ -17,11 +17,11 @@
 import type { User } from '@/domain/db/users';
 import {
   ERROR_INVALID_PARAMS,
-  InvalidToolArguments,
+  InvalidToolArgumentsError,
   McpServer,
   RpcError,
   SUPPORTED_VERSIONS,
-  UnknownTool,
+  UnknownToolError,
   isPlainObject,
   negotiateLegacyVersion,
   type CacheHint,
@@ -220,10 +220,10 @@ async function callTool(params: Params, ctx: McpContext): Promise<object> {
   try {
     return await ctx.runTool(ctx.user, params);
   } catch (error) {
-    if (error instanceof UnknownTool) {
+    if (error instanceof UnknownToolError) {
       throw unknownToolError(error.tool);
     }
-    if (error instanceof InvalidToolArguments) {
+    if (error instanceof InvalidToolArgumentsError) {
       throw new RpcError(
         ERROR_INVALID_PARAMS,
         `Invalid arguments for tool ${name}: ${error.problems.join(' ')}`,
@@ -234,7 +234,7 @@ async function callTool(params: Params, ctx: McpContext): Promise<object> {
   }
 }
 
-/** plumbline's MCP server: the engine with the methods registered. */
+/** Plumbline's MCP server: the engine with the methods registered. */
 const server = new McpServer<McpContext>({
   serverInfo: SERVER_INFO,
   serverInfoMetaKey: SERVER_INFO_META_KEY,

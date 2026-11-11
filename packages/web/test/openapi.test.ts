@@ -6,8 +6,8 @@ import {
   it,
   jest,
 } from '@jest/globals';
-import { readdirSync, readFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
 
 import { ROUTE_MODULES } from './helpers/route-modules';
 import { APP_MIGRATIONS } from './lib/core/db/migrations';
@@ -32,7 +32,7 @@ interface Operation {
 }
 
 const document = JSON.parse(
-  readFileSync(join(process.cwd(), 'openapi.json'), 'utf8'),
+  await readFile(path.join(process.cwd(), 'openapi.json'), 'utf8'),
 ) as {
   openapi: string;
   paths: Record<string, Record<string, Operation>>;
@@ -43,7 +43,7 @@ const document = JSON.parse(
 };
 
 const METHODS = ['get', 'post', 'put', 'patch', 'delete'] as const;
-const API = join(process.cwd(), 'src/app/api');
+const API = path.join(process.cwd(), 'src/app/api');
 
 const documented = (): Map<string, Operation> => {
   const found = new Map<string, Operation>();
@@ -57,21 +57,30 @@ const documented = (): Map<string, Operation> => {
   return found;
 };
 
-const routeFiles = (dir: string): string[] =>
-  readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
-    entry.isDirectory()
-      ? routeFiles(join(dir, entry.name))
-      : entry.name === 'route.ts'
-        ? [join(dir, entry.name)]
-        : [],
-  );
+const routeFiles = async (dir: string): Promise<string[]> => {
+  const found: string[] = [];
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    if (entry.isDirectory()) {
+      found.push(...(await routeFiles(path.join(dir, entry.name))));
+    } else if (entry.name === 'route.ts') {
+      found.push(path.join(dir, entry.name));
+    } else {
+      continue;
+    }
+  }
+  return found;
+};
 
 /** The path a route file serves, with `[x]` written `{x}`. */
 const pathOf = (file: string): string =>
   '/api/' +
-  relative(API, file)
+  path
+    .relative(API, file)
     .replace(/\/?route\.ts$/, '')
-    .replace(/\[([a-z_]+)\]/g, '{$1}');
+    .replaceAll(
+      /\[([a-z_-]+)\]/g,
+      (_, name: string) => `{${name.replaceAll('-', '_')}}`,
+    );
 
 /**
  * The routes kept only so that an address still registered outside the code
@@ -94,7 +103,7 @@ const registered = async (): Promise<
   { key: string; path: string; method: string; handler: Handler }[]
 > => {
   const found = [];
-  for (const file of routeFiles(API)) {
+  for (const file of await routeFiles(API)) {
     const path = pathOf(file).replace(/\/$/, '');
     if (ALIASES.has(path)) {
       continue;
@@ -139,11 +148,16 @@ const response = (value: Json): Json => {
 const routes = await registered();
 
 describe('openapi.json and the route files', () => {
-  it('has a module in the test table for every route file, and a route file for every module', () => {
-    const files = routeFiles(API)
+  it('has a module in the test table for every route file, and a route file for every module', async () => {
+    const routeList = await routeFiles(API);
+    const files = routeList
       .map((file) => pathOf(file).replace(/\/$/, ''))
       .filter((path) => !ALIASES.has(path));
-    expect(files.toSorted()).toEqual(Object.keys(ROUTE_MODULES).toSorted());
+    expect(files.toSorted((a, b) => Number(a > b) - Number(a < b))).toEqual(
+      Object.keys(ROUTE_MODULES).toSorted(
+        (a, b) => Number(a > b) - Number(a < b),
+      ),
+    );
   });
 
   it('is OpenAPI 3.1', () => {
@@ -151,8 +165,14 @@ describe('openapi.json and the route files', () => {
   });
 
   it('describes every method of every route under /api, and nothing else', () => {
-    expect(routes.map((route) => route.key).toSorted()).toEqual(
-      [...documented().keys()].toSorted(),
+    expect(
+      routes
+        .map((route) => route.key)
+        .toSorted((a, b) => Number(a > b) - Number(a < b)),
+    ).toEqual(
+      [...documented().keys()].toSorted(
+        (a, b) => Number(a > b) - Number(a < b),
+      ),
     );
   });
 
@@ -220,16 +240,20 @@ describe('openapi.json and the route files', () => {
       } else if (value && typeof value === 'object') {
         const record = value as Json;
         const properties = record['properties'];
-        if (properties && typeof properties === 'object') {
-          for (const name of Object.keys(properties)) {
-            if (!/^[a-z][a-z0-9_]*$/.test(name)) {
-              bad.push(`${where}.${name}`);
-            }
-          }
-        }
+        const names =
+          properties && typeof properties === 'object'
+            ? Object.keys(properties)
+            : [];
+        bad.push(
+          ...names
+            .filter((name) => !/^[a-z][a-z0-9_]*$/.test(name))
+            .map((name) => `${where}.${name}`),
+        );
         for (const [name, child] of Object.entries(record)) {
           walk(child, `${where}.${name}`);
         }
+      } else {
+        // A scalar holds no properties and no children to walk.
       }
     };
     walk(document.components.schemas, 'schemas');
@@ -238,7 +262,7 @@ describe('openapi.json and the route files', () => {
 
   it('has no path segment that is a verb or has a hyphen, and no trailing slash', () => {
     for (const path of Object.keys(document.paths)) {
-      expect(path).not.toMatch(/-|\/$/);
+      expect(path).not.toMatch(/(?:-|\/$)/);
     }
   });
 });
@@ -270,7 +294,7 @@ describe('what the controllers do, against what the spec says', () => {
       const params = Object.fromEntries(names.map((name) => [name, 'x']));
       const answer = await handler(
         new Request(
-          `https://plumbline.test${path.replace(/\{[a-z_]+\}/g, 'x')}`,
+          `https://plumbline.test${path.replaceAll(/\{[a-z_]+\}/g, 'x')}`,
           {
             method,
             headers: { 'content-type': 'application/json' },

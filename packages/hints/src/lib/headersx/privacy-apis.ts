@@ -15,9 +15,8 @@ import { finding, type Finding } from '../headers/finding.js';
  * reports that the response takes part in attribution reporting (a privacy
  * signal worth surfacing) and warns when the registration is not valid JSON,
  * since the browser then silently ignores it.
- *
- * @param source the `Attribution-Reporting-Register-Source` value, or null.
- * @param trigger the `Attribution-Reporting-Register-Trigger` value, or null.
+ * @param source - The `Attribution-Reporting-Register-Source` value, or null.
+ * @param trigger - The `Attribution-Reporting-Register-Trigger` value, or null.
  */
 export function attributionReportingFindings(
   source: string | null,
@@ -32,35 +31,39 @@ export function attributionReportingFindings(
     if (value === null) {
       continue;
     }
-    try {
-      const parsed: unknown = JSON.parse(value);
-      if (
-        typeof parsed !== 'object' ||
-        parsed === null ||
-        Array.isArray(parsed)
-      ) {
-        findings.push(
-          finding('warning', `The '${name}' header must be a JSON object.`),
-        );
-        continue;
-      }
-    } catch {
+    const problem = registrationProblem(name, value);
+    if (problem) {
+      findings.push(problem);
+    } else {
       findings.push(
         finding(
-          'warning',
-          `The '${name}' header must be valid JSON, or the registration is ignored.`,
+          'hint',
+          `The '${name}' header registers this response with the Attribution Reporting API (ad measurement).`,
         ),
       );
-      continue;
     }
-    findings.push(
-      finding(
-        'hint',
-        `The '${name}' header registers this response with the Attribution Reporting API (ad measurement).`,
-      ),
-    );
   }
   return findings;
+}
+
+/** The warning for a registration that is not a JSON object, or null when it is one. */
+function registrationProblem(name: string, value: string): Finding | null {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
+      return finding('warning', `The '${name}' header must be a JSON object.`);
+    }
+    return null;
+  } catch {
+    return finding(
+      'warning',
+      `The '${name}' header must be valid JSON, or the registration is ignored.`,
+    );
+  }
 }
 
 /**

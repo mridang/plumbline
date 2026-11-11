@@ -1,14 +1,11 @@
-import { createRequire } from 'node:module';
 import { describe, expect, it } from '@jest/globals';
+import { createHTMLDocument } from '@hint/utils-dom';
 import type { DocumentLike } from '../../../src/lib/feeds/read.js';
 import {
   feedDiscovery,
   oembedDiscovery,
   opensearchDiscovery,
 } from '../../../src/lib/feeds/checks.js';
-
-const require = createRequire(import.meta.url);
-const { createHTMLDocument } = require('@hint/utils-dom');
 
 const parse = (html: string): DocumentLike =>
   createHTMLDocument(html, 'https://x.test/') as DocumentLike;

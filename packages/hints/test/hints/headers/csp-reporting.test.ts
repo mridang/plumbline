@@ -75,7 +75,7 @@ describe('csp-reporting', () => {
   });
 
   const cloudflareNel = {
-    nel: JSON.stringify({ report_to: 'cf-nel', max_age: 604800 }),
+    nel: JSON.stringify({ report_to: 'cf-nel', max_age: 604_800 }),
     'report-to': group('cf-nel', 'https://a.nel.cloudflare.com/report/v4?s=x'),
   };
 

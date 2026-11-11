@@ -1,7 +1,7 @@
 import { agentHint } from './define-agent-hint.js';
 
 /**
- * isitagentready.com check. Discovery: /.well-known/agent-skills/index.json (Cloudflare agent-skills-discovery RFC) lists installable skills.
+ * Isitagentready.com check. Discovery: /.well-known/agent-skills/index.json (Cloudflare agent-skills-discovery RFC) lists installable skills.
  * The logic lives in `src/lib/agent`; failures are reported as advice.
  */
 export default agentHint({

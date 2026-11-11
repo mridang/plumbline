@@ -5,10 +5,11 @@ export type AiTxtFormat = 'markdown' | 'spawning';
 /** Picks the format by looking for front matter or robots style lines. */
 export function detectAiTxtFormat(text: string): AiTxtFormat {
   const t = text.replace(/^\uFEFF/, '').trimStart();
-  if (t.startsWith('---') || /^#\s/m.test(t)) {
-    if (!/^user-agent\s*:/im.test(t)) {
-      return 'markdown';
-    }
+  if (
+    (t.startsWith('---') || /^#\s/m.test(t)) &&
+    !/^user-agent\s*:/im.test(t)
+  ) {
+    return 'markdown';
   }
   return 'spawning';
 }
@@ -26,7 +27,7 @@ function validateMarkdownAiTxt(text: string): FileIssue[] {
   let bodyStart = 0;
   if (lines[0]?.trim() === '---') {
     const end = lines.findIndex((l, i) => i > 0 && l.trim() === '---');
-    if (end < 0) {
+    if (end === -1) {
       issues.push({
         severity: 'error',
         line: 1,
@@ -34,11 +35,11 @@ function validateMarkdownAiTxt(text: string): FileIssue[] {
       });
     } else {
       bodyStart = end + 1;
-      const meta: Record<string, string> = {};
+      const meta: Partial<Record<string, string>> = {};
       lines.slice(1, end).forEach((l) => {
-        const m = l.match(/^([A-Za-z_-]+)\s*:\s*(.*)$/);
+        const m = /^([A-Za-z_-]+)\s*:(.*)$/.exec(l);
         if (m) {
-          meta[m[1].toLowerCase()] = m[2].trim().replace(/^["']|["']$/g, '');
+          meta[m[1].toLowerCase()] = m[2].trim().replaceAll(/^["']|["']$/g, '');
         }
       });
       const updated = meta['updated'];
@@ -57,6 +58,8 @@ function validateMarkdownAiTxt(text: string): FileIssue[] {
           line: 1,
           message: `'updated' must be a YYYY-MM-DD date, not '${updated}'.`,
         });
+      } else {
+        // A well-formed 'updated' date needs no finding.
       }
       if (!meta['scope']) {
         issues.push({
@@ -80,16 +83,18 @@ function validateMarkdownAiTxt(text: string): FileIssue[] {
       message: 'The file must contain an H1 title.',
     });
   }
-  const headings = body
-    .filter((l) => /^##\s/.test(l))
-    .map((l) =>
-      l
-        .replace(/^##\s+/, '')
-        .trim()
-        .toLowerCase(),
-    );
+  const headings = new Set(
+    body
+      .filter((l) => /^##\s/.test(l))
+      .map((l) =>
+        l
+          .replace(/^##\s+/, '')
+          .trim()
+          .toLowerCase(),
+      ),
+  );
   for (const section of SECTIONS) {
-    if (!headings.includes(section.toLowerCase())) {
+    if (!headings.has(section.toLowerCase())) {
       issues.push({
         severity: 'warning',
         message: `The expected section '${section}' is missing.`,
@@ -109,7 +114,7 @@ function validateSpawningAiTxt(text: string): FileIssue[] {
   let hasRule = false;
   splitLines(text).forEach((raw, i) => {
     const line = i + 1;
-    const content = raw.replace(/#.*$/, '').trim();
+    const content = raw.split('#', 1)[0].trim();
     if (content === '') {
       return;
     }
@@ -124,7 +129,7 @@ function validateSpawningAiTxt(text: string): FileIssue[] {
     const value = content.slice(colon + 1).trim();
     const key = rawKey.toLowerCase();
     if (!['user-agent', 'allow', 'disallow', 'sitemap'].includes(key)) {
-      const near = key.replace(/[\s_]+/g, '-');
+      const near = key.replaceAll(/[\s_]+/g, '-');
       at(
         'error',
         ['user-agent'].includes(near)
@@ -151,22 +156,24 @@ function validateSpawningAiTxt(text: string): FileIssue[] {
       for (const token of tokens) {
         if (
           !TOKENS.has(token.toLowerCase()) &&
-          !/^(\*?\.[\w]+|\/\S*|\*\.\w+)$/.test(token)
+          !/^(\*?\.\w+|\/\S*|\*\.\w+)$/.test(token)
         ) {
           at('warning', `Unknown media type token '${token}'.`);
         }
       }
     }
   });
-  if (!hasAgent) {
+  if (hasAgent) {
+    if (!hasRule) {
+      issues.push({
+        severity: 'warning',
+        message: 'The file has no Allow or Disallow rules.',
+      });
+    }
+  } else {
     issues.push({
       severity: 'error',
       message: 'The file has no User-Agent line.',
-    });
-  } else if (!hasRule) {
-    issues.push({
-      severity: 'warning',
-      message: 'The file has no Allow or Disallow rules.',
     });
   }
   return issues;

@@ -80,7 +80,7 @@ describe('SiteHeader signed in', () => {
       out.indexOf(text),
     );
     expect(at.every((index) => index >= 0)).toBe(true);
-    expect([...at].sort((a, b) => a - b)).toEqual(at);
+    expect([...at].toSorted((a, b) => a - b)).toEqual(at);
   });
 
   it('greets the person by their first name in the account menu', () => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/technical/technical-redirect-chain.js';
 import { runHint } from '../../helpers/run-hint.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 /** Routes for a valid page whose head and body are filled in by the test. */
 const page = (body: string, head = '') => ({
@@ -29,19 +30,24 @@ describe('technical-redirect-chain', () => {
         options: Record<string, unknown>,
       ) => reports.push({ resource, options }),
     };
-    new hint.ctor(context as never);
+    const instance = new hint.ctor(context as never);
+    expect(instance).toBeInstanceOf(hint.ctor);
     handlers['fetch::end::html']({
-      resource: 'http://a.example/',
+      resource: `${HTTP_SCHEME}a.example/`,
       response: {
-        hops: ['http://a.example/', 'http://b.example/', 'http://c.example/'],
-        url: 'http://d.example/',
+        hops: [
+          `${HTTP_SCHEME}a.example/`,
+          `${HTTP_SCHEME}b.example/`,
+          `${HTTP_SCHEME}c.example/`,
+        ],
+        url: `${HTTP_SCHEME}d.example/`,
         statusCode: 200,
       },
     });
     expect(reports).toHaveLength(1);
     expect(reports[0].options.codeLanguage).toBe('http');
     expect(reports[0].options.codeSnippet).toBe(
-      'http://a.example/\n-> http://b.example/\n-> http://c.example/\n-> http://d.example/ (HTTP 200)',
+      `${HTTP_SCHEME}a.example/\n-> ${HTTP_SCHEME}b.example/\n-> ${HTTP_SCHEME}c.example/\n-> ${HTTP_SCHEME}d.example/ (HTTP 200)`,
     );
   });
 });

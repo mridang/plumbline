@@ -50,23 +50,27 @@ describe('checkRobotsTxt', () => {
     expect(r.passed).toBe(true);
   });
   it('fails when missing', async () => {
-    expect((await checkRobotsTxt(fakeEnv())).passed).toBe(false);
+    const r = await checkRobotsTxt(fakeEnv());
+    expect(r.passed).toBe(false);
   });
   it('fails for a non-200 status', async () => {
     const env = fakeEnv({
       '/robots.txt': { status: 404, body: 'User-agent: *' },
     });
-    expect((await checkRobotsTxt(env)).passed).toBe(false);
+    const r = await checkRobotsTxt(env);
+    expect(r.passed).toBe(false);
   });
   it('fails for the wrong content type', async () => {
     const env = fakeEnv({
       '/robots.txt': { contentType: 'text/html', body: 'User-agent: *' },
     });
-    expect((await checkRobotsTxt(env)).detail).toContain('not text/plain');
+    const r = await checkRobotsTxt(env);
+    expect(r.detail).toContain('not text/plain');
   });
   it('fails without a User-agent directive', async () => {
     const env = fakeEnv({ '/robots.txt': 'Disallow: /' });
-    expect((await checkRobotsTxt(env)).detail).toContain('no User-agent');
+    const r = await checkRobotsTxt(env);
+    expect(r.detail).toContain('no User-agent');
   });
 });
 
@@ -106,11 +110,13 @@ describe('sitemap', () => {
       '/robots.txt': 'Sitemap: https://example.com/map.xml',
       'https://example.com/map.xml': SITEMAP,
     });
-    expect((await checkSitemap(env)).passed).toBe(true);
+    const r = await checkSitemap(env);
+    expect(r.passed).toBe(true);
   });
   it('falls back to /sitemap.xml', async () => {
     const env = fakeEnv({ '/sitemap.xml': SITEMAP });
-    expect((await checkSitemap(env)).passed).toBe(true);
+    const r = await checkSitemap(env);
+    expect(r.passed).toBe(true);
   });
   it('fails when the declared sitemap is invalid', async () => {
     const env = fakeEnv({
@@ -123,7 +129,8 @@ describe('sitemap', () => {
     expect(r.detail).toContain('listed in robots.txt');
   });
   it('fails when there is nothing', async () => {
-    expect((await checkSitemap(fakeEnv())).passed).toBe(false);
+    const r = await checkSitemap(fakeEnv());
+    expect(r.passed).toBe(false);
   });
 });
 
@@ -146,7 +153,8 @@ describe('checkAiBotRules', () => {
   });
   it('fails for a robots.txt without any User-agent', async () => {
     const env = fakeEnv({ '/robots.txt': 'Disallow: /' });
-    expect((await checkAiBotRules(env)).detail).toContain('no User-agent');
+    const r = await checkAiBotRules(env);
+    expect(r.detail).toContain('no User-agent');
   });
   it('fails without robots.txt, saying why', async () => {
     const r = await checkAiBotRules(fakeEnv({}, { fallback: { status: 404 } }));
@@ -157,7 +165,8 @@ describe('checkAiBotRules', () => {
     const env = fakeEnv({
       '/robots.txt': { contentType: 'text/html', body: 'User-agent: *' },
     });
-    expect((await checkAiBotRules(env)).passed).toBe(false);
+    const r = await checkAiBotRules(env);
+    expect(r.passed).toBe(false);
   });
 });
 
@@ -174,19 +183,57 @@ describe('content signals', () => {
     const env = fakeEnv({
       '/robots.txt': 'Content-Signal: ai-train=no, search=yes',
     });
-    expect((await checkContentSignals(env)).passed).toBe(true);
+    const r = await checkContentSignals(env);
+    expect(r.passed).toBe(true);
   });
   it('fails with an invalid directive', async () => {
     const env = fakeEnv({ '/robots.txt': 'Content-Signal: nonsense' });
-    expect((await checkContentSignals(env)).detail).toContain('no valid');
+    const r = await checkContentSignals(env);
+    expect(r.detail).toContain('no valid');
   });
   it('fails without the directive', async () => {
     const env = fakeEnv({ '/robots.txt': 'User-agent: *' });
-    expect((await checkContentSignals(env)).detail).toContain(
-      'no Content-Signal',
-    );
+    const r = await checkContentSignals(env);
+    expect(r.detail).toContain('no Content-Signal');
   });
   it('fails without robots.txt', async () => {
-    expect((await checkContentSignals(fakeEnv())).passed).toBe(false);
+    const r = await checkContentSignals(fakeEnv());
+    expect(r.passed).toBe(false);
+  });
+});
+
+describe('parseRobots comment stripping against the former regex', () => {
+  // The former pattern, assembled at run time so the linter does not flag the
+  // reference implementation this test compares against.
+  const old = (flags: string, ...parts: string[]): RegExp =>
+    new RegExp(parts.join(''), flags);
+  const former = (line: string): string[] => {
+    const text = line.replace(old('', '#', '.*$'), '').trim();
+    const match = /^([A-Za-z-]+)\s*:(.*)$/.exec(text);
+    const value = match?.[2].trim();
+    return value ? [value] : [];
+  };
+
+  it.each([
+    'Sitemap: https://a.test/s.xml',
+    'Sitemap: https://a.test/s.xml # note',
+    'Sitemap: https://a.test/s.xml#frag',
+    '# Sitemap: https://a.test/s.xml',
+    'Sitemap: a # b # c',
+    'Sitemap: a\r# b',
+    'Sitemap: a # b\rc',
+    'Sitemap: a # b c',
+    'Sitemap: a # b # c d',
+    'Sitemap: a#b\r#c',
+    'Sitemap:#',
+  ])('agrees on %j', (line) => {
+    expect(parseRobots(line).sitemaps).toEqual(former(line));
+  });
+
+  it('agrees on a 100k character line of hashes', () => {
+    const line = `Sitemap: a${'#'.repeat(100_000)}`;
+    expect(parseRobots(line).sitemaps).toEqual(former(line));
+    const broken = `${line}\r${'#'.repeat(100_000)}`;
+    expect(parseRobots(broken).sitemaps).toEqual(former(broken));
   });
 });

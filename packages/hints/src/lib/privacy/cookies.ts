@@ -11,6 +11,7 @@ export interface CookieRecord {
   domain: string;
   /** The Path attribute, `/` when absent (unknown for script cookies). */
   path: string;
+
   /**
    * `session` when the cookie has no expiry, `persistent` when it has one and
    * `unknown` for cookies read from `document.cookie`, which hides expiry.
@@ -57,7 +58,7 @@ export function parseSetCookie(
   now: number = Date.now(),
 ): CookieRecord | null {
   const [pair, ...attributes] = header.split(';').map((part) => part.trim());
-  const name = pair.split('=')[0]?.trim();
+  const name = pair.split('=', 1)[0]?.trim();
   if (!name || !pair.includes('=')) {
     return null;
   }
@@ -73,16 +74,18 @@ export function parseSetCookie(
     const [key, ...rest] = attribute.split('=');
     const value = rest.join('=').trim();
     switch (key.trim().toLowerCase()) {
-      case 'domain':
+      case 'domain': {
         if (value) {
           domain = normalizeHost(value);
         }
         break;
-      case 'path':
+      }
+      case 'path': {
         if (value.startsWith('/')) {
           path = value;
         }
         break;
+      }
       case 'expires': {
         const time = Date.parse(value);
         if (!Number.isNaN(time)) {
@@ -90,20 +93,24 @@ export function parseSetCookie(
         }
         break;
       }
-      case 'max-age':
+      case 'max-age': {
         if (/^-?\d+$/.test(value)) {
           maxAge = Number(value);
         }
         break;
-      case 'secure':
+      }
+      case 'secure': {
         secure = true;
         break;
-      case 'httponly':
+      }
+      case 'httponly': {
         httpOnly = true;
         break;
-      case 'samesite':
+      }
+      case 'samesite': {
         sameSite = value || null;
         break;
+      }
     }
   }
   if (!domainMatches(origin, domain)) {
@@ -138,7 +145,7 @@ export function cookiesFromHeaders(
   }
   const values = Array.isArray(setCookie) ? setCookie : [setCookie];
   return values
-    .flatMap(splitSetCookie)
+    .flatMap((value) => splitSetCookie(value))
     .map((value) => parseSetCookie(value, host))
     .filter((cookie): cookie is CookieRecord => cookie !== null);
 }
@@ -153,7 +160,7 @@ export function cookiesFromDocument(
     .map((part) => part.trim())
     .filter((part) => part.includes('='))
     .map((part) => ({
-      name: part.split('=')[0].trim(),
+      name: part.split('=', 1)[0].trim(),
       domain: normalizeHost(pageHost),
       path: '/',
       lifetime: 'unknown' as const,
@@ -196,27 +203,32 @@ export function summarizeCookies(
   ];
   for (const cookie of ordered) {
     const key = `${cookie.domain}|${cookie.path}|${cookie.name}`;
-    if (seen.has(key)) {
-      continue;
-    }
-    if (
-      cookie.fromScript &&
-      [...seen].some((other) => {
-        const [domain, , name] = other.split('|');
-        return name === cookie.name && domainMatches(page, domain);
-      })
-    ) {
-      continue;
-    }
-    seen.add(key);
-    if (isSameParty(cookie.domain, pageHost)) {
-      firstParty.push(cookie);
-    } else {
-      thirdParty.push(cookie);
-      keep.add(cookie.domain);
+    if (!seen.has(key) && !heldByHeader(cookie, page, seen)) {
+      seen.add(key);
+      if (isSameParty(cookie.domain, pageHost)) {
+        firstParty.push(cookie);
+      } else {
+        thirdParty.push(cookie);
+        keep.add(cookie.domain);
+      }
     }
   }
   return { firstParty, thirdParty, thirdPartyDomains: [...keep] };
+}
+
+/** True when a script cookie is already held under a domain that covers the page. */
+function heldByHeader(
+  cookie: CookieRecord,
+  page: string,
+  seen: ReadonlySet<string>,
+): boolean {
+  return (
+    cookie.fromScript &&
+    [...seen].some((other) => {
+      const [domain, , name] = other.split('|');
+      return name === cookie.name && domainMatches(page, domain);
+    })
+  );
 }
 
 /**
@@ -229,11 +241,13 @@ export function describeCookie(cookie: CookieRecord): string {
     cookie.lifetime === 'persistent'
       ? `expires ${cookie.expires}`
       : cookie.lifetime;
+  const sameSite = cookie.sameSite
+    ? `SameSite=${cookie.sameSite}`
+    : 'no SameSite';
   return (
     `${cookie.domain} ${truncate(cookie.name, COOKIE_NAME_LENGTH)} (${lifetime}, ` +
     `${cookie.secure ? 'Secure' : 'not Secure'}, ` +
-    `${cookie.httpOnly ? 'HttpOnly' : 'not HttpOnly'}, ` +
-    `${cookie.sameSite ? `SameSite=${cookie.sameSite}` : 'no SameSite'})`
+    `${cookie.httpOnly ? 'HttpOnly' : 'not HttpOnly'}, ${sameSite})`
   );
 }
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/email/mail-ipv6.js';
 import type { MailNetClient } from '../../../src/lib/email/net.js';
 import { fakeDns, runMailHint } from '../../lib/email/fakes.js';
+import { vector } from '../../helpers/data.js';
 
 const MX = {
   'example.test MX': ['10 mx1.example.test.', '20 mx2.example.test.'],
@@ -43,7 +44,7 @@ describe('mail-ipv6', () => {
     const dns = fakeDns({
       ...MX,
       'mx1.example.test AAAA': ['2001:db8::1'],
-      'mx2.example.test AAAA': ['::ffff:192.0.2.1'],
+      'mx2.example.test AAAA': [vector('ip__ffff_192_0_2_1')],
     });
     const problems = await runMailHint(hint, {
       dns,

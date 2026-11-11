@@ -16,11 +16,12 @@ function Counts({ run }: Readonly<{ run: RunSummary }>): ReactElement {
     word: string,
     colour: string,
   ): ReactElement => (
-    <span
-      className={value === null || value === 0 ? 'text-subtle' : colour}
-      title={value === null ? `${word}: not kept` : `${value} ${word}`}
-    >
+    <span className={value === null || value === 0 ? 'text-subtle' : colour}>
       {value === null ? '–' : <Count value={value} />}
+      <span className="sr-only">
+        {' '}
+        {value === null ? `${word}: not kept` : word}
+      </span>
     </span>
   );
   return (
@@ -112,10 +113,7 @@ export function RunPicker({
                       <Counts run={run} />
                     </Link>
                   ) : (
-                    <p
-                      className="flex min-h-10 items-center justify-between gap-3 px-3 py-2 text-sm text-subtle"
-                      title="This run kept no report"
-                    >
+                    <p className="flex min-h-10 items-center justify-between gap-3 px-3 py-2 text-sm text-subtle">
                       <span className="flex items-center gap-2">
                         <RelativeTime at={run.ran_at} now={now} />
                         <Badge>{KINDS[run.kind].label}</Badge>

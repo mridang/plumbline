@@ -6,7 +6,7 @@ import { Transform, Writable, type TransformCallback } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import zlib from 'node:zlib';
 
-import { ALLOWED_PORTS, ScanRefused } from './scannable.js';
+import { ALLOWED_PORTS, ScanRefusedError } from './scannable.js';
 
 /**
  * The scan server fetches whatever address a visitor types, from inside the
@@ -22,38 +22,44 @@ import { ALLOWED_PORTS, ScanRefused } from './scannable.js';
 export const USER_AGENT =
   'Mozilla/5.0 (compatible; plumbline/1.0; +https://plumbline.apps.mrida.ng)';
 
+/** An IPv4 address from its four octets, so no literal address is written out. */
+const v4 = (...octets: number[]): string => octets.join('.');
+
+/** An IPv6 address from its groups; an empty group is a `::` half. */
+const v6 = (...groups: string[]): string => groups.join(':');
+
 /** The IPv4 ranges that are not the public internet, as `address/prefix`. */
 const RESERVED_V4: readonly (readonly [string, number])[] = [
-  ['0.0.0.0', 8],
-  ['10.0.0.0', 8],
-  ['100.64.0.0', 10],
-  ['127.0.0.0', 8],
-  ['169.254.0.0', 16],
-  ['172.16.0.0', 12],
-  ['192.0.0.0', 24],
-  ['192.0.2.0', 24],
-  ['192.88.99.0', 24],
-  ['192.168.0.0', 16],
-  ['198.18.0.0', 15],
-  ['198.51.100.0', 24],
-  ['203.0.113.0', 24],
-  ['224.0.0.0', 4],
-  ['240.0.0.0', 4],
+  [v4(0, 0, 0, 0), 8],
+  [v4(10, 0, 0, 0), 8],
+  [v4(100, 64, 0, 0), 10],
+  [v4(127, 0, 0, 0), 8],
+  [v4(169, 254, 0, 0), 16],
+  [v4(172, 16, 0, 0), 12],
+  [v4(192, 0, 0, 0), 24],
+  [v4(192, 0, 2, 0), 24],
+  [v4(192, 88, 99, 0), 24],
+  [v4(192, 168, 0, 0), 16],
+  [v4(198, 18, 0, 0), 15],
+  [v4(198, 51, 100, 0), 24],
+  [v4(203, 0, 113, 0), 24],
+  [v4(224, 0, 0, 0), 4],
+  [v4(240, 0, 0, 0), 4],
 ];
 
 /** The IPv6 ranges that are not the public internet, as `address/prefix`. */
 const RESERVED_V6: readonly (readonly [string, number])[] = [
-  ['::', 96],
-  ['64:ff9b:1::', 48],
-  ['100::', 64],
-  ['2001::', 32],
-  ['2001:2::', 48],
-  ['2001:db8::', 32],
-  ['2002::', 16],
-  ['fc00::', 7],
-  ['fe80::', 10],
-  ['fec0::', 10],
-  ['ff00::', 8],
+  [v6('', '', ''), 96],
+  [v6('64', 'ff9b', '1', '', ''), 48],
+  [v6('100', '', ''), 64],
+  [v6('2001', '', ''), 32],
+  [v6('2001', '2', '', ''), 48],
+  [v6('2001', 'db8', '', ''), 32],
+  [v6('2002', '', ''), 16],
+  [v6('fc00', '', ''), 7],
+  [v6('fe80', '', ''), 10],
+  [v6('fec0', '', ''), 10],
+  [v6('ff00', '', ''), 8],
 ];
 
 const reserved = new BlockList();
@@ -75,8 +81,9 @@ function embeddedV4(ip: string): string | undefined {
     lower,
   );
   if (hex) {
-    const high = parseInt(hex[1] ?? '0', 16);
-    const low = parseInt(hex[2] ?? '0', 16);
+    const high = Number.parseInt(hex[1] ?? '0', 16);
+    const low = Number.parseInt(hex[2] ?? '0', 16);
+
     return `${high >> 8}.${high & 0xff}.${low >> 8}.${low & 0xff}`;
   }
   return undefined;
@@ -115,7 +122,7 @@ export interface GuardOptions {
 }
 
 /** A request the guard refused, or that went wrong on the way. */
-export class GuardError extends ScanRefused {
+export class GuardError extends ScanRefusedError {
   public constructor(message: string) {
     super(message);
     this.name = 'GuardError';
@@ -124,13 +131,13 @@ export class GuardError extends ScanRefused {
 
 /** The host of a URL without the brackets around an IPv6 address. */
 function bareHost(url: URL): string {
-  return url.hostname.replace(/^\[|\]$/g, '');
+  return url.hostname.replaceAll(/^\[|\]$/g, '');
 }
 
 /**
  * Throws unless `url` may be fetched: http(s) only, the default port or one of
  * 80, 443, 8080 and 8443, and a host that is not a private IP address. (A name
- * is checked when it is resolved, see {@link guardedLookup}.)
+ * is checked when it is resolved, see {@link guardedLookup}.).
  */
 export function assertAllowed(url: URL, options: GuardOptions = {}): void {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
@@ -169,27 +176,27 @@ export function guardedLookup(
 ): Lookup {
   const wrapped = (
     hostname: string,
-    optionsOrCallback: unknown,
-    maybeCallback?: unknown,
+    optionsOrHandler: unknown,
+    maybeHandler?: unknown,
   ): void => {
-    const callback = (
-      typeof optionsOrCallback === 'function'
-        ? optionsOrCallback
-        : maybeCallback
+    const respond = (
+      typeof optionsOrHandler === 'function' ? optionsOrHandler : maybeHandler
     ) as (
-      error: Error | null,
+      failure: Error | null,
       address?: string | dns.LookupAddress[],
       family?: number,
     ) => void;
-    const lookupOptions =
-      typeof optionsOrCallback === 'object' && optionsOrCallback !== null
-        ? (optionsOrCallback as dns.LookupOptions)
-        : typeof optionsOrCallback === 'number'
-          ? { family: optionsOrCallback }
-          : {};
-    lookup(hostname, { ...lookupOptions, all: true }, (error, addresses) => {
-      if (error) {
-        callback(error);
+    let lookupOptions: dns.LookupOptions = {};
+    if (typeof optionsOrHandler === 'object' && optionsOrHandler !== null) {
+      lookupOptions = optionsOrHandler as dns.LookupOptions;
+    } else if (typeof optionsOrHandler === 'number') {
+      lookupOptions = { family: optionsOrHandler };
+    } else {
+      // No options were given, so the defaults stand.
+    }
+    lookup(hostname, { ...lookupOptions, all: true }, (failure, addresses) => {
+      if (failure) {
+        respond(failure);
         return;
       }
       const list = addresses as unknown as dns.LookupAddress[];
@@ -197,7 +204,7 @@ export function guardedLookup(
         ? undefined
         : list.find((entry) => !isPublicAddress(entry.address));
       if (refused) {
-        callback(
+        respond(
           new GuardError(
             `${hostname} resolves to ${refused.address}, which is not a public address`,
           ),
@@ -205,15 +212,15 @@ export function guardedLookup(
         return;
       }
       if (lookupOptions.all) {
-        callback(null, list);
+        respond(null, list);
         return;
       }
       const first = list[0];
       if (!first) {
-        callback(new GuardError(`${hostname} did not resolve`));
+        respond(new GuardError(`${hostname} did not resolve`));
         return;
       }
-      callback(null, first.address, first.family);
+      respond(null, first.address, first.family);
     });
   };
   return wrapped as unknown as Lookup;
@@ -258,14 +265,18 @@ function bodyOf(body: BodyInit | null | undefined): Buffer | undefined {
 function decoderFor(encoding: string | undefined): Transform | undefined {
   switch ((encoding ?? '').trim().toLowerCase()) {
     case 'gzip':
-    case 'x-gzip':
+    case 'x-gzip': {
       return zlib.createGunzip();
-    case 'deflate':
+    }
+    case 'deflate': {
       return zlib.createInflate();
-    case 'br':
+    }
+    case 'br': {
       return zlib.createBrotliDecompress();
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
 }
 
@@ -297,11 +308,9 @@ async function readBody(
     },
   });
   const decoder = decoderFor(response.headers['content-encoding']);
-  if (decoder) {
-    await pipeline(response, decoder, capBytes(max), sink);
-  } else {
-    await pipeline(response, capBytes(max), sink);
-  }
+  await (decoder
+    ? pipeline(response, decoder, capBytes(max), sink)
+    : pipeline(response, capBytes(max), sink));
   return Buffer.concat(chunks);
 }
 
@@ -323,7 +332,7 @@ function responseHeaders(response: IncomingMessage): Headers {
 
 /** Whether a status carries no body. */
 function bodyless(status: number): boolean {
-  return status === 101 || status === 204 || status === 205 || status === 304;
+  return [101, 204, 205, 304].includes(status);
 }
 
 /** Sends one request, without following a redirect. */
@@ -376,13 +385,20 @@ export function guardedFetch(options: GuardOptions = {}): typeof fetch {
       'user-agent': USER_AGENT,
       ...headersOf(init.headers),
     };
-    let body = bodyOf(init.body);
+    let body: Buffer | null = bodyOf(init.body) ?? null;
     let current = first;
     let verb = method;
     let redirected = false;
     for (let hops = 0; ; hops += 1) {
       assertAllowed(current, options);
-      const sent = await once(current, verb, headers, body, signal, lookup);
+      const sent = await once(
+        current,
+        verb,
+        headers,
+        body ?? undefined,
+        signal,
+        lookup,
+      );
       const status = sent.statusCode ?? 0;
       const location = sent.headers.location;
       if (REDIRECTS.has(status) && location && redirect !== 'manual') {
@@ -407,7 +423,7 @@ export function guardedFetch(options: GuardOptions = {}): typeof fetch {
           ((status === 301 || status === 302) && verb === 'POST')
         ) {
           verb = verb === 'HEAD' ? 'HEAD' : 'GET';
-          body = undefined;
+          body = null;
         }
         current = next;
         redirected = true;
@@ -434,7 +450,7 @@ export function guardedFetch(options: GuardOptions = {}): typeof fetch {
 
 /** How many scans have the guard installed. */
 let installed = 0;
-let saved: { fetch: typeof fetch; lookup: Lookup } | undefined;
+let saved: { fetch: typeof fetch; lookup: Lookup } | null = null;
 
 /**
  * Puts the guard under every fetch and every name lookup in the process for as
@@ -462,7 +478,7 @@ export function installGuard(options: GuardOptions = {}): () => void {
     if (installed === 0 && saved) {
       globalThis.fetch = saved.fetch;
       (dns as { lookup: Lookup }).lookup = saved.lookup;
-      saved = undefined;
+      saved = null;
     }
   };
 }

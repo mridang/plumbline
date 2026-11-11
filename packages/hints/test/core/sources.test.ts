@@ -4,7 +4,9 @@ import { SOURCES } from '../../src/core/sources.js';
 
 describe('the sources', () => {
   it('has one entry for every source group', () => {
-    expect(SOURCES.map((s) => s.id).sort()).toEqual([...SOURCE_GROUPS].sort());
+    expect(
+      SOURCES.map((s) => s.id).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual([...SOURCE_GROUPS].toSorted((a, b) => a.localeCompare(b)));
   });
 
   it('names each source, links it and states its licence', () => {

@@ -1,7 +1,7 @@
 import { isAbsoluteUrl, splitLines, type FileIssue } from './issue.js';
 
 /** Matches `- [name](url)` with an optional `: description`. */
-const LINK_ITEM = /^[-*]\s+\[([^\]]+)\]\(([^)\s]*)\)\s*(?::\s*(.*))?$/;
+const LINK_ITEM = /^[-*]\s+\[([^\]]+)\]\(([^)\s]*)\)\s*(?::(.*))?$/;
 
 /** Validates an llms.txt file against the llmstxt.org format. */
 export function validateLlmsTxt(text: string): FileIssue[] {
@@ -77,7 +77,7 @@ export function validateLlmsTxt(text: string): FileIssue[] {
         'Only H2 headings delimit sections; deeper headings are not part of the format.',
       );
     } else if (section && /^[-*]\s/.test(t)) {
-      const m = t.match(LINK_ITEM);
+      const m = LINK_ITEM.exec(t);
       if (!m) {
         at('error', "List items must be links: '- [name](url): description'.");
         return;
@@ -92,7 +92,11 @@ export function validateLlmsTxt(text: string): FileIssue[] {
         at('error', `The link '${m[2]}' must be an absolute URL.`);
       } else if (m[2].startsWith('http:')) {
         at('warning', `The link '${m[2]}' should use HTTPS.`);
+      } else {
+        // An absolute link that is not plain HTTP needs no finding.
       }
+    } else {
+      // Other lines are free text and are not checked here.
     }
   });
   closeSection();

@@ -8,8 +8,9 @@ export function Duration({
   className,
 }: Readonly<{ ms: number; className?: string }>): ReactElement {
   return (
-    <span className={className} title={`${ms} milliseconds`}>
+    <span className={className}>
       {formatElapsed(ms)}
+      <span className="sr-only"> ({ms} milliseconds)</span>
     </span>
   );
 }

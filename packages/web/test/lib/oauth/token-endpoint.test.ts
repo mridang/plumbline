@@ -21,6 +21,9 @@ import {
 } from '@/lib/oauth';
 import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 
+// A field the request leaves out: its key stays present, so an override can unset it.
+let notProvided: undefined;
+
 const RESOURCE = 'https://site.example/mcp';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 const NOW = 1_000_000;
@@ -69,7 +72,7 @@ const redeem = (
       clientId: 'client-1',
       redirectUri: 'https://app.example/cb',
       codeVerifier: VERIFIER,
-      resource: undefined,
+      resource: notProvided,
       ...overrides,
     },
     isOurs,
@@ -126,7 +129,7 @@ describe('exchangeAuthorizationCode', () => {
         clientId: 'client-1',
         redirectUri: 'https://app.example/cb',
         codeVerifier: VERIFIER,
-        resource: undefined,
+        resource: notProvided,
       },
       isOurs,
       NOW + CODE_TTL_SECONDS + 1,
@@ -138,7 +141,7 @@ describe('exchangeAuthorizationCode', () => {
     expect(
       await redeem(code, { codeVerifier: `${VERIFIER.slice(1)}x` }),
     ).toMatchObject({ ok: false, error: 'invalid_grant' });
-    expect(await redeem(code, { codeVerifier: undefined })).toMatchObject({
+    expect(await redeem(code, { codeVerifier: notProvided })).toMatchObject({
       ok: false,
       error: 'invalid_grant',
     });
@@ -152,7 +155,7 @@ describe('exchangeAuthorizationCode', () => {
     expect(
       await redeem(code, { redirectUri: 'https://evil.example/cb' }),
     ).toMatchObject({ ok: false, error: 'invalid_grant' });
-    expect(await redeem(code, { redirectUri: undefined })).toMatchObject({
+    expect(await redeem(code, { redirectUri: notProvided })).toMatchObject({
       ok: false,
       error: 'invalid_grant',
     });
@@ -268,22 +271,22 @@ describe('authenticateAccessToken', () => {
   });
 });
 
-describe('exchangeRefreshToken', () => {
-  const refresh = (
-    token: string,
-    overrides: Record<string, string | undefined> = {},
-  ) =>
-    exchangeRefreshToken(
-      store,
-      {
-        refreshToken: token,
-        clientId: 'client-1',
-        scope: undefined,
-        ...overrides,
-      },
-      NOW + 100,
-    );
+const refresh = (
+  token: string,
+  overrides: Record<string, string | undefined> = {},
+) =>
+  exchangeRefreshToken(
+    store,
+    {
+      refreshToken: token,
+      clientId: 'client-1',
+      scope: notProvided,
+      ...overrides,
+    },
+    NOW + 100,
+  );
 
+describe('exchangeRefreshToken', () => {
   it('rotates: a new pair is issued and the old refresh token is spent', async () => {
     const first = (await redeem(code)) as TokenResponse;
     const second = (await refresh(first.refresh_token)) as TokenResponse;
@@ -307,7 +310,7 @@ describe('exchangeRefreshToken', () => {
         {
           refreshToken: first.refresh_token,
           clientId: 'client-1',
-          scope: undefined,
+          scope: notProvided,
         },
         NOW + 100 + REFRESH_GRACE_SECONDS + 1,
       ),
@@ -334,7 +337,7 @@ describe('exchangeRefreshToken', () => {
     const retryAt = (token: string, now: number) =>
       exchangeRefreshToken(
         store,
-        { refreshToken: token, clientId: 'client-1', scope: undefined },
+        { refreshToken: token, clientId: 'client-1', scope: notProvided },
         now,
       );
 
@@ -403,7 +406,7 @@ describe('exchangeRefreshToken', () => {
           {
             refreshToken: first.refresh_token,
             clientId: 'client-2',
-            scope: undefined,
+            scope: notProvided,
           },
           NOW + 105,
         ),
@@ -447,7 +450,7 @@ describe('exchangeRefreshToken', () => {
         {
           refreshToken: first.refresh_token,
           clientId: 'client-1',
-          scope: undefined,
+          scope: notProvided,
         },
         NOW + 100,
       );
@@ -471,7 +474,7 @@ describe('exchangeRefreshToken', () => {
         {
           refreshToken: first.refresh_token,
           clientId: 'client-1',
-          scope: undefined,
+          scope: notProvided,
         },
         NOW + 100,
       );
@@ -479,7 +482,9 @@ describe('exchangeRefreshToken', () => {
       expect(store.grants.values().next().value?.revoked).toBe(true);
     });
   });
+});
 
+describe('exchangeRefreshToken: replacement, replay and scope', () => {
   it('stores the replacement tokens in the same step that spends the old one', async () => {
     const first = (await redeem(code)) as TokenResponse;
     const before = store.tokens.size;
@@ -503,7 +508,7 @@ describe('exchangeRefreshToken', () => {
       {
         refreshToken: first.refresh_token,
         clientId: 'client-1',
-        scope: undefined,
+        scope: notProvided,
       },
       NOW + 60 * 60 * 24 * 31,
     );
@@ -573,7 +578,7 @@ describe('several installs of one app', () => {
         {
           refreshToken: first.refresh_token,
           clientId: 'client-1',
-          scope: undefined,
+          scope: notProvided,
         },
         NOW + 10,
       ),
@@ -610,7 +615,7 @@ describe('several installs of one app', () => {
         clientId: 'client-2',
         redirectUri: 'https://app.example/cb',
         codeVerifier: VERIFIER,
-        resource: undefined,
+        resource: notProvided,
       },
       isOurs,
       NOW + 5,
@@ -641,7 +646,7 @@ describe('several installs of one app', () => {
 describe('redirect_uri at the token endpoint (OAuth 2.1 4.1.3)', () => {
   it('is required when the authorization request carried one', async () => {
     const sent = await newCode({ redirectUriSent: true });
-    expect(await redeem(sent, { redirectUri: undefined })).toMatchObject({
+    expect(await redeem(sent, { redirectUri: notProvided })).toMatchObject({
       ok: false,
       error: 'invalid_grant',
       description: 'The redirect_uri does not match the request.',
@@ -650,7 +655,7 @@ describe('redirect_uri at the token endpoint (OAuth 2.1 4.1.3)', () => {
 
   it('may be left out when the client let the only registered address stand in', async () => {
     const assumed = await newCode({ redirectUriSent: false });
-    const tokens = await redeem(assumed, { redirectUri: undefined });
+    const tokens = await redeem(assumed, { redirectUri: notProvided });
     expect(isFailure(tokens)).toBe(false);
   });
 
@@ -676,7 +681,12 @@ describe('refresh scope and resource', () => {
   ) =>
     exchangeRefreshToken(
       store,
-      { refreshToken: token, clientId: 'client-1', scope: undefined, ...extra },
+      {
+        refreshToken: token,
+        clientId: 'client-1',
+        scope: notProvided,
+        ...extra,
+      },
       NOW + 100,
     );
 
@@ -762,7 +772,7 @@ describe('security events', () => {
         {
           refreshToken: first.refresh_token,
           clientId: 'client-1',
-          scope: undefined,
+          scope: notProvided,
         },
         at,
       );

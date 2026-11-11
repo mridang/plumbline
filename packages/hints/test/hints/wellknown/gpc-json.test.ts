@@ -25,14 +25,16 @@ describe('gpc-json', () => {
 
   it('reports a wrong content type', async () => {
     const problems = await runHint(hint, serve(valid, 'text/plain'));
-    expect(problems.map((p) => p.message).join()).toContain(
+    expect(problems.map((p) => p.message).join(',')).toContain(
       "served as 'text/plain'",
     );
   });
 
   it('reports invalid JSON', async () => {
     const problems = await runHint(hint, serve('nope'));
-    expect(problems.map((p) => p.message).join()).toContain('not valid JSON');
+    expect(problems.map((p) => p.message).join(',')).toContain(
+      'not valid JSON',
+    );
   });
 
   it('reports a non-boolean gpc field', async () => {
@@ -40,7 +42,7 @@ describe('gpc-json', () => {
       hint,
       serve(JSON.stringify({ gpc: 'yes', lastUpdate: '2026-01-01' })),
     );
-    expect(problems.map((p) => p.message).join()).toContain(
+    expect(problems.map((p) => p.message).join(',')).toContain(
       "'gpc' field must be a boolean",
     );
   });

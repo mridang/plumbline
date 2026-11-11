@@ -13,7 +13,7 @@ describe('decodeTxt', () => {
   });
 
   it('decodes escapes', () => {
-    expect(decodeTxt('"a\\"b\\\\c\\065"')).toBe('a"b\\cA');
+    expect(decodeTxt(String.raw`"a\"b\\c\065"`)).toBe(String.raw`a"b\cA`);
   });
 
   it('returns an unquoted value as is', () => {

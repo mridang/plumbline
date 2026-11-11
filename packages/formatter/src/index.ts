@@ -60,17 +60,16 @@ function originsOf(value: unknown): Origin[] | undefined {
 
 /**
  * Names the report file after the target, like the stock html formatter.
- *
- * @param target The scanned URL.
+ * @param target - The scanned URL.
  * @returns A file name without directory, ending in `.html`.
  */
 function fileName(target: string): string {
   const name = target
-    .replace(/:\/\//g, '-')
-    .replace(/:/g, '-')
-    .replace(/\./g, '-')
-    .replace(/\//g, '-')
-    .replace(/[?=]/g, '-query-')
+    .replaceAll('://', '-')
+    .replaceAll(':', '-')
+    .replaceAll('.', '-')
+    .replaceAll('/', '-')
+    .replaceAll(/[?=]/g, '-query-')
     .replace(/-$/, '');
   return `${name || 'report'}.html`;
 }
@@ -79,9 +78,8 @@ function fileName(target: string): string {
 export default class ExtraFormatter implements IFormatter {
   /**
    * Writes the report and logs where it is.
-   *
-   * @param problems All findings of the scan.
-   * @param options Webhint's formatter options.
+   * @param problems - All findings of the scan.
+   * @param options - Webhint's formatter options.
    */
   public async format(
     problems: Problem[],

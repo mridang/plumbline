@@ -32,7 +32,8 @@ describe('mail-tls-ems', () => {
 
   it('does not apply when the mail server cannot be reached', async () => {
     missingOpenssl();
-    expect((await scanClosedMail(hint)).problems).toEqual([]);
+    const closed = await scanClosedMail(hint);
+    expect(closed.problems).toEqual([]);
   });
 
   it('passes when the extended master secret is used', async () => {

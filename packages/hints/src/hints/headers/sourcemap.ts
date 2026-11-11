@@ -23,7 +23,7 @@ export default defineHint({
       const sourceMap = headerValue(page.headers, 'sourcemap');
       const xSourceMap = headerValue(page.headers, 'x-sourcemap');
       reportFindings(page, sourcemapFindings(sourceMap, xSourceMap), {
-        name: sourceMap !== null ? 'SourceMap' : 'X-SourceMap',
+        name: sourceMap === null ? 'X-SourceMap' : 'SourceMap',
         value: sourceMap ?? xSourceMap,
       });
     });

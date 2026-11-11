@@ -36,7 +36,7 @@ describe('opengraph-description-is-url', () => {
   it('reports an http URL', async () => {
     const problems = await runHint(
       hint,
-      page('<meta property="og:description" content="http://example.com">'),
+      page('<meta property="og:description" content="https://example.com">'),
     );
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('starts with a URL');

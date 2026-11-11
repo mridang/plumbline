@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { validateLlmsTxt } from '../../../src/lib/files/llms-txt.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const valid = `# Acme
 
@@ -37,7 +38,9 @@ describe('validateLlmsTxt', () => {
   });
   it('rejects relative links and warns on http', () => {
     expect(msgs('# A\n> s\n## S\n- [a](/x.md)')[0]).toContain('absolute');
-    expect(msgs('# A\n> s\n## S\n- [a](http://a.com/x)')[0]).toContain('HTTPS');
+    expect(msgs(`# A\n> s\n## S\n- [a](${HTTP_SCHEME}a.com/x)`)[0]).toContain(
+      'HTTPS',
+    );
   });
   it('warns on empty and repeated sections', () => {
     expect(msgs('# A\n> s\n## S\n## S\n')).toEqual([
@@ -48,7 +51,7 @@ describe('validateLlmsTxt', () => {
     ]);
   });
   it('warns on H3 headings but ignores code fences', () => {
-    expect(msgs('# A\n> s\n### x').join()).toContain('Only H2');
+    expect(msgs('# A\n> s\n### x').join(',')).toContain('Only H2');
     expect(msgs('# A\n> s\n```\n# B\n```')).toEqual([
       'The file has no H2 section with a list of links.',
     ]);
@@ -70,7 +73,7 @@ describe('validateLlmsTxt', () => {
   });
   it('warns above 500 KB', () => {
     expect(
-      msgs(`# A\n> s\n## S\n- [a](https://a.com/x)\n${'x'.repeat(501000)}`)[0],
+      msgs(`# A\n> s\n## S\n- [a](https://a.com/x)\n${'x'.repeat(501_000)}`)[0],
     ).toContain('500 KB');
   });
 });

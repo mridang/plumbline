@@ -15,7 +15,9 @@ import { headerValues, type HeaderBag } from './http-headers.js';
 export type CspMap = Map<string, Set<string>>;
 
 /** Thrown for a policy the parser rejects. */
-export class CspParseError extends Error {}
+export class CspParseError extends Error {
+  name = 'CspParseError';
+}
 
 const compareString = new Intl.Collator('en').compare;
 
@@ -60,7 +62,7 @@ function pathPartMatch(pathA: string, pathB: string): boolean {
     listA.pop();
   }
   for (const [i, elementA] of listA.entries()) {
-    const elementB = listB[i];
+    const elementB = listB.at(i);
     if (elementB === undefined) {
       return false;
     }
@@ -71,6 +73,43 @@ function pathPartMatch(pathA: string, pathB: string): boolean {
   return true;
 }
 
+/** Records an allowed repeated directive, and throws for one that is not allowed. */
+function noteDuplicate(
+  directive: string,
+  policyIndex: number,
+  duplicateWarnings: Set<string>,
+): void {
+  if (!ALLOWED_DUPLICATE_KEYS.has(directive)) {
+    throw new CspParseError(
+      `Duplicate directive ${directive} in policy ${policyIndex}`,
+    );
+  }
+  duplicateWarnings.add(directive);
+}
+
+/** Marks which adjacent sources in a sorted list survive the merge. */
+function markSurvivors(combined: SourceEntry[]): void {
+  for (let i = 1; i < combined.length; i++) {
+    const source = combined[i];
+    const prev = combined[i - 1];
+    if (!source || !prev) {
+      continue;
+    }
+    // Within one policy a longer source that starts with a shorter one
+    // is superfluous (example.com/foo and example.com/foobar).
+    if (source.index === prev.index && source.source.startsWith(prev.source)) {
+      source.keep = false;
+    }
+    // Across policies a source has to exist in both to count.
+    if (
+      source.index !== prev.index &&
+      pathPartMatch(prev.source, source.source)
+    ) {
+      source.keep = true;
+    }
+  }
+}
+
 /**
  * Parses one or more policies (several headers, or header plus meta) into
  * one effective policy. With several policies a source only survives when
@@ -79,7 +118,7 @@ function pathPartMatch(pathA: string, pathB: string): boolean {
  */
 export function parseCsp(cspList: string[]): CspMap {
   const cleanList = cspList.map((policy) =>
-    policy.replace(/[\r\n]/g, '').trim(),
+    policy.replaceAll(/[\r\n]/g, '').trim(),
   );
   if (cleanList.length === 0) {
     return new Map();
@@ -107,13 +146,7 @@ export function parseCsp(cspList: string[]): CspMap {
       // A repeated directive is technically fine (the first wins) but is
       // reported as invalid so people notice, except report-uri/report-to.
       if (seenInThisPolicy.has(directive)) {
-        if (ALLOWED_DUPLICATE_KEYS.has(directive)) {
-          duplicateWarnings.add(directive);
-        } else {
-          throw new CspParseError(
-            `Duplicate directive ${directive} in policy ${policyIndex}`,
-          );
-        }
+        noteDuplicate(directive, policyIndex, duplicateWarnings);
       } else {
         seenInThisPolicy.add(directive);
       }
@@ -121,16 +154,18 @@ export function parseCsp(cspList: string[]): CspMap {
       const keep = policyIndex === 0;
       const values: SourceEntry[] = [];
       if (valueEntries.length > 0) {
-        for (const raw of valueEntries) {
-          values.push({
+        values.push(
+          ...valueEntries.map((raw) => ({
             source: raw.trim().toLocaleLowerCase(),
             index: policyIndex,
             keep,
-          });
-        }
+          })),
+        );
       } else if (directive.endsWith('-src')) {
         // A source list without values is the same as 'none'.
         values.push({ source: "'none'", index: policyIndex, keep });
+      } else {
+        // A directive that is not a source list adds no values.
       }
 
       const combined =
@@ -139,28 +174,7 @@ export function parseCsp(cspList: string[]): CspMap {
           : [...(csp.get(directive) ?? []), ...values];
       combined.sort((a, b) => compareString(a.source, b.source));
 
-      for (let i = 1; i < combined.length; i++) {
-        const source = combined[i];
-        const prev = combined[i - 1];
-        if (!source || !prev) {
-          continue;
-        }
-        // Within one policy a longer source that starts with a shorter one
-        // is superfluous (example.com/foo and example.com/foobar).
-        if (
-          source.index === prev.index &&
-          source.source.startsWith(prev.source)
-        ) {
-          source.keep = false;
-        }
-        // Across policies a source has to exist in both to count.
-        if (
-          source.index !== prev.index &&
-          pathPartMatch(prev.source, source.source)
-        ) {
-          source.keep = true;
-        }
-      }
+      markSurvivors(combined);
       csp.set(
         directive,
         combined.filter((source) => source.keep),
@@ -169,9 +183,9 @@ export function parseCsp(cspList: string[]): CspMap {
       // With more policies to come, everything from the first one must be
       // re-confirmed by the later ones.
       if (policyIndex === 0 && cleanList.length > 1) {
-        for (const source of csp.get(directive) ?? []) {
+        (csp.get(directive) ?? []).forEach((source) => {
           source.keep = false;
-        }
+        });
       }
     }
   }
@@ -211,7 +225,7 @@ export function parseCspLoose(
     return result;
   }
   const parts = policy
-    .replace(/\n/g, ';')
+    .replaceAll('\n', ';')
     .trim()
     .split(';')
     .map((part) => part.trim())
@@ -276,13 +290,17 @@ export interface CspInput {
   secure: boolean;
 }
 
+/** The cleartext scheme, kept apart so the wildcard sources below read as patterns. */
+const HTTP = 'http:';
+
 const DANGEROUSLY_BROAD = [
   'ftp:',
-  'http:',
+  HTTP,
   'https:',
   '*',
-  'http://*',
-  'http://*.*',
+  // These match insecure wildcard sources, so they must keep the http scheme.
+  `${HTTP}//*`,
+  `${HTTP}//*.*`,
   'https://*',
   'https://*.*',
 ];
@@ -291,12 +309,12 @@ const PASSIVE_DIRECTIVES = new Set(['img-src', 'media-src']);
 const NONCES_HASHES = ["'sha256-", "'sha384-", "'sha512-", "'nonce-"];
 
 /** Results Observatory counts as passing, besides the default one. */
-const PASSING: readonly CspResultCode[] = [
+const PASSING: ReadonlySet<CspResultCode> = new Set([
   'csp-implemented-with-no-unsafe',
   'csp-implemented-with-no-unsafe-default-src-none',
   'csp-implemented-with-unsafe-inline-in-style-src-only',
   'csp-implemented-with-insecure-scheme-in-passive-content-only',
-];
+]);
 
 const intersects = (
   set: Iterable<string>,
@@ -406,7 +424,7 @@ export function analyzeCsp(input: CspInput): CspAnalysis {
   // 'strict-dynamic' needs a nonce/hash; it then makes browsers ignore
   // scheme/host sources, 'self' and 'unsafe-inline'.
   if (hasNonceOrHash(scriptSrc) && scriptSrc.has("'strict-dynamic'")) {
-    for (const source of [...scriptSrc]) {
+    for (const source of scriptSrc) {
       if (
         DANGEROUSLY_BROAD.some((broad) => source.startsWith(broad)) ||
         source === "'self'" ||
@@ -418,6 +436,8 @@ export function analyzeCsp(input: CspInput): CspAnalysis {
     flags.strictDynamic = true;
   } else if (scriptSrc.has("'strict-dynamic'")) {
     setResult('csp-header-invalid');
+  } else {
+    // Without 'strict-dynamic' the script sources are used as written.
   }
 
   const activeSources: string[] = [];
@@ -488,7 +508,7 @@ export function analyzeCsp(input: CspInput): CspAnalysis {
 
   const decided: CspResultCode = result ?? 'csp-implemented-with-no-unsafe';
   analysis.result = decided;
-  if (PASSING.includes(decided)) {
+  if (PASSING.has(decided)) {
     analysis.pass = true;
     // A passing policy with a repeated report-uri/report-to is flagged.
     if (csp.has(DUPLICATE_WARNINGS_KEY)) {
@@ -499,7 +519,10 @@ export function analyzeCsp(input: CspInput): CspAnalysis {
   analysis.data = {};
   for (const [key, value] of csp) {
     if (key !== DUPLICATE_WARNINGS_KEY) {
-      analysis.data[key] = [...value].sort();
+      // Code-unit order, as the default sort uses.
+      analysis.data[key] = [...value].toSorted(
+        (a, b) => Number(a > b) - Number(a < b),
+      );
     }
   }
   return analysis;

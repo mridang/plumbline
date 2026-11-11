@@ -118,8 +118,7 @@ export interface Section {
 
 /**
  * Chooses the section of a hint.
- *
- * @param info The hint's metadata.
+ * @param info - The hint's metadata.
  * @returns The section key and title.
  */
 export function sectionFor(info: HintInfo): { key: string; title: string } {
@@ -135,8 +134,7 @@ export function sectionFor(info: HintInfo): { key: string; title: string } {
 
 /**
  * Title-cases a category such as `best-practices`.
- *
- * @param value Kebab or plain text.
+ * @param value - Kebab or plain text.
  * @returns Words separated by spaces, first letters upper-cased.
  */
 function titleCase(value: string): string {
@@ -149,8 +147,7 @@ function titleCase(value: string): string {
 
 /**
  * Counts findings by severity.
- *
- * @param findings Findings to count.
+ * @param findings - Findings to count.
  * @returns Totals; information is folded into `hint`.
  */
 export function countFindings(findings: readonly Finding[]): Counts {
@@ -189,9 +186,8 @@ function weight(counts: Counts): number {
  * with come first in their stamped order, then category sections for other
  * hints alphabetically. Inside a section hints with the most severe findings
  * come first, passed hints last.
- *
- * @param hints Every hint that ran.
- * @param findings Every finding of the scan.
+ * @param hints - Every hint that ran.
+ * @param findings - Every finding of the scan.
  * @returns The sections, in display order.
  */
 export function buildSections(
@@ -259,7 +255,7 @@ export function buildSections(
   }
 
   const rank = (key: string): number => order.get(key) ?? order.size + 1;
-  const result = [...sections.values()].sort(
+  const result = [...sections.values()].toSorted(
     (a, b) => rank(a.key) - rank(b.key) || a.title.localeCompare(b.title),
   );
   for (const section of result) {

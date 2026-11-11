@@ -38,7 +38,12 @@ import { remoteConnect } from '@mridang/webhint-hint-plumbline/dist/lib/tls/remo
 
 import type { ProbeClient } from './client.js';
 import { unchunk } from './fetch.js';
-import { fromBase64, ProbeError, ProbeUnavailable } from './protocol.js';
+import {
+  fromBase64,
+  ProbeError,
+  ProbeUnavailableError,
+  type RemoteCertificate,
+} from './protocol.js';
 
 /** What the scan that is running here uses: its probe, and the DNS answers it has already had. */
 interface ScanScope {
@@ -91,8 +96,9 @@ function parseSClient(args: readonly string[]): {
     const arg = args[i] ?? '';
     const next = args[i + 1] ?? '';
     switch (arg) {
-      case 's_client':
+      case 's_client': {
         break;
+      }
       case '-connect': {
         const match = /^\[?([^\]]+?)\]?:(\d+)$/.exec(next);
         host = match?.[1] ?? '';
@@ -100,28 +106,34 @@ function parseSClient(args: readonly string[]): {
         i += 1;
         break;
       }
-      case '-servername':
+      case '-servername': {
         servername = next;
         i += 1;
         break;
-      case '-starttls':
+      }
+      case '-starttls': {
         starttls = next === 'smtp' ? 'smtp' : undefined;
         i += 1;
         break;
-      case '-sess_out':
+      }
+      case '-sess_out': {
         sessionOut = next;
         i += 1;
         break;
-      case '-sess_in':
+      }
+      case '-sess_in': {
         sessionIn = next;
         i += 1;
         break;
-      case '-early_data':
+      }
+      case '-early_data': {
         earlyDataFile = next;
         i += 1;
         break;
-      default:
+      }
+      default: {
         flags.push(arg);
+      }
     }
   }
   return {
@@ -138,7 +150,23 @@ function parseSClient(args: readonly string[]): {
 
 /** A name for a session file the probe keeps: the path with what is not a letter or digit made safe. */
 function sessionName(path: string): string {
-  return path.replace(/[^A-Za-z0-9]/g, '_').slice(-80);
+  return path.replaceAll(/[^A-Za-z0-9]/g, '_').slice(-80);
+}
+
+/** A copy of a certificate, with its own names and access URLs, so a cached answer is never shared. */
+function copyCertificate({ infoAccess, ...certificate }: RemoteCertificate) {
+  return {
+    ...certificate,
+    subject: { ...certificate.subject },
+    issuer: { ...certificate.issuer },
+    ...(infoAccess
+      ? {
+          infoAccess: Object.fromEntries(
+            Object.entries(infoAccess).map(([name, urls]) => [name, [...urls]]),
+          ),
+        }
+      : {}),
+  };
 }
 
 /** Replaces the network clients of the checks, once. */
@@ -147,7 +175,18 @@ function install(): void {
     return;
   }
   installed = true;
+  installDnsCache();
+  installRpkiCache();
+  installTlsHandshakeCache();
+  installMailClient();
+  installNetworkClient();
+  installCompressionClient();
+  installDaneClient();
+  installOpensslClient();
+}
 
+/** Caches the DNS answers within one scan. */
+function installDnsCache(): void {
   // The checks ask the same names again and again (a scan makes 160 queries for 60 names), so
   // within one scan an answer already had is reused; a Worker may have only a few requests
   // open at once, and each query is one.
@@ -168,7 +207,10 @@ function install(): void {
       return answer;
     },
   };
+}
 
+/** Caches the routing lookups within one scan. */
+function installRpkiCache(): void {
   // The four routing checks ask about the same addresses (a web server is also a name server),
   // and each answer is two round trips to a web service: within one scan, one lookup per address.
   const validator = rpki.client;
@@ -187,7 +229,10 @@ function install(): void {
       return answer;
     },
   };
+}
 
+/** Makes each identical TLS handshake once within one scan. */
+function installTlsHandshakeCache(): void {
   // Several checks enumerate the same server's versions and cipher suites with the same
   // handshakes, one after another (a mail handshake opens a session that takes seconds), and
   // what a server answers to the same offer does not change within a scan: an identical
@@ -202,7 +247,7 @@ function install(): void {
     const key = JSON.stringify([target, options]);
     let handshake = scanned.handshakes.get(key);
     if (!handshake) {
-      const { client } = scanned;
+      const { client, handshakes } = scanned;
       handshake = remoteConnect((request) =>
         client
           .handshake({
@@ -219,35 +264,28 @@ function install(): void {
           .then((answer) => ({
             ...answer,
             chain: [...answer.chain],
-            certificates: answer.certificates.map(
-              ({ infoAccess, ...certificate }) => ({
-                ...certificate,
-                subject: { ...certificate.subject },
-                issuer: { ...certificate.issuer },
-                ...(infoAccess
-                  ? {
-                      infoAccess: Object.fromEntries(
-                        Object.entries(infoAccess).map(([name, urls]) => [
-                          name,
-                          [...urls],
-                        ]),
-                      ),
-                    }
-                  : {}),
-              }),
+            certificates: answer.certificates.map((certificate) =>
+              copyCertificate(certificate),
             ),
           })),
       )(target, options);
-      scanned.handshakes.set(key, handshake);
-      handshake.catch((error: unknown) => {
-        if (error instanceof ProbeUnavailable) {
-          scanned.handshakes.delete(key);
+      handshakes.set(key, handshake);
+      void (async () => {
+        try {
+          await handshake;
+        } catch (error) {
+          if (error instanceof ProbeUnavailableError) {
+            handshakes.delete(key);
+          }
         }
-      });
+      })();
     }
     return handshake;
   };
+}
 
+/** Sends the mail checks through the probe. */
+function installMailClient(): void {
   const nodeMail = mailNet.client;
   mailNet.client = {
     tcpReachable: (ip, port) => {
@@ -270,7 +308,9 @@ function install(): void {
           trusted: answer.trusted,
           trustError: answer.trustError,
           hostnameMatches: answer.hostnameMatches,
-          certificates: answer.certificates.map(bufferOf),
+          certificates: answer.certificates.map((certificate) =>
+            bufferOf(certificate),
+          ),
           error: answer.error,
         };
       } catch (error) {
@@ -287,7 +327,10 @@ function install(): void {
       }
     },
   };
+}
 
+/** Sends the raw connect and GET calls through the probe. */
+function installNetworkClient(): void {
   const nodeConnect = network.connect;
   network.connect = async (ip, port, timeoutMs) => {
     const client = scope.getStore()?.client;
@@ -333,7 +376,10 @@ function install(): void {
       return null;
     }
   };
+}
 
+/** Sends the compression probe through the probe. */
+function installCompressionClient(): void {
   const nodeProbe = compression.probe;
   compression.probe = async (url) => {
     const client = scope.getStore()?.client;
@@ -342,9 +388,10 @@ function install(): void {
     }
     try {
       const tls = url.protocol === 'https:';
+      const defaultPort = tls ? 443 : 80;
       const answer = await client.http({
         host: url.hostname,
-        port: url.port === '' ? (tls ? 443 : 80) : Number(url.port),
+        port: url.port === '' ? defaultPort : Number(url.port),
         tls,
         method: 'GET',
         path: `${url.pathname}${url.search}`,
@@ -366,7 +413,10 @@ function install(): void {
       return null;
     }
   };
+}
 
+/** Fetches the DANE certificate chain through the probe. */
+function installDaneClient(): void {
   const nodeChain = dane.fetchChain;
   dane.fetchChain = async (host, port) => {
     const client = scope.getStore()?.client;
@@ -376,13 +426,19 @@ function install(): void {
     try {
       const answer = await client.handshake({ host, port });
       return answer.chain.length > 0
-        ? { chain: answer.chain.map(bufferOf), pkixValid: answer.authorized }
+        ? {
+            chain: answer.chain.map((link) => bufferOf(link)),
+            pkixValid: answer.authorized,
+          }
         : null;
     } catch {
       return null;
     }
   };
+}
 
+/** Runs the `openssl s_client` calls through the probe. */
+function installOpensslClient(): void {
   const nodeExec = openssl.exec;
   openssl.exec = async (args, options = {}) => {
     const client = scope.getStore()?.client;
@@ -403,7 +459,7 @@ function install(): void {
         ? { sessionOut: sessionName(parsed.sessionOut) }
         : {}),
       ...(parsed.sessionIn ? { sessionIn: sessionName(parsed.sessionIn) } : {}),
-      ...(earlyData !== undefined ? { earlyData } : {}),
+      ...(earlyData === undefined ? {} : { earlyData }),
       input: options.input ?? [],
       delayMs: options.inputDelayMs ?? 0,
       timeoutMs: options.timeoutMs ?? 15_000,

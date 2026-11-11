@@ -19,8 +19,8 @@
  * webhint hint metadata (`../meta.ts`), never restated. Every check is
  * `numeric` — each is a real security problem, so it is scored, not advisory.
  */
-import { createRequire } from 'node:module';
-import type * as LH from 'lighthouse';
+import { createHTMLDocument } from '@hint/utils-dom';
+import type { Artifacts } from 'lighthouse';
 import type { HTMLDocument } from '@hint/utils-dom';
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import { headerValues } from '@mridang/webhint-hint-plumbline/dist/lib/headers/http-headers.js';
@@ -49,15 +49,6 @@ import cspStrengthHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/
 import cookiePrefixesHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/cookie-prefixes.js';
 import formActionSecureHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/form-action-secure.js';
 
-// `@hint/utils-dom` ships as CommonJS, so it is loaded through `createRequire`
-// (the pattern the parent package's tests and `adapt-seo.ts` use) rather than a
-// named ESM import. This is the same DOM implementation the webhint connector
-// builds `page.document` with, so the readers see exactly what the hint sees.
-const require = createRequire(import.meta.url);
-const { createHTMLDocument } = require('@hint/utils-dom') as {
-  createHTMLDocument: (html: string, finalHref: string) => HTMLDocument;
-};
-
 /** The artifact sets each check reads, named for what reads them. */
 const HTML_AND_URL = ['MainDocumentContent', 'URL'] as const;
 const HEADER_ARTIFACTS = ['DevtoolsLog', 'URL'] as const;
@@ -68,14 +59,14 @@ const HEADER_AND_META_ARTIFACTS = [
 ] as const;
 
 /** The page URL a DOM check resolves relative hrefs against. */
-function pageUrl(artifacts: LH.Artifacts): string {
+function pageUrl(artifacts: Artifacts): string {
   return (
     artifacts.URL?.finalDisplayedUrl || artifacts.URL?.mainDocumentUrl || ''
   );
 }
 
 /** Parses `MainDocumentContent` with webhint's DOM implementation. */
-function parsePage(artifacts: LH.Artifacts): HTMLDocument {
+function parsePage(artifacts: Artifacts): HTMLDocument {
   return createHTMLDocument(
     artifacts.MainDocumentContent ?? '',
     pageUrl(artifacts) || 'http://localhost/',

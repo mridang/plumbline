@@ -24,8 +24,10 @@ describe('exitCodeFor', () => {
 
 describe('severityRank', () => {
   it('orders the severities most serious last', () => {
-    const order = ['information', 'hint', 'warning', 'error'].map(severityRank);
-    expect(order).toEqual([...order].sort((a, b) => a - b));
+    const order = ['information', 'hint', 'warning', 'error'].map((severity) =>
+      severityRank(severity),
+    );
+    expect(order).toEqual(order.toSorted((a, b) => a - b));
     expect(new Set(order).size).toBe(4);
   });
 

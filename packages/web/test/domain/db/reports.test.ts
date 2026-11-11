@@ -153,14 +153,16 @@ describe('latestReport', () => {
     const { db, raw } = empty();
     await saveReport(db, 1, 'd1', input);
     raw.prepare("UPDATE reports SET outcomes = '{}'").run();
-    expect((await latestReport(db, 1, 'd1'))?.outcomes).toEqual([]);
+    const report = await latestReport(db, 1, 'd1');
+    expect(report?.outcomes).toEqual([]);
   });
 
   it('reads outcomes that are not JSON at all as none', async () => {
     const { db, raw } = empty();
     await saveReport(db, 1, 'd1', input);
     raw.prepare("UPDATE reports SET outcomes = 'nope'").run();
-    expect((await latestReport(db, 1, 'd1'))?.outcomes).toEqual([]);
+    const report = await latestReport(db, 1, 'd1');
+    expect(report?.outcomes).toEqual([]);
   });
 });
 

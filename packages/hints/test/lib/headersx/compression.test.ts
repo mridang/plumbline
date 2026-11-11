@@ -13,7 +13,7 @@ describe('compressionDictionaryFindings', () => {
   });
 
   it('warns when it is not a dictionary', () => {
-    const [f] = compressionDictionaryFindings('   ');
+    const [f] = compressionDictionaryFindings(' '.repeat(3));
     expect(f?.severity).toBe('warning');
   });
 

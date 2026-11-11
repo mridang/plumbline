@@ -43,7 +43,7 @@ export function Avatar({
   /** Their name; its first letter stands in for a missing photo. */
   name: string;
   /** The address of their Google profile photo, if they have one. */
-  picture?: string | undefined;
+  picture?: string;
 }>): ReactElement {
   const [failed, setFailed] = useState(false);
   return (
@@ -137,7 +137,7 @@ export function AccountMenu({
   firstName: string;
   name: string;
   email: string;
-  picture?: string | undefined;
+  picture?: string;
 }>): ReactElement {
   const [notifying, setNotifying] = useState(false);
   return (

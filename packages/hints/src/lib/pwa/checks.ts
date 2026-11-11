@@ -164,7 +164,8 @@ export function manifestValid(text: string, mediaType: string): Finding[] {
         `The manifest has no "display"; set it to one of ${DISPLAY_VALUES.join(', ')}. Read more: ${MANIFEST_VALID_REF}`,
       ),
     );
-  } else if (!isValidDisplay(manifest.display)) {
+  }
+  if (hasMember(manifest, 'display') && !isValidDisplay(manifest.display)) {
     findings.push(
       finding(
         'error',
@@ -191,7 +192,11 @@ export function manifestValid(text: string, mediaType: string): Finding[] {
         `The manifest has no "theme_color"; add one so the browser UI is themed when the app is installed. Read more: ${MANIFEST_VALID_REF}`,
       ),
     );
-  } else if (!isValidColor(manifest.theme_color)) {
+  }
+  if (
+    hasMember(manifest, 'theme_color') &&
+    !isValidColor(manifest.theme_color)
+  ) {
     findings.push(
       finding(
         'warning',
@@ -207,7 +212,11 @@ export function manifestValid(text: string, mediaType: string): Finding[] {
         `The manifest has no "background_color"; add one so the splash screen has a background before the app paints. Read more: ${MANIFEST_VALID_REF}`,
       ),
     );
-  } else if (!isValidColor(manifest.background_color)) {
+  }
+  if (
+    hasMember(manifest, 'background_color') &&
+    !isValidColor(manifest.background_color)
+  ) {
     findings.push(
       finding(
         'warning',

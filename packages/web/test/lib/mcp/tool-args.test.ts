@@ -159,8 +159,12 @@ describe('canonicalArguments', () => {
       unknown
     >;
     const result = canonicalArguments(TOOL, args);
-    expect(Object.keys(result).toSorted()).toEqual(
-      ['__proto__', CANONICAL].toSorted(),
+    expect(
+      Object.keys(result).toSorted((a, b) => Number(a > b) - Number(a < b)),
+    ).toEqual(
+      ['__proto__', CANONICAL].toSorted(
+        (a, b) => Number(a > b) - Number(a < b),
+      ),
     );
     expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
   });

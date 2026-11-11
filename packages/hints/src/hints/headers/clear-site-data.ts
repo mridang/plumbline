@@ -58,7 +58,7 @@ export default defineHint({
         return;
       }
       const value = headerValue(data.response.headers, 'clear-site-data');
-      const normalised = value?.replace(/\s+/g, '').toLowerCase() ?? null;
+      const normalised = value?.replaceAll(/\s+/g, '').toLowerCase() ?? null;
       reportSiteFindings(
         site,
         target,

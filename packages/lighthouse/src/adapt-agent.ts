@@ -11,7 +11,7 @@
  * with the main document and its `dns` client throws. Nothing here calls those.
  */
 import { NetworkRecords } from 'lighthouse';
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type {
   AgentEnv,
@@ -21,8 +21,8 @@ import { findMainDocument, headerBagFromRecord } from './adapt.js';
 
 /** The artifacts an agent check reads: the devtools log and the URL set. */
 export interface AgentArtifacts {
-  DevtoolsLog: LH.Artifacts['DevtoolsLog'];
-  URL: LH.Artifacts['URL'];
+  DevtoolsLog: Artifacts['DevtoolsLog'];
+  URL: Artifacts['URL'];
 }
 
 /**

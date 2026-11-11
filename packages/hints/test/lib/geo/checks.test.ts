@@ -1,4 +1,4 @@
-import { createRequire } from 'node:module';
+import { createHTMLDocument } from '@hint/utils-dom';
 import { describe, expect, it } from '@jest/globals';
 import {
   contentExtractionFindings,
@@ -7,30 +7,18 @@ import {
   speakableSchemaFindings,
   structuredDataInvalidFindings,
 } from '../../../src/lib/geo/checks.js';
-import {
-  readJsonLd,
-  type JsonLdDocument,
-} from '../../../src/lib/geo/json-ld.js';
+import { readJsonLd } from '../../../src/lib/geo/json-ld.js';
 import {
   measureContent,
-  type ContentDocument,
   type ContentStats,
 } from '../../../src/lib/geo/content.js';
 
-// Build the shared checks' inputs from a real parse, the way both the webhint
-// hint and the Lighthouse check do, rather than hand-rolling the shapes.
-const require = createRequire(import.meta.url);
-const { createHTMLDocument } = require('@hint/utils-dom') as {
-  createHTMLDocument: (
-    html: string,
-    url: string,
-  ) => JsonLdDocument & ContentDocument;
-};
+// Build the shared checks' inputs from a real parse, the way both the webhint hint and the Lighthouse check do, rather than hand-rolling the shapes.
 
 const blocksOf = (html: string) =>
-  readJsonLd(createHTMLDocument(html, 'http://x.test/'));
+  readJsonLd(createHTMLDocument(html, 'https://x.test/'));
 const statsOf = (html: string): ContentStats | null =>
-  measureContent(createHTMLDocument(html, 'http://x.test/'));
+  measureContent(createHTMLDocument(html, 'https://x.test/'));
 
 /** Wraps a parsed object as one JSON-LD block of HTML. */
 const jsonLd = (value: unknown): string =>

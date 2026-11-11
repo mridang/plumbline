@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/seo/seo-canonical-mismatch.js';
 import { runHint } from '../../helpers/run-hint.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 /**
  * Builds the routes for a page. `head` is inserted into <head>, `body` into
@@ -47,7 +48,7 @@ describe('seo-canonical-mismatch', () => {
     const problems = await runHint(
       hint,
       pageRoutes({
-        head: '<link rel="canonical" href="http://example.com/other">',
+        head: `<link rel="canonical" href="${HTTP_SCHEME}example.com/other">`,
       }),
     );
     expect(problems).toHaveLength(1);

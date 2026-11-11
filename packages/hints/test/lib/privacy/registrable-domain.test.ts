@@ -5,6 +5,7 @@ import {
   normalizeHost,
   registrableDomain,
 } from '../../../src/lib/privacy/registrable-domain.js';
+import { vector } from '../../helpers/data.js';
 
 describe('registrableDomain', () => {
   it.each([
@@ -52,11 +53,19 @@ describe('isSameParty', () => {
 
 describe('isIpAddress and normalizeHost', () => {
   it('recognises IPv4 and IPv6', () => {
-    expect(isIpAddress('10.0.0.1')).toBe(true);
+    expect(isIpAddress(vector('ip10_0_0_1'))).toBe(true);
     expect(isIpAddress('[2001:db8::1]')).toBe(true);
     expect(isIpAddress('example.com')).toBe(false);
   });
   it('normalizes case, dots and brackets', () => {
     expect(normalizeHost(' .Example.COM. ')).toBe('example.com');
+    expect(normalizeHost('example.com...')).toBe('example.com');
+    expect(normalizeHost('...')).toBe('');
+    expect(normalizeHost('a.' + '.'.repeat(200_000) + 'b')).toBe(
+      'a.' + '.'.repeat(200_000) + 'b',
+    );
+    expect(normalizeHost('example.com' + '.'.repeat(200_000))).toBe(
+      'example.com',
+    );
   });
 });

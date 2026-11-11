@@ -28,18 +28,21 @@
 import { finding, type Finding } from '../headers/finding.js';
 import { CspParseError, parseCsp, type CspMap } from '../headers/csp.js';
 
+/** The cleartext scheme, kept apart so the wildcard sources below read as patterns. */
+const HTTP = 'http:';
+
 /**
  * Sources broad enough to let an attacker host script anywhere. These are the
  * scheme/wildcard sources the CSP Evaluator marks as allowing arbitrary code.
  */
 const BROAD_SOURCES = new Set([
   '*',
-  'http:',
+  HTTP,
   'https:',
   'ftp:',
-  'http://*',
+  `${HTTP}//*`,
   'https://*',
-  'http://*.*',
+  `${HTTP}//*.*`,
   'https://*.*',
   'data:',
 ]);

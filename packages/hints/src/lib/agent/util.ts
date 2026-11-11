@@ -106,7 +106,7 @@ export function bareHost(host: string): string {
 
 /** True for host names that are only reachable locally (dev servers). */
 export function isLoopback(host: string): boolean {
-  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+  return ['localhost', '127.0.0.1', '[::1]'].includes(host);
 }
 
 /** Why a probe is not a usable document, in the scanner's words. */

@@ -11,25 +11,25 @@ export const ALLOWED_PORTS: ReadonlySet<number> = new Set([
 ]);
 
 /** An address a scan refuses, with the reason in words for the person who asked. */
-export class ScanRefused extends Error {
+export class ScanRefusedError extends Error {
   public constructor(message: string) {
     super(message);
-    this.name = 'ScanRefused';
+    this.name = 'ScanRefusedError';
   }
 }
 
-/** Throws a {@link ScanRefused} unless the scheme, port and credentials of `url` may be scanned. */
+/** Throws a {@link ScanRefusedError} unless the scheme, port and credentials of `url` may be scanned. */
 export function assertScannable(url: URL): void {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new ScanRefused(
+    throw new ScanRefusedError(
       `Only http and https can be fetched, not ${url.protocol}`,
     );
   }
   if (url.port !== '' && !ALLOWED_PORTS.has(Number(url.port))) {
-    throw new ScanRefused(`Port ${url.port} cannot be fetched`);
+    throw new ScanRefusedError(`Port ${url.port} cannot be fetched`);
   }
   if (url.username !== '' || url.password !== '') {
-    throw new ScanRefused(
+    throw new ScanRefusedError(
       'An address with a user name or password cannot be fetched',
     );
   }

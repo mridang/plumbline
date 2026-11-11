@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { canonicalUrl, readTarget } from '@/domain/scan/target';
+import { HTTP_SCHEME, vector } from '../../helpers/data.js';
 
 /** The URL a valid input becomes. */
 const urlOf = (input: string): string | undefined => {
@@ -35,7 +36,7 @@ describe('readTarget', () => {
     ['  Example.COM  ', 'https://example.com/'],
     ['example.com/blog', 'https://example.com/blog'],
     ['https://example.com/a?b=1', 'https://example.com/a?b=1'],
-    ['http://example.com', 'http://example.com/'],
+    [`${HTTP_SCHEME}example.com`, `${HTTP_SCHEME}example.com/`],
     ['https://example.com/#top', 'https://example.com/'],
     ['example.com.', 'https://example.com/'],
     ['https://example.com:443/', 'https://example.com/'],
@@ -55,12 +56,12 @@ describe('readTarget', () => {
 
   it.each([
     ['', 'Enter a domain or a URL to scan.'],
-    ['   ', 'Enter a domain or a URL to scan.'],
+    [' '.repeat(3), 'Enter a domain or a URL to scan.'],
     [`${'a'.repeat(2050)}.com`, 'That address is too long.'],
     ['https://exa mple.com', 'That is not a domain or a URL.'],
     ['ftp://example.com', 'Only http and https addresses can be scanned.'],
     ['https://user:pw@example.com', 'Leave the user name and password out.'],
-    ['10.0.0.1', 'Enter a domain name, not an IP address.'],
+    [vector('ip10_0_0_1'), 'Enter a domain name, not an IP address.'],
     ['http://[::1]/', 'Enter a domain name, not an IP address.'],
     ['localhost', 'Only public domains can be scanned.'],
     ['localhost.', 'Only public domains can be scanned.'],

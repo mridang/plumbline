@@ -33,7 +33,7 @@ describe('mail-tls-kex-params', () => {
     const problems = await scanMail(hint, {
       maxVersion: 'TLSv1.2',
       ciphers: 'DHE-RSA-AES128-GCM-SHA256',
-      dhparam: fixture('dh2048.pem'),
+      dhparam: await fixture('dh2048.pem'),
     });
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe(Severity.error);

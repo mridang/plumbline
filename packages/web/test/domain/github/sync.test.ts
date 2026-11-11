@@ -28,8 +28,8 @@ function githubWith(
       return Response.json({
         repositories: Object.entries(repos)
           .slice((page - 1) * size, page * size)
-          .map(([full_name, r]) => ({
-            full_name,
+          .map(([fullName, r]) => ({
+            full_name: fullName,
             default_branch: 'main',
             homepage: r.homepage,
             archived: r.archived,
@@ -37,7 +37,7 @@ function githubWith(
           })),
       });
     }
-    const [, , owner, name, kind, ...rest] = url.pathname.split('/');
+    const [owner, name, kind, ...rest] = url.pathname.split('/').slice(2);
     const repo = repos[`${owner}/${name}`];
     if (!repo || repo.broken) {
       return new Response('no', { status: 404 });
@@ -72,10 +72,11 @@ describe('analyseRepo', () => {
 
   it('finds nothing in a repository that cannot be read', async () => {
     const api = githubWith({ 'o/gone': { files: {}, broken: true } });
-    expect(
-      (await analyseRepo(api, { full_name: 'o/gone', default_branch: 'main' }))
-        .hosts,
-    ).toEqual([]);
+    const analysed = await analyseRepo(api, {
+      full_name: 'o/gone',
+      default_branch: 'main',
+    });
+    expect(analysed.hosts).toEqual([]);
   });
 });
 
@@ -95,16 +96,16 @@ describe('syncInstallation', () => {
     });
     const result = await syncInstallation(db, 7, 99, api);
     expect(result).toEqual({ repositories: 3, deployed: 2, domainsAdded: 2 });
-    expect((await listRepos(db, 7)).map((r) => [r.full_name, r.hosts])).toEqual(
-      [
-        ['o/lib', []],
-        ['o/site', ['site.example.com']],
-        ['o/site2', ['two.example.com']],
-      ],
-    );
+    const repos = await listRepos(db, 7);
+    expect(repos.map((r) => [r.full_name, r.hosts])).toEqual([
+      ['o/lib', []],
+      ['o/site', ['site.example.com']],
+      ['o/site2', ['two.example.com']],
+    ]);
     // Domains created in the same millisecond have no fixed order.
+    const domains = await listDomains(db, 7);
     expect(
-      (await listDomains(db, 7))
+      domains
         .map((d) => [d.host, d.repo])
         .toSorted(([a], [b]) => String(a).localeCompare(String(b))),
     ).toEqual([
@@ -127,7 +128,8 @@ describe('syncInstallation', () => {
     expect(await syncInstallation(db, 7, 99, api)).toMatchObject({
       domainsAdded: 0,
     });
-    expect((await listDomains(db, 7)).map((d) => d.repo)).toEqual(['o/site']);
+    const domains = await listDomains(db, 7);
+    expect(domains.map((d) => d.repo)).toEqual(['o/site']);
   });
 
   it('reads an account with well over a hundred repositories, the last one included', async () => {
@@ -143,9 +145,8 @@ describe('syncInstallation', () => {
       repositories: 141,
       deployed: 1,
     });
-    expect((await listDomains(db, 7)).map((d) => d.host)).toEqual([
-      'last.example.com',
-    ]);
+    const domains = await listDomains(db, 7);
+    expect(domains.map((d) => d.host)).toEqual(['last.example.com']);
   });
 
   it("ignores a fork's website, which is the upstream project's", async () => {
@@ -157,9 +158,8 @@ describe('syncInstallation', () => {
     expect(await syncInstallation(db, 7, 99, api)).toMatchObject({
       deployed: 1,
     });
-    expect((await listDomains(db, 7)).map((d) => d.host)).toEqual([
-      'own.example.com',
-    ]);
+    const domains = await listDomains(db, 7);
+    expect(domains.map((d) => d.host)).toEqual(['own.example.com']);
   });
 
   it('stops adding domains at the limit', async () => {
@@ -203,11 +203,12 @@ describe('syncInstallation', () => {
         'o/old': { ...site('old.example.com'), archived: true },
       }),
     );
-    expect((await listDomains(db, 7)).map((d) => d.host).toSorted()).toEqual([
-      'hand.example.com',
-      'keep.example.com',
-      'old.example.com',
-    ]);
+    const domains = await listDomains(db, 7);
+    expect(
+      domains
+        .map((d) => d.host)
+        .toSorted((a, b) => Number(a > b) - Number(a < b)),
+    ).toEqual(['hand.example.com', 'keep.example.com', 'old.example.com']);
   });
 
   it('removes the sites of a repository that left a former sync but is gone from the list too', async () => {
@@ -230,9 +231,8 @@ describe('syncInstallation', () => {
       }),
     );
     await syncInstallation(db, 7, 99, githubWith({ 'o/a': { files: {} } }));
-    expect((await listDomains(db, 7)).map((d) => d.host)).toEqual([
-      'other.example.com',
-    ]);
+    const domains = await listDomains(db, 7);
+    expect(domains.map((d) => d.host)).toEqual(['other.example.com']);
   });
 
   it('forgets repositories that left the installation', async () => {
@@ -244,7 +244,8 @@ describe('syncInstallation', () => {
       githubWith({ 'o/a': { files: {} }, 'o/b': { files: {} } }),
     );
     await syncInstallation(db, 7, 99, githubWith({ 'o/a': { files: {} } }));
-    expect((await listRepos(db, 7)).map((r) => r.full_name)).toEqual(['o/a']);
+    const repos = await listRepos(db, 7);
+    expect(repos.map((r) => r.full_name)).toEqual(['o/a']);
   });
 });
 
@@ -252,8 +253,12 @@ describe('syncInstallation, where the sites come from', () => {
   const route = (host: string) => ({
     'wrangler.jsonc': `{"route": "${host}/*"}`,
   });
-  const hostsOf = async (db: ReturnType<typeof sqliteDatabase>['db']) =>
-    (await listDomains(db, 7)).map((d) => [d.host, d.source]).toSorted();
+  const hostsOf = async (db: ReturnType<typeof sqliteDatabase>['db']) => {
+    const domains = await listDomains(db, 7);
+    return domains
+      .map((d) => [d.host, d.source])
+      .toSorted((a, b) => String(a).localeCompare(String(b)));
+  };
 
   it('takes the sites a plumbline.yaml declares, and not the routes or the Website field', async () => {
     const { db } = sqliteDatabase(...APP_MIGRATIONS);
@@ -348,7 +353,8 @@ describe('syncInstallation, where the sites come from', () => {
       githubWith({ 'o/site': { files: route('route.example.com') } }),
     );
     expect(await hostsOf(db)).toEqual([['live.example.com', 'deployment']]);
-    expect((await listRepos(db, 7))[0]?.hosts).toEqual(['live.example.com']);
+    const repos = await listRepos(db, 7);
+    expect(repos[0]?.hosts).toEqual(['live.example.com']);
   });
 
   it('keeps the sites of a repository that could not be read this time, so a GitHub hiccup drops nothing', async () => {

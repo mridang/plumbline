@@ -45,7 +45,7 @@ const data = (html: string): NetworkData =>
     request: { headers: {}, url: 'https://example.com/' },
     response: {
       body: { content: html, rawContent: Buffer.from(html) },
-      charset: 'utf-8',
+      charset: new TextDecoder().encoding,
       headers: { server: 'x' },
       hops: [],
       mediaType: 'text/html',
@@ -63,9 +63,7 @@ const page = () =>
 
 describe('findingOf', () => {
   it('drops a finding switched off', () => {
-    expect(
-      findingOf('r', 'm', { severity: Severity.off }, undefined),
-    ).toBeNull();
+    expect(findingOf('r', 'm', { severity: Severity.off })).toBeNull();
   });
 
   it('names the level of each severity', () => {
@@ -98,7 +96,7 @@ describe('findingOf', () => {
 
   it('takes the snippet and place from an element', async () => {
     const { document } = await page();
-    const title = document.querySelectorAll('title')[0];
+    const title = document.querySelector('title');
     const finding = findingOf('r', 'm', {
       severity: Severity.warning,
       element: title,
@@ -222,8 +220,8 @@ describe('runHint', () => {
       entry((context) =>
         context.on('scan::end', async () => {
           headers = context.pageHeaders;
-          body = (await context.fetchContent('https://example.com/x')).response
-            .body.content;
+          const fetched = await context.fetchContent('https://example.com/x');
+          body = fetched.response.body.content;
         }),
       ),
       await page(),

@@ -65,7 +65,7 @@ export function faqSchemaFindings(blocks: JsonLdBlocks): Finding[] {
  * `readJsonLd(doc)`.
  */
 export function speakableSchemaFindings(blocks: JsonLdBlocks): Finding[] {
-  if (!blocks.parsed.some(containsSpeakable)) {
+  if (!blocks.parsed.some((block) => containsSpeakable(block))) {
     return [
       finding(
         'warning',

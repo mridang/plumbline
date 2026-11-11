@@ -35,10 +35,11 @@ export function createIssuesCollection(
   resolver: CurrentUserResolver = requestCookieResolver,
 ): ApiController<DomainContext> {
   return new ApiController<DomainContext>({
-    context: async (request, route) => ({
-      uid: await liveUid(request, resolver),
-      domainId: (await route.params)?.['id'] ?? '',
-    }),
+    context: async (request, route) => {
+      const uid = await liveUid(request, resolver);
+      const params = await route.params;
+      return { uid, domainId: params?.['id'] ?? '' };
+    },
   }).on<null, readonly IssueRef[]>({
     method: 'GET',
     handle: async (_input, { uid, domainId }) => {

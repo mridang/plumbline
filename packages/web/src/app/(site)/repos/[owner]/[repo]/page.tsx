@@ -128,6 +128,7 @@ export default async function RepoPage({
   const now = serverNow();
   const settings = view === 'settings';
 
+  const ready = domain && current && loaded;
   return (
     <>
       <RepoHeader
@@ -155,7 +156,7 @@ export default async function RepoPage({
             </p>
           </Callout>
         ) : null}
-        {domain && current && loaded ? (
+        {ready && (
           <>
             {mine.length > 1 ? (
               <TabList
@@ -178,7 +179,7 @@ export default async function RepoPage({
               />
             ) : null}
             {(() => {
-              const view_ = (
+              const siteView = (
                 <SiteView
                   domain={domain}
                   status={current}
@@ -199,14 +200,14 @@ export default async function RepoPage({
               );
               return mine.length > 1 ? (
                 <TabPanel panelId={PANEL} current={current.host}>
-                  {view_}
+                  {siteView}
                 </TabPanel>
               ) : (
-                view_
+                siteView
               );
             })()}
           </>
-        ) : null}
+        )}
 
         {others.length > 0 ? (
           <Section

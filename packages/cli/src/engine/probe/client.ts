@@ -14,7 +14,7 @@
 
 import {
   ProbeError,
-  ProbeUnavailable,
+  ProbeUnavailableError,
   encodeBatch,
   encodeItem,
   parseBatch,
@@ -131,13 +131,11 @@ export class ProbeClient {
   private readonly retries: number;
   private readonly lanes: Record<Lane, Pool>;
   private readonly waiting: Record<Lane, Waiting[]> = { web: [], mail: [] };
-  private readonly timers: Record<
-    Lane,
-    ReturnType<typeof setTimeout> | undefined
-  > = {
-    web: undefined,
-    mail: undefined,
-  };
+  private readonly timers: Record<Lane, ReturnType<typeof setTimeout> | null> =
+    {
+      web: null,
+      mail: null,
+    };
 
   public constructor(
     private readonly transport: ProbeTransport,
@@ -179,7 +177,7 @@ export class ProbeClient {
         try {
           answer = await this.transport(path, body);
         } catch (error) {
-          throw new ProbeUnavailable(
+          throw new ProbeUnavailableError(
             `the probe could not be reached: ${error instanceof Error ? error.message : String(error)}`,
           );
         }
@@ -205,7 +203,7 @@ export class ProbeClient {
       throw new ProbeError(parseComplaint(answer.text));
     }
     if (answer.status !== 200) {
-      throw new ProbeUnavailable(
+      throw new ProbeUnavailableError(
         `the probe answered ${answer.status}${answer.status === 503 ? ' (it is busy)' : ''}`,
       );
     }
@@ -230,11 +228,13 @@ export class ProbeClient {
       this.waiting[lane].push({ request: item, resolve, reject });
       if (this.waiting[lane].length >= this.size) {
         void this.flush(lane);
-      } else if (this.timers[lane] === undefined) {
+      } else if (this.timers[lane] === null) {
         this.timers[lane] = setTimeout(
           () => void this.flush(lane),
           this.waitMs,
         );
+      } else {
+        // A timer is already set for this lane, and it will send what waits.
       }
     });
   }
@@ -242,9 +242,9 @@ export class ProbeClient {
   /** Sends the handshakes waiting in a lane, as one request, and answers each. */
   private async flush(lane: Lane): Promise<void> {
     const timer = this.timers[lane];
-    if (timer !== undefined) {
+    if (timer !== null) {
       clearTimeout(timer);
-      this.timers[lane] = undefined;
+      this.timers[lane] = null;
     }
     const batch = this.waiting[lane].splice(0, this.size);
     if (batch.length === 0) {
@@ -268,6 +268,8 @@ export class ProbeClient {
           entry.reject(answer);
         } else if (answer) {
           entry.resolve(answer);
+        } else {
+          // No answer came back for this entry, so there is nothing to settle.
         }
       });
     } catch (error) {
@@ -370,7 +372,7 @@ export class ProbeClient {
         request.earlyData === undefined
           ? undefined
           : lineBase64(request.earlyData),
-      input: request.input.map(lineBase64),
+      input: request.input.map((line) => lineBase64(line)),
       delay: request.delayMs,
       timeout: request.timeoutMs,
     };

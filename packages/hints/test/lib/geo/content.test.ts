@@ -1,16 +1,13 @@
-import { createRequire } from 'node:module';
+import { createHTMLDocument } from '@hint/utils-dom';
 import { describe, expect, it } from '@jest/globals';
 import {
   measureContent,
   type ContentDocument,
 } from '../../../src/lib/geo/content.js';
 
-const require = createRequire(import.meta.url);
-const { createHTMLDocument } = require('@hint/utils-dom');
-
 const measure = (html: string) =>
   measureContent(
-    createHTMLDocument(html, 'http://example.com/') as ContentDocument,
+    createHTMLDocument(html, 'https://example.com/') as ContentDocument,
   );
 
 const LONG = 'x'.repeat(31);

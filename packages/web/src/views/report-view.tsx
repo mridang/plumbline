@@ -1,4 +1,5 @@
-/* eslint-disable tailwindcss/no-custom-classname -- the widget's classes are defined in src/views/styles.ts, not in a CSS file. */
+/* eslint-disable tailwindcss/no-custom-classname -- the widget's classes are defined in src/views/styles.ts and injected at build; the plugin only reads a CSS entry, and the lint config cannot be changed here */
+
 /**
  * @packageDocumentation
  *
@@ -147,17 +148,20 @@ export function ReportScreen({
   const body = (() => {
     switch (state.phase) {
       case 'connecting':
-      case 'waiting':
+      case 'waiting': {
         return (
           <LoadingCard
             noun="the report"
             request={state.phase === 'waiting' ? state.request : undefined}
           />
         );
-      case 'failed':
+      }
+      case 'failed': {
         return <MessageCard reason={state.reason} message={state.message} />;
-      case 'ready':
+      }
+      case 'ready': {
         return <ReportCard data={state.data} onOpenLink={onOpenLink} />;
+      }
     }
   })();
   return (
@@ -178,3 +182,5 @@ export function ReportApp(): ReactElement {
   const bridge = useWidgetData('plumbline-report', isReportData);
   return <ReportScreen state={bridge.state} onOpenLink={bridge.openLink} />;
 }
+
+/* eslint-enable tailwindcss/no-custom-classname -- the classes above come from src/views/styles.ts. */

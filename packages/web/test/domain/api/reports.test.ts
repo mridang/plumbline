@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+
 import type { DatabaseSync } from 'node:sqlite';
 
 import type { CurrentUserResolver } from '@/domain/api/auth';
@@ -90,7 +91,7 @@ const post = (
 /** A GET of one report. */
 const read = (reportId: string, id = DOMAIN) =>
   item.GET(new Request(`${ORIGIN}${reportPath(id, reportId)}`), {
-    params: Promise.resolve({ id, report_id: reportId }),
+    params: Promise.resolve({ id, 'report-id': reportId }),
   });
 
 const good = {
@@ -102,21 +103,25 @@ describe('GET /api/domains/{id}/reports', () => {
   it('lists the reports newest first', async () => {
     seedReport('r-old', 7, '2026-01-01');
     seedReport('r-new', 7, '2026-01-02');
-    const body = (await (await list()).json()) as { items: { id: string }[] };
+    const response = await list();
+    const body = (await response.json()) as { items: { id: string }[] };
     expect(body.items.map((r) => r.id)).toEqual(['r-new', 'r-old']);
   });
 
   it('leaves the outcomes out', async () => {
     seedReport('r1', 7, '2026-01-01');
-    const body = (await (await list()).json()) as { items: object[] };
+    const response = await list();
+    const body = (await response.json()) as { items: object[] };
     expect(body.items[0]).not.toHaveProperty('outcomes');
   });
 
   it('hands out a link to the next page', async () => {
     seedReport('r-old', 7, '2026-01-01');
     seedReport('r-new', 7, '2026-01-02');
-    const first = (await (await list('?limit=1')).json()) as { next: string };
-    const second = (await (await list(new URL(first.next).search)).json()) as {
+    const firstPage = await list('?limit=1');
+    const first = (await firstPage.json()) as { next: string };
+    const secondPage = await list(new URL(first.next).search);
+    const second = (await secondPage.json()) as {
       items: { id: string }[];
     };
     expect(second.items.map((r) => r.id)).toEqual(['r-old']);
@@ -124,36 +129,43 @@ describe('GET /api/domains/{id}/reports', () => {
 
   it('hands out no next link on the last page', async () => {
     seedReport('r1', 7, '2026-01-01');
-    const body = (await (await list('?limit=1')).json()) as object;
+    const response = await list('?limit=1');
+    const body = (await response.json()) as object;
     expect(body).not.toHaveProperty('next');
   });
 
   it('answers 400 for a cursor it did not hand out', async () => {
-    expect((await list('?cursor=nope')).status).toBe(400);
+    const response = await list('?cursor=nope');
+    expect(response.status).toBe(400);
   });
 
   it('answers 400 for a limit out of range', async () => {
-    expect((await list('?limit=1000')).status).toBe(400);
+    const response = await list('?limit=1000');
+    expect(response.status).toBe(400);
   });
 
   it('answers 404 for another person’s domain', async () => {
     session.uid = 8;
-    expect((await list()).status).toBe(404);
+    const response = await list();
+    expect(response.status).toBe(404);
   });
 
   it('answers 404 for an id that cannot be a domain', async () => {
-    expect((await list('', 'nope')).status).toBe(404);
+    const response = await list('', 'nope');
+    expect(response.status).toBe(404);
   });
 
   it('answers 401 when nobody is signed in', async () => {
     session.uid = null;
-    expect((await list()).status).toBe(401);
+    const response = await list();
+    expect(response.status).toBe(401);
   });
 });
 
 describe('POST /api/domains/{id}/reports and the five-minute limit', () => {
   it('refuses a second report within five minutes with 429 and when to try again', async () => {
-    expect((await post(good)).status).toBe(201);
+    const created = await post(good);
+    expect(created.status).toBe(201);
     const refused = await post(good);
     expect(refused.status).toBe(429);
     expect(refused.headers.get('content-type')).toBe(
@@ -169,9 +181,12 @@ describe('POST /api/domains/{id}/reports and the five-minute limit', () => {
 
   it('allows another report once five minutes have passed, and keeps only the refused one out', async () => {
     seedReport('r-old', 7, new Date(Date.now() - 301_000).toISOString());
-    expect((await post(good)).status).toBe(201);
-    expect((await post(good)).status).toBe(429);
-    const body = (await (await list()).json()) as { items: unknown[] };
+    const created = await post(good);
+    expect(created.status).toBe(201);
+    const refused = await post(good);
+    expect(refused.status).toBe(429);
+    const listed = await list();
+    const body = (await listed.json()) as { items: unknown[] };
     expect(body.items).toHaveLength(2);
   });
 
@@ -182,10 +197,10 @@ describe('POST /api/domains/{id}/reports and the five-minute limit', () => {
         "INSERT INTO domains (id, user_id, host, created_at, updated_at) VALUES (?, 7, 'other.com', 'now', 'now')",
       )
       .run(other);
-    expect((await post(good)).status).toBe(201);
-    expect(
-      (await post({ ...good, url: 'https://other.com/' }, other)).status,
-    ).toBe(201);
+    const first = await post(good);
+    expect(first.status).toBe(201);
+    const second = await post({ ...good, url: 'https://other.com/' }, other);
+    expect(second.status).toBe(201);
   });
 
   it('records the commit the site was last known to be at', async () => {
@@ -194,14 +209,16 @@ describe('POST /api/domains/{id}/reports and the five-minute limit', () => {
         "INSERT INTO suite_runs (user_id, host, repo, sha, status, ran_at, findings) VALUES (7, 'example.com', 'a/b', 'cafe123', 200, 'now', '[]')",
       )
       .run();
-    expect((await post(good)).status).toBe(201);
+    const response = await post(good);
+    expect(response.status).toBe(201);
     expect(raw.prepare('SELECT sha FROM reports').get()).toEqual({
       sha: 'cafe123',
     });
   });
 
   it('records no commit when the site has had no server run', async () => {
-    expect((await post(good)).status).toBe(201);
+    const response = await post(good);
+    expect(response.status).toBe(201);
     expect(raw.prepare('SELECT sha FROM reports').get()).toEqual({ sha: null });
   });
 });
@@ -217,20 +234,24 @@ describe('POST /api/domains/{id}/reports', () => {
   });
 
   it('counts the outcomes itself', async () => {
-    const body = (await (await post(good)).json()) as { failed: number };
+    const response = await post(good);
+    const body = (await response.json()) as { failed: number };
     expect(body.failed).toBe(1);
   });
 
   it('names each check in the answer', async () => {
-    const body = (await (await post(good)).json()) as {
+    const response = await post(good);
+    const body = (await response.json()) as {
       outcomes: { name: string }[];
     };
     expect(typeof body.outcomes[0]?.name).toBe('string');
   });
 
   it('keeps the report', async () => {
-    const body = (await (await post(good)).json()) as { id: string };
-    expect((await read(body.id)).status).toBe(200);
+    const created = await post(good);
+    const body = (await created.json()) as { id: string };
+    const response = await read(body.id);
+    expect(response.status).toBe(200);
   });
 
   it('answers 400 with the reasons for a report that is not well formed', async () => {
@@ -243,28 +264,33 @@ describe('POST /api/domains/{id}/reports', () => {
   });
 
   it('answers 400 for a body that is not an object', async () => {
-    expect((await post('"text"')).status).toBe(400);
+    const response = await post('"text"');
+    expect(response.status).toBe(400);
   });
 
   it('answers 413 for a report over the size limit', async () => {
     const huge = { ...good, padding: 'x'.repeat(MAX_REPORT_BYTES) };
-    expect((await post(huge)).status).toBe(413);
+    const response = await post(huge);
+    expect(response.status).toBe(413);
   });
 
   it('answers 404 for another person’s domain', async () => {
     session.uid = 8;
-    expect((await post(good)).status).toBe(404);
+    const response = await post(good);
+    expect(response.status).toBe(404);
   });
 
   it('answers 403 for a write from another site', async () => {
-    expect(
-      (await post(good, DOMAIN, { 'sec-fetch-site': 'cross-site' })).status,
-    ).toBe(403);
+    const response = await post(good, DOMAIN, {
+      'sec-fetch-site': 'cross-site',
+    });
+    expect(response.status).toBe(403);
   });
 
   it('answers 401 when nobody is signed in', async () => {
     session.uid = null;
-    expect((await post(good)).status).toBe(401);
+    const response = await post(good);
+    expect(response.status).toBe(401);
   });
 });
 
@@ -281,27 +307,30 @@ describe('GET /api/domains/{id}/reports/{report_id}', () => {
 
   it('is private to the person', async () => {
     seedReport(REPORT, 7, '2026-01-01');
-    expect((await read(REPORT)).headers.get('cache-control')).toBe(
-      'private, no-cache',
-    );
+    const response = await read(REPORT);
+    expect(response.headers.get('cache-control')).toBe('private, no-cache');
   });
 
   it('answers 404 for another person’s report', async () => {
     seedReport(REPORT, 8, '2026-01-01');
-    expect((await read(REPORT)).status).toBe(404);
+    const response = await read(REPORT);
+    expect(response.status).toBe(404);
   });
 
   it('answers 404 for an id that cannot be a report', async () => {
-    expect((await read('latest')).status).toBe(404);
+    const response = await read('latest');
+    expect(response.status).toBe(404);
   });
 
   it('answers 404 for a domain id that cannot be one', async () => {
     seedReport(REPORT, 7, '2026-01-01');
-    expect((await read(REPORT, 'nope')).status).toBe(404);
+    const response = await read(REPORT, 'nope');
+    expect(response.status).toBe(404);
   });
 
   it('answers 401 when nobody is signed in', async () => {
     session.uid = null;
-    expect((await read(REPORT)).status).toBe(401);
+    const response = await read(REPORT);
+    expect(response.status).toBe(401);
   });
 });

@@ -96,18 +96,19 @@ describe('markChecking, markChecked and overviewOf', () => {
   it('follows a check from unchecked, to running, to what it found', async () => {
     const { db } = made();
     await addDomain(db, 1, 'a.test', 'acme/site');
-    expect((await overviewOf(db, 1, NOW))[0]?.sites[0]?.state).toBe(
-      'unchecked',
-    );
+    const before = await overviewOf(db, 1, NOW);
+    expect(before[0]?.sites[0]?.state).toBe('unchecked');
 
     await markChecking(db, 1, 'a.test', new Date(NOW).toISOString());
-    expect((await overviewOf(db, 1, NOW))[0]?.sites[0]?.state).toBe('running');
+    const during = await overviewOf(db, 1, NOW);
+    expect(during[0]?.sites[0]?.state).toBe('running');
 
     await markChecked(db, 1, 'a.test', {
       counts: { errors: 2, warnings: 1, hints: 5 },
       at: 't',
     });
-    expect((await overviewOf(db, 1, NOW))[0]?.sites[0]).toMatchObject({
+    const after = await overviewOf(db, 1, NOW);
+    expect(after[0]?.sites[0]).toMatchObject({
       state: 'failing',
       errors: 2,
       warnings: 1,
@@ -123,9 +124,8 @@ describe('markChecking, markChecked and overviewOf', () => {
       at: 't',
     });
     await markChecked(db, 1, 'a.test', { counts: null, at: 't2' });
-    expect((await overviewOf(db, 1, NOW))[0]?.sites[0]?.state).toBe(
-      'unreachable',
-    );
+    const overview = await overviewOf(db, 1, NOW);
+    expect(overview[0]?.sites[0]?.state).toBe('unreachable');
   });
 
   it('groups sites by repository, with the ones added by hand last', async () => {
@@ -134,11 +134,8 @@ describe('markChecking, markChecked and overviewOf', () => {
     await addDomain(db, 1, 'b.test', 'acme/b');
     await addDomain(db, 1, 'a.test', 'acme/a');
     await addDomain(db, 2, 'theirs.test', 'acme/c');
-    expect((await overviewOf(db, 1, NOW)).map((r) => r.repo)).toEqual([
-      'acme/a',
-      'acme/b',
-      null,
-    ]);
+    const overview = await overviewOf(db, 1, NOW);
+    expect(overview.map((r) => r.repo)).toEqual(['acme/a', 'acme/b', null]);
   });
 });
 

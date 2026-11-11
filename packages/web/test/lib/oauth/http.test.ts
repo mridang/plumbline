@@ -178,9 +178,9 @@ describe('readOAuthForm', () => {
   });
 
   it('refuses a body that is not text', async () => {
-    expect((await readOAuthForm(post(new Uint8Array([0xff, 0xfe])))).kind).toBe(
-      'unreadable',
-    );
+    const body = new Uint8Array([0xff, 0xfe]);
+    const result = await readOAuthForm(post(body));
+    expect(result.kind).toBe('unreadable');
   });
 });
 

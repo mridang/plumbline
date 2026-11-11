@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, type FormEvent, type ReactElement } from 'react';
+import { useState, type ReactElement, type SubmitEvent } from 'react';
 
 import { ensureOk, problemText } from '@/components/api/problem-message';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,9 @@ export function checksToSend(
   ticked: ReadonlySet<string>,
   total: number,
 ): readonly string[] | null {
-  return ticked.size === total ? null : [...ticked].toSorted();
+  return ticked.size === total
+    ? null
+    : [...ticked].toSorted((a, b) => Number(a > b) - Number(a < b));
 }
 
 /** Choose a domain's checks (`PATCH /api/domains/{id}`, JSON Merge Patch). */
@@ -76,7 +78,9 @@ export function CheckForm({
       return next;
     });
 
-  const onSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
+  const onSubmit = async (
+    event: SubmitEvent<HTMLFormElement>,
+  ): Promise<void> => {
     event.preventDefault();
     setBusy(true);
     setMessage(undefined);

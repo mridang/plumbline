@@ -37,22 +37,51 @@ export const TERMS_OF_SERVICE_LINK_REF =
   'https://support.google.com/cloud/answer/15549049';
 
 /** Words a link's text uses for each page, in the languages most sites use. */
-const TEXT: Readonly<Record<LegalPage, RegExp>> = {
+export const TEXT: Readonly<Record<LegalPage, RegExp>> = {
   'privacy-policy':
     /\b(privacy|data protection|datenschutz|privacidad|privacidade|confidentialit[eé]|vie priv[eé]e|privacybeleid|riservatezza|integritet|personvern|tietosuoja|prywatno)/i,
-  'terms-of-service':
-    /\b(terms|conditions|t\s*&\s*cs?\b|tos\b|agb\b|nutzungsbedingungen|condiciones|termos|gebruiksvoorwaarden|voorwaarden|termini|villkor|vilk[aå]r|k[aä]ytt[oö]ehdot|regulamin)/i,
+  'terms-of-service': new RegExp(
+    String.raw`\b(${[
+      'terms',
+      'conditions',
+      String.raw`t\s*&\s*cs?\b`,
+      String.raw`tos\b`,
+      String.raw`agb\b`,
+      'nutzungsbedingungen',
+      'condiciones',
+      'termos',
+      'gebruiksvoorwaarden',
+      'voorwaarden',
+      'termini',
+      'villkor',
+      'vilk[aå]r',
+      'k[aä]ytt[oö]ehdot',
+      'regulamin',
+    ].join('|')})`,
+    'i',
+  ),
 };
 
 /**
  * Path words that name each page in a link's address. A word must start at a
  * separator, so an article slug such as `/2026-midterms/` is not the terms.
  */
-const PATH: Readonly<Record<LegalPage, RegExp>> = {
+export const PATH: Readonly<Record<LegalPage, RegExp>> = {
   'privacy-policy':
     /(privacy|datenschutz|privacidad|privacidade|confidentialite|privacybeleid|riservatezza|integritet|personvern|tietosuoja)/i,
-  'terms-of-service':
-    /((^|[_.-])(terms|termos|termini|conditions)|^tos([_.-]|$)|(^|[_.-])agb([_.-]|$)|nutzungsbedingungen|condiciones|voorwaarden|villkor|vilkar)/i,
+  'terms-of-service': new RegExp(
+    `(${[
+      '(^|[_.-])(terms|termos|termini|conditions)',
+      '^tos([_.-]|$)',
+      '(^|[_.-])agb([_.-]|$)',
+      'nutzungsbedingungen',
+      'condiciones',
+      'voorwaarden',
+      'villkor',
+      'vilkar',
+    ].join('|')})`,
+    'i',
+  ),
 };
 
 /**
@@ -110,21 +139,26 @@ export function findLegalLink(
   }
   for (const element of doc.querySelectorAll('a[href]')) {
     const href = (element.getAttribute('href') ?? '').trim();
-    if (!href || href === '#' || isNotAPage(href)) {
-      continue;
-    }
-    const text = (element.textContent ?? '').replace(/\s+/g, ' ').trim();
-    if (text.length > MAX_TEXT_LENGTH) {
-      continue;
-    }
-    if (
-      TEXT[page].test(text) ||
-      shortSegmentsOf(href).some((segment) => PATH[page].test(segment))
-    ) {
+    const text = (element.textContent ?? '').replaceAll(/\s+/g, ' ').trim();
+    if (namesPage(href, text, page)) {
       return href;
     }
   }
   return undefined;
+}
+
+/** Whether a link with this address and text reads as the named page. */
+function namesPage(href: string, text: string, page: LegalPage): boolean {
+  if (!href || href === '#' || isNotAPage(href)) {
+    return false;
+  }
+  if (text.length > MAX_TEXT_LENGTH) {
+    return false;
+  }
+  return (
+    TEXT[page].test(text) ||
+    shortSegmentsOf(href).some((segment) => PATH[page].test(segment))
+  );
 }
 
 /** Warning when the page links to no privacy policy. */

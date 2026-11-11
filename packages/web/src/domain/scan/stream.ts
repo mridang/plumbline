@@ -40,10 +40,8 @@ function parseLine(text: string): ScanLine | undefined {
   const { type } = value as { type: unknown };
   // A line of a kind this page does not know is skipped, so the scanner can
   // grow new lines without breaking pages that are already open.
-  return type === 'ready' ||
-    type === 'done' ||
-    type === 'unreachable' ||
-    type === 'end'
+  return typeof type === 'string' &&
+    ['ready', 'done', 'unreachable', 'end'].includes(type)
     ? (value as ScanLine)
     : undefined;
 }
@@ -81,7 +79,7 @@ export async function readScan(
       pending += decoder.decode(value, { stream: true });
       const lines = pending.split('\n');
       pending = lines.pop() ?? '';
-      lines.forEach(handle);
+      lines.forEach((line) => handle(line));
     }
     pending += decoder.decode();
     handle(pending);

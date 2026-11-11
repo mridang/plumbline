@@ -24,7 +24,7 @@ export function validateContentSignal(value: string): string | null {
   }
   const seen = new Set<string>();
   for (const part of value.split(',')) {
-    const pair = part.trim().match(/^([a-z-]+)=([a-z]+)$/i);
+    const pair = /^([a-z-]+)=([a-z]+)$/i.exec(part.trim());
     if (!pair) {
       return `Invalid Content-Signal entry '${part.trim()}', expected name=yes or name=no.`;
     }
@@ -74,7 +74,7 @@ export function validateRobotsTxt(text: string): FileIssue[] {
 
   splitLines(text).forEach((raw, index) => {
     const line = index + 1;
-    const content = raw.replace(/#.*$/, '').trim();
+    const content = raw.split('#', 1)[0].trim();
     if (content === '') {
       return;
     }
@@ -92,7 +92,7 @@ export function validateRobotsTxt(text: string): FileIssue[] {
       return;
     }
     switch (key) {
-      case 'user-agent':
+      case 'user-agent': {
         if (value === '') {
           at('error', 'User-agent needs a product token or *.');
         }
@@ -104,8 +104,9 @@ export function validateRobotsTxt(text: string): FileIssue[] {
         current.agents.push(value.toLowerCase());
         collectingAgents = true;
         break;
+      }
       case 'allow':
-      case 'disallow':
+      case 'disallow': {
         if (!current) {
           at('error', `'${key}' appears before any User-agent line.`);
           break;
@@ -116,11 +117,13 @@ export function validateRobotsTxt(text: string): FileIssue[] {
         }
         current.rules.push({ kind: key, value });
         break;
-      case 'sitemap':
+      }
+      case 'sitemap': {
         if (!isAbsoluteUrl(value)) {
           at('error', `The Sitemap '${value}' is not an absolute http(s) URL.`);
         }
         break;
+      }
       case 'content-signal': {
         anySignal = true;
         const problem = validateContentSignal(value);
@@ -138,10 +141,11 @@ export function validateRobotsTxt(text: string): FileIssue[] {
         }
         break;
       }
-      default:
+      default: {
         if (current) {
           collectingAgents = false;
         }
+      }
     }
   });
 

@@ -5,14 +5,14 @@ import { html } from '../render';
 
 describe('Count', () => {
   it('groups thousands and keeps digits aligned', () => {
-    const out = html(<Count value={1234567} />);
+    const out = html(<Count value={1_234_567} />);
     expect(out).toContain('>1,234,567</span>');
     expect(out).toContain('tabular-nums');
   });
 
-  it('can be shortened, keeping the whole number as its tooltip', () => {
+  it('can be shortened, keeping the whole number for people who hear the page', () => {
     const out = html(<Count value={1234} compact />);
     expect(out).toContain('>1.2K</span>');
-    expect(out).toContain('title="1,234"');
+    expect(out).toContain('<span class="sr-only">1,234</span>');
   });
 });

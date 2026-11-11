@@ -11,7 +11,7 @@ const CATEGORY_LABELS: Record<AgentCategory, string> = {
 };
 
 /**
- * PROVISIONAL category weights. isitagentready.com does not publish its
+ * PROVISIONAL category weights. Isitagentready.com does not publish its
  * weights, so these were fitted to one observed scan: chowdown scored
  * Discoverability 50 (2/4), Content 0 (0/1), Bot Access 50 (1/2) and
  * API/Auth/MCP/Skill 13 (1/8), overall 27. The plain mean would be 28.1;
@@ -49,7 +49,7 @@ export const LEVELS: readonly Level[] = [
 
 /** The level a score reaches (the highest whose minimum it meets). */
 export function levelFor(score: number): Level {
-  return [...LEVELS].reverse().find((l) => score >= l.min) ?? LEVELS[0];
+  return LEVELS.findLast((l) => score >= l.min) ?? LEVELS[0];
 }
 
 /** Score and counts of one category. */

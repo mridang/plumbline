@@ -144,19 +144,24 @@ describe('syncIssues: opening', () => {
         reopens: 0,
       },
     );
-    expect(
-      (await issueOf(db, 'acme/site', 'site.test', 'seo-http-status'))?.number,
-    ).toBe(22);
+    const issue = await issueOf(
+      db,
+      'acme/site',
+      'site.test',
+      'seo-http-status',
+    );
+    expect(issue?.number).toBe(22);
   });
 
   it('keeps a history, one issue under each check', async () => {
     const db = database();
     const { api } = github();
     await syncIssues(api, db, report([error, other]));
+    const issues = await issuesOf(db, 'acme/site', 'site.test');
     expect(
-      (await issuesOf(db, 'acme/site', 'site.test'))
+      issues
         .map((i) => [i.number, i.state, ...i.checks])
-        .toSorted(),
+        .toSorted((a, b) => String(a).localeCompare(String(b))),
     ).toEqual([
       [21, 'open', 'seo-viewport'],
       [22, 'open', 'seo-http-status'],
@@ -205,12 +210,15 @@ describe('syncIssues: opening', () => {
       'POST /repos/acme/site/issues',
       'POST /repos/acme/site/issues',
     ]);
-    expect(
-      (await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'))?.number,
-    ).toBe(21);
-    expect(
-      (await issueOf(db, 'acme/site', 'b.test', 'seo-viewport'))?.number,
-    ).toBe(22);
+    const viewportIssue = await issueOf(
+      db,
+      'acme/site',
+      'site.test',
+      'seo-viewport',
+    );
+    expect(viewportIssue?.number).toBe(21);
+    const bIssue = await issueOf(db, 'acme/site', 'b.test', 'seo-viewport');
+    expect(bIssue?.number).toBe(22);
     expect(String(requests[1]?.body['body'])).toContain(
       '<!-- plumbline:b.test:seo-viewport -->',
     );
@@ -221,9 +229,8 @@ describe('syncIssues: opening', () => {
     const { api } = github();
     await syncIssues(api, db, report([error]));
     await syncIssues(api, db, report([error], { repo: 'acme/other' }));
-    expect(
-      (await issueOf(db, 'acme/other', 'site.test', 'seo-viewport'))?.number,
-    ).toBe(22);
+    const issue = await issueOf(db, 'acme/other', 'site.test', 'seo-viewport');
+    expect(issue?.number).toBe(22);
   });
 
   it('pauses before each write to GitHub', async () => {
@@ -334,9 +341,8 @@ describe('syncIssues: while a problem lasts', () => {
     expect(lines(requests)).toEqual(['PATCH /repos/acme/site/issues/12']);
     expect(requests[0]?.body).not.toHaveProperty('state');
     expect(String(requests[0]?.body['body'])).toContain('no viewport');
-    expect(
-      (await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'))?.signature,
-    ).toBe(await signatureOf([error]));
+    const issue = await issueOf(db, 'acme/site', 'site.test', 'seo-viewport');
+    expect(issue?.signature).toBe(await signatureOf([error]));
   });
 
   it('does nothing when what the check finds is what the issue says', async () => {
@@ -362,10 +368,11 @@ describe('syncIssues: while a problem lasts', () => {
       syncIssues(api, db, report([error])),
     ]);
     expect(requests.filter((r) => r.method === 'POST')).toHaveLength(1);
-    expect(results.map((r) => r.get('seo-viewport')).toSorted()).toEqual([
-      'none',
-      'opened',
-    ]);
+    expect(
+      results
+        .map((r) => r.get('seo-viewport'))
+        .toSorted((a, b) => (a ?? '').localeCompare(b ?? '')),
+    ).toEqual(['none', 'opened']);
   });
 
   it('opens nothing twice when a delivery is sent again', async () => {
@@ -411,9 +418,9 @@ describe('syncIssues: while a problem lasts', () => {
     const db = database();
     const failing = github({ 'POST /repos/acme/site/issues': 500 });
     await syncIssues(failing.api, db, report([error]));
-    expect(await issueOf(db, 'acme/site', 'site.test', 'seo-viewport')).toBe(
-      undefined,
-    );
+    expect(
+      await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'),
+    ).toBeUndefined();
     const { api } = github();
     const actions = await syncIssues(api, db, report([error]));
     expect(actions.get('seo-viewport')).toBe('opened');
@@ -431,9 +438,8 @@ describe('syncIssues: while a problem lasts', () => {
       'PATCH /repos/acme/site/issues/12',
       'POST /repos/acme/site/issues',
     ]);
-    expect(
-      (await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'))?.number,
-    ).toBe(21);
+    const issue = await issueOf(db, 'acme/site', 'site.test', 'seo-viewport');
+    expect(issue?.number).toBe(21);
   });
 
   it('keeps going with the other checks when GitHub fails for one, and says what it could not do', async () => {
@@ -450,9 +456,8 @@ describe('syncIssues: while a problem lasts', () => {
     expect([...actions]).toEqual([['seo-http-status', 'updated']]);
     expect(requests).toHaveLength(2);
     expect(log).toHaveBeenCalled();
-    expect(
-      (await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'))?.signature,
-    ).toBe('old');
+    const issue = await issueOf(db, 'acme/site', 'site.test', 'seo-viewport');
+    expect(issue?.signature).toBe('old');
   });
 
   it('stops when GitHub refuses the app, so it does not make that worse', async () => {
@@ -491,9 +496,8 @@ describe('syncIssues: when the problem is gone', () => {
         reopens: 0,
       },
     );
-    expect((await issuesOf(db, 'acme/site', 'site.test'))[0]?.state).toBe(
-      'fixed',
-    );
+    const issues = await issuesOf(db, 'acme/site', 'site.test');
+    expect(issues[0]?.state).toBe('fixed');
   });
 
   it('closes only the issue of the check that is fixed', async () => {
@@ -506,9 +510,13 @@ describe('syncIssues: when the problem is gone', () => {
       'PATCH /repos/acme/site/issues/12',
       'POST /repos/acme/site/issues/12/comments',
     ]);
-    expect(
-      (await issueOf(db, 'acme/site', 'site.test', 'seo-http-status'))?.state,
-    ).toBe('open');
+    const issue = await issueOf(
+      db,
+      'acme/site',
+      'site.test',
+      'seo-http-status',
+    );
+    expect(issue?.state).toBe('open');
   });
 
   it('reopens the issue, saying so, when the problem is back', async () => {
@@ -518,7 +526,7 @@ describe('syncIssues: when the problem is gone', () => {
     await syncIssues(api, db, report([]));
     const back = await syncIssues(api, db, report([error]));
     expect(back.get('seo-viewport')).toBe('reopened');
-    const edit = requests.filter((r) => r.method === 'PATCH').at(-1);
+    const edit = requests.findLast((r) => r.method === 'PATCH');
     expect(edit?.body).toMatchObject({
       state: 'open',
       state_reason: 'reopened',
@@ -563,9 +571,8 @@ describe('syncIssues: when the problem is gone', () => {
     });
     await syncIssues(api, db, report([]));
     expect(said(requests)).toEqual([]);
-    expect(
-      (await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'))?.state,
-    ).toBe('open');
+    const issue = await issueOf(db, 'acme/site', 'site.test', 'seo-viewport');
+    expect(issue?.state).toBe('open');
   });
 
   it('makes no comment on an issue that was deleted when it closed it', async () => {
@@ -576,9 +583,8 @@ describe('syncIssues: when the problem is gone', () => {
     });
     await syncIssues(api, db, report([]));
     expect(said(requests)).toEqual([]);
-    expect(
-      (await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'))?.state,
-    ).toBe('fixed');
+    const issue = await issueOf(db, 'acme/site', 'site.test', 'seo-viewport');
+    expect(issue?.state).toBe('fixed');
   });
 
   it('does not touch the issue of a check that did not run this time', async () => {
@@ -700,9 +706,8 @@ describe('syncIssues: an issue a person closed', () => {
     const { api, requests } = github();
     await syncIssues(api, db, report([]));
     expect(requests).toEqual([]);
-    expect(
-      (await issueOf(db, 'acme/site', 'site.test', 'seo-viewport'))?.state,
-    ).toBe('dismissed');
+    const issue = await issueOf(db, 'acme/site', 'site.test', 'seo-viewport');
+    expect(issue?.state).toBe('dismissed');
   });
 });
 
@@ -793,19 +798,15 @@ describe('closeUndeployed', () => {
       requests
         .filter((r) => r.method === 'PATCH')
         .map((r) => r.path)
-        .toSorted(),
+        .toSorted((a, b) => Number(a > b) - Number(a < b)),
     ).toEqual(['/repos/acme/site/issues/12', '/repos/acme/site/issues/13']);
     expect(said(requests)[0]).toContain(
       'gone.test is no longer deployed from this repository',
     );
-    expect(
-      (await issuesOfHost(db, 'acme/site', 'site.test')).get('seo-viewport')
-        ?.state,
-    ).toBe('open');
-    expect(
-      (await issuesOfHost(db, 'acme/site', 'gone.test')).get('seo-links')
-        ?.state,
-    ).toBe('fixed');
+    const siteIssues = await issuesOfHost(db, 'acme/site', 'site.test');
+    expect(siteIssues.get('seo-viewport')?.state).toBe('open');
+    const goneIssues = await issuesOfHost(db, 'acme/site', 'gone.test');
+    expect(goneIssues.get('seo-links')?.state).toBe('fixed');
   });
 
   it('closes every issue, saying checks were turned off, when the reason is disabled', async () => {
@@ -824,11 +825,11 @@ describe('closeUndeployed', () => {
       requests
         .filter((r) => r.method === 'PATCH')
         .map((r) => r.path)
-        .toSorted(),
+        .toSorted((a, b) => Number(a > b) - Number(a < b)),
     ).toEqual(['/repos/acme/site/issues/12', '/repos/acme/site/issues/13']);
     expect(said(requests)).toHaveLength(2);
     expect(said(requests)[0]).toContain('turned off in Plumbline');
-    expect((await openIssuesOf(db, 'acme/site')).length).toBe(0);
+    expect(await openIssuesOf(db, 'acme/site')).toHaveLength(0);
   });
 
   it('does nothing when every site is still deployed', async () => {

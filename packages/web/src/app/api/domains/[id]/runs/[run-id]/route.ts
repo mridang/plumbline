@@ -1,7 +1,7 @@
 /**
  * One run of a domain, with every check's outcome.
  *
- *   GET /api/domains/:id/runs/:run_id → 200
+ *   GET /api/domains/:id/runs/:run_id → 200.
  *
  * The behaviour lives in the `runItem` controller; this file only mounts it.
  */

@@ -5,4 +5,4 @@
  * `imports` in package.json).
  */
 
-export * from 'node:http';
+export { request } from 'node:http';

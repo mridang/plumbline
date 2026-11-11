@@ -98,7 +98,7 @@ describe('filterRows', () => {
   const rows = rowsOf(REPOS, new Set());
 
   it('keeps every row for an empty search', () => {
-    expect(filterRows(rows, '   ')).toBe(rows);
+    expect(filterRows(rows, ' '.repeat(3))).toBe(rows);
   });
 
   it('matches the host or the repository, ignoring case', () => {

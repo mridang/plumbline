@@ -82,8 +82,8 @@ function dohClient(
       return {
         status: body.Status,
         authenticated: body.AD === true,
-        answers: (body.Answer ?? []).map(toRecord),
-        authority: (body.Authority ?? []).map(toRecord),
+        answers: (body.Answer ?? []).map((r) => toRecord(r)),
+        authority: (body.Authority ?? []).map((r) => toRecord(r)),
       };
     },
   };

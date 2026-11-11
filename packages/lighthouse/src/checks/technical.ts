@@ -25,7 +25,7 @@
  * Lighthouse loads, so none is informative.
  */
 import { NetworkRecords } from 'lighthouse';
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import { finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import {
@@ -74,7 +74,7 @@ import twitterCardTypeHint from '@mridang/webhint-hint-plumbline/dist/hints/tech
 /**
  * Builds a check that borrows its metadata from a compiled webhint hint. The
  * title, description, reference and section are taken from the hint, so they
- * are never restated here. (Local to the set, mirroring `headers.ts`.)
+ * are never restated here. (Local to the set, mirroring `headers.ts`.).
  */
 function fromHint(
   definition: HintDefinition,
@@ -98,7 +98,7 @@ function fromHint(
 }
 
 /** The page URL the relative-URL and image checks resolve against. */
-function pageUrl(artifacts: LH.Artifacts): string {
+function pageUrl(artifacts: Artifacts): string {
   return (
     artifacts.URL?.finalDisplayedUrl || artifacts.URL?.mainDocumentUrl || ''
   );

@@ -1,26 +1,30 @@
 import { createRequire } from 'node:module';
 import { Analyzer, Configuration } from 'hint';
 import type { Problem } from '@hint/utils-types';
+import connectorPuppeteer from '@hint/connector-puppeteer';
+import parserHtml from '@hint/parser-html';
 import extraHints from '@mridang/webhint-hint-plumbline';
 
 // The connector and the parser are CommonJS packages with a default export.
-const require = createRequire(import.meta.url);
-const { default: PuppeteerConnector } = require('@hint/connector-puppeteer');
-const { default: HTMLParser } = require('@hint/parser-html');
+const { default: PuppeteerConnector } = connectorPuppeteer;
+const { default: HTMLParser } = parserHtml;
 
 // The connector still calls `page.removeListener`, which newer Puppeteer
 // renamed to `off` (a page is an event emitter whose `off` does the same).
 // Patch the copy the connector itself loads, whichever version that is. Its
 // `detached` and `ignoreHTTPSErrors` options also changed in newer
 // Puppeteer, so leave them unset.
-const puppeteer = createRequire(require.resolve('@hint/connector-puppeteer'))(
-  'puppeteer-core',
+// Resolved from the connector's own location, since this package does not
+// depend on Puppeteer directly.
+const connectorRequire = createRequire(
+  import.meta.resolve('@hint/connector-puppeteer'),
 );
-if (
-  puppeteer.Page &&
-  typeof puppeteer.Page.prototype.removeListener !== 'function'
-) {
-  puppeteer.Page.prototype.removeListener = puppeteer.Page.prototype.off;
+const { Page } = connectorRequire('puppeteer-core') as {
+  Page: { prototype: { removeListener?: unknown; off?: unknown } };
+};
+const pagePrototype = Page.prototype;
+if (typeof pagePrototype.removeListener !== 'function') {
+  pagePrototype.removeListener = pagePrototype.off;
 }
 
 /**
@@ -37,7 +41,7 @@ const hintMap = extraHints as unknown as Record<string, HintCtor>;
 
 /** Every hint id the package ships, without the `extra/` prefix. */
 export const allHintIds: readonly string[] = Object.freeze(
-  Object.keys(hintMap).sort(),
+  Object.keys(hintMap).toSorted((a, b) => a.localeCompare(b)),
 );
 
 /** The hint constructors for a list of ids, for the formatter's `resources`. */
@@ -88,17 +92,16 @@ function metaOf(id: string): HintMeta {
 
 /** The catalogue of every shipped hint. */
 export function hintCatalogue(): HintMeta[] {
-  return allHintIds.map(metaOf);
+  return allHintIds.map((id) => metaOf(id));
 }
 
 /**
  * The `hints` section of a webhint config for the given ids. The hint classes
  * are handed to the analyzer directly (see `scan`), so webhint matches each
  * config key against the class's own `meta.id`, which is `extra/<id>`.
- *
- * @param ids Bare hint ids (no `extra/` prefix).
+ * @param ids - Bare hint ids (no `extra/` prefix).
  * @returns A map of `extra/<id>` to the `'default'` severity, so every hint
- *   keeps the level its rule defines.
+ * keeps the level its rule defines.
  */
 export function hintConfig(ids: readonly string[]): Record<string, string> {
   return Object.fromEntries(ids.map((id) => [`extra/${id}`, 'default']));
@@ -133,9 +136,8 @@ export interface ScanResult {
  * misses packages installed by `npx` in its cache and cannot load the hints
  * package (an ES module) at all under Jest; handing the classes over avoids
  * both, the same way the hints package's own tests build their analyzer.
- *
- * @param url The absolute URL to scan.
- * @param options Which hints to run and how to launch the browser.
+ * @param url - The absolute URL to scan.
+ * @param options - Which hints to run and how to launch the browser.
  * @returns The problems reported and the metadata of the hints that ran.
  */
 export async function scan(
@@ -186,5 +188,8 @@ export async function scan(
     [],
   ]) as Analyzer;
   const [result] = await analyzer.analyze(url);
-  return { problems: result?.problems ?? [], hints: ids.map(metaOf) };
+  return {
+    problems: result?.problems ?? [],
+    hints: ids.map((id) => metaOf(id)),
+  };
 }

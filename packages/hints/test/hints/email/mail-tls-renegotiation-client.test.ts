@@ -35,7 +35,8 @@ describe('mail-tls-renegotiation-client', () => {
 
   it('does not apply when the mail server cannot be reached', async () => {
     missingOpenssl();
-    expect((await scanClosedMail(hint)).problems).toEqual([]);
+    const closed = await scanClosedMail(hint);
+    expect(closed.problems).toEqual([]);
   });
 
   it('passes when client renegotiation is limited', async () => {

@@ -118,13 +118,13 @@ export async function runScan(
 }
 
 /** The real dependencies, with any replacements a caller gives. */
-export function resolveDependencies(
+export async function resolveDependencies(
   dependencies: Dependencies = {},
-): Required<Dependencies> {
+): Promise<Required<Dependencies>> {
   return {
     scan: dependencies.scan ?? realScan,
     catalogue: dependencies.catalogue ?? hintCatalogue,
-    version: dependencies.version ?? packageVersion(),
+    version: dependencies.version ?? (await packageVersion()),
     findBrowser: dependencies.findBrowser ?? (() => findBrowser()),
   };
 }

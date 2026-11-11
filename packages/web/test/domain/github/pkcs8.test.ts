@@ -1,10 +1,14 @@
-import { createPrivateKey, generateKeyPairSync } from 'node:crypto';
+import { createPrivateKey } from 'node:crypto';
 
 import { describe, expect, it } from '@jest/globals';
 
 import { toPkcs8 } from '@/domain/github/pkcs8';
 
-const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+import { generateKeyPairAsync } from '../../helpers/crypto';
+
+const { privateKey } = await generateKeyPairAsync('rsa', {
+  modulusLength: 2048,
+});
 const pkcs1 = privateKey.export({ type: 'pkcs1', format: 'pem' }).toString();
 const pkcs8 = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
 
@@ -21,8 +25,10 @@ describe('toPkcs8', () => {
     expect(toPkcs8(pkcs8)).toBe(pkcs8);
   });
 
-  it('restores newlines written as \\n or &', () => {
-    expect(toPkcs8(pkcs1.trim().replaceAll('\n', '\\n'))).toBe(toPkcs8(pkcs1));
+  it(String.raw`restores newlines written as \n or &`, () => {
+    expect(toPkcs8(pkcs1.trim().replaceAll('\n', String.raw`\n`))).toBe(
+      toPkcs8(pkcs1),
+    );
     expect(toPkcs8(pkcs1.trim().replaceAll('\n', '&'))).toBe(toPkcs8(pkcs1));
   });
 });

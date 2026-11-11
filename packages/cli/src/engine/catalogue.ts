@@ -156,7 +156,7 @@ export function catalogue(
   >,
 ): CatalogueEntry[] {
   return Object.keys(hints)
-    .sort()
+    .toSorted((a, b) => a.localeCompare(b))
     .flatMap((id) => {
       const ctor = hints[id];
       return ctor ? [entryOf(id, ctor)] : [];

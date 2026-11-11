@@ -13,10 +13,11 @@ import {
 import { PAID_LIMITS } from '@/domain/suite/limits';
 import { RULE_SETS } from '@/domain/suite/rules';
 import type { SuiteRun } from '@/domain/suite/run';
-import { ScanFailed, SiteUnreachable } from '@/domain/suite/scanner';
+import { ScanFailedError, SiteUnreachableError } from '@/domain/suite/scanner';
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const deployed = { repo: 'acme/site', sha: 'abc123' };
 
@@ -110,7 +111,9 @@ describe('classifyDeployment', () => {
     ).toBe('https://pr-3.site.test/');
     expect(
       classifyDeployment(
-        status('success', 'Preview', { environment_url: 'http://plain.test/' }),
+        status('success', 'Preview', {
+          environment_url: `${HTTP_SCHEME}plain.test/`,
+        }),
       )?.url,
     ).toBeNull();
     expect(
@@ -193,7 +196,10 @@ describe('checkDeployment', () => {
       },
     });
     // The sites are checked together, so which request comes first is not fixed.
-    expect(urls.toSorted()).toEqual(['https://a.test/', 'https://b.test/']);
+    expect(urls.toSorted((a, b) => Number(a > b) - Number(a < b))).toEqual([
+      'https://a.test/',
+      'https://b.test/',
+    ]);
     expect(outcomes.map((o) => o.host)).toEqual(['a.test', 'b.test']);
     const [stored] = await latestRuns(db, 1, 'a.test');
     expect(stored).toMatchObject({
@@ -416,7 +422,8 @@ describe('checkSite and the history', () => {
   it('records a run forced by a change to the rules as a config run', async () => {
     const { db, domainId } = await withDomain();
     await checkSite(db, 1, site, { run, force: true });
-    expect((await history(db, domainId))[0]?.kind).toBe('config');
+    const runs = await history(db, domainId);
+    expect(runs[0]?.kind).toBe('config');
   });
 
   it('records the kind it is given, and a run without counts or outcomes as one that cannot be opened', async () => {
@@ -621,7 +628,7 @@ describe('checkSite, telling the live dashboard', () => {
     const { told, live } = recorder();
     await checkSite(db, 1, site, {
       run: async () => {
-        throw new SiteUnreachable('no answer');
+        throw new SiteUnreachableError('no answer');
       },
       live,
     });
@@ -636,7 +643,7 @@ describe('checkSite, telling the live dashboard', () => {
     const { told, live } = recorder();
     await checkSite(db, 1, site, {
       run: async () => {
-        throw new ScanFailed('The scan stopped before it finished.');
+        throw new ScanFailedError('The scan stopped before it finished.');
       },
       live,
     });
@@ -649,8 +656,10 @@ describe('checkSite, telling the live dashboard', () => {
 
 describe('checkSite, when the scheduled re-check comes round', () => {
   const site = { host: 'a.test', repo: 'acme/site', sha: 'abc' };
-  const dueAt = async (db: Awaited<ReturnType<typeof setup>>) =>
-    (await dueSites(db, '9999-01-01T00:00:00.000Z', 10)).map((due) => due.host);
+  const dueAt = async (db: Awaited<ReturnType<typeof setup>>) => {
+    const rows = await dueSites(db, '9999-01-01T00:00:00.000Z', 10);
+    return rows.map((due) => due.host);
+  };
   const dueBefore = (db: Awaited<ReturnType<typeof setup>>) =>
     dueSites(db, '2026-11-06T00:00:00.000Z', 10).then((rows) =>
       rows.map((due) => due.host),
@@ -661,7 +670,7 @@ describe('checkSite, when the scheduled re-check comes round', () => {
     await checkSite(db, 1, site, {
       now: () => new Date('2026-11-06T08:00:00.000Z'),
       run: async () => {
-        throw new SiteUnreachable('no answer');
+        throw new SiteUnreachableError('no answer');
       },
     });
     expect(await dueBefore(db)).toEqual([]);
@@ -673,7 +682,7 @@ describe('checkSite, when the scheduled re-check comes round', () => {
     await checkSite(db, 1, site, {
       now: () => new Date('2026-11-06T08:00:00.000Z'),
       run: async () => {
-        throw new ScanFailed('The scan stopped before it finished.');
+        throw new ScanFailedError('The scan stopped before it finished.');
       },
     });
     expect(await dueBefore(db)).toEqual(['a.test']);

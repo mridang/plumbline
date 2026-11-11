@@ -89,9 +89,10 @@ describe('GET /badge/{owner}/{repo}/{signature}.svg', () => {
 
   it('answers 404 to a signature that was not handed out', async () => {
     await addDomain(db, 1, 'a.test', 'acme/site');
-    expect((await get('acme/site', '0'.repeat(20))).status).toBe(404);
-    expect(
-      (await get('acme/other', await signRepo('secret', 'acme/site'))).status,
-    ).toBe(404);
+    const unknown = await get('acme/site', '0'.repeat(20));
+    expect(unknown.status).toBe(404);
+    const signature = await signRepo('secret', 'acme/site');
+    const wrongRepo = await get('acme/other', signature);
+    expect(wrongRepo.status).toBe(404);
   });
 });

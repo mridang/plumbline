@@ -20,9 +20,8 @@
  * advice (the webhint hint reports it at `Severity.hint`), so it is
  * `informative` — surfaced but never scored.
  */
-import { createRequire } from 'node:module';
-import type * as LH from 'lighthouse';
-import type { HTMLDocument } from '@hint/utils-dom';
+import { createHTMLDocument } from '@hint/utils-dom';
+import type { Artifacts } from 'lighthouse';
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/pwa/read.js';
 // The single-source PWA rules: predicate + message + severity. Both this check
@@ -40,18 +39,11 @@ import type { AuditCheck } from './types.js';
 import manifestLinkedHint from '@mridang/webhint-hint-plumbline/dist/hints/pwa/manifest-linked.js';
 import themeColorMetaHint from '@mridang/webhint-hint-plumbline/dist/hints/pwa/theme-color-meta.js';
 
-// `@hint/utils-dom` ships as CommonJS, so it is loaded through `createRequire`
-// (the pattern the other adapters use) rather than a named ESM import.
-const require = createRequire(import.meta.url);
-const { createHTMLDocument } = require('@hint/utils-dom') as {
-  createHTMLDocument: (html: string, finalHref: string) => HTMLDocument;
-};
-
 /** The artifacts both PWA checks read: the raw HTML and the page URL. */
 const HTML_ONLY = ['MainDocumentContent', 'URL'] as const;
 
 /** The page URL a check resolves relative links against. */
-function pageUrl(artifacts: LH.Artifacts): string {
+function pageUrl(artifacts: Artifacts): string {
   return (
     artifacts.URL?.finalDisplayedUrl || artifacts.URL?.mainDocumentUrl || ''
   );
@@ -64,7 +56,7 @@ function pageUrl(artifacts: LH.Artifacts): string {
  * answers directly, so the parsed document is used as-is — the same parser and
  * the same selectors the webhint hints see.
  */
-function documentOf(artifacts: LH.Artifacts): DocumentLike {
+function documentOf(artifacts: Artifacts): DocumentLike {
   const html = artifacts.MainDocumentContent ?? '';
   return createHTMLDocument(
     html,

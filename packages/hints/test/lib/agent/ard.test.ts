@@ -81,33 +81,36 @@ describe('catalogProblems', () => {
 
 describe('checkArd', () => {
   it('passes with the well-known catalog', async () => {
-    expect(
-      (await checkArd(fakeEnv({ '/.well-known/ard.json': catalog }))).passed,
-    ).toBe(true);
+    const result = await checkArd(
+      fakeEnv({ '/.well-known/ard.json': catalog }),
+    );
+    expect(result.passed).toBe(true);
   });
   it('still accepts the older ai-catalog.json, but then needs specVersion and host', async () => {
-    expect(
-      (await checkArd(fakeEnv({ '/.well-known/ai-catalog.json': legacy })))
-        .passed,
-    ).toBe(true);
-    expect(
-      (await checkArd(fakeEnv({ '/.well-known/ai-catalog.json': catalog })))
-        .detail,
-    ).toContain('specVersion');
+    const accepted = await checkArd(
+      fakeEnv({ '/.well-known/ai-catalog.json': legacy }),
+    );
+    expect(accepted.passed).toBe(true);
+    const rejected = await checkArd(
+      fakeEnv({ '/.well-known/ai-catalog.json': catalog }),
+    );
+    expect(rejected.detail).toContain('specVersion');
   });
   it('finds a catalog through an Agentmap directive', async () => {
     const env = fakeEnv({
       '/robots.txt': 'Agentmap: https://example.com/cat.json',
       'https://example.com/cat.json': catalog,
     });
-    expect((await checkArd(env)).passed).toBe(true);
+    const result = await checkArd(env);
+    expect(result.passed).toBe(true);
   });
   it('finds a catalog through a link element', async () => {
     const env = fakeEnv({
       '/': '<link rel="ard" href="/c.json">',
       '/c.json': catalog,
     });
-    expect((await checkArd(env)).passed).toBe(true);
+    const result = await checkArd(env);
+    expect(result.passed).toBe(true);
   });
   it('finds a catalog through DNS TXT', async () => {
     const env = fakeEnv(
@@ -120,19 +123,20 @@ describe('checkArd', () => {
         },
       },
     );
-    expect((await checkArd(env)).passed).toBe(true);
+    const result = await checkArd(env);
+    expect(result.passed).toBe(true);
   });
   it('reports the first problem of an invalid catalog', async () => {
     const env = fakeEnv({
       '/.well-known/ard.json': { ...catalog, entries: [] },
     });
-    expect((await checkArd(env)).detail).toContain('entries is empty');
+    const result = await checkArd(env);
+    expect(result.detail).toContain('entries is empty');
   });
   it('fails when no catalog is found, even if DNS errors', async () => {
     const env = fakeEnv();
     env.dns = { query: () => Promise.reject(new Error('down')) };
-    expect((await checkArd(env)).detail).toContain(
-      '/.well-known/ard.json was not found',
-    );
+    const result = await checkArd(env);
+    expect(result.detail).toContain('/.well-known/ard.json was not found');
   });
 });

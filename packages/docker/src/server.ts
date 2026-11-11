@@ -170,7 +170,7 @@ function handle(
   scan: ScanFn,
   run: RunFn,
 ): void {
-  const path = (req.url ?? '/').split('?')[0];
+  const path = (req.url ?? '/').split('?', 1)[0];
   if (req.method === 'GET' && path === '/healthz') {
     sendJson(res, 200, { status: 'ok' });
     return;

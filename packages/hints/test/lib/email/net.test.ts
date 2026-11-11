@@ -3,11 +3,11 @@ import { afterEach, describe, expect, it } from '@jest/globals';
 import { createMailNetClient } from '../../../src/lib/email/net.js';
 import { startSmtp, type FakeSmtp } from './fake-smtp.js';
 
-let smtp: FakeSmtp | undefined;
+let smtp: FakeSmtp | null = null;
 
 afterEach(async () => {
   await smtp?.close();
-  smtp = undefined;
+  smtp = null;
 });
 
 describe('createMailNetClient', () => {

@@ -9,7 +9,7 @@ import {
   type HintOutcome,
 } from './engine.js';
 import { fetchResource } from './network.js';
-import { ScanRefused } from './scannable.js';
+import { ScanRefusedError } from './scannable.js';
 
 /**
  * Running every check against a site and reporting as they finish. The server
@@ -60,6 +60,7 @@ export interface ScanEnvironment {
   assertScannable(url: URL): Promise<void>;
   /** Puts in place what the checks reach the network through; returns the function that removes it. */
   install(): () => void;
+
   /**
    * Whether an error loading the page is the environment's own fault (the probe is down), not
    * the site's: such an error is thrown, so the scan is tried again and not recorded as a site
@@ -109,7 +110,7 @@ function cachedFetchContent(fetcher: typeof fetch): FetchContent {
 
 /** Why the page could not be fetched, in words for the person who asked. */
 function unreachableDetail(url: URL, error: unknown): string {
-  return error instanceof ScanRefused
+  return error instanceof ScanRefusedError
     ? error.message
     : `${url.host} did not answer. Check the address and try again.`;
 }

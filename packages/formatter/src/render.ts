@@ -44,28 +44,73 @@ interface AgentScore {
   categories: ScoreCategory[];
 }
 
+/** True when `text` is `<digits>`, an optional `(<n>/<n>)` and an optional dot. */
+function isScoreTail(text: string): string | null {
+  const digits = text.search(/\D/);
+  const length = digits === -1 ? text.length : digits;
+  if (length === 0) {
+    return null;
+  }
+  let rest = text.slice(length).trimStart();
+  const paren = /^\(\d+\/\d+\)/.exec(rest);
+  if (paren) {
+    rest = rest.slice(paren[0].length).trimStart();
+  }
+  if (rest.startsWith('.')) {
+    rest = rest.slice(1);
+  }
+  return rest === '' ? text.slice(0, length) : null;
+}
+
+/**
+ * Splits `<name> <score>[ (a/b)][.]` at the first whitespace run whose rest
+ * is a score; the name is one line.
+ */
+function splitCategory(text: string): { name: string; score: string } | null {
+  for (let at = 1; at < text.length; at += 1) {
+    if (/[\n\r\u2028\u2029]/.test(text[at - 1])) {
+      return null;
+    }
+    if (!/\s/.test(text[at]) || /\s/.test(text[at - 1])) {
+      continue;
+    }
+    const score = isScoreTail(text.slice(at).trimStart());
+    if (score !== null) {
+      return { name: text.slice(0, at), score };
+    }
+  }
+  return null;
+}
+
 /**
  * Parses 'Agent readiness score 27/100, level 1 "Basic Web Presence".
  * Discoverability 50 (2/4); ...'.
- *
- * @param message The agent-score finding message.
+ * @param message - The agent-score finding message.
  * @returns The score, or `undefined` when the message has another shape.
  */
 function parseAgentScore(message: string): AgentScore | undefined {
-  const head =
-    /^Agent readiness score (\d+)\/100, level (\d+)(?: "([^"]*)")?\.?\s*(.*)$/s.exec(
-      message,
-    );
-  if (!head) {
+  const lead = /^Agent readiness score (\d+)\/100, level (\d+)/.exec(message);
+  if (!lead) {
     return undefined;
   }
+  let rest = message.slice(lead[0].length);
+  let quoted = '';
+  const close = rest.startsWith(' "') ? rest.indexOf('"', 2) : -1;
+  if (close !== -1) {
+    quoted = rest.slice(2, close);
+    rest = rest.slice(close + 1);
+  }
+  if (rest.startsWith('.')) {
+    rest = rest.slice(1);
+  }
+  const head = [lead[0], lead[1], lead[2], quoted, rest];
   const categories: ScoreCategory[] = [];
   for (const part of (head[4] ?? '').split(';')) {
-    const match = /^\s*(.+?)\s+(\d+)(?:\s*\(\d+\/\d+\))?\s*\.?\s*$/.exec(part);
+    const match = splitCategory(part.trim());
     if (match) {
       categories.push({
-        name: match[1] ?? '',
-        value: Math.min(100, Number(match[2])),
+        name: match.name,
+        value: Math.min(100, Number(match.score)),
       });
     }
   }
@@ -122,18 +167,18 @@ function renderFinding(finding: Finding): string {
     finding.location && finding.location.line >= 0
       ? ` <span class="loc">${finding.location.line}:${finding.location.column}</span>`
       : '';
+  const language = finding.codeLanguage
+    ? `<span class="lang">${escapeHtml(finding.codeLanguage)}</span>`
+    : '';
   const code = finding.sourceCode
-    ? `<pre><code>${escapeHtml(finding.sourceCode)}</code>${
-        finding.codeLanguage
-          ? `<span class="lang">${escapeHtml(finding.codeLanguage)}</span>`
-          : ''
-      }</pre>`
+    ? `<pre><code>${escapeHtml(finding.sourceCode)}</code>${language}</pre>`
     : '';
-  const docs = (finding.documentation ?? []).length
-    ? `<p class="docs">Further reading: ${(finding.documentation ?? [])
-        .map((d) => link(d.link, d.text))
-        .join(', ')}</p>`
-    : '';
+  const docs =
+    (finding.documentation ?? []).length > 0
+      ? `<p class="docs">Further reading: ${(finding.documentation ?? [])
+          .map((d) => link(d.link, d.text))
+          .join(', ')}</p>`
+      : '';
   return `<li class="finding"><span class="sev ${label}">${label}</span> <span class="msg">${escapeHtml(finding.message)}</span><div class="res">${link(finding.resource)}${where}</div>${code}${docs}</li>`;
 }
 
@@ -177,18 +222,18 @@ function renderHintHead(block: HintBlock): string {
   ].filter(Boolean);
   const meta =
     facts.length > 0
-      ? `<p class="muted">${escapeHtml(facts.join(' \u00b7 '))}</p>`
+      ? `<p class="muted">${escapeHtml(facts.join(' \u00B7 '))}</p>`
       : '';
   return `${description}${meta}${reference}${renderOrigins(info.origins)}${info.id.startsWith('extra/') ? '' : renderStockButtons(info.id)}`;
 }
 
 /** Renders a hint that has findings as a collapsible block. */
 function renderHint(block: HintBlock): string {
-  const { info } = block;
+  const { info, counts, findings } = block;
   const badges = block.badges
     .map((b) => `<span class="badge">${escapeHtml(b)}</span>`)
     .join('');
-  return `<details class="hint" data-groups="${escapeHtml(info.groups.join(' '))}"><summary><span class="name">${escapeHtml(info.name)}</span> <code>${escapeHtml(info.id)}</code> ${badges}<span class="counts">${renderCounts(block.counts)}</span></summary>${renderHintHead(block)}<ul class="findings">${block.findings.map(renderFinding).join('')}</ul></details>`;
+  return `<details class="hint" data-groups="${escapeHtml(info.groups.join(' '))}"><summary><span class="name">${escapeHtml(info.name)}</span> <code>${escapeHtml(info.id)}</code> ${badges}<span class="counts">${renderCounts(counts)}</span></summary>${renderHintHead(block)}<ul class="findings">${findings.map((finding) => renderFinding(finding)).join('')}</ul></details>`;
 }
 
 /** Renders the collapsed list of hints that ran without findings. */
@@ -207,7 +252,7 @@ function renderPassed(blocks: readonly HintBlock[]): string {
 
 /** Makes a section key safe to use inside an id attribute. */
 function anchor(key: string): string {
-  return `sec-${key.replace(/[^a-z0-9-]/gi, '-')}`;
+  return `sec-${key.replaceAll(/[^a-z0-9-]/gi, '-')}`;
 }
 
 /** Renders one section of the report. */
@@ -217,7 +262,10 @@ function renderSection(section: Section): string {
   const status = section.passed
     ? '<span class="ok" title="Passed">&#10003;</span>'
     : renderCounts(section.counts);
-  return `<section class="section" id="${anchor(section.key)}"><h2>${escapeHtml(section.title)} ${status}</h2>${section.description ? `<p class="section-desc">${escapeHtml(section.description)}</p>` : ''}${failing.map(renderHint).join('')}${renderPassed(passing)}</section>`;
+  const description = section.description
+    ? `<p class="section-desc">${escapeHtml(section.description)}</p>`
+    : '';
+  return `<section class="section" id="${anchor(section.key)}"><h2>${escapeHtml(section.title)} ${status}</h2>${description}${failing.map((hint) => renderHint(hint)).join('')}${renderPassed(passing)}</section>`;
 }
 
 /** Renders the sidebar navigation. */
@@ -318,8 +366,7 @@ apply();
 
 /**
  * Renders the whole report.
- *
- * @param data Scan target, date, hints that ran and all findings.
+ * @param data - Scan target, date, hints that ran and all findings.
  * @returns A complete HTML document as a string.
  */
 export function generateReport(data: ReportData): string {
@@ -336,7 +383,7 @@ export function generateReport(data: ReportData): string {
 <main><h1>${link(data.target)}</h1><p class="meta">${escapeHtml(data.date)}</p>
 <div class="totals">${renderCounts(totals) || '<span class="ok">No findings</span>'}</div>
 <p class="meta">${hintsRun} hints run, ${withFindings} with findings</p>
-${renderScoreCard(data.findings)}${renderFilter(data.hints)}${sections.map(renderSection).join('')}</main></div>
+${renderScoreCard(data.findings)}${renderFilter(data.hints)}${sections.map((section) => renderSection(section)).join('')}</main></div>
 <script>${SCRIPT}</script></body></html>
 `;
 }

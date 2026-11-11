@@ -30,7 +30,7 @@ describe('usesGeolocation', () => {
     '// navigator.geolocation.getCurrentPosition(f)',
     '/* navigator.geolocation.watchPosition(f) */ run();',
     'log("navigator.geolocation.getCurrentPosition(f)");',
-    'const u = "http://x.test/"; navigator.geolocation;',
+    'const u = "https://x.test/"; navigator.geolocation;',
   ])('ignores %j', (code) => {
     expect(usesGeolocation(code)).toBe(false);
   });
@@ -44,7 +44,7 @@ describe('stripCommentsAndStrings', () => {
     expect(stripCommentsAndStrings('p /* z */ q')).toBe('p   q');
   });
   it('handles escaped quotes and unterminated input', () => {
-    expect(stripCommentsAndStrings('x("a\\"b");')).toBe('x("");');
+    expect(stripCommentsAndStrings(String.raw`x("a\"b");`)).toBe('x("");');
     expect(stripCommentsAndStrings('/* open')).toBe(' ');
     expect(stripCommentsAndStrings('"open')).toBe('""');
   });

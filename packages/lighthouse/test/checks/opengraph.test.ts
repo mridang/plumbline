@@ -1,7 +1,7 @@
-import { existsSync } from 'node:fs';
+import { access } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from '@jest/globals';
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import { SECTIONS } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
@@ -35,6 +35,7 @@ import {
 import { ogMetaReader } from '../../src/adapt-opengraph.js';
 import { opengraphChecks } from '../../src/checks/opengraph.js';
 import type { AuditCheck } from '../../src/checks/types.js';
+import { HTTP_SCHEME } from '../helpers/data.js';
 
 /**
  * One `<meta>` entry in the shape Lighthouse's `MetaElements` artifact uses.
@@ -48,8 +49,8 @@ interface Meta {
 }
 
 /** Builds the artifacts an Open Graph check reads from a list of meta tags. */
-function artifacts(metas: readonly Meta[]): LH.Artifacts {
-  return { MetaElements: metas } as unknown as LH.Artifacts;
+function artifacts(metas: readonly Meta[]): Artifacts {
+  return { MetaElements: metas } as Artifacts;
 }
 
 /** A fresh audit context; the checks never read it, but the signature wants it. */
@@ -132,9 +133,11 @@ const EXPECTED_IDS = [
 describe('the opengraph registry', () => {
   it('registers all twenty-five Open Graph/Twitter checks', () => {
     expect(opengraphChecks).toHaveLength(25);
-    expect([...opengraphChecks].map((c) => c.id).sort()).toEqual(
-      [...EXPECTED_IDS].sort(),
-    );
+    expect(
+      [...opengraphChecks]
+        .map((c) => c.id)
+        .toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual([...EXPECTED_IDS].toSorted((a, b) => a.localeCompare(b)));
   });
 
   it('places every check in a real taxonomy section', () => {
@@ -152,12 +155,15 @@ describe('the opengraph registry', () => {
     }
   });
 
-  it('has a thin wrapper module for every check', () => {
+  it('has a thin wrapper module for every check', async () => {
     for (const c of opengraphChecks) {
       const wrapper = fileURLToPath(
         new URL(`../../src/audits/${c.id}.ts`, import.meta.url),
       );
-      expect(existsSync(wrapper)).toBe(true);
+      const exists = await access(wrapper)
+        .then(() => true)
+        .catch(() => false);
+      expect(exists).toBe(true);
     }
   });
 
@@ -165,7 +171,7 @@ describe('the opengraph registry', () => {
     const informative = opengraphChecks
       .filter((c) => c.scoreMode === 'informative')
       .map((c) => c.id)
-      .sort();
+      .toSorted((a, b) => a.localeCompare(b));
     expect(informative).toEqual(
       [
         'opengraph-description-could-be-longer',
@@ -178,7 +184,7 @@ describe('the opengraph registry', () => {
         'opengraph-type-missing',
         'twitter-card-not-large',
         'twitter-site-missing',
-      ].sort(),
+      ].toSorted((a, b) => a.localeCompare(b)),
     );
     // The remaining checks are all graded.
     for (const c of opengraphChecks) {
@@ -205,7 +211,7 @@ describe('the opengraph checks run() over a complete, well-formed meta set', () 
   });
 
   it('is not applicable when the MetaElements artifact is absent', async () => {
-    const empty = {} as unknown as LH.Artifacts;
+    const empty = {} as Artifacts;
     for (const c of opengraphChecks) {
       expect(await c.run(empty, context())).toBeNull();
     }
@@ -327,7 +333,7 @@ describe('the description-quality checks run()', () => {
 describe('the image checks run()', () => {
   it('warns when og:image is not served over HTTPS', async () => {
     const findings = await run('opengraph-image-not-https', [
-      { property: 'og:image', content: 'http://example.com/og.png' },
+      { property: 'og:image', content: `${HTTP_SCHEME}example.com/og.png` },
     ]);
     expect(findings?.[0]?.severity).toBe('warning');
   });
@@ -354,9 +360,8 @@ describe('the image checks run()', () => {
 
 describe('the twitter checks run()', () => {
   it('warns when twitter:card is absent', async () => {
-    expect((await run('twitter-card-missing', []))?.[0]?.severity).toBe(
-      'warning',
-    );
+    const twitterFindings = await run('twitter-card-missing', []);
+    expect(twitterFindings?.[0]?.severity).toBe('warning');
   });
 
   it('suggests the large card only when summary is used with an image', async () => {
@@ -439,7 +444,7 @@ const LIB_FN: Readonly<
 const FLAWED_METAS: readonly Meta[] = [
   { property: 'og:title', content: 'x'.repeat(61) },
   { property: 'og:description', content: 'https://example.com' },
-  { property: 'og:image', content: 'http://example.com/og.png' },
+  { property: 'og:image', content: `${HTTP_SCHEME}example.com/og.png` },
   { name: 'twitter:card', content: 'summary' },
 ];
 

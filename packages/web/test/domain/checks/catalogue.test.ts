@@ -30,7 +30,7 @@ describe('CHECKS', () => {
   });
 
   it('is sorted by id', () => {
-    expect(ALL).toEqual(ALL.toSorted());
+    expect(ALL).toEqual(ALL.toSorted((a, b) => Number(a > b) - Number(a < b)));
   });
 
   it('has no id twice', () => {
@@ -99,7 +99,9 @@ describe('checksPerSection', () => {
 
 describe('GROUPS', () => {
   it('is sorted and has each name once', () => {
-    expect(GROUPS).toEqual([...new Set(GROUPS)].toSorted());
+    expect(GROUPS).toEqual(
+      [...new Set(GROUPS)].toSorted((a, b) => Number(a > b) - Number(a < b)),
+    );
   });
 
   it('names the sections, tags, targets, tiers, sources and old groups', () => {
@@ -135,7 +137,11 @@ describe('the taxonomy of a check', () => {
 
   it('lists every section under one display group', () => {
     const listed = DISPLAY_GROUPS.flatMap((group) => group.sections);
-    expect(listed.toSorted()).toEqual(SECTIONS.map((s) => s.id).toSorted());
+    expect(listed.toSorted((a, b) => Number(a > b) - Number(a < b))).toEqual(
+      SECTIONS.map((s) => s.id).toSorted(
+        (a, b) => Number(a > b) - Number(a < b),
+      ),
+    );
     for (const section of SECTIONS) {
       expect(typeof section.default_on).toBe('boolean');
       expect(section.group_title.length).toBeGreaterThan(1);

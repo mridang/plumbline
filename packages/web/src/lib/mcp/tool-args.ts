@@ -25,11 +25,9 @@ export function stringArg(value: unknown): string {
  * as strings, commas split ("a, b" is two values), and blanks are dropped.
  */
 export function stringListArg(value: unknown): readonly string[] {
-  const list = Array.isArray(value)
+  const list: readonly unknown[] = Array.isArray(value)
     ? value
-    : value === undefined
-      ? []
-      : [value];
+    : [value].filter((v) => v !== undefined);
   return list
     .filter((v) => typeof v === 'string' || typeof v === 'number')
     .flatMap((v) => String(v).split(','))

@@ -1,10 +1,27 @@
 import { Category, defineHint } from '../../core/define-hint.js';
-import { onPage, onSite, type Page } from '../../core/page.js';
+import { onPage, onSite, type Page, type Site } from '../../core/page.js';
 import { isExposedSourceMap } from '../../lib/exposure/detect.js';
 import { fetchIfReachable, reportExposure } from './shared.js';
 
 const WSTG =
   'https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/04-Review_Old_Backup_and_Unreferenced_Files_for_Sensitive_Information';
+
+/**
+ * Resolves a script URL against the page and guesses its `.map` sibling.
+ * Returns undefined when the URL is not parseable or not a same-origin `.js`.
+ */
+function sourceMapPath(src: string, site: Site): string | undefined {
+  let scriptUrl: URL;
+  try {
+    scriptUrl = new URL(src, site.url);
+  } catch {
+    return undefined;
+  }
+  if (scriptUrl.origin !== site.origin || !/\.js$/i.test(scriptUrl.pathname)) {
+    return undefined;
+  }
+  return `${scriptUrl.pathname}.map`;
+}
 
 /**
  * Probes for a reachable JavaScript source map that exposes original source.
@@ -36,27 +53,14 @@ export default defineHint({
       }
     });
     onSite(context, async (site) => {
-      const seen = new Set<string>();
+      const mapPaths = new Set<string>();
       for (const src of scripts) {
-        // Resolve relative script URLs against the page, keep only same-origin
-        // scripts, and guess the `.map` sibling.
-        let scriptUrl: URL;
-        try {
-          scriptUrl = new URL(src, site.url);
-        } catch {
-          continue;
+        const mapPath = sourceMapPath(src, site);
+        if (mapPath !== undefined) {
+          mapPaths.add(mapPath);
         }
-        if (
-          scriptUrl.origin !== site.origin ||
-          !/\.js$/i.test(scriptUrl.pathname)
-        ) {
-          continue;
-        }
-        const mapPath = `${scriptUrl.pathname}.map`;
-        if (seen.has(mapPath)) {
-          continue;
-        }
-        seen.add(mapPath);
+      }
+      for (const mapPath of mapPaths) {
         const body = await fetchIfReachable(site, mapPath);
         if (body !== null && isExposedSourceMap(body)) {
           reportExposure(

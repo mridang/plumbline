@@ -15,7 +15,7 @@ const serve = (
 });
 
 // Six months ahead, so the file is neither expired nor over a year away.
-const EXPIRES = new Date(Date.now() + 182 * 86400000).toISOString();
+const EXPIRES = new Date(Date.now() + 182 * 86_400_000).toISOString();
 
 describe('security-txt', () => {
   it('passes for a valid file', async () => {
@@ -48,7 +48,7 @@ describe('security-txt', () => {
         'text/html; charset=utf-8',
       ),
     );
-    expect(problems.map((p) => p.message).join()).toContain(
+    expect(problems.map((p) => p.message).join(',')).toContain(
       "served as 'text/html'",
     );
   });
@@ -61,12 +61,12 @@ describe('security-txt', () => {
         'text/plain; charset=iso-8859-1',
       ),
     );
-    expect(problems.map((p) => p.message).join()).toContain('UTF-8');
+    expect(problems.map((p) => p.message).join(',')).toMatch(/UTF-8/);
   });
 
   it('reports an invalid file with a line number', async () => {
     const problems = await runHint(hint, serve(`Contact: mailto:s@a.com\n`));
-    expect(problems.map((p) => p.message).join()).toContain(
+    expect(problems.map((p) => p.message).join(',')).toContain(
       "'Expires' field is missing",
     );
   });
@@ -89,7 +89,7 @@ describe('security-txt', () => {
         body: 'Contact: mailto:s@a.com\n',
       },
     });
-    expect(problems.map((p) => p.message).join()).toContain("'Expires'");
+    expect(problems.map((p) => p.message).join(',')).toContain("'Expires'");
   });
 
   it('prefers the well-known file over the legacy one', async () => {
@@ -107,6 +107,6 @@ describe('security-txt', () => {
       hint,
       serve(`Contact: mailto:s@a.com\nExpires: ${EXPIRES}\n`),
     );
-    expect(problems.map((p) => p.message).join()).not.toContain('HTTPS');
+    expect(problems.map((p) => p.message).join(',')).not.toContain('HTTPS');
   });
 });

@@ -46,14 +46,25 @@ const emptyGroups = <T>(): Grouped<T> => ({
 
 /** Adds an item to the group for its rating. */
 function addRated<T>(groups: Grouped<T>, rating: Rating, item: T): void {
-  if (rating === 'good') {
-    groups.good.push(item);
-  } else if (rating === 'sufficient') {
-    groups.sufficient.push(item);
-  } else if (rating === 'phase-out') {
-    groups.phaseOut.push(item);
-  } else {
-    groups.bad.push(item);
+  switch (rating) {
+    case 'good': {
+      groups.good.push(item);
+
+      break;
+    }
+    case 'sufficient': {
+      groups.sufficient.push(item);
+
+      break;
+    }
+    case 'phase-out': {
+      groups.phaseOut.push(item);
+
+      break;
+    }
+    default: {
+      groups.bad.push(item);
+    }
   }
 }
 
@@ -177,6 +188,8 @@ export function evaluateKex(keys: readonly EphemeralKey[]): KexEvaluation {
       phaseOut.add(label);
     } else if (rating === 'bad') {
       bad.add(label);
+    } else {
+      // Good and sufficient keys are not reported.
     }
   }
   const sizes = (type: EphemeralKey['type']): number[] =>
@@ -216,11 +229,10 @@ export interface CipherOrderEvaluation {
  * The test does not apply when the server accepts nothing below
  * "sufficient" or only TLS 1.3 (`onlyTls13`), because TLS 1.3 suites are
  * all acceptable.
- *
- * @param accepted - the cipher suites accepted below TLS 1.3
- * @param choose - connects offering the ciphers in order and returns the
- *   cipher the server picked, or null when the connection failed
- * @param onlyTls13 - true when the server accepts no version below TLS 1.3
+ * @param accepted - The cipher suites accepted below TLS 1.3.
+ * @param choose - Connects offering the ciphers in order and returns the
+ * cipher the server picked, or null when the connection failed.
+ * @param onlyTls13 - True when the server accepts no version below TLS 1.3.
  */
 export async function evaluateCipherOrder(
   accepted: readonly CipherInfo[],
@@ -240,7 +252,7 @@ export async function evaluateCipherOrder(
     return na;
   }
   // Internet.nl sorts CHACHA last in case the server prioritizes it (#461).
-  const lessPreferred = [...phaseOut].sort(
+  const lessPreferred = [...phaseOut].toSorted(
     (a, b) =>
       Number(a.standardName.includes('CHACHA')) -
       Number(b.standardName.includes('CHACHA')),
@@ -285,22 +297,25 @@ export function rateCertificateKey(key: CertKey): RatedKey {
   const bits = key.modulusLength ? `-${key.modulusLength}` : '';
   const curve = key.curve ? `, curve: ${key.curve}` : '';
   const description = `${key.type.toUpperCase()}${bits}${curve}`;
-  const good =
-    (key.type === 'rsa' &&
-      (key.modulusLength ?? 0) >= CERT_RSA_MIN_GOOD_KEY_SIZE) ||
-    CERT_CURVES_GOOD.includes(key.type) ||
-    (key.type === 'ec' &&
-      key.curve !== undefined &&
-      CERT_EC_CURVES_GOOD.includes(key.curve));
+  const rsaGood =
+    key.type === 'rsa' &&
+    (key.modulusLength ?? 0) >= CERT_RSA_MIN_GOOD_KEY_SIZE;
+  const ecGood =
+    key.type === 'ec' &&
+    key.curve !== undefined &&
+    CERT_EC_CURVES_GOOD.includes(key.curve);
+  const good = rsaGood || CERT_CURVES_GOOD.includes(key.type) || ecGood;
   if (good) {
     return { rating: 'good', description };
   }
-  const phaseOut =
-    (key.type === 'ec' &&
-      key.curve !== undefined &&
-      CERT_EC_CURVES_PHASE_OUT.includes(key.curve)) ||
-    (key.type === 'rsa' &&
-      (key.modulusLength ?? 0) >= CERT_RSA_MIN_PHASE_OUT_KEY_SIZE);
+  const ecPhaseOut =
+    key.type === 'ec' &&
+    key.curve !== undefined &&
+    CERT_EC_CURVES_PHASE_OUT.includes(key.curve);
+  const rsaPhaseOut =
+    key.type === 'rsa' &&
+    (key.modulusLength ?? 0) >= CERT_RSA_MIN_PHASE_OUT_KEY_SIZE;
+  const phaseOut = ecPhaseOut || rsaPhaseOut;
   return { rating: phaseOut ? 'phase-out' : 'bad', description };
 }
 

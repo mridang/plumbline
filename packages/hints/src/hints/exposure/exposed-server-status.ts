@@ -32,7 +32,7 @@ export default defineHint({
             site,
             path,
             `The Apache status page ${path} is publicly readable and leaks server internals.`,
-            body.replace(/\s+/g, ' ').trim(),
+            body.replaceAll(/\s+/g, ' ').trim(),
           );
         }
       }

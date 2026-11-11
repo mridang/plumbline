@@ -5,6 +5,7 @@ import {
   originAgentClusterFindings,
   reportingEndpointsFindings,
 } from '../../../src/lib/headers/reporting-extra.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 describe('reportingEndpointsFindings', () => {
   it('is silent when absent', () => {
@@ -21,7 +22,7 @@ describe('reportingEndpointsFindings', () => {
 
   it('rejects a non-https or unquoted url', () => {
     expect(
-      reportingEndpointsFindings('csp="http://e.test/r"')[0]?.severity,
+      reportingEndpointsFindings(`csp="${HTTP_SCHEME}e.test/r"`)[0]?.severity,
     ).toBe('warning');
     expect(reportingEndpointsFindings('csp=https://e.test')[0]?.severity).toBe(
       'warning',

@@ -50,9 +50,10 @@ export function FixPromptBox({
           variant="accent"
           onClick={() => {
             // `clipboard` is missing on insecure pages; then there is nothing to confirm.
+
             void navigator.clipboard?.writeText(prompt).then(() => {
               setCopied(true);
-              setTimeout(() => setCopied(false), CONFIRMATION_MS);
+              return setTimeout(() => setCopied(false), CONFIRMATION_MS);
             });
           }}
         >

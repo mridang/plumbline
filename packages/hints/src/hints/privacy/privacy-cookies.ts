@@ -74,7 +74,7 @@ export default defineHint({
         {
           severity: third > 0 ? Severity.warning : Severity.hint,
           codeSnippet: [...summary.firstParty, ...summary.thirdParty]
-            .map(cookieLine)
+            .map((cookie) => cookieLine(cookie))
             .join('\n'),
           codeLanguage: 'http',
         },
@@ -87,7 +87,7 @@ export default defineHint({
 function list(label: string, cookies: readonly CookieRecord[]): string {
   return cookies.length === 0
     ? ''
-    : ` ${label}: ${cookies.map(describeCookie).join('; ')}.`;
+    : ` ${label}: ${cookies.map((cookie) => describeCookie(cookie)).join('; ')}.`;
 }
 
 /** The raw `Set-Cookie` value(s), which may be a string or a list. */

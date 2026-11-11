@@ -1,7 +1,7 @@
 /**
  * A repository's badge, to paste into its README.
  *
- *   GET /badge/{owner}/{repo}/{signature}.svg → 200 image/svg+xml
+ *   GET /badge/{owner}/{repo}/{signature}.svg → 200 image/svg+xml.
  *
  * Shows one score for how the repository's sites stand. The signature is the
  * one the app handed out for that repository (see `domain/badge/sign.ts`); any

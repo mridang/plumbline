@@ -66,7 +66,7 @@ describe('mail-spf', () => {
   });
 
   it('reports more than ten lookups', async () => {
-    const terms = Array(11).fill('mx').join(' ');
+    const terms = Array.from({ length: 11 }, () => 'mx').join(' ');
     const problems = await run({
       'example.test TXT': [`"v=spf1 ${terms} -all"`],
     });

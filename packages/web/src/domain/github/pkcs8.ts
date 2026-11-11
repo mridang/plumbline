@@ -10,8 +10,7 @@ import { base64ToBytes, bytesToBase64 } from '@/utils/base64';
 
 /** The DER header of an `rsaEncryption` algorithm identifier. */
 const RSA_ALGORITHM = new Uint8Array([
-  0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01,
-  0x05, 0x00,
+  48, 13, 6, 9, 42, 134, 72, 134, 247, 13, 1, 1, 1, 5, 0,
 ]);
 
 /** The DER length bytes for a body of `size` bytes. */
@@ -19,9 +18,11 @@ function lengthOf(size: number): number[] {
   if (size < 0x80) {
     return [size];
   }
+
   if (size <= 0xff) {
     return [0x81, size];
   }
+
   return [0x82, size >> 8, size & 0xff];
 }
 
@@ -45,7 +46,7 @@ function der(tag: number, ...body: Uint8Array[]): Uint8Array {
  * as `\n` or `&` (how a one-line secret carries them) are restored first.
  */
 export function toPkcs8(pem: string): string {
-  const text = pem.replaceAll('\\n', '\n').replaceAll('&', '\n');
+  const text = pem.replaceAll(String.raw`\n`, '\n').replaceAll('&', '\n');
   const match =
     /-----BEGIN RSA PRIVATE KEY-----([\s\S]+?)-----END RSA PRIVATE KEY-----/.exec(
       text,
@@ -53,7 +54,7 @@ export function toPkcs8(pem: string): string {
   if (match === null) {
     return text;
   }
-  const pkcs1 = base64ToBytes((match[1] ?? '').replace(/\s+/g, ''));
+  const pkcs1 = base64ToBytes((match[1] ?? '').replaceAll(/\s+/g, ''));
   const pkcs8 = der(
     0x30,
     new Uint8Array([0x02, 0x01, 0x00]),

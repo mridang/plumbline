@@ -9,11 +9,12 @@
  * hand so each hop can be checked.
  */
 
-import { brotliDecompressSync, gunzipSync, inflateSync } from 'node:zlib';
+import { promisify } from 'node:util';
+import { brotliDecompress, gunzip, inflate } from 'node:zlib';
 
 import { ProbeError } from './protocol.js';
 import type { HttpRequest, ProbeClient } from './client.js';
-import { ScanRefused, assertScannable } from '../scannable.js';
+import { ScanRefusedError, assertScannable } from '../scannable.js';
 
 /** The user agent sent with every request, so site owners can tell what called. */
 export const USER_AGENT =
@@ -27,7 +28,7 @@ const REDIRECTS: ReadonlySet<number> = new Set([301, 302, 303, 307, 308]);
 
 /** Whether a status carries no body. */
 function bodyless(status: number): boolean {
-  return status === 101 || status === 204 || status === 205 || status === 304;
+  return [101, 204, 205, 304].includes(status);
 }
 
 /** The body with its chunks put together (`Transfer-Encoding: chunked`). */
@@ -35,7 +36,8 @@ export function unchunk(bytes: Uint8Array): Uint8Array {
   const parts: Uint8Array[] = [];
   let at = 0;
   let total = 0;
-  for (;;) {
+  let more = true;
+  while (more) {
     let end = at;
     while (
       end + 1 < bytes.length &&
@@ -46,9 +48,11 @@ export function unchunk(bytes: Uint8Array): Uint8Array {
     if (end + 1 >= bytes.length) {
       throw new ProbeError('the response ended inside a chunk header');
     }
-    const size = parseInt(
-      new TextDecoder().decode(bytes.subarray(at, end)).split(';')[0]?.trim() ??
-        '',
+    const size = Number.parseInt(
+      new TextDecoder()
+        .decode(bytes.subarray(at, end))
+        .split(';', 1)[0]
+        ?.trim() ?? '',
       16,
     );
     if (!Number.isFinite(size) || size < 0) {
@@ -58,17 +62,17 @@ export function unchunk(bytes: Uint8Array): Uint8Array {
     }
     at = end + 2;
     if (size === 0) {
-      break;
-    }
-    if (at + size > bytes.length) {
+      more = false;
+    } else if (at + size > bytes.length) {
       // The probe cut the body at its limit; keep what came.
       parts.push(bytes.subarray(at));
       total += bytes.length - at;
-      break;
+      more = false;
+    } else {
+      parts.push(bytes.subarray(at, at + size));
+      total += size;
+      at += size + 2;
     }
-    parts.push(bytes.subarray(at, at + size));
-    total += size;
-    at += size + 2;
   }
   const out = new Uint8Array(total);
   let offset = 0;
@@ -79,29 +83,37 @@ export function unchunk(bytes: Uint8Array): Uint8Array {
   return out;
 }
 
+const gunzipAsync = promisify(gunzip);
+const inflateAsync = promisify(inflate);
+const brotliDecompressAsync = promisify(brotliDecompress);
+
 /** The body with its content coding undone. A coding this does not know is left alone. */
-export function decode(
+export async function decode(
   bytes: Uint8Array,
   encoding: string | undefined,
-): Uint8Array {
+): Promise<Uint8Array> {
   const coding = (encoding ?? '').trim().toLowerCase();
   try {
     switch (coding) {
       case 'gzip':
-      case 'x-gzip':
+      case 'x-gzip': {
         return new Uint8Array(
-          gunzipSync(bytes, { maxOutputLength: MAX_BYTES }),
+          await gunzipAsync(bytes, { maxOutputLength: MAX_BYTES }),
         );
-      case 'deflate':
+      }
+      case 'deflate': {
         return new Uint8Array(
-          inflateSync(bytes, { maxOutputLength: MAX_BYTES }),
+          await inflateAsync(bytes, { maxOutputLength: MAX_BYTES }),
         );
-      case 'br':
+      }
+      case 'br': {
         return new Uint8Array(
-          brotliDecompressSync(bytes, { maxOutputLength: MAX_BYTES }),
+          await brotliDecompressAsync(bytes, { maxOutputLength: MAX_BYTES }),
         );
-      default:
+      }
+      default: {
         return bytes;
+      }
     }
   } catch (error) {
     throw new ProbeError(
@@ -131,9 +143,10 @@ async function once(
   headers: readonly (readonly [string, string])[],
 ): Promise<Response> {
   const tls = url.protocol === 'https:';
+  const defaultPort = tls ? 443 : 80;
   const request: HttpRequest = {
-    host: url.hostname.replace(/^\[|\]$/g, ''),
-    port: url.port === '' ? (tls ? 443 : 80) : Number(url.port),
+    host: url.hostname.replaceAll(/^\[|\]$/g, ''),
+    port: url.port === '' ? defaultPort : Number(url.port),
     tls,
     method,
     path: `${url.pathname}${url.search}`,
@@ -154,9 +167,11 @@ async function once(
   if (method !== 'HEAD' && !bodyless(answer.status)) {
     const chunked = /chunked/i.test(lines.get('transfer-encoding') ?? '');
     const raw = chunked ? unchunk(answer.body) : answer.body;
-    body = decode(raw, lines.get('content-encoding') ?? undefined);
+    body = await decode(raw, lines.get('content-encoding') ?? undefined);
     if (body.byteLength > MAX_BYTES) {
-      throw new ScanRefused(`The response is larger than ${MAX_BYTES} bytes`);
+      throw new ScanRefusedError(
+        `The response is larger than ${MAX_BYTES} bytes`,
+      );
     }
   }
   return new Response(body as ConstructorParameters<typeof Response>[0], {
@@ -175,7 +190,9 @@ export function probeFetch(
     const first = new URL(input instanceof Request ? input.url : String(input));
     const method = (init.method ?? 'GET').toUpperCase();
     if (init.body !== undefined && init.body !== null) {
-      throw new ScanRefused('A request body cannot be sent through the probe');
+      throw new ScanRefusedError(
+        'A request body cannot be sent through the probe',
+      );
     }
     const redirect = init.redirect ?? 'follow';
     const headers = requestHeaders(init.headers);
@@ -187,10 +204,10 @@ export function probeFetch(
       const location = response.headers.get('location');
       if (REDIRECTS.has(response.status) && location && redirect !== 'manual') {
         if (redirect === 'error') {
-          throw new ScanRefused(`${current.href} redirected`);
+          throw new ScanRefusedError(`${current.href} redirected`);
         }
         if (hops >= maxRedirects) {
-          throw new ScanRefused('Too many redirects');
+          throw new ScanRefusedError('Too many redirects');
         }
         current = new URL(location, current);
         redirected = true;

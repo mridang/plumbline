@@ -64,6 +64,7 @@ export default defineHint({
       for (const selector of selectors) {
         const name = `${selector.trim()}._domainkey.${mail.domain}`;
         const lookup = await lookupTxt(dns.client, name);
+        const records = lookup.status === 'ok' ? lookup.records : [];
         if (lookup.status === 'error') {
           mail.report(
             `The DKIM record for selector '${selector}' could not be looked up.`,
@@ -72,34 +73,31 @@ export default defineHint({
               codeSnippet: name,
             },
           );
-          continue;
-        }
-        const records = lookup.status === 'ok' ? lookup.records : [];
-        if (records.length === 0) {
+        } else if (records.length === 0) {
           mail.report(
             `Your domain does *not* support DKIM records: there is no DKIM record for selector '${selector}'.`,
             { severity: Severity.error, codeSnippet: name },
           );
-          continue;
-        }
-        if (records.length > 1) {
+        } else if (records.length > 1) {
           mail.report(
             `The DKIM record for selector '${selector}' is ambiguous: ${records.length} TXT records were found.`,
             { severity: Severity.error, codeSnippet: records.join('\n') },
           );
-          continue;
-        }
-        const parsed = parseDkim(records[0]);
-        if (!parsed.valid) {
-          mail.report(
-            `The DKIM record for selector '${selector}' is not valid: ${parsed.errors.join(' ')}`,
-            { severity: Severity.error, codeSnippet: records[0] },
-          );
-        } else if (parsed.testing) {
-          mail.report(
-            `The DKIM record for selector '${selector}' is in testing mode (t=y); verifiers may ignore failures.`,
-            { severity: Severity.warning, codeSnippet: records[0] },
-          );
+        } else {
+          const parsed = parseDkim(records[0]);
+          if (!parsed.valid) {
+            mail.report(
+              `The DKIM record for selector '${selector}' is not valid: ${parsed.errors.join(' ')}`,
+              { severity: Severity.error, codeSnippet: records[0] },
+            );
+          } else if (parsed.testing) {
+            mail.report(
+              `The DKIM record for selector '${selector}' is in testing mode (t=y); verifiers may ignore failures.`,
+              { severity: Severity.warning, codeSnippet: records[0] },
+            );
+          } else {
+            // A valid record outside testing mode needs no report.
+          }
         }
       }
     });

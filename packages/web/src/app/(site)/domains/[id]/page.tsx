@@ -39,7 +39,8 @@ export default async function DomainPage({
   const { report: picked, view } = await searchParams;
   const user = await getCurrentUser();
   if (!user) {
-    redirect(`/auth/login?returnTo=${encodeURIComponent(`/domains/${id}`)}`);
+    const returnTo = `/domains/${id}`;
+    redirect(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`);
   }
   const db = getDatabase();
   const domain = isDomainId(id) ? await getDomain(db, user.id, id) : undefined;

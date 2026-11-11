@@ -33,24 +33,35 @@ export default defineHint({
       const v6 = await ipv6Addresses(host);
       const verdict = await compareIpFamilies(host, v4, v6);
       const codeSnippet = `${host}. IN A ${v4.join(', ')}\n${host}. IN AAAA ${v6.join(', ')}`;
-      if (verdict === 'bad') {
-        site.report(
-          site.url.href,
-          'Available ports or offered headers of your website via IPv4 are not the same via IPv6.',
-          { severity: Severity.error, codeSnippet },
-        );
-      } else if (verdict === 'notice') {
-        site.report(
-          site.url.href,
-          'The HTML content of your website via IPv4 is not the same via IPv6.',
-          { severity: Severity.warning, codeSnippet },
-        );
-      } else if (verdict === 'notice-status-code') {
-        site.report(
-          site.url.href,
-          'Your website via IPv6 looks identical via IPv4, but the HTTP response code is in the 4xx or 5xx range. This may indicate a configuration issue.',
-          { severity: Severity.warning, codeSnippet },
-        );
+      switch (verdict) {
+        case 'bad': {
+          site.report(
+            site.url.href,
+            'Available ports or offered headers of your website via IPv4 are not the same via IPv6.',
+            { severity: Severity.error, codeSnippet },
+          );
+
+          break;
+        }
+        case 'notice': {
+          site.report(
+            site.url.href,
+            'The HTML content of your website via IPv4 is not the same via IPv6.',
+            { severity: Severity.warning, codeSnippet },
+          );
+
+          break;
+        }
+        case 'notice-status-code': {
+          site.report(
+            site.url.href,
+            'Your website via IPv6 looks identical via IPv4, but the HTTP response code is in the 4xx or 5xx range. This may indicate a configuration issue.',
+            { severity: Severity.warning, codeSnippet },
+          );
+
+          break;
+        }
+        // No default
       }
     });
   },

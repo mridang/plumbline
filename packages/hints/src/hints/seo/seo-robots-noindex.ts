@@ -10,7 +10,7 @@ const REF = SEO_ROBOTS_NOINDEX_REF;
 /**
  * Warns when the robots meta tag contains noindex.
  *
- * noindex keeps the page out of search results, often by mistake after staging. Source: opengraph.to "Page Is Set to noindex" (warning).
+ * Noindex keeps the page out of search results, often by mistake after staging. Source: opengraph.to "Page Is Set to noindex" (warning).
  *
  * The predicate, message and severity live in `src/lib/seo/checks.ts`; this
  * hint re-derives the source (meta element or `X-Robots-Tag` header) only to

@@ -38,16 +38,41 @@ const ENTITIES: Readonly<Record<string, string>> = {
 const NON_TEXT =
   /<(script|style|noscript|template|head|svg)\b[\s\S]*?<\/\1\s*>/gi;
 
+/** Removes trailing characters matching `drop`, scanning once from the end. */
+function trimEnd(value: string, drop: RegExp): string {
+  let end = value.length;
+  while (end > 0 && drop.test(value[end - 1])) {
+    end -= 1;
+  }
+  return value.slice(0, end);
+}
+
+/** Replaces every `<...>` (up to the first `>`) with a space; a lone `<` stays. */
+function stripTags(html: string): string {
+  let out = '';
+  let kept = 0;
+  let open = html.indexOf('<');
+  while (open !== -1) {
+    const close = html.indexOf('>', open + 1);
+    if (close === -1) {
+      break;
+    }
+    out += `${html.slice(kept, open)} `;
+    kept = close + 1;
+    open = html.indexOf('<', kept);
+  }
+  return out + html.slice(kept);
+}
+
 /** Returns the text a visitor reads in `html`, with whitespace collapsed. */
 export function visibleText(html: string): string {
-  return html
-    .replace(/<!--[\s\S]*?-->/g, ' ')
-    .replace(NON_TEXT, ' ')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&(?:nbsp|amp|lt|gt|quot|#39);/gi, (entity) => {
+  return stripTags(
+    html.replaceAll(/<!--[\s\S]*?-->/g, ' ').replaceAll(NON_TEXT, ' '),
+  )
+    .replaceAll(/&(?:nbsp|amp|lt|gt|quot|#39);/gi, (entity) => {
       return ENTITIES[entity.toLowerCase()] ?? ' ';
     })
-    .replace(/\s+/g, ' ')
+    .replaceAll(/\s+/g, ' ')
     .trim();
 }
 
@@ -94,7 +119,7 @@ export interface Keyword {
 export function topKeywords(text: string, limit = 5): Keyword[] {
   const counts = new Map<string, number>();
   for (const raw of wordsOf(text)) {
-    const word = raw.toLowerCase().replace(/^['’-]+|['’-]+$/g, '');
+    const word = trimEnd(raw.toLowerCase().replace(/^['’-]+/, ''), /['’-]/);
     if (
       word.length < 3 ||
       STOP_WORDS.has(word) ||
@@ -107,7 +132,7 @@ export function topKeywords(text: string, limit = 5): Keyword[] {
   return [...counts.entries()]
     .filter(([, count]) => count >= 2)
     .map(([word, count]) => ({ word, count }))
-    .sort((a, b) => b.count - a.count || a.word.localeCompare(b.word))
+    .toSorted((a, b) => b.count - a.count || a.word.localeCompare(b.word))
     .slice(0, limit);
 }
 
@@ -219,12 +244,9 @@ export function linkFindings(
     }
     try {
       const target = new URL(trimmed, page);
-      if (!/^https?:$/.test(target.protocol)) {
-        continue;
-      }
-      total += 1;
-      if (bareHost(target.host) === bareHost(page.host)) {
-        internal += 1;
+      if (/^https?:$/.test(target.protocol)) {
+        total += 1;
+        internal += bareHost(target.host) === bareHost(page.host) ? 1 : 0;
       }
     } catch {
       // An unparseable href is not a link a crawler can follow.
@@ -288,15 +310,13 @@ export type AnchorProblem = 'empty' | 'generic';
 /** Classifies one anchor; null when its text is descriptive. */
 export function anchorProblem(anchor: AnchorInfo): AnchorProblem | null {
   const shown = [anchor.text, anchor.label, anchor.imageAlt, anchor.title]
-    .map((value) => value.replace(/\s+/g, ' ').trim())
+    .map((value) => value.replaceAll(/\s+/g, ' ').trim())
     .find((value) => value !== '');
   if (shown === undefined) {
     return 'empty';
   }
-  const normal = shown
-    .toLowerCase()
-    .replace(/[\s.…»›→>]+$/u, '')
-    .trim();
+  const lowered = shown.toLowerCase();
+  const normal = trimEnd(lowered, /[\s.…»›→>]/u).trim();
   return GENERIC_ANCHORS.has(normal) ? 'generic' : null;
 }
 

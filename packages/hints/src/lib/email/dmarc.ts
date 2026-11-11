@@ -41,11 +41,21 @@ export interface DmarcRecord {
 
 const POLICY = /^(?:none|quarantine|reject)$/iu;
 const URI_SCHEME = /^[A-Za-z][A-Za-z0-9+.-]*:/u;
-const URI_SIZE = /^[0-9]+[kmgtKMGT]?$/u;
+const URI_SIZE = /^\d+[kmgtKMGT]?$/u;
 const KEYWORD = /^[A-Za-z0-9-]*[A-Za-z0-9]$/u;
 
 /** Trims spaces only; DMARC's grammar allows no other whitespace. */
-const trimSpaces = (text: string): string => text.replace(/^ +| +$/gu, '');
+const trimSpaces = (text: string): string => {
+  let start = 0;
+  let end = text.length;
+  while (start < end && text[start] === ' ') {
+    start += 1;
+  }
+  while (end > start && text[end - 1] === ' ') {
+    end -= 1;
+  }
+  return text.slice(start, end);
+};
 
 /** Validates one `dmarc-uri`: a URI with an optional `!size` limit. */
 function isValidUri(uri: string): boolean {
@@ -64,16 +74,18 @@ function isValidUri(uri: string): boolean {
 }
 
 function parseUriList(value: string): string[] | null {
-  const uris = value.split(',').map(trimSpaces);
-  return uris.every(isValidUri) ? uris : null;
+  const uris = value.split(',').map((uri) => trimSpaces(uri));
+  return uris.every((uri) => isValidUri(uri)) ? uris : null;
 }
 
 function parseColonList(
   value: string,
   isValid: (item: string) => boolean,
 ): string[] | null {
-  const items = value.split(':').map(trimSpaces);
-  return items.every(isValid) ? items.map((item) => item.toLowerCase()) : null;
+  const items = value.split(':').map((item) => trimSpaces(item));
+  return items.every((item) => isValid(item))
+    ? items.map((item) => item.toLowerCase())
+    : null;
 }
 
 /** Sets a directive from its tag and value; false when the value is invalid. */
@@ -99,18 +111,20 @@ function setDirective(
       }
       return true;
     }
-    case 'psd':
+    case 'psd': {
       if (!/^[ynuYNU]$/u.test(value)) {
         return false;
       }
       directives.psd = value.toLowerCase() as 'y' | 'n' | 'u';
       return true;
-    case 't':
+    }
+    case 't': {
       if (!/^[ynYN]$/u.test(value)) {
         return false;
       }
       directives.testing = value.toLowerCase() as 'y' | 'n';
       return true;
+    }
     case 'rua':
     case 'ruf': {
       const uris = parseUriList(value);
@@ -125,18 +139,20 @@ function setDirective(
       return true;
     }
     case 'adkim':
-    case 'aspf':
+    case 'aspf': {
       if (!/^[rsRS]$/u.test(value)) {
         return false;
       }
       directives[tag] = value.toLowerCase() as 'r' | 's';
       return true;
-    case 'ri':
-      if (!/^[0-9]+$/u.test(value)) {
+    }
+    case 'ri': {
+      if (!/^\d+$/u.test(value)) {
         return false;
       }
       directives.ainterval = value;
       return true;
+    }
     case 'fo': {
       const options = parseColonList(value, (item) => /^[01dsDS]$/u.test(item));
       if (!options) {
@@ -153,14 +169,16 @@ function setDirective(
       directives.rfmt = formats;
       return true;
     }
-    case 'pct':
-      if (!/^[0-9]{1,3}$/u.test(value)) {
+    case 'pct': {
+      if (!/^\d{1,3}$/u.test(value)) {
         return false;
       }
       directives.percent = value;
       return true;
-    default:
+    }
+    default: {
       return false;
+    }
   }
 }
 
@@ -176,14 +194,15 @@ export function parseDmarc(record: string): DmarcRecord | null {
   }
   const rest = record.slice(version[0].length);
   const directives: DmarcDirectives = {};
-  const pieces = rest === '' ? [] : rest.split(';').map(trimSpaces);
+  const pieces =
+    rest === '' ? [] : rest.split(';').map((piece) => trimSpaces(piece));
   // One trailing separator is allowed, which leaves an empty last piece.
-  if (pieces.length > 0 && pieces[pieces.length - 1] === '') {
+  if (pieces.length > 0 && pieces.at(-1) === '') {
     pieces.pop();
   }
   const seen = new Set<string>();
   for (const [index, piece] of pieces.entries()) {
-    const match = /^([A-Za-z]+) *= *(.*)$/u.exec(piece);
+    const match = /^([A-Za-z]+) *=(.*)$/u.exec(piece);
     if (!match) {
       return null;
     }
@@ -193,7 +212,7 @@ export function parseDmarc(record: string): DmarcRecord | null {
       return null;
     }
     seen.add(tag);
-    if (!setDirective(directives, tag, match[2])) {
+    if (!setDirective(directives, tag, match[2].replace(/^ +/u, ''))) {
       return null;
     }
   }

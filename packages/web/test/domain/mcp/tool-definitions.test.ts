@@ -75,9 +75,9 @@ describe('the tool catalogue', () => {
   });
 
   it('has a set of good arguments for every tool, and for no other', () => {
-    expect(Object.keys(GOOD_ARGUMENTS).toSorted()).toEqual(
-      TOOLS.map((t) => t.name).toSorted(),
-    );
+    expect(
+      Object.keys(GOOD_ARGUMENTS).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(TOOLS.map((t) => t.name).toSorted((a, b) => a.localeCompare(b)));
   });
 
   it('finds a tool by name', () => {
@@ -152,7 +152,9 @@ describe('the input schemas', () => {
   it.each(['get_domain', 'configure_checks'])(
     '%s refuses a blank domain',
     (name) => {
-      expect(validateJson(inputOf(name), { domain: '   ' })).not.toEqual([]);
+      expect(
+        validateJson(inputOf(name), { domain: ' '.repeat(3) }),
+      ).not.toEqual([]);
     },
   );
 

@@ -97,16 +97,16 @@ export function classifyRequests(
       if (insecure) {
         report.insecureFirstParty.push(request);
       }
-      continue;
-    }
-    report.thirdParty.push(request);
-    hosts.add(url.hostname.toLowerCase());
-    if (insecure) {
-      report.insecure++;
     } else {
-      report.secure++;
+      report.thirdParty.push(request);
+      hosts.add(url.hostname.toLowerCase());
+      if (insecure) {
+        report.insecure++;
+      } else {
+        report.secure++;
+      }
+      report.byType[request.type] = (report.byType[request.type] ?? 0) + 1;
     }
-    report.byType[request.type] = (report.byType[request.type] ?? 0) + 1;
   }
   report.thirdPartyHosts = [...hosts];
   return report;

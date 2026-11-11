@@ -3,6 +3,7 @@ import hint from '../../../src/hints/headers/redirection.js';
 import { redirectionClient } from '../../../src/lib/headers/redirection.js';
 import { Severity } from '@hint/utils-types';
 import { runHint } from '../../helpers/run-hint.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const original = redirectionClient.fetch;
 
@@ -59,8 +60,8 @@ describe('redirection', () => {
   });
 
   it('reports a final destination that is not https', async () => {
-    fakeSite((url, hop) =>
-      hop === 0 ? [302, 'http://other.example/'] : [200],
+    fakeSite((_url, hop) =>
+      hop === 0 ? [302, `${HTTP_SCHEME}other.example/`] : [200],
     );
     const problems = await runHint(hint, {});
     expect(problems[0]?.message).toContain(
@@ -69,9 +70,9 @@ describe('redirection', () => {
   });
 
   it('reports an initial redirect to another http URL', async () => {
-    fakeSite((url, hop) => {
+    fakeSite((_url, hop) => {
       if (hop === 0) {
-        return [301, 'http://www.example.test/'];
+        return [301, `${HTTP_SCHEME}www.example.test/`];
       }
       return hop === 1 ? [301, 'https://www.example.test/'] : [200];
     });
@@ -82,7 +83,7 @@ describe('redirection', () => {
   });
 
   it('warns about a first redirect to a different host', async () => {
-    fakeSite((url, hop) =>
+    fakeSite((_url, hop) =>
       hop === 0 ? [301, 'https://www.example.test/'] : [200],
     );
     const problems = await runHint(hint, {});
@@ -91,7 +92,7 @@ describe('redirection', () => {
   });
 
   it('reports an invalid certificate on the https hop', async () => {
-    fakeSite((url, hop) =>
+    fakeSite((_url, hop) =>
       hop === 0
         ? [301, 'https://127.0.0.1/']
         : Object.assign(new Error('bad'), {

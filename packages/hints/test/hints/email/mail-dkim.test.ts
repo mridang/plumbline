@@ -1,15 +1,18 @@
-import { generateKeyPairSync } from 'node:crypto';
 import { describe, expect, it } from '@jest/globals';
 import { Severity } from '@hint/utils-types';
 import hint from '../../../src/hints/email/mail-dkim.js';
+import { generateKeyPairAsync } from '../../helpers/crypto.js';
 import {
   fakeDns,
   runMailHint,
   type FakeAnswer,
 } from '../../lib/email/fakes.js';
 
-const KEY = generateKeyPairSync('rsa', { modulusLength: 2048 })
-  .publicKey.export({ type: 'spki', format: 'der' })
+const { publicKey } = await generateKeyPairAsync('rsa', {
+  modulusLength: 2048,
+});
+const KEY = publicKey
+  .export({ type: 'spki', format: 'der' })
   .toString('base64');
 
 const run = (txt: Record<string, FakeAnswer>, selectors?: string[]) =>

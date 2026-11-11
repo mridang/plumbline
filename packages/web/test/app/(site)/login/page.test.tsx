@@ -80,8 +80,8 @@ describe('LoginPage', () => {
   it.each([
     ['denied', 'Signing in was cancelled.'],
     ['github', 'Signing in with GitHub is not set up here.'],
-  ])('says what %s means', async (error, words) => {
-    expect(await page({ error })).toContain(words);
+  ])('says what %s means', async (flag, words) => {
+    expect(await page({ error: flag })).toContain(words);
   });
 
   it('ignores any other error flag', async () => {

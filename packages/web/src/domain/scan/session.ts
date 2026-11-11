@@ -86,6 +86,8 @@ export async function runScan(
       (!chosen || chosen.has(line.outcome.id))
     ) {
       callbacks.onOutcome(line.outcome);
+    } else {
+      // Other lines, and outcomes this run did not choose, are not shown.
     }
   });
   if (!started) {

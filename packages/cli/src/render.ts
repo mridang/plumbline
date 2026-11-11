@@ -41,12 +41,11 @@ function bySeverity(a: Finding, b: Finding): number {
  * Flattens a report into the machine-readable list of findings, most serious
  * first. Optional fields are left out rather than set to `undefined`, so the
  * JSON stays small and predictable.
- *
- * @param report The scan's report.
+ * @param report - The scan's report.
  * @returns One entry per finding.
  */
 export function toJsonFindings(report: Report): JsonFinding[] {
-  return [...report.findings].sort(bySeverity).map((finding) => ({
+  return report.findings.toSorted(bySeverity).map((finding) => ({
     hint: bareId(finding.hintId),
     severity: finding.severity,
     message: finding.message,
@@ -86,9 +85,8 @@ function indent(text: string, by: string): string {
  * hint with the most serious finding first, each finding with its severity,
  * message, the resource it is about when that is not the page itself, and its
  * code snippet. A summary line closes the report.
- *
- * @param report The scan's report.
- * @param hints The catalogue entries of the hints that ran, for their names.
+ * @param report - The scan's report.
+ * @param hints - The catalogue entries of the hints that ran, for their names.
  * @returns The text to print, ending in a newline.
  */
 export function formatFindings(
@@ -96,7 +94,7 @@ export function formatFindings(
   hints: readonly HintMeta[],
 ): string {
   const groups = new Map<string, Finding[]>();
-  for (const finding of [...report.findings].sort(bySeverity)) {
+  for (const finding of report.findings.toSorted(bySeverity)) {
     const id = bareId(finding.hintId);
     groups.set(id, [...(groups.get(id) ?? []), finding]);
   }
@@ -123,8 +121,7 @@ export function formatFindings(
 /**
  * Renders the catalogue for a terminal: each check's id and name, its groups,
  * and its description, with a count at the end.
- *
- * @param checks The catalogue entries to list.
+ * @param checks - The catalogue entries to list.
  * @returns The text to print, ending in a newline.
  */
 export function formatChecks(checks: readonly HintMeta[]): string {

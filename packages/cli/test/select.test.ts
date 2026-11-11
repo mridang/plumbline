@@ -51,9 +51,11 @@ describe('filterByGroups', () => {
   it('keeps the hints of a tier and a target', () => {
     const ids = (tiers: string[], targets?: string[]) =>
       filterByGroups(CATALOGUE, [], { tiers, targets }).map((h) => h.id);
+    const placementOf = (id: string): (typeof PLACEMENT)[string] | undefined =>
+      PLACEMENT[id];
     const expected = (tiers: string[], target?: string) =>
       CATALOGUE.map((h) => h.id).filter((id) => {
-        const placement = PLACEMENT[id];
+        const placement = placementOf(id);
         return (
           placement !== undefined &&
           tiers.includes(placement.tier) &&

@@ -43,14 +43,10 @@ export function readGitHubConfig(
     GITHUB_PRIVATE_KEY: privateKey,
     GITHUB_WEBHOOK_SECRET: webhookSecret,
   } = env;
-  if (
-    !appId ||
-    !slug ||
-    !clientId ||
-    !clientSecret ||
-    !privateKey ||
-    !webhookSecret
-  ) {
+  if (!appId || !slug || !clientId) {
+    return null;
+  }
+  if (!clientSecret || !privateKey || !webhookSecret) {
     return null;
   }
   return { appId, slug, clientId, clientSecret, privateKey, webhookSecret };

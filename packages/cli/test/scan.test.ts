@@ -21,7 +21,7 @@ describe('allHintIds', () => {
 
   it('is sorted and free of duplicates', () => {
     const ids = [...allHintIds];
-    expect(ids).toEqual([...ids].sort());
+    expect(ids).toEqual([...ids].toSorted((a, b) => a.localeCompare(b)));
     expect(new Set(ids).size).toBe(ids.length);
   });
 
@@ -55,7 +55,7 @@ describe('hintConfig', () => {
 
   it('keys all shipped hints and nothing else', () => {
     const keys = Object.keys(hintConfig(allHintIds));
-    expect(keys.length).toBe(allHintIds.length);
+    expect(keys).toHaveLength(allHintIds.length);
     expect(keys.every((k) => k.startsWith('extra/'))).toBe(true);
   });
 });

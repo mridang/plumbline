@@ -134,6 +134,8 @@ export function validateOpenSearch(text: string): Finding[] {
         `The OpenSearch <ShortName> must be 16 characters or fewer; it is ${shortName.text.length}.`,
       ),
     );
+  } else {
+    // A ShortName within the limit needs no finding.
   }
   const urls = descendantsByName(root, 'url');
   if (!urls.some((url) => (url.attrs['template'] ?? '').trim() !== '')) {

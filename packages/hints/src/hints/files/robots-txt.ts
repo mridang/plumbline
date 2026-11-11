@@ -5,7 +5,7 @@ import { checkFile } from './shared.js';
 
 /**
  * Checks that robots.txt follows RFC 9309, including Content-Signal lines.
- * Source: https://www.rfc-editor.org/rfc/rfc9309
+ * Source: https://www.rfc-editor.org/rfc/rfc9309.
  */
 export default defineHint({
   id: 'robots-txt',

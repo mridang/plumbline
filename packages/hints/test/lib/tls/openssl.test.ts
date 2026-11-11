@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process';
 import { afterEach, describe, expect, it } from '@jest/globals';
 import {
   countRenegotiations,
@@ -17,6 +16,7 @@ import {
   type OpensslExec,
   type OpensslRun,
 } from '../../../src/lib/tls/openssl.js';
+import { execFileAsync } from '../../helpers/exec.js';
 import { startServer } from './local-server.js';
 
 afterEach(() => {
@@ -25,7 +25,9 @@ afterEach(() => {
 });
 
 /** The tests that run the real binary need openssl on the PATH. */
-const hasOpenssl = spawnSync(openssl.command, ['version']).status === 0;
+const hasOpenssl = await execFileAsync(openssl.command, ['version'])
+  .then(() => true)
+  .catch(() => false);
 const realIt = hasOpenssl ? it : it.skip;
 
 const target = { host: '127.0.0.1', port: 4433 };
@@ -187,7 +189,8 @@ describe('probes with a fake openssl', () => {
 
   it('fails the compression test without a handshake', async () => {
     fake('connect:errno=61');
-    expect((await testCompression(target)).kind).toBe('failed');
+    const outcome = await testCompression(target);
+    expect(outcome.kind).toBe('failed');
   });
 
   it('finds missing secure renegotiation', async () => {
@@ -204,7 +207,8 @@ describe('probes with a fake openssl', () => {
 
   it('fails the secure renegotiation test without a handshake', async () => {
     fake('');
-    expect((await testSecureRenegotiation(target)).kind).toBe('failed');
+    const outcome = await testSecureRenegotiation(target);
+    expect(outcome.kind).toBe('failed');
   });
 
   it('counts accepted client renegotiations', async () => {
@@ -224,7 +228,8 @@ describe('probes with a fake openssl', () => {
 
   it('fails the client renegotiation test without a handshake', async () => {
     fake('');
-    expect((await testClientRenegotiation(target)).kind).toBe('failed');
+    const outcome = await testClientRenegotiation(target);
+    expect(outcome.kind).toBe('failed');
   });
 
   it('finds a missing extended master secret', async () => {
@@ -249,7 +254,8 @@ describe('probes with a fake openssl', () => {
 
   it('fails the EMS test without a handshake', async () => {
     fake('');
-    expect((await testExtendedMasterSecret(target)).kind).toBe('failed');
+    const outcome = await testExtendedMasterSecret(target);
+    expect(outcome.kind).toBe('failed');
   });
 
   it('finds accepted early data', async () => {
@@ -278,7 +284,8 @@ describe('probes with a fake openssl', () => {
 
   it('fails the 0-RTT test when the session cannot be resumed', async () => {
     fake('no resumption');
-    expect((await testZeroRtt(target)).kind).toBe('failed');
+    const outcome = await testZeroRtt(target);
+    expect(outcome.kind).toBe('failed');
   });
 
   it('stops the 0-RTT test when the second run cannot start', async () => {
@@ -369,7 +376,7 @@ describe('probes with the real openssl against a local server', () => {
       expect(outcome.kind).toBe('ok');
       expect(outcome.kind === 'ok' ? outcome.value : 0).toBeGreaterThan(0);
     },
-    30000,
+    30_000,
   );
 
   realIt('fails when nothing listens', async () => {

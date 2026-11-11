@@ -91,14 +91,17 @@ const deliver = (
 
 describe('POST /webhooks/github', () => {
   it('refuses a delivery with a wrong or missing signature', async () => {
-    expect((await deliver('push', {}, 'sha256=00')).status).toBe(401);
-    expect((await deliver('push', {}, null)).status).toBe(401);
+    const wrongSignature = await deliver('push', {}, 'sha256=00');
+    expect(wrongSignature.status).toBe(401);
+    const noSignature = await deliver('push', {}, null);
+    expect(noSignature.status).toBe(401);
   });
 
   it('answers 503 when GitHub is not set up', async () => {
     restore();
     restore = installCloudflareContext(made.d1, {});
-    expect((await deliver('push', {})).status).toBe(503);
+    const response = await deliver('push', {});
+    expect(response.status).toBe(503);
   });
 
   it('answers 400 to a signed body that is not JSON', async () => {
@@ -114,7 +117,8 @@ describe('POST /webhooks/github', () => {
   });
 
   it('acknowledges a delivery with no installation and does nothing', async () => {
-    expect((await deliver('ping', { zen: 'x' })).status).toBe(202);
+    const response = await deliver('ping', { zen: 'x' });
+    expect(response.status).toBe(202);
   });
 
   it('forgets an installation that was deleted', async () => {
@@ -134,9 +138,8 @@ describe('POST /webhooks/github', () => {
     });
     expect(res.status).toBe(202);
     await settleBackground();
-    expect(
-      (await listRepos(createDatabase(made.d1), 7)).map((r) => r.full_name),
-    ).toEqual(['acme/site']);
+    const repos = await listRepos(createDatabase(made.d1), 7);
+    expect(repos.map((r) => r.full_name)).toEqual(['acme/site']);
   });
 
   it('reads the installation again when a repository is deleted, archived, renamed or moved, and not when it is created', async () => {
@@ -177,7 +180,9 @@ describe('POST /webhooks/github', () => {
     await settleBackground();
     expect(requested).toEqual([]);
   });
+});
 
+describe('POST /webhooks/github, deployment_status', () => {
   describe('deployment_status', () => {
     const deployment = (
       state = 'success',
@@ -304,21 +309,23 @@ describe('POST /webhooks/github', () => {
       restore();
       restore = installCloudflareContext(made.d1, GITHUB_ENV);
       jest.spyOn(console, 'error').mockImplementation(() => undefined);
-      expect((await deliver('deployment_status', deployment())).status).toBe(
-        202,
-      );
+      const response = await deliver('deployment_status', deployment());
+      expect(response.status).toBe(202);
     });
   });
+});
 
+describe('POST /webhooks/github, installation and configuration push', () => {
   describe('installation', () => {
     it.each(['new_permissions_accepted', 'unsuspend', 'created'])(
       'reads the installation again after %s',
       async (action) => {
         const requested = fakeGitHub(DEPLOYED_APP);
-        expect(
-          (await deliver('installation', { action, installation: { id: 5 } }))
-            .status,
-        ).toBe(202);
+        const response = await deliver('installation', {
+          action,
+          installation: { id: 5 },
+        });
+        expect(response.status).toBe(202);
         await settleBackground();
         expect(requested.length).toBeGreaterThan(0);
       },
@@ -418,7 +425,9 @@ describe('POST /webhooks/github', () => {
       expect(jobs).toEqual([]);
     });
   });
+});
 
+describe('POST /webhooks/github, issues', () => {
   describe('issues', () => {
     const issueEvent = (action: string, sender = 'someone', number = 12) => ({
       action,
@@ -458,7 +467,8 @@ describe('POST /webhooks/github', () => {
       );
 
     it('reopens an issue a person closed while the problem is still there, and counts it', async () => {
-      expect((await deliver('issues', issueEvent('closed'))).status).toBe(202);
+      const response = await deliver('issues', issueEvent('closed'));
+      expect(response.status).toBe(202);
       expect(await stored()).toMatchObject({
         state: 'open',
         signature: 'sig',
@@ -480,13 +490,15 @@ describe('POST /webhooks/github', () => {
         { number: 12, state: 'dismissed', signature: 'sig', reopens: 3 },
       );
       await deliver('issues', issueEvent('reopened'));
-      expect((await stored())?.state).toBe('open');
+      const current = await stored();
+      expect(current?.state).toBe('open');
       expect(asked).toEqual([]);
     });
 
     it('ignores what the app did itself', async () => {
       await deliver('issues', issueEvent('closed', 'plumbline-test[bot]'));
-      expect((await stored())?.state).toBe('open');
+      const current = await stored();
+      expect(current?.state).toBe('open');
       expect(asked).toEqual([]);
     });
 
@@ -499,7 +511,8 @@ describe('POST /webhooks/github', () => {
       await deliver('issues', issueEvent('closed', 'someone', 99));
       await deliver('issues', issueEvent('edited'));
       await deliver('issues', issueEvent('labeled'));
-      expect((await stored())?.state).toBe('open');
+      const current = await stored();
+      expect(current?.state).toBe('open');
       expect(asked).toEqual([]);
     });
   });

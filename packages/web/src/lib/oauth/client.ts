@@ -89,26 +89,44 @@ export function isMetadataDocumentUrl(
 ): boolean {
   const url =
     clientId.length <= MAX_CLIENT_ID_LENGTH ? parseUrl(clientId) : undefined;
+  if (url === undefined || url.origin === ownOrigin) {
+    return false;
+  }
   return (
-    url !== undefined &&
-    url.origin !== ownOrigin &&
+    isPlainHttpsAddress(url) &&
+    isPublicHostname(url.hostname) &&
+    // Dot segments, an upper-case host or a default port would make the URL
+    // we fetch differ from the client_id the client presented.
+    url.href === clientId
+  );
+}
+
+/** Whether a URL is https with a path, and has no query string, fragment or credentials. */
+function isPlainHttpsAddress(url: Readonly<URL>): boolean {
+  return (
     url.protocol === 'https:' &&
     url.pathname.length > 1 &&
     // CIMD draft §3: the URL SHOULD NOT have a query string.
     !url.href.includes('?') &&
-    !url.hash &&
-    !url.username &&
-    !url.password &&
-    url.hostname.includes('.') &&
+    hasNoFragmentOrCredentials(url)
+  );
+}
+
+/** Whether a URL has no fragment and no username or password. */
+function hasNoFragmentOrCredentials(url: Readonly<URL>): boolean {
+  return !url.hash && !url.username && !url.password;
+}
+
+/** Whether a host name is a plain public name: dotted, and not a bare IP address. */
+function isPublicHostname(hostname: string): boolean {
+  return (
+    hostname.includes('.') &&
     // `example.com.` and `example.com` are one host with two spellings; only
     // the plain one may name a client.
-    !url.hostname.endsWith('.') &&
+    !hostname.endsWith('.') &&
     // A bare IP address is never a client's public home.
-    !/^[\d.]+$/.test(url.hostname) &&
-    !url.hostname.startsWith('[') &&
-    // Dot segments, an upper-case host or a default port would make the URL
-    // we fetch differ from the client_id the client presented.
-    url.href === clientId
+    !/^[\d.]+$/.test(hostname) &&
+    !hostname.startsWith('[')
   );
 }
 
@@ -131,14 +149,21 @@ function logoOf(value: unknown): string | undefined {
     typeof value === 'string' && value.length <= MAX_CLIENT_ID_LENGTH
       ? parseUrl(value)
       : undefined;
-  return url?.protocol === 'https:' &&
-    !url.hash &&
-    !url.username &&
-    !url.password &&
-    isPublicWebUrl(url.href) &&
-    url.href === value
-    ? url.href
-    : undefined;
+  if (
+    url === undefined ||
+    url.protocol !== 'https:' ||
+    !hasNoFragmentOrCredentials(url)
+  ) {
+    return undefined;
+  }
+  return isPublicWebUrl(url.href) && url.href === value ? url.href : undefined;
+}
+
+/** A refusal of a client metadata document, in the shape both of its results share. */
+function invalidClient(
+  description: string,
+): Extract<ClientParse, { readonly ok: false }> {
+  return { ok: false, error: 'invalid_client', description };
 }
 
 /** Whether a value is a JSON object (or array) whose members can be looked up by name. */
@@ -220,6 +245,16 @@ export function isDocumentUsable(
   );
 }
 
+/** Whether a parsed `jwks_uri` is an https address with a dotted host, named exactly as written. */
+function isPlainJwksAddress(url: Readonly<URL>, written: string): boolean {
+  return (
+    url.protocol === 'https:' &&
+    hasNoFragmentOrCredentials(url) &&
+    url.hostname.includes('.') &&
+    url.href === written
+  );
+}
+
 /**
  * How a metadata document says its client authenticates: not at all (a public
  * client, the default), or by `private_key_jwt` with a `jwks_uri` over https
@@ -249,12 +284,7 @@ function documentAuth(
     typeof jwksUri !== 'string' ||
     jwksUri.length > MAX_CLIENT_ID_LENGTH ||
     !jwks ||
-    jwks.protocol !== 'https:' ||
-    jwks.hash ||
-    jwks.username ||
-    jwks.password ||
-    !jwks.hostname.includes('.') ||
-    jwks.href !== jwksUri
+    !isPlainJwksAddress(jwks, jwksUri)
   ) {
     return {
       ok: false,
@@ -297,11 +327,7 @@ export function parseClientMetadataDocument(
   document: unknown,
   url: string,
 ): ClientParse {
-  const bad = (description: string): ClientParse => ({
-    ok: false,
-    error: 'invalid_client',
-    description,
-  });
+  const bad = (description: string): ClientParse => invalidClient(description);
   if (!isRecord(document)) {
     return bad('The client metadata document is not a JSON object.');
   }
@@ -435,11 +461,7 @@ export async function fetchClientMetadata(
   fetchImpl: typeof fetch = fetch,
   ownOrigin?: string,
 ): Promise<ClientFetch> {
-  const bad = (description: string): ClientFetch => ({
-    ok: false,
-    error: 'invalid_client',
-    description,
-  });
+  const bad = (description: string): ClientFetch => invalidClient(description);
   if (!isMetadataDocumentUrl(url, ownOrigin)) {
     return bad('The client_id is not a usable metadata document URL.');
   }
@@ -500,7 +522,7 @@ export type Registration =
     };
 
 /** Registration bodies are tiny; anything bigger is refused unread. */
-export const MAX_REGISTRATION_BYTES = 8_000;
+export const MAX_REGISTRATION_BYTES = 8000;
 
 /** Read the text of an RFC 7591 registration request: size, then JSON, then the rules of {@link parseRegistration}. */
 export function parseRegistrationText(text: string): Registration {

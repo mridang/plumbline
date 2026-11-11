@@ -9,7 +9,7 @@ export const TICK_MS = 30_000;
 
 /** The listeners of the one shared clock. */
 const listeners = new Set<() => void>();
-let timer: ReturnType<typeof setInterval> | undefined;
+let timer: ReturnType<typeof setInterval> | null = null;
 
 /** Starts the shared clock with the first listener and stops it with the last. */
 function subscribe(listener: () => void): () => void {
@@ -21,9 +21,9 @@ function subscribe(listener: () => void): () => void {
   }, TICK_MS);
   return () => {
     listeners.delete(listener);
-    if (listeners.size === 0 && timer !== undefined) {
+    if (listeners.size === 0 && timer !== null) {
       clearInterval(timer);
-      timer = undefined;
+      timer = null;
     }
   };
 }
@@ -46,6 +46,7 @@ export function RelativeTime({
 }: Readonly<{
   /** The moment, as an ISO timestamp. */
   at: string;
+
   /**
    * The server's clock when the page was made, in milliseconds. Leave it out
    * only where nothing is drawn on the server (a result that appears after a

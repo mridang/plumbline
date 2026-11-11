@@ -23,7 +23,7 @@ describe('contentTypeOf', () => {
   it('splits the media type from the charset', () => {
     expect(contentTypeOf('Text/HTML; charset="UTF-8"')).toEqual({
       mediaType: 'text/html',
-      charset: 'utf-8',
+      charset: new TextDecoder().encoding,
     });
     expect(contentTypeOf(undefined)).toEqual({ mediaType: '', charset: '' });
   });
@@ -52,7 +52,7 @@ describe('fetchResource', () => {
             headers: { location: 'https://b.example/page' },
           }),
         'https://b.example/page': () =>
-          new Response(Buffer.from('caf\xe9', 'latin1'), {
+          new Response(Buffer.from('caf\u00E9', 'latin1'), {
             status: 200,
             headers: { 'content-type': 'text/html; charset=iso-8859-1' },
           }),
@@ -63,7 +63,7 @@ describe('fetchResource', () => {
     expect(data.response.statusCode).toBe(200);
     expect(data.response.mediaType).toBe('text/html');
     expect(data.response.body.content).toBe('café');
-    expect(data.response.body.rawContent.length).toBe(4);
+    expect(data.response.body.rawContent).toHaveLength(4);
     expect(data.request).toEqual({
       headers: { accept: 'text/html' },
       url: 'https://b.example/page',

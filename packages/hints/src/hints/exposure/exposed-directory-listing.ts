@@ -36,7 +36,7 @@ export default defineHint({
             site,
             path,
             `Directory listing is enabled for ${path}, disclosing its contents.`,
-            body.replace(/\s+/g, ' ').trim(),
+            body.replaceAll(/\s+/g, ' ').trim(),
           );
           // One finding is enough to make the point; a misconfigured server
           // usually lists every directory.

@@ -1,23 +1,25 @@
 import { describe, expect, it } from '@jest/globals';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+
+import { pathExists } from './helpers/fs.js';
 
 /** The skills package, and the repository it lives in. */
 const PACKAGE = fileURLToPath(new URL('..', import.meta.url));
 const REPOSITORY = path.join(PACKAGE, '..', '..');
 
 /** A JSON file of the package or the repository. */
-function json(...parts: string[]): Record<string, unknown> {
-  return JSON.parse(readFileSync(path.join(...parts), 'utf8')) as Record<
+async function json(...parts: string[]): Promise<Record<string, unknown>> {
+  return JSON.parse(await readFile(path.join(...parts), 'utf8')) as Record<
     string,
     unknown
   >;
 }
 
 /** The front matter of a Markdown file, as `key: value` pairs. */
-function frontMatter(file: string): Record<string, string> {
-  const text = readFileSync(file, 'utf8');
+async function frontMatter(file: string): Promise<Record<string, string>> {
+  const text = await readFile(file, 'utf8');
   const block = /^---\n([\s\S]*?)\n---\n/.exec(text)?.[1] ?? '';
   return Object.fromEntries(
     block.split('\n').flatMap((line) => {
@@ -29,7 +31,7 @@ function frontMatter(file: string): Record<string, string> {
   );
 }
 
-const SKILLS = readdirSync(path.join(PACKAGE, 'skills'));
+const SKILLS = await readdir(path.join(PACKAGE, 'skills'));
 
 describe('the skills', () => {
   it('include the plumbline skill', () => {
@@ -38,23 +40,33 @@ describe('the skills', () => {
 
   it.each(SKILLS)(
     '%s is named after its folder and says when to use it',
-    (name) => {
-      const meta = frontMatter(path.join(PACKAGE, 'skills', name, 'SKILL.md'));
+    async (name) => {
+      const meta = await frontMatter(
+        path.join(PACKAGE, 'skills', name, 'SKILL.md'),
+      );
       expect(meta['name']).toBe(name);
       expect((meta['description'] ?? '').length).toBeGreaterThan(40);
     },
   );
 
-  it.each(SKILLS)('%s runs the published CLI', (name) => {
+  it.each(SKILLS)('%s runs the published CLI', async (name) => {
     expect(
-      readFileSync(path.join(PACKAGE, 'skills', name, 'SKILL.md'), 'utf8'),
+      await readFile(path.join(PACKAGE, 'skills', name, 'SKILL.md'), 'utf8'),
     ).toContain('npx @mridang/plumbline scan');
   });
 });
 
+const PLUGIN = await json(PACKAGE, '.claude-plugin', 'plugin.json');
+const PKG = await json(PACKAGE, 'package.json');
+const MARKETPLACE = await json(
+  REPOSITORY,
+  '.claude-plugin',
+  'marketplace.json',
+);
+
 describe('the Claude Code plugin', () => {
-  const plugin = json(PACKAGE, '.claude-plugin', 'plugin.json');
-  const pkg = json(PACKAGE, 'package.json');
+  const plugin = PLUGIN;
+  const pkg = PKG;
 
   it('is named plumbline and leaves its version to the package release', () => {
     expect(plugin['name']).toBe('plumbline');
@@ -65,20 +77,18 @@ describe('the Claude Code plugin', () => {
     expect(pkg['files']).toEqual(['.claude-plugin', 'commands', 'skills']);
   });
 
-  it('has an audit command that runs the CLI with what it is given', () => {
+  it('has an audit command that runs the CLI with what it is given', async () => {
     const file = path.join(PACKAGE, 'commands', 'audit.md');
-    expect(frontMatter(file)['allowed-tools']).toBe(
-      'Bash(npx @mridang/plumbline:*)',
-    );
-    expect(readFileSync(file, 'utf8')).toContain(
+    const meta = await frontMatter(file);
+    expect(meta['allowed-tools']).toBe('Bash(npx @mridang/plumbline:*)');
+    expect(await readFile(file, 'utf8')).toContain(
       'npx @mridang/plumbline scan $ARGUMENTS --format json --fail-on none',
     );
   });
 });
 
 describe('the marketplace', () => {
-  const marketplace = json(REPOSITORY, '.claude-plugin', 'marketplace.json');
-  const plugins = marketplace['plugins'] as { name: string; source: string }[];
+  const plugins = MARKETPLACE['plugins'] as { name: string; source: string }[];
 
   it('lists the plugin from this package', () => {
     expect(plugins).toEqual([
@@ -89,10 +99,10 @@ describe('the marketplace', () => {
     ]);
   });
 
-  it('points at a folder that holds the plugin', () => {
+  it('points at a folder that holds the plugin', async () => {
     for (const plugin of plugins) {
       expect(
-        existsSync(
+        await pathExists(
           path.join(REPOSITORY, plugin.source, '.claude-plugin', 'plugin.json'),
         ),
       ).toBe(true);

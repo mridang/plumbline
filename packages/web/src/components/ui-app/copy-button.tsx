@@ -28,11 +28,10 @@ export function CopyButton({
     <button
       type="button"
       aria-label={copied ? `${label}: copied` : `Copy ${label}`}
-      title={copied ? 'Copied' : `Copy ${label}`}
       onClick={() => {
         void navigator.clipboard?.writeText(value).then(() => {
           setCopied(true);
-          setTimeout(() => setCopied(false), COPIED_MS);
+          return setTimeout(() => setCopied(false), COPIED_MS);
         });
       }}
       className={cn(

@@ -35,6 +35,7 @@ export interface OgRule {
   /** Extra topic groups; `opengraph` and `social` are always added. */
   extraGroups?: readonly Group[];
   category?: Category;
+
   /**
    * Meta tag that is wrong when it is present; the finding then carries that
    * tag. When the tag is absent the finding carries `<head>` and `add`.
@@ -42,11 +43,13 @@ export interface OgRule {
   at?: string;
   /** Tag(s) to suggest when the finding is about something missing. */
   add?: string;
+
   /**
    * Reports against the resolved `og:image` URL instead of the page, keeping
    * the `og:image` tag as the element.
    */
   image?: boolean;
+
   /**
    * The rule reads the fetched `og:image` bytes, so the image must be
    * downloaded before `run` is called. Left out for rules that only read tags
@@ -54,6 +57,7 @@ export interface OgRule {
    * network request is made for them — matching the old lazy behaviour.
    */
   fetchImage?: boolean;
+
   /**
    * The rule itself: the exported pure function from `./checks.ts`. It reads
    * the fields of {@link OgInput} it needs and returns the findings (with their

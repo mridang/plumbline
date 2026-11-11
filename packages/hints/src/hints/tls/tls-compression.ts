@@ -35,6 +35,8 @@ export async function checkTlsCompression({
     );
   } else if (outcome.value === 'cannot-compress') {
     couldNotTest('this openssl was built without TLS compression support');
+  } else {
+    // The server does not negotiate compression, so nothing is reported.
   }
 }
 

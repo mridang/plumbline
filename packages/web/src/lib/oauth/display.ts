@@ -52,8 +52,8 @@ export function sanitiseDisplayName(
     .normalize('NFKC')
     // Line and paragraph separators and tabs are whitespace, not invisible;
     // turn them into spaces before the invisible characters are dropped.
-    .replace(/\s+/gu, ' ')
-    .replace(INVISIBLE, '')
+    .replaceAll(/\s+/gu, ' ')
+    .replaceAll(INVISIBLE, '')
     .trim();
   const capped = [...cleaned].slice(0, maxLength).join('').trim();
   return capped || fallback;
@@ -118,9 +118,9 @@ export const APP_SCHEME_WARNING =
 function asciiOnly(text: string): string {
   return [...text]
     .map((ch) =>
-      /^[\x21-\x7e]$/.test(ch)
+      /^[\u0021-\u007E]$/.test(ch)
         ? ch
-        : `\\u{${(ch.codePointAt(0) ?? 0).toString(16)}}`,
+        : String.raw`\u{${(ch.codePointAt(0) ?? 0).toString(16)}}`,
     )
     .join('');
 }
@@ -129,6 +129,9 @@ function asciiOnly(text: string): string {
 function sameSite(a: string, b: string): boolean {
   return a === b || a.endsWith(`.${b}`) || b.endsWith(`.${a}`);
 }
+
+/** The identity used when a caller does not say who published the app. */
+const UNVERIFIED_CLIENT: Readonly<ClientIdentity> = { kind: 'unverified' };
 
 /**
  * Describe the address approving will send the person to: the full text in its
@@ -140,21 +143,21 @@ function sameSite(a: string, b: string): boolean {
  */
 export function describeRedirect(
   redirectUri: string,
-  identity: Readonly<ClientIdentity> = { kind: 'unverified' },
+  identity: Readonly<ClientIdentity> = UNVERIFIED_CLIENT,
 ): RedirectDescription {
   const kind = redirectKind(redirectUri);
   const url = parseUrl(redirectUri);
   const short = url ? url.host || url.protocol : asciiOnly(redirectUri);
-  const warnings: Readonly<Record<RedirectKind, string | undefined>> = {
-    web: undefined,
+  const warnings: Readonly<Partial<Record<RedirectKind, string>>> = {
     loopback: LOOPBACK_WARNING,
     private: PRIVATE_WARNING,
     app: APP_SCHEME_WARNING,
   };
+  const webOrPrivate = kind === 'web' || kind === 'private';
   const elsewhere =
     identity.kind === 'domain' &&
     url !== undefined &&
-    (kind === 'web' || kind === 'private') &&
+    webOrPrivate &&
     !sameSite(
       url.hostname,
       parseUrl(`https://${identity.domain}`)?.hostname ?? '',

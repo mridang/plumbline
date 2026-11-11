@@ -41,10 +41,10 @@ function candidates(
       env['PROGRAMFILES(X86)'],
     ].filter((root): root is string => !!root);
     const apps = [
-      'Google\\Chrome\\Application\\chrome.exe',
-      'Chromium\\Application\\chrome.exe',
-      'Microsoft\\Edge\\Application\\msedge.exe',
-      'BraveSoftware\\Brave-Browser\\Application\\brave.exe',
+      String.raw`Google\Chrome\Application\chrome.exe`,
+      String.raw`Chromium\Application\chrome.exe`,
+      String.raw`Microsoft\Edge\Application\msedge.exe`,
+      String.raw`BraveSoftware\Brave-Browser\Application\brave.exe`,
     ];
     return roots.flatMap((root) =>
       apps.map((app) => path.win32.join(root, app)),
@@ -69,16 +69,20 @@ function candidates(
  * the LaunchServices database in a way that no longer finds Chrome, so the
  * CLI looks in the well-known places itself and only leaves the connector to
  * search when none of them exists.
- *
- * @param lookup The platform, environment and a file-exists test.
+ * @param lookup - The platform, environment and a file-exists test.
  * @returns The binary to use, or `undefined` to let the connector search.
  */
-export function findBrowser(
-  lookup: BrowserLookup = {
+/** The lookup against the machine this runs on. */
+function systemLookup(): BrowserLookup {
+  return {
     platform: process.platform,
     env: process.env,
     exists: existsSync,
-  },
+  };
+}
+
+export function findBrowser(
+  lookup: BrowserLookup = systemLookup(),
 ): string | undefined {
   for (const name of ENV_NAMES) {
     const value = lookup.env[name];
@@ -88,5 +92,7 @@ export function findBrowser(
       return value;
     }
   }
-  return candidates(lookup.platform, lookup.env).find(lookup.exists);
+  return candidates(lookup.platform, lookup.env).find((file) =>
+    lookup.exists(file),
+  );
 }

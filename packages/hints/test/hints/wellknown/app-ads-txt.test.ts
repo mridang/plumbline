@@ -24,13 +24,15 @@ describe('app-ads-txt', () => {
       hint,
       serve('example.com, 1, DIRECT', 'application/json'),
     );
-    expect(problems.map((p) => p.message).join()).toContain(
+    expect(problems.map((p) => p.message).join(',')).toContain(
       "served as 'application/json'",
     );
   });
 
   it('reports a malformed record', async () => {
     const problems = await runHint(hint, serve('example.com'));
-    expect(problems.map((p) => p.message).join()).toContain('Malformed record');
+    expect(problems.map((p) => p.message).join(',')).toContain(
+      'Malformed record',
+    );
   });
 });

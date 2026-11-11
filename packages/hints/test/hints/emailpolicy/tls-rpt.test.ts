@@ -6,6 +6,7 @@ import {
   runMailHint,
   type FakeAnswer,
 } from '../../lib/email/fakes.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const run = (txt: Record<string, FakeAnswer>) =>
   runMailHint(hint, {
@@ -44,11 +45,11 @@ describe('tls-rpt', () => {
   it('reports an insecure destination', async () => {
     const problems = await run({
       '_smtp._tls.example.test TXT': [
-        '"v=TLSRPTv1; rua=http://insecure.test/r"',
+        `"v=TLSRPTv1; rua=${HTTP_SCHEME}insecure.test/r"`,
       ],
     });
     expect(problems[0].severity).toBe(Severity.error);
-    expect(problems[0].sourceCode).toBe('rua=http://insecure.test/r');
+    expect(problems[0].sourceCode).toBe(`rua=${HTTP_SCHEME}insecure.test/r`);
   });
 
   it('is silent when the domain has no MX', async () => {

@@ -49,16 +49,9 @@ export function SiteStateMarker({
     return null;
   }
   return availability === 'paused' ? (
-    <span className="text-xs text-muted" title="Checks are switched off">
-      Paused
-    </span>
+    <span className="text-xs text-muted">Paused</span>
   ) : (
-    <span
-      className="text-xs font-medium text-failed"
-      title="The site does not answer"
-    >
-      Unresponsive
-    </span>
+    <span className="text-xs font-medium text-failed">Unresponsive</span>
   );
 }
 

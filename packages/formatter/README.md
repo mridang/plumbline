@@ -33,7 +33,7 @@ npx hint https://example.com/
 
 The report is written to `hint-report/<site>.html` in the current directory (for example `hint-report/https-example-com.html`), and the path is printed when the scan ends.
 
-The [`plumbline` CLI](../cli/README.md) writes the same report with `plumbline scan example.com --format html`, and the [Docker image](../docker/README.md) writes it when given an output directory.
+The [`plumbline` CLI](../cli/readme.md) writes the same report with `plumbline scan example.com --format html`, and the [Docker image](../docker/README.md) writes it when given an output directory.
 
 ## Development
 

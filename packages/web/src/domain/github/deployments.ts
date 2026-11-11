@@ -38,6 +38,8 @@ export function stripJsonComments(text: string): string {
         i += 1;
       } else if (char === '"') {
         inString = false;
+      } else {
+        // Any other character inside a string is copied as it is.
       }
     } else if (char === '"') {
       inString = true;
@@ -60,7 +62,7 @@ export function stripJsonComments(text: string): string {
       out += char;
     }
   }
-  return out.replace(/,(\s*[}\]])/g, '$1');
+  return out.replaceAll(/,(\s*[}\]])/g, '$1');
 }
 
 /** The public host a route pattern serves, or undefined for a wildcard or anything else. */
@@ -68,7 +70,7 @@ export function hostOfPattern(pattern: string): string | undefined {
   const bare = pattern
     .trim()
     .replace(/^[a-z]+:\/\//i, '')
-    .split(/[/?#]/)[0];
+    .split(/[/?#]/, 1)[0];
   if (!bare || bare.includes('*') || bare.endsWith('.workers.dev')) {
     return undefined;
   }
@@ -78,11 +80,9 @@ export function hostOfPattern(pattern: string): string | undefined {
 
 /** The route patterns of a parsed `routes`/`route` value. */
 function patternsOf(value: unknown): string[] {
-  const list = Array.isArray(value)
+  const list: unknown[] = Array.isArray(value)
     ? value
-    : value === undefined
-      ? []
-      : [value];
+    : [value].filter((item) => item !== undefined);
   return list.flatMap((entry): string[] => {
     if (typeof entry === 'string') {
       return [entry];
@@ -108,14 +108,63 @@ function jsonPatterns(text: string): string[] {
   }
 }
 
+const LINE_BREAKS = '\n\r\u2028\u2029';
+
+/** Where the line holding `index` starts when only whitespace precedes it, else -1. */
+function leadingLineStart(text: string, index: number): number {
+  let at = index;
+  while (
+    at > 0 &&
+    /\s/.test(text.charAt(at - 1)) &&
+    !LINE_BREAKS.includes(text.charAt(at - 1))
+  ) {
+    at -= 1;
+  }
+  return at === 0 || LINE_BREAKS.includes(text.charAt(at - 1)) ? at : -1;
+}
+
+/** The text before the first line that opens an `[env.*]` table. */
+function beforeEnvTable(text: string): string {
+  for (
+    let hit = text.indexOf('env.');
+    hit !== -1;
+    hit = text.indexOf('env.', hit + 1)
+  ) {
+    let open = hit;
+    while (open > 0 && text[open - 1] === '[') {
+      open -= 1;
+    }
+    const start = open === hit ? -1 : leadingLineStart(text, open);
+    if (start !== -1) {
+      return text.slice(0, start);
+    }
+  }
+  return text;
+}
+
+/** The matches of `pattern` (global) that begin a line, ignoring indentation. */
+function lineMatches(text: string, pattern: RegExp): RegExpExecArray[] {
+  const found: RegExpExecArray[] = [];
+  pattern.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(text)) !== null) {
+    if (leadingLineStart(text, match.index) === -1) {
+      pattern.lastIndex = match.index + 1;
+    } else {
+      found.push(match);
+    }
+  }
+  return found;
+}
+
 /** The top-level routes of a `wrangler.toml`, before any `[env.*]` table. */
 function tomlPatterns(text: string): string[] {
-  const top = text.split(/^\s*\[+env\./m)[0] ?? '';
+  const top = beforeEnvTable(text);
   const out: string[] = [];
-  for (const match of top.matchAll(/^\s*(?:pattern|route)\s*=\s*"([^"]+)"/gm)) {
+  for (const match of lineMatches(top, /(?:pattern|route)\s*=\s*"([^"]+)"/g)) {
     out.push(match[1] ?? '');
   }
-  for (const array of top.matchAll(/^\s*routes\s*=\s*\[([^\]]*)\]/gm)) {
+  for (const array of lineMatches(top, /routes\s*=\s*\[([^\]]*)\]/g)) {
     for (const item of (array[1] ?? '').matchAll(/"([^"]+)"/g)) {
       out.push(item[1] ?? '');
     }
@@ -128,7 +177,7 @@ export function wranglerHosts(path: string, text: string): string[] {
   const patterns = path.endsWith('.toml')
     ? tomlPatterns(text)
     : jsonPatterns(text);
-  return unique(patterns.map(hostOfPattern));
+  return unique(patterns.map((pattern) => hostOfPattern(pattern)));
 }
 
 /**
@@ -201,7 +250,7 @@ export interface RepoFiles {
   /** The text of a file. */
   read(path: string): Promise<string>;
   /** The repository's website field. */
-  readonly homepage?: string | null | undefined;
+  readonly homepage?: string | null;
 }
 
 /**
@@ -213,7 +262,9 @@ export interface RepoFiles {
  * read is skipped.
  */
 export async function deploymentHosts(repo: RepoFiles): Promise<string[]> {
-  const files = repo.paths.filter(isWranglerPath).slice(0, MAX_WRANGLER_FILES);
+  const files = repo.paths
+    .filter((path) => isWranglerPath(path))
+    .slice(0, MAX_WRANGLER_FILES);
   const found = await Promise.all(
     files.map(async (path) => {
       try {
@@ -253,7 +304,7 @@ export function touchesWrangler(delivery: Readonly<Delivery>): boolean {
       ...(commit.added ?? []),
       ...(commit.modified ?? []),
       ...(commit.removed ?? []),
-    ].some(isWranglerPath),
+    ].some((path) => isWranglerPath(path)),
   );
 }
 

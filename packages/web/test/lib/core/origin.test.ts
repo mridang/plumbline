@@ -5,6 +5,7 @@ import {
   appOriginFromHeaders,
   originOfSetting,
 } from '@/lib/core/origin';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 describe('without a Cloudflare context (tests, scripts)', () => {
   it("uses the request's own origin as the app origin", () => {
@@ -23,7 +24,7 @@ describe('appOriginFromHeaders', () => {
       appOriginFromHeaders(
         new Headers({ host: 'app.test', 'x-forwarded-proto': 'http' }),
       ),
-    ).toBe('http://app.test');
+    ).toBe(`${HTTP_SCHEME}app.test`);
   });
 
   it('is http on localhost, where there is no TLS', () => {

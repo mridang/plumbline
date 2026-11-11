@@ -89,7 +89,7 @@ export default defineHint({
           severity: Severity.error,
           // Innermost record first, as Internet.nl shows them reversed.
           codeSnippet: [...result.records]
-            .reverse()
+            .toReversed()
             .map(({ domain, record }) => `${domain}: ${record}`)
             .join('\n'),
         });

@@ -40,10 +40,7 @@ export function BadgeMenu({
         <img src={image} alt={`Plumbline badge for ${repo}`} height={20} />
       </div>
       <div className="flex items-center gap-1 rounded-control border border-field bg-surface py-1 pr-1 pl-3">
-        <code
-          aria-label={`Markdown for the badge of ${repo}`}
-          className="min-w-0 flex-1 truncate font-mono text-xs"
-        >
+        <code className="min-w-0 flex-1 truncate font-mono text-xs">
           {markdown}
         </code>
         <CopyButton value={markdown} label="the badge Markdown" />

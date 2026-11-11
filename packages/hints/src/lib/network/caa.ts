@@ -35,8 +35,26 @@ export function formatCaa(record: CaaRecord, name: string): string {
 
 /** Decodes the hex of a generic `\# n hex` record into bytes. */
 function fromGeneric(data: string): Buffer | null {
-  const m = /^\\#\s+\d+\s*([0-9a-fA-F\s]*)$/.exec(data.trim());
-  return m ? Buffer.from(m[1].replace(/\s+/g, ''), 'hex') : null;
+  const text = data.trim();
+  if (!text.startsWith(String.raw`\#`)) {
+    return null;
+  }
+  const afterMarker = text.slice(2).trimStart();
+  if (afterMarker.length === text.length - 2) {
+    return null;
+  }
+  const digits = afterMarker.search(/\D/);
+  const length = digits === -1 ? afterMarker.length : digits;
+  if (length === 0) {
+    return null;
+  }
+  let hex = afterMarker.slice(length);
+  if (/^\s/.test(hex)) {
+    hex = hex.slice(1);
+  }
+  return /^[\da-fA-F\s]*$/.test(hex)
+    ? Buffer.from(hex.replaceAll(/\s+/g, ''), 'hex')
+    : null;
 }
 
 /** Parses a CAA record in presentation (`0 issue "ca.example"`) or generic form. */
@@ -54,26 +72,26 @@ export function parseCaa(data: string): CaaRecord | null {
       value: generic.subarray(2 + tagLength).toString('utf8'),
     };
   }
-  const m = /^(\d+)\s+([A-Za-z0-9]+)\s+(.*)$/s.exec(data.trim());
+  const m = /^(\d+)\s+([A-Za-z0-9]+)\s(.*)$/s.exec(data.trim());
   if (!m) {
     return null;
   }
   let value = m[3].trim();
   if (value.startsWith('"') && value.endsWith('"') && value.length >= 2) {
-    value = value.slice(1, -1).replace(/\\(.)/g, '$1');
+    value = value.slice(1, -1).replaceAll(/\\(.)/g, '$1');
   }
   return { flags: Number(m[1]), tag: m[2], value };
 }
 
 const LABEL = '[A-Za-z0-9](?:-*[A-Za-z0-9])*';
-const DOMAIN = new RegExp(`^${LABEL}(?:\\.${LABEL})*$`);
+const DOMAIN = new RegExp(String.raw`^${LABEL}(?:\.${LABEL})*$`);
 const PARAMETER = new RegExp(
-  `^${LABEL}[ \\t]*=[ \\t]*[\\x21-\\x3A\\x3C-\\x7E]*$`,
+  String.raw`^${LABEL}[ \t]*=[ \t]*[\x21-\x3A\x3C-\x7E]*$`,
 );
 const EMAIL = /^[^\s@;<>,"]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/;
-const PHONE = /^\+[0-9.()-]*[0-9][0-9.()-]*(?:;.*)?$/;
+const PHONE = /^\+(?=[\d.()-]*\d)[\d.()-]*(?:;.*)?$/;
 
-/** https://www.iana.org/assignments/acme/acme.xhtml#acme-validation-methods */
+/** Https://www.iana.org/assignments/acme/acme.xhtml#acme-validation-methods */
 const ACME_METHODS = new Set([
   'http-01',
   'dns-01',
@@ -98,23 +116,33 @@ function checkIssueValue(value: string): string | null {
   const parameters = rest.join(';').trim();
   if (rest.length > 0 && parameters !== '') {
     for (const parameter of parameters.split(';').map((p) => p.trim())) {
-      if (!PARAMETER.test(parameter)) {
-        return 'invalid-property-syntax';
+      const error = checkIssueParameter(parameter);
+      if (error !== null) {
+        return error;
       }
-      const [name, ...v] = parameter.split('=');
-      if (name.trim() === 'validationmethods') {
-        // RFC 8657 section 4: comma separated, known or `ca-` prefixed.
-        const methods = v.join('=').trim();
-        const labels = methods === '' ? [] : methods.split(',');
-        for (const label of labels) {
-          if (
-            !/^[A-Za-z0-9-]+$/.test(label) ||
-            (!ACME_METHODS.has(label) && !label.startsWith('ca-'))
-          ) {
-            return 'invalid-parameter-validation-methods';
-          }
-        }
-      }
+    }
+  }
+  return null;
+}
+
+/** Validates one `tag=value` parameter of an issue property. Returns an error id or null. */
+function checkIssueParameter(parameter: string): string | null {
+  if (!PARAMETER.test(parameter)) {
+    return 'invalid-property-syntax';
+  }
+  const [name, ...v] = parameter.split('=');
+  if (name.trim() !== 'validationmethods') {
+    return null;
+  }
+  // RFC 8657 section 4: comma separated, known or `ca-` prefixed.
+  const methods = v.join('=').trim();
+  const labels = methods === '' ? [] : methods.split(',');
+  for (const label of labels) {
+    if (
+      !/^[A-Za-z0-9-]+$/.test(label) ||
+      (!ACME_METHODS.has(label) && !label.startsWith('ca-'))
+    ) {
+      return 'invalid-parameter-validation-methods';
     }
   }
   return null;
@@ -142,26 +170,36 @@ function checkIodef(value: string): string | null {
 /** Messages follow the Internet.nl tech table wording. */
 function describeError(id: string, record: CaaRecord): string {
   switch (id) {
-    case MISSING_ISSUE:
+    case MISSING_ISSUE: {
       return "Error: Required 'issue' property missing";
-    case 'invalid-flags-reserved-bits':
+    }
+    case 'invalid-flags-reserved-bits': {
       return `Error: Invalid flags ${record.flags} (only 0 and 128 are allowed)`;
-    case 'invalid-reserved-property':
+    }
+    case 'invalid-reserved-property': {
       return `Error: The '${record.tag}' property is reserved`;
-    case 'invalid-unknown-property':
+    }
+    case 'invalid-unknown-property': {
       return `Error: Unknown property '${record.tag}'`;
-    case 'invalid-parameter-validation-methods':
+    }
+    case 'invalid-parameter-validation-methods': {
       return `Error: Invalid validationmethods parameter in '${record.tag}': ${record.value}`;
-    case 'invalid-property-iodef-value':
+    }
+    case 'invalid-property-iodef-value': {
       return `Error: Invalid iodef value '${record.value}' (use https or mailto)`;
-    case 'invalid-property-contactemail-value':
+    }
+    case 'invalid-property-contactemail-value': {
       return `Error: Invalid contactemail value '${record.value}'`;
-    case 'invalid-property-contactphone-value':
+    }
+    case 'invalid-property-contactphone-value': {
       return `Error: Invalid contactphone value '${record.value}'`;
-    case 'invalid-property-issuemail-value':
+    }
+    case 'invalid-property-issuemail-value': {
       return `Error: Invalid issuemail value '${record.value}'`;
-    default:
+    }
+    default: {
       return `Error: Invalid syntax in '${record.tag}': ${record.value}`;
+    }
   }
 }
 
@@ -174,28 +212,34 @@ export function validateCaaRecord(record: CaaRecord): string | null {
   switch (tag) {
     case 'issue':
     case 'issuewild':
-    case 'issuevmc':
+    case 'issuevmc': {
       return checkIssueValue(record.value);
+    }
     case 'issuemail': {
       const error = checkIssueValue(record.value);
       return error === null ? null : 'invalid-property-issuemail-value';
     }
-    case 'iodef':
+    case 'iodef': {
       return checkIodef(record.value);
-    case 'contactemail':
+    }
+    case 'contactemail': {
       return EMAIL.test(record.value)
         ? null
         : 'invalid-property-contactemail-value';
-    case 'contactphone':
+    }
+    case 'contactphone': {
       return PHONE.test(record.value)
         ? null
         : 'invalid-property-contactphone-value';
+    }
     case 'auth':
     case 'path':
-    case 'policy':
+    case 'policy': {
       return 'invalid-reserved-property';
-    default:
+    }
+    default: {
       return 'invalid-unknown-property';
+    }
   }
 }
 

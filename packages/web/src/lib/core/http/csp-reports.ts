@@ -51,13 +51,14 @@ function short(value: unknown, limit: number): string {
     return '';
   }
   // Control characters (a line break in a log line could pass for another line) become spaces.
-  const printable = [...value.slice(0, limit * 2)]
+  const head = value.slice(0, limit * 2);
+  const printable = [...head]
     .map((char) => {
       const code = char.codePointAt(0) ?? 0;
       return code < 32 || code === 127 ? ' ' : char;
     })
     .join('');
-  return printable.replace(/\s+/g, ' ').trim().slice(0, limit);
+  return printable.replaceAll(/\s+/g, ' ').trim().slice(0, limit);
 }
 
 /** The first of `keys` in `body` that holds text. */
@@ -139,6 +140,15 @@ function summarise(
   };
 }
 
+/** The single report a body in the one-report format carries, if it does. */
+function singleReport(
+  body: unknown,
+): readonly (readonly [string, Readonly<Record<string, unknown>>])[] {
+  return isRecord(body) && isRecord(body['csp-report'])
+    ? [['csp-violation', body['csp-report']]]
+    : [];
+}
+
 /**
  * The reports in a request body, whichever format it came in, as summaries,
  * leaving out anything an extension caused and keeping at most
@@ -154,9 +164,7 @@ export function summariseReports(body: unknown): readonly ReportSummary[] {
           ? [[short(entry['type'], 40), entry['body']]]
           : [],
       )
-    : isRecord(body) && isRecord(body['csp-report'])
-      ? [['csp-violation', body['csp-report']]]
-      : [];
+    : singleReport(body);
   return entries
     .slice(0, MAX_REPORTS_PER_REQUEST)
     .filter(([, report]) => !fromExtension(report))

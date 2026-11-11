@@ -40,6 +40,8 @@ export async function checkCertSignature({
     } else if (rating === 'phase-out') {
       phaseOut.push(`${cert.commonName}: ${name}`);
       phaseOutEvidence.push(evidence);
+    } else {
+      // Any other rating needs no finding.
     }
   }
   if (bad.length > 0) {

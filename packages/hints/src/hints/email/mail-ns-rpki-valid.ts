@@ -44,6 +44,8 @@ export default defineHint({
             `${host}: At least one IP address of the name servers of your mail server has a \`NotFound\` validation state. There is *no* RPKI Route Origin Authorisation (ROA) published for its route announcement.`,
             { severity: Severity.error, codeSnippet: rpkiLines(offenders) },
           );
+        } else {
+          // Any other verdict needs no report.
         }
       }
     });

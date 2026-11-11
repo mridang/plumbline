@@ -32,11 +32,19 @@ const SOURCE_RANK: Readonly<Record<SiteSource, number>> = {
   manual: 3,
 };
 
+/** The sources a stored value may hold besides manual. */
+const STORED_SOURCES: readonly SiteSource[] = [
+  'config',
+  'deployment',
+  'fallback',
+];
+
+/** The origin of a domain added by hand. */
+const MANUAL_ORIGIN: SiteOrigin = { source: 'manual' };
+
 /** The sources a site can have, as a stored value is checked against. */
 function sourceOf(value: string): SiteSource {
-  return value === 'config' || value === 'deployment' || value === 'fallback'
-    ? value
-    : 'manual';
+  return STORED_SOURCES.find((source) => source === value) ?? 'manual';
 }
 
 /** What found a site: the source, and for a deployment the environment that reported it. */
@@ -128,7 +136,7 @@ export async function listDomains(
     .from(domains)
     .where(eq(domains.user_id, userId))
     .orderBy(asc(domains.created_at), asc(domains.id));
-  return rows.map(domainOf);
+  return rows.map((row) => domainOf(row));
 }
 
 /** How many domains the person keeps. */
@@ -182,7 +190,7 @@ export async function listDomainsOfRepo(
     .from(domains)
     .where(and(eq(domains.user_id, userId), eq(domains.repo, repo)))
     .orderBy(asc(domains.host));
-  return rows.map(domainOf);
+  return rows.map((row) => domainOf(row));
 }
 
 /**
@@ -198,7 +206,7 @@ export async function addDomain(
   userId: number,
   host: string,
   repo: string | null = null,
-  origin: SiteOrigin = { source: 'manual' },
+  origin: SiteOrigin = MANUAL_ORIGIN,
 ): Promise<{ readonly domain: Domain; readonly created: boolean }> {
   const timestamp = now();
   const environment =
@@ -228,9 +236,10 @@ export async function addDomain(
   // A domain added by hand that a repository turns out to serve learns its
   // repository, and one found in this repository takes the better source.
   const learns = repo !== null && existing.repo === null;
+  const sameRepo = existing.repo === null || existing.repo === repo;
   const upgrades =
     repo !== null &&
-    (existing.repo === null || existing.repo === repo) &&
+    sameRepo &&
     SOURCE_RANK[origin.source] > SOURCE_RANK[existing.source] &&
     existing.source !== 'manual';
   if (!learns && !upgrades) {

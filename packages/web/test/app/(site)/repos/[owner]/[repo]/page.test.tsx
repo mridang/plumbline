@@ -20,24 +20,27 @@ import {
 import { htmlAt } from '../../../../../components/render';
 
 /** What the page asked Next to redirect to; `redirect` throws, as the real one does. */
-class Redirected extends Error {
+class RedirectedError extends Error {
+  override name = 'RedirectedError';
   constructor(readonly to: string) {
     super(`redirected to ${to}`);
   }
 }
 
 /** Thrown by `notFound`, as the real one throws. */
-class NotFound extends Error {}
+class NotFoundError extends Error {
+  override name = 'NotFoundError';
+}
 
 /** The signed-in user, or null for nobody. */
 const state: { user: { id: number } | null } = { user: null };
 
 jest.unstable_mockModule('next/navigation', () => ({
   redirect: (to: string) => {
-    throw new Redirected(to);
+    throw new RedirectedError(to);
   },
   notFound: () => {
-    throw new NotFound();
+    throw new NotFoundError();
   },
   useRouter: () => ({ push: () => undefined, refresh: () => undefined }),
   usePathname: () => '/repos/acme/site',
@@ -120,19 +123,19 @@ describe('RepoPage', () => {
   it('sends someone not signed in to sign in and back to this repository', async () => {
     state.user = null;
     await expect(render('acme', 'site')).rejects.toEqual(
-      new Redirected(
+      new RedirectedError(
         `/auth/login?returnTo=${encodeURIComponent('/repos/acme/site')}`,
       ),
     );
   });
 
   it('is not found for a name that cannot be a repository', async () => {
-    await expect(render('acme', '..')).rejects.toBeInstanceOf(NotFound);
+    await expect(render('acme', '..')).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it('is not found for a repository the person cannot see', async () => {
     await addDomain(db, 2, 'other.example.com', 'acme/other');
-    await expect(render('acme', 'other')).rejects.toBeInstanceOf(NotFound);
+    await expect(render('acme', 'other')).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it('is headed with the Octocat and the repository, and links to it on GitHub', async () => {

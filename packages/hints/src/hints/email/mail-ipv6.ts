@@ -42,26 +42,24 @@ export default defineHint({
       const unreachable: string[] = [];
 
       for (const host of mail.hosts) {
-        let addresses: string[];
+        let addresses: string[] | undefined;
         try {
           const response = await dns.client.query(host, 'AAAA');
           // A failed lookup says nothing about the server; skip it.
-          if (response.status !== 0 && response.status !== 3) {
-            continue;
+          if (response.status === 0 || response.status === 3) {
+            addresses = response.answers
+              .filter((record) => record.type === AAAA)
+              .map((record) => record.data)
+              // IPv4-mapped IPv6 addresses give no IPv6 connectivity.
+              .filter((ip) => isIPv6(ip) && !/^::ffff:/iu.test(ip));
           }
-          addresses = response.answers
-            .filter((record) => record.type === AAAA)
-            .map((record) => record.data)
-            // IPv4-mapped IPv6 addresses give no IPv6 connectivity.
-            .filter((ip) => isIPv6(ip) && !/^::ffff:/iu.test(ip));
         } catch {
-          continue;
+          // A failed lookup says nothing about the server; skip it.
         }
-        if (addresses.length === 0) {
+        if (addresses?.length === 0) {
           withoutIpv6.push(host);
-          continue;
         }
-        for (const ip of addresses) {
+        for (const ip of addresses ?? []) {
           if (!(await mailNet.client.tcpReachable(ip, SMTP_PORT))) {
             unreachable.push(`${host} ${ip}`);
           }

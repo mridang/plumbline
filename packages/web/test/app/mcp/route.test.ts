@@ -1,4 +1,3 @@
-import { readdirSync } from 'node:fs';
 import {
   afterEach,
   beforeEach,
@@ -7,6 +6,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
+
 import type { DatabaseSync } from 'node:sqlite';
 
 import { DELETE, GET, OPTIONS, POST } from '@/app/mcp/route';
@@ -22,6 +22,7 @@ import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { READ_ONLY_TOOLS, SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import { TOOLS } from '@/domain/mcp/tool-definitions';
 
@@ -35,17 +36,12 @@ const WRITE_TOOL =
   '';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 
-/** Every migration, in order: the route reads users, grants and rate-limit counters. */
-const MIGRATIONS = readdirSync('migrations')
-  .filter((file) => file.endsWith('.sql'))
-  .toSorted();
-
 let raw: DatabaseSync;
 let restore: () => void;
 let database: ReturnType<typeof createDatabase>;
 
 beforeEach(() => {
-  const made = sqliteD1(...MIGRATIONS);
+  const made = sqliteD1(...APP_MIGRATIONS);
   raw = made.raw;
   restore = installCloudflareContext(made.d1);
   database = createDatabase(made.d1);
@@ -147,7 +143,7 @@ describe('OPTIONS /mcp', () => {
     const res = await OPTIONS(request('OPTIONS', { origin: OTHER }));
     expect(res.status).toBe(403);
     expect(((await res.json()) as { error: { code: number } }).error.code).toBe(
-      -32600,
+      -32_600,
     );
   });
 });
@@ -166,7 +162,7 @@ describe('without a token', () => {
     expect(res.headers.get('www-authenticate')).not.toContain('invalid_token');
     expect(await res.json()).toMatchObject({
       id: null,
-      error: { code: -32600 },
+      error: { code: -32_600 },
     });
   });
 
@@ -330,7 +326,7 @@ describe('when the database cannot be reached', () => {
     const text = await res.text();
     expect(JSON.parse(text)).toMatchObject({
       id: null,
-      error: { code: -32603 },
+      error: { code: -32_603 },
     });
     expect(text).not.toContain('secret detail');
     expect(spy).toHaveBeenCalled();

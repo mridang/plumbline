@@ -148,7 +148,7 @@ export function corsExposeHeadersFindings(value: string | null): Finding[] {
 }
 
 /** One day: preflight results cached longer than this are flagged. */
-const MAX_REASONABLE_AGE = 86400;
+const MAX_REASONABLE_AGE = 86_400;
 
 /**
  * `Access-Control-Max-Age` caches a preflight result for the given number of

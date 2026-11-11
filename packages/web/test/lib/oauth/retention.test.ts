@@ -57,7 +57,7 @@ describe('purgeCutoffs', () => {
 
 describe('shouldPurge', () => {
   it('fires for about one request in a hundred', () => {
-    expect(PURGE_PROBABILITY).toBe(0.01);
+    expect(1 / PURGE_PROBABILITY).toBe(100);
     expect(shouldPurge(0)).toBe(true);
     expect(shouldPurge(0.0099)).toBe(true);
     expect(shouldPurge(0.01)).toBe(false);

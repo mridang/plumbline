@@ -29,9 +29,15 @@ export interface DisplayModeHostContext {
   readonly availableDisplayModes?: readonly string[];
 }
 
+const DISPLAY_MODES: ReadonlySet<unknown> = new Set<unknown>([
+  'inline',
+  'fullscreen',
+  'pip',
+]);
+
 /** Whether the value is one of the three modes the spec defines. */
 export function isDisplayMode(value: unknown): value is DisplayMode {
-  return value === 'inline' || value === 'fullscreen' || value === 'pip';
+  return DISPLAY_MODES.has(value);
 }
 
 /**
@@ -75,6 +81,7 @@ export function planExpand(
 export interface LayoutState {
   readonly hostMode: DisplayMode;
   readonly expandedLocally: boolean;
+
   /**
    * True when the View asked the host to leave fullscreen and got no usable
    * answer: the View is then still fullscreen and has to say how to get out
@@ -130,12 +137,15 @@ export function reduceLayout(
         collapseRefused: false,
       };
     }
-    case 'expand-locally':
+    case 'expand-locally': {
       return { ...state, expandedLocally: true };
-    case 'collapse-locally':
+    }
+    case 'collapse-locally': {
       return { ...state, expandedLocally: false, collapseRefused: false };
-    case 'collapse-refused':
+    }
+    case 'collapse-refused': {
       return { ...state, collapseRefused: true };
+    }
   }
 }
 

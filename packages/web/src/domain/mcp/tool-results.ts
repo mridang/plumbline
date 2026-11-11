@@ -116,7 +116,7 @@ export function reportText(data: Readonly<ReportData>): string {
     for (const finding of problem.findings) {
       lines.push(`- ${finding.message} (${finding.resource})`);
       if (finding.snippet) {
-        lines.push(`  ${finding.snippet.replace(/\s+/g, ' ')}`);
+        lines.push(`  ${finding.snippet.replaceAll(/\s+/g, ' ')}`);
       }
     }
     if (problem.fixer) {
@@ -175,10 +175,12 @@ export function domainListResult(
     domains.length === 0
       ? 'The user has no domains yet.'
       : domains
-          .map(
-            ({ domain, checks, latest }) =>
-              `- ${domain.host}: ${checks} of ${totalChecks} checks; ${latest ? `newest scan ${latest.created_at}: ${tallyLine(latest)}` : 'not scanned yet'}`,
-          )
+          .map(({ domain, checks, latest }) => {
+            const newest = latest
+              ? `newest scan ${latest.created_at}: ${tallyLine(latest)}`
+              : 'not scanned yet';
+            return `- ${domain.host}: ${checks} of ${totalChecks} checks; ${newest}`;
+          })
           .join('\n');
   return { ...textResult(text), structuredContent: data };
 }

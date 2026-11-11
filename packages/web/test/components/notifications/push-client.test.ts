@@ -95,9 +95,10 @@ function browser(options: {
       calls.push({ url, method: init?.method ?? 'GET', body: init?.body });
       const status =
         options.responses?.[`${init?.method ?? 'GET'} ${url}`] ?? 200;
+      const body = status === 204 ? null : '{}';
       return url.endsWith('configuration')
         ? Response.json({ vapid_public_key: 'AQID' })
-        : new Response(status === 204 ? null : '{}', { status });
+        : new Response(body, { status });
     }) as typeof fetch,
   };
   return { host, subscription, subscribe, calls };

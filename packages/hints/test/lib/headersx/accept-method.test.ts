@@ -20,7 +20,7 @@ describe('acceptPostFindings', () => {
   });
 
   it('warns on an empty value', () => {
-    const [f] = acceptPostFindings('   ');
+    const [f] = acceptPostFindings(' '.repeat(3));
     expect(f?.severity).toBe('warning');
   });
 

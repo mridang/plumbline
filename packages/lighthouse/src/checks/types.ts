@@ -14,7 +14,7 @@
  * are never restated here; a check only restates them when it has no webhint
  * hint to borrow them from.
  */
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import type { ScoreMode } from '../result.js';
@@ -27,6 +27,7 @@ export interface AuditCheck {
    * check borrowed from a webhint hint this is the hint's id.
    */
   id: string;
+
   /**
    * The section this check is grouped under in the report: a category id from
    * `src/core/taxonomy.ts` (the SECTIONS). It decides the Lighthouse
@@ -45,13 +46,14 @@ export interface AuditCheck {
   description: string;
   /** Where the rule is documented, appended to the description as a link. */
   reference?: string;
+
   /**
    * Runs the check against the Lighthouse artifacts. Returns the findings (the
    * reused library's shape), or `null` when the data needed was absent from the
    * run, which the factory renders as "not applicable".
    */
   run(
-    artifacts: LH.Artifacts,
+    artifacts: Artifacts,
     context: AuditNS.Context,
   ): Promise<readonly Finding[] | null> | readonly Finding[] | null;
 }

@@ -48,14 +48,18 @@ function severityUnder(
   own: Finding['severity'],
 ): Finding['severity'] | null {
   switch (level) {
-    case 'off':
+    case 'off': {
       return null;
-    case 'warn':
+    }
+    case 'warn': {
       return 'warning';
-    case 'error':
+    }
+    case 'error': {
       return 'error';
-    case 'on':
+    }
+    case 'on': {
       return own;
+    }
   }
 }
 

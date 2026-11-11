@@ -103,10 +103,11 @@ export function crossOriginFindings(
       ? declared.slice(0, 256).trim().toLowerCase()
       : parseStructuredToken(declared.slice(0, 1024));
   if (token === null || !spec.valid.includes(token)) {
+    const quoted = spec.valid.map((v) => `'${v}'`).join(', ');
     return [
       finding(
         'error',
-        `${name} header cannot be recognized. Set to one of ${spec.valid.map((v) => `'${v}'`).join(', ')}.`,
+        `${name} header cannot be recognized. Set to one of ${quoted}.`,
       ),
     ];
   }

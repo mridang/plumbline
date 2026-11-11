@@ -8,11 +8,11 @@ import {
 import { startSmtp, type FakeSmtp, type SmtpOptions } from './fake-smtp.js';
 import { TEST_CERT } from './test-cert.js';
 
-let server: FakeSmtp | undefined;
+let server: FakeSmtp | null = null;
 
 afterEach(async () => {
   await server?.close();
-  server = undefined;
+  server = null;
 });
 
 /** Probes `host` while the connection actually goes to a local fake server. */
@@ -91,7 +91,7 @@ describe('probeStarttls', () => {
   it('fails when the server stays silent', async () => {
     const result = await probe('mail.example.test', { greeting: '220-more' });
     expect(result.reachable).toBe(false);
-  }, 15000);
+  }, 15_000);
 });
 
 describe('tlsVersionLevel', () => {
@@ -135,7 +135,7 @@ describe('negotiateStarttls', () => {
     server = await startSmtp();
     const { port } = server;
     await server.close();
-    server = undefined;
+    server = null;
     await expect(
       negotiateStarttls(connect({ host: '127.0.0.1', port }), {
         timeoutMs: 3000,

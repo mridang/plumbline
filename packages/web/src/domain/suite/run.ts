@@ -67,20 +67,21 @@ export function keptOutcomes(scan: Readonly<ScanResult>): string | null {
   return text.length <= MAX_KEPT_OUTCOMES_BYTES ? text : null;
 }
 
+/** Whether an outcome has an id that `keep` allows. */
+function hasKeptId(outcome: unknown, keep: ReadonlySet<string>): boolean {
+  if (typeof outcome !== 'object' || outcome === null || !('id' in outcome)) {
+    return false;
+  }
+  return typeof outcome.id === 'string' && keep.has(outcome.id);
+}
+
 /** The ids in a stored outcomes JSON that `keep` allows; the text as it was when it cannot be read. */
 function restrictedOutcomes(text: string, keep: ReadonlySet<string>): string {
   try {
     const parsed: unknown = JSON.parse(text);
     return Array.isArray(parsed)
       ? JSON.stringify(
-          parsed.filter(
-            (outcome: unknown) =>
-              typeof outcome === 'object' &&
-              outcome !== null &&
-              'id' in outcome &&
-              typeof outcome.id === 'string' &&
-              keep.has(outcome.id),
-          ),
+          parsed.filter((outcome: unknown) => hasKeptId(outcome, keep)),
         )
       : text;
   } catch {

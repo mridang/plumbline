@@ -90,6 +90,7 @@ export function createLive(db: Database, env: Readonly<LiveEnv>): Live {
       : null;
 
   /** Store `event` and wake the hub so open dashboards show it. */
+
   /**
    * Everyone who sees the site: the person it belongs to, and whoever GitHub
    * lets see its repository (see `db/access.ts`).
@@ -147,7 +148,7 @@ export function createLive(db: Database, env: Readonly<LiveEnv>): Live {
             type: 'finished',
             ...site,
             reachable: after !== null,
-            ...(after ?? {}),
+            ...after,
             at,
           },
           at,

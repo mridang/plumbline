@@ -16,7 +16,7 @@
  *
  * References:
  *   - MDN rel=noopener: https://developer.mozilla.org/docs/Web/HTML/Reference/Attributes/rel/noopener
- *   - OWASP reverse tabnabbing: https://owasp.org/www-community/attacks/Reverse_Tabnabbing
+ *   - OWASP reverse tabnabbing: https://owasp.org/www-community/attacks/Reverse_Tabnabbing.
  */
 import { finding, type Finding } from '../headers/finding.js';
 

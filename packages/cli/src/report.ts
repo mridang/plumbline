@@ -67,11 +67,10 @@ function toFinding(problem: Problem, hints: HintMeta[]): Finding {
 
 /**
  * Builds the JSON report envelope from a scan result.
- *
- * @param url The scanned URL.
- * @param result What the scan found.
- * @param scannerVersion The version stamped on the report: the Docker image
- *   passes the release tag it was built with, the CLI its package version.
+ * @param url - The scanned URL.
+ * @param result - What the scan found.
+ * @param scannerVersion - The version stamped on the report: the Docker image
+ * passes the release tag it was built with, the CLI its package version.
  * @returns The report envelope.
  */
 export function buildReport(
@@ -100,17 +99,16 @@ export function buildReport(
 /**
  * Names the report file after the target, matching the HTML formatter so the
  * `.json` and `.html` reports for one scan sit side by side with one name.
- *
- * @param target The scanned URL.
+ * @param target - The scanned URL.
  * @returns A bare file name (no directory, no extension).
  */
 function slug(target: string): string {
   const name = target
-    .replace(/:\/\//g, '-')
-    .replace(/:/g, '-')
-    .replace(/\./g, '-')
-    .replace(/\//g, '-')
-    .replace(/[?=]/g, '-query-')
+    .replaceAll('://', '-')
+    .replaceAll(':', '-')
+    .replaceAll('.', '-')
+    .replaceAll('/', '-')
+    .replaceAll(/[?=]/g, '-query-')
     .replace(/-$/, '');
   return name || 'report';
 }
@@ -125,11 +123,10 @@ export interface SavedReport {
  * Writes the JSON report and the HTML report into a directory, so a scan run
  * with a host directory mounted into the container, or a CLI scan with
  * `--format html`, leaves both behind.
- *
- * @param url The scanned URL.
- * @param report The JSON report to write.
- * @param result The scan result, for the HTML formatter's hint resources.
- * @param directory The output directory (created if missing).
+ * @param url - The scanned URL.
+ * @param report - The JSON report to write.
+ * @param result - The scan result, for the HTML formatter's hint resources.
+ * @param directory - The output directory (created if missing).
  * @returns The absolute paths of the two files written.
  */
 export async function saveReport(

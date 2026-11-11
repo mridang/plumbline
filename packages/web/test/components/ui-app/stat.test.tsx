@@ -22,7 +22,6 @@ describe('CountCell', () => {
   it('colours a count and says its word to people who hear the page', () => {
     const out = html(<CountCell value={3} word="warned" tone="warn" />);
     expect(out).toContain('text-warned');
-    expect(out).toContain('title="3 warned"');
     expect(out).toContain('<span class="sr-only"> warned</span>');
   });
 

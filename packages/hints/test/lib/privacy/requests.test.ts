@@ -3,6 +3,7 @@ import {
   classifyRequests,
   parseWebUrl,
 } from '../../../src/lib/privacy/requests.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const req = (url: string, type = 'script') => ({ url, type });
 
@@ -12,7 +13,7 @@ describe('classifyRequests', () => {
       req('https://cdn.example.com/a.js'),
       req('https://tracker.test/a.js'),
       req('https://tracker.test/b.png', 'image'),
-      req('http://ads.test/c.png', 'image'),
+      req(`${HTTP_SCHEME}ads.test/c.png`, 'image'),
     ]);
     expect(result.pageDomain).toBe('example.com');
     expect(result.thirdParty).toHaveLength(3);
@@ -31,11 +32,11 @@ describe('classifyRequests', () => {
 
   it('finds insecure first-party requests on https and http pages', () => {
     const urls = [
-      req('http://static.example.com/a.js'),
+      req(`${HTTP_SCHEME}static.example.com/a.js`),
       req('https://static.example.com/b.js'),
-      req('http://other.test/c.js'),
+      req(`${HTTP_SCHEME}other.test/c.js`),
     ];
-    for (const page of ['https://example.com/', 'http://example.com/']) {
+    for (const page of ['https://example.com/', `${HTTP_SCHEME}example.com/`]) {
       expect(classifyRequests(page, urls).insecureFirstParty).toEqual([
         urls[0],
       ]);
@@ -44,9 +45,9 @@ describe('classifyRequests', () => {
 
   it('splits mixed content into active and passive', () => {
     const result = classifyRequests('https://example.com/', [
-      req('http://other.test/a.js', 'script'),
-      req('http://other.test/b.css', 'css'),
-      req('http://other.test/c.png', 'image'),
+      req(`${HTTP_SCHEME}other.test/a.js`, 'script'),
+      req(`${HTTP_SCHEME}other.test/b.css`, 'css'),
+      req(`${HTTP_SCHEME}other.test/c.png`, 'image'),
       req('https://other.test/d.png', 'image'),
     ]);
     expect(result.mixedContent.active).toHaveLength(2);
@@ -54,8 +55,8 @@ describe('classifyRequests', () => {
   });
 
   it('reports no mixed content on an http page', () => {
-    const result = classifyRequests('http://example.com/', [
-      req('http://other.test/a.js'),
+    const result = classifyRequests(`${HTTP_SCHEME}example.com/`, [
+      req(`${HTTP_SCHEME}other.test/a.js`),
     ]);
     expect(result.mixedContent).toEqual({ active: [], passive: [] });
   });
@@ -70,7 +71,9 @@ describe('classifyRequests', () => {
   });
 
   it('copes with an unparsable page URL', () => {
-    const result = classifyRequests('nonsense', [req('http://a.test/x.js')]);
+    const result = classifyRequests('nonsense', [
+      req(`${HTTP_SCHEME}a.test/x.js`),
+    ]);
     expect(result.pageSecure).toBe(false);
     expect(result.thirdParty).toHaveLength(1);
   });

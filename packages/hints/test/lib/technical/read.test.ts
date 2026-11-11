@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { createRequire } from 'node:module';
+import { createHTMLDocument } from '@hint/utils-dom';
 import {
   altCoverage,
   canonicalHref,
@@ -14,13 +14,12 @@ import {
   robotsAdvanced,
   twitterCardType,
 } from '../../../src/lib/technical/read.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
-const require = createRequire(import.meta.url);
-const { createHTMLDocument } = require('@hint/utils-dom');
 const doc = (body: string, head = '') =>
   createHTMLDocument(
     `<!doctype html><html><head>${head}</head><body>${body}</body></html>`,
-    'http://x.test/',
+    `${HTTP_SCHEME}x.test/`,
   );
 
 describe('headings', () => {
@@ -78,7 +77,9 @@ describe('imageUrls', () => {
     const d = doc(
       '<img src="/a.png"><img src="/a.png"><img src="data:image/png;base64,AA"><img src="http://[bad"><img>',
     );
-    expect(imageUrls(d, 'http://x.test/p')).toEqual(['http://x.test/a.png']);
+    expect(imageUrls(d, `${HTTP_SCHEME}x.test/p`)).toEqual([
+      `${HTTP_SCHEME}x.test/a.png`,
+    ]);
   });
 });
 
@@ -101,7 +102,7 @@ describe('mapWithConcurrency', () => {
     const out = await mapWithConcurrency([1, 2, 3, 4, 5, 6], 2, async (n) => {
       active++;
       peak = Math.max(peak, active);
-      await new Promise((r) => setTimeout(r, 5));
+      await new Promise((resolve) => setTimeout(resolve, 5));
       active--;
       return n * 2;
     });
@@ -115,24 +116,28 @@ describe('mapWithConcurrency', () => {
 
 describe('redirectVerdict', () => {
   it('is null without hops', () => {
-    expect(redirectVerdict([], 'http://a/', 200)).toBeNull();
+    expect(redirectVerdict([], `${HTTP_SCHEME}a/`, 200)).toBeNull();
   });
   it('is null for up to two hops', () => {
     expect(
-      redirectVerdict(['http://a/', 'http://b/'], 'http://c/', 200),
+      redirectVerdict(
+        [`${HTTP_SCHEME}a/`, `${HTTP_SCHEME}b/`],
+        `${HTTP_SCHEME}c/`,
+        200,
+      ),
     ).toBeNull();
   });
   it('warns for more than two hops', () => {
     const v = redirectVerdict(
-      ['http://a/', 'http://b/', 'http://c/'],
-      'http://d/',
+      [`${HTTP_SCHEME}a/`, `${HTTP_SCHEME}b/`, `${HTTP_SCHEME}c/`],
+      `${HTTP_SCHEME}d/`,
       200,
     );
     expect(v?.severity).toBe('warning');
     expect(v?.message).toContain('3 redirect hops');
   });
   it('errors when the chain ends in an error', () => {
-    const v = redirectVerdict(['http://a/'], 'http://b/', 404);
+    const v = redirectVerdict([`${HTTP_SCHEME}a/`], `${HTTP_SCHEME}b/`, 404);
     expect(v?.severity).toBe('error');
     expect(v?.message).toContain('HTTP 404');
   });

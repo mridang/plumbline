@@ -141,7 +141,8 @@ describe('POST /run', () => {
     });
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('application/x-ndjson');
-    const lines = (await res.text()).trim().split('\n');
+    const text = await res.text();
+    const lines = text.trim().split('\n');
     expect(lines.map((line) => JSON.parse(line).type)).toEqual([
       'ready',
       'end',
@@ -173,7 +174,8 @@ describe('POST /run when the scan throws', () => {
       method: 'POST',
       body: JSON.stringify({ url: 'https://example.com/' }),
     });
-    const events = (await res.text())
+    const text = await res.text();
+    const events = text
       .trim()
       .split('\n')
       .map((line) => JSON.parse(line));

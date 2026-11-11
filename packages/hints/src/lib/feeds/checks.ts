@@ -29,7 +29,7 @@ import {
 // ---- Reference links (shared with each hint's `reference` metadata) --------
 /** RSS 2.0 autodiscovery, as defined by the RSS Advisory Board. */
 export const FEED_DISCOVERY_REF = 'https://www.rssboard.org/rss-autodiscovery';
-/** oEmbed discovery, as defined by the oEmbed specification. */
+/** OEmbed discovery, as defined by the oEmbed specification. */
 export const OEMBED_DISCOVERY_REF = 'https://oembed.com/#section4';
 /** OpenSearch autodiscovery, as defined by the OpenSearch specification. */
 export const OPENSEARCH_DISCOVERY_REF =
@@ -65,11 +65,11 @@ export function feedDiscovery(doc: DocumentLike): Finding[] {
 }
 
 /**
- * Reports the oEmbed-discovery state of a page. oEmbed consumers look for a
+ * Reports the oEmbed-discovery state of a page. OEmbed consumers look for a
  * `<link rel="alternate" type="application/json+oembed">` (or the XML variant)
  * whose `href` is the oEmbed endpoint for the page. Absence is informational;
  * a declared link with a missing `href` is a `warning` (the endpoint URL is
- * mandatory). oEmbed permits a relative `href`, so only an empty one is flagged.
+ * mandatory). OEmbed permits a relative `href`, so only an empty one is flagged.
  */
 export function oembedDiscovery(doc: DocumentLike): Finding[] {
   const links = getOembedLinks(doc);

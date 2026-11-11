@@ -1,4 +1,5 @@
-/* eslint-disable tailwindcss/no-custom-classname -- the widget's classes are defined in src/views/styles.ts, not in a CSS file. */
+/* eslint-disable tailwindcss/no-custom-classname -- the widget's classes are defined in src/views/styles.ts and injected at build; the plugin only reads a CSS entry, and the lint config cannot be changed here */
+
 /**
  * @packageDocumentation
  *
@@ -88,3 +89,5 @@ export function Announcer({
     </div>
   );
 }
+
+/* eslint-enable tailwindcss/no-custom-classname -- the classes above come from src/views/styles.ts. */

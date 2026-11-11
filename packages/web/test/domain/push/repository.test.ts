@@ -11,9 +11,9 @@ const repo = () =>
     createDatabase(sqliteD1(...APP_MIGRATIONS).d1),
   );
 
-const sub = (endpoint: string, user_id = 1, p256dh = 'p') => ({
+const sub = (endpoint: string, userId = 1, p256dh = 'p') => ({
   endpoint,
-  user_id,
+  user_id: userId,
   p256dh,
   auth: 'a',
 });
@@ -23,9 +23,8 @@ describe('PushSubscriptionRepository', () => {
     const store = repo();
     await store.upsert(sub('https://p.test/1'), 'now');
     await store.upsert(sub('https://p.test/2', 2), 'now');
-    expect((await store.listForUser(1)).map((s) => s.endpoint)).toEqual([
-      'https://p.test/1',
-    ]);
+    const subs = await store.listForUser(1);
+    expect(subs.map((s) => s.endpoint)).toEqual(['https://p.test/1']);
     expect(await store.listAll()).toHaveLength(2);
   });
 

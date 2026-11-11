@@ -22,6 +22,13 @@ import {
 import { CHECKS, SECTIONS } from '@/domain/checks/catalogue';
 import { findRuleSet } from '@/domain/checks/sets';
 
+/** An object with each key present and set to `undefined`. */
+const unset = <K extends string>(...keys: K[]): Record<K, undefined> =>
+  Object.fromEntries(keys.map((key) => [key, undefined])) as Record<
+    K,
+    undefined
+  >;
+
 describe('parseView', () => {
   it('is empty when the address says nothing', () => {
     expect(parseView({})).toEqual({ q: '' });
@@ -49,7 +56,7 @@ describe('queryOf', () => {
   it('writes what is set, lets a change override and removes with undefined', () => {
     const view = { q: 'tls', tier: 'advanced' as const, rule: 'hsts' };
     expect(queryOf(view)).toBe('?q=tls&tier=advanced&rule=hsts');
-    expect(queryOf(view, { tier: undefined, rule: undefined })).toBe('?q=tls');
+    expect(queryOf(view, unset('tier', 'rule'))).toBe('?q=tls');
     expect(queryOf(view, { open: 'all' })).toContain('open=all');
   });
 });
@@ -101,7 +108,9 @@ describe('the rules of a view', () => {
     );
     const subs = bySubsection(rulesOfArea(SECTIONS[0]!.id));
     expect(subs.map((g) => g.subsection)).toEqual(
-      subs.map((g) => g.subsection).toSorted(),
+      subs
+        .map((g) => g.subsection)
+        .toSorted((a, b) => Number(a > b) - Number(a < b)),
     );
     expect(subs.flatMap((g) => g.rules)).toHaveLength(
       rulesOfArea(SECTIONS[0]!.id).length,

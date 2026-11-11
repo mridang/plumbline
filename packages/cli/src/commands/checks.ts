@@ -9,17 +9,17 @@ import { PlumblineCommand } from './base.js';
  * description, optionally only those of some groups, tiers or targets.
  */
 export default class Checks extends PlumblineCommand {
-  static override id = 'checks';
+  static override readonly id = 'checks';
 
-  static override summary =
+  static override readonly summary =
     'List every check, with its id, groups and description.';
 
-  static override examples = [
+  static override readonly examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --group owasp --format json',
   ];
 
-  static override flags = {
+  static override readonly flags = {
     group: Flags.string({
       char: 'g',
       multiple: true,
@@ -52,7 +52,7 @@ export default class Checks extends PlumblineCommand {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(Checks);
-    const deps = resolveDependencies(this.dependencies());
+    const deps = await resolveDependencies(this.dependencies());
     await this.finish(() =>
       runChecks(
         {

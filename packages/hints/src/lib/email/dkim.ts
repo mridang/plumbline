@@ -64,25 +64,23 @@ export function parseDkim(record: string): DkimRecord {
 
   const pieces = record.split(';').map((piece) => piece.trim());
   // A tag-list may end in a semicolon.
-  if (pieces[pieces.length - 1] === '') {
+  if (pieces.at(-1) === '') {
     pieces.pop();
   }
   const tags = new Map<string, string>();
   for (const [index, piece] of pieces.entries()) {
-    const match = /^([A-Za-z][A-Za-z0-9_]*)\s*=\s*([\s\S]*)$/u.exec(piece);
+    const match = /^([A-Za-z]\w*)\s*=([\s\S]*)$/u.exec(piece);
     if (!match) {
       errors.push(`'${piece}' is not a tag=value pair.`);
-      continue;
+    } else if (tags.has(match[1])) {
+      errors.push(`The '${match[1]}' tag appears more than once.`);
+    } else {
+      const name = match[1];
+      if (name === 'v' && index !== 0) {
+        errors.push("The 'v' tag must come first.");
+      }
+      tags.set(name, match[2].trim());
     }
-    const name = match[1];
-    if (tags.has(name)) {
-      errors.push(`The '${name}' tag appears more than once.`);
-      continue;
-    }
-    if (name === 'v' && index !== 0) {
-      errors.push("The 'v' tag must come first.");
-    }
-    tags.set(name, match[2].trim());
   }
   // Unknown tags are ignored by verifiers, so they are not an error.
 
@@ -107,10 +105,12 @@ export function parseDkim(record: string): DkimRecord {
     errors.push('The key is revoked: the p tag is empty.');
   } else if (result.keyType) {
     // Whitespace inside the base64 is folding and is ignored.
-    const problem = checkKey(result.keyType, key.replace(/\s+/gu, ''));
+    const problem = checkKey(result.keyType, key.replaceAll(/\s+/gu, ''));
     if (problem) {
       errors.push(problem);
     }
+  } else {
+    // An unsupported key type is already reported above.
   }
 
   const hashes = tags.get('h');
@@ -131,13 +131,13 @@ export function parseDkim(record: string): DkimRecord {
   }
   const flags = tags.get('t');
   if (flags !== undefined) {
-    if (!/^[A-Za-z0-9-]*(?:\s*:\s*[A-Za-z0-9-]+)*$/u.test(flags)) {
-      errors.push("The 't' tag must be a colon separated list of flags.");
-    } else {
+    if (/^[A-Za-z0-9-]*(?:\s*:\s*[A-Za-z0-9-]+)*$/u.test(flags)) {
       result.testing = flags
         .split(':')
         .map((flag) => flag.trim().toLowerCase())
         .includes('y');
+    } else {
+      errors.push("The 't' tag must be a colon separated list of flags.");
     }
   }
 

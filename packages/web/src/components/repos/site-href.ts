@@ -3,9 +3,9 @@ import { repoPath } from '@/components/repos/repo-path';
 /** What the address of a repository's page can say besides which repository. */
 export interface SiteView {
   /** The report (a run's id) to show; the newest when left out. */
-  readonly report?: string | undefined;
+  readonly report?: string;
   /** `settings` shows the choice of checks in place of the results. */
-  readonly view?: 'settings' | undefined;
+  readonly view?: 'settings';
 }
 
 /**

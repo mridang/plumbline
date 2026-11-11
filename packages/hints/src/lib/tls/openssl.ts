@@ -53,7 +53,7 @@ export const execOpenssl: OpensslExec = (args, options = {}) =>
     child.stdin.on('error', () => undefined);
     const timer = setTimeout(
       () => child.kill('SIGKILL'),
-      options.timeoutMs ?? 15000,
+      options.timeoutMs ?? 15_000,
     );
     child.once('close', (code) => {
       clearTimeout(timer);
@@ -89,6 +89,7 @@ export type OpensslOutcome<T> =
   | {
       kind: 'ok';
       value: T;
+
       /**
        * The `openssl` command and the lines of its output the verdict rests
        * on, ready to show as a code snippet. Empty from `runSClient`.
@@ -286,9 +287,12 @@ export async function testClientRenegotiation(
 ): Promise<OpensslOutcome<number>> {
   const args = ['-tls1_2', '-state'];
   const outcome = await runSClient(target, args, {
-    input: [...Array(SCAN_RENEGOTIATION_LIMIT).fill('R\n'), 'Q\n'],
+    input: [
+      ...Array.from({ length: SCAN_RENEGOTIATION_LIMIT }, () => 'R\n'),
+      'Q\n',
+    ],
     inputDelayMs: 300,
-    timeoutMs: 30000,
+    timeoutMs: 30_000,
   });
   if (outcome.kind !== 'ok') {
     return outcome;

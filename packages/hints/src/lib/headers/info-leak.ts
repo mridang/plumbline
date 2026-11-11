@@ -92,7 +92,7 @@ export function sourcemapFindings(
   sourceMap: string | null,
   xSourceMap: string | null,
 ): Finding[] {
-  const header = sourceMap !== null ? 'SourceMap' : 'X-SourceMap';
+  const header = sourceMap === null ? 'X-SourceMap' : 'SourceMap';
   const value = sourceMap ?? xSourceMap;
   return value === null
     ? []

@@ -1,7 +1,7 @@
 import { agentHint } from './define-agent-hint.js';
 
 /**
- * isitagentready.com check. Bot access control: explicit rules for GPTBot, ClaudeBot and others, not only a wildcard group.
+ * Isitagentready.com check. Bot access control: explicit rules for GPTBot, ClaudeBot and others, not only a wildcard group.
  * The logic lives in `src/lib/agent`; failures are reported as advice.
  */
 export default agentHint({

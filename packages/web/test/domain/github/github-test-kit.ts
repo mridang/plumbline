@@ -1,8 +1,12 @@
-import { createHmac, generateKeyPairSync } from 'node:crypto';
+import { createHmac } from 'node:crypto';
 
 import { jest } from '@jest/globals';
 
-const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+import { generateKeyPairAsync } from '../../helpers/crypto';
+
+const { privateKey } = await generateKeyPairAsync('rsa', {
+  modulusLength: 2048,
+});
 
 /** The GitHub App's settings in the Worker environment. */
 export const GITHUB_ENV = {

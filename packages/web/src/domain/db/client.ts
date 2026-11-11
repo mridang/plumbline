@@ -13,7 +13,60 @@ import {
   type Database as GenericDatabase,
 } from '@/lib/core/db/client';
 import { getDB } from '@/lib/core/runtime';
-import * as schema from '@/domain/db/schema';
+import {
+  users,
+  domains,
+  reports,
+  oauthClients,
+  oauthAssertions,
+  oauthGrants,
+  oauthCodes,
+  oauthTokens,
+  githubLinks,
+  githubInstallations,
+  githubRepos,
+  suiteRuns,
+  previewReports,
+  userRepositories,
+  disabledRepos,
+  configDisabledRepos,
+  deployUrlGaps,
+  liveEvents,
+  pushSubscriptions,
+  suiteIssues,
+  suiteCheckIssues,
+  suiteIssueHistory,
+  webhookDeliveries,
+  pendingScans,
+} from '@/domain/db/schema';
+
+/** Drizzle takes every table as one object. */
+const schema = {
+  users,
+  domains,
+  reports,
+  oauthClients,
+  oauthAssertions,
+  oauthGrants,
+  oauthCodes,
+  oauthTokens,
+  githubLinks,
+  githubInstallations,
+  githubRepos,
+  suiteRuns,
+  previewReports,
+  userRepositories,
+  disabledRepos,
+  configDisabledRepos,
+  deployUrlGaps,
+  liveEvents,
+  pushSubscriptions,
+  suiteIssues,
+  suiteCheckIssues,
+  suiteIssueHistory,
+  webhookDeliveries,
+  pendingScans,
+};
 
 /** A Drizzle client typed against plumbline's schema. */
 export type Database = GenericDatabase<typeof schema>;

@@ -6,8 +6,10 @@ import { isObject, parsedOrIssue } from './json.js';
  * Control specification gives for `lastUpdate`. Either a bare `YYYY-MM-DD`
  * or a full date-time is accepted.
  */
-const ISO_DATE =
-  /^\d{4}-\d{2}-\d{2}([Tt]\d{2}:\d{2}:\d{2}(\.\d+)?([Zz]|[+-]\d{2}:\d{2})?)?$/;
+const DATE = String.raw`\d{4}-\d{2}-\d{2}`;
+const TIME = String.raw`[Tt]\d{2}:\d{2}:\d{2}(\.\d+)?`;
+const ZONE = String.raw`([Zz]|[+-]\d{2}:\d{2})?`;
+export const ISO_DATE = new RegExp(`^${DATE}(${TIME}${ZONE})?$`);
 
 /**
  * Validates a Global Privacy Control well-known resource (gpc.json). The
@@ -53,6 +55,8 @@ export function validateGpcJson(text: string): FileIssue[] {
       severity: 'error',
       message: "The 'lastUpdate' field must be an ISO 8601 date.",
     });
+  } else {
+    // A valid ISO 8601 date: nothing to report.
   }
 
   return issues;

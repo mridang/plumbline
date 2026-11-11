@@ -13,8 +13,8 @@
  */
 
 import {
-  InvalidToolArguments,
-  UnknownTool,
+  InvalidToolArgumentsError,
+  UnknownToolError,
   canonicalArguments,
   isJsonObject,
   numberArg,
@@ -22,7 +22,7 @@ import {
   stringArg,
   stringListArg,
   validateJson,
-  BackendFailure,
+  BackendFailureError,
   type JsonSchema,
 } from '@/lib/mcp';
 import { overviewOf } from '@/domain/db/live';
@@ -145,11 +145,13 @@ function listChecks(args: Args): ToolResult {
   );
   const offset = offsetArg(args['offset']);
   const page = pool.slice(offset, offset + limit);
+  const groupText = group ? ` in ${group}` : '';
+  const queryText = query ? ` matching "${query}"` : '';
   const lines = [
     ...(group === '' && query === '' && offset === 0
       ? [`Groups: ${GROUPS.join(', ')}.`, '']
       : []),
-    `${countOf(pool.length, 'check')}${group ? ` in ${group}` : ''}${query ? ` matching "${query}"` : ''}; showing ${page.length} from ${offset}.`,
+    `${countOf(pool.length, 'check')}${groupText}${queryText}; showing ${page.length} from ${offset}.`,
     ...page.map(
       (check) =>
         `- ${check.id}: ${check.name} [${check.groups.join(', ')}] ${check.description}`,
@@ -209,6 +211,7 @@ async function getDomainTool(
 ): Promise<ToolResult> {
   const on = enabledChecks(domain.checks);
   const off = CHECKS.filter((check) => !on.includes(check.id));
+  const offMore = off.length > 100 ? `, and ${off.length - 100} more` : '';
   const [latest] = await listReports(db, user.id, domain.id, 1);
   return textResult(
     [
@@ -221,9 +224,7 @@ async function getDomainTool(
             `Switched off: ${off
               .slice(0, 100)
               .map((check) => check.id)
-              .join(
-                ', ',
-              )}${off.length > 100 ? `, and ${off.length - 100} more` : ''}.`,
+              .join(', ')}${offMore}.`,
           ]
         : []),
       latest
@@ -234,6 +235,19 @@ async function getDomainTool(
   );
 }
 
+/** The newest report when no id is given, otherwise the one the id names. */
+async function namedReport(
+  db: Database,
+  userId: number,
+  domainId: string,
+  id: string,
+) {
+  if (id === '') {
+    return latestReport(db, userId, domainId);
+  }
+  return isReportId(id) ? getReport(db, userId, domainId, id) : undefined;
+}
+
 /** `get_report`: the newest report, or the one `report` names. */
 async function getReportTool(
   db: Database,
@@ -242,12 +256,7 @@ async function getReportTool(
   args: Args,
 ): Promise<ToolResult> {
   const id = stringArg(args['report']);
-  const report =
-    id === ''
-      ? await latestReport(db, user.id, domain.id)
-      : isReportId(id)
-        ? await getReport(db, user.id, domain.id, id)
-        : undefined;
+  const report = await namedReport(db, user.id, domain.id, id);
   if (!report) {
     return id === ''
       ? errorResult(
@@ -331,10 +340,23 @@ async function configureChecksTool(
     ...enable.ids.slice(0, 5).map((id) => `on: ${checkName(id)}`),
     ...disable.ids.slice(0, 5).map((id) => `off: ${checkName(id)}`),
   ];
-  return textResult(
-    `${domain.host} now runs ${chosen === null ? `every check (${count})` : `${count} of ${CHECKS.length} checks`}.${changed.length > 0 ? ` Changed ${changed.join('; ')}${enable.ids.length + disable.ids.length > changed.length ? ', and more' : ''}.` : ''}`,
-  );
+  const scope =
+    chosen === null
+      ? `every check (${count})`
+      : `${count} of ${CHECKS.length} checks`;
+  const more =
+    enable.ids.length + disable.ids.length > changed.length ? ', and more' : '';
+  const changedText =
+    changed.length > 0 ? ` Changed ${changed.join('; ')}${more}.` : '';
+  return textResult(`${domain.host} now runs ${scope}.${changedText}`);
 }
+
+/** `scan_domain` takes no more than the domain, whatever the other tools get. */
+const scanDomainFor = (
+  _db: Database,
+  _user: Readonly<User>,
+  domain: Readonly<Domain>,
+): ToolResult => scanDomainTool(domain);
 
 /** The tools that act on one of the user's existing domains. */
 const DOMAIN_TOOLS: Readonly<
@@ -353,14 +375,14 @@ const DOMAIN_TOOLS: Readonly<
   get_domain: getDomainTool,
   get_report: getReportTool,
   list_reports: listReportsTool,
-  scan_domain: (_db, _user, domain) => scanDomainTool(domain),
+  scan_domain: scanDomainFor,
   remove_domain: removeDomainTool,
   configure_checks: configureChecksTool,
 };
 
 /** The arguments a tool takes, as one line the assistant can follow. */
 function usage(schema: JsonSchema): string {
-  const required = new Set(schema.required ?? []);
+  const required = new Set(schema.required);
   const names = Object.keys(schema.properties ?? {}).map((key) =>
     required.has(key) ? `${key} (required)` : key,
   );
@@ -376,8 +398,7 @@ type Checked = { readonly args: Args } | { readonly refusal: ToolResult };
  * The arguments of a call, checked against the tool's input schema. Arguments
  * that do not fit come back as an `isError` result naming each problem (the
  * spec lists input validation among tool execution errors).
- *
- * @throws {InvalidToolArguments} If `arguments` is not an object at all.
+ * @throws {InvalidToolArgumentsError} If `arguments` is not an object at all.
  */
 function checkedArguments(
   tool: Readonly<{ name: string; inputSchema: JsonSchema }>,
@@ -385,7 +406,7 @@ function checkedArguments(
 ): Checked {
   const given = rawArgs === undefined ? {} : rawArgs;
   if (!isJsonObject(given)) {
-    throw new InvalidToolArguments(['`arguments` must be an object.']);
+    throw new InvalidToolArgumentsError(['`arguments` must be an object.']);
   }
   const args = canonicalArguments(tool.name, given);
   const problems = validateJson(tool.inputSchema, args, 'The arguments');
@@ -400,12 +421,11 @@ function checkedArguments(
 
 /**
  * Execute a `tools/call` for `user`.
- *
- * @param openDatabase How the database is opened; tests pass their own.
- * @throws {UnknownTool} If no such tool exists.
- * @throws {InvalidToolArguments} If the request has no tool name, or its
+ * @param openDatabase - How the database is opened; tests pass their own.
+ * @throws {UnknownToolError} If no such tool exists.
+ * @throws {InvalidToolArgumentsError} If the request has no tool name, or its
  *   `arguments` is not an object.
- * @throws {BackendFailure} If the database failed mid-call.
+ * @throws {BackendFailureError} If the database failed mid-call.
  */
 export async function callTool(
   user: Readonly<User>,
@@ -414,11 +434,11 @@ export async function callTool(
 ): Promise<ToolResult> {
   const name: unknown = params?.['name'];
   if (typeof name !== 'string' || name === '') {
-    throw new InvalidToolArguments(['`name` must be the name of a tool.']);
+    throw new InvalidToolArgumentsError(['`name` must be the name of a tool.']);
   }
   const tool = toolNamed(name);
   if (!tool) {
-    throw new UnknownTool(name);
+    throw new UnknownToolError(name);
   }
   const checked = checkedArguments(
     tool as unknown as { name: string; inputSchema: JsonSchema },
@@ -456,7 +476,7 @@ export async function callTool(
       ? found.refusal
       : await run(db, user, found.domain, args);
   } catch (error) {
-    throw new BackendFailure('the database', error);
+    throw new BackendFailureError('the database', error);
   }
 }
 
@@ -473,7 +493,7 @@ export async function callToolOrExplain(
   try {
     return await callTool(user, params, openDatabase);
   } catch (error) {
-    if (error instanceof BackendFailure) {
+    if (error instanceof BackendFailureError) {
       // What actually failed stays in our logs.
       logError({
         event: 'mcp.backend_failed',

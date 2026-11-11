@@ -25,6 +25,7 @@ export interface CheckResult {
   passed: boolean;
   /** One sentence saying what was found (or why nothing was). */
   detail: string;
+
   /**
    * True when a passed check still has something to say (shown as an
    * informational message by its hint).
@@ -60,6 +61,7 @@ export interface AgentEnv {
   origin: string;
   /** Host name of the scanned site. */
   host: string;
+
   /**
    * Fetches a path or absolute URL; null when the request failed. Results
    * are cached so a probe is made once per scan.

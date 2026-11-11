@@ -17,7 +17,7 @@ const withTlsa = (data: string[]) =>
 
 const issuerHash = createHash('sha256')
   .update(
-    new X509Certificate(fixture('ca.pem')).publicKey.export({
+    new X509Certificate(await fixture('ca.pem')).publicKey.export({
       type: 'spki',
       format: 'der',
     }),

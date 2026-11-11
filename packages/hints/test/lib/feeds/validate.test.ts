@@ -47,8 +47,8 @@ describe('validateFeed', () => {
     const found = validateFeed(
       '<rss><channel><title>t</title></channel></rss>',
     );
-    expect(found.map((f) => f.message).join()).toContain('<link>');
-    expect(found.map((f) => f.message).join()).toContain('<description>');
+    expect(found.map((f) => f.message).join(',')).toContain('<link>');
+    expect(found.map((f) => f.message).join(',')).toContain('<description>');
     expect(found).toHaveLength(2);
   });
 

@@ -98,9 +98,9 @@ describe('getPrompt', () => {
   });
 
   it('ignores a blank optional argument', () => {
-    expect(textOf('choose-checks', { domain: 'a.com', focus: '   ' })).toBe(
-      textOf('choose-checks', { domain: 'a.com' }),
-    );
+    expect(
+      textOf('choose-checks', { domain: 'a.com', focus: ' '.repeat(3) }),
+    ).toBe(textOf('choose-checks', { domain: 'a.com' }));
   });
 
   it('treats a null value, which some clients send for a skipped field, as left out', () => {
@@ -148,6 +148,6 @@ describe('getPrompt', () => {
     ['arguments that are text', 'my-domains', 'domain'],
     ['an argument that is not a string', 'choose-checks', { domain: 3 }],
   ])('refuses %s as bad parameters', (_label, name, args) => {
-    expect(refusalCode(name, args)).toBe(-32602);
+    expect(refusalCode(name, args)).toBe(-32_602);
   });
 });

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+
 import type { DatabaseSync } from 'node:sqlite';
 
 import type { CurrentUserResolver } from '@/domain/api/auth';
@@ -80,7 +81,8 @@ describe('GET /api/domains', () => {
   it('lists the person’s domains, oldest first', async () => {
     seed(OTHER, 7, 'b.example', '2026-01-02');
     seed(ID, 7, 'a.example', '2026-01-01');
-    const body = (await (await list()).json()) as {
+    const res = await list();
+    const body = (await res.json()) as {
       items: { host: string }[];
     };
     expect(body.items.map((d) => d.host)).toEqual(['a.example', 'b.example']);
@@ -88,39 +90,44 @@ describe('GET /api/domains', () => {
 
   it('shows nobody else’s domains', async () => {
     seed(ID, 8, 'a.example');
-    const body = (await (await list()).json()) as { items: unknown[] };
+    const res = await list();
+    const body = (await res.json()) as { items: unknown[] };
     expect(body.items).toEqual([]);
   });
 
   it('is private to the person', async () => {
-    expect((await list()).headers.get('cache-control')).toBe(
-      'private, no-cache',
-    );
+    const res = await list();
+    expect(res.headers.get('cache-control')).toBe('private, no-cache');
   });
 
   it('hands out a link to the next page', async () => {
     seed(ID, 7, 'a.example', '2026-01-01');
     seed(OTHER, 7, 'b.example', '2026-01-02');
-    const first = (await (await list('?limit=1')).json()) as {
+    const firstPage = await list('?limit=1');
+    const first = (await firstPage.json()) as {
       next: string;
     };
-    const second = (await (await list(new URL(first.next).search)).json()) as {
+    const nextPage = await list(new URL(first.next).search);
+    const second = (await nextPage.json()) as {
       items: { host: string }[];
     };
     expect(second.items.map((d) => d.host)).toEqual(['b.example']);
   });
 
   it('answers 400 for a limit out of range', async () => {
-    expect((await list('?limit=0')).status).toBe(400);
+    const res = await list('?limit=0');
+    expect(res.status).toBe(400);
   });
 
   it('answers 400 for a cursor it did not hand out', async () => {
-    expect((await list('?cursor=nope')).status).toBe(400);
+    const res = await list('?cursor=nope');
+    expect(res.status).toBe(400);
   });
 
   it('answers 401 when nobody is signed in', async () => {
     session.uid = null;
-    expect((await list()).status).toBe(401);
+    const res = await list();
+    expect(res.status).toBe(401);
   });
 });
 
@@ -138,16 +145,19 @@ describe('GET /api/domains/{id}', () => {
 
   it('answers 404 for another person’s domain', async () => {
     seed(ID, 8, 'example.com');
-    expect((await call('GET', ID)).status).toBe(404);
+    const res = await call('GET', ID);
+    expect(res.status).toBe(404);
   });
 
   it('answers 404 for an id that cannot be a domain', async () => {
-    expect((await call('GET', 'nope')).status).toBe(404);
+    const res = await call('GET', 'nope');
+    expect(res.status).toBe(404);
   });
 
   it('answers 401 when nobody is signed in', async () => {
     session.uid = null;
-    expect((await call('GET', ID)).status).toBe(401);
+    const res = await call('GET', ID);
+    expect(res.status).toBe(401);
   });
 });
 
@@ -169,7 +179,8 @@ describe('PATCH /api/domains/{id}', () => {
 
   it('keeps the choice', async () => {
     await patch(ID, { checks: ['accept-ch'] });
-    const body = (await (await call('GET', ID)).json()) as {
+    const res = await call('GET', ID);
+    const body = (await res.json()) as {
       checks: string[];
     };
     expect(body.checks).toEqual(['accept-ch']);
@@ -177,23 +188,23 @@ describe('PATCH /api/domains/{id}', () => {
 
   it('goes back to every check for null', async () => {
     await patch(ID, { checks: ['accept-ch'] });
-    const body = (await (await patch(ID, { checks: null })).json()) as {
+    const res = await patch(ID, { checks: null });
+    const body = (await res.json()) as {
       all_checks: boolean;
     };
     expect(body.all_checks).toBe(true);
   });
 
   it('honours an If-Match that still matches', async () => {
-    const etag = (await call('GET', ID)).headers.get('etag') ?? '';
-    expect(
-      (await patch(ID, { checks: null }, { 'if-match': etag })).status,
-    ).toBe(200);
+    const current = await call('GET', ID);
+    const etag = current.headers.get('etag') ?? '';
+    const res = await patch(ID, { checks: null }, { 'if-match': etag });
+    expect(res.status).toBe(200);
   });
 
   it('answers 412 for an If-Match that no longer matches', async () => {
-    expect(
-      (await patch(ID, { checks: null }, { 'if-match': '"stale"' })).status,
-    ).toBe(412);
+    const res = await patch(ID, { checks: null }, { 'if-match': '"stale"' });
+    expect(res.status).toBe(412);
   });
 
   it('answers 400 for checks that do not exist', async () => {
@@ -206,18 +217,22 @@ describe('PATCH /api/domains/{id}', () => {
   });
 
   it('answers 400 for a change to the host', async () => {
-    expect((await patch(ID, { host: 'other.example' })).status).toBe(400);
+    const res = await patch(ID, { host: 'other.example' });
+    expect(res.status).toBe(400);
   });
 
   it('answers 404 for another person’s domain', async () => {
     seed(OTHER, 8, 'example.com');
-    expect((await patch(OTHER, { checks: null })).status).toBe(404);
+    const res = await patch(OTHER, { checks: null });
+    expect(res.status).toBe(404);
   });
 
   it('answers 403 for a write from another site', async () => {
-    expect(
-      (await patch(ID, { checks: null }, { 'sec-fetch-site': 'cross-site' }))
-        .status,
-    ).toBe(403);
+    const res = await patch(
+      ID,
+      { checks: null },
+      { 'sec-fetch-site': 'cross-site' },
+    );
+    expect(res.status).toBe(403);
   });
 });

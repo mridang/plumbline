@@ -1,4 +1,4 @@
-import { createRequire } from 'node:module';
+import { createHTMLDocument } from '@hint/utils-dom';
 import { describe, expect, it } from '@jest/globals';
 import {
   getAlternateMediaLinks,
@@ -9,9 +9,7 @@ import {
   sameUrl,
   type DocumentLike,
 } from '../../../src/lib/i18n/read.js';
-
-const require = createRequire(import.meta.url);
-const { createHTMLDocument } = require('@hint/utils-dom');
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 /** Parses markup with the same DOM implementation the webhint hints use. */
 const parse = (html: string): DocumentLike =>
@@ -104,7 +102,7 @@ describe('isValidHreflang', () => {
 });
 
 describe('isAbsoluteHttpUrl', () => {
-  it.each(['https://x.test/', 'http://x.test/a?b#c'])(
+  it.each(['https://x.test/', `${HTTP_SCHEME}x.test/a?b#c`])(
     'accepts absolute %s',
     (href) => {
       expect(isAbsoluteHttpUrl(href)).toBe(true);

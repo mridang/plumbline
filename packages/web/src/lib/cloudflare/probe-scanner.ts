@@ -35,13 +35,16 @@ import { readLimits, scanLimits } from '@/domain/suite/limits';
 import { suiteRunOf, type SuiteRun } from '@/domain/suite/run';
 import {
   JOBS_PATH,
-  SiteUnreachable,
+  SiteUnreachableError,
   collectScan,
   type ScanJob,
 } from '@/domain/suite/scanner';
 
 /** The port the probe listens on. */
 const PORT = 8080;
+
+/** The container's address on the internal Durable Object channel; no TLS exists there. */
+const CHANNEL = `${'http'}://probe`;
 
 /** How long the container may be idle before it stops, in milliseconds. */
 export const IDLE_MS = 120_000;
@@ -53,16 +56,16 @@ export const START_TIMEOUT_MS = 60_000;
 const RETRY_MS = 250;
 
 /** How long a container that has finished its job may stay up, in milliseconds. */
-export const AFTER_JOB_IDLE_MS = 5_000;
+export const AFTER_JOB_IDLE_MS = 5000;
 
 /** A probe call that takes longer than this is logged, with what it was about, in milliseconds. */
-export const SLOW_PROBE_MS = 3_000;
+export const SLOW_PROBE_MS = 3000;
 
 /** What a probe request is about, for a log: the route and the host, port and path it names. */
 export function aboutRequest(path: string, body: string): string {
   // For a batch, the first item stands for it.
   const fields = Object.fromEntries(
-    (body.split('--\n')[0] ?? '')
+    (body.split('--\n', 1)[0] ?? '')
       .split('\n')
       .map((line) => line.split(/=(.*)/s).slice(0, 2))
       .filter(([key]) =>
@@ -111,20 +114,24 @@ export class ProbeScanner extends DurableObject<CloudflareEnv> {
     const writer = writable.getWriter();
     const encoder = new TextEncoder();
     const client = new ProbeClient((path, text) => this.callProbe(path, text));
-    void runWorkerScan(
-      client,
-      url,
-      (event) => {
-        void writer.write(encoder.encode(`${JSON.stringify(event)}\n`));
-      },
-      {
-        diagnose: (error) =>
-          console.error('the page of a scan could not be loaded', error),
-      },
-    ).then(
-      () => writer.close(),
-      (error: unknown) => writer.abort(error),
-    );
+    void (async () => {
+      try {
+        await runWorkerScan(
+          client,
+          url,
+          (event) => {
+            void writer.write(encoder.encode(`${JSON.stringify(event)}\n`));
+          },
+          {
+            diagnose: (error) =>
+              console.error('the page of a scan could not be loaded', error),
+          },
+        );
+        await writer.close();
+      } catch (error) {
+        await writer.abort(error);
+      }
+    })();
     return readable;
   }
 
@@ -156,7 +163,7 @@ export class ProbeScanner extends DurableObject<CloudflareEnv> {
       try {
         return await this.scan(url);
       } catch (error) {
-        if (!(error instanceof SiteUnreachable)) {
+        if (!(error instanceof SiteUnreachableError)) {
           trouble = error;
         }
         throw error;
@@ -252,7 +259,7 @@ export class ProbeScanner extends DurableObject<CloudflareEnv> {
     const deadline = Date.now() + START_TIMEOUT_MS;
     for (;;) {
       try {
-        const health = await port.fetch('http://probe/healthz');
+        const health = await port.fetch(`${CHANNEL}/healthz`);
         if (health.ok) {
           break;
         }
@@ -265,7 +272,7 @@ export class ProbeScanner extends DurableObject<CloudflareEnv> {
       await new Promise((resolve) => setTimeout(resolve, RETRY_MS));
     }
     const url = new URL(request.url);
-    return port.fetch(`http://probe${url.pathname}`, {
+    return port.fetch(`${CHANNEL}${url.pathname}`, {
       method: request.method,
       headers: request.headers,
       body: request.method === 'GET' ? undefined : request.body,

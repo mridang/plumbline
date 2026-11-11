@@ -93,10 +93,10 @@ export function registrableDomain(hostname: string): string | null {
     return null;
   }
   const labels = host.split('.');
-  if (labels.length < 2 || labels.some((label) => label === '')) {
+  if (labels.length < 2 || labels.includes('')) {
     return null;
   }
-  if (NON_PUBLIC_TLDS.has(labels[labels.length - 1])) {
+  if (NON_PUBLIC_TLDS.has(labels.at(-1) ?? '')) {
     return null;
   }
   const lastTwo = labels.slice(-2).join('.');

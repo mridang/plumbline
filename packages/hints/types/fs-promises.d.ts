@@ -1,2 +1,2 @@
 // The Node module `#fs/promises` stands for (see `imports` in package.json).
-export * from 'node:fs/promises';
+export { mkdtemp, rm, writeFile } from 'node:fs/promises';

@@ -1,9 +1,6 @@
-import { createRequire } from 'node:module';
 import { describe, expect, it } from '@jest/globals';
+import { createHTMLDocument } from '@hint/utils-dom';
 import { metaValue, metaValues } from '../../../src/lib/opengraph/meta.js';
-
-const require = createRequire(import.meta.url);
-const { createHTMLDocument } = require('@hint/utils-dom');
 
 const doc = createHTMLDocument(
   `<html><head>
@@ -15,7 +12,7 @@ const doc = createHTMLDocument(
     <meta property="og:nocontent">
     <meta property="description" name="twitter:site" content="@x">
   </head></html>`,
-  'http://example.com/',
+  'https://example.com/',
 );
 
 describe('metaValues', () => {

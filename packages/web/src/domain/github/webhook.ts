@@ -41,7 +41,7 @@ export async function verifySignature(
   // Every character is compared, so the time taken says nothing about where they differ.
   let difference = 0;
   for (let i = 0; i < expected.length; i += 1) {
-    difference |= expected.charCodeAt(i) ^ given.charCodeAt(i);
+    difference |= (expected.codePointAt(i) ?? 0) ^ (given.codePointAt(i) ?? 0);
   }
   return difference === 0;
 }

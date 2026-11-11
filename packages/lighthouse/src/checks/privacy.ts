@@ -83,7 +83,7 @@ function fromHint(
 function list(label: string, cookies: readonly CookieRecord[]): string {
   return cookies.length === 0
     ? ''
-    : ` ${label}: ${cookies.map(describeCookie).join('; ')}.`;
+    : ` ${label}: ${cookies.map((cookie) => describeCookie(cookie)).join('; ')}.`;
 }
 
 /** The host of the page URL, or null when it cannot be parsed. */

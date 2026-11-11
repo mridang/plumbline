@@ -32,6 +32,7 @@ import {
   twitterTitleMissing,
   type OgImage,
 } from '../../../src/lib/opengraph/checks.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 /** Builds a `meta(key)` reader over a plain map of tag values. */
 function meta(
@@ -241,8 +242,9 @@ describe('ogImageMissing', () => {
 describe('ogImageNotHttps', () => {
   it('warns on http:// only', () => {
     expect(
-      ogImageNotHttps({ meta: meta({ 'og:image': 'http://x/og.png' }) })[0]
-        .severity,
+      ogImageNotHttps({
+        meta: meta({ 'og:image': `${HTTP_SCHEME}x/og.png` }),
+      })[0].severity,
     ).toBe('warning');
     expect(
       ogImageNotHttps({ meta: meta({ 'og:image': 'https://x/og.png' }) }),

@@ -2,16 +2,18 @@
  * Helpers for tests of the hints that shell out to `openssl`: a fake runner
  * that returns canned `s_client` output, and a check for the real binary.
  */
-import { spawnSync } from 'node:child_process';
 import { it } from '@jest/globals';
 import {
   execOpenssl,
   openssl,
   type OpensslExec,
 } from '../../../src/lib/tls/openssl.js';
+import { execFileAsync } from '../../helpers/exec.js';
 
 /** Whether the real `openssl` binary is on the PATH. */
-const hasOpenssl = spawnSync(openssl.command, ['version']).status === 0;
+const hasOpenssl = await execFileAsync(openssl.command, ['version'])
+  .then(() => true)
+  .catch(() => false);
 
 /** `it` when the real binary exists, `it.skip` otherwise. */
 export const realIt = hasOpenssl ? it : it.skip;

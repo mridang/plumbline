@@ -1,5 +1,5 @@
-import { createRequire } from 'node:module';
 import { describe, expect, it } from '@jest/globals';
+import { createHTMLDocument } from '@hint/utils-dom';
 import type { DocumentLike } from '../../../src/lib/pwa/read.js';
 import {
   manifestIcons,
@@ -12,11 +12,8 @@ import {
   THEME_COLOR_META_REF,
 } from '../../../src/lib/pwa/checks.js';
 
-const require = createRequire(import.meta.url);
-const { createHTMLDocument } = require('@hint/utils-dom');
-
 const parse = (html: string): DocumentLike =>
-  createHTMLDocument(html, 'http://example.com/') as DocumentLike;
+  createHTMLDocument(html, 'https://example.com/') as DocumentLike;
 
 /** A fully valid manifest; tests delete or override one member at a time. */
 const fullManifest = (): Record<string, unknown> => ({

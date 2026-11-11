@@ -26,20 +26,15 @@ import {
 
 describe('compareText', () => {
   it('alphabetises accented letters with their base letter', () => {
-    expect(['Eggs', 'Éclair', 'Zucchini', 'Apple'].sort(compareText)).toEqual([
-      'Apple',
-      'Éclair',
-      'Eggs',
-      'Zucchini',
-    ]);
+    expect(
+      ['Eggs', 'Éclair', 'Zucchini', 'Apple'].toSorted(compareText),
+    ).toEqual(['Apple', 'Éclair', 'Eggs', 'Zucchini']);
   });
 
   it('compares digit runs as numbers', () => {
-    expect(['Recipe 10', 'Recipe 2', 'Recipe 1'].sort(compareText)).toEqual([
-      'Recipe 1',
-      'Recipe 2',
-      'Recipe 10',
-    ]);
+    expect(['Recipe 10', 'Recipe 2', 'Recipe 1'].toSorted(compareText)).toEqual(
+      ['Recipe 1', 'Recipe 2', 'Recipe 10'],
+    );
   });
 
   it('treats case and accent differences as ties', () => {
@@ -207,7 +202,7 @@ describe('truncate', () => {
 
 describe('formatCount and formatCompact', () => {
   it('groups thousands', () => {
-    expect(formatCount(1234567)).toBe('1,234,567');
+    expect(formatCount(1_234_567)).toBe('1,234,567');
   });
 
   it('shortens large numbers and leaves small ones alone', () => {

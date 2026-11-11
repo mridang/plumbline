@@ -18,7 +18,7 @@ describe('speculationRulesFindings', () => {
   });
 
   it('warns on an empty value', () => {
-    const [f] = speculationRulesFindings('   ');
+    const [f] = speculationRulesFindings(' '.repeat(3));
     expect(f?.severity).toBe('warning');
   });
 

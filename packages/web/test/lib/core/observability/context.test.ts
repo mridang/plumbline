@@ -15,6 +15,13 @@ beforeEach(() => {
   fake.throwing = false;
 });
 
+/** An object with each key present and set to `undefined`. */
+const unset = <K extends string>(...keys: K[]): Record<K, undefined> =>
+  Object.fromEntries(keys.map((key) => [key, undefined])) as Record<
+    K,
+    undefined
+  >;
+
 describe('setErrorContext', () => {
   it('sets strings, numbers and booleans on the active span', async () => {
     await setErrorContext({ 'user.id': 4, 'auth.method': 'session', ok: true });
@@ -33,7 +40,7 @@ describe('setErrorContext', () => {
 
   it('drops undefined values and anything that is not a plain value', async () => {
     await setErrorContext({
-      gone: undefined,
+      ...unset('gone'),
       nan: Number.NaN,
       object: { a: 1 } as never,
       kept: 'yes',

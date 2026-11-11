@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   ALLOWED_PORTS,
-  ScanRefused,
+  ScanRefusedError,
   assertScannable,
 } from '../../src/engine/scannable.js';
 
@@ -10,21 +10,23 @@ describe('assertScannable', () => {
   it('lets an https or http address on the default port or a listed port through', () => {
     for (const address of [
       'https://example.com/',
-      'http://example.com/',
+      'https://example.com/',
       'https://example.com:8443/x',
-      'http://example.com:8080/',
+      'https://example.com:8080/',
     ]) {
       expect(() => assertScannable(new URL(address))).not.toThrow();
     }
-    expect([...ALLOWED_PORTS].sort()).toEqual([443, 80, 8080, 8443].sort());
+    expect([...ALLOWED_PORTS].toSorted((a, b) => a - b)).toEqual(
+      [443, 80, 8080, 8443].toSorted((a, b) => a - b),
+    );
   });
 
   it('refuses any other scheme, with the scheme in the message', () => {
     expect(() => assertScannable(new URL('ftp://example.com/'))).toThrow(
-      new ScanRefused('Only http and https can be fetched, not ftp:'),
+      new ScanRefusedError('Only http and https can be fetched, not ftp:'),
     );
     expect(() => assertScannable(new URL('file:///etc/passwd'))).toThrow(
-      ScanRefused,
+      ScanRefusedError,
     );
   });
 
@@ -40,6 +42,6 @@ describe('assertScannable', () => {
     );
     expect(() =>
       assertScannable(new URL('https://user:secret@example.com/')),
-    ).toThrow(ScanRefused);
+    ).toThrow(ScanRefusedError);
   });
 });

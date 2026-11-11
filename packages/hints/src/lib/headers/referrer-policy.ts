@@ -10,18 +10,18 @@
  */
 import { finding, type Finding, type Profile } from './finding.js';
 
-const PRIVATE = [
+const PRIVATE = new Set([
   'no-referrer',
   'same-origin',
   'strict-origin',
   'strict-origin-when-cross-origin',
-];
-const UNSAFE = [
+]);
+const UNSAFE = new Set([
   'origin',
   'origin-when-cross-origin',
   'unsafe-url',
   'no-referrer-when-downgrade',
-];
+]);
 
 export interface ReferrerSources {
   /** Contents of `<meta name="referrer">`. */
@@ -48,11 +48,10 @@ export function effectiveReferrerPolicy(
 
 /** The last token the browser would recognise, or null if there is none. */
 export function lastKnownPolicy(declared: string): string | null {
-  const known = new Set([...PRIVATE, ...UNSAFE]);
   const tokens = declared
     .split(',')
     .map((token) => token.trim().toLowerCase())
-    .filter((token) => known.has(token));
+    .filter((token) => PRIVATE.has(token) || UNSAFE.has(token));
   return tokens.at(-1) ?? null;
 }
 
@@ -96,7 +95,7 @@ export function referrerPolicyFindings(
       ),
     ];
   }
-  if (UNSAFE.includes(policy)) {
+  if (UNSAFE.has(policy)) {
     return [
       finding(
         'error',

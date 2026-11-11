@@ -10,6 +10,8 @@ describe('firstNameOf', () => {
 
   it('falls back to the part of the email before the @', () => {
     expect(firstNameOf({ name: null, email: 'ada@example.com' })).toBe('ada');
-    expect(firstNameOf({ name: '   ', email: 'ada@example.com' })).toBe('ada');
+    expect(firstNameOf({ name: ' '.repeat(3), email: 'ada@example.com' })).toBe(
+      'ada',
+    );
   });
 });

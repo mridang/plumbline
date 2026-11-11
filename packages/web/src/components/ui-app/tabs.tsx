@@ -17,6 +17,23 @@ export function tabId(panelId: string, key: string): string {
   return `${panelId}-tab-${key}`;
 }
 
+/** The index a key moves focus to, or -1 for a key that moves nothing. */
+function nextTabIndex(key: string, at: number, last: number): number {
+  if (key === 'ArrowRight') {
+    return at >= last ? 0 : at + 1;
+  }
+  if (key === 'ArrowLeft') {
+    return at <= 0 ? last : at - 1;
+  }
+  if (key === 'Home') {
+    return 0;
+  }
+  if (key === 'End') {
+    return last;
+  }
+  return -1;
+}
+
 /**
  * Move focus to the tab the key points at: arrows step along (and wrap), Home
  * and End go to the ends. The tab in force is the only one in the tab order, so
@@ -30,20 +47,7 @@ export function moveFocus(
 ): void {
   const at = tabs.indexOf(document.activeElement as HTMLElement);
   const last = tabs.length - 1;
-  const target =
-    event.key === 'ArrowRight'
-      ? at >= last
-        ? 0
-        : at + 1
-      : event.key === 'ArrowLeft'
-        ? at <= 0
-          ? last
-          : at - 1
-        : event.key === 'Home'
-          ? 0
-          : event.key === 'End'
-            ? last
-            : -1;
+  const target = nextTabIndex(event.key, at, last);
   if (target >= 0) {
     event.preventDefault();
     tabs[target]?.focus();

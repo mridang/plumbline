@@ -44,7 +44,10 @@ function problem(severity: Severity): Problem {
 /** Captures what a run prints and what it asked the scan to do. */
 async function run(
   argv: string[],
-  options: { problems?: Problem[]; scan?: Dependencies['scan'] } = {},
+  options: {
+    problems?: Problem[];
+    scan?: NonNullable<Dependencies['scan']>;
+  } = {},
 ) {
   const calls: { url: string; options?: ScanOptions }[] = [];
   const scan =
@@ -181,7 +184,8 @@ describe('plumbline scan', () => {
       { problems: [problem(Severity.error)] },
     );
     expect(result.code).toBe(EXIT.findings);
-    expect((await readdir(dir)).sort()).toEqual([
+    const files = await readdir(dir);
+    expect(files.toSorted((a, b) => a.localeCompare(b))).toEqual([
       'https-example-com.html',
       'https-example-com.json',
     ]);

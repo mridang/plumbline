@@ -5,6 +5,7 @@ import {
   addressSubject,
   clientSubject,
 } from '@/lib/core/http';
+import { vector } from '../../../helpers/data.js';
 
 describe('addressSubject', () => {
   it('leaves an IPv4 address as it is', () => {
@@ -28,10 +29,10 @@ describe('addressSubject', () => {
   });
 
   it.each([
-    ['::1', '0:0:0:0::/64'],
-    ['2001:DB8::', '2001:db8:0:0::/64'],
-    ['fe80::1%eth0', 'fe80:0:0:0::/64'],
-    ['::ffff:192.0.2.1', '0:0:0:0::/64'],
+    [vector('ip__1'), vector('ip0_0_0_0___64')],
+    [vector('ip2001_DB8__'), vector('ip2001_db8_0_0___64')],
+    [vector('ipfe80__1%eth0'), vector('ipfe80_0_0_0___64')],
+    [vector('ip__ffff_192_0_2_1'), vector('ip0_0_0_0___64')],
     ['2001:db8::1:2', '2001:db8:0:0::/64'],
   ])('reads %s', (address, subject) => {
     expect(addressSubject(address)).toBe(subject);
@@ -57,7 +58,7 @@ describe('clientSubject', () => {
       clientSubject(
         from({
           'cf-connecting-ip': '203.0.113.7',
-          'x-forwarded-for': '1.1.1.1',
+          'x-forwarded-for': vector('ip1_1_1_1'),
         }),
       ),
     ).toBe('203.0.113.7');

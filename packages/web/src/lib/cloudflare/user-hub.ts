@@ -41,14 +41,13 @@ export class UserHub extends DurableObject<CloudflareEnv> {
 
   /**
    * Open an event stream, replaying what the client missed.
-   *
-   * @param request The stream request, naming the repository in its path's last segment.
+   * @param request - The stream request, naming the repository in its path's last segment.
    * @returns The streaming response.
    */
   override async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const userId = decodeURIComponent(
-      url.pathname.split('/').filter(Boolean).pop() ?? '',
+      url.pathname.split('/').findLast(Boolean) ?? '',
     );
     if (userId === '') {
       return new Response('Missing person.', { status: 400 });
@@ -82,18 +81,14 @@ export class UserHub extends DurableObject<CloudflareEnv> {
     this.clients.add(writer);
     // A client that goes away (a closed tab, a dropped connection) ends the
     // writer; let go of it at once, not at the next ping or event.
-    void writer.closed.then(
-      () => this.release(writer),
-      () => this.release(writer),
-    );
+    void writer.closed.catch(() => undefined).then(() => this.release(writer));
     this.startHeartbeat();
     return new Response(readable, { headers: SSE_HEADERS });
   }
 
   /**
    * Push facts recorded since the last position to every open stream.
-   *
-   * @param userId The repository whose log grew.
+   * @param userId - The repository whose log grew.
    */
   async notify(userId: string): Promise<void> {
     if (this.clients.size === 0) {
@@ -162,7 +157,7 @@ export class UserHub extends DurableObject<CloudflareEnv> {
   }
 
   private broadcast(frame: string): void {
-    for (const writer of [...this.clients]) {
+    for (const writer of this.clients) {
       if (writer.desiredSize === null || writer.desiredSize <= 0) {
         this.clients.delete(writer);
         writer.abort().catch(() => undefined);
@@ -173,7 +168,7 @@ export class UserHub extends DurableObject<CloudflareEnv> {
   }
 
   private startHeartbeat(): void {
-    this.timer ??= setInterval(() => void this.heartbeat(), HEARTBEAT_MS);
+    this.timer ??= setInterval(() => this.heartbeat(), HEARTBEAT_MS);
   }
 
   private stopHeartbeat(): void {

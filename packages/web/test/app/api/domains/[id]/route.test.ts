@@ -60,17 +60,20 @@ describe('/api/domains/:id', () => {
   });
 
   it('chooses the checks of the domain', async () => {
-    const body = (await (await patch({ cookie })).json()) as {
+    const res = await patch({ cookie });
+    const body = (await res.json()) as {
       checks: string[];
     };
     expect(body.checks).toEqual(['accept-ch']);
   });
 
   it('answers 401 to a GET without a session cookie', async () => {
-    expect((await GET(new Request(URL), params)).status).toBe(401);
+    const res = await GET(new Request(URL), params);
+    expect(res.status).toBe(401);
   });
 
   it('answers 401 to a PATCH without a session cookie', async () => {
-    expect((await patch({})).status).toBe(401);
+    const res = await patch({});
+    expect(res.status).toBe(401);
   });
 });

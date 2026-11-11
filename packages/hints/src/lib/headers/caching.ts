@@ -11,7 +11,7 @@ import { splitList } from './http-headers.js';
 
 /** The preferred IMF-fixdate HTTP-date, plus the two obsolete formats. */
 const IMF_FIXDATE =
-  /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} \d{2}:\d{2}:\d{2} GMT$/;
+  /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d\d (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d\d\d\d \d\d:\d\d:\d\d GMT$/;
 
 /** True when a value is a valid HTTP-date and names a real calendar day. */
 function isHttpDate(value: string): boolean {
@@ -154,7 +154,7 @@ export function noVarySearchFindings(value: string | null): Finding[] {
     return [finding('warning', "The 'No-Vary-Search' header is empty.")];
   }
   for (const member of members) {
-    const key = member.split(/[=;]/)[0]?.trim() ?? '';
+    const key = member.split(/[=;]/, 1)[0]?.trim() ?? '';
     if (!NO_VARY_SEARCH_KEYS.has(key)) {
       return [
         finding(

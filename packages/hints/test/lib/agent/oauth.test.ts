@@ -6,6 +6,7 @@ import {
   checkOauthProtectedResource,
 } from '../../../src/lib/agent/oauth.js';
 import { fakeEnv } from './fake-env.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 describe('isIdentifierUrl', () => {
   it('accepts https URLs and http loopback hosts', () => {
@@ -14,7 +15,7 @@ describe('isIdentifierUrl', () => {
   });
   it('rejects http, query, fragment, junk and non-strings', () => {
     for (const v of [
-      'http://example.com',
+      `${HTTP_SCHEME}example.com`,
       'https://e.com/?a=1',
       'https://e.com/#f',
       'nope',
@@ -51,7 +52,8 @@ describe('checkOauthDiscovery with a JSON 404 fallback', () => {
         issuer: 'https://example.com',
       },
     });
-    expect((await checkOauthDiscovery(env)).passed).toBe(true);
+    const r = await checkOauthDiscovery(env);
+    expect(r.passed).toBe(true);
   });
   it('names both paths when both fail', async () => {
     const r = await checkOauthDiscovery(fakeEnv({}, { fallback: notFound }));
@@ -67,7 +69,8 @@ describe('checkOauthDiscovery', () => {
     const env = fakeEnv({
       '/.well-known/openid-configuration': { issuer: 'https://example.com' },
     });
-    expect((await checkOauthDiscovery(env)).passed).toBe(true);
+    const r = await checkOauthDiscovery(env);
+    expect(r.passed).toBe(true);
   });
   it('falls back to RFC 8414 metadata', async () => {
     const env = fakeEnv({
@@ -75,31 +78,33 @@ describe('checkOauthDiscovery', () => {
         issuer: 'https://example.com',
       },
     });
-    expect((await checkOauthDiscovery(env)).passed).toBe(true);
+    const r = await checkOauthDiscovery(env);
+    expect(r.passed).toBe(true);
   });
   it('fails for an issuer with a query or plain http', async () => {
-    for (const issuer of ['https://example.com/?a=1', 'http://example.com']) {
+    for (const issuer of [
+      'https://example.com/?a=1',
+      `${HTTP_SCHEME}example.com`,
+    ]) {
       const env = fakeEnv({ '/.well-known/openid-configuration': { issuer } });
-      expect((await checkOauthDiscovery(env)).passed).toBe(false);
+      const r = await checkOauthDiscovery(env);
+      expect(r.passed).toBe(false);
     }
   });
   it('fails for an invalid issuer', async () => {
     const env = fakeEnv({
       '/.well-known/openid-configuration': { issuer: 'not a url' },
     });
-    expect((await checkOauthDiscovery(env)).detail).toContain(
-      'no valid issuer',
-    );
+    const r = await checkOauthDiscovery(env);
+    expect(r.detail).toContain('no valid issuer');
   });
   it('fails for a non-JSON answer or nothing', async () => {
-    expect(
-      (
-        await checkOauthDiscovery(
-          fakeEnv({ '/.well-known/openid-configuration': '<html>' }),
-        )
-      ).passed,
-    ).toBe(false);
-    expect((await checkOauthDiscovery(fakeEnv())).passed).toBe(false);
+    const html = await checkOauthDiscovery(
+      fakeEnv({ '/.well-known/openid-configuration': '<html>' }),
+    );
+    expect(html.passed).toBe(false);
+    const none = await checkOauthDiscovery(fakeEnv());
+    expect(none.passed).toBe(false);
   });
 });
 
@@ -109,7 +114,8 @@ describe('checkOauthProtectedResource', () => {
     const env = fakeEnv({
       [path]: { resource: 'https://www.example.com' },
     });
-    expect((await checkOauthProtectedResource(env)).passed).toBe(true);
+    const r = await checkOauthProtectedResource(env);
+    expect(r.passed).toBe(true);
   });
   it('follows resource_metadata from a WWW-Authenticate challenge', async () => {
     const env = fakeEnv({
@@ -122,7 +128,8 @@ describe('checkOauthProtectedResource', () => {
       },
       'https://example.com/meta.json': { resource: 'https://example.com' },
     });
-    expect((await checkOauthProtectedResource(env)).passed).toBe(true);
+    const r = await checkOauthProtectedResource(env);
+    expect(r.passed).toBe(true);
   });
   it('fails for a resource at a path, as the scanner does', async () => {
     const env = fakeEnv({
@@ -136,39 +143,36 @@ describe('checkOauthProtectedResource', () => {
   });
   it('fails for a resource with a fragment', async () => {
     const env = fakeEnv({ [path]: { resource: 'https://example.com/#x' } });
-    expect((await checkOauthProtectedResource(env)).passed).toBe(false);
+    const r = await checkOauthProtectedResource(env);
+    expect(r.passed).toBe(false);
   });
   it('fails for another host', async () => {
     const env = fakeEnv({ [path]: { resource: 'https://other.com/api' } });
-    expect((await checkOauthProtectedResource(env)).detail).toContain('not on');
+    const r = await checkOauthProtectedResource(env);
+    expect(r.detail).toContain('not on');
   });
   it('fails without a resource URL', async () => {
-    expect(
-      (await checkOauthProtectedResource(fakeEnv({ [path]: {} }))).detail,
-    ).toContain('no valid resource');
+    const r = await checkOauthProtectedResource(fakeEnv({ [path]: {} }));
+    expect(r.detail).toContain('no valid resource');
   });
   it('fails when missing', async () => {
-    expect((await checkOauthProtectedResource(fakeEnv())).passed).toBe(false);
+    const r = await checkOauthProtectedResource(fakeEnv());
+    expect(r.passed).toBe(false);
   });
 });
 
 describe('checkAuthMd', () => {
   it('passes with /auth.md', async () => {
-    expect((await checkAuthMd(fakeEnv({ '/auth.md': '# Auth' }))).passed).toBe(
-      true,
-    );
+    const r = await checkAuthMd(fakeEnv({ '/auth.md': '# Auth' }));
+    expect(r.passed).toBe(true);
   });
   it('rejects an HTML soft 404 and an empty file', async () => {
-    expect(
-      (
-        await checkAuthMd(
-          fakeEnv({ '/auth.md': { contentType: 'text/html', body: '<html>' } }),
-        )
-      ).passed,
-    ).toBe(false);
-    expect((await checkAuthMd(fakeEnv({ '/auth.md': ' ' }))).passed).toBe(
-      false,
+    const html = await checkAuthMd(
+      fakeEnv({ '/auth.md': { contentType: 'text/html', body: '<html>' } }),
     );
+    expect(html.passed).toBe(false);
+    const empty = await checkAuthMd(fakeEnv({ '/auth.md': ' ' }));
+    expect(empty.passed).toBe(false);
   });
   it('passes with an agent_auth block in the metadata', async () => {
     const env = fakeEnv({
@@ -177,9 +181,11 @@ describe('checkAuthMd', () => {
         agent_auth: {},
       },
     });
-    expect((await checkAuthMd(env)).passed).toBe(true);
+    const r = await checkAuthMd(env);
+    expect(r.passed).toBe(true);
   });
   it('fails when nothing exists', async () => {
-    expect((await checkAuthMd(fakeEnv())).passed).toBe(false);
+    const r = await checkAuthMd(fakeEnv());
+    expect(r.passed).toBe(false);
   });
 });

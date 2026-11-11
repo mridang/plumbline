@@ -13,7 +13,7 @@
  * functions query the same way they query `page.document` under the hint, so
  * the two surfaces agree by construction. (This replaces a hand-rolled regex tag
  * reader that could rewind its cursor on a page with several `<script>` tags and
- * loop forever; a real parser removes that whole class of bug.)
+ * loop forever; a real parser removes that whole class of bug.).
  *
  * The rest (`meta[name=robots]`, `meta[name=twitter:card]`, the canonical link,
  * the image sources) come straight from Lighthouse's own parsed `MetaElements`,
@@ -155,7 +155,7 @@ export function imageSizesByUrl(
     const header = (record.responseHeaders ?? []).find(
       (entry) => entry.name.toLowerCase() === 'content-length',
     );
-    const declared = header ? Number(header.value) : NaN;
+    const declared = header ? Number(header.value) : Number.NaN;
     const bytes =
       Number.isFinite(declared) && declared > 0
         ? declared

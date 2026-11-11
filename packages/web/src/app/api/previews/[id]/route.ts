@@ -5,7 +5,7 @@
  * commit and never changes, so it is kept by its id and never by age.
  *
  *   GET /api/previews/{id} → 200, 404 for an id that is not one or a report
- *   that was removed
+ *   that was removed.
  */
 
 import { problems } from '@/lib/core/api';

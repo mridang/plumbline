@@ -74,7 +74,7 @@ export function createChecksCollection(): ApiController {
       }
       return {
         limit,
-        ...(group !== null ? { group } : {}),
+        ...(group === null ? {} : { group }),
         ...(after ? { after } : {}),
       };
     },

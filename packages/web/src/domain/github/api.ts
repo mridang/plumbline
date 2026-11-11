@@ -69,8 +69,8 @@ export class GitHubApi {
   readonly #fetch: typeof fetch;
 
   /**
-   * @param token The installation or user access token.
-   * @param fetcher The `fetch` to use; wrapped because Workers reject the global one called as a method.
+   * @param token - The installation or user access token.
+   * @param fetcher - The `fetch` to use; wrapped because Workers reject the global one called as a method.
    */
   constructor(
     private readonly token: string,
@@ -281,7 +281,10 @@ export class GitHubApi {
     branch: string,
     maxBytes?: number,
   ): Promise<string> {
-    const encoded = path.split('/').map(encodeURIComponent).join('/');
+    const encoded = path
+      .split('/')
+      .map((segment) => encodeURIComponent(segment))
+      .join('/');
     return this.text(
       `/repos/${fullName}/contents/${encoded}?ref=${encodeURIComponent(branch)}`,
       maxBytes,

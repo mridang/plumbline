@@ -1,7 +1,7 @@
 import { agentHint } from './define-agent-hint.js';
 
 /**
- * isitagentready.com check. Discovery: agents learn how to authenticate from /.well-known/openid-configuration or oauth-authorization-server.
+ * Isitagentready.com check. Discovery: agents learn how to authenticate from /.well-known/openid-configuration or oauth-authorization-server.
  * The logic lives in `src/lib/agent`; failures are reported as advice.
  */
 export default agentHint({

@@ -3,7 +3,7 @@
  * the hints at it. It uses the certificates in `test/fixtures/tls`, which
  * were generated once with the `openssl` command line tool.
  */
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import {
   TLSSocket,
   createSecureContext,
@@ -21,8 +21,8 @@ import { tlsProbe, connectWithNode } from '../../../src/lib/tls/client.js';
 const FIXTURES = new URL('../../fixtures/tls/', import.meta.url);
 
 /** Reads a fixture file by name. */
-export function fixture(name: string): Buffer {
-  return readFileSync(new URL(name, FIXTURES));
+export function fixture(name: string): Promise<Buffer> {
+  return readFile(new URL(name, FIXTURES));
 }
 
 /**
@@ -33,7 +33,7 @@ export function fixture(name: string): Buffer {
 export const OCSP_STAPLE = Buffer.from('30030a0100', 'hex');
 
 /** The test CA, trusted by `pointAt` unless told otherwise. */
-const CA = fixture('ca.pem');
+const CA = await fixture('ca.pem');
 
 export interface LocalServerOptions extends TlsOptions {
   /** Fixture basename of the certificate and key, default `rsa3072`. */
@@ -55,8 +55,8 @@ export async function startServer(
 ): Promise<LocalServer> {
   const { cert = 'rsa3072', keepOpen = false, ...rest } = options;
   const server = createServer({
-    cert: fixture(`${cert}.pem`),
-    key: fixture(`${cert}.key`),
+    cert: await fixture(`${cert}.pem`),
+    key: await fixture(`${cert}.key`),
     // Legacy protocols and suites are part of what the tests exercise.
     ciphers: 'ALL:@SECLEVEL=0',
     minVersion: 'TLSv1',
@@ -121,9 +121,10 @@ export async function startMailServer(
     ...rest
   } = options;
   const secureContext = createSecureContext({
-    cert: fixture(`${cert}.pem`),
-    key: fixture(`${cert}.key`),
+    cert: await fixture(`${cert}.pem`),
+    key: await fixture(`${cert}.key`),
     ciphers: 'ALL:@SECLEVEL=0',
+    // eslint-disable-next-line sonarjs/weak-ssl -- the checks must see a server that still offers TLS 1.0; the rule also resolves a named constant, so there is no spelling of the version it accepts
     minVersion: 'TLSv1',
     ...rest,
   });
@@ -163,6 +164,8 @@ export async function startMailServer(
           return;
         } else if (line === 'QUIT') {
           socket.end('221 Bye\r\n');
+        } else {
+          // Any other command gets no reply from this minimal server.
         }
         end = buffer.indexOf('\r\n');
       }
@@ -210,5 +213,5 @@ export function restoreProbe(): void {
   tlsProbe.connect = connectWithNode;
   tlsProbe.port = 443;
   tlsProbe.mailPort = 25;
-  tlsProbe.ca = undefined;
+  delete tlsProbe.ca;
 }

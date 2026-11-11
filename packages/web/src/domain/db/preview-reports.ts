@@ -44,7 +44,7 @@ export async function savePreviewReport(
 ): Promise<string> {
   const id = crypto.randomUUID();
   const { errors, warnings, hints } = countsOf(report.findings);
-  await db.insert(previewReports).values({
+  const inserted = db.insert(previewReports).values({
     id,
     repo: report.repo,
     sha: report.sha,
@@ -55,6 +55,7 @@ export async function savePreviewReport(
     findings: JSON.stringify(report.findings),
     created_at: now.toISOString(),
   });
+  await inserted;
   const cutoff = new Date(now.getTime() - KEEP_DAYS * 24 * 60 * 60 * 1000);
   await db
     .delete(previewReports)

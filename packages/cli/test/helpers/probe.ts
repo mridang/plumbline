@@ -1,5 +1,3 @@
-import { deflateSync, gzipSync } from 'node:zlib';
-
 import {
   ProbeClient,
   type ProbeTransport,
@@ -31,8 +29,7 @@ export function httpAnswer(
   body: string | Uint8Array = '',
   statusText = 'OK',
 ): string {
-  const bytes =
-    typeof body === 'string' ? Buffer.from(body) : Buffer.from(body);
+  const bytes = Buffer.from(body);
   return JSON.stringify({
     httpVersion: 'HTTP/1.1',
     status,
@@ -45,12 +42,12 @@ export function httpAnswer(
 
 /** A chunked body of the pieces. */
 export function chunked(...pieces: string[]): Buffer {
-  return Buffer.from(
-    `${pieces.map((piece) => `${Buffer.byteLength(piece).toString(16)}\r\n${piece}\r\n`).join('')}0\r\n\r\n`,
-  );
+  const frames = pieces.map((piece) => {
+    const size = Buffer.byteLength(piece).toString(16);
+    return `${size}\r\n${piece}\r\n`;
+  });
+  return Buffer.from(`${frames.join('')}0\r\n\r\n`);
 }
-
-export { deflateSync, gzipSync };
 
 /** A fake probe: `answer` decides each request; every request is kept in `sent`. */
 export function fakeProbe(
@@ -98,7 +95,7 @@ export function handshakeAnswer(
         fingerprint256: 'AA:BB',
         keyType: 'EC',
         signatureAlgorithm: 'ecdsa-with-SHA256',
-        infoAccess: { 'OCSP - URI': ['http://ocsp.example.com'] },
+        infoAccess: { 'OCSP - URI': ['https://ocsp.example.com'] },
       },
     ],
     ocsp: null,

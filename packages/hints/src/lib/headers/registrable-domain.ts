@@ -31,8 +31,8 @@ export function registrableDomain(host: string): string {
     return name;
   }
   const labels = name.split('.');
-  const tld = labels[labels.length - 1] ?? '';
-  const second = labels[labels.length - 2] ?? '';
+  const tld = labels.at(-1) ?? '';
+  const second = labels.at(-2) ?? '';
   const keep = tld.length === 2 && SECOND_LEVEL.has(second) ? 3 : 2;
   return labels.slice(-keep).join('.');
 }

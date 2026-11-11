@@ -6,6 +6,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
+
 import type { DatabaseSync } from 'node:sqlite';
 
 import type { CurrentUserResolver } from '@/domain/api/auth';
@@ -22,6 +23,7 @@ import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const session: { uid: number | null } = { uid: 7 };
 const resolver: CurrentUserResolver = {
@@ -100,28 +102,37 @@ describe('POST /api/users/self/push/subscriptions', () => {
     expect(first.headers.get('location')).toBe(
       `${ORIGIN}/api/users/self/push/subscriptions/${id}`,
     );
-    expect((await post(GOOD)).status).toBe(200);
+    const again = await post(GOOD);
+    expect(again.status).toBe(200);
     expect(owners()).toEqual([{ endpoint: ENDPOINT, user_id: 7 }]);
   });
 
   it("refuses a field it does not know, such as the browser's own expirationTime", async () => {
-    expect((await post({ ...GOOD, expirationTime: null })).status).toBe(400);
+    const res = await post({ ...GOOD, expirationTime: null });
+    expect(res.status).toBe(400);
     expect(owners()).toEqual([]);
   });
 
   it.each([
-    [{ endpoint: 'http://push.test/x', keys: { p256dh: 'p', auth: 'a' } }],
+    [
+      {
+        endpoint: `${HTTP_SCHEME}push.test/x`,
+        keys: { p256dh: 'p', auth: 'a' },
+      },
+    ],
     [{ endpoint: ENDPOINT, keys: { auth: 'a' } }],
     [{ endpoint: ENDPOINT, keys: { p256dh: 'p' } }],
     [{ keys: { p256dh: 'p', auth: 'a' } }],
   ])('refuses %j', async (body) => {
-    expect((await post(body)).status).toBe(400);
+    const res = await post(body);
+    expect(res.status).toBe(400);
     expect(owners()).toEqual([]);
   });
 
   it('refuses nobody signed in', async () => {
     session.uid = null;
-    expect((await post(GOOD)).status).toBe(401);
+    const res = await post(GOOD);
+    expect(res.status).toBe(401);
   });
 });
 
@@ -136,19 +147,22 @@ describe('DELETE /api/users/self/push/subscriptions/{id}', () => {
 
   it('forgets the person’s own subscription', async () => {
     await post(GOOD);
-    expect((await remove(await subscriptionId(ENDPOINT))).status).toBe(204);
+    const res = await remove(await subscriptionId(ENDPOINT));
+    expect(res.status).toBe(204);
     expect(owners()).toEqual([]);
   });
 
   it('cannot forget someone else’s, and says it is not there', async () => {
     await post(GOOD);
     session.uid = 8;
-    expect((await remove(await subscriptionId(ENDPOINT))).status).toBe(404);
+    const res = await remove(await subscriptionId(ENDPOINT));
+    expect(res.status).toBe(404);
     expect(owners()).toHaveLength(1);
   });
 
   it('answers 404 for an id that is not one', async () => {
-    expect((await remove('nope')).status).toBe(404);
+    const res = await remove('nope');
+    expect(res.status).toBe(404);
   });
 });
 
@@ -165,12 +179,14 @@ describe('POST /api/users/self/push/subscriptions/{id}/tests', () => {
     restore();
     install(false);
     await post(GOOD);
-    expect((await test(await subscriptionId(ENDPOINT))).status).toBe(503);
+    const res = await test(await subscriptionId(ENDPOINT));
+    expect(res.status).toBe(503);
   });
 
   it('answers 404 for a subscription that is not the person’s', async () => {
     await post(GOOD);
     session.uid = 8;
-    expect((await test(await subscriptionId(ENDPOINT))).status).toBe(404);
+    const res = await test(await subscriptionId(ENDPOINT));
+    expect(res.status).toBe(404);
   });
 });

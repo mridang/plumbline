@@ -27,19 +27,20 @@ export async function readTextCapped(
   const chunks: Uint8Array[] = [];
   let size = 0;
   let truncated = false;
-  for (;;) {
+  let finished = false;
+  while (!finished) {
     const { done, value } = await reader.read();
     if (done) {
-      break;
-    }
-    if (size + value.byteLength > maxBytes) {
+      finished = true;
+    } else if (size + value.byteLength > maxBytes) {
       chunks.push(value.subarray(0, maxBytes - size));
       truncated = true;
       await reader.cancel().catch(() => undefined);
-      break;
+      finished = true;
+    } else {
+      chunks.push(value);
+      size += value.byteLength;
     }
-    chunks.push(value);
-    size += value.byteLength;
   }
   const whole = new Uint8Array(chunks.reduce((n, c) => n + c.byteLength, 0));
   let at = 0;

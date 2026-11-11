@@ -37,7 +37,7 @@
  * webhint check also falls back to fetching `/favicon.ico`, a request a plugin
  * cannot make, so only the declared `<link>`s are inspected here.
  */
-import type * as LH from 'lighthouse';
+import type { Artifacts } from 'lighthouse';
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/seo/read.js';
 // The single-source SEO/favicon rules: predicate + message + severity. Both
@@ -102,7 +102,7 @@ const LINKS_AND_URL = ['LinkElements', 'URL'] as const;
 const ROBOTS_ARTIFACTS = ['MetaElements', 'DevtoolsLog', 'URL'] as const;
 
 /** The page URL a check compares against (the rendered URL, else the requested). */
-function pageUrl(artifacts: LH.Artifacts): string {
+function pageUrl(artifacts: Artifacts): string {
   return (
     artifacts.URL?.finalDisplayedUrl || artifacts.URL?.mainDocumentUrl || ''
   );
@@ -114,7 +114,7 @@ function pageUrl(artifacts: LH.Artifacts): string {
  * only one of them never trips over the absence of another. The page URL is
  * threaded through so the HTML parser can resolve relative URLs.
  */
-function documentOf(artifacts: LH.Artifacts): DocumentLike {
+function documentOf(artifacts: Artifacts): DocumentLike {
   return seoDocument({
     MetaElements: artifacts.MetaElements ?? [],
     LinkElements: (artifacts.LinkElements ??
