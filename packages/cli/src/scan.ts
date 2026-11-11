@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import { Analyzer, Configuration } from 'hint';
 import type { Problem } from '@hint/utils-types';
 import connectorPuppeteer from '@hint/connector-puppeteer';
@@ -13,11 +14,15 @@ const { default: HTMLParser } = parserHtml;
 // Patch the copy the connector itself loads, whichever version that is. Its
 // `detached` and `ignoreHTTPSErrors` options also changed in newer
 // Puppeteer, so leave them unset.
-// Loaded after the connector, which requires it first (a static import would
-// make that require a cycle).
-const { Page } = await import('puppeteer-core');
-const pagePrototype: { removeListener?: unknown; off?: unknown } =
-  Page.prototype;
+// Resolved from the connector's own location, since this package does not
+// depend on Puppeteer directly.
+const connectorRequire = createRequire(
+  import.meta.resolve('@hint/connector-puppeteer'),
+);
+const { Page } = connectorRequire('puppeteer-core') as {
+  Page: { prototype: { removeListener?: unknown; off?: unknown } };
+};
+const pagePrototype = Page.prototype;
 if (typeof pagePrototype.removeListener !== 'function') {
   pagePrototype.removeListener = pagePrototype.off;
 }
