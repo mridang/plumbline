@@ -77,10 +77,7 @@ function Issues({
 function Host({ host }: Readonly<{ host: string }>): ReactElement {
   return (
     <span className="flex min-w-0 items-center gap-1.5 text-muted">
-      {/* eslint-disable-next-line github/a11y-no-title-attribute -- the native tooltip shows the full host when it is truncated and a test asserts it */}
-      <span className="truncate" title={host}>
-        {host}
-      </span>
+      <span className="truncate">{host}</span>
       <a
         href={`https://${host}`}
         target="_blank"

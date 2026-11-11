@@ -5,7 +5,7 @@ import { formatCompact, formatCount } from '@/lib/intl';
 
 /**
  * A number, grouped in thousands and kept in step with the digits around it;
- * `compact` shortens it ("1.2K") and keeps the whole number in its tooltip.
+ * `compact` shortens it ("1.2K") and reads out the whole number.
  */
 export function Count({
   value,
@@ -17,12 +17,15 @@ export function Count({
   className?: string;
 }>): ReactElement {
   return (
-    // eslint-disable-next-line github/a11y-no-title-attribute -- the native tooltip showing the full number is the intended UX and a test asserts it
-    <span
-      title={compact ? formatCount(value) : undefined}
-      className={cn('tabular-nums', className)}
-    >
-      {compact ? formatCompact(value) : formatCount(value)}
+    <span className={cn('tabular-nums', className)}>
+      {compact ? (
+        <>
+          <span aria-hidden="true">{formatCompact(value)}</span>
+          <span className="sr-only">{formatCount(value)}</span>
+        </>
+      ) : (
+        formatCount(value)
+      )}
     </span>
   );
 }

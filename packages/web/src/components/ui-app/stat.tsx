@@ -48,26 +48,24 @@ export function CountCell({
   tone,
 }: Readonly<{
   value: number | null;
-  /** What it counts, for the tooltip and for people who hear the page. */
+  /** What it counts, for people who hear the page. */
   word: string;
   tone: Tone;
 }>): ReactElement {
   if (value === null) {
     return (
-      // eslint-disable-next-line github/a11y-no-title-attribute -- the native tooltip is the intended hover detail; the visible dash carries the text
-      <span className="text-subtle" title={`${word}: not kept for this run`}>
-        –
+      <span className="text-subtle">
+        <span aria-hidden="true">–</span>
+        <span className="sr-only">{word}: not kept for this run</span>
       </span>
     );
   }
   return (
-    // eslint-disable-next-line github/a11y-no-title-attribute -- the native tooltip is the intended hover detail; the visible count carries the text
     <span
       className={cn(
         'tabular-nums',
         value === 0 ? 'text-subtle' : `font-semibold ${TONE_TEXT[tone]}`,
       )}
-      title={`${value} ${word}`}
     >
       <Count value={value} />
       <span className="sr-only"> {word}</span>

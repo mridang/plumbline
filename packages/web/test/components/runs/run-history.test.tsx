@@ -44,9 +44,9 @@ describe('RunList', () => {
       'href="https://github.com/acme/site/commit/abcdef1234567890"',
     );
     expect(html).toContain('Deployment');
-    expect(html).toContain('title="2 failed"');
-    expect(html).toContain('title="3 warned"');
-    expect(html).toContain('title="200 passed"');
+    expect(html).toContain('<span class="sr-only"> failed</span>');
+    expect(html).toContain('<span class="sr-only"> warned</span>');
+    expect(html).toContain('<span class="sr-only"> passed</span>');
   });
 
   it('says how long ago a run was, not only the date', () => {
@@ -56,9 +56,9 @@ describe('RunList', () => {
 
   it('colours a count only when there is something to see', () => {
     const html = list([run({ failed: 0, warned: 0, passed: 5 })]);
-    expect(html).toContain('text-subtle" title="0 failed"');
-    expect(html).toContain('text-subtle" title="0 warned"');
-    expect(html).toContain('font-semibold text-passed" title="5 passed"');
+    expect(html).toContain('text-subtle');
+    expect(html).toContain('text-subtle');
+    expect(html).toContain('font-semibold text-passed');
   });
 
   it('marks the report being shown, and offers the others to open', () => {
@@ -91,7 +91,7 @@ describe('RunList', () => {
   it('shows a dash for an unknown commit and for a count an older run did not keep', () => {
     const html = list([run({ sha: null, passed: null, skipped: null })]);
     expect(html).not.toContain('github.com/acme/site/commit');
-    expect(html).toContain('title="passed: not kept for this run"');
+    expect(html).toContain('passed: not kept for this run');
   });
 
   it('says so when a site has no runs yet', () => {

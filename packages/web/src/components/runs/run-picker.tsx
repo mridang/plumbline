@@ -16,12 +16,12 @@ function Counts({ run }: Readonly<{ run: RunSummary }>): ReactElement {
     word: string,
     colour: string,
   ): ReactElement => (
-    // eslint-disable-next-line github/a11y-no-title-attribute -- the native tooltip is the intended hover detail; the visible figure carries the text
-    <span
-      className={value === null || value === 0 ? 'text-subtle' : colour}
-      title={value === null ? `${word}: not kept` : `${value} ${word}`}
-    >
+    <span className={value === null || value === 0 ? 'text-subtle' : colour}>
       {value === null ? '–' : <Count value={value} />}
+      <span className="sr-only">
+        {' '}
+        {value === null ? `${word}: not kept` : word}
+      </span>
     </span>
   );
   return (

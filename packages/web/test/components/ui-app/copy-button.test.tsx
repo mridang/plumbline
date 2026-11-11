@@ -8,7 +8,7 @@ describe('CopyButton', () => {
     const out = html(<CopyButton value="abc" label="the evidence" />);
     expect(out).toContain('type="button"');
     expect(out).toContain('aria-label="Copy the evidence"');
-    expect(out).toContain('title="Copy the evidence"');
+    expect(out).not.toContain('title=');
   });
 
   it('draws the copy icon until something has been copied', () => {
