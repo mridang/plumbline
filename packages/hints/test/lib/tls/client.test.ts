@@ -94,10 +94,8 @@ describe('tryConnect', () => {
 
   it('reports a stapled OCSP response when asked', async () => {
     const server = await startServer();
-    // eslint-disable-next-line promise/prefer-await-to-callbacks -- Node's OCSPRequest event only accepts its response through this callback
-    server.server.on('OCSPRequest', (_cert, _issuer, callback) =>
-      // eslint-disable-next-line promise/prefer-await-to-callbacks -- Node's OCSPRequest event only accepts its response through this callback
-      callback(null, OCSP_STAPLE),
+    server.server.on('OCSPRequest', (_cert, _issuer, respond) =>
+      respond(null, OCSP_STAPLE),
     );
     const result = await tryConnect(at(server.port), { requestOCSP: true });
     await server.close();

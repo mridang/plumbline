@@ -21,9 +21,8 @@
  * finding without affecting the score. The numeric gate for an *invalid linked
  * document* belongs to the webhint-only `*-valid` hints, not here.
  */
-import { createRequire } from 'node:module';
+import { createHTMLDocument } from '@hint/utils-dom';
 import type { Artifacts } from 'lighthouse';
-import type { HTMLDocument } from '@hint/utils-dom';
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/feeds/read.js';
 import {
@@ -40,14 +39,6 @@ import type { AuditCheck } from './types.js';
 import feedDiscoveryHint from '@mridang/webhint-hint-plumbline/dist/hints/feeds/feed-discovery.js';
 import oembedDiscoveryHint from '@mridang/webhint-hint-plumbline/dist/hints/feeds/oembed-discovery.js';
 import opensearchDiscoveryHint from '@mridang/webhint-hint-plumbline/dist/hints/feeds/opensearch-discovery.js';
-
-// `@hint/utils-dom` ships as CommonJS, so it is loaded through `createRequire`
-// (the pattern the SEO adapter uses) rather than a named ESM import.
-const require = createRequire(import.meta.url);
-// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CommonJS-only, loaded through createRequire as described above
-const { createHTMLDocument } = require('@hint/utils-dom') as {
-  createHTMLDocument: (html: string, finalHref: string) => HTMLDocument;
-};
 
 /** The only artifacts the discovery checks read. */
 const HTML_ONLY = ['MainDocumentContent', 'URL'] as const;

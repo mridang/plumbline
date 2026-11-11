@@ -1,32 +1,17 @@
-import { createRequire } from 'node:module';
+import { createHTMLDocument } from '@hint/utils-dom';
 import { describe, expect, it } from '@jest/globals';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import { geoChecks } from '../../src/checks/geo.js';
 import type { AuditCheck } from '../../src/checks/types.js';
-import {
-  readJsonLd,
-  type JsonLdDocument,
-} from '@mridang/webhint-hint-plumbline/dist/lib/geo/json-ld.js';
-import {
-  measureContent,
-  type ContentDocument,
-} from '@mridang/webhint-hint-plumbline/dist/lib/geo/content.js';
+import { readJsonLd } from '@mridang/webhint-hint-plumbline/dist/lib/geo/json-ld.js';
+import { measureContent } from '@mridang/webhint-hint-plumbline/dist/lib/geo/content.js';
 import {
   contentExtractionFindings,
   structuredDataInvalidFindings,
 } from '@mridang/webhint-hint-plumbline/dist/lib/geo/checks.js';
 
-// The same DOM parser webhint feeds its hints: the equivalence tests build the
-// "webhint side" of each check with it, exactly as the hint does.
-const require = createRequire(import.meta.url);
-// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CJS-only with no ESM entry point
-const { createHTMLDocument } = require('@hint/utils-dom') as {
-  createHTMLDocument: (
-    html: string,
-    url: string,
-  ) => JsonLdDocument & ContentDocument;
-};
+// The same DOM parser webhint feeds its hints: the equivalence tests build the "webhint side" of each check with it, exactly as the hint does.
 
 /** Builds the artifact bag a geo check reads: only the served HTML. */
 function artifacts(html: string): Artifacts {

@@ -19,7 +19,7 @@
  * webhint hint metadata (`../meta.ts`), never restated. Every check is
  * `numeric` — each is a real security problem, so it is scored, not advisory.
  */
-import { createRequire } from 'node:module';
+import { createHTMLDocument } from '@hint/utils-dom';
 import type { Artifacts } from 'lighthouse';
 import type { HTMLDocument } from '@hint/utils-dom';
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
@@ -48,16 +48,6 @@ import tabnabbingHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/t
 import cspStrengthHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/csp-strength.js';
 import cookiePrefixesHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/cookie-prefixes.js';
 import formActionSecureHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/form-action-secure.js';
-
-// `@hint/utils-dom` ships as CommonJS, so it is loaded through `createRequire`
-// (the pattern the parent package's tests and `adapt-seo.ts` use) rather than a
-// named ESM import. This is the same DOM implementation the webhint connector
-// builds `page.document` with, so the readers see exactly what the hint sees.
-const require = createRequire(import.meta.url);
-// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CommonJS-only, loaded through createRequire as described above
-const { createHTMLDocument } = require('@hint/utils-dom') as {
-  createHTMLDocument: (html: string, finalHref: string) => HTMLDocument;
-};
 
 /** The artifact sets each check reads, named for what reads them. */
 const HTML_AND_URL = ['MainDocumentContent', 'URL'] as const;

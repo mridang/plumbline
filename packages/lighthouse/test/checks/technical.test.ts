@@ -1,4 +1,4 @@
-import { createRequire } from 'node:module';
+import { createHTMLDocument } from '@hint/utils-dom';
 import { describe, expect, it } from '@jest/globals';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
@@ -8,20 +8,13 @@ import {
   altCoverage,
   firstSkippedLevel,
   headingLevels,
-  type TechDocumentLike,
 } from '@mridang/webhint-hint-plumbline/dist/lib/technical/read.js';
 import {
   headingHierarchyFindings,
   imageAltCoverageFindings,
 } from '@mridang/webhint-hint-plumbline/dist/lib/technical/checks.js';
 
-// The same DOM parser webhint feeds its hints: the equivalence tests build the
-// "webhint side" of each check with it, exactly as the hint does.
-const require = createRequire(import.meta.url);
-// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CJS-only with no ESM entry point
-const { createHTMLDocument } = require('@hint/utils-dom') as {
-  createHTMLDocument: (html: string, url: string) => TechDocumentLike;
-};
+// The same DOM parser webhint feeds its hints: the equivalence tests build the "webhint side" of each check with it, exactly as the hint does.
 
 /** One resource (besides the main document) to seed into the devtools log. */
 interface Resource {

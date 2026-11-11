@@ -1,4 +1,4 @@
-import { createRequire } from 'node:module';
+import { createHTMLDocument } from '@hint/utils-dom';
 import { describe, expect, it } from '@jest/globals';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
@@ -13,10 +13,6 @@ import {
   themeColorMeta,
 } from '@mridang/webhint-hint-plumbline/dist/lib/pwa/checks.js';
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/pwa/read.js';
-
-const require = createRequire(import.meta.url);
-// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CJS-only with no ESM entry point
-const { createHTMLDocument } = require('@hint/utils-dom');
 
 const parse = (html: string): DocumentLike =>
   createHTMLDocument(html, 'https://x.test/') as DocumentLike;

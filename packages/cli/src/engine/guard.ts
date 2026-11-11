@@ -172,31 +172,27 @@ export function guardedLookup(
 ): Lookup {
   const wrapped = (
     hostname: string,
-    optionsOrCallback: unknown,
-    maybeCallback?: unknown,
+    optionsOrHandler: unknown,
+    maybeHandler?: unknown,
   ): void => {
-    const callback = (
-      typeof optionsOrCallback === 'function'
-        ? optionsOrCallback
-        : maybeCallback
+    const respond = (
+      typeof optionsOrHandler === 'function' ? optionsOrHandler : maybeHandler
     ) as (
-      error: Error | null,
+      failure: Error | null,
       address?: string | dns.LookupAddress[],
       family?: number,
     ) => void;
     let lookupOptions: dns.LookupOptions = {};
-    if (typeof optionsOrCallback === 'object' && optionsOrCallback !== null) {
-      lookupOptions = optionsOrCallback as dns.LookupOptions;
-    } else if (typeof optionsOrCallback === 'number') {
-      lookupOptions = { family: optionsOrCallback };
+    if (typeof optionsOrHandler === 'object' && optionsOrHandler !== null) {
+      lookupOptions = optionsOrHandler as dns.LookupOptions;
+    } else if (typeof optionsOrHandler === 'number') {
+      lookupOptions = { family: optionsOrHandler };
     } else {
       // No options were given, so the defaults stand.
     }
-    // eslint-disable-next-line promise/prefer-await-to-callbacks -- the lookup hook Node calls is callback-based
-    lookup(hostname, { ...lookupOptions, all: true }, (error, addresses) => {
-      if (error) {
-        // eslint-disable-next-line promise/prefer-await-to-callbacks -- the lookup hook Node calls is callback-based
-        callback(error);
+    lookup(hostname, { ...lookupOptions, all: true }, (failure, addresses) => {
+      if (failure) {
+        respond(failure);
         return;
       }
       const list = addresses as unknown as dns.LookupAddress[];
@@ -204,8 +200,7 @@ export function guardedLookup(
         ? undefined
         : list.find((entry) => !isPublicAddress(entry.address));
       if (refused) {
-        // eslint-disable-next-line promise/prefer-await-to-callbacks -- the lookup hook Node calls is callback-based
-        callback(
+        respond(
           new GuardError(
             `${hostname} resolves to ${refused.address}, which is not a public address`,
           ),
@@ -213,18 +208,15 @@ export function guardedLookup(
         return;
       }
       if (lookupOptions.all) {
-        // eslint-disable-next-line promise/prefer-await-to-callbacks -- the lookup hook Node calls is callback-based
-        callback(null, list);
+        respond(null, list);
         return;
       }
       const first = list[0];
       if (!first) {
-        // eslint-disable-next-line promise/prefer-await-to-callbacks -- the lookup hook Node calls is callback-based
-        callback(new GuardError(`${hostname} did not resolve`));
+        respond(new GuardError(`${hostname} did not resolve`));
         return;
       }
-      // eslint-disable-next-line promise/prefer-await-to-callbacks -- the lookup hook Node calls is callback-based
-      callback(null, first.address, first.family);
+      respond(null, first.address, first.family);
     });
   };
   return wrapped as unknown as Lookup;

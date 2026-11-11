@@ -20,9 +20,8 @@
  * advice (the webhint hint reports it at `Severity.hint`), so it is
  * `informative` — surfaced but never scored.
  */
-import { createRequire } from 'node:module';
+import { createHTMLDocument } from '@hint/utils-dom';
 import type { Artifacts } from 'lighthouse';
-import type { HTMLDocument } from '@hint/utils-dom';
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/pwa/read.js';
 // The single-source PWA rules: predicate + message + severity. Both this check
@@ -39,14 +38,6 @@ import type { AuditCheck } from './types.js';
 // `src/lib/pwa/**` rule functions above, not through these modules.
 import manifestLinkedHint from '@mridang/webhint-hint-plumbline/dist/hints/pwa/manifest-linked.js';
 import themeColorMetaHint from '@mridang/webhint-hint-plumbline/dist/hints/pwa/theme-color-meta.js';
-
-// `@hint/utils-dom` ships as CommonJS, so it is loaded through `createRequire`
-// (the pattern the other adapters use) rather than a named ESM import.
-const require = createRequire(import.meta.url);
-// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CommonJS-only, loaded through createRequire as described above
-const { createHTMLDocument } = require('@hint/utils-dom') as {
-  createHTMLDocument: (html: string, finalHref: string) => HTMLDocument;
-};
 
 /** The artifacts both PWA checks read: the raw HTML and the page URL. */
 const HTML_ONLY = ['MainDocumentContent', 'URL'] as const;

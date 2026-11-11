@@ -1,28 +1,25 @@
-import { createRequire } from 'node:module';
 import { Analyzer, Configuration } from 'hint';
 import type { Problem } from '@hint/utils-types';
+import connectorPuppeteer from '@hint/connector-puppeteer';
+import parserHtml from '@hint/parser-html';
 import extraHints from '@mridang/webhint-hint-plumbline';
 
 // The connector and the parser are CommonJS packages with a default export.
-const require = createRequire(import.meta.url);
-// eslint-disable-next-line sonarjs/no-require-or-define -- the connector is a CommonJS-only package, loaded through createRequire
-const { default: PuppeteerConnector } = require('@hint/connector-puppeteer');
-// eslint-disable-next-line sonarjs/no-require-or-define -- the parser is a CommonJS-only package, loaded through createRequire
-const { default: HTMLParser } = require('@hint/parser-html');
+const { default: PuppeteerConnector } = connectorPuppeteer;
+const { default: HTMLParser } = parserHtml;
 
 // The connector still calls `page.removeListener`, which newer Puppeteer
 // renamed to `off` (a page is an event emitter whose `off` does the same).
 // Patch the copy the connector itself loads, whichever version that is. Its
 // `detached` and `ignoreHTTPSErrors` options also changed in newer
 // Puppeteer, so leave them unset.
-const puppeteer = createRequire(require.resolve('@hint/connector-puppeteer'))(
-  'puppeteer-core',
-);
-if (
-  puppeteer.Page &&
-  typeof puppeteer.Page.prototype.removeListener !== 'function'
-) {
-  puppeteer.Page.prototype.removeListener = puppeteer.Page.prototype.off;
+// Loaded after the connector, which requires it first (a static import would
+// make that require a cycle).
+const { Page } = await import('puppeteer-core');
+const pagePrototype: { removeListener?: unknown; off?: unknown } =
+  Page.prototype;
+if (typeof pagePrototype.removeListener !== 'function') {
+  pagePrototype.removeListener = pagePrototype.off;
 }
 
 /**

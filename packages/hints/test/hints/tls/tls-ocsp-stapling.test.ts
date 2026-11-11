@@ -15,10 +15,8 @@ afterEach(restoreProbe);
 async function scan(cert: string, staple: boolean) {
   const server = await startServer({ cert });
   if (staple) {
-    // eslint-disable-next-line promise/prefer-await-to-callbacks -- OCSPRequest event API passes a node-style callback that cannot be awaited
-    server.server.on('OCSPRequest', (_cert, _issuer, callback) =>
-      // eslint-disable-next-line promise/prefer-await-to-callbacks -- OCSPRequest event API passes a node-style callback that cannot be awaited
-      callback(null, OCSP_STAPLE),
+    server.server.on('OCSPRequest', (_cert, _issuer, respond) =>
+      respond(null, OCSP_STAPLE),
     );
   }
   pointAt(server.port);

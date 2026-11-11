@@ -1,11 +1,7 @@
-import { createRequire } from 'node:module';
+import { traverse, createHTMLDocument } from '@hint/utils-dom';
 import type { Engine, IConnector, NetworkData } from 'hint';
 import type { HTMLDocument } from '@hint/utils-dom';
 import type { HttpHeaders } from '@hint/utils-types';
-
-const require = createRequire(import.meta.url);
-// eslint-disable-next-line sonarjs/no-require-or-define -- CJS-only package, its named exports are read from module.exports via createRequire
-const { traverse, createHTMLDocument } = require('@hint/utils-dom');
 
 interface ParserEvents {
   on(

@@ -1,4 +1,4 @@
-import { createRequire } from 'node:module';
+import parserHtml from '@hint/parser-html';
 import {
   createServer,
   type IncomingMessage,
@@ -11,9 +11,7 @@ import type { Problem } from '@hint/utils-types';
 import type { HintDefinition } from '../../src/core/define-hint.js';
 import TestConnector from './test-connector.js';
 
-const require = createRequire(import.meta.url);
-// eslint-disable-next-line sonarjs/no-require-or-define -- CJS-only package, its default export is read from module.exports via createRequire
-const { default: HTMLParser } = require('@hint/parser-html');
+const { default: HTMLParser } = parserHtml;
 
 /** What the test server answers for one path. */
 interface Route {

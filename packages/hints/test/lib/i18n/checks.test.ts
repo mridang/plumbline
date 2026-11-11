@@ -1,4 +1,4 @@
-import { createRequire } from 'node:module';
+import { createHTMLDocument } from '@hint/utils-dom';
 import { describe, expect, it } from '@jest/globals';
 import {
   alternateMedia,
@@ -10,10 +10,6 @@ import {
   paginationRel,
 } from '../../../src/lib/i18n/checks.js';
 import type { DocumentLike } from '../../../src/lib/i18n/read.js';
-
-const require = createRequire(import.meta.url);
-// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CommonJS only, loaded through createRequire
-const { createHTMLDocument } = require('@hint/utils-dom');
 
 const parse = (head: string): DocumentLike =>
   createHTMLDocument(

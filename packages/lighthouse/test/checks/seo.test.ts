@@ -1,4 +1,4 @@
-import { createRequire } from 'node:module';
+import { createHTMLDocument } from '@hint/utils-dom';
 import { describe, expect, it } from '@jest/globals';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
@@ -15,10 +15,6 @@ import {
   titleMissing,
 } from '@mridang/webhint-hint-plumbline/dist/lib/seo/checks.js';
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/seo/read.js';
-
-const require = createRequire(import.meta.url);
-// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CJS-only with no ESM entry point
-const { createHTMLDocument } = require('@hint/utils-dom');
 
 /** Parses markup with the same DOM implementation the webhint hints use. */
 const parse = (html: string): DocumentLike =>

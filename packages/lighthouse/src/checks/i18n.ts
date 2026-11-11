@@ -25,9 +25,8 @@
  * (`hreflang-x-default`, a webhint `Severity.hint`) is `informative` — surfaced
  * but never scored.
  */
-import { createRequire } from 'node:module';
+import { createHTMLDocument } from '@hint/utils-dom';
 import type { Artifacts } from 'lighthouse';
-import type { HTMLDocument } from '@hint/utils-dom';
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/i18n/read.js';
 // The single-source i18n rules: predicate + message + severity. Both this check
@@ -54,15 +53,6 @@ import hreflangSelfHint from '@mridang/webhint-hint-plumbline/dist/hints/i18n/hr
 import hreflangDuplicateHint from '@mridang/webhint-hint-plumbline/dist/hints/i18n/hreflang-duplicate.js';
 import alternateMediaHint from '@mridang/webhint-hint-plumbline/dist/hints/i18n/alternate-media.js';
 import paginationRelHint from '@mridang/webhint-hint-plumbline/dist/hints/i18n/pagination-rel.js';
-
-// `@hint/utils-dom` ships as CommonJS, so it is loaded through `createRequire`
-// (the pattern the SEO adapter and the tests use) rather than a named ESM
-// import. The signature is narrowed to the one function this check needs.
-const require = createRequire(import.meta.url);
-// eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CommonJS-only, loaded through createRequire as described above
-const { createHTMLDocument } = require('@hint/utils-dom') as {
-  createHTMLDocument: (html: string, finalHref: string) => HTMLDocument;
-};
 
 /** The only artifacts the i18n checks read. */
 const HTML_AND_URL = ['MainDocumentContent', 'URL'] as const;

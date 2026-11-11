@@ -270,12 +270,15 @@ function installTlsHandshakeCache(): void {
           })),
       )(target, options);
       handshakes.set(key, handshake);
-      // eslint-disable-next-line promise/prefer-await-to-callbacks -- a promise catch handler, not a callback; it only forgets an unavailable probe's answer
-      handshake.catch((error: unknown) => {
-        if (error instanceof ProbeUnavailableError) {
-          handshakes.delete(key);
+      void (async () => {
+        try {
+          await handshake;
+        } catch (error) {
+          if (error instanceof ProbeUnavailableError) {
+            handshakes.delete(key);
+          }
         }
-      });
+      })();
     }
     return handshake;
   };
