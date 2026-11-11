@@ -1,6 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 import {
   findLegalLink,
+  PATH,
+  TEXT,
   PRIVACY_POLICY_LINK_REF,
   privacyPolicyLinkMissing,
   TERMS_OF_SERVICE_LINK_REF,
@@ -278,5 +280,93 @@ describe('termsOfServiceLinkMissing', () => {
         message: `The page links to no terms of service. Link them from the home page, for example in the footer, next to the privacy policy. Read more: ${TERMS_OF_SERVICE_LINK_REF}`,
       },
     ]);
+  });
+});
+
+/** A small seeded generator, so a failure replays exactly. */
+function seeded(seed: number): () => number {
+  let state = seed;
+  return () => {
+    state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+    return state / 2 ** 32;
+  };
+}
+
+function generate(
+  random: () => number,
+  pieces: string[],
+  count: number,
+): string {
+  let text = '';
+  for (let i = 0; i < count; i += 1) {
+    text += pieces[Math.floor(random() * pieces.length)];
+  }
+  return text;
+}
+
+describe('TEXT and PATH', () => {
+  const oldText = new RegExp(
+    [
+      String.raw`\b(terms|conditions|t\s*&\s*cs?\b|tos\b|agb\b|nutzungsbedingungen`,
+      'condiciones|termos|gebruiksvoorwaarden|voorwaarden|termini|villkor',
+      'vilk[aå]r|k[aä]ytt[oö]ehdot|regulamin)',
+    ].join('|'),
+    'i',
+  );
+  const oldPath = new RegExp(
+    [
+      '((^|[_.-])(terms|termos|termini|conditions)',
+      '^tos([_.-]|$)',
+      '(^|[_.-])agb([_.-]|$)',
+      'nutzungsbedingungen|condiciones|voorwaarden|villkor|vilkar)',
+    ].join('|'),
+    'i',
+  );
+  const words = [
+    'terms',
+    'conditions',
+    't & c',
+    'tos',
+    'agb',
+    'agbs',
+    'nutzungsbedingungen',
+    'villkor',
+    'vilkår',
+    'käyttöehdot',
+    'regulamin',
+    '-',
+    '_',
+    '.',
+    ' ',
+    'x',
+    '2026',
+  ];
+
+  it.each([
+    'Terms of Service',
+    'T&Cs',
+    'tos',
+    'ToS-x',
+    'Allgemeine AGB',
+    'vilkår',
+    'privacy',
+    '',
+  ])('reads the text %j like the old pattern', (text) => {
+    expect(TEXT['terms-of-service'].test(text)).toBe(oldText.test(text));
+  });
+
+  it('matches the old patterns on seeded random text', () => {
+    const random = seeded(4);
+    for (let i = 0; i < 20_000; i += 1) {
+      const text = generate(random, words, 4);
+      expect(TEXT['terms-of-service'].test(text)).toBe(oldText.test(text));
+      expect(PATH['terms-of-service'].test(text)).toBe(oldPath.test(text));
+    }
+  });
+
+  it('agrees on a long adversarial input', () => {
+    const text = `${'t & '.repeat(30_000)}x`;
+    expect(TEXT['terms-of-service'].test(text)).toBe(oldText.test(text));
+    expect(PATH['terms-of-service'].test(text)).toBe(oldPath.test(text));
   });
 });

@@ -35,13 +35,23 @@ function localName(name: string): string {
   return (colon === -1 ? name : name.slice(colon + 1)).toLowerCase();
 }
 
+/** An attribute's name. */
+const ATTRIBUTE_NAME = String.raw`([^\s"'>/=]+)`;
+
+/** An attribute's value: double-quoted, single-quoted or bare. */
+const ATTRIBUTE_VALUE = String.raw`("([^"]*)"|'([^']*)'|([^\s"'>]+))`;
+
+/** One attribute: a name, then an optional `=` and value. */
+export const ATTRIBUTE_PATTERN = [
+  ATTRIBUTE_NAME,
+  String.raw`(?:\s*=\s*${ATTRIBUTE_VALUE})?`,
+].join('');
+
 /** Parses the attribute list of a start tag into a name→value map. */
 function parseAttributes(source: string): Record<string, string> {
   const attributes: Record<string, string> = {};
   // name = "value" | name = 'value' | name (valueless, rare in XML)
-  const pattern =
-    // eslint-disable-next-line sonarjs/regex-complexity -- the name, optional value and three value forms are one grammar; splitting it would duplicate the parse
-    /([^\s"'>/=]+)(?:\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
+  const pattern = new RegExp(ATTRIBUTE_PATTERN, 'g');
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(source)) !== null) {
     const name = match[1];

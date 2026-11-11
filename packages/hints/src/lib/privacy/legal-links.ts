@@ -37,24 +37,51 @@ export const TERMS_OF_SERVICE_LINK_REF =
   'https://support.google.com/cloud/answer/15549049';
 
 /** Words a link's text uses for each page, in the languages most sites use. */
-const TEXT: Readonly<Record<LegalPage, RegExp>> = {
+export const TEXT: Readonly<Record<LegalPage, RegExp>> = {
   'privacy-policy':
     /\b(privacy|data protection|datenschutz|privacidad|privacidade|confidentialit[eé]|vie priv[eé]e|privacybeleid|riservatezza|integritet|personvern|tietosuoja|prywatno)/i,
-  'terms-of-service':
-    // eslint-disable-next-line sonarjs/regex-complexity -- one flat list of translated link words; splitting it would change which words match
-    /\b(terms|conditions|t\s*&\s*cs?\b|tos\b|agb\b|nutzungsbedingungen|condiciones|termos|gebruiksvoorwaarden|voorwaarden|termini|villkor|vilk[aå]r|k[aä]ytt[oö]ehdot|regulamin)/i,
+  'terms-of-service': new RegExp(
+    String.raw`\b(${[
+      'terms',
+      'conditions',
+      String.raw`t\s*&\s*cs?\b`,
+      String.raw`tos\b`,
+      String.raw`agb\b`,
+      'nutzungsbedingungen',
+      'condiciones',
+      'termos',
+      'gebruiksvoorwaarden',
+      'voorwaarden',
+      'termini',
+      'villkor',
+      'vilk[aå]r',
+      'k[aä]ytt[oö]ehdot',
+      'regulamin',
+    ].join('|')})`,
+    'i',
+  ),
 };
 
 /**
  * Path words that name each page in a link's address. A word must start at a
  * separator, so an article slug such as `/2026-midterms/` is not the terms.
  */
-const PATH: Readonly<Record<LegalPage, RegExp>> = {
+export const PATH: Readonly<Record<LegalPage, RegExp>> = {
   'privacy-policy':
     /(privacy|datenschutz|privacidad|privacidade|confidentialite|privacybeleid|riservatezza|integritet|personvern|tietosuoja)/i,
-  'terms-of-service':
-    // eslint-disable-next-line sonarjs/regex-complexity -- one flat list of translated address words; splitting it would change which addresses match
-    /((^|[_.-])(terms|termos|termini|conditions)|^tos([_.-]|$)|(^|[_.-])agb([_.-]|$)|nutzungsbedingungen|condiciones|voorwaarden|villkor|vilkar)/i,
+  'terms-of-service': new RegExp(
+    `(${[
+      '(^|[_.-])(terms|termos|termini|conditions)',
+      '^tos([_.-]|$)',
+      '(^|[_.-])agb([_.-]|$)',
+      'nutzungsbedingungen',
+      'condiciones',
+      'voorwaarden',
+      'villkor',
+      'vilkar',
+    ].join('|')})`,
+    'i',
+  ),
 };
 
 /**
