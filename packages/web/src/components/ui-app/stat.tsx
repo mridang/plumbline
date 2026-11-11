@@ -54,12 +54,14 @@ export function CountCell({
 }>): ReactElement {
   if (value === null) {
     return (
+      // eslint-disable-next-line github/a11y-no-title-attribute -- the native tooltip is the intended hover detail; the visible dash carries the text
       <span className="text-subtle" title={`${word}: not kept for this run`}>
         –
       </span>
     );
   }
   return (
+    // eslint-disable-next-line github/a11y-no-title-attribute -- the native tooltip is the intended hover detail; the visible count carries the text
     <span
       className={cn(
         'tabular-nums',

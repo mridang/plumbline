@@ -50,7 +50,7 @@ interface Meta {
 
 /** Builds the artifacts an Open Graph check reads from a list of meta tags. */
 function artifacts(metas: readonly Meta[]): Artifacts {
-  return { MetaElements: metas } as unknown as Artifacts;
+  return { MetaElements: metas } as Artifacts;
 }
 
 /** A fresh audit context; the checks never read it, but the signature wants it. */
@@ -211,7 +211,7 @@ describe('the opengraph checks run() over a complete, well-formed meta set', () 
   });
 
   it('is not applicable when the MetaElements artifact is absent', async () => {
-    const empty = {} as unknown as Artifacts;
+    const empty = {} as Artifacts;
     for (const c of opengraphChecks) {
       expect(await c.run(empty, context())).toBeNull();
     }

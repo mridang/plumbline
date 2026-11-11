@@ -67,7 +67,7 @@ function devtoolsLog(
       },
     ];
   });
-  return events as unknown as Artifacts['DevtoolsLog'];
+  return events as Artifacts['DevtoolsLog'];
 }
 
 /** Builds the artifacts a privacy check reads over the given requests. */
@@ -76,7 +76,7 @@ function artifacts(requests: readonly RequestSpec[]): Artifacts {
   return {
     DevtoolsLog: devtoolsLog(requests),
     URL: { mainDocumentUrl: pageUrl, finalDisplayedUrl: pageUrl },
-  } as unknown as Artifacts;
+  } as Artifacts;
 }
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */
@@ -140,9 +140,9 @@ describe('the privacy registry', () => {
 
   it('is not applicable when the run captured no document', async () => {
     const empty = {
-      DevtoolsLog: [] as unknown as Artifacts['DevtoolsLog'],
+      DevtoolsLog: [] as Artifacts['DevtoolsLog'],
       URL: { mainDocumentUrl: '', finalDisplayedUrl: '' },
-    } as unknown as Artifacts;
+    } as Artifacts;
     for (const c of privacyChecks) {
       expect(await c.run(empty, context())).toBeNull();
     }

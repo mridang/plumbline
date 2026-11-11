@@ -472,6 +472,21 @@ function ids(
 
 const MIGRATIONS = ['0001_init.sql'] as const;
 
+const tokenRows = (...hashes: readonly string[]) =>
+  hashes.map((hash, i) => ({
+    hash,
+    kind: i === 0 ? ('access' as const) : ('refresh' as const),
+    grantId: 'new',
+    expiresAt: 9_999_999_999,
+  }));
+const grantRecord = (id: string, userId = 7, clientId = 'c1') => ({
+  id,
+  userId,
+  clientId,
+  scope: ['checks:read'],
+  resource: 'r',
+});
+
 describe('against a real SQLite database', () => {
   describe('client authentication', () => {
     const signed = {
@@ -557,21 +572,6 @@ describe('against a real SQLite database', () => {
     });
   });
 
-  const tokenRows = (...hashes: readonly string[]) =>
-    hashes.map((hash, i) => ({
-      hash,
-      kind: i === 0 ? ('access' as const) : ('refresh' as const),
-      grantId: 'new',
-      expiresAt: 9_999_999_999,
-    }));
-  const grantRecord = (id: string, userId = 7, clientId = 'c1') => ({
-    id,
-    userId,
-    clientId,
-    scope: ['checks:read'],
-    resource: 'r',
-  });
-
   describe('createGrant', () => {
     it("keeps the user's other grants for the same client working, and other users' and clients' too", async () => {
       const { db, raw } = sqliteDatabase(...MIGRATIONS);
@@ -648,7 +648,9 @@ describe('against a real SQLite database', () => {
       ).toBeNull();
     });
   });
+});
 
+describe('against a real SQLite database, refresh token rotation', () => {
   describe('rotateRefreshToken', () => {
     const setup = async () => {
       const made = sqliteDatabase(...MIGRATIONS);
@@ -707,7 +709,9 @@ describe('against a real SQLite database', () => {
       expect(spent?.usedAt).toBeNull();
     });
   });
+});
 
+describe('against a real SQLite database, connected apps', () => {
   describe('listConnectedApps and revokeConnectedApp', () => {
     const seed = () => {
       const made = sqliteDatabase(...MIGRATIONS);
@@ -869,7 +873,9 @@ describe('against a real SQLite database', () => {
       expect(await revokeConnectedApp(db, 7, 'g-solo')).toBe(false);
     });
   });
+});
 
+describe('against a real SQLite database, purging OAuth data', () => {
   describe('purgeOAuthData', () => {
     const NOW = Date.parse('2026-06-01T00:00:00.000Z') / 1000;
     const day = (n: number) =>
@@ -974,7 +980,9 @@ describe('against a real SQLite database', () => {
       await expect(purgeOAuthData(db)).resolves.toBeUndefined();
     });
   });
+});
 
+describe('against a real SQLite database, resolving clients', () => {
   describe('resolveClient', () => {
     const NOW = Date.parse('2026-06-01T12:00:00.000Z');
     const ago = (seconds: number) =>
@@ -1171,7 +1179,9 @@ describe('against a real SQLite database', () => {
       ).toMatchObject({ clientId: 'dcr_x', kind: 'dcr' });
     });
   });
+});
 
+describe('against a real SQLite database, saving clients', () => {
   describe('saveClient', () => {
     it('records an expiry for a fetched document and none for a registered client', async () => {
       const { db, raw } = sqliteDatabase(...MIGRATIONS);

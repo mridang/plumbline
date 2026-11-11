@@ -54,7 +54,7 @@ beforeEach(() => {
 afterEach(() => restore());
 
 const params = (id = DOMAIN, runId = '') => ({
-  params: Promise.resolve({ id, run_id: runId }),
+  params: Promise.resolve({ id, 'run-id': runId }),
 });
 
 /** Store a server run of the host. */

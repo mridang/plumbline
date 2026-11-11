@@ -58,7 +58,7 @@ function devtoolsLog(
       params: { requestId, timestamp: 3, encodedDataLength: 100 },
     },
   ];
-  return events as unknown as Artifacts['DevtoolsLog'];
+  return events as Artifacts['DevtoolsLog'];
 }
 
 /** Header-check artifacts over the given response headers. */
@@ -69,8 +69,8 @@ function headerArtifacts(
   return {
     DevtoolsLog: devtoolsLog(url, headers),
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
-    MetaElements: [],
-  } as unknown as Artifacts;
+    MetaElements: [] as Artifacts['MetaElements'],
+  } as Artifacts;
 }
 
 /** DOM-check artifacts over the given HTML and page URL. */
@@ -78,7 +78,7 @@ function domArtifacts(url: string, html: string): Artifacts {
   return {
     MainDocumentContent: html,
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
-  } as unknown as Artifacts;
+  } as Artifacts;
 }
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */

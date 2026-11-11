@@ -25,6 +25,7 @@ export function CopyButton({
 }>): ReactElement {
   const [copied, setCopied] = useState(false);
   return (
+    // eslint-disable-next-line github/a11y-no-title-attribute -- the native tooltip is the intended hover label and the accessible name comes from aria-label
     <button
       type="button"
       aria-label={copied ? `${label}: copied` : `Copy ${label}`}

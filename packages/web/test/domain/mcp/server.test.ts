@@ -19,7 +19,7 @@ import {
   type ToolRunner,
 } from '@/domain/mcp/server';
 import { callTool, callToolOrExplain } from '@/domain/mcp/tool-calls';
-import { InvalidToolArguments, UnknownTool } from '@/lib/mcp';
+import { InvalidToolArgumentsError, UnknownToolError } from '@/lib/mcp';
 import {
   CAPABILITIES,
   INSTRUCTIONS,
@@ -44,26 +44,25 @@ describe('MCP tool scopes', () => {
     const readTools = TOOLS.filter(
       (t) => scopeForTool(t.name) === SCOPE_READ,
     ).map((t) => t.name);
-    expect(readTools.toSorted((a, b) => Number(a > b) - Number(a < b))).toEqual(
-      [
-        'get_domain',
-        'get_report',
-        'list_checks',
-        'list_domains',
-        'list_reports',
-        'list_repositories',
-        'scan_domain',
-      ],
-    );
+    expect(readTools.toSorted((a, b) => a.localeCompare(b))).toEqual([
+      'get_domain',
+      'get_report',
+      'list_checks',
+      'list_domains',
+      'list_reports',
+      'list_repositories',
+      'scan_domain',
+    ]);
   });
 
   it('treats every other tool as a write, so new tools are protected by default', () => {
     const writeTools = TOOLS.filter(
       (t) => scopeForTool(t.name) === SCOPE_WRITE,
     ).map((t) => t.name);
-    expect(
-      writeTools.toSorted((a, b) => Number(a > b) - Number(a < b)),
-    ).toEqual(['configure_checks', 'remove_domain']);
+    expect(writeTools.toSorted((a, b) => a.localeCompare(b))).toEqual([
+      'configure_checks',
+      'remove_domain',
+    ]);
     expect(scopeForTool('a_tool_added_next_year')).toBe(SCOPE_WRITE);
   });
 
@@ -273,7 +272,7 @@ describe('the tool catalogue', () => {
         await callTool(someone, { name, arguments: {} }, () => db);
         return false;
       } catch (error) {
-        return error instanceof UnknownTool;
+        return error instanceof UnknownToolError;
       }
     };
     const results = await Promise.all(
@@ -584,7 +583,7 @@ describe('handleMcpMessage — refusals', () => {
     const reply = await send(
       { method: 'tools/call', params: { name: 'list_domains' } },
       async () => {
-        throw new UnknownTool('ghost');
+        throw new UnknownToolError('ghost');
       },
     );
     expect(reply).toMatchObject({
@@ -597,7 +596,7 @@ describe('handleMcpMessage — refusals', () => {
     const reply = await send(
       { method: 'tools/call', params: { name: 'get_domain' } },
       async () => {
-        throw new InvalidToolArguments([
+        throw new InvalidToolArgumentsError([
           'Missing "name".',
           '"limit" must be a number.',
         ]);

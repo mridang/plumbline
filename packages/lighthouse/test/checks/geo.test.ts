@@ -36,7 +36,7 @@ function artifacts(html: string): Artifacts {
       finalDisplayedUrl: 'https://x.test/',
     },
     MainDocumentContent: html,
-  } as unknown as Artifacts;
+  } as Artifacts;
 }
 
 /** A geo check reads no computed artifact, but run() still takes a context. */

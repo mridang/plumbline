@@ -8,6 +8,9 @@ const state: { user: User | null } = { user: null };
 
 jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
+  getLiveSessionUid: async () => state.user?.id ?? null,
+  getSession: async () => null,
+  getSessionUid: async () => state.user?.id ?? null,
 }));
 
 jest.unstable_mockModule('@/domain/db/client', () => ({

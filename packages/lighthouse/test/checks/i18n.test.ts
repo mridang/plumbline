@@ -32,7 +32,7 @@ function artifacts(overrides: { html?: string; url?: string }): Artifacts {
   return {
     MainDocumentContent: overrides.html ?? '',
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
-  } as unknown as Artifacts;
+  } as Artifacts;
 }
 
 /** A fresh audit context. */

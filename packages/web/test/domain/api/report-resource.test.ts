@@ -185,7 +185,9 @@ describe('parseReportInput', () => {
     );
     expect(parsed.ok && parsed.value.outcomes[0]?.findings).toEqual([finding]);
   });
+});
 
+describe('parseReportInput, the findings of a check', () => {
   it('keeps the detail of a finding and drops a position that is not a whole number', () => {
     const detailed = {
       ...finding,

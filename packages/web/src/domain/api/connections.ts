@@ -66,7 +66,7 @@ export function makeConnectionItem(
     context: async (request, route) => {
       const uid = await liveUid(request, resolver);
       const params = await route.params;
-      return { uid, grantId: params?.['grant_id'] ?? '' };
+      return { uid, grantId: params?.['grant-id'] ?? '' };
     },
   }).on({
     method: 'DELETE',

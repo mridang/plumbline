@@ -42,6 +42,7 @@ export function Badge({
   children: ReactNode;
 }>): ReactElement {
   return (
+    // eslint-disable-next-line github/a11y-no-title-attribute -- the native tooltip is the intended hover detail and a test asserts it
     <span
       title={title}
       className={cn(

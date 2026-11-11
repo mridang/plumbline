@@ -50,9 +50,7 @@ const CHATGPT_DOCUMENT = {
 let notProvided: undefined;
 
 const respond = (body: string, status = 200) =>
-  jest.fn(
-    async () => new Response(body, { status }),
-  ) as unknown as typeof fetch;
+  jest.fn<typeof fetch>(async () => new Response(body, { status }));
 
 describe('isMetadataDocumentUrl', () => {
   it('accepts an https URL with a path', () => {

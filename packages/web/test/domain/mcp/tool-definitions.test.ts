@@ -76,14 +76,8 @@ describe('the tool catalogue', () => {
 
   it('has a set of good arguments for every tool, and for no other', () => {
     expect(
-      Object.keys(GOOD_ARGUMENTS).toSorted(
-        (a, b) => Number(a > b) - Number(a < b),
-      ),
-    ).toEqual(
-      TOOLS.map((t) => t.name).toSorted(
-        (a, b) => Number(a > b) - Number(a < b),
-      ),
-    );
+      Object.keys(GOOD_ARGUMENTS).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(TOOLS.map((t) => t.name).toSorted((a, b) => a.localeCompare(b)));
   });
 
   it('finds a tool by name', () => {

@@ -13,6 +13,7 @@ import {
   type Database as GenericDatabase,
 } from '@/lib/core/db/client';
 import { getDB } from '@/lib/core/runtime';
+// eslint-disable-next-line sonarjs/no-wildcard-import -- drizzle takes the whole schema module as one object, so every table must be in the namespace
 import * as schema from '@/domain/db/schema';
 
 /** A Drizzle client typed against plumbline's schema. */

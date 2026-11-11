@@ -57,7 +57,7 @@ function devtoolsLog(
       params: { requestId, timestamp: 3, encodedDataLength: 100 },
     },
   ];
-  return events as unknown as Artifacts['DevtoolsLog'];
+  return events as Artifacts['DevtoolsLog'];
 }
 
 /** Builds the artifacts the agent check reads, over the given headers. */
@@ -65,7 +65,7 @@ function artifacts(url: string, headers: Record<string, string>): Artifacts {
   return {
     DevtoolsLog: devtoolsLog(url, headers),
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
-  } as unknown as Artifacts;
+  } as Artifacts;
 }
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */
@@ -130,9 +130,9 @@ describe('the agent-link-headers check run()', () => {
 
   it('is not applicable when the run captured no document', async () => {
     const empty = {
-      DevtoolsLog: [] as unknown as Artifacts['DevtoolsLog'],
+      DevtoolsLog: [] as Artifacts['DevtoolsLog'],
       URL: { mainDocumentUrl: '', finalDisplayedUrl: '' },
-    } as unknown as Artifacts;
+    } as Artifacts;
     expect(await linkHeaders.run(empty, context())).toBeNull();
   });
 });

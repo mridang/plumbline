@@ -17,6 +17,7 @@ export function Count({
   className?: string;
 }>): ReactElement {
   return (
+    // eslint-disable-next-line github/a11y-no-title-attribute -- the native tooltip showing the full number is the intended UX and a test asserts it
     <span
       title={compact ? formatCount(value) : undefined}
       className={cn('tabular-nums', className)}

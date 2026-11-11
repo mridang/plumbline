@@ -91,7 +91,7 @@ const post = (
 /** A GET of one report. */
 const read = (reportId: string, id = DOMAIN) =>
   item.GET(new Request(`${ORIGIN}${reportPath(id, reportId)}`), {
-    params: Promise.resolve({ id, report_id: reportId }),
+    params: Promise.resolve({ id, 'report-id': reportId }),
   });
 
 const good = {

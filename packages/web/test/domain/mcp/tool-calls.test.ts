@@ -11,7 +11,11 @@ import {
   callToolOrExplain,
 } from '@/domain/mcp/tool-calls';
 import { domainLink, type ToolResult } from '@/domain/mcp/tool-results';
-import { BackendFailure, InvalidToolArguments, UnknownTool } from '@/lib/mcp';
+import {
+  BackendFailureError,
+  InvalidToolArgumentsError,
+  UnknownToolError,
+} from '@/lib/mcp';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 import { vector } from '../../helpers/data.js';
@@ -104,20 +108,20 @@ describe('callTool — the request', () => {
     ['a name that is not text', { name: 7 }],
   ])('refuses %s as a malformed call', async (_label, params) => {
     await expect(callTool(USER, params, broken)).rejects.toBeInstanceOf(
-      InvalidToolArguments,
+      InvalidToolArgumentsError,
     );
   });
 
   it('refuses a call with no parameters at all', async () => {
     await expect(callTool(USER, undefined, broken)).rejects.toBeInstanceOf(
-      InvalidToolArguments,
+      InvalidToolArgumentsError,
     );
   });
 
   it('refuses a tool it does not have', async () => {
     await expect(
       callTool(USER, { name: 'make_coffee' }, broken),
-    ).rejects.toBeInstanceOf(UnknownTool);
+    ).rejects.toBeInstanceOf(UnknownToolError);
   });
 
   it.each([
@@ -129,7 +133,7 @@ describe('callTool — the request', () => {
     async (_label, args) => {
       await expect(
         callTool(USER, { name: 'list_domains', arguments: args }, broken),
-      ).rejects.toBeInstanceOf(InvalidToolArguments);
+      ).rejects.toBeInstanceOf(InvalidToolArgumentsError);
     },
   );
 
@@ -166,7 +170,7 @@ describe('callTool — the request', () => {
   it('reports a database that fails as a backend failure', async () => {
     await expect(
       callTool(USER, { name: 'list_domains' }, broken),
-    ).rejects.toBeInstanceOf(BackendFailure);
+    ).rejects.toBeInstanceOf(BackendFailureError);
   });
 
   it('accepts a host given under its other spelling', async () => {
@@ -212,7 +216,7 @@ describe('callToolOrExplain', () => {
   it('still throws an unknown tool for the router to answer', async () => {
     await expect(
       callToolOrExplain(USER, { name: 'make_coffee' }, broken),
-    ).rejects.toBeInstanceOf(UnknownTool);
+    ).rejects.toBeInstanceOf(UnknownToolError);
   });
 
   it('passes a working call through unchanged', async () => {

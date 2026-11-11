@@ -125,6 +125,7 @@ export function IconButton({
   } & Omit<ComponentProps<'button'>, 'aria-label'>
 >): ReactElement {
   return (
+    // eslint-disable-next-line github/a11y-no-title-attribute -- the native tooltip is the intended hover label and the accessible name comes from aria-label
     <button
       type="button"
       aria-label={label}

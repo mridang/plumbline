@@ -231,7 +231,9 @@ describe('POST /oauth/token', () => {
     expect(res.status).toBe(400);
     expect(await res.json()).toMatchObject({ error: 'unsupported_grant_type' });
   });
+});
 
+describe('POST /oauth/token, refresh tokens and rate limits', () => {
   it('rotates a refresh token, and answers a retry with the old one inside the grace window', async () => {
     const first = await redeem();
     const refresh = (value: string) =>

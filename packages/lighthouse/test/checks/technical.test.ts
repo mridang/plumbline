@@ -102,7 +102,7 @@ function devtoolsLog(
       ),
     ),
   ];
-  return events as unknown as Artifacts['DevtoolsLog'];
+  return events as Artifacts['DevtoolsLog'];
 }
 
 /** Builds the artifact bag a technical check reads, over the given fields. */
@@ -117,7 +117,7 @@ function artifacts(fields: Partial<Artifacts>): Artifacts {
     LinkElements: [],
     ImageElements: [],
     ...fields,
-  } as unknown as Artifacts;
+  } as Artifacts;
 }
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */
@@ -287,7 +287,7 @@ describe('the technical-canonical-invalid check run()', () => {
     const findings = await canonical.run(
       artifacts({
         LinkElements: [{ rel: 'canonical', href: null, hrefRaw: 'http://' }],
-      } as unknown as Partial<Artifacts>),
+      } as Partial<Artifacts>),
       context(),
     );
     expect(findings?.[0]?.severity).toBe('error');
@@ -303,7 +303,7 @@ describe('the technical-canonical-invalid check run()', () => {
             hrefRaw: 'https://x.test/',
           },
         ],
-      } as unknown as Partial<Artifacts>),
+      } as Partial<Artifacts>),
       context(),
     );
     expect(findings).toEqual([]);
@@ -323,7 +323,7 @@ describe('the technical-redirect-chain check run()', () => {
 
   it('is not applicable when the run captured no document', async () => {
     const findings = await redirect.run(
-      artifacts({ DevtoolsLog: [] as unknown as Artifacts['DevtoolsLog'] }),
+      artifacts({ DevtoolsLog: [] as Artifacts['DevtoolsLog'] }),
       context(),
     );
     expect(findings).toBeNull();
@@ -337,7 +337,7 @@ describe('the technical-image-weight check run()', () => {
     const url = 'https://x.test/huge.png';
     const findings = await weight.run(
       artifacts({
-        ImageElements: [{ src: url }] as unknown as Artifacts['ImageElements'],
+        ImageElements: [{ src: url }] as Artifacts['ImageElements'],
         DevtoolsLog: devtoolsLog('https://x.test/', [
           {
             url,
@@ -356,7 +356,7 @@ describe('the technical-image-weight check run()', () => {
     const url = 'https://x.test/small.png';
     const findings = await weight.run(
       artifacts({
-        ImageElements: [{ src: url }] as unknown as Artifacts['ImageElements'],
+        ImageElements: [{ src: url }] as Artifacts['ImageElements'],
         DevtoolsLog: devtoolsLog('https://x.test/', [
           {
             url,

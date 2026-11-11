@@ -47,7 +47,7 @@ export function keyBytes(base64url: string): Uint8Array<ArrayBuffer> {
   const binary = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='));
   const bytes = new Uint8Array(new ArrayBuffer(binary.length));
   for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i);
+    bytes[i] = binary.codePointAt(i) ?? 0;
   }
   return bytes;
 }
@@ -81,8 +81,8 @@ export class PushError extends Error {
 
 /** Read the server's answer, or throw its refusal. */
 async function checked(response: Response): Promise<Response> {
-  if (response.status === 401 && typeof window !== 'undefined') {
-    window.location.assign('/login');
+  if (response.status === 401 && 'window' in globalThis) {
+    globalThis.window.location.assign('/login');
   }
   if (!response.ok) {
     throw await problemError(response);
@@ -111,7 +111,28 @@ export function wireOf(subscription: BrowserSubscription): {
 export async function currentSubscription(
   host: PushHost,
 ): Promise<BrowserSubscription | null> {
-  return (await host.manager()).getSubscription();
+  const manager = await host.manager();
+  return manager.getSubscription();
+}
+
+/** Subscribe with the key the server publishes for this site. */
+async function subscribeWithServerKey(
+  host: PushHost,
+  manager: Awaited<ReturnType<PushHost['manager']>>,
+): Promise<BrowserSubscription> {
+  const configuration = await checked(
+    await host.fetcher('/api/push/configuration', {
+      headers: { Accept: 'application/json' },
+      credentials: 'same-origin',
+    }),
+  );
+  const { vapid_public_key: vapidPublicKey } = (await configuration.json()) as {
+    vapid_public_key: string;
+  };
+  return manager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: keyBytes(vapidPublicKey),
+  });
 }
 
 /**
@@ -133,22 +154,7 @@ export async function enablePush(host: PushHost): Promise<BrowserSubscription> {
   const manager = await host.manager();
   const existing = await manager.getSubscription();
   const subscription =
-    existing ??
-    (await manager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: keyBytes(
-        (
-          (await (
-            await checked(
-              await host.fetcher('/api/push/configuration', {
-                headers: { Accept: 'application/json' },
-                credentials: 'same-origin',
-              }),
-            )
-          ).json()) as { vapid_public_key: string }
-        ).vapid_public_key,
-      ),
-    }));
+    existing ?? (await subscribeWithServerKey(host, manager));
   await checked(
     await host.fetcher('/api/users/self/push/subscriptions', {
       method: 'POST',
@@ -201,10 +207,13 @@ export function browserHost(): PushHost {
   return {
     manager: async () => {
       // Development registers no worker, and `ready` would then never settle.
-      if (!(await navigator.serviceWorker.getRegistration())) {
-        await navigator.serviceWorker.register(WORKER_URL, { scope: '/' });
+      // eslint-disable-next-line n/no-unsupported-features/node-builtins -- navigator is the browser's own API; this code runs only in the browser
+      const { serviceWorker } = globalThis.navigator;
+      if (!(await serviceWorker.getRegistration())) {
+        await serviceWorker.register(WORKER_URL, { scope: '/' });
       }
-      return (await navigator.serviceWorker.ready).pushManager;
+      const registration = await serviceWorker.ready;
+      return registration.pushManager;
     },
     permission: () => Notification.permission,
     requestPermission: () => Notification.requestPermission(),
@@ -214,14 +223,16 @@ export function browserHost(): PushHost {
 
 /** What the live browser can do. */
 export function browserCapabilities(): PushCapabilities {
+  // eslint-disable-next-line n/no-unsupported-features/node-builtins -- navigator is the browser's own API; this code runs only in the browser
+  const { navigator: browser } = globalThis;
   return {
-    userAgent: navigator.userAgent,
-    maxTouchPoints: navigator.maxTouchPoints,
+    userAgent: browser.userAgent,
+    maxTouchPoints: browser.maxTouchPoints,
     standalone:
-      (navigator as { standalone?: boolean }).standalone === true ||
-      window.matchMedia('(display-mode: standalone)').matches,
-    hasServiceWorker: 'serviceWorker' in navigator,
-    hasPushManager: 'PushManager' in window,
-    hasNotification: 'Notification' in window,
+      (browser as { standalone?: boolean }).standalone === true ||
+      globalThis.window.matchMedia('(display-mode: standalone)').matches,
+    hasServiceWorker: 'serviceWorker' in browser,
+    hasPushManager: 'PushManager' in globalThis.window,
+    hasNotification: 'Notification' in globalThis.window,
   };
 }

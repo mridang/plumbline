@@ -111,7 +111,9 @@ describe('GitHubApi', () => {
       { full_name: 'o/r', default_branch: 'main' },
     ]);
   });
+});
 
+describe('GitHubApi, writes and size limits', () => {
   describe('writes', () => {
     /** An api whose every request is recorded, answered with `answer`. */
     const recording = (answer: () => Response) => {

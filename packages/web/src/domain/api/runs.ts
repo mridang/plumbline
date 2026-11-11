@@ -146,7 +146,7 @@ export function createRunItem(
       return {
         uid: await liveUid(request, resolver),
         domainId: params?.['id'] ?? '',
-        runId: params?.['run_id'] ?? '',
+        runId: params?.['run-id'] ?? '',
       };
     },
   }).on<null, RunResource>({

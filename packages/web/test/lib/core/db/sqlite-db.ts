@@ -4,6 +4,7 @@ import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
 
 import type { Database } from '@/domain/db/client';
+// eslint-disable-next-line sonarjs/no-wildcard-import -- drizzle takes the whole schema module as one object, so every table must be in the namespace
 import * as schema from '@/domain/db/schema';
 
 import { migrationSql } from './migrations';

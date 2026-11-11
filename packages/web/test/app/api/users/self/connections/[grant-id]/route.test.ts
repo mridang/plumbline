@@ -77,7 +77,7 @@ describe('DELETE /api/users/self/connections/:grant_id', () => {
         method: 'DELETE',
         headers: { 'sec-fetch-site': 'same-origin', ...headers },
       }),
-      { params: Promise.resolve({ grant_id: id }) },
+      { params: Promise.resolve({ 'grant-id': id }) },
     );
 
   it('disconnects the app, including any older grant for it, with 204', async () => {

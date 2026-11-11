@@ -180,8 +180,8 @@ describe('buildSchema', () => {
 
   it('has every key of the reader, with the same names', () => {
     expect(
-      Object.keys(schema['properties'] as object).toSorted(
-        (a, b) => Number(a > b) - Number(a < b),
+      Object.keys(schema['properties'] as object).toSorted((a, b) =>
+        a.localeCompare(b),
       ),
     ).toEqual([
       'deployments',
@@ -209,11 +209,9 @@ describe('buildSchema', () => {
     const rules = (schema['$defs'] as Record<string, JsonSchema>)['rules'];
     const properties = rules?.['properties'] as Record<string, JsonSchema>;
     expect(
-      Object.keys(properties).toSorted((a, b) => Number(a > b) - Number(a < b)),
+      Object.keys(properties).toSorted((a, b) => a.localeCompare(b)),
     ).toEqual(
-      CHECKS.map((check) => check.id).toSorted(
-        (a, b) => Number(a > b) - Number(a < b),
-      ),
+      CHECKS.map((check) => check.id).toSorted((a, b) => a.localeCompare(b)),
     );
     for (const check of CHECKS) {
       expect(properties[check.id]).toMatchObject({
@@ -229,19 +227,15 @@ describe('buildSchema', () => {
     expect(
       ((name['anyOf'] as JsonSchema[])[0]!['oneOf'] as { const: string }[])
         .map((set) => set.const)
-        .toSorted((a, b) => Number(a > b) - Number(a < b)),
+        .toSorted((a, b) => a.localeCompare(b)),
     ).toEqual(
-      RULE_SET_DEFS.map((set) => set.id).toSorted(
-        (a, b) => Number(a > b) - Number(a < b),
-      ),
+      RULE_SET_DEFS.map((set) => set.id).toSorted((a, b) => a.localeCompare(b)),
     );
     expect(
       Object.keys(defs['environments']?.['properties'] as object).toSorted(
-        (a, b) => Number(a > b) - Number(a < b),
+        (a, b) => a.localeCompare(b),
       ),
-    ).toEqual(
-      [...ENVIRONMENTS].toSorted((a, b) => Number(a > b) - Number(a < b)),
-    );
+    ).toEqual([...ENVIRONMENTS].toSorted((a, b) => a.localeCompare(b)));
     expect(defs['extends']?.['default']).toBe(DEFAULT_RULE_SET);
   });
 

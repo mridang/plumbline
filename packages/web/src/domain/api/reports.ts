@@ -195,7 +195,7 @@ export function createReportItem(
       return {
         uid: await liveUid(request, resolver),
         domainId: params?.['id'] ?? '',
-        reportId: params?.['report_id'] ?? '',
+        reportId: params?.['report-id'] ?? '',
       };
     },
   }).on<null, Report>({

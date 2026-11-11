@@ -33,7 +33,7 @@ import {
 import {
   keyOf,
   runJobThrough,
-  ScanFailed,
+  ScanFailedError,
   type ScanJob,
   type ScannerNamespace,
 } from '@/domain/suite/scanner';
@@ -82,7 +82,7 @@ export async function enqueueScan(
   now: Date = new Date(),
 ): Promise<boolean> {
   if (!queue) {
-    throw new ScanFailed('Scans are not available.');
+    throw new ScanFailedError('Scans are not available.');
   }
   const key = keyOf(job);
   const seq = await putPending(

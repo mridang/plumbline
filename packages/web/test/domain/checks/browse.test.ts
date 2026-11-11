@@ -49,6 +49,7 @@ describe('queryOf', () => {
   it('writes what is set, lets a change override and removes with undefined', () => {
     const view = { q: 'tls', tier: 'advanced' as const, rule: 'hsts' };
     expect(queryOf(view)).toBe('?q=tls&tier=advanced&rule=hsts');
+    // eslint-disable-next-line sonarjs/no-undefined-assignment -- undefined is how a change removes a key, which is what the test covers
     expect(queryOf(view, { tier: undefined, rule: undefined })).toBe('?q=tls');
     expect(queryOf(view, { open: 'all' })).toContain('open=all');
   });

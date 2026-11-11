@@ -13,8 +13,8 @@
  */
 
 import {
-  InvalidToolArguments,
-  UnknownTool,
+  InvalidToolArgumentsError,
+  UnknownToolError,
   canonicalArguments,
   isJsonObject,
   numberArg,
@@ -22,7 +22,7 @@ import {
   stringArg,
   stringListArg,
   validateJson,
-  BackendFailure,
+  BackendFailureError,
   type JsonSchema,
 } from '@/lib/mcp';
 import { overviewOf } from '@/domain/db/live';
@@ -392,7 +392,7 @@ type Checked = { readonly args: Args } | { readonly refusal: ToolResult };
  * The arguments of a call, checked against the tool's input schema. Arguments
  * that do not fit come back as an `isError` result naming each problem (the
  * spec lists input validation among tool execution errors).
- * @throws {InvalidToolArguments} If `arguments` is not an object at all.
+ * @throws {InvalidToolArgumentsError} If `arguments` is not an object at all.
  */
 function checkedArguments(
   tool: Readonly<{ name: string; inputSchema: JsonSchema }>,
@@ -400,7 +400,7 @@ function checkedArguments(
 ): Checked {
   const given = rawArgs === undefined ? {} : rawArgs;
   if (!isJsonObject(given)) {
-    throw new InvalidToolArguments(['`arguments` must be an object.']);
+    throw new InvalidToolArgumentsError(['`arguments` must be an object.']);
   }
   const args = canonicalArguments(tool.name, given);
   const problems = validateJson(tool.inputSchema, args, 'The arguments');
@@ -416,10 +416,10 @@ function checkedArguments(
 /**
  * Execute a `tools/call` for `user`.
  * @param openDatabase - How the database is opened; tests pass their own.
- * @throws {UnknownTool} If no such tool exists.
- * @throws {InvalidToolArguments} If the request has no tool name, or its
+ * @throws {UnknownToolError} If no such tool exists.
+ * @throws {InvalidToolArgumentsError} If the request has no tool name, or its
  *   `arguments` is not an object.
- * @throws {BackendFailure} If the database failed mid-call.
+ * @throws {BackendFailureError} If the database failed mid-call.
  */
 export async function callTool(
   user: Readonly<User>,
@@ -428,11 +428,11 @@ export async function callTool(
 ): Promise<ToolResult> {
   const name: unknown = params?.['name'];
   if (typeof name !== 'string' || name === '') {
-    throw new InvalidToolArguments(['`name` must be the name of a tool.']);
+    throw new InvalidToolArgumentsError(['`name` must be the name of a tool.']);
   }
   const tool = toolNamed(name);
   if (!tool) {
-    throw new UnknownTool(name);
+    throw new UnknownToolError(name);
   }
   const checked = checkedArguments(
     tool as unknown as { name: string; inputSchema: JsonSchema },
@@ -470,7 +470,7 @@ export async function callTool(
       ? found.refusal
       : await run(db, user, found.domain, args);
   } catch (error) {
-    throw new BackendFailure('the database', error);
+    throw new BackendFailureError('the database', error);
   }
 }
 
@@ -487,7 +487,7 @@ export async function callToolOrExplain(
   try {
     return await callTool(user, params, openDatabase);
   } catch (error) {
-    if (error instanceof BackendFailure) {
+    if (error instanceof BackendFailureError) {
       // What actually failed stays in our logs.
       logError({
         event: 'mcp.backend_failed',

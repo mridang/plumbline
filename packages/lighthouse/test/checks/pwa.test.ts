@@ -29,7 +29,7 @@ function artifacts(html: string): Artifacts {
       mainDocumentUrl: 'https://x.test/',
       finalDisplayedUrl: 'https://x.test/',
     },
-  } as unknown as Artifacts;
+  } as Artifacts;
 }
 
 const context = {} as AuditNS.Context;

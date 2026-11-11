@@ -60,7 +60,7 @@ function artifacts(overrides: {
     LinkElements: overrides.links ?? [],
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
     DevtoolsLog: devtoolsLog(url, overrides.xRobotsTag),
-  } as unknown as Artifacts;
+  } as Artifacts;
 }
 
 /**
@@ -116,7 +116,7 @@ function devtoolsLog(
       params: { requestId, timestamp: 3, encodedDataLength: 100 },
     },
   ];
-  return events as unknown as Artifacts['DevtoolsLog'];
+  return events as Artifacts['DevtoolsLog'];
 }
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */

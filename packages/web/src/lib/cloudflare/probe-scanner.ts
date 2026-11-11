@@ -35,7 +35,7 @@ import { readLimits, scanLimits } from '@/domain/suite/limits';
 import { suiteRunOf, type SuiteRun } from '@/domain/suite/run';
 import {
   JOBS_PATH,
-  SiteUnreachable,
+  SiteUnreachableError,
   collectScan,
   type ScanJob,
 } from '@/domain/suite/scanner';
@@ -160,7 +160,7 @@ export class ProbeScanner extends DurableObject<CloudflareEnv> {
       try {
         return await this.scan(url);
       } catch (error) {
-        if (!(error instanceof SiteUnreachable)) {
+        if (!(error instanceof SiteUnreachableError)) {
           trouble = error;
         }
         throw error;
@@ -256,6 +256,7 @@ export class ProbeScanner extends DurableObject<CloudflareEnv> {
     const deadline = Date.now() + START_TIMEOUT_MS;
     for (;;) {
       try {
+        // eslint-disable-next-line sonarjs/no-clear-text-protocols -- the container port is reached over the internal Durable Object channel, not the network; no TLS exists for it
         const health = await port.fetch('http://probe/healthz');
         if (health.ok) {
           break;

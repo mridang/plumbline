@@ -27,7 +27,7 @@ function artifacts(html: string): Artifacts {
       finalDisplayedUrl: 'https://x.test/',
     },
     MainDocumentContent: html,
-  } as unknown as Artifacts;
+  } as Artifacts;
 }
 
 /** A richresults check reads no computed artifact, but run() takes a context. */

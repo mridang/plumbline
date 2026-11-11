@@ -85,11 +85,14 @@ function kindOf(value: string): SuiteRunKind {
 /** A list is in the order newest first, ties broken by id, descending. */
 function newestFirst(a: RunSummary, b: RunSummary): number {
   if (a.ran_at !== b.ran_at) {
+    // eslint-disable-next-line sonarjs/strings-comparison -- code-unit order on purpose: it must match the database ordering of ISO timestamps and ids, which localeCompare would not
     return a.ran_at < b.ran_at ? 1 : -1;
   }
+  // eslint-disable-next-line sonarjs/strings-comparison -- code-unit order on purpose: it must match the database ordering of ISO timestamps and ids, which localeCompare would not
   if (a.id < b.id) {
     return 1;
   }
+  // eslint-disable-next-line sonarjs/strings-comparison -- code-unit order on purpose: it must match the database ordering of ISO timestamps and ids, which localeCompare would not
   if (a.id > b.id) {
     return -1;
   }

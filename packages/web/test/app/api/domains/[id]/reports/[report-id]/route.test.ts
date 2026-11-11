@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
-import { GET, dynamic } from '@/app/api/domains/[id]/reports/[report_id]/route';
+import { GET, dynamic } from '@/app/api/domains/[id]/reports/[report-id]/route';
 import { SESSION_COOKIE } from '@/domain/auth/app';
 import { APP_MIGRATIONS } from '../../../../../../lib/core/db/migrations';
 import {
@@ -15,7 +15,7 @@ import {
 const ID = '00000000-0000-4000-8000-000000000001';
 const REPORT = '00000000-0000-4000-8000-0000000000aa';
 const URL = `https://plumbline.test/api/domains/${ID}/reports/${REPORT}`;
-const params = { params: Promise.resolve({ id: ID, report_id: REPORT }) };
+const params = { params: Promise.resolve({ id: ID, 'report-id': REPORT }) };
 
 let restore: () => void;
 /** The Cookie header of the signed-in caller. */

@@ -77,7 +77,10 @@ const pathOf = (file: string): string =>
   path
     .relative(API, file)
     .replace(/\/?route\.ts$/, '')
-    .replaceAll(/\[([a-z_]+)\]/g, '{$1}');
+    .replaceAll(
+      /\[([a-z_-]+)\]/g,
+      (_, name: string) => `{${name.replaceAll('-', '_')}}`,
+    );
 
 /**
  * The routes kept only so that an address still registered outside the code

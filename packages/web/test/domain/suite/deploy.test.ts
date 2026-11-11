@@ -13,7 +13,7 @@ import {
 import { PAID_LIMITS } from '@/domain/suite/limits';
 import { RULE_SETS } from '@/domain/suite/rules';
 import type { SuiteRun } from '@/domain/suite/run';
-import { ScanFailed, SiteUnreachable } from '@/domain/suite/scanner';
+import { ScanFailedError, SiteUnreachableError } from '@/domain/suite/scanner';
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
@@ -628,7 +628,7 @@ describe('checkSite, telling the live dashboard', () => {
     const { told, live } = recorder();
     await checkSite(db, 1, site, {
       run: async () => {
-        throw new SiteUnreachable('no answer');
+        throw new SiteUnreachableError('no answer');
       },
       live,
     });
@@ -643,7 +643,7 @@ describe('checkSite, telling the live dashboard', () => {
     const { told, live } = recorder();
     await checkSite(db, 1, site, {
       run: async () => {
-        throw new ScanFailed('The scan stopped before it finished.');
+        throw new ScanFailedError('The scan stopped before it finished.');
       },
       live,
     });
@@ -670,7 +670,7 @@ describe('checkSite, when the scheduled re-check comes round', () => {
     await checkSite(db, 1, site, {
       now: () => new Date('2026-11-06T08:00:00.000Z'),
       run: async () => {
-        throw new SiteUnreachable('no answer');
+        throw new SiteUnreachableError('no answer');
       },
     });
     expect(await dueBefore(db)).toEqual([]);
@@ -682,7 +682,7 @@ describe('checkSite, when the scheduled re-check comes round', () => {
     await checkSite(db, 1, site, {
       now: () => new Date('2026-11-06T08:00:00.000Z'),
       run: async () => {
-        throw new ScanFailed('The scan stopped before it finished.');
+        throw new ScanFailedError('The scan stopped before it finished.');
       },
     });
     expect(await dueBefore(db)).toEqual(['a.test']);

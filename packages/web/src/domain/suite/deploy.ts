@@ -29,7 +29,7 @@ import { countsOf } from '@/domain/suite/report';
 import { restrictRun, type SuiteRun } from '@/domain/suite/run';
 import { resolveRules } from '@/domain/suite/config';
 import { FREE_LIMITS, inBatches, type Limits } from '@/domain/suite/limits';
-import { SiteUnreachable } from '@/domain/suite/scanner';
+import { SiteUnreachableError } from '@/domain/suite/scanner';
 import { siteAddress } from '@/domain/suite/site-address';
 import { applyLevels, fingerprintOf, type Level } from '@/domain/suite/rules';
 
@@ -205,7 +205,7 @@ export async function checkSite(
     result = await run(url);
   } catch (error) {
     console.error('suite run failed', site.host, error);
-    if (error instanceof SiteUnreachable) {
+    if (error instanceof SiteUnreachableError) {
       await markTried(db, userId, site.host, now().toISOString());
     }
     // Only a site that did not answer the scanner is told as down; a scanner
@@ -214,7 +214,7 @@ export async function checkSite(
       before,
       after: null,
       at: now().toISOString(),
-      ...(error instanceof SiteUnreachable ? {} : { failed: true }),
+      ...(error instanceof SiteUnreachableError ? {} : { failed: true }),
     });
     return { host: site.host, skipped: 'unreachable' };
   }

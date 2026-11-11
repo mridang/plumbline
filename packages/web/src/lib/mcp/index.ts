@@ -68,7 +68,7 @@ export {
   textArg,
 } from './tool-args';
 export {
-  UnknownTool,
-  InvalidToolArguments,
-  BackendFailure,
+  UnknownToolError,
+  InvalidToolArgumentsError,
+  BackendFailureError,
 } from './tool-errors';

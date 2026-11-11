@@ -15,12 +15,12 @@ export const ROUTE_MODULES: Readonly<
   '/api/domains/{id}/reports': () =>
     import('@/app/api/domains/[id]/reports/route'),
   '/api/domains/{id}/reports/{report_id}': () =>
-    import('@/app/api/domains/[id]/reports/[report_id]/route'),
+    import('@/app/api/domains/[id]/reports/[report-id]/route'),
   '/api/domains/{id}/issues': () =>
     import('@/app/api/domains/[id]/issues/route'),
   '/api/domains/{id}/runs': () => import('@/app/api/domains/[id]/runs/route'),
   '/api/domains/{id}/runs/{run_id}': () =>
-    import('@/app/api/domains/[id]/runs/[run_id]/route'),
+    import('@/app/api/domains/[id]/runs/[run-id]/route'),
   '/api/github/syncs': () => import('@/app/api/github/syncs/route'),
   '/api/previews/{id}': () => import('@/app/api/previews/[id]/route'),
   '/api/push/configuration': () => import('@/app/api/push/configuration/route'),
@@ -32,7 +32,7 @@ export const ROUTE_MODULES: Readonly<
   '/api/users/self/connections': () =>
     import('@/app/api/users/self/connections/route'),
   '/api/users/self/connections/{grant_id}': () =>
-    import('@/app/api/users/self/connections/[grant_id]/route'),
+    import('@/app/api/users/self/connections/[grant-id]/route'),
   '/api/users/self/github': () => import('@/app/api/users/self/github/route'),
   '/api/users/self/repositories/disabled/{owner}/{repo}': () =>
     import('@/app/api/users/self/repositories/disabled/[owner]/[repo]/route'),

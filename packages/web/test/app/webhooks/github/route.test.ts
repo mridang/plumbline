@@ -180,7 +180,9 @@ describe('POST /webhooks/github', () => {
     await settleBackground();
     expect(requested).toEqual([]);
   });
+});
 
+describe('POST /webhooks/github, deployment_status', () => {
   describe('deployment_status', () => {
     const deployment = (
       state = 'success',
@@ -311,7 +313,9 @@ describe('POST /webhooks/github', () => {
       expect(response.status).toBe(202);
     });
   });
+});
 
+describe('POST /webhooks/github, installation and configuration push', () => {
   describe('installation', () => {
     it.each(['new_permissions_accepted', 'unsuspend', 'created'])(
       'reads the installation again after %s',
@@ -421,7 +425,9 @@ describe('POST /webhooks/github', () => {
       expect(jobs).toEqual([]);
     });
   });
+});
 
+describe('POST /webhooks/github, issues', () => {
   describe('issues', () => {
     const issueEvent = (action: string, sender = 'someone', number = 12) => ({
       action,

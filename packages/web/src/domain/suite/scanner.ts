@@ -19,18 +19,18 @@ export interface ScannerNamespace {
 }
 
 /** The scanner could not be reached, or the site could not be scanned. */
-export class ScanFailed extends Error {
+export class ScanFailedError extends Error {
   public constructor(detail: string) {
     super(detail);
-    this.name = 'ScanFailed';
+    this.name = 'ScanFailedError';
   }
 }
 
 /** The scanner ran, and the site did not answer it. Anything else that goes wrong is the scanner's trouble, not the site's. */
-export class SiteUnreachable extends ScanFailed {
+export class SiteUnreachableError extends ScanFailedError {
   public constructor(detail: string) {
     super(detail);
-    this.name = 'SiteUnreachable';
+    this.name = 'SiteUnreachableError';
   }
 }
 
@@ -73,7 +73,7 @@ export interface ScanResult {
 }
 
 /**
- * Reads the scanner's stream to its end. Throws {@link ScanFailed} when the
+ * Reads the scanner's stream to its end. Throws {@link ScanFailedError} when the
  * site could not be reached, when a line is not JSON, or when the stream stops
  * before its last line (the scanner went away part-way, so what was read is
  * not the whole scan).
@@ -96,7 +96,7 @@ export async function collectScan(
     try {
       json = JSON.parse(line);
     } catch {
-      throw new ScanFailed('The scanner sent a line that is not JSON.');
+      throw new ScanFailedError('The scanner sent a line that is not JSON.');
     }
     const parsed = LineSchema.safeParse(json);
     if (!parsed.success) {
@@ -105,7 +105,7 @@ export async function collectScan(
     const event = parsed.data;
     switch (event.type) {
       case 'unreachable': {
-        throw new SiteUnreachable(event.detail);
+        throw new SiteUnreachableError(event.detail);
       }
       case 'ready': {
         ready = { finalUrl: event.finalUrl, status: event.status };
@@ -135,12 +135,12 @@ export async function collectScan(
   }
   take(buffer);
   if (!ready || !ended) {
-    throw new ScanFailed('The scan stopped before it finished.');
+    throw new ScanFailedError('The scan stopped before it finished.');
   }
   return { ...ready, outcomes, raw };
 }
 
-/** The scan of `url` as the container's stream; throws {@link ScanFailed} when it did not start. */
+/** The scan of `url` as the container's stream; throws {@link ScanFailedError} when it did not start. */
 async function startScan(
   send: (request: Request) => Promise<Response>,
   url: string,
@@ -153,7 +153,7 @@ async function startScan(
     }),
   );
   if (!answer.ok || !answer.body) {
-    throw new ScanFailed('The scanner did not answer.');
+    throw new ScanFailedError('The scanner did not answer.');
   }
   return answer.body;
 }
@@ -213,7 +213,7 @@ export const JOBS_PATH = '/jobs';
 /**
  * Run `job` in the scanner Durable Object called `name` (each name has its own
  * container, so jobs of different names run at the same time) and resolve when
- * it is done. Throws {@link ScanFailed} when the object could not run it, so
+ * it is done. Throws {@link ScanFailedError} when the object could not run it, so
  * the caller can try again.
  */
 export async function runJobThrough(
@@ -222,7 +222,7 @@ export async function runJobThrough(
   job: Readonly<ScanJob>,
 ): Promise<void> {
   if (!namespace) {
-    throw new ScanFailed('Scans are not available.');
+    throw new ScanFailedError('Scans are not available.');
   }
   const stub = namespace.get(namespace.idFromName(name));
   const answer = await stub.fetch(
@@ -234,7 +234,7 @@ export async function runJobThrough(
   );
   if (!answer.ok) {
     const body = await answer.text();
-    throw new ScanFailed(
+    throw new ScanFailedError(
       `The scanner did not run the job (${answer.status}): ${body.slice(0, 200)}`,
     );
   }

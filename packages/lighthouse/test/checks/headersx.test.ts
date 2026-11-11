@@ -57,15 +57,15 @@ function devtoolsLog(
       params: { requestId, timestamp: 3, encodedDataLength: 100 },
     },
   ];
-  return events as unknown as Artifacts['DevtoolsLog'];
+  return events as Artifacts['DevtoolsLog'];
 }
 
 function artifacts(url: string, headers: Record<string, string>): Artifacts {
   return {
     DevtoolsLog: devtoolsLog(url, headers),
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
-    MetaElements: [],
-  } as unknown as Artifacts;
+    MetaElements: [] as Artifacts['MetaElements'],
+  } as Artifacts;
 }
 
 function context(): AuditNS.Context {
@@ -122,7 +122,7 @@ describe('the set-login check run()', () => {
 
   it('is not applicable when the document is missing', async () => {
     const findings = await setLogin.run(
-      { DevtoolsLog: [], URL: {} } as unknown as Artifacts,
+      { DevtoolsLog: [] as Artifacts['DevtoolsLog'], URL: {} } as Artifacts,
       context(),
     );
     expect(findings).toBeNull();

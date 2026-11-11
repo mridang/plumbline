@@ -312,7 +312,9 @@ describe('handleDeployment of the live site', () => {
     expect(error).toHaveBeenCalled();
     expect(await latestRuns(db, 7, 'site.test')).toHaveLength(1);
   });
+});
 
+describe('handleDeployment of the live site, later deployments', () => {
   it('says nothing about a site whose page and rules have not changed', async () => {
     const db = await setup();
     const first = github();
@@ -979,7 +981,9 @@ describe('handleDeployment of a preview', () => {
     expect(summary).toContain('- **error**: it is wrong');
     expect(summary).toContain('Rules from `plumbline.yaml`.');
   });
+});
 
+describe('handleDeployment of a preview, the rules in use', () => {
   it('uses the production rules for the live site and the preview rules for the preview', async () => {
     const files = {
       'plumbline.yaml':
