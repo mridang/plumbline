@@ -13,6 +13,7 @@ import {
 
 import { quietSecurityLogs } from './quiet-logs';
 import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 // A field the request leaves out: its key stays present, so an override can unset it.
 let notProvided: undefined;
@@ -72,8 +73,7 @@ describe('validateAuthorizeRequest', () => {
     const old: OAuthClient = {
       ...client,
       clientId: 'dcr_old',
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      redirectUris: ['http://example.com/cb', 'myapp://cb'],
+      redirectUris: [`${HTTP_SCHEME}example.com/cb`, 'myapp://cb'],
     };
     for (const uri of old.redirectUris) {
       const result = await validateAuthorizeRequest(

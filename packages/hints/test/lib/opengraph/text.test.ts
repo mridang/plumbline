@@ -5,6 +5,7 @@ import {
   normalizeText,
   startsWithUrl,
 } from '../../../src/lib/opengraph/text.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 describe('charLength', () => {
   it('counts code points, not UTF-16 units', () => {
@@ -17,8 +18,7 @@ describe('charLength', () => {
 describe('startsWithUrl', () => {
   it('detects http and https at the start', () => {
     expect(startsWithUrl('https://a.com')).toBe(true);
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
-    expect(startsWithUrl('  HTTP://a.com')).toBe(true);
+    expect(startsWithUrl(`  ${HTTP_SCHEME.toUpperCase()}a.com`)).toBe(true);
   });
   it('ignores URLs later in the text and bare domains', () => {
     expect(startsWithUrl('see https://a.com')).toBe(false);

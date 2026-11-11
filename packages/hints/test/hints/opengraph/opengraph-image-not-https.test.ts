@@ -3,6 +3,7 @@ import { Severity } from '@hint/utils-types';
 import hint from '../../../src/hints/opengraph/opengraph-image-not-https.js';
 import { runHint } from '../../helpers/run-hint.js';
 import { page } from './page.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 describe('opengraph-image-not-https', () => {
   it('passes with https', async () => {
@@ -17,8 +18,9 @@ describe('opengraph-image-not-https', () => {
   it('reports http', async () => {
     const problems = await runHint(
       hint,
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      page('<meta property="og:image" content="http://example.com/i.png">'),
+      page(
+        `<meta property="og:image" content="${HTTP_SCHEME}example.com/i.png">`,
+      ),
     );
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('uses http://');

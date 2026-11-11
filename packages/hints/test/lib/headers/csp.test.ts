@@ -10,6 +10,7 @@ import {
   parseCspLoose,
   parseCspMeta,
 } from '../../../src/lib/headers/csp.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const run = (
   policy: string,
@@ -180,9 +181,7 @@ describe('analyzeCsp results', () => {
   });
 
   it('insecure scheme in active content only on https', () => {
-    const policy =
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      "default-src 'none'; script-src 'self'; connect-src http://a.example";
+    const policy = `default-src 'none'; script-src 'self'; connect-src ${HTTP_SCHEME}a.example`;
     expect(run(policy).result).toBe('csp-implemented-with-insecure-scheme');
     expect(run(policy, { secure: false }).result).toBe(
       'csp-implemented-with-no-unsafe-default-src-none',
@@ -191,8 +190,7 @@ describe('analyzeCsp results', () => {
 
   it('insecure scheme in passive content passes with advice', () => {
     const a = run(
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      "default-src 'none'; script-src 'self'; img-src http://a.example",
+      `default-src 'none'; script-src 'self'; img-src ${HTTP_SCHEME}a.example`,
     );
     expect(a.result).toBe(
       'csp-implemented-with-insecure-scheme-in-passive-content-only',

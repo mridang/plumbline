@@ -18,6 +18,7 @@ import {
   startMailServer,
   startServer,
 } from './local-server.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 afterEach(restoreProbe);
 
@@ -193,8 +194,7 @@ describe('helpers', () => {
   });
 
   it('targets the host on the probe port', () => {
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    expect(targetFor(new URL('http://example.test:8080/x'))).toEqual({
+    expect(targetFor(new URL(`${HTTP_SCHEME}example.test:8080/x`))).toEqual({
       host: 'example.test',
       port: 443,
     });

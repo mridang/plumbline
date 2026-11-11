@@ -9,8 +9,7 @@ import {
 
 /** Parses markup with the same DOM implementation webhint uses. */
 const parse = (html: string): DocumentLike =>
-  // eslint-disable-next-line unicorn/prefer-https -- test fixture
-  createHTMLDocument(html, 'http://example.com/') as DocumentLike;
+  createHTMLDocument(html, 'https://example.com/') as DocumentLike;
 
 describe('getManifestHref', () => {
   it('returns the trimmed href of the manifest link', () => {

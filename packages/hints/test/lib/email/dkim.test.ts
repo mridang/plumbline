@@ -1,14 +1,15 @@
-import { generateKeyPairSync } from 'node:crypto';
 import { describe, expect, it } from '@jest/globals';
 import { parseDkim } from '../../../src/lib/email/dkim.js';
+import { generateKeyPairAsync } from '../../helpers/crypto.js';
 
-const rsa = (bits: number): string =>
-  // eslint-disable-next-line n/no-sync -- sync is fine in a test helper
-  generateKeyPairSync('rsa', { modulusLength: bits })
-    .publicKey.export({ type: 'spki', format: 'der' })
-    .toString('base64');
+const rsa = async (bits: number): Promise<string> => {
+  const { publicKey } = await generateKeyPairAsync('rsa', {
+    modulusLength: bits,
+  });
+  return publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
+};
 
-const RSA_2048 = rsa(2048);
+const RSA_2048 = await rsa(2048);
 
 describe('parseDkim', () => {
   it('accepts an RSA key record', () => {
@@ -53,8 +54,8 @@ describe('parseDkim', () => {
     );
   });
 
-  it('rejects a short RSA key', () => {
-    const result = parseDkim(`p=${rsa(512)}`);
+  it('rejects a short RSA key', async () => {
+    const result = parseDkim(`p=${await rsa(512)}`);
     expect(result.valid).toBe(false);
     expect(result.errors.join(' ')).toContain('512 bits');
   });

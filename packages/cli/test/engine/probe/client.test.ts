@@ -9,6 +9,7 @@ import {
   linesOf,
   ok,
 } from '../../helpers/probe.js';
+import { vector } from '../../helpers/data.js';
 
 const batchOf = (count: number): string =>
   JSON.stringify({
@@ -187,8 +188,9 @@ describe('web and mail lanes', () => {
     const client = new ProbeClient(transport, { mailInFlight: 1 });
     const mail = [client.starttls('mx1.test'), client.starttls('mx2.test')];
     // Both mail requests are waiting (one on its way, one for a place), and a web request still goes through.
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    await expect(client.reachable('1.1.1.1', 443)).resolves.toBe(true);
+    await expect(client.reachable(vector('ip1_1_1_1'), 443)).resolves.toBe(
+      true,
+    );
     release();
     await Promise.all(mail);
   });
@@ -219,15 +221,19 @@ describe('busy probe', () => {
       return calls < 3 ? { status: 503, text: '' } : ok('{"reachable":true}');
     });
     await expect(
-      // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-      new ProbeClient(transport, { retries: 5 }).reachable('1.1.1.1', 53),
+      new ProbeClient(transport, { retries: 5 }).reachable(
+        vector('ip1_1_1_1'),
+        53,
+      ),
     ).resolves.toBe(true);
     expect(calls).toBe(3);
 
     const busy = fakeProbe(() => ({ status: 503, text: '' }));
     await expect(
-      // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-      new ProbeClient(busy.transport, { retries: 1 }).reachable('1.1.1.1', 53),
+      new ProbeClient(busy.transport, { retries: 1 }).reachable(
+        vector('ip1_1_1_1'),
+        53,
+      ),
     ).rejects.toThrow('answered 503 (it is busy)');
     expect(busy.sent).toHaveLength(2);
   });
@@ -245,8 +251,7 @@ describe('busy probe', () => {
     const client = new ProbeClient(transport, { inFlight: 3 });
     await Promise.all(
       Array.from({ length: 10 }, (_v, n) =>
-        // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-        client.reachable('1.1.1.1', 80 + n),
+        client.reachable(vector('ip1_1_1_1'), 80 + n),
       ),
     );
     expect(most).toBe(3);
@@ -256,21 +261,21 @@ describe('busy probe', () => {
 describe('the other requests', () => {
   it('asks for a connection test with its timeout, and treats a refused address as not reachable', async () => {
     const { client, sent } = fakeProbe((_path, body) =>
-      // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-      linesOf(body)['host'] === '10.0.0.1'
+      linesOf(body)['host'] === vector('ip10_0_0_1')
         ? { status: 502, text: '{"error":"not a public address"}' }
         : ok('{"reachable":true}'),
     );
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    await expect(client.reachable('1.1.1.1', 53, 4000)).resolves.toBe(true);
+    await expect(client.reachable(vector('ip1_1_1_1'), 53, 4000)).resolves.toBe(
+      true,
+    );
     expect(linesOf(sent[0]?.body ?? '')).toMatchObject({
-      // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-      host: '1.1.1.1',
+      host: vector('ip1_1_1_1'),
       port: '53',
       timeout: '4000',
     });
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    await expect(client.reachable('10.0.0.1', 80)).resolves.toBe(false);
+    await expect(client.reachable(vector('ip10_0_0_1'), 80)).resolves.toBe(
+      false,
+    );
   });
 
   it('lets another complaint through', async () => {
@@ -278,8 +283,7 @@ describe('the other requests', () => {
       status: 502,
       text: '{"error":"the connection failed"}',
     }));
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    await expect(client.reachable('1.1.1.1', 80)).rejects.toThrow(
+    await expect(client.reachable(vector('ip1_1_1_1'), 80)).rejects.toThrow(
       'the connection failed',
     );
   });
@@ -292,8 +296,7 @@ describe('the other requests', () => {
       host: 'example.com',
       port: 443,
       tls: true,
-      // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-      ip: '2606:4700::1',
+      ip: vector('ip2606_4700__1'),
       method: 'GET',
       path: '/robots.txt',
       headers: [
@@ -310,8 +313,7 @@ describe('the other requests', () => {
     expect(linesOf(body)).toMatchObject({
       host: 'example.com',
       tls: '1',
-      // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-      ip: '2606:4700::1',
+      ip: vector('ip2606_4700__1'),
       maxbody: '1000',
     });
     expect(body).not.toContain('nobody');

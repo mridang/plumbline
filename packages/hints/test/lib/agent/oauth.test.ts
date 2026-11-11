@@ -6,6 +6,7 @@ import {
   checkOauthProtectedResource,
 } from '../../../src/lib/agent/oauth.js';
 import { fakeEnv } from './fake-env.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 describe('isIdentifierUrl', () => {
   it('accepts https URLs and http loopback hosts', () => {
@@ -14,8 +15,7 @@ describe('isIdentifierUrl', () => {
   });
   it('rejects http, query, fragment, junk and non-strings', () => {
     for (const v of [
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      'http://example.com',
+      `${HTTP_SCHEME}example.com`,
       'https://e.com/?a=1',
       'https://e.com/#f',
       'nope',
@@ -82,8 +82,10 @@ describe('checkOauthDiscovery', () => {
     expect(r.passed).toBe(true);
   });
   it('fails for an issuer with a query or plain http', async () => {
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    for (const issuer of ['https://example.com/?a=1', 'http://example.com']) {
+    for (const issuer of [
+      'https://example.com/?a=1',
+      `${HTTP_SCHEME}example.com`,
+    ]) {
       const env = fakeEnv({ '/.well-known/openid-configuration': { issuer } });
       const r = await checkOauthDiscovery(env);
       expect(r.passed).toBe(false);

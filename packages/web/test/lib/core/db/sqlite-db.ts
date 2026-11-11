@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 // eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 
@@ -7,6 +5,8 @@ import { drizzle } from 'drizzle-orm/sqlite-proxy';
 
 import type { Database } from '@/domain/db/client';
 import * as schema from '@/domain/db/schema';
+
+import { migrationSql } from './migrations';
 
 /** The method Drizzle asks the driver to run a statement with. */
 type Method = 'run' | 'all' | 'values' | 'get';
@@ -30,12 +30,7 @@ export function sqliteDatabase(
   ...migrations: readonly string[]
 ): SqliteDatabase {
   const raw = new DatabaseSync(':memory:');
-  migrations.forEach((file) =>
-    raw.exec(
-      // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap: test database is built synchronously
-      readFileSync(path.join(process.cwd(), 'migrations', file), 'utf8'),
-    ),
-  );
+  migrations.forEach((file) => raw.exec(migrationSql(file)));
   const exec = (sql: string, params: readonly unknown[], method: Method) => {
     const statement = raw.prepare(sql);
     const values = params as SQLInputValue[];

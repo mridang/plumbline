@@ -23,6 +23,7 @@ import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const session: { uid: number | null } = { uid: 7 };
 const resolver: CurrentUserResolver = {
@@ -113,8 +114,12 @@ describe('POST /api/users/self/push/subscriptions', () => {
   });
 
   it.each([
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    [{ endpoint: 'http://push.test/x', keys: { p256dh: 'p', auth: 'a' } }],
+    [
+      {
+        endpoint: `${HTTP_SCHEME}push.test/x`,
+        keys: { p256dh: 'p', auth: 'a' },
+      },
+    ],
     [{ endpoint: ENDPOINT, keys: { auth: 'a' } }],
     [{ endpoint: ENDPOINT, keys: { p256dh: 'p' } }],
     [{ keys: { p256dh: 'p', auth: 'a' } }],

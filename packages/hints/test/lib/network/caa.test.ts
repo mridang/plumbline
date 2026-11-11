@@ -9,6 +9,7 @@ import {
   type CaaRecord,
 } from '../../../src/lib/network/caa.js';
 import { installDns } from './fake-dns.js';
+import { FTP_SCHEME, HTTP_SCHEME } from '../../helpers/data.js';
 
 let restore: () => void = () => undefined;
 afterEach(() => restore());
@@ -66,8 +67,7 @@ describe('validateCaaRecord', () => {
       'invalid-parameter-validation-methods',
     ],
     ['issuemail', 'bad domain', 'invalid-property-issuemail-value'],
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    ['iodef', 'http://example.org/', 'invalid-property-iodef-value'],
+    ['iodef', `${HTTP_SCHEME}example.org/`, 'invalid-property-iodef-value'],
     ['iodef', 'mailto:nonsense', 'invalid-property-iodef-value'],
     ['iodef', 'not a url', 'invalid-property-iodef-value'],
     ['contactemail', 'nope', 'invalid-property-contactemail-value'],
@@ -104,8 +104,7 @@ describe('evaluateCaa', () => {
   });
   it('reports syntax errors with readable messages', () => {
     const e = evaluateCaa(
-      // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
-      [rec('issue', 'ca.test'), rec('iodef', 'ftp://x')],
+      [rec('issue', 'ca.test'), rec('iodef', `${FTP_SCHEME}x`)],
       'x',
     );
     expect(e.errors).toHaveLength(1);

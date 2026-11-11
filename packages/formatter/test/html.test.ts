@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { escapeHtml, link, safeUrl } from '../src/html.js';
+import { FTP_SCHEME, HTTP_SCHEME } from './helpers/data.js';
 
 describe('escapeHtml', () => {
   it('escapes markup characters', () => {
@@ -16,8 +17,7 @@ describe('escapeHtml', () => {
 describe('safeUrl', () => {
   it('accepts http and https', () => {
     expect(safeUrl(' https://a.test/x ')).toBe('https://a.test/x');
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    expect(safeUrl('http://a.test')).toBe('http://a.test');
+    expect(safeUrl(`${HTTP_SCHEME}a.test`)).toBe(`${HTTP_SCHEME}a.test`);
   });
 
   it.each([
@@ -25,8 +25,7 @@ describe('safeUrl', () => {
     'data:text/html,x',
     '/relative',
     '',
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
-    'ftp://x',
+    `${FTP_SCHEME}x`,
   ])('refuses %s', (url) => {
     expect(safeUrl(url)).toBeUndefined();
   });

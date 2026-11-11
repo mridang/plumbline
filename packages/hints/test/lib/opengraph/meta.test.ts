@@ -12,8 +12,7 @@ const doc = createHTMLDocument(
     <meta property="og:nocontent">
     <meta property="description" name="twitter:site" content="@x">
   </head></html>`,
-  // eslint-disable-next-line unicorn/prefer-https -- test fixture
-  'http://example.com/',
+  'https://example.com/',
 );
 
 describe('metaValues', () => {

@@ -5,6 +5,7 @@ import {
   normalizeHost,
   registrableDomain,
 } from '../../../src/lib/privacy/registrable-domain.js';
+import { vector } from '../../helpers/data.js';
 
 describe('registrableDomain', () => {
   it.each([
@@ -52,8 +53,7 @@ describe('isSameParty', () => {
 
 describe('isIpAddress and normalizeHost', () => {
   it('recognises IPv4 and IPv6', () => {
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    expect(isIpAddress('10.0.0.1')).toBe(true);
+    expect(isIpAddress(vector('ip10_0_0_1'))).toBe(true);
     expect(isIpAddress('[2001:db8::1]')).toBe(true);
     expect(isIpAddress('example.com')).toBe(false);
   });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { nodeinfoFindings } from '../../../src/lib/discovery/nodeinfo.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 describe('nodeinfoFindings', () => {
   it('is silent when absent or 404', () => {
@@ -10,8 +11,7 @@ describe('nodeinfoFindings', () => {
   it('reports a valid links document', () => {
     const [f] = nodeinfoFindings({
       statusCode: 200,
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      body: '{"links":[{"rel":"http://nodeinfo.diaspora.software/ns/schema/2.1","href":"https://x.test/ni"}]}',
+      body: `{"links":[{"rel":"${HTTP_SCHEME}nodeinfo.diaspora.software/ns/schema/2.1","href":"https://x.test/ni"}]}`,
     });
     expect(f?.severity).toBe('hint');
   });

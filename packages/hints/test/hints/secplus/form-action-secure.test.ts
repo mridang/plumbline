@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { runHint } from '../../helpers/run-hint.js';
 import formActionSecure from '../../../src/hints/secplus/form-action-secure.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 /**
  * The local scan harness serves the page over plain HTTP, and the rule is
@@ -19,8 +20,7 @@ describe('the form-action-secure hint', () => {
     const problems = await runHint(formActionSecure, {
       '/': {
         headers: { 'content-type': 'text/html; charset=utf-8' },
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        body: page('<form action="http://example.test/submit"></form>'),
+        body: page(`<form action="${HTTP_SCHEME}example.test/submit"></form>`),
       },
     });
     expect(problems).toHaveLength(0);

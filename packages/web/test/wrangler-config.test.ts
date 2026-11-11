@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
@@ -33,8 +33,7 @@ interface Wrangler {
 
 const config = ts.parseConfigFileTextToJson(
   'wrangler.jsonc',
-  // eslint-disable-next-line n/no-sync -- sync is fine in a test bootstrap, read once at load
-  readFileSync(path.join(process.cwd(), 'wrangler.jsonc'), 'utf8'),
+  await readFile(path.join(process.cwd(), 'wrangler.jsonc'), 'utf8'),
 ).config as Wrangler;
 
 const probe = config.containers.find(

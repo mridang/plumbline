@@ -8,6 +8,7 @@ import {
 } from '@/domain/suite/config';
 import { findCheck } from '@/domain/checks/catalogue';
 import { RULE_SETS } from '@/domain/suite/rules';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 /** A rule of the advanced set that the recommended set does not hold. */
 const ADV = Object.keys(RULE_SETS['plumbline:advanced']!).find(
@@ -341,13 +342,11 @@ describe('sites', () => {
 
   it('ignores an address that cannot be a site and says why', () => {
     const rules = resolve(
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      'sites:\n  - http://plain.example.com\n  - https://github.com/acme/site\n  - localhost\n  - ok.example.com\n',
+      `sites:\n  - ${HTTP_SCHEME}plain.example.com\n  - https://github.com/acme/site\n  - localhost\n  - ok.example.com\n`,
     );
     expect(rules.sites).toEqual(['ok.example.com']);
     expect(rules.problems).toEqual([
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      'plumbline.yaml: "http://plain.example.com" in sites is not an https address, so it was ignored.',
+      `plumbline.yaml: "${HTTP_SCHEME}plain.example.com" in sites is not an https address, so it was ignored.`,
       'plumbline.yaml: "https://github.com/acme/site" in sites is not a site (GitHub or a registry), so it was ignored.',
       'plumbline.yaml: "localhost" in sites is not a public domain name, so it was ignored.',
     ]);
@@ -399,13 +398,11 @@ describe('previews', () => {
 
   it('ignores a target that cannot be a site and says why', () => {
     const rules = resolve(
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      'previews:\n  "pr-*": http://app.example.com\n  ok: app.example.com\n',
+      `previews:\n  "pr-*": ${HTTP_SCHEME}app.example.com\n  ok: app.example.com\n`,
     );
     expect(rules.previews).toEqual([['ok', 'app.example.com']]);
     expect(rules.problems).toEqual([
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      'plumbline.yaml: "http://app.example.com" for "pr-*" in previews is not an https address, so it was ignored.',
+      `plumbline.yaml: "${HTTP_SCHEME}app.example.com" for "pr-*" in previews is not an https address, so it was ignored.`,
     ]);
   });
 

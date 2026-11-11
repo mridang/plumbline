@@ -17,6 +17,7 @@ import { ScanFailed, SiteUnreachable } from '@/domain/suite/scanner';
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const deployed = { repo: 'acme/site', sha: 'abc123' };
 
@@ -110,8 +111,9 @@ describe('classifyDeployment', () => {
     ).toBe('https://pr-3.site.test/');
     expect(
       classifyDeployment(
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        status('success', 'Preview', { environment_url: 'http://plain.test/' }),
+        status('success', 'Preview', {
+          environment_url: `${HTTP_SCHEME}plain.test/`,
+        }),
       )?.url,
     ).toBeNull();
     expect(

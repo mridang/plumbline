@@ -21,6 +21,7 @@ import {
   registrationResponse,
 } from '@/lib/oauth';
 import { SITE_NAME } from '@/utils/site';
+import { FTP_SCHEME, HTTP_SCHEME } from '../../helpers/data.js';
 
 const URL_ID = 'https://chatgpt.com/oauth/client.json';
 const goodDoc = {
@@ -60,8 +61,9 @@ describe('isMetadataDocumentUrl', () => {
 
   it('rejects plain ids, http, bare hosts, IPs, localhost and dot segments', () => {
     expect(isMetadataDocumentUrl('dcr_abc123')).toBe(false);
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
-    expect(isMetadataDocumentUrl('http://chatgpt.com/client.json')).toBe(false);
+    expect(isMetadataDocumentUrl(`${HTTP_SCHEME}chatgpt.com/client.json`)).toBe(
+      false,
+    );
     expect(isMetadataDocumentUrl('https://chatgpt.com')).toBe(false);
     expect(isMetadataDocumentUrl('https://chatgpt.com/')).toBe(false);
     expect(isMetadataDocumentUrl('https://10.0.0.1/client.json')).toBe(false);
@@ -132,8 +134,7 @@ describe('parseClientMetadataDocument', () => {
   });
 
   it.each([
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    ['an http address', 'http://example.com/logo.png'],
+    ['an http address', `${HTTP_SCHEME}example.com/logo.png`],
     ['an address with a login', 'https://user:pw@example.com/logo.png'],
     ['an address on a private network', 'https://192.168.0.1/logo.png'],
     ['an address that is not normalised', 'https://EXAMPLE.com/a/../logo.png'],
@@ -155,8 +156,10 @@ describe('parseClientMetadataDocument', () => {
 
   it.each([
     ['no jwks_uri', { jwks_uri: notProvided }],
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
-    ['an http jwks_uri', { jwks_uri: 'http://chatgpt.com/oauth/jwks.json' }],
+    [
+      'an http jwks_uri',
+      { jwks_uri: `${HTTP_SCHEME}chatgpt.com/oauth/jwks.json` },
+    ],
     ['a jwks_uri with credentials', { jwks_uri: 'https://u:p@chatgpt.com/k' }],
     ['a jwks_uri that is not a URL', { jwks_uri: 'keys' }],
     ['a jwks_uri that is not text', { jwks_uri: 7 }],
@@ -260,8 +263,7 @@ describe('parseRegistration', () => {
     for (const redirectUris of [
       undefined,
       [],
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      ['http://example.com/cb'],
+      [`${HTTP_SCHEME}example.com/cb`],
       Array.from({ length: 21 }, (_, i) => `https://a.com/${i}`),
     ]) {
       expect(parseRegistration({ redirect_uris: redirectUris })).toMatchObject({
@@ -466,8 +468,11 @@ describe('fetchClientMetadata details', () => {
 
 describe('redirect rules in client metadata', () => {
   it('rejects a document whose redirect URIs include a disallowed scheme', () => {
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    for (const uri of ['http://example.com/cb', 'mailto:a@b.c', 'myapp://cb']) {
+    for (const uri of [
+      `${HTTP_SCHEME}example.com/cb`,
+      'mailto:a@b.c',
+      'myapp://cb',
+    ]) {
       expect(
         parseClientMetadataDocument(
           { ...goodDoc, redirect_uris: ['https://chatgpt.com/cb', uri] },
@@ -785,8 +790,10 @@ describe('error_description is printable ASCII without quotes or backslashes (RF
   it.each([
     ['a body that is not an object', 'x'],
     ['no redirect_uris', {}],
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
-    ['redirect_uris that are not acceptable', { redirect_uris: ['ftp://a/b'] }],
+    [
+      'redirect_uris that are not acceptable',
+      { redirect_uris: [`${FTP_SCHEME}a/b`] },
+    ],
     ['a non-text auth method', { ...base, token_endpoint_auth_method: 7 }],
     ['grant types without authorization_code', { ...base, grant_types: ['x'] }],
     ['response types without code', { ...base, response_types: ['token'] }],

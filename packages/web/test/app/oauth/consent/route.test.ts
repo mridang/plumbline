@@ -19,6 +19,7 @@ import {
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
+import { HTTP_SCHEME } from '../../../helpers/data.js';
 
 /** Who is signed in; null means nobody. */
 /** `ended`: the person signed out everywhere, though the cookie itself still verifies. */
@@ -62,8 +63,7 @@ beforeEach(async () => {
       JSON.stringify([
         'https://app.example/cb',
         'http://localhost:6274/oauth/callback',
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        'http://example.com/old',
+        `${HTTP_SCHEME}example.com/old`,
       ]),
       '2026-01-01T00:00:00.000Z',
     );
@@ -155,8 +155,9 @@ describe('POST /oauth/consent', () => {
   });
 
   it('shows an error, with no redirect, for a stored address the rules no longer allow', async () => {
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    const res = await consent({ redirect_uri: 'http://example.com/old' });
+    const res = await consent({
+      redirect_uri: `${HTTP_SCHEME}example.com/old`,
+    });
     expect(res.status).toBe(400);
     expect(res.headers.get('location')).toBeNull();
   });

@@ -11,8 +11,7 @@ const { createHTMLDocument } = require('@hint/utils-dom');
 
 const measure = (html: string) =>
   measureContent(
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    createHTMLDocument(html, 'http://example.com/') as ContentDocument,
+    createHTMLDocument(html, 'https://example.com/') as ContentDocument,
   );
 
 const LONG = 'x'.repeat(31);

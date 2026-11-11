@@ -29,11 +29,9 @@ const { createHTMLDocument } = require('@hint/utils-dom') as {
 };
 
 const blocksOf = (html: string) =>
-  // eslint-disable-next-line unicorn/prefer-https -- test fixture
-  readJsonLd(createHTMLDocument(html, 'http://x.test/'));
+  readJsonLd(createHTMLDocument(html, 'https://x.test/'));
 const statsOf = (html: string): ContentStats | null =>
-  // eslint-disable-next-line unicorn/prefer-https -- test fixture
-  measureContent(createHTMLDocument(html, 'http://x.test/'));
+  measureContent(createHTMLDocument(html, 'https://x.test/'));
 
 /** Wraps a parsed object as one JSON-LD block of HTML. */
 const jsonLd = (value: unknown): string =>

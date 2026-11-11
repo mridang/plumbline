@@ -4,6 +4,7 @@ import type AuditNS from 'lighthouse/types/audit.js';
 import { secplusChecks } from '../../src/checks/secplus.js';
 import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 import type { AuditCheck } from '../../src/checks/types.js';
+import { HTTP_SCHEME } from '../helpers/data.js';
 
 /**
  * Builds the minimal devtools log Lighthouse's `NetworkRecords` computed
@@ -180,8 +181,7 @@ describe('form-action-secure check', () => {
     const findings = await check('form-action-secure').run(
       domArtifacts(
         'https://x.test/',
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        '<form action="http://x.test/submit"></form>',
+        `<form action="${HTTP_SCHEME}x.test/submit"></form>`,
       ),
       context(),
     );

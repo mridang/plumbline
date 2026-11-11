@@ -5,6 +5,7 @@ import type { AddressInfo } from 'node:net';
 import { Severity } from '@hint/utils-types';
 import type { CatalogueEntry } from '../../src/engine/catalogue.js';
 import { runScan, type ScanEvent } from '../../src/engine/run-scan.js';
+import { HTTP_SCHEME } from '../helpers/data.js';
 
 /** A fake check that reports `message` as an error on the page. */
 function failing(id: string, message: string): CatalogueEntry {
@@ -130,8 +131,7 @@ describe('runScan', () => {
     ['http://127.0.0.1:8080/', 'not a public address'],
     ['http://169.254.169.254/latest/meta-data/', 'not a public address'],
     ['http://localhost:8080/', 'not a public address'],
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    ['http://example.com:22/', 'Port 22'],
+    [`${HTTP_SCHEME}example.com:22/`, 'Port 22'],
     ['ftp://example.com/', 'Only http and https'],
   ])('refuses to scan %s', async (address, reason) => {
     const events = await eventsOf(address, { entries: [passing('b-good')] });

@@ -60,8 +60,7 @@ describe('parseReportInput', () => {
 
   it('takes an address on a subdomain', () => {
     expect(
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      parseReportInput(body({ url: 'http://www.example.com/x' }), HOST).ok,
+      parseReportInput(body({ url: 'https://www.example.com/x' }), HOST).ok,
     ).toBe(true);
   });
 

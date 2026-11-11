@@ -6,7 +6,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { ROUTE_MODULES } from './helpers/route-modules';
@@ -32,8 +32,7 @@ interface Operation {
 }
 
 const document = JSON.parse(
-  // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap, the spec is read once at load
-  readFileSync(path.join(process.cwd(), 'openapi.json'), 'utf8'),
+  await readFile(path.join(process.cwd(), 'openapi.json'), 'utf8'),
 ) as {
   openapi: string;
   paths: Record<string, Record<string, Operation>>;
@@ -58,14 +57,19 @@ const documented = (): Map<string, Operation> => {
   return found;
 };
 
-const routeFiles = (dir: string): string[] =>
-  // eslint-disable-next-line n/no-sync -- sync is fine in a test helper, async would ripple into every synchronous caller
-  readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+const routeFiles = async (dir: string): Promise<string[]> => {
+  const found: string[] = [];
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
     if (entry.isDirectory()) {
-      return routeFiles(path.join(dir, entry.name));
+      found.push(...(await routeFiles(path.join(dir, entry.name))));
+    } else if (entry.name === 'route.ts') {
+      found.push(path.join(dir, entry.name));
+    } else {
+      continue;
     }
-    return entry.name === 'route.ts' ? [path.join(dir, entry.name)] : [];
-  });
+  }
+  return found;
+};
 
 /** The path a route file serves, with `[x]` written `{x}`. */
 const pathOf = (file: string): string =>
@@ -96,7 +100,7 @@ const registered = async (): Promise<
   { key: string; path: string; method: string; handler: Handler }[]
 > => {
   const found = [];
-  for (const file of routeFiles(API)) {
+  for (const file of await routeFiles(API)) {
     const path = pathOf(file).replace(/\/$/, '');
     if (ALIASES.has(path)) {
       continue;
@@ -141,8 +145,9 @@ const response = (value: Json): Json => {
 const routes = await registered();
 
 describe('openapi.json and the route files', () => {
-  it('has a module in the test table for every route file, and a route file for every module', () => {
-    const files = routeFiles(API)
+  it('has a module in the test table for every route file, and a route file for every module', async () => {
+    const routeList = await routeFiles(API);
+    const files = routeList
       .map((file) => pathOf(file).replace(/\/$/, ''))
       .filter((path) => !ALIASES.has(path));
     expect(files.toSorted((a, b) => Number(a > b) - Number(a < b))).toEqual(

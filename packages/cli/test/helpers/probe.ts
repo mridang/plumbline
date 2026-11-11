@@ -95,13 +95,10 @@ export function handshakeAnswer(
         fingerprint256: 'AA:BB',
         keyType: 'EC',
         signatureAlgorithm: 'ecdsa-with-SHA256',
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        infoAccess: { 'OCSP - URI': ['http://ocsp.example.com'] },
+        infoAccess: { 'OCSP - URI': ['https://ocsp.example.com'] },
       },
     ],
     ocsp: null,
     compression: false,
   };
 }
-
-export { deflateSync, gzipSync } from 'node:zlib';

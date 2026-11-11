@@ -3,7 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import { signatureAlgorithmOid } from '../../../src/lib/tls/der.js';
 import { fixture } from './local-server.js';
 
-const der = (name: string): Buffer => new X509Certificate(fixture(name)).raw;
+const der = async (name: string): Promise<Buffer> =>
+  new X509Certificate(await fixture(name)).raw;
 
 describe('signatureAlgorithmOid', () => {
   it.each([
@@ -12,8 +13,8 @@ describe('signatureAlgorithmOid', () => {
     ['rsa3072-sha1.pem', '1.2.840.10045.4.1'],
     ['rsa3072-sha224.pem', '1.2.840.10045.4.3.1'],
     ['ca.pem', '1.2.840.10045.4.3.2'],
-  ])('reads the algorithm of %s', (name, oid) => {
-    expect(signatureAlgorithmOid(der(name))).toBe(oid);
+  ])('reads the algorithm of %s', async (name, oid) => {
+    expect(signatureAlgorithmOid(await der(name))).toBe(oid);
   });
 
   it('decodes an OID whose first arc is 2', () => {

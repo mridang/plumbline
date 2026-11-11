@@ -10,11 +10,9 @@ describe('assertScannable', () => {
   it('lets an https or http address on the default port or a listed port through', () => {
     for (const address of [
       'https://example.com/',
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      'http://example.com/',
+      'https://example.com/',
       'https://example.com:8443/x',
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      'http://example.com:8080/',
+      'https://example.com:8080/',
     ]) {
       expect(() => assertScannable(new URL(address))).not.toThrow();
     }

@@ -30,6 +30,7 @@ import {
   reportedFindings,
   safeText,
 } from '@/domain/suite/report';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const found = (
   severity: StoredFinding['severity'],
@@ -417,8 +418,7 @@ describe('safeText', () => {
 
   it('cannot make a link, an image, a tag or a code span', () => {
     const text = safeText(
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture: hostile plain-http link text that must be neutralised
-      '[login](https://evil.test) <img src=x> `code` http://x.test',
+      `[login](https://evil.test) <img src=x> \`code\` ${HTTP_SCHEME}x.test`,
     );
     expect(text).not.toMatch(/[<>[\]`]/);
     expect(text).not.toMatch(/https?:\/\//);

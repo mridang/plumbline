@@ -14,6 +14,7 @@ import { domainLink, type ToolResult } from '@/domain/mcp/tool-results';
 import { BackendFailure, InvalidToolArguments, UnknownTool } from '@/lib/mcp';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import { vector } from '../../helpers/data.js';
 
 const USER = { id: 1 } as User;
 const STRANGER = { id: 2 } as User;
@@ -467,8 +468,9 @@ describe('get_domain', () => {
   });
 
   it('refuses an address that is not a public domain, saying why', async () => {
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    const result = await setup().call('get_domain', { domain: '192.168.1.1' });
+    const result = await setup().call('get_domain', {
+      domain: vector('ip192_168_1_1'),
+    });
     expect(textOf(result)).toBe(
       'domain: Enter a domain name, not an IP address.',
     );

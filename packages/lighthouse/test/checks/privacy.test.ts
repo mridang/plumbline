@@ -3,6 +3,7 @@ import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import { privacyChecks } from '../../src/checks/privacy.js';
 import type { AuditCheck } from '../../src/checks/types.js';
+import { HTTP_SCHEME } from '../helpers/data.js';
 
 /** One request to synthesise into the devtools log. */
 interface RequestSpec {
@@ -206,8 +207,10 @@ describe('the privacy-third-party-requests check run()', () => {
 
   it('warns when a third-party request is insecure', async () => {
     const findings = await thirdParty.run(
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      artifacts([doc(), { url: 'http://cdn.other.test/a.js', type: 'Script' }]),
+      artifacts([
+        doc(),
+        { url: `${HTTP_SCHEME}cdn.other.test/a.js`, type: 'Script' },
+      ]),
       context(),
     );
     expect(findings?.[0]?.severity).toBe('warning');
@@ -230,10 +233,8 @@ describe('the privacy-mixed-content check run()', () => {
     const findings = await mixed.run(
       artifacts([
         doc(),
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        { url: 'http://x.test/a.js', type: 'Script' },
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        { url: 'http://x.test/a.png', type: 'Image' },
+        { url: `${HTTP_SCHEME}x.test/a.js`, type: 'Script' },
+        { url: `${HTTP_SCHEME}x.test/a.png`, type: 'Image' },
       ]),
       context(),
     );
@@ -247,10 +248,8 @@ describe('the privacy-mixed-content check run()', () => {
   it('reports nothing when the page itself is http', async () => {
     const findings = await mixed.run(
       artifacts([
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        { url: 'http://x.test/', type: 'Document' },
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        { url: 'http://x.test/a.js', type: 'Script' },
+        { url: `${HTTP_SCHEME}x.test/`, type: 'Document' },
+        { url: `${HTTP_SCHEME}x.test/a.js`, type: 'Script' },
       ]),
       context(),
     );
@@ -263,14 +262,12 @@ describe('the privacy-insecure-first-party check run()', () => {
 
   it('errors on a plain-http request to the page’s own domain', async () => {
     const findings = await insecure.run(
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      artifacts([doc(), { url: 'http://x.test/a.js', type: 'Script' }]),
+      artifacts([doc(), { url: `${HTTP_SCHEME}x.test/a.js`, type: 'Script' }]),
       context(),
     );
     expect(findings).toHaveLength(1);
     expect(findings?.[0]?.severity).toBe('error');
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    expect(findings?.[0]?.message).toContain('http://x.test/a.js');
+    expect(findings?.[0]?.message).toContain(`${HTTP_SCHEME}x.test/a.js`);
   });
 
   it('reports nothing when first-party requests use https', async () => {

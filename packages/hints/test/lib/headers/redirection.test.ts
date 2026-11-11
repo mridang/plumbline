@@ -6,6 +6,7 @@ import {
   type Hop,
   type RedirectionClient,
 } from '../../../src/lib/headers/redirection.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const hop = (url: string, status = 301): Hop => ({ url: new URL(url), status });
 const route = (...hops: Hop[]) => ({
@@ -18,8 +19,7 @@ describe('analyzeRedirection', () => {
   it('to https on the same host is fine', () => {
     expect(
       analyzeRedirection(
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        route(hop('http://a.example/'), hop('https://a.example/', 200)),
+        route(hop(`${HTTP_SCHEME}a.example/`), hop('https://a.example/', 200)),
       ),
     ).toBe('redirection-to-https');
   });
@@ -28,8 +28,7 @@ describe('analyzeRedirection', () => {
     expect(
       analyzeRedirection(
         route(
-          // eslint-disable-next-line unicorn/prefer-https -- test fixture
-          hop('http://a.example/'),
+          hop(`${HTTP_SCHEME}a.example/`),
           hop('https://a.example/'),
           hop('https://www.a.example/', 200),
         ),
@@ -38,10 +37,9 @@ describe('analyzeRedirection', () => {
   });
 
   it('is missing when http does not redirect', () => {
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    expect(analyzeRedirection(route(hop('http://a.example/', 200)))).toBe(
-      'redirection-missing',
-    );
+    expect(
+      analyzeRedirection(route(hop(`${HTTP_SCHEME}a.example/`, 200))),
+    ).toBe('redirection-missing');
   });
 
   it('is not needed when http cannot be reached', () => {
@@ -53,8 +51,7 @@ describe('analyzeRedirection', () => {
   it('reports an invalid certificate', () => {
     expect(
       analyzeRedirection({
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        hops: [hop('http://a.example/')],
+        hops: [hop(`${HTTP_SCHEME}a.example/`)],
         invalidCert: true,
         unreachable: false,
       }),
@@ -64,8 +61,10 @@ describe('analyzeRedirection', () => {
   it('flags a final destination that is not https', () => {
     expect(
       analyzeRedirection(
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        route(hop('http://a.example/'), hop('http://b.example/', 200)),
+        route(
+          hop(`${HTTP_SCHEME}a.example/`),
+          hop(`${HTTP_SCHEME}b.example/`, 200),
+        ),
       ),
     ).toBe('redirection-not-to-https');
   });
@@ -74,10 +73,8 @@ describe('analyzeRedirection', () => {
     expect(
       analyzeRedirection(
         route(
-          // eslint-disable-next-line unicorn/prefer-https -- test fixture
-          hop('http://a.example/'),
-          // eslint-disable-next-line unicorn/prefer-https -- test fixture
-          hop('http://www.a.example/'),
+          hop(`${HTTP_SCHEME}a.example/`),
+          hop(`${HTTP_SCHEME}www.a.example/`),
           hop('https://www.a.example/', 200),
         ),
       ),
@@ -87,16 +84,20 @@ describe('analyzeRedirection', () => {
   it('flags a first hop to another host', () => {
     expect(
       analyzeRedirection(
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        route(hop('http://a.example/'), hop('https://www.a.example/', 200)),
+        route(
+          hop(`${HTTP_SCHEME}a.example/`),
+          hop('https://www.a.example/', 200),
+        ),
       ),
     ).toBe('redirection-off-host-from-http');
   });
 
   it('accepts a route that is entirely preloaded', () => {
     expect(
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      analyzeRedirection(route(hop('http://a.example/', 200)), () => true),
+      analyzeRedirection(
+        route(hop(`${HTTP_SCHEME}a.example/`, 200)),
+        () => true,
+      ),
     ).toBe('redirection-all-redirects-preloaded');
   });
 });
@@ -105,34 +106,36 @@ describe('redirectionFindings', () => {
   it('is silent for passing results', () => {
     expect(
       redirectionFindings(
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        route(hop('http://a.example/'), hop('https://a.example/', 200)),
+        route(hop(`${HTTP_SCHEME}a.example/`), hop('https://a.example/', 200)),
       ),
     ).toEqual([]);
     expect(
       redirectionFindings({ hops: [], invalidCert: false, unreachable: true }),
     ).toEqual([]);
     expect(
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      redirectionFindings(route(hop('http://a.example/', 200)), () => true),
+      redirectionFindings(
+        route(hop(`${HTTP_SCHEME}a.example/`, 200)),
+        () => true,
+      ),
     ).toEqual([]);
   });
 
   it('warns for an off-host first hop and errors for the rest', () => {
     expect(
       redirectionFindings(
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        route(hop('http://a.example/'), hop('https://www.a.example/', 200)),
+        route(
+          hop(`${HTTP_SCHEME}a.example/`),
+          hop('https://www.a.example/', 200),
+        ),
       )[0]?.severity,
     ).toBe('warning');
     expect(
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      redirectionFindings(route(hop('http://a.example/', 200)))[0]?.severity,
+      redirectionFindings(route(hop(`${HTTP_SCHEME}a.example/`, 200)))[0]
+        ?.severity,
     ).toBe('error');
     expect(
       redirectionFindings({
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        hops: [hop('http://a.example/')],
+        hops: [hop(`${HTTP_SCHEME}a.example/`)],
         invalidCert: true,
         unreachable: false,
       })[0]?.message,
@@ -161,16 +164,16 @@ function fake(
 describe('followRedirects', () => {
   it('follows a chain and records each hop', async () => {
     const client = fake({
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      'http://a.example/': [301, 'https://a.example/'],
+      [`${HTTP_SCHEME}a.example/`]: [301, 'https://a.example/'],
       'https://a.example/': [302, '/home'],
       'https://a.example/home': [200],
     });
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    const result = await followRedirects(new URL('http://a.example/'), client);
+    const result = await followRedirects(
+      new URL(`${HTTP_SCHEME}a.example/`),
+      client,
+    );
     expect(result.hops.map((h) => h.url.href)).toEqual([
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      'http://a.example/',
+      `${HTTP_SCHEME}a.example/`,
       'https://a.example/',
       'https://a.example/home',
     ]);
@@ -178,8 +181,7 @@ describe('followRedirects', () => {
 
   it('marks an unreachable start', async () => {
     const result = await followRedirects(
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      new URL('http://a.example/'),
+      new URL(`${HTTP_SCHEME}a.example/`),
       fake({}),
     );
     expect(result.unreachable).toBe(true);
@@ -188,38 +190,38 @@ describe('followRedirects', () => {
   it('marks a certificate failure on a later hop', async () => {
     const cause = Object.assign(new Error('x'), { code: 'CERT_HAS_EXPIRED' });
     const client = fake({
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      'http://a.example/': [301, 'https://a.example/'],
+      [`${HTTP_SCHEME}a.example/`]: [301, 'https://a.example/'],
       'https://a.example/': new Error('fetch failed', { cause }),
     });
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    const result = await followRedirects(new URL('http://a.example/'), client);
+    const result = await followRedirects(
+      new URL(`${HTTP_SCHEME}a.example/`),
+      client,
+    );
     expect(result.invalidCert).toBe(true);
     expect(result.unreachable).toBe(false);
   });
 
   it('stops quietly on another failure on a later hop', async () => {
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    const client = fake({ 'http://a.example/': [301, 'https://a.example/'] });
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    const result = await followRedirects(new URL('http://a.example/'), client);
+    const client = fake({
+      [`${HTTP_SCHEME}a.example/`]: [301, 'https://a.example/'],
+    });
+    const result = await followRedirects(
+      new URL(`${HTTP_SCHEME}a.example/`),
+      client,
+    );
     expect(result).toMatchObject({ invalidCert: false, unreachable: false });
     expect(result.hops).toHaveLength(1);
   });
 
   it('stops at a redirect without a usable location and at the hop limit', async () => {
     const noLocation = await followRedirects(
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      new URL('http://a.example/'),
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      fake({ 'http://a.example/': [301] }),
+      new URL(`${HTTP_SCHEME}a.example/`),
+      fake({ [`${HTTP_SCHEME}a.example/`]: [301] }),
     );
     expect(noLocation.hops).toHaveLength(1);
     const loop = await followRedirects(
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      new URL('http://a.example/'),
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      fake({ 'http://a.example/': [302, 'http://a.example/'] }),
+      new URL(`${HTTP_SCHEME}a.example/`),
+      fake({ [`${HTTP_SCHEME}a.example/`]: [302, `${HTTP_SCHEME}a.example/`] }),
       3,
     );
     expect(loop.hops).toHaveLength(3);
@@ -227,10 +229,8 @@ describe('followRedirects', () => {
 
   it('stops on a location that is not a URL', async () => {
     const result = await followRedirects(
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      new URL('http://a.example/'),
-      // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
-      fake({ 'http://a.example/': [302, 'http://[bad'] }),
+      new URL(`${HTTP_SCHEME}a.example/`),
+      fake({ [`${HTTP_SCHEME}a.example/`]: [302, `${HTTP_SCHEME}[bad`] }),
     );
     expect(result.hops).toHaveLength(1);
   });

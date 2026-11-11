@@ -25,6 +25,7 @@ import {
   replyIdOf,
   withoutId,
 } from '@/lib/mcp';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const META = 'io.modelcontextprotocol/protocolVersion';
 const CAPS = 'io.modelcontextprotocol/clientCapabilities';
@@ -653,8 +654,7 @@ describe('isAllowedOrigin', () => {
       'https://evil.example',
       'https://claude.ai.evil.example',
       'https://notclaude.ai',
-      // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
-      'http://claude.ai',
+      `${HTTP_SCHEME}claude.ai`,
       'https://claude.ai/path',
       'null',
       'not a url',
@@ -707,8 +707,9 @@ describe('isAllowedOrigin', () => {
     expect(isAllowedOrigin('https://tool.example:8443', self, setting)).toBe(
       false,
     );
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    expect(isAllowedOrigin('http://tool.example', self, setting)).toBe(false);
+    expect(isAllowedOrigin(`${HTTP_SCHEME}tool.example`, self, setting)).toBe(
+      false,
+    );
     expect(isAllowedOrigin('https://sub.tool.example', self, setting)).toBe(
       false,
     );

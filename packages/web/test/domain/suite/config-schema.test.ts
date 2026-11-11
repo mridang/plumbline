@@ -20,6 +20,7 @@ import {
 } from '@/domain/suite/config-schema';
 import { RULE_SET_DEFS } from '@/domain/checks/sets';
 import { DEFAULT_RULE_SET } from '@/domain/suite/rules';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const schema = buildSchema();
 const validate = new Ajv2020({ strict: true }).compile(schema);
@@ -103,8 +104,11 @@ const FILES: readonly [string, string, boolean][] = [
     true,
   ],
   ['sites that are not a list', 'sites: api.example.com', false],
-  // eslint-disable-next-line unicorn/prefer-https -- test fixture
-  ['a site that is not https', 'sites:\n  - http://api.example.com', false],
+  [
+    'a site that is not https',
+    `sites:\n  - ${HTTP_SCHEME}api.example.com`,
+    false,
+  ],
   ['a site that is not a string', 'sites:\n  - 5', false],
   [
     'a key deployments does not have',

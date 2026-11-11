@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/discovery/nodeinfo.js';
 import { runHint } from '../../helpers/run-hint.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 describe('nodeinfo', () => {
   it('is silent when the document is absent', async () => {
@@ -11,8 +12,7 @@ describe('nodeinfo', () => {
     const problems = await runHint(hint, {
       '/.well-known/nodeinfo': {
         headers: { 'content-type': 'application/json' },
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture: the NodeInfo rel identifier is an http:// URL by specification
-        body: '{"links":[{"rel":"http://nodeinfo.diaspora.software/ns/schema/2.1","href":"https://x.test/ni"}]}',
+        body: `{"links":[{"rel":"${HTTP_SCHEME}nodeinfo.diaspora.software/ns/schema/2.1","href":"https://x.test/ni"}]}`,
       },
     });
     expect(problems[0].message).toContain('NodeInfo');

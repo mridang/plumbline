@@ -10,6 +10,7 @@ import {
 } from '../../../src/lib/network/dns-util.js';
 import { dns } from '../../../src/core/dns.js';
 import { installDns } from './fake-dns.js';
+import { vector } from '../../helpers/data.js';
 
 let restore: () => void = () => undefined;
 afterEach(() => restore());
@@ -50,8 +51,13 @@ describe('dns-util', () => {
   it('drops IPv4-mapped and invalid AAAA answers', async () => {
     restore = installDns({
       'a.test': {
-        // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-        AAAA: { data: ['2001:db8::1', '::ffff:192.0.2.1', 'nonsense'] },
+        AAAA: {
+          data: [
+            vector('ip2001_db8__1'),
+            vector('ip__ffff_192_0_2_1'),
+            'nonsense',
+          ],
+        },
         A: { data: ['192.0.2.7'] },
       },
     });

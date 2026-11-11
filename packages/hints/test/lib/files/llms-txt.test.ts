@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { validateLlmsTxt } from '../../../src/lib/files/llms-txt.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const valid = `# Acme
 
@@ -37,8 +38,9 @@ describe('validateLlmsTxt', () => {
   });
   it('rejects relative links and warns on http', () => {
     expect(msgs('# A\n> s\n## S\n- [a](/x.md)')[0]).toContain('absolute');
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    expect(msgs('# A\n> s\n## S\n- [a](http://a.com/x)')[0]).toContain('HTTPS');
+    expect(msgs(`# A\n> s\n## S\n- [a](${HTTP_SCHEME}a.com/x)`)[0]).toContain(
+      'HTTPS',
+    );
   });
   it('warns on empty and repeated sections', () => {
     expect(msgs('# A\n> s\n## S\n## S\n')).toEqual([

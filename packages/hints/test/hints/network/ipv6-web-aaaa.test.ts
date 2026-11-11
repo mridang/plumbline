@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/network/ipv6-web-aaaa.js';
 import { installDns, type Zone } from '../../lib/network/fake-dns.js';
 import { runHint } from '../../helpers/run-hint.js';
+import { vector } from '../../helpers/data.js';
 
 let restore: () => void = () => undefined;
 afterEach(() => restore());
@@ -30,8 +31,7 @@ describe('ipv6-web-aaaa', () => {
 
   it('does not count IPv4-mapped addresses', async () => {
     const problems = await run({
-      // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-      'example.test': { AAAA: { data: ['::ffff:192.0.2.1'] } },
+      'example.test': { AAAA: { data: [vector('ip__ffff_192_0_2_1')] } },
     });
     expect(problems).toHaveLength(1);
   });

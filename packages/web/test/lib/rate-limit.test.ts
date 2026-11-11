@@ -11,21 +11,17 @@ import {
 } from '@/lib/rate-limit';
 
 /** The statement the real store runs, read from the source so the test cannot drift from it. */
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { APP_MIGRATIONS } from './core/db/migrations';
+import { APP_MIGRATIONS, migrationSql } from './core/db/migrations';
 
-// eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap: a test helper reads the source at load
-const SOURCE = readFileSync(
+const SOURCE = await readFile(
   path.join(process.cwd(), 'src/lib/rate-limit.ts'),
   'utf8',
 );
 const HIT_SQL = /const HIT_SQL = `([^`]*)`/.exec(SOURCE)?.[1] ?? '';
 /** The whole schema, every migration in order: the rate-limit table is one of them. */
-const SCHEMA = APP_MIGRATIONS.map((file) =>
-  // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap: a test helper reads the schema at load
-  readFileSync(path.join(process.cwd(), 'migrations', file), 'utf8'),
-).join('\n');
+const SCHEMA = APP_MIGRATIONS.map((file) => migrationSql(file)).join('\n');
 
 /** A store that runs the real SQL against an in-memory SQLite, as D1 would. */
 function sqliteStore(): RateLimitStore {

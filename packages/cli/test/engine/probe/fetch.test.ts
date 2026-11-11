@@ -1,5 +1,3 @@
-import { brotliCompressSync } from 'node:zlib';
-
 import { describe, expect, it } from '@jest/globals';
 
 import {
@@ -10,13 +8,17 @@ import {
 import { ProbeError } from '../../../src/engine/probe/protocol.js';
 import {
   chunked,
-  deflateSync,
   fakeProbe,
-  gzipSync,
   httpAnswer,
   linesOf,
   ok,
 } from '../../helpers/probe.js';
+import {
+  brotliCompressAsync,
+  deflateAsync,
+  gzipAsync,
+} from '../../helpers/zlib.js';
+import { HTTP_SCHEME, vector } from '../../helpers/data.js';
 
 /** A fake site: the answer for each path, and the requests it saw. */
 function site(routes: Record<string, string>): ReturnType<typeof fakeProbe> {
@@ -52,12 +54,9 @@ describe('unchunk', () => {
 describe('decode', () => {
   it('undoes gzip, deflate and brotli and leaves anything else alone', async () => {
     const text = Buffer.from('hello world');
-    // eslint-disable-next-line n/no-sync -- sync is fine in a test fixture that builds encoded bodies
-    const gzipped = gzipSync(text);
-    // eslint-disable-next-line n/no-sync -- sync is fine in a test fixture that builds encoded bodies
-    const deflated = deflateSync(text);
-    // eslint-disable-next-line n/no-sync -- sync is fine in a test fixture that builds encoded bodies
-    const brotlied = brotliCompressSync(text);
+    const gzipped = await gzipAsync(text);
+    const deflated = await deflateAsync(text);
+    const brotlied = await brotliCompressAsync(text);
     expect(Buffer.from(await decode(gzipped, 'gzip')).toString()).toBe(
       'hello world',
     );
@@ -99,8 +98,7 @@ describe('probeFetch', () => {
           ['Set-Cookie', 'a=1'],
           ['Set-Cookie', 'b=2'],
         ],
-        // eslint-disable-next-line n/no-sync -- sync is fine in a test fixture that builds encoded bodies
-        gzipSync('<html>hi</html>'),
+        await gzipAsync('<html>hi</html>'),
       ),
     });
     const response = await probeFetch(client)('https://example.com/');
@@ -135,8 +133,9 @@ describe('probeFetch', () => {
         chunked('he', 'llo'),
       ),
     });
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    const response = await probeFetch(client)('http://example.com:8080/a?b=1');
+    const response = await probeFetch(client)(
+      `${HTTP_SCHEME}example.com:8080/a?b=1`,
+    );
     expect(await response.text()).toBe('hello');
     expect(linesOf(sent[0]?.body ?? '')).toMatchObject({
       port: '8080',
@@ -229,7 +228,8 @@ describe('probeFetch', () => {
   it('reads an IPv6 literal without its brackets', async () => {
     const { client, sent } = site({ '/': httpAnswer(200, [], 'x') });
     await probeFetch(client)('https://[2606:4700:4700::1111]/');
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    expect(linesOf(sent[0]?.body ?? '')['host']).toBe('2606:4700:4700::1111');
+    expect(linesOf(sent[0]?.body ?? '')['host']).toBe(
+      vector('ip2606_4700_4700__1111'),
+    );
   });
 });

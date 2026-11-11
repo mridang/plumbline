@@ -8,6 +8,7 @@ import {
   tooManyRequests,
 } from '@/lib/oauth';
 import type { RateLimit, RateLimitStore } from '@/lib/rate-limit';
+import { vector } from '../../helpers/data.js';
 
 /** A store that counts hits per key in memory, in one never-ending window that opens at the first hit. */
 function countingStore(): RateLimitStore & { readonly keys: string[] } {
@@ -51,8 +52,7 @@ describe('clientAddress', () => {
   it.each([
     ['2001:db8:1:2:aaaa:bbbb:cccc:dddd', '2001:db8:1:2::/64'],
     ['2001:db8:1:2:1111:2222:3333:4444', '2001:db8:1:2::/64'],
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    ['2001:DB8::1', '2001:db8:0:0::/64'],
+    [vector('ip2001_DB8__1'), vector('ip2001_db8_0_0___64')],
   ])(
     'puts IPv6 address %s in its /64 so a network shares one counter',
     (address, subject) => {

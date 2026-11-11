@@ -1,12 +1,13 @@
-import { generateKeyPairSync } from 'node:crypto';
-
 import { describe, expect, it, jest } from '@jest/globals';
 import { decodeJwt, decodeProtectedHeader } from 'jose';
 
 import { appJwt, installationToken } from '@/domain/github/app-auth';
 
-// eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap: one test key generated at load
-const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+import { generateKeyPairAsync } from '../../helpers/crypto';
+
+const { privateKey } = await generateKeyPairAsync('rsa', {
+  modulusLength: 2048,
+});
 const config = {
   appId: '123',
   privateKey: privateKey.export({ type: 'pkcs1', format: 'pem' }).toString(),

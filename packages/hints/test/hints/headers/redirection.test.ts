@@ -3,6 +3,7 @@ import hint from '../../../src/hints/headers/redirection.js';
 import { redirectionClient } from '../../../src/lib/headers/redirection.js';
 import { Severity } from '@hint/utils-types';
 import { runHint } from '../../helpers/run-hint.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const original = redirectionClient.fetch;
 
@@ -60,8 +61,7 @@ describe('redirection', () => {
 
   it('reports a final destination that is not https', async () => {
     fakeSite((_url, hop) =>
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      hop === 0 ? [302, 'http://other.example/'] : [200],
+      hop === 0 ? [302, `${HTTP_SCHEME}other.example/`] : [200],
     );
     const problems = await runHint(hint, {});
     expect(problems[0]?.message).toContain(
@@ -72,8 +72,7 @@ describe('redirection', () => {
   it('reports an initial redirect to another http URL', async () => {
     fakeSite((_url, hop) => {
       if (hop === 0) {
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        return [301, 'http://www.example.test/'];
+        return [301, `${HTTP_SCHEME}www.example.test/`];
       }
       return hop === 1 ? [301, 'https://www.example.test/'] : [200];
     });

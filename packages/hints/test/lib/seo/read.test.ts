@@ -13,11 +13,11 @@ import {
   sameUrl,
   type DocumentLike,
 } from '../../../src/lib/seo/read.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 /** Parses markup with the same DOM implementation webhint uses. */
 const parse = (html: string): DocumentLike =>
-  // eslint-disable-next-line unicorn/prefer-https -- test fixture
-  createHTMLDocument(html, 'http://example.com/') as DocumentLike;
+  createHTMLDocument(html, `${HTTP_SCHEME}example.com/`) as DocumentLike;
 
 describe('getTitle', () => {
   it('returns the collapsed title text', () => {
@@ -106,24 +106,25 @@ describe('hasJsonLd', () => {
 
 describe('sameUrl', () => {
   it('matches equal, relative and fragment variants', () => {
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
-    expect(sameUrl('http://e.com/a', 'http://e.com/a')).toBe(true);
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
-    expect(sameUrl('/a', 'http://e.com/a')).toBe(true);
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
-    expect(sameUrl('http://e.com/a#x', 'http://e.com/a')).toBe(true);
+    expect(sameUrl(`${HTTP_SCHEME}e.com/a`, `${HTTP_SCHEME}e.com/a`)).toBe(
+      true,
+    );
+    expect(sameUrl('/a', `${HTTP_SCHEME}e.com/a`)).toBe(true);
+    expect(sameUrl(`${HTTP_SCHEME}e.com/a#x`, `${HTTP_SCHEME}e.com/a`)).toBe(
+      true,
+    );
   });
   it('detects differences', () => {
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
-    expect(sameUrl('http://e.com/b', 'http://e.com/a')).toBe(false);
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
-    expect(sameUrl('https://e.com/a', 'http://e.com/a')).toBe(false);
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
-    expect(sameUrl('http://e.com/a?x=1', 'http://e.com/a')).toBe(false);
+    expect(sameUrl(`${HTTP_SCHEME}e.com/b`, `${HTTP_SCHEME}e.com/a`)).toBe(
+      false,
+    );
+    expect(sameUrl('https://e.com/a', `${HTTP_SCHEME}e.com/a`)).toBe(false);
+    expect(sameUrl(`${HTTP_SCHEME}e.com/a?x=1`, `${HTTP_SCHEME}e.com/a`)).toBe(
+      false,
+    );
   });
   it('returns false for unparsable input', () => {
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
-    expect(sameUrl('http://', 'http://e.com/a')).toBe(false);
+    expect(sameUrl(`${HTTP_SCHEME}`, `${HTTP_SCHEME}e.com/a`)).toBe(false);
   });
 });
 

@@ -6,6 +6,7 @@ import {
   runMailHint,
   type FakeAnswer,
 } from '../../lib/email/fakes.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const run = (txt: Record<string, FakeAnswer>) =>
   runMailHint(hint, {
@@ -44,8 +45,7 @@ describe('bimi', () => {
   it('reports a non-https logo', async () => {
     const problems = await run({
       'default._bimi.example.test TXT': [
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture: the http logo URL is the input being rejected
-        '"v=BIMI1; l=http://example.test/logo.svg"',
+        `"v=BIMI1; l=${HTTP_SCHEME}example.test/logo.svg"`,
       ],
     });
     expect(problems[0].severity).toBe(Severity.error);

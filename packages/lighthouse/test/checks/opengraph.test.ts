@@ -35,6 +35,7 @@ import {
 import { ogMetaReader } from '../../src/adapt-opengraph.js';
 import { opengraphChecks } from '../../src/checks/opengraph.js';
 import type { AuditCheck } from '../../src/checks/types.js';
+import { HTTP_SCHEME } from '../helpers/data.js';
 
 /**
  * One `<meta>` entry in the shape Lighthouse's `MetaElements` artifact uses.
@@ -332,8 +333,7 @@ describe('the description-quality checks run()', () => {
 describe('the image checks run()', () => {
   it('warns when og:image is not served over HTTPS', async () => {
     const findings = await run('opengraph-image-not-https', [
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      { property: 'og:image', content: 'http://example.com/og.png' },
+      { property: 'og:image', content: `${HTTP_SCHEME}example.com/og.png` },
     ]);
     expect(findings?.[0]?.severity).toBe('warning');
   });
@@ -444,8 +444,7 @@ const LIB_FN: Readonly<
 const FLAWED_METAS: readonly Meta[] = [
   { property: 'og:title', content: 'x'.repeat(61) },
   { property: 'og:description', content: 'https://example.com' },
-  // eslint-disable-next-line unicorn/prefer-https -- test fixture
-  { property: 'og:image', content: 'http://example.com/og.png' },
+  { property: 'og:image', content: `${HTTP_SCHEME}example.com/og.png` },
   { name: 'twitter:card', content: 'summary' },
 ];
 

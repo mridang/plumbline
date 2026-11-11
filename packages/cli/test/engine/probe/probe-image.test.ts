@@ -1,10 +1,11 @@
-import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 
 import { afterAll, beforeAll, describe, expect, it, jest } from '@jest/globals';
 
 import { ProbeClient } from '../../../src/engine/probe/client.js';
 import { ProbeError } from '../../../src/engine/probe/protocol.js';
+import { execFileAsync } from '../../helpers/exec.js';
+import { vector } from '../../helpers/data.js';
 
 /**
  * The real probe: the image is built from `probe/Dockerfile` (which runs the C
@@ -18,9 +19,12 @@ const IMAGE = 'plumbline-probe:spec';
 const NAME = `plumbline-probe-spec-${process.pid}`;
 let base = '';
 
-const docker = (...args: string[]): string =>
-  // eslint-disable-next-line n/no-sync, sonarjs/no-os-command-from-path -- sync is fine in a test helper, which runs the docker CLI the developer already trusts
-  execFileSync('docker', args, { encoding: 'utf8' }).trim();
+const docker = async (...args: string[]): Promise<string> => {
+  const { stdout } = await execFileAsync('docker', args, {
+    encoding: 'utf8',
+  });
+  return stdout.trim();
+};
 
 /** A request to the running probe: the status and the text of the answer. */
 async function post(
@@ -32,9 +36,10 @@ async function post(
 }
 
 beforeAll(async () => {
-  docker('build', '-t', IMAGE, path.resolve(process.cwd(), 'probe'));
-  docker('run', '-d', '--name', NAME, '-P', IMAGE);
-  const mapped = docker('port', NAME, '8080/tcp').split('\n', 1)[0] ?? '';
+  await docker('build', '-t', IMAGE, path.resolve(process.cwd(), 'probe'));
+  await docker('run', '-d', '--name', NAME, '-P', IMAGE);
+  const ports = await docker('port', NAME, '8080/tcp');
+  const mapped = ports.split('\n', 1)[0] ?? '';
   base = `http://127.0.0.1:${mapped.slice(mapped.lastIndexOf(':') + 1)}`;
   for (let attempt = 0; attempt < 50; attempt += 1) {
     try {
@@ -50,18 +55,18 @@ beforeAll(async () => {
   throw new Error('the probe did not start');
 });
 
-afterAll(() => {
+afterAll(async () => {
   try {
-    docker('rm', '-f', NAME);
+    await docker('rm', '-f', NAME);
   } catch {
     // Already gone.
   }
 });
 
 describe('the probe image', () => {
-  it('is a few megabytes on an empty image', () => {
+  it('is a few megabytes on an empty image', async () => {
     const bytes = Number(
-      docker('image', 'inspect', IMAGE, '--format', '{{.Size}}'),
+      await docker('image', 'inspect', IMAGE, '--format', '{{.Size}}'),
     );
     expect(bytes).toBeLessThan(8 * 1024 * 1024);
   });
@@ -89,10 +94,8 @@ describe('the probe refuses what it must refuse', () => {
 
   it.each([
     ['loopback', '127.0.0.1'],
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    ['a private network', '10.0.0.1'],
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    ['the cloud metadata address', '169.254.169.254'],
+    ['a private network', vector('ip10_0_0_1')],
+    ['the cloud metadata address', vector('ip169_254_169_254')],
     ['IPv6 loopback', '::1'],
     ['a name that resolves to loopback', 'localhost'],
   ])('does not connect to %s', async (_name, host) => {
@@ -129,8 +132,11 @@ describe('the probe refuses what it must refuse', () => {
   it('answers each handshake of a batch on its own, a refused one with its reason', async () => {
     const answers = await Promise.allSettled([
       client().handshake({ host: '127.0.0.1', port: 443 }),
-      // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-      client().handshake({ host: '10.1.2.3', port: 25, starttls: 'smtp' }),
+      client().handshake({
+        host: vector('ip10_1_2_3'),
+        port: 25,
+        starttls: 'smtp',
+      }),
     ]);
     expect(answers.map((answer) => answer.status)).toEqual([
       'rejected',

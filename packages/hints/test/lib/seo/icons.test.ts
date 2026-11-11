@@ -10,8 +10,7 @@ import {
 import type { DocumentLike } from '../../../src/lib/seo/read.js';
 
 const parse = (html: string): DocumentLike =>
-  // eslint-disable-next-line unicorn/prefer-https -- test fixture
-  createHTMLDocument(html, 'http://example.com/') as DocumentLike;
+  createHTMLDocument(html, 'https://example.com/') as DocumentLike;
 
 describe('getIconLinks', () => {
   it('reads icon and shortcut icon but not apple-touch-icon', () => {

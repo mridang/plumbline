@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { checkPoppy } from '../../../src/lib/agent/poppy.js';
 import { fakeEnv, without } from './fake-env.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const doc = {
   protocol_version: '0.1',
@@ -25,8 +26,10 @@ describe('checkPoppy', () => {
     expect(r.passed).toBe(true);
   });
   it('rejects plain http except on loopback hosts', async () => {
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    const http = fakeEnv({ [path]: doc }, { origin: 'http://example.com' });
+    const http = fakeEnv(
+      { [path]: doc },
+      { origin: `${HTTP_SCHEME}example.com` },
+    );
     const httpResult = await checkPoppy(http);
     expect(httpResult.detail).toContain('HTTPS');
     const local = fakeEnv(

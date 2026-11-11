@@ -2,7 +2,6 @@ import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 import dns from 'node:dns';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import zlib from 'node:zlib';
 import {
   GuardError,
   assertAllowed,
@@ -10,55 +9,42 @@ import {
   installGuard,
   isPublicAddress,
 } from '../../src/engine/guard.js';
+import { gzipAsync } from '../helpers/zlib.js';
+import { HTTP_SCHEME, vector } from '../helpers/data.js';
 
 describe('isPublicAddress', () => {
-  // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-  it.each(['8.8.8.8', '1.1.1.1', '93.184.216.34', '2606:4700:4700::1111'])(
-    'accepts the public address %s',
-    (ip) => {
-      expect(isPublicAddress(ip)).toBe(true);
-    },
-  );
+  it.each([
+    vector('ip8_8_8_8'),
+    vector('ip1_1_1_1'),
+    vector('ip93_184_216_34'),
+    vector('ip2606_4700_4700__1111'),
+  ])('accepts the public address %s', (ip) => {
+    expect(isPublicAddress(ip)).toBe(true);
+  });
 
   it.each([
     '127.0.0.1',
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    '10.0.0.1',
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    '172.16.5.5',
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    '172.31.255.255',
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    '192.168.1.1',
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    '169.254.169.254',
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    '100.64.0.1',
+    vector('ip10_0_0_1'),
+    vector('ip172_16_5_5'),
+    vector('ip172_31_255_255'),
+    vector('ip192_168_1_1'),
+    vector('ip169_254_169_254'),
+    vector('ip100_64_0_1'),
     '0.0.0.0',
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    '224.0.0.1',
+    vector('ip224_0_0_1'),
     '255.255.255.255',
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    '198.18.0.1',
+    vector('ip198_18_0_1'),
     '::',
     '::1',
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    'fe80::1',
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    'fc00::1',
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    'fd12:3456::1',
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    'ff02::1',
+    vector('ipfe80__1'),
+    vector('ipfc00__1'),
+    vector('ipfd12_3456__1'),
+    vector('ipff02__1'),
     '2001:db8::1',
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    '::ffff:127.0.0.1',
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    '::ffff:7f00:1',
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    '::ffff:169.254.169.254',
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    '64:ff9b::a00:1',
+    vector('ip__ffff_127_0_0_1'),
+    vector('ip__ffff_7f00_1'),
+    vector('ip__ffff_169_254_169_254'),
+    vector('ip64_ff9b__a00_1'),
   ])('refuses the address %s', (ip) => {
     expect(isPublicAddress(ip)).toBe(false);
   });
@@ -69,19 +55,16 @@ describe('isPublicAddress', () => {
   });
 
   it('accepts a public address inside an IPv4-mapped one', () => {
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    expect(isPublicAddress('::ffff:8.8.8.8')).toBe(true);
+    expect(isPublicAddress(vector('ip__ffff_8_8_8_8'))).toBe(true);
   });
 });
 
 describe('assertAllowed', () => {
   it.each([
     'https://example.com/',
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    'http://example.com/',
+    `${HTTP_SCHEME}example.com/`,
     'https://example.com:8443/',
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    'http://example.com:8080/',
+    `${HTTP_SCHEME}example.com:8080/`,
     'https://93.184.216.34/',
   ])('allows %s', (url) => {
     expect(() => assertAllowed(new URL(url))).not.toThrow();
@@ -91,14 +74,12 @@ describe('assertAllowed', () => {
     ['ftp://example.com/', 'Only http and https'],
     ['file:///etc/passwd', 'Only http and https'],
     ['https://example.com:22/', 'Port 22'],
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    ['http://example.com:6379/', 'Port 6379'],
+    [`${HTTP_SCHEME}example.com:6379/`, 'Port 6379'],
     ['https://user:pass@example.com/', 'user name or password'],
     ['http://127.0.0.1/', 'not a public address'],
     ['http://169.254.169.254/latest/meta-data/', 'not a public address'],
     ['http://[::1]/', 'not a public address'],
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
-    ['http://[::ffff:10.0.0.1]/', 'not a public address'],
+    [`${HTTP_SCHEME}[::ffff:10.0.0.1]/`, 'not a public address'],
     ['http://2130706433/', 'not a public address'],
     ['http://0x7f.1/', 'not a public address'],
   ])('refuses %s', (url, reason) => {
@@ -118,6 +99,7 @@ describe('guardedFetch', () => {
   let base: string;
 
   beforeAll(async () => {
+    const squeezed = await gzipAsync('squeezed');
     server = createServer((req, res) => {
       const path = req.url ?? '/';
       switch (path) {
@@ -138,8 +120,7 @@ describe('guardedFetch', () => {
             'content-type': 'text/plain',
             'content-encoding': 'gzip',
           });
-          // eslint-disable-next-line n/no-sync -- sync is fine in a test server fixture
-          res.end(zlib.gzipSync('squeezed'));
+          res.end(squeezed);
 
           break;
         }

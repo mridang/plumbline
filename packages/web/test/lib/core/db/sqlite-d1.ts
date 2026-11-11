@@ -1,11 +1,11 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 // eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import {
   DatabaseSync,
   type SQLInputValue,
   type StatementSync,
 } from 'node:sqlite';
+
+import { migrationSql } from './migrations';
 
 /** What a prepared statement answers, shaped like D1's `D1Result`. */
 interface Result {
@@ -76,12 +76,7 @@ export function sqliteD1(...migrations: readonly string[]): {
   readonly raw: DatabaseSync;
 } {
   const raw = new DatabaseSync(':memory:');
-  migrations.forEach((file) =>
-    raw.exec(
-      // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap: test database is built synchronously
-      readFileSync(path.join(process.cwd(), 'migrations', file), 'utf8'),
-    ),
-  );
+  migrations.forEach((file) => raw.exec(migrationSql(file)));
   const d1 = {
     prepare: (sql: string) => new Statement(raw, sql),
     batch: async (statements: readonly Statement[]) => {

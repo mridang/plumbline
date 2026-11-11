@@ -21,11 +21,11 @@ import {
   titleTooLong,
   titleTooShort,
 } from '../../../src/lib/seo/checks.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 /** Parses markup with the same DOM implementation webhint uses. */
 const parse = (html: string): DocumentLike =>
-  // eslint-disable-next-line unicorn/prefer-https -- test fixture
-  createHTMLDocument(html, 'http://example.com/') as DocumentLike;
+  createHTMLDocument(html, `${HTTP_SCHEME}example.com/`) as DocumentLike;
 
 describe('titleMissing', () => {
   it('reports an absent or empty title as an error', () => {
@@ -190,28 +190,23 @@ describe('canonicalMissing', () => {
 describe('canonicalMismatch', () => {
   it('flags a canonical that points elsewhere with both URLs', () => {
     const [found] = canonicalMismatch(
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      parse('<link rel="canonical" href="http://example.com/other">'),
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      'http://example.com/page',
+      parse(`<link rel="canonical" href="${HTTP_SCHEME}example.com/other">`),
+      `${HTTP_SCHEME}example.com/page`,
     );
     expect(found?.severity).toBe('hint');
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    expect(found?.message).toContain('http://example.com/other');
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    expect(found?.message).toContain('http://example.com/page');
+    expect(found?.message).toContain(`${HTTP_SCHEME}example.com/other`);
+    expect(found?.message).toContain(`${HTTP_SCHEME}example.com/page`);
   });
   it('passes a self-referencing canonical and a missing one', () => {
     expect(
       canonicalMismatch(
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        parse('<link rel="canonical" href="http://example.com/page">'),
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture
-        'http://example.com/page',
+        parse(`<link rel="canonical" href="${HTTP_SCHEME}example.com/page">`),
+        `${HTTP_SCHEME}example.com/page`,
       ),
     ).toEqual([]);
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
-    expect(canonicalMismatch(parse('<head></head>'), 'http://x/')).toEqual([]);
+    expect(
+      canonicalMismatch(parse('<head></head>'), `${HTTP_SCHEME}x/`),
+    ).toEqual([]);
   });
 });
 

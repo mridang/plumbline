@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process';
 import { afterEach, describe, expect, it } from '@jest/globals';
 import {
   countRenegotiations,
@@ -17,6 +16,7 @@ import {
   type OpensslExec,
   type OpensslRun,
 } from '../../../src/lib/tls/openssl.js';
+import { execFileAsync } from '../../helpers/exec.js';
 import { startServer } from './local-server.js';
 
 afterEach(() => {
@@ -25,8 +25,9 @@ afterEach(() => {
 });
 
 /** The tests that run the real binary need openssl on the PATH. */
-// eslint-disable-next-line n/no-sync -- sync is fine in a bootstrap: openssl availability decides at collection time which tests exist
-const hasOpenssl = spawnSync(openssl.command, ['version']).status === 0;
+const hasOpenssl = await execFileAsync(openssl.command, ['version'])
+  .then(() => true)
+  .catch(() => false);
 const realIt = hasOpenssl ? it : it.skip;
 
 const target = { host: '127.0.0.1', port: 4433 };

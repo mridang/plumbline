@@ -1,11 +1,14 @@
-import { createPrivateKey, generateKeyPairSync } from 'node:crypto';
+import { createPrivateKey } from 'node:crypto';
 
 import { describe, expect, it } from '@jest/globals';
 
 import { toPkcs8 } from '@/domain/github/pkcs8';
 
-// eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap: one test key generated at load
-const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+import { generateKeyPairAsync } from '../../helpers/crypto';
+
+const { privateKey } = await generateKeyPairAsync('rsa', {
+  modulusLength: 2048,
+});
 const pkcs1 = privateKey.export({ type: 'pkcs1', format: 'pem' }).toString();
 const pkcs8 = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
 

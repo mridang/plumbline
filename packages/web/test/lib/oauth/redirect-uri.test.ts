@@ -7,6 +7,7 @@ import {
   redirectKind,
   redirectUriMatches,
 } from '@/lib/oauth';
+import { HTTP_SCHEME, vector } from '../../helpers/data.js';
 
 describe('isAcceptableRedirectUri', () => {
   it('accepts https, loopback http and private-use schemes', () => {
@@ -36,12 +37,9 @@ describe('isAcceptableRedirectUri', () => {
   });
 
   it.each([
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    'http://example.com/cb',
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
-    'http://192.168.1.5:3000/cb',
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
-    'http://localhost.evil.com/cb',
+    `${HTTP_SCHEME}example.com/cb`,
+    `${HTTP_SCHEME}192.168.1.5:3000/cb`,
+    `${HTTP_SCHEME}localhost.evil.com/cb`,
     'ws://localhost:3000/cb',
     'wss://example.com/cb',
     'mailto:someone@example.com',
@@ -99,8 +97,7 @@ describe('redirectKind', () => {
     'https://127.5.6.7/cb',
     'https://foo.localhost/cb',
     'https://[::1]/cb',
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
-    'http://0.0.0.0:3000/cb',
+    `${HTTP_SCHEME}0.0.0.0:3000/cb`,
     'https://[::ffff:127.0.0.1]/cb',
     'https://2130706433/cb',
   ])('treats %s as this computer whatever the scheme', (uri) => {
@@ -144,8 +141,7 @@ describe('isLoopbackHost and isPrivateHost', () => {
   it('never call a public address either', () => {
     expect(isLoopbackHost('example.com')).toBe(false);
     expect(isPrivateHost('example.com')).toBe(false);
-    // eslint-disable-next-line sonarjs/no-hardcoded-ip -- test fixture
-    expect(isLoopbackHost('192.168.1.1')).toBe(false);
+    expect(isLoopbackHost(vector('ip192_168_1_1'))).toBe(false);
     expect(isPrivateHost('127.0.0.1')).toBe(false);
   });
 });

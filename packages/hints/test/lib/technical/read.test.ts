@@ -14,12 +14,12 @@ import {
   robotsAdvanced,
   twitterCardType,
 } from '../../../src/lib/technical/read.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const doc = (body: string, head = '') =>
   createHTMLDocument(
     `<!doctype html><html><head>${head}</head><body>${body}</body></html>`,
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    'http://x.test/',
+    `${HTTP_SCHEME}x.test/`,
   );
 
 describe('headings', () => {
@@ -77,8 +77,9 @@ describe('imageUrls', () => {
     const d = doc(
       '<img src="/a.png"><img src="/a.png"><img src="data:image/png;base64,AA"><img src="http://[bad"><img>',
     );
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    expect(imageUrls(d, 'http://x.test/p')).toEqual(['http://x.test/a.png']);
+    expect(imageUrls(d, `${HTTP_SCHEME}x.test/p`)).toEqual([
+      `${HTTP_SCHEME}x.test/a.png`,
+    ]);
   });
 });
 
@@ -115,29 +116,28 @@ describe('mapWithConcurrency', () => {
 
 describe('redirectVerdict', () => {
   it('is null without hops', () => {
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
-    expect(redirectVerdict([], 'http://a/', 200)).toBeNull();
+    expect(redirectVerdict([], `${HTTP_SCHEME}a/`, 200)).toBeNull();
   });
   it('is null for up to two hops', () => {
     expect(
-      // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
-      redirectVerdict(['http://a/', 'http://b/'], 'http://c/', 200),
+      redirectVerdict(
+        [`${HTTP_SCHEME}a/`, `${HTTP_SCHEME}b/`],
+        `${HTTP_SCHEME}c/`,
+        200,
+      ),
     ).toBeNull();
   });
   it('warns for more than two hops', () => {
     const v = redirectVerdict(
-      // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
-      ['http://a/', 'http://b/', 'http://c/'],
-      // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
-      'http://d/',
+      [`${HTTP_SCHEME}a/`, `${HTTP_SCHEME}b/`, `${HTTP_SCHEME}c/`],
+      `${HTTP_SCHEME}d/`,
       200,
     );
     expect(v?.severity).toBe('warning');
     expect(v?.message).toContain('3 redirect hops');
   });
   it('errors when the chain ends in an error', () => {
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
-    const v = redirectVerdict(['http://a/'], 'http://b/', 404);
+    const v = redirectVerdict([`${HTTP_SCHEME}a/`], `${HTTP_SCHEME}b/`, 404);
     expect(v?.severity).toBe('error');
     expect(v?.message).toContain('HTTP 404');
   });

@@ -30,8 +30,7 @@ describe('usesGeolocation', () => {
     '// navigator.geolocation.getCurrentPosition(f)',
     '/* navigator.geolocation.watchPosition(f) */ run();',
     'log("navigator.geolocation.getCurrentPosition(f)");',
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    'const u = "http://x.test/"; navigator.geolocation;',
+    'const u = "https://x.test/"; navigator.geolocation;',
   ])('ignores %j', (code) => {
     expect(usesGeolocation(code)).toBe(false);
   });

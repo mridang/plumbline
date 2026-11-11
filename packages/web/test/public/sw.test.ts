@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import vm from 'node:vm';
 
@@ -13,6 +13,11 @@ type Handled = { answered: boolean; response: Promise<Response> | null };
  * network that either works (`online`) or fails, and a browser that does or
  * does not support navigation preload. Returns the listeners it registered.
  */
+const SW_SOURCE = await readFile(
+  path.join(process.cwd(), 'public/sw.js'),
+  'utf8',
+);
+
 function loadWorker(options: {
   online: boolean;
   preload: boolean;
@@ -78,11 +83,7 @@ function loadWorker(options: {
     },
   });
   // eslint-disable-next-line sonarjs/code-eval -- runs the shipped worker script in an isolated vm context on purpose
-  vm.runInContext(
-    // eslint-disable-next-line n/no-sync -- sync is fine in a test helper, async would ripple into every synchronous caller
-    readFileSync(path.join(process.cwd(), 'public/sw.js'), 'utf8'),
-    context,
-  );
+  vm.runInContext(SW_SOURCE, context);
   return { listeners, calls, windows };
 }
 

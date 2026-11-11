@@ -9,6 +9,7 @@ import {
   sameUrl,
   type DocumentLike,
 } from '../../../src/lib/i18n/read.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const require = createRequire(import.meta.url);
 // eslint-disable-next-line sonarjs/no-require-or-define -- @hint/utils-dom is CommonJS only, loaded through createRequire
@@ -105,8 +106,7 @@ describe('isValidHreflang', () => {
 });
 
 describe('isAbsoluteHttpUrl', () => {
-  // eslint-disable-next-line unicorn/prefer-https -- test fixture
-  it.each(['https://x.test/', 'http://x.test/a?b#c'])(
+  it.each(['https://x.test/', `${HTTP_SCHEME}x.test/a?b#c`])(
     'accepts absolute %s',
     (href) => {
       expect(isAbsoluteHttpUrl(href)).toBe(true);

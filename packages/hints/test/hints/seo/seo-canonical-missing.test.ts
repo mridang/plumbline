@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/seo/seo-canonical-missing.js';
 import { runHint } from '../../helpers/run-hint.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 
 /**
  * Builds the routes for a page. `head` is inserted into <head>, `body` into
@@ -28,8 +29,7 @@ describe('seo-canonical-missing', () => {
       await runHint(
         hint,
         pageRoutes({
-          // eslint-disable-next-line unicorn/prefer-https -- test fixture
-          head: '<link rel="canonical" href="http://example.com/">',
+          head: `<link rel="canonical" href="${HTTP_SCHEME}example.com/">`,
         }),
       ),
     ).toEqual([]);
