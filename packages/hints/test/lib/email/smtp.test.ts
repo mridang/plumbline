@@ -91,7 +91,7 @@ describe('probeStarttls', () => {
   it('fails when the server stays silent', async () => {
     const result = await probe('mail.example.test', { greeting: '220-more' });
     expect(result.reachable).toBe(false);
-  }, 15000);
+  }, 15_000);
 });
 
 describe('tlsVersionLevel', () => {

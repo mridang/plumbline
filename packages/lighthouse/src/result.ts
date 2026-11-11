@@ -6,14 +6,14 @@
  *   `numeric` (a graded check)
  *     - no findings            -> score 1   (pass)
  *     - at least one `error`   -> score 0   (fail)
- *     - only `warning`/`hint`  -> score 0.5 (advice)
+ *     - only `warning`/`hint`  -> score 0.5 (advice).
  *
  *   `binary` (a pass/fail check)
  *     - no findings            -> score 1   (pass)
- *     - any finding            -> score 0   (fail)
+ *     - any finding            -> score 0   (fail).
  *
  *   `informative` (a context-specific check that should surface findings but
- *   never affect the category score, e.g. a check whose webhint hint is opt-in
+ *   never affect the category score, e.g. A check whose webhint hint is opt-in
  *   or needs a request Lighthouse cannot make)
  *     - score is always null; the findings are still listed.
  *
@@ -88,7 +88,7 @@ export function productFromFindings(
   // Graded (`numeric`) checks distinguish a hard failure (any error) from
   // advice (only warnings/hints); pass/fail (`binary`) checks fail on anything.
   const hasError = findings.some((f) => f.severity === 'error');
-  const score = scoreMode === 'binary' ? 0 : hasError ? 0 : 0.5;
+  const score = scoreMode === 'binary' || hasError ? 0 : 0.5;
 
   return {
     score,

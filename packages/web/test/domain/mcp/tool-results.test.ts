@@ -194,7 +194,7 @@ describe('reportText', () => {
   const text = reportText(reportData(DOMAIN, REPORT));
 
   it('opens with the domain, the address, the date and the counts', () => {
-    expect(text.split('\n')[0]).toBe(
+    expect(text.split('\n', 1)[0]).toBe(
       'Report for example.com (https://example.com/), scanned 2026-10-01T00:00:00.000Z: 1 failed, 1 warned, 10 passed, 2 skipped.',
     );
   });

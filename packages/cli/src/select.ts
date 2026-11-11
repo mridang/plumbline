@@ -63,10 +63,9 @@ function requireKnown(
  * section, tag, target, tier, control or source, bare or written with its kind
  * such as `tag:seo`, or an old group name such as `tls`) that are also in one of
  * the given tiers and targets; every hint when none is given.
- *
- * @param catalogue Every shipped hint.
- * @param groups Selector names, for example `owasp`, `section:https` or `tls`.
- * @param filters Tiers and targets a hint must also be in.
+ * @param catalogue - Every shipped hint.
+ * @param groups - Selector names, for example `owasp`, `section:https` or `tls`.
+ * @param filters - Tiers and targets a hint must also be in.
  * @returns The matching catalogue entries, in catalogue order.
  * @throws UsageError when a name matches nothing.
  */
@@ -104,9 +103,8 @@ export function filterByGroups(
  * Works out the hint ids to run: the `--only` ids (or every hint), kept to
  * those in a `--group`, `--tier` or `--target` when given, less the `--skip`
  * ids.
- *
- * @param catalogue Every shipped hint.
- * @param selection The `--only`, `--skip`, `--group`, `--tier` and `--target` lists.
+ * @param catalogue - Every shipped hint.
+ * @param selection - The `--only`, `--skip`, `--group`, `--tier` and `--target` lists.
  * @returns The bare ids to run, in catalogue order.
  * @throws UsageError for an unknown id or name, or when nothing is left.
  */

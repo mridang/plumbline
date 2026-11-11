@@ -70,14 +70,14 @@ export const tls: { fetchChain: ChainFetcher } = { fetchChain };
 export function parseTlsa(data: string): Tlsa | null {
   const generic = /^\\#\s+\d+\s+([0-9a-fA-F\s]+)$/.exec(data.trim());
   if (generic) {
-    const hex = generic[1].replace(/\s+/g, '').toLowerCase();
+    const hex = generic[1].replaceAll(/\s+/g, '').toLowerCase();
     if (hex.length < 6) {
       return null;
     }
     return {
-      usage: parseInt(hex.slice(0, 2), 16),
-      selector: parseInt(hex.slice(2, 4), 16),
-      matching: parseInt(hex.slice(4, 6), 16),
+      usage: Number.parseInt(hex.slice(0, 2), 16),
+      selector: Number.parseInt(hex.slice(2, 4), 16),
+      matching: Number.parseInt(hex.slice(4, 6), 16),
       data: hex.slice(6),
     };
   }
@@ -89,7 +89,7 @@ export function parseTlsa(data: string): Tlsa | null {
     usage: Number(m[1]),
     selector: Number(m[2]),
     matching: Number(m[3]),
-    data: m[4].replace(/\s+/g, '').toLowerCase(),
+    data: m[4].replaceAll(/\s+/g, '').toLowerCase(),
   };
 }
 

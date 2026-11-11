@@ -19,7 +19,7 @@ describe('signatureAlgorithmOid', () => {
   it('decodes an OID whose first arc is 2', () => {
     // SEQUENCE { SEQUENCE {}, SEQUENCE { OID 2.5.4.3 } }
     const data = Buffer.from(
-      '3009 3000 3005 0603 550403'.replace(/ /g, ''),
+      '3009 3000 3005 0603 550403'.replaceAll(' ', ''),
       'hex',
     );
     expect(signatureAlgorithmOid(data)).toBe('2.5.4.3');
@@ -33,18 +33,20 @@ describe('signatureAlgorithmOid', () => {
 
   it('rejects truncated data', () => {
     expect(() =>
-      signatureAlgorithmOid(Buffer.from('3010 3000'.replace(/ /g, ''), 'hex')),
+      signatureAlgorithmOid(
+        Buffer.from('3010 3000'.replaceAll(' ', ''), 'hex'),
+      ),
     ).toThrow('Truncated');
     expect(() => signatureAlgorithmOid(Buffer.alloc(0))).toThrow('Truncated');
   });
 
   it('rejects a certificate without an algorithm sequence', () => {
-    const data = Buffer.from('3004 3000 0400'.replace(/ /g, ''), 'hex');
+    const data = Buffer.from('3004 3000 0400'.replaceAll(' ', ''), 'hex');
     expect(() => signatureAlgorithmOid(data)).toThrow('No signatureAlgorithm');
   });
 
   it('rejects an algorithm without an identifier', () => {
-    const data = Buffer.from('3006 3000 3002 0400'.replace(/ /g, ''), 'hex');
+    const data = Buffer.from('3006 3000 3002 0400'.replaceAll(' ', ''), 'hex');
     expect(() => signatureAlgorithmOid(data)).toThrow(
       'No algorithm identifier',
     );

@@ -42,7 +42,7 @@ describe('privacy-cookies', () => {
     const problems = await runHint(hint, {
       '/': (req) =>
         html(
-          `<img src="http://localhost:${req.headers.host?.split(':')[1]}/p.png">`,
+          `<img src="http://localhost:${req.headers.host?.split(':', 2)[1]}/p.png">`,
         ),
       '/p.png': { headers: { 'set-cookie': 't=1' } },
     });

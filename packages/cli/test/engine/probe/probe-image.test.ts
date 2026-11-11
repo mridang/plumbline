@@ -33,7 +33,7 @@ async function post(
 beforeAll(async () => {
   docker('build', '-t', IMAGE, path.resolve(process.cwd(), 'probe'));
   docker('run', '-d', '--name', NAME, '-P', IMAGE);
-  const mapped = docker('port', NAME, '8080/tcp').split('\n')[0] ?? '';
+  const mapped = docker('port', NAME, '8080/tcp').split('\n', 1)[0] ?? '';
   base = `http://127.0.0.1:${mapped.slice(mapped.lastIndexOf(':') + 1)}`;
   for (let attempt = 0; attempt < 50; attempt += 1) {
     try {

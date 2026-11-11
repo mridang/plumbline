@@ -81,67 +81,69 @@ export default async function GitHubPage({
             {ERRORS[error]}
           </Callout>
         ) : null}
-        {!configured ? (
+        {configured ? (
+          link ? (
+            <Section
+              id="account"
+              title="Account"
+              actions={
+                <div className="flex flex-wrap gap-3">
+                  <LinkButton href="/auth/github/link?install=1" native>
+                    Install on another account
+                  </LinkButton>
+                  {/* Their GitHub account is how they sign in: there is nothing to disconnect it from. */}
+                  {githubOnly ? null : <DisconnectButton />}
+                </div>
+              }
+            >
+              <KeyValue
+                facts={[
+                  { label: 'GitHub', value: <strong>{link.login}</strong> },
+                  {
+                    label: 'Signed in with',
+                    value: githubOnly ? 'GitHub' : user.email,
+                  },
+                  {
+                    label: 'Installed on',
+                    value:
+                      installations.length === 0 ? (
+                        'No account yet'
+                      ) : (
+                        <span className="flex flex-wrap gap-1.5">
+                          {installations.map((installation) => (
+                            <Badge key={installation.installation_id} size="md">
+                              {installation.account_login}
+                            </Badge>
+                          ))}
+                        </span>
+                      ),
+                  },
+                ]}
+              />
+            </Section>
+          ) : (
+            <Section
+              id="account"
+              title="Connect your account"
+              description={`Connecting proves the GitHub account is yours and ties it to ${user.email}. Plumbline asks only to read repository contents and metadata, and keeps no GitHub sign-in token.`}
+            >
+              <div className="flex flex-wrap gap-3">
+                <LinkButton href="/auth/github/link?install=1" native>
+                  Install the GitHub app
+                </LinkButton>
+                <LinkButton href="/auth/github/link" native variant="outline">
+                  Already installed? Connect
+                </LinkButton>
+              </div>
+            </Section>
+          )
+        ) : (
           <Callout tone="plain" shape="banner">
             GitHub is not set up on this site. The app&apos;s settings
             (GITHUB_APP_ID, GITHUB_APP_SLUG, GITHUB_CLIENT_ID,
             GITHUB_CLIENT_SECRET, GITHUB_PRIVATE_KEY and GITHUB_WEBHOOK_SECRET)
             are missing.
           </Callout>
-        ) : link ? (
-          <Section
-            id="account"
-            title="Account"
-            actions={
-              <div className="flex flex-wrap gap-3">
-                <LinkButton href="/auth/github/link?install=1" native>
-                  Install on another account
-                </LinkButton>
-                {/* Their GitHub account is how they sign in: there is nothing to disconnect it from. */}
-                {githubOnly ? null : <DisconnectButton />}
-              </div>
-            }
-          >
-            <KeyValue
-              facts={[
-                { label: 'GitHub', value: <strong>{link.login}</strong> },
-                {
-                  label: 'Signed in with',
-                  value: githubOnly ? 'GitHub' : user.email,
-                },
-                {
-                  label: 'Installed on',
-                  value:
-                    installations.length === 0 ? (
-                      'No account yet'
-                    ) : (
-                      <span className="flex flex-wrap gap-1.5">
-                        {installations.map((installation) => (
-                          <Badge key={installation.installation_id} size="md">
-                            {installation.account_login}
-                          </Badge>
-                        ))}
-                      </span>
-                    ),
-                },
-              ]}
-            />
-          </Section>
-        ) : (
-          <Section
-            id="account"
-            title="Connect your account"
-            description={`Connecting proves the GitHub account is yours and ties it to ${user.email}. Plumbline asks only to read repository contents and metadata, and keeps no GitHub sign-in token.`}
-          >
-            <div className="flex flex-wrap gap-3">
-              <LinkButton href="/auth/github/link?install=1" native>
-                Install the GitHub app
-              </LinkButton>
-              <LinkButton href="/auth/github/link" native variant="outline">
-                Already installed? Connect
-              </LinkButton>
-            </div>
-          </Section>
         )}
 
         {link ? (

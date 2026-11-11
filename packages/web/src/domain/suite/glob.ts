@@ -25,12 +25,12 @@ export function globMatches(pattern: string, text: string): boolean {
       star = p;
       taken = t;
       p += 1;
-    } else if (star !== -1) {
+    } else if (star === -1) {
+      return false;
+    } else {
       p = star + 1;
       taken += 1;
       t = taken;
-    } else {
-      return false;
     }
   }
   while (p < want.length && want[p] === '*') {

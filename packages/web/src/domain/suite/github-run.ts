@@ -173,11 +173,9 @@ async function settleSites(
       matchesAny(rules.siteEnvironments, deployed.name));
   const address = named && deployed.url ? siteAddress(deployed.url) : null;
   if (isDeployment) {
-    if (!named || address?.ok || (rules.read && rules.sites.length > 0)) {
-      await clearGap(db, deployed.repo, deployed.name);
-    } else {
-      await noteGap(db, deployed.repo, deployed.name);
-    }
+    await (!named || address?.ok || (rules.read && rules.sites.length > 0)
+      ? clearGap(db, deployed.repo, deployed.name)
+      : noteGap(db, deployed.repo, deployed.name));
   }
   await reconcileSites(db, userId, deployed.repo, {
     declared: rules.read ? rules.sites : null,
@@ -400,7 +398,7 @@ async function checkPreview(
   } catch (error) {
     console.error('preview run failed', deployed.repo, url, error);
     await publishUnreachable(api, deployed.repo, sha, url).catch(
-      (failure: unknown) => console.error('check run failed', failure),
+      (error_: unknown) => console.error('check run failed', error_),
     );
     return;
   }

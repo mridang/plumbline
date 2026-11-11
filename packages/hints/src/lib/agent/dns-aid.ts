@@ -10,7 +10,7 @@ const QUERIES: readonly { label: string; types: readonly DnsType[] }[] = [
 ];
 
 /**
- * Parameters that make a ServiceMode record useful. draft-mozleywilliams-
+ * Parameters that make a ServiceMode record useful. Draft-mozleywilliams-
  * dnsop-dnsaid-02 lists alpn, port, ipv4hint/ipv6hint, well-known, cap and
  * cap-sha256 (and recommends mandatory=). UNVERIFIED against the draft:
  * `endpoint`, `mcp` and `a2a` are accepted because isitagentready.com looks

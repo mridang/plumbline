@@ -42,7 +42,7 @@ const MACRO_EXPAND =
 
 /** A `macro-string`: macro expansions and printable characters except `%`. */
 const MACRO_STRING =
-  /^(?:%\{[slodiphcrtvSLODIPHCRTV]\d*[rR]?[.\-+,/_=]*\}|%%|%_|%-|[\x21-\x24\x26-\x7e])*$/u;
+  /^(?:%\{[slodiphcrtvSLODIPHCRTV]\d*[rR]?[.\-+,/_=]*\}|%%|%_|%-|[\u0021-\u0024\u0026-\u007E])*$/u;
 
 /** `toplabel` of RFC 7208: must contain a letter or a hyphen between alphanum. */
 const TOPLABEL =
@@ -50,7 +50,7 @@ const TOPLABEL =
 
 const IPV4_OCTET = '(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])';
 const IPV4 = new RegExp(
-  `^${IPV4_OCTET}\\.${IPV4_OCTET}\\.${IPV4_OCTET}\\.${IPV4_OCTET}(?:/(3[0-2]|[12][0-9]|[0-9]))?$`,
+  String.raw`^${IPV4_OCTET}\.${IPV4_OCTET}\.${IPV4_OCTET}\.${IPV4_OCTET}(?:/(3[0-2]|[12][0-9]|[0-9]))?$`,
   'u',
 );
 

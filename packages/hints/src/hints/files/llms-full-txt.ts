@@ -5,7 +5,7 @@ import { checkFile } from './shared.js';
 
 /**
  * Checks that /llms-full.txt is non-empty markdown that parses.
- * Source: https://llmstxt.org
+ * Source: https://llmstxt.org.
  */
 export default defineHint({
   id: 'llms-full-txt',

@@ -9,7 +9,7 @@
 
 /** Text made safe to place inside SVG. */
 function escape(text: string): string {
-  return text.replace(
+  return text.replaceAll(
     /[&<>"']/g,
     (char) =>
       ({

@@ -8,7 +8,7 @@ import { cn } from '@/components/ui/cn';
 /** The owner and the name of `owner/name`; a name with no slash has no owner. */
 export function splitRepo(repo: string): { owner: string; name: string } {
   const at = repo.indexOf('/');
-  return at < 0
+  return at === -1
     ? { owner: '', name: repo }
     : { owner: repo.slice(0, at), name: repo.slice(at + 1) };
 }

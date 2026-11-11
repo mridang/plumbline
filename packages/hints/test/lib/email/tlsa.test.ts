@@ -26,9 +26,9 @@ describe('parseTlsa', () => {
   });
 
   it('parses the generic format', () => {
-    const record = parseTlsa('\\# 5 030101ab');
+    const record = parseTlsa(String.raw`\# 5 030101ab`);
     expect(record).toBeNull();
-    expect(parseTlsa('\\# 4 030101ab')).toEqual({
+    expect(parseTlsa(String.raw`\# 4 030101ab`)).toEqual({
       usage: 3,
       selector: 1,
       matching: 1,
@@ -40,7 +40,7 @@ describe('parseTlsa', () => {
     expect(parseTlsa('garbage')).toBeNull();
     expect(parseTlsa('3 1 1 abc')).toBeNull();
     expect(parseTlsa('3 1 1')).toBeNull();
-    expect(parseTlsa('\\# 2 0301')).toBeNull();
+    expect(parseTlsa(String.raw`\# 2 0301`)).toBeNull();
   });
 });
 

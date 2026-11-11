@@ -69,8 +69,8 @@ export class GitHubApi {
   readonly #fetch: typeof fetch;
 
   /**
-   * @param token The installation or user access token.
-   * @param fetcher The `fetch` to use; wrapped because Workers reject the global one called as a method.
+   * @param token - The installation or user access token.
+   * @param fetcher - The `fetch` to use; wrapped because Workers reject the global one called as a method.
    */
   constructor(
     private readonly token: string,

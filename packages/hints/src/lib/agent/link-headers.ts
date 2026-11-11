@@ -57,7 +57,7 @@ export function parseLinkHeader(header: string): WebLink[] {
  * (agenticresourcediscovery.org). UNVERIFIED: `ai-catalog` is not in the
  * IANA registry; it is kept because isitagentready.com accepts it.
  */
-const AGENT_RELS: readonly string[] = [
+const AGENT_RELS: ReadonlySet<string> = new Set([
   'api-catalog',
   'service-desc',
   'service-doc',
@@ -66,7 +66,7 @@ const AGENT_RELS: readonly string[] = [
   'describedby',
   'ard',
   'ai-catalog',
-];
+]);
 
 /**
  * Link headers: the home page sends a `Link` header with at least one
@@ -92,7 +92,7 @@ export async function checkLinkHeaders(env: AgentEnv): Promise<CheckResult> {
     );
   }
   const useful = parseLinkHeader(header).flatMap((link) =>
-    link.rels.filter((rel) => AGENT_RELS.includes(rel)),
+    link.rels.filter((rel) => AGENT_RELS.has(rel)),
   );
   return useful.length > 0
     ? result(

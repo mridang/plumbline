@@ -146,7 +146,7 @@ export type NsAaaaVerdict = 'none' | 'one' | 'good';
 /** Internet.nl `ns_aaaa`: at least two name servers need an IPv6 address. */
 export function judgeNsAaaa(servers: NsAddresses[]): NsAaaaVerdict {
   const withV6 = servers.filter((s) => s.v6.length > 0).length;
-  return withV6 === 0 ? 'none' : withV6 === 1 ? 'one' : 'good';
+  return withV6 === 0 ? 'none' : (withV6 === 1 ? 'one' : 'good');
 }
 
 /** Name servers (with their IPv6 addresses) that cannot be reached on port 53. */
@@ -194,11 +194,11 @@ export async function unreachableWebAddresses(v6: string[]): Promise<string[]> {
 /** Removes the parts of a page that legitimately differ between requests. */
 export function stripIrrelevantHtml(html: string): string {
   return html
-    .replace(
+    .replaceAll(
       /(<(?:script|style)\b[^>]*?)\s+nonce\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi,
       '$1',
     )
-    .replace(/<input\b[^>]*name\s*=\s*["']?__VIEWSTATE["']?[^>]*>/gi, '');
+    .replaceAll(/<input\b[^>]*name\s*=\s*["']?__VIEWSTATE["']?[^>]*>/gi, '');
 }
 
 /**

@@ -103,15 +103,24 @@ export async function collectScan(
       return;
     }
     const event = parsed.data;
-    if (event.type === 'unreachable') {
-      throw new SiteUnreachable(event.detail);
-    } else if (event.type === 'ready') {
-      ready = { finalUrl: event.finalUrl, status: event.status };
-    } else if (event.type === 'done') {
-      outcomes.push(event.outcome);
-      raw.push((json as { outcome: unknown }).outcome);
-    } else {
-      ended = true;
+    switch (event.type) {
+      case 'unreachable': {
+        throw new SiteUnreachable(event.detail);
+      }
+      case 'ready': {
+        ready = { finalUrl: event.finalUrl, status: event.status };
+
+        break;
+      }
+      case 'done': {
+        outcomes.push(event.outcome);
+        raw.push((json as { outcome: unknown }).outcome);
+
+        break;
+      }
+      default: {
+        ended = true;
+      }
     }
   };
   for (;;) {

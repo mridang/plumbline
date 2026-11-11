@@ -16,8 +16,8 @@ interface JsonParse {
 function parseJson(text: string): JsonParse {
   try {
     return { value: JSON.parse(text) as unknown };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     return { error: message };
   }
 }

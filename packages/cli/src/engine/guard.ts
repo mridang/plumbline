@@ -75,8 +75,8 @@ function embeddedV4(ip: string): string | undefined {
     lower,
   );
   if (hex) {
-    const high = parseInt(hex[1] ?? '0', 16);
-    const low = parseInt(hex[2] ?? '0', 16);
+    const high = Number.parseInt(hex[1] ?? '0', 16);
+    const low = Number.parseInt(hex[2] ?? '0', 16);
     return `${high >> 8}.${high & 0xff}.${low >> 8}.${low & 0xff}`;
   }
   return undefined;
@@ -124,13 +124,13 @@ export class GuardError extends ScanRefused {
 
 /** The host of a URL without the brackets around an IPv6 address. */
 function bareHost(url: URL): string {
-  return url.hostname.replace(/^\[|\]$/g, '');
+  return url.hostname.replaceAll(/^\[|\]$/g, '');
 }
 
 /**
  * Throws unless `url` may be fetched: http(s) only, the default port or one of
  * 80, 443, 8080 and 8443, and a host that is not a private IP address. (A name
- * is checked when it is resolved, see {@link guardedLookup}.)
+ * is checked when it is resolved, see {@link guardedLookup}.).
  */
 export function assertAllowed(url: URL, options: GuardOptions = {}): void {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
@@ -258,14 +258,18 @@ function bodyOf(body: BodyInit | null | undefined): Buffer | undefined {
 function decoderFor(encoding: string | undefined): Transform | undefined {
   switch ((encoding ?? '').trim().toLowerCase()) {
     case 'gzip':
-    case 'x-gzip':
+    case 'x-gzip': {
       return zlib.createGunzip();
-    case 'deflate':
+    }
+    case 'deflate': {
       return zlib.createInflate();
-    case 'br':
+    }
+    case 'br': {
       return zlib.createBrotliDecompress();
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
 }
 
@@ -297,11 +301,9 @@ async function readBody(
     },
   });
   const decoder = decoderFor(response.headers['content-encoding']);
-  if (decoder) {
-    await pipeline(response, decoder, capBytes(max), sink);
-  } else {
-    await pipeline(response, capBytes(max), sink);
-  }
+  await (decoder
+    ? pipeline(response, decoder, capBytes(max), sink)
+    : pipeline(response, capBytes(max), sink));
   return Buffer.concat(chunks);
 }
 

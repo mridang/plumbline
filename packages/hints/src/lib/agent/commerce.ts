@@ -12,7 +12,7 @@ import {
 } from './util.js';
 
 /**
- * x402: one of `/`, `/api` or `/api/v1` answers HTTP 402 Payment Required
+ * X402: one of `/`, `/api` or `/api/v1` answers HTTP 402 Payment Required
  * (the x402 protocol). Informational.
  */
 export async function checkX402(env: AgentEnv): Promise<CheckResult> {

@@ -53,7 +53,7 @@ function fake(visible = true) {
     },
     advance(ms: number) {
       state.now += ms;
-      for (const [id, timer] of [...timers]) {
+      for (const [id, timer] of timers) {
         if (timer.at <= state.now) {
           timers.delete(id);
           timer.handler();

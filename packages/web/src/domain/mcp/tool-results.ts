@@ -116,7 +116,7 @@ export function reportText(data: Readonly<ReportData>): string {
     for (const finding of problem.findings) {
       lines.push(`- ${finding.message} (${finding.resource})`);
       if (finding.snippet) {
-        lines.push(`  ${finding.snippet.replace(/\s+/g, ' ')}`);
+        lines.push(`  ${finding.snippet.replaceAll(/\s+/g, ' ')}`);
       }
     }
     if (problem.fixer) {

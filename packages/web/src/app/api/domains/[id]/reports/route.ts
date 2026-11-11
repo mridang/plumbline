@@ -2,7 +2,7 @@
  * The saved reports of one of the signed-in person's domains.
  *
  *   GET  /api/domains/:id/reports                  → 200, a page of reports
- *   POST /api/domains/:id/reports {url, outcomes}  → 201 + Location
+ *   POST /api/domains/:id/reports {url, outcomes}  → 201 + Location.
  *
  * The behaviour lives in the `reportsCollection` controller; this file only
  * mounts it.

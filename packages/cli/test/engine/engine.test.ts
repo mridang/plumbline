@@ -98,7 +98,7 @@ describe('findingOf', () => {
 
   it('takes the snippet and place from an element', async () => {
     const { document } = await page();
-    const title = document.querySelectorAll('title')[0];
+    const title = document.querySelector('title');
     const finding = findingOf('r', 'm', {
       severity: Severity.warning,
       element: title,

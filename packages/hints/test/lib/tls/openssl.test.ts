@@ -369,7 +369,7 @@ describe('probes with the real openssl against a local server', () => {
       expect(outcome.kind).toBe('ok');
       expect(outcome.kind === 'ok' ? outcome.value : 0).toBeGreaterThan(0);
     },
-    30000,
+    30_000,
   );
 
   realIt('fails when nothing listens', async () => {

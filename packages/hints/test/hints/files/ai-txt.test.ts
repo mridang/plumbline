@@ -35,7 +35,7 @@ describe('ai-txt', () => {
       hint,
       serve(`User-Agent: *\nDisallow: images\n`, 'text/html; charset=utf-8'),
     );
-    expect(problems.map((p) => p.message).join()).toContain(
+    expect(problems.map((p) => p.message).join(',')).toContain(
       "served as 'text/html'",
     );
   });
@@ -48,7 +48,7 @@ describe('ai-txt', () => {
         'text/plain; charset=iso-8859-1',
       ),
     );
-    expect(problems.map((p) => p.message).join()).toContain('UTF-8');
+    expect(problems.map((p) => p.message).join(',')).toContain('UTF-8');
   });
 
   it('reports an invalid file with a line number', async () => {

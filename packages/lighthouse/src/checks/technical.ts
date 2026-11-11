@@ -74,7 +74,7 @@ import twitterCardTypeHint from '@mridang/webhint-hint-plumbline/dist/hints/tech
 /**
  * Builds a check that borrows its metadata from a compiled webhint hint. The
  * title, description, reference and section are taken from the hint, so they
- * are never restated here. (Local to the set, mirroring `headers.ts`.)
+ * are never restated here. (Local to the set, mirroring `headers.ts`.).
  */
 function fromHint(
   definition: HintDefinition,

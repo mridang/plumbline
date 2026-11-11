@@ -5,9 +5,9 @@ import type { Finding } from './finding.js';
  * MTA-STS (RFC 8461) lets a domain tell sending mail servers that mail to it
  * must go over authenticated TLS. It has two parts that must agree:
  *
- * 1. a TXT record at `_mta-sts.<domain>` of the form `v=STSv1; id=<id>`, whose
+ * 1. A TXT record at `_mta-sts.<domain>` of the form `v=STSv1; id=<id>`, whose
  *    `id` changes whenever the policy changes (RFC 8461 section 3.1), and
- * 2. a policy file served over HTTPS at
+ * 2. A policy file served over HTTPS at
  *    `https://mta-sts.<domain>/.well-known/mta-sts.txt` with the fields
  *    `version: STSv1`, `mode: enforce|testing|none`, one or more `mx:` MX host
  *    patterns and `max_age:` in seconds (RFC 8461 sections 3.2 and 3.3).
@@ -18,7 +18,7 @@ import type { Finding } from './finding.js';
  */
 
 /** The upper bound RFC 8461 section 3.2 places on `max_age` (seconds). */
-export const MAX_AGE_LIMIT = 31557600;
+export const MAX_AGE_LIMIT = 31_557_600;
 
 /** The outcome of fetching the policy file over HTTPS. */
 export type PolicyFetch =
@@ -146,7 +146,7 @@ function checkPolicyFile(policy: PolicyFetch): Finding[] {
   }
   const findings: Finding[] = [];
   // The policy file must be served as text/plain (RFC 8461 3.2).
-  const mediaType = policy.mediaType.split(';')[0].trim().toLowerCase();
+  const mediaType = policy.mediaType.split(';', 1)[0].trim().toLowerCase();
   if (mediaType !== 'text/plain') {
     findings.push({
       message: `Your MTA-STS policy file is *not* served as \`text/plain\` (it is \`${policy.mediaType || 'unknown'}\`).`,

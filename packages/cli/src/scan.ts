@@ -95,10 +95,9 @@ export function hintCatalogue(): HintMeta[] {
  * The `hints` section of a webhint config for the given ids. The hint classes
  * are handed to the analyzer directly (see `scan`), so webhint matches each
  * config key against the class's own `meta.id`, which is `extra/<id>`.
- *
- * @param ids Bare hint ids (no `extra/` prefix).
+ * @param ids - Bare hint ids (no `extra/` prefix).
  * @returns A map of `extra/<id>` to the `'default'` severity, so every hint
- *   keeps the level its rule defines.
+ * keeps the level its rule defines.
  */
 export function hintConfig(ids: readonly string[]): Record<string, string> {
   return Object.fromEntries(ids.map((id) => [`extra/${id}`, 'default']));
@@ -133,9 +132,8 @@ export interface ScanResult {
  * misses packages installed by `npx` in its cache and cannot load the hints
  * package (an ES module) at all under Jest; handing the classes over avoids
  * both, the same way the hints package's own tests build their analyzer.
- *
- * @param url The absolute URL to scan.
- * @param options Which hints to run and how to launch the browser.
+ * @param url - The absolute URL to scan.
+ * @param options - Which hints to run and how to launch the browser.
  * @returns The problems reported and the metadata of the hints that ran.
  */
 export async function scan(

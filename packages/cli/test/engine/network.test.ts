@@ -52,7 +52,7 @@ describe('fetchResource', () => {
             headers: { location: 'https://b.example/page' },
           }),
         'https://b.example/page': () =>
-          new Response(Buffer.from('caf\xe9', 'latin1'), {
+          new Response(Buffer.from('caf\u00E9', 'latin1'), {
             status: 200,
             headers: { 'content-type': 'text/html; charset=iso-8859-1' },
           }),

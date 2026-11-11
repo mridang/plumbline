@@ -21,8 +21,8 @@ function parseDirectives(data: string): Map<string, string | null> | null {
   const result = new Map<string, string | null>();
   for (const part of data.split(';')) {
     const equals = part.indexOf('=');
-    const key = (equals < 0 ? part : part.slice(0, equals)).trim();
-    const value = equals < 0 ? null : part.slice(equals + 1).trim();
+    const key = (equals === -1 ? part : part.slice(0, equals)).trim();
+    const value = equals === -1 ? null : part.slice(equals + 1).trim();
     if (
       !valid.has(key) ||
       (key === 'mode' && value !== 'block') ||

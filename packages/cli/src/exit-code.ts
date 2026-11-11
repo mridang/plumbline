@@ -27,9 +27,8 @@ const RANK: Record<string, number> = {
  * Decides the exit status of a scan: non-zero when any finding is at or above
  * the threshold, so a CI step fails on errors by default, on warnings with
  * `--fail-on warning`, and never with `--fail-on none`.
- *
- * @param findings The findings of the scan (only `severity` is read).
- * @param failOn The lowest severity that fails the run.
+ * @param findings - The findings of the scan (only `severity` is read).
+ * @param failOn - The lowest severity that fails the run.
  * @returns `EXIT.findings` or `EXIT.ok`.
  */
 export function exitCodeFor(

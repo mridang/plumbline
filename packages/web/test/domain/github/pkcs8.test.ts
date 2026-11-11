@@ -21,8 +21,10 @@ describe('toPkcs8', () => {
     expect(toPkcs8(pkcs8)).toBe(pkcs8);
   });
 
-  it('restores newlines written as \\n or &', () => {
-    expect(toPkcs8(pkcs1.trim().replaceAll('\n', '\\n'))).toBe(toPkcs8(pkcs1));
+  it(String.raw`restores newlines written as \n or &`, () => {
+    expect(toPkcs8(pkcs1.trim().replaceAll('\n', String.raw`\n`))).toBe(
+      toPkcs8(pkcs1),
+    );
     expect(toPkcs8(pkcs1.trim().replaceAll('\n', '&'))).toBe(toPkcs8(pkcs1));
   });
 });

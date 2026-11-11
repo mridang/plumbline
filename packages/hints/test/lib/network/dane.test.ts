@@ -63,7 +63,7 @@ describe('parseTlsa', () => {
     });
   });
   it('parses the generic format', () => {
-    expect(parseTlsa('\\# 7 030101abcd')).toEqual({
+    expect(parseTlsa(String.raw`\# 7 030101abcd`)).toEqual({
       usage: 3,
       selector: 1,
       matching: 1,
@@ -72,7 +72,7 @@ describe('parseTlsa', () => {
   });
   it('rejects garbage', () => {
     expect(parseTlsa('nonsense')).toBeNull();
-    expect(parseTlsa('\\# 2 0301')).toBeNull();
+    expect(parseTlsa(String.raw`\# 2 0301`)).toBeNull();
   });
 });
 

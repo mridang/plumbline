@@ -53,10 +53,10 @@ describe('findBrowser', () => {
   });
 
   it('finds Edge under Program Files on Windows', () => {
-    const edge = 'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe';
+    const edge = String.raw`C:\Program Files\Microsoft\Edge\Application\msedge.exe`;
     expect(
       findBrowser(
-        lookup('win32', [edge], { PROGRAMFILES: 'C:\\Program Files' }),
+        lookup('win32', [edge], { PROGRAMFILES: String.raw`C:\Program Files` }),
       ),
     ).toBe(edge);
   });

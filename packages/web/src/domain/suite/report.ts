@@ -35,11 +35,11 @@ export function safeText(text: string): string {
   })
     .join('')
     // No mention, issue reference, tag, link or code span.
-    .replace(/@/g, '@\u200b')
-    .replace(/#/g, '#\u200b')
-    .replace(/[<>[\]`]/g, "'")
+    .replaceAll('@', '@\u200B')
+    .replaceAll('#', '#\u200B')
+    .replaceAll(/[<>[\]`]/g, "'")
     // A bare address would become a link.
-    .replace(/(https?):\/\//gi, '$1:\u200b//');
+    .replaceAll(/(https?):\/\//gi, '$1:\u200B//');
   return flat.length > MAX_PROBLEM_LENGTH
     ? `${flat.slice(0, MAX_PROBLEM_LENGTH)}...`
     : flat;
@@ -239,7 +239,7 @@ export function dataBlock(report: Readonly<RunReport>): string {
     },
     null,
     1,
-  ).replace(/`/g, '\\u0060');
+  ).replaceAll('`', String.raw`\u0060`);
   return `\`\`\`json\n${json}\n\`\`\``;
 }
 
@@ -321,9 +321,9 @@ export function checkRunOutput(report: Readonly<RunReport>): {
   const { errors, warnings, hints } = countsOf(report.findings);
   const title = report.comparison
     ? comparedTitle(report.comparison, host)
-    : report.findings.length === 0
+    : (report.findings.length === 0
       ? `No problems found on ${host}`
-      : `${amount(errors, 'error')}, ${amount(warnings, 'warning')} and ${amount(hints, 'hint')} on ${host}`;
+      : `${amount(errors, 'error')}, ${amount(warnings, 'warning')} and ${amount(hints, 'hint')} on ${host}`);
   const parts = [`Checked ${report.url}`];
   if (report.reportUrl) {
     parts.push(`[Open the full report](${report.reportUrl})`);
@@ -474,20 +474,27 @@ export function closingComment(
 ): string {
   const rules = rulesLink(input.repo, input.source, input.sha);
   switch (reason) {
-    case 'fixed':
+    case 'fixed': {
       return `Plumbline no longer finds this problem as of ${input.where}, so this issue is closed. It opens again if the problem comes back.`;
-    case 'off':
+    }
+    case 'off': {
       return `This check is turned off by the rules in ${rules}, so Plumbline stopped tracking it and closed this issue. If you turn it on again and the problem is still there, a new issue is opened.`;
-    case 'level':
+    }
+    case 'level': {
       return `What this check finds no longer opens an issue under the rules in ${rules}, so this issue is closed. The results in Plumbline still show it.`;
-    case 'removed':
+    }
+    case 'removed': {
       return 'Plumbline no longer has this check, so this issue is closed.';
-    case 'disabled':
+    }
+    case 'disabled': {
       return 'Checks for this repository were turned off in Plumbline, so Plumbline stopped tracking this issue and closed it. If you turn checks back on and the problem is still there, a new issue is opened.';
-    case 'config':
+    }
+    case 'config': {
       return 'Checks for this repository were turned off in `plumbline.yaml` (`enabled: false`), so Plumbline stopped tracking this issue and closed it. Set `enabled: true` (or remove the key) and checks resume with the next deployment; if the problem is still there, a new issue is opened.';
-    case 'undeployed':
+    }
+    case 'undeployed': {
       return `${input.host} is no longer deployed from this repository, so Plumbline stopped checking it and closed this issue.`;
+    }
   }
 }
 

@@ -425,9 +425,7 @@ describe('safeText', () => {
 
   it('cannot start a new line or block', () => {
     const text = safeText('a\n\n# heading\r\n- item\u0000');
-    expect(Array.from(text).filter((char) => char.charCodeAt(0) < 32)).toEqual(
-      [],
-    );
+    expect([...text].filter((char) => char.charCodeAt(0) < 32)).toEqual([]);
   });
 
   it('is no longer than a sentence', () => {
@@ -470,7 +468,7 @@ describe('what a hostile configuration can make the text hold', () => {
 
   it('never goes past what GitHub accepts in a summary', () => {
     const findings = Array.from({ length: MAX_LISTED }, (_, i) =>
-      found('error', 'x'.repeat(5_000) + i),
+      found('error', 'x'.repeat(5000) + i),
     );
     const out = checkRunOutput({ ...base, findings, problems: [] });
     expect(out.summary.length).toBeLessThanOrEqual(MAX_TEXT + 20);

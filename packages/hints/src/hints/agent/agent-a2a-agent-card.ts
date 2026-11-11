@@ -1,7 +1,7 @@
 import { agentHint } from './define-agent-hint.js';
 
 /**
- * isitagentready.com check. Discovery: the A2A agent card advertises skills and endpoints.
+ * Isitagentready.com check. Discovery: the A2A agent card advertises skills and endpoints.
  * The logic lives in `src/lib/agent`; failures are reported as advice.
  */
 export default agentHint({

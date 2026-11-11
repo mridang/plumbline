@@ -37,20 +37,25 @@ export function parseRobots(body: string): Robots {
     }
     const value = match[2].trim();
     switch (match[1].toLowerCase()) {
-      case 'user-agent':
+      case 'user-agent': {
         if (value) robots.userAgents.push(value);
         break;
-      case 'sitemap':
+      }
+      case 'sitemap': {
         if (value) robots.sitemaps.push(value);
         break;
-      case 'content-signal':
+      }
+      case 'content-signal': {
         if (value) robots.contentSignals.push(value);
         break;
-      case 'agentmap':
+      }
+      case 'agentmap': {
         if (value) robots.agentmaps.push(value);
         break;
-      default:
+      }
+      default: {
         break;
+      }
     }
   }
   return robots;
@@ -84,7 +89,7 @@ export async function loadRobots(env: AgentEnv): Promise<Robots | undefined> {
 }
 
 /**
- * robots.txt: `GET /robots.txt` answers 200 as `text/plain` and holds at
+ * Robots.txt: `GET /robots.txt` answers 200 as `text/plain` and holds at
  * least one valid `User-agent` directive (RFC 9309).
  */
 export async function checkRobotsTxt(env: AgentEnv): Promise<CheckResult> {
@@ -264,14 +269,18 @@ export async function checkAiBotRules(env: AgentEnv): Promise<CheckResult> {
 }
 
 /** The three signals defined by contentsignals.org. */
-const CONTENT_SIGNALS: readonly string[] = ['ai-train', 'search', 'ai-input'];
+const CONTENT_SIGNALS: ReadonlySet<string> = new Set([
+  'ai-train',
+  'search',
+  'ai-input',
+]);
 
 /** Parses `ai-train=no, search=yes` into valid signal/value pairs. */
 export function parseContentSignal(value: string): Record<string, boolean> {
   const signals: Record<string, boolean> = {};
   for (const part of value.split(',')) {
     const match = /^\s*([a-z-]+)\s*=\s*(yes|no)\s*$/i.exec(part);
-    if (match && CONTENT_SIGNALS.includes(match[1].toLowerCase())) {
+    if (match && CONTENT_SIGNALS.has(match[1].toLowerCase())) {
       signals[match[1].toLowerCase()] = match[2].toLowerCase() === 'yes';
     }
   }

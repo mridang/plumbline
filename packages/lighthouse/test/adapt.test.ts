@@ -95,7 +95,7 @@ describe('cspMetaContents', () => {
             httpEquiv: 'Content-Security-Policy',
             content: "default-src 'self'",
           },
-          { httpEquiv: 'Content-Security-Policy', content: '   ' },
+          { httpEquiv: 'Content-Security-Policy', content: ' '.repeat(3) },
           { name: 'description', content: 'ignored' },
         ),
       ),

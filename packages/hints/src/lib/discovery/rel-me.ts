@@ -12,8 +12,7 @@ import { withRel, type RelLink } from './links.js';
 
 /**
  * Evaluates the `rel=me` links of a page.
- *
- * @param links every relation link found in the DOM and `Link` header.
+ * @param links - Every relation link found in the DOM and `Link` header.
  */
 export function relMeFindings(links: readonly RelLink[]): Finding[] {
   const me = withRel(links, 'me');

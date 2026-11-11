@@ -7,8 +7,8 @@ import { htmlAt } from '../render';
 const labels = (html: string): string[] =>
   [...html.matchAll(/<button[^>]*>(.*?)<\/button>/g)].map((m) =>
     m[1]!
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
+      .replaceAll(/<[^>]+>/g, ' ')
+      .replaceAll(/\s+/g, ' ')
       .trim(),
   );
 

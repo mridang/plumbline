@@ -29,7 +29,7 @@ const DEFAULT_PAGE =
 
 function listen(routes: Routes): Promise<Server> {
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
-    const path = (req.url ?? '/').split('?')[0];
+    const path = (req.url ?? '/').split('?', 1)[0];
     const entry = routes[path];
     const route =
       typeof entry === 'function'

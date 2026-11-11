@@ -140,7 +140,7 @@ export function LiveOverview({
   const change = (next: Filter): void => {
     setFilter(next);
     // Keep the address in step so the view can be shared and survives a refresh.
-    window.history.replaceState(null, '', dashboardHref(view, next));
+    globalThis.history.replaceState(null, '', dashboardHref(view, next));
   };
   if (repos.length === 0) {
     return (
@@ -194,7 +194,7 @@ export function LiveOverview({
             ? 'No site is shown with these filters.'
             : `Nothing here has “${query.trim()}” in its repository or address.`}
         </EmptyState>
-      ) : view === 'cards' ? (
+      ) : (view === 'cards' ? (
         <SiteCards
           repos={groupRows(rows)}
           paused={pausedSet}
@@ -209,7 +209,7 @@ export function LiveOverview({
           onSort={(key) => setSort((current) => nextSort(current, key))}
           now={now}
         />
-      )}
+      ))}
     </div>
   );
 }

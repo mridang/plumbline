@@ -1,6 +1,6 @@
 import { splitLines, type FileIssue } from './issue.js';
 
-/** llmstxtvalidator.dev warns above 500 KB. */
+/** Llmstxtvalidator.dev warns above 500 KB. */
 const LLMS_FULL_WARN_BYTES = 500 * 1000;
 
 /** Validates an llms-full.txt file: markdown with an H1 that parses. */

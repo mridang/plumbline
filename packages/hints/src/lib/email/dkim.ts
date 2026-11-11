@@ -64,7 +64,7 @@ export function parseDkim(record: string): DkimRecord {
 
   const pieces = record.split(';').map((piece) => piece.trim());
   // A tag-list may end in a semicolon.
-  if (pieces[pieces.length - 1] === '') {
+  if (pieces.at(-1) === '') {
     pieces.pop();
   }
   const tags = new Map<string, string>();
@@ -107,7 +107,7 @@ export function parseDkim(record: string): DkimRecord {
     errors.push('The key is revoked: the p tag is empty.');
   } else if (result.keyType) {
     // Whitespace inside the base64 is folding and is ignored.
-    const problem = checkKey(result.keyType, key.replace(/\s+/gu, ''));
+    const problem = checkKey(result.keyType, key.replaceAll(/\s+/gu, ''));
     if (problem) {
       errors.push(problem);
     }
@@ -131,13 +131,13 @@ export function parseDkim(record: string): DkimRecord {
   }
   const flags = tags.get('t');
   if (flags !== undefined) {
-    if (!/^[A-Za-z0-9-]*(?:\s*:\s*[A-Za-z0-9-]+)*$/u.test(flags)) {
-      errors.push("The 't' tag must be a colon separated list of flags.");
-    } else {
+    if (/^[A-Za-z0-9-]*(?:\s*:\s*[A-Za-z0-9-]+)*$/u.test(flags)) {
       result.testing = flags
         .split(':')
         .map((flag) => flag.trim().toLowerCase())
         .includes('y');
+    } else {
+      errors.push("The 't' tag must be a colon separated list of flags.");
     }
   }
 

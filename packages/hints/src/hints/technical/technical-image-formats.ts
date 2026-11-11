@@ -8,7 +8,7 @@ import { reportFindings } from '../seo/report-findings.js';
 function urlsOf(src: string, srcset: string): string[] {
   const candidates = srcset
     .split(',')
-    .map((part) => part.trim().split(/\s+/)[0])
+    .map((part) => part.trim().split(/\s+/, 1)[0])
     .filter((url) => url !== '');
   return [src, ...candidates].filter((url) => url !== '');
 }

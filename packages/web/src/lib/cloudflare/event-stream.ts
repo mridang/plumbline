@@ -9,10 +9,9 @@ import { SSE_HEADERS } from './sse';
 
 /**
  * Ask the person's hub for an event stream, resuming after a position.
- *
- * @param hubs The hub namespace.
- * @param userId The person to stream.
- * @param resume The last sequence number the client has seen, or `null` to stream only what is new.
+ * @param hubs - The hub namespace.
+ * @param userId - The person to stream.
+ * @param resume - The last sequence number the client has seen, or `null` to stream only what is new.
  * @returns The streaming response.
  */
 export async function openEventStream(

@@ -10,8 +10,7 @@ export interface LocalSite {
 /**
  * Serves one small HTML page on 127.0.0.1 with the given response headers,
  * so a real scan can run without touching the internet.
- *
- * @param headers Extra response headers for every path.
+ * @param headers - Extra response headers for every path.
  * @returns The page's URL and a function that stops the server.
  */
 export async function serve(

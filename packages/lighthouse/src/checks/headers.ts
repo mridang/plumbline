@@ -410,7 +410,7 @@ export const headersChecks: readonly AuditCheck[] = [
         return null;
       }
       const value = firstHeader(main.headers, 'clear-site-data');
-      const normalised = value?.replace(/\s+/g, '').toLowerCase() ?? null;
+      const normalised = value?.replaceAll(/\s+/g, '').toLowerCase() ?? null;
       return exactHeaderFindings('Clear-Site-Data', normalised, [
         CLEAR_SITE_DATA_EXPECTED,
       ]);

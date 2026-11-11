@@ -41,14 +41,13 @@ export class UserHub extends DurableObject<CloudflareEnv> {
 
   /**
    * Open an event stream, replaying what the client missed.
-   *
-   * @param request The stream request, naming the repository in its path's last segment.
+   * @param request - The stream request, naming the repository in its path's last segment.
    * @returns The streaming response.
    */
   override async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const userId = decodeURIComponent(
-      url.pathname.split('/').filter(Boolean).pop() ?? '',
+      url.pathname.split('/').findLast(Boolean) ?? '',
     );
     if (userId === '') {
       return new Response('Missing person.', { status: 400 });
@@ -92,8 +91,7 @@ export class UserHub extends DurableObject<CloudflareEnv> {
 
   /**
    * Push facts recorded since the last position to every open stream.
-   *
-   * @param userId The repository whose log grew.
+   * @param userId - The repository whose log grew.
    */
   async notify(userId: string): Promise<void> {
     if (this.clients.size === 0) {
@@ -162,7 +160,7 @@ export class UserHub extends DurableObject<CloudflareEnv> {
   }
 
   private broadcast(frame: string): void {
-    for (const writer of [...this.clients]) {
+    for (const writer of this.clients) {
       if (writer.desiredSize === null || writer.desiredSize <= 0) {
         this.clients.delete(writer);
         writer.abort().catch(() => undefined);

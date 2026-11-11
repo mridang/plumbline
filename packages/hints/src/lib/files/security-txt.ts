@@ -35,7 +35,7 @@ function stripSignature(
   const sig = lines.findIndex((l) =>
     l.startsWith('-----BEGIN PGP SIGNATURE-----'),
   );
-  if (blank < 0 || sig < 0) {
+  if (blank === -1 || sig === -1) {
     issues.push({
       severity: 'error',
       line: 1,
@@ -113,7 +113,7 @@ export function validateSecurityTxt(
   if (expires[0]) {
     const { value, line } = expires[0];
     const snippet = `Expires: ${value}`;
-    const time = RFC3339.test(value) ? Date.parse(value) : NaN;
+    const time = RFC3339.test(value) ? Date.parse(value) : Number.NaN;
     if (Number.isNaN(time)) {
       issues.push({
         severity: 'error',

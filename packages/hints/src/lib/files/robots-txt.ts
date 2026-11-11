@@ -92,7 +92,7 @@ export function validateRobotsTxt(text: string): FileIssue[] {
       return;
     }
     switch (key) {
-      case 'user-agent':
+      case 'user-agent': {
         if (value === '') {
           at('error', 'User-agent needs a product token or *.');
         }
@@ -104,8 +104,9 @@ export function validateRobotsTxt(text: string): FileIssue[] {
         current.agents.push(value.toLowerCase());
         collectingAgents = true;
         break;
+      }
       case 'allow':
-      case 'disallow':
+      case 'disallow': {
         if (!current) {
           at('error', `'${key}' appears before any User-agent line.`);
           break;
@@ -116,11 +117,13 @@ export function validateRobotsTxt(text: string): FileIssue[] {
         }
         current.rules.push({ kind: key, value });
         break;
-      case 'sitemap':
+      }
+      case 'sitemap': {
         if (!isAbsoluteUrl(value)) {
           at('error', `The Sitemap '${value}' is not an absolute http(s) URL.`);
         }
         break;
+      }
       case 'content-signal': {
         anySignal = true;
         const problem = validateContentSignal(value);
@@ -138,10 +141,11 @@ export function validateRobotsTxt(text: string): FileIssue[] {
         }
         break;
       }
-      default:
+      default: {
         if (current) {
           collectingAgents = false;
         }
+      }
     }
   });
 

@@ -12,9 +12,8 @@ import { withRel, type RelLink } from './links.js';
 
 /**
  * Evaluates the Pingback advertisement of a page.
- *
- * @param links every relation link found in the DOM and `Link` header.
- * @param xPingback the `X-Pingback` response header value, or null.
+ * @param links - Every relation link found in the DOM and `Link` header.
+ * @param xPingback - The `X-Pingback` response header value, or null.
  */
 export function pingbackFindings(
   links: readonly RelLink[],

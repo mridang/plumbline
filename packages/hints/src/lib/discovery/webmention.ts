@@ -12,8 +12,7 @@ import { isAbsoluteUrl, withRel, type RelLink } from './links.js';
 
 /**
  * Evaluates the Webmention endpoint of a page.
- *
- * @param links every relation link found in the DOM and `Link` header.
+ * @param links - Every relation link found in the DOM and `Link` header.
  */
 export function webmentionFindings(links: readonly RelLink[]): Finding[] {
   const endpoints = withRel(links, 'webmention');

@@ -87,16 +87,16 @@ function webp(b: Uint8Array): ImageInfo | null {
     const bits = b[21] | (b[22] << 8) | (b[23] << 16) | (b[24] << 24);
     return {
       format: 'webp',
-      width: 1 + (bits & 0x3fff),
-      height: 1 + ((bits >> 14) & 0x3fff),
+      width: 1 + (bits & 0x3F_FF),
+      height: 1 + ((bits >> 14) & 0x3F_FF),
     };
   }
   if (kind === 'VP8 ') {
     // Lossy: 14 bit sizes after the 3 byte frame tag and 3 byte start code.
     return {
       format: 'webp',
-      width: (b[26] | (b[27] << 8)) & 0x3fff,
-      height: (b[28] | (b[29] << 8)) & 0x3fff,
+      width: (b[26] | (b[27] << 8)) & 0x3F_FF,
+      height: (b[28] | (b[29] << 8)) & 0x3F_FF,
     };
   }
   return null;
@@ -114,7 +114,9 @@ function svg(text: string): ImageInfo | null {
     return null;
   }
   const attr = (name: string) =>
-    new RegExp(`\\s${name}\\s*=\\s*["']([^"']*)["']`, 'i').exec(tag)?.[1];
+    new RegExp(String.raw`\s${name}\s*=\s*["']([^"']*)["']`, 'i').exec(
+      tag,
+    )?.[1];
   let width = svgLength(attr('width'));
   let height = svgLength(attr('height'));
   if (width === null || height === null) {

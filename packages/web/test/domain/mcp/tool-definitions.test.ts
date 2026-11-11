@@ -152,7 +152,9 @@ describe('the input schemas', () => {
   it.each(['get_domain', 'configure_checks'])(
     '%s refuses a blank domain',
     (name) => {
-      expect(validateJson(inputOf(name), { domain: '   ' })).not.toEqual([]);
+      expect(
+        validateJson(inputOf(name), { domain: ' '.repeat(3) }),
+      ).not.toEqual([]);
     },
   );
 

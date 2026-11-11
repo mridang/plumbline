@@ -60,7 +60,7 @@ export function stripJsonComments(text: string): string {
       out += char;
     }
   }
-  return out.replace(/,(\s*[}\]])/g, '$1');
+  return out.replaceAll(/,(\s*[}\]])/g, '$1');
 }
 
 /** The public host a route pattern serves, or undefined for a wildcard or anything else. */
@@ -68,7 +68,7 @@ export function hostOfPattern(pattern: string): string | undefined {
   const bare = pattern
     .trim()
     .replace(/^[a-z]+:\/\//i, '')
-    .split(/[/?#]/)[0];
+    .split(/[/?#]/, 1)[0];
   if (!bare || bare.includes('*') || bare.endsWith('.workers.dev')) {
     return undefined;
   }
@@ -80,9 +80,9 @@ export function hostOfPattern(pattern: string): string | undefined {
 function patternsOf(value: unknown): string[] {
   const list = Array.isArray(value)
     ? value
-    : value === undefined
+    : (value === undefined
       ? []
-      : [value];
+      : [value]);
   return list.flatMap((entry): string[] => {
     if (typeof entry === 'string') {
       return [entry];
@@ -110,7 +110,7 @@ function jsonPatterns(text: string): string[] {
 
 /** The top-level routes of a `wrangler.toml`, before any `[env.*]` table. */
 function tomlPatterns(text: string): string[] {
-  const top = text.split(/^\s*\[+env\./m)[0] ?? '';
+  const top = text.split(/^\s*\[+env\./m, 1)[0] ?? '';
   const out: string[] = [];
   for (const match of top.matchAll(/^\s*(?:pattern|route)\s*=\s*"([^"]+)"/gm)) {
     out.push(match[1] ?? '');

@@ -14,7 +14,7 @@ const MEDIA_TYPE = /^(\*|[A-Za-z0-9][\w.+-]*)\/(\*|[A-Za-z0-9][\w.+-]*)$/;
 
 /** True for a media type, ignoring any `;parameter` suffix. */
 function isMediaType(value: string): boolean {
-  const base = value.split(';')[0]?.trim() ?? '';
+  const base = value.split(';', 1)[0]?.trim() ?? '';
   return MEDIA_TYPE.test(base);
 }
 

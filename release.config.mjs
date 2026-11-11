@@ -1,7 +1,7 @@
-import { readFileSync } from 'fs';
+import { readFileSync } from 'node:fs';
 
 const packageJson = JSON.parse(
-  readFileSync(new URL('./package.json', import.meta.url), 'utf-8'),
+  readFileSync(new URL('package.json', import.meta.url), 'utf-8'),
 );
 
 const packages = ['cli', 'formatter', 'hints', 'lighthouse', 'skills'];
@@ -26,7 +26,7 @@ export default {
         dockerProject: 'mridang',
         dockerImage: 'plumbline',
         dockerTags: ['latest', '{{major}}', '{{version}}'],
-        dockerTimeout: 3600000,
+        dockerTimeout: 3_600_000,
         dockerBake: {
           file: 'docker-bake.hcl',
           group: 'release',

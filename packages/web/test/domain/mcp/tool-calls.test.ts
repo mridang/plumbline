@@ -225,7 +225,7 @@ describe('callToolOrExplain', () => {
 
 describe('list_checks', () => {
   it('starts with the groups', async () => {
-    expect(textOf(await setup().call('list_checks')).split('\n')[0]).toMatch(
+    expect(textOf(await setup().call('list_checks')).split('\n', 1)[0]).toMatch(
       /^Groups: .*\btls\b.*\.$/,
     );
   });
@@ -246,7 +246,7 @@ describe('list_checks', () => {
 
   it('narrows the list to one group, without the list of groups', async () => {
     const text = textOf(await setup().call('list_checks', { group: 'tls' }));
-    expect(text.split('\n')[0]).toBe(
+    expect(text.split('\n', 1)[0]).toBe(
       `${TLS} checks in tls; showing ${TLS} from 0.`,
     );
   });
@@ -273,7 +273,7 @@ describe('list_checks', () => {
 
   it('reads the next page from an offset, without the list of groups', async () => {
     const text = textOf(await setup().call('list_checks', { offset: 50 }));
-    expect(text.split('\n')[0]).toBe(`${TOTAL} checks; showing 50 from 50.`);
+    expect(text.split('\n', 1)[0]).toBe(`${TOTAL} checks; showing 50 from 50.`);
   });
 
   it('offers no next page after the last', async () => {
@@ -371,6 +371,7 @@ describe('get_domain', () => {
     expect(
       textOf(await call('get_domain', { domain: 'example.com' })).split(
         '\n',
+        1,
       )[0],
     ).toBe(`example.com (id ${domain.id}), added ${domain.created_at}.`);
   });
@@ -685,7 +686,7 @@ describe('configure_checks', () => {
       ),
     ).toMatch(
       new RegExp(
-        `^example\\.com now runs ${TOTAL - 1} of ${TOTAL} checks\\. Changed off: `,
+        String.raw`^example\.com now runs ${TOTAL - 1} of ${TOTAL} checks\. Changed off: `,
       ),
     );
   });

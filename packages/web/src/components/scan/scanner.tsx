@@ -143,9 +143,9 @@ export function Scanner({
   const scan = async (value: string): Promise<void> => {
     if (value.trim() !== '') {
       // The address carries the domain, so a result can be shared or reloaded.
-      const url = new URL(window.location.href);
+      const url = new URL(globalThis.location.href);
       url.searchParams.set('domain', value.trim());
-      window.history.replaceState(null, '', url);
+      globalThis.history.replaceState(null, '', url);
     }
     await run(value);
   };
@@ -155,7 +155,7 @@ export function Scanner({
       return;
     }
     started.current = true;
-    const given = new URLSearchParams(window.location.search).get('domain');
+    const given = new URLSearchParams(globalThis.location.search).get('domain');
     // A shared link starts its scan by submitting the form, as a click would.
     if (given && input.current) {
       input.current.value = given;

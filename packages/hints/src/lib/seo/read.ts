@@ -25,7 +25,7 @@ export function getTitle(doc: DocumentLike): string | null {
   if (!element) {
     return null;
   }
-  return element.textContent.replace(/\s+/g, ' ').trim();
+  return element.textContent.replaceAll(/\s+/g, ' ').trim();
 }
 
 /** Returns the trimmed content of `<meta name="description">`, or null when the tag is absent. */
@@ -34,7 +34,7 @@ export function getMetaDescription(doc: DocumentLike): string | null {
   if (!element) {
     return null;
   }
-  return (element.getAttribute('content') ?? '').replace(/\s+/g, ' ').trim();
+  return (element.getAttribute('content') ?? '').replaceAll(/\s+/g, ' ').trim();
 }
 
 /** Counts the `<h1>` elements of the page. */

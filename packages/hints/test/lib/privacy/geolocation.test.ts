@@ -44,7 +44,7 @@ describe('stripCommentsAndStrings', () => {
     expect(stripCommentsAndStrings('p /* z */ q')).toBe('p   q');
   });
   it('handles escaped quotes and unterminated input', () => {
-    expect(stripCommentsAndStrings('x("a\\"b");')).toBe('x("");');
+    expect(stripCommentsAndStrings(String.raw`x("a\"b");`)).toBe('x("");');
     expect(stripCommentsAndStrings('/* open')).toBe(' ');
     expect(stripCommentsAndStrings('"open')).toBe('""');
   });

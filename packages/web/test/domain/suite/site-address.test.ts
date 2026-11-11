@@ -44,7 +44,7 @@ describe('siteAddress', () => {
 
   it('refuses a value that is not an address at all', () => {
     expect(siteAddress('')).toMatchObject({ ok: false });
-    expect(siteAddress('   ')).toMatchObject({ ok: false });
+    expect(siteAddress(' '.repeat(3))).toMatchObject({ ok: false });
     expect(siteAddress(42)).toMatchObject({ ok: false });
     expect(siteAddress(undefined)).toMatchObject({ ok: false });
   });

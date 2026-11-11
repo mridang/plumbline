@@ -5,8 +5,7 @@ import { UsageError } from './options.js';
  * bare domain (`example.com`, `example.com/blog`) is taken to mean its HTTPS
  * site, since that is what a visitor gets; an explicit `http://` is kept so a
  * local or plain-HTTP site can still be scanned.
- *
- * @param input The URL or domain as typed.
+ * @param input - The URL or domain as typed.
  * @returns The absolute http(s) URL.
  * @throws UsageError when the input is not a usable http(s) URL or host.
  */

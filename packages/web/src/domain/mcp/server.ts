@@ -234,7 +234,7 @@ async function callTool(params: Params, ctx: McpContext): Promise<object> {
   }
 }
 
-/** plumbline's MCP server: the engine with the methods registered. */
+/** Plumbline's MCP server: the engine with the methods registered. */
 const server = new McpServer<McpContext>({
   serverInfo: SERVER_INFO,
   serverInfoMetaKey: SERVER_INFO_META_KEY,

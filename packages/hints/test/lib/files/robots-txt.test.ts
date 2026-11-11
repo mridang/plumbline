@@ -47,7 +47,7 @@ describe('validateRobotsTxt', () => {
     expect(msgs('User-agent:\nDisallow: /a')[0]).toContain('product token');
   });
   it('warns on Disallow / for all agents', () => {
-    expect(msgs('User-agent: *\nDisallow: /').join()).toContain(
+    expect(msgs('User-agent: *\nDisallow: /').join(',')).toContain(
       'blocks the whole site',
     );
   });
@@ -55,9 +55,9 @@ describe('validateRobotsTxt', () => {
     expect(msgs('User-agent: BadBot\nDisallow: /')).toEqual([]);
   });
   it('groups consecutive User-agent lines', () => {
-    expect(msgs('User-agent: a\nUser-agent: *\nDisallow: /').join()).toContain(
-      'blocks',
-    );
+    expect(
+      msgs('User-agent: a\nUser-agent: *\nDisallow: /').join(','),
+    ).toContain('blocks');
   });
   it('warns when a file has no group', () => {
     expect(msgs('Sitemap: https://a.com/s.xml')[0]).toContain(

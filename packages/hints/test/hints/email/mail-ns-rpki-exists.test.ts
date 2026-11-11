@@ -20,7 +20,7 @@ const rpki = (table: Record<string, RpkiResult>): RpkiClient => ({
 });
 
 const valid = (prefix: string): RpkiResult => ({
-  asn: 64500,
+  asn: 64_500,
   prefix,
   status: 'valid',
 });
@@ -48,7 +48,7 @@ describe('mail-ns-rpki-exists', () => {
 
   it('reports a name server address without a ROA', async () => {
     const client = rpki({
-      '192.0.2.9': { asn: 64500, prefix: '192.0.2.0/24', status: 'unknown' },
+      '192.0.2.9': { asn: 64_500, prefix: '192.0.2.0/24', status: 'unknown' },
       '2001:db8::9': valid('2001:db8::/32'),
     });
     const problems = await runMailHint(hint, { dns, rpki: client });

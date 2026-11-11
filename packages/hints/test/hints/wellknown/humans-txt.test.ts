@@ -25,7 +25,7 @@ describe('humans-txt', () => {
 
   it('reports a wrong content type', async () => {
     const problems = await runHint(hint, serve('text/html; charset=utf-8'));
-    expect(problems.map((p) => p.message).join()).toContain(
+    expect(problems.map((p) => p.message).join(',')).toContain(
       "served as 'text/html'",
     );
   });

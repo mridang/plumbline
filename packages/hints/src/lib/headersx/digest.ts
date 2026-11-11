@@ -16,9 +16,8 @@ const BYTE_SEQUENCE = /^:[A-Za-z0-9+/=]*:(?:;.*)?$/;
 
 /**
  * Validates a `Content-Digest` / `Repr-Digest` header value.
- *
- * @param name the header name, used in messages.
- * @param value the header value, or null when the header is absent.
+ * @param name - The header name, used in messages.
+ * @param value - The header value, or null when the header is absent.
  */
 export function digestFindings(name: string, value: string | null): Finding[] {
   if (value === null) {

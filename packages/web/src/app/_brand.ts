@@ -18,7 +18,6 @@ import {
   PRIVACY_LAST_UPDATED,
   SITE_DESCRIPTION,
   SITE_NAME,
-  SITE_TITLE,
   SITE_URL,
   TERMS_LAST_UPDATED,
 } from '@/utils/site';
@@ -27,19 +26,16 @@ import {
 export const BRAND_NAME = SITE_NAME;
 
 /** The name under a home-screen icon: twelve characters at most. */
-export const BRAND_SHORT_NAME = SITE_NAME;
 
 /** A few words on what the site is, above the page heading. */
 export const BRAND_TAGLINE = 'Website checks';
 
 /** The default page title. */
-export const BRAND_TITLE = SITE_TITLE;
 
 /** The default description, for page metadata. */
 export const BRAND_DESCRIPTION = SITE_DESCRIPTION;
 
 /** The public address, with no trailing slash. */
-export const BRAND_URL = SITE_URL;
 
 /** Where vulnerabilities are reported (`security.txt`). */
 export const SECURITY_CONTACT = 'mailto:mridang.agarwalla@gmail.com';
@@ -152,3 +148,9 @@ export const NOT_FOUND_LINK: Readonly<{ href: string; label: string }> | null =
 /** The error pages' reassurance. */
 export const ERROR_REASSURANCE =
   'Try again in a moment; nothing about the site you scanned was stored.';
+
+export {
+  SITE_TITLE as BRAND_TITLE,
+  SITE_NAME as BRAND_SHORT_NAME,
+  SITE_URL as BRAND_URL,
+} from '@/utils/site';

@@ -207,7 +207,7 @@ describe('truncate', () => {
 
 describe('formatCount and formatCompact', () => {
   it('groups thousands', () => {
-    expect(formatCount(1234567)).toBe('1,234,567');
+    expect(formatCount(1_234_567)).toBe('1,234,567');
   });
 
   it('shortens large numbers and leaves small ones alone', () => {

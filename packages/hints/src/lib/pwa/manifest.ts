@@ -113,7 +113,7 @@ export function isPngIcon(icon: ManifestIcon): boolean {
     return icon.type.toLowerCase() === 'image/png';
   }
   // No type declared: fall back to the file extension, ignoring any query.
-  return icon.src.split(/[?#]/)[0].toLowerCase().endsWith('.png');
+  return icon.src.split(/[?#]/, 1)[0].toLowerCase().endsWith('.png');
 }
 
 /**

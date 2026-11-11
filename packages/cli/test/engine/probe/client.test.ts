@@ -348,7 +348,7 @@ describe('the other requests', () => {
       earlyData: 'GET /',
       input: ['', 'Q\n'],
       delayMs: 500,
-      timeoutMs: 20000,
+      timeoutMs: 20_000,
     });
     expect(answer.stdout).toBe('out');
     const body = sent[0]?.body ?? '';

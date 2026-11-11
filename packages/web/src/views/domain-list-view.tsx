@@ -1,4 +1,5 @@
 /* eslint-disable tailwindcss/no-custom-classname -- the widget's classes are defined in src/views/styles.ts, not in a CSS file. */
+
 /**
  * @packageDocumentation
  *
@@ -120,10 +121,12 @@ export function DomainListScreen({
     }
     switch (state.phase) {
       case 'connecting':
-      case 'waiting':
+      case 'waiting': {
         return <LoadingCard noun="your domains" />;
-      case 'failed':
+      }
+      case 'failed': {
         return <MessageCard reason={state.reason} message={state.message} />;
+      }
       case 'ready': {
         const link = safeHttpUrl(state.data.link);
         return (

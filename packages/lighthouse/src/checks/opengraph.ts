@@ -31,7 +31,7 @@
  * A plugin runs after gathering and cannot issue that network fetch, so these
  * are left to a custom gatherer. (The three image hints that read only tags —
  * opengraph-image-not-https, opengraph-image-dimensions-missing and
- * opengraph-image-alt-missing — are included.)
+ * opengraph-image-alt-missing — are included.).
  */
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';

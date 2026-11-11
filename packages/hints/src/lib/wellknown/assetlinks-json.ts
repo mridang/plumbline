@@ -6,7 +6,7 @@ import { isObject, isStringArray, parsedOrIssue } from './json.js';
  * `relation` array of strings and a `target` object whose `namespace` is
  * either `android_app` (then `package_name` and `sha256_cert_fingerprints`
  * are required) or `web` (then `site` is required). See
- * https://developers.google.com/digital-asset-links/v1/statements
+ * https://developers.google.com/digital-asset-links/v1/statements.
  */
 function validateStatement(
   statement: unknown,

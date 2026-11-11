@@ -41,13 +41,13 @@ const NON_TEXT =
 /** Returns the text a visitor reads in `html`, with whitespace collapsed. */
 export function visibleText(html: string): string {
   return html
-    .replace(/<!--[\s\S]*?-->/g, ' ')
-    .replace(NON_TEXT, ' ')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&(?:nbsp|amp|lt|gt|quot|#39);/gi, (entity) => {
+    .replaceAll(/<!--[\s\S]*?-->/g, ' ')
+    .replaceAll(NON_TEXT, ' ')
+    .replaceAll(/<[^>]*>/g, ' ')
+    .replaceAll(/&(?:nbsp|amp|lt|gt|quot|#39);/gi, (entity) => {
       return ENTITIES[entity.toLowerCase()] ?? ' ';
     })
-    .replace(/\s+/g, ' ')
+    .replaceAll(/\s+/g, ' ')
     .trim();
 }
 
@@ -94,7 +94,7 @@ export interface Keyword {
 export function topKeywords(text: string, limit = 5): Keyword[] {
   const counts = new Map<string, number>();
   for (const raw of wordsOf(text)) {
-    const word = raw.toLowerCase().replace(/^['’-]+|['’-]+$/g, '');
+    const word = raw.toLowerCase().replaceAll(/^['’-]+|['’-]+$/g, '');
     if (
       word.length < 3 ||
       STOP_WORDS.has(word) ||
@@ -288,7 +288,7 @@ export type AnchorProblem = 'empty' | 'generic';
 /** Classifies one anchor; null when its text is descriptive. */
 export function anchorProblem(anchor: AnchorInfo): AnchorProblem | null {
   const shown = [anchor.text, anchor.label, anchor.imageAlt, anchor.title]
-    .map((value) => value.replace(/\s+/g, ' ').trim())
+    .map((value) => value.replaceAll(/\s+/g, ' ').trim())
     .find((value) => value !== '');
   if (shown === undefined) {
     return 'empty';

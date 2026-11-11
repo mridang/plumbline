@@ -14,15 +14,14 @@ export type HubNamespace = DurableObjectNamespace<UserHub>;
 /** Wakes a person's hub after facts were recorded. */
 export class Broadcaster {
   /**
-   * @param hubs The hub namespace, one object per person id.
+   * @param hubs - The hub namespace, one object per person id.
    */
   constructor(private readonly hubs: HubNamespace) {}
 
   /**
    * Wake the person's hub. The facts are already recorded when this runs,
    * so a hub that cannot be reached is logged and never fails the caller.
-   *
-   * @param userId The person whose log grew.
+   * @param userId - The person whose log grew.
    */
   async notify(userId: string): Promise<void> {
     try {

@@ -36,8 +36,8 @@ const scanOf = (
   status: 200,
   total: hints.length,
   hints,
-  startedAt: 1_000,
-  finishedAt: 3_500,
+  startedAt: 1000,
+  finishedAt: 3500,
   ...extra,
 });
 

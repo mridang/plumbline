@@ -24,7 +24,7 @@ async function assertPublicHost(
   if (options.allowPrivate) {
     return;
   }
-  const host = url.hostname.replace(/^\[|\]$/g, '');
+  const host = url.hostname.replaceAll(/^\[|\]$/g, '');
   const addresses = await dns.lookup(host, { all: true });
   const refused = addresses.find((entry) => !isPublicAddress(entry.address));
   if (refused) {

@@ -253,10 +253,12 @@ describe('handleDeployment of the live site', () => {
       (c) => c.method === 'POST' && c.path.endsWith('/issues'),
     );
     // One issue for each check the rules ask for; the one they turned off has none.
-    expect(issues.map((c) => String(c.body['body']).split('\n')[0])).toEqual([
-      '<!-- plumbline:site.test:seo-links -->',
-      '<!-- plumbline:site.test:dnssec-valid -->',
-    ]);
+    expect(issues.map((c) => String(c.body['body']).split('\n', 1)[0])).toEqual(
+      [
+        '<!-- plumbline:site.test:seo-links -->',
+        '<!-- plumbline:site.test:dnssec-valid -->',
+      ],
+    );
     const [links, dns] = issues.map((c) => String(c.body['body']));
     expect(links).toContain('**error**: links');
     expect(links).toContain('Rules from `plumbline.yaml`.');
@@ -689,7 +691,7 @@ describe('handleDeployment, the life of the issues', () => {
       (c) => c.method === 'POST' && c.path.endsWith('/issues'),
     );
     expect(
-      opened.map((c) => String(c.body['body']).split('\n')[0]).toSorted(),
+      opened.map((c) => String(c.body['body']).split('\n', 1)[0]).toSorted(),
     ).toEqual([
       '<!-- plumbline:other.test:seo-viewport -->',
       '<!-- plumbline:site.test:seo-viewport -->',
@@ -788,8 +790,8 @@ describe('handleDeployment, telling the repository', () => {
       fetcher,
       run: failing(),
     });
-    const sent = calls.filter((c) => c.path.endsWith('/dispatches'));
-    expect(sent[0]?.body['client_payload']).toMatchObject({
+    const sent = calls.find((c) => c.path.endsWith('/dispatches'));
+    expect(sent?.body['client_payload']).toMatchObject({
       environment: 'preview',
       url: 'https://pr-3.site.test/',
     });

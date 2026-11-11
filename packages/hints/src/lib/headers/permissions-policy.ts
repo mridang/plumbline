@@ -75,14 +75,14 @@ export function parsePermissionsPolicy(value: string): Map<string, string> {
   const policy = new Map<string, string>();
   for (const member of splitTopLevel(value)) {
     const equals = member.indexOf('=');
-    if (equals < 0) {
+    if (equals === -1) {
       continue;
     }
     const feature = member.slice(0, equals).trim().toLowerCase();
     let allowlist = member.slice(equals + 1).trim();
     if (allowlist.startsWith('(')) {
       const close = allowlist.indexOf(')');
-      const inner = allowlist.slice(1, close < 0 ? undefined : close);
+      const inner = allowlist.slice(1, close === -1 ? undefined : close);
       allowlist = `(${inner.trim().split(/\s+/).filter(Boolean).join(' ')})`;
     }
     if (!policy.has(feature)) {

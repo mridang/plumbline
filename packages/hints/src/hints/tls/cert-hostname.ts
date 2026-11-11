@@ -20,7 +20,7 @@ export async function checkCertHostname(
     const names = [
       result.peerCertificate.subject?.CN,
       ...(result.peerCertificate.subjectaltname ?? '').split(/,\s*/),
-    ].filter((name) => name);
+    ].filter(Boolean);
     report(
       `The domain name of your ${subject.owner} does *not* match the domain name on your ${subject.certificate} (${names.join(', ')}).`,
       `Requested host: ${target.host}\nSubject: CN=${result.peerCertificate.subject?.CN ?? '-'}\nSubject Alternative Name: ${result.peerCertificate.subjectaltname ?? '-'}`,

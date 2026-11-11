@@ -30,7 +30,7 @@ export function reportBody(scan: Readonly<Scan>): {
     outcomes: scan.hints.map((hint) => ({
       id: hint.id,
       status: hint.status,
-      ...(hint.reason !== undefined ? { reason: hint.reason } : {}),
+      ...(hint.reason === undefined ? {} : { reason: hint.reason }),
       findings: hint.findings,
     })),
   };

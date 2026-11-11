@@ -50,7 +50,7 @@ const TRACKING_PARAMS = new Set([
 function nameOf(pair: string): string {
   const raw = pair.split('=', 1)[0] ?? '';
   try {
-    return decodeURIComponent(raw.replace(/\+/g, ' '));
+    return decodeURIComponent(raw.replaceAll('+', ' '));
   } catch {
     return raw;
   }
@@ -74,7 +74,7 @@ export function canonicalUrl(input: URL): URL {
   const url = new URL(input.href);
   url.hash = '';
   url.hostname = url.hostname.replace(/\.+$/, '');
-  url.pathname = url.pathname.replace(/\/{2,}/g, '/');
+  url.pathname = url.pathname.replaceAll(/\/{2,}/g, '/');
   // The pairs are kept as they were written, not decoded and encoded again,
   // so a server that reads `+` and `%20` differently gets what was typed.
   const kept = url.search
@@ -84,7 +84,7 @@ export function canonicalUrl(input: URL): URL {
     .filter((pair) => !isTrackingParam(nameOf(pair)));
   kept.sort((a, b) => {
     const [x, y] = [nameOf(a), nameOf(b)];
-    return x < y ? -1 : x > y ? 1 : 0;
+    return x < y ? -1 : (x > y ? 1 : 0);
   });
   url.search = kept.join('&');
   return url;

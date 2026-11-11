@@ -34,14 +34,16 @@ describe('assetlinks-json', () => {
 
   it('reports a wrong content type', async () => {
     const problems = await runHint(hint, serve(valid, 'text/plain'));
-    expect(problems.map((p) => p.message).join()).toContain(
+    expect(problems.map((p) => p.message).join(',')).toContain(
       "served as 'text/plain'",
     );
   });
 
   it('reports invalid JSON', async () => {
     const problems = await runHint(hint, serve('nope'));
-    expect(problems.map((p) => p.message).join()).toContain('not valid JSON');
+    expect(problems.map((p) => p.message).join(',')).toContain(
+      'not valid JSON',
+    );
   });
 
   it('reports a malformed statement', async () => {
@@ -51,7 +53,7 @@ describe('assetlinks-json', () => {
         JSON.stringify([{ relation: ['r'], target: { namespace: 'web' } }]),
       ),
     );
-    expect(problems.map((p) => p.message).join()).toContain(
+    expect(problems.map((p) => p.message).join(',')).toContain(
       "is a web target but has no 'site'",
     );
   });

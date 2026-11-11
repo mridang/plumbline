@@ -23,7 +23,7 @@ const rpki = (table: Record<string, RpkiResult | Error>): RpkiClient => ({
 });
 
 const valid = (prefix: string): RpkiResult => ({
-  asn: 64500,
+  asn: 64_500,
   prefix,
   status: 'valid',
 });
@@ -39,7 +39,7 @@ describe('mail-rpki', () => {
 
   it('reports a route without a ROA', async () => {
     const client = rpki({
-      '192.0.2.10': { asn: 64500, prefix: '192.0.2.0/24', status: 'unknown' },
+      '192.0.2.10': { asn: 64_500, prefix: '192.0.2.0/24', status: 'unknown' },
       '2001:db8::10': valid('2001:db8::/32'),
     });
     const problems = await runMailHint(hint, { dns, rpki: client });
@@ -54,7 +54,7 @@ describe('mail-rpki', () => {
     const client = rpki({
       '192.0.2.10': valid('192.0.2.0/24'),
       '2001:db8::10': {
-        asn: 64501,
+        asn: 64_501,
         prefix: '2001:db8::/32',
         status: 'invalid',
       },

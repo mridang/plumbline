@@ -64,7 +64,7 @@ describe('opengraph-image-too-large', () => {
         '/i.svg': {
           status: 200,
           headers: { 'content-type': 'image/svg+xml' },
-          body: `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"><!--${'x'.repeat(600000)}--></svg>`,
+          body: `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"><!--${'x'.repeat(600_000)}--></svg>`,
         },
       }),
     );

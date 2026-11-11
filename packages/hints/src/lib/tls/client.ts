@@ -21,6 +21,7 @@ import type { CipherInfo, EphemeralKey } from './evaluate.js';
 export interface TlsTarget {
   host: string;
   port: number;
+
   /**
    * Set for a mail server: the connection starts as plain SMTP and is
    * upgraded with STARTTLS (RFC 3207) before the TLS handshake, as
@@ -190,7 +191,7 @@ export const tlsProbe: {
 export function targetFor(url: URL): TlsTarget {
   // `hostname` of an IPv6 URL still carries the brackets.
   return {
-    host: url.hostname.replace(/^\[|\]$/g, ''),
+    host: url.hostname.replaceAll(/^\[|\]$/g, ''),
     port: tlsProbe.port,
   };
 }

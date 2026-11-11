@@ -48,7 +48,7 @@ describe('validateLlmsTxt', () => {
     ]);
   });
   it('warns on H3 headings but ignores code fences', () => {
-    expect(msgs('# A\n> s\n### x').join()).toContain('Only H2');
+    expect(msgs('# A\n> s\n### x').join(',')).toContain('Only H2');
     expect(msgs('# A\n> s\n```\n# B\n```')).toEqual([
       'The file has no H2 section with a list of links.',
     ]);
@@ -70,7 +70,7 @@ describe('validateLlmsTxt', () => {
   });
   it('warns above 500 KB', () => {
     expect(
-      msgs(`# A\n> s\n## S\n- [a](https://a.com/x)\n${'x'.repeat(501000)}`)[0],
+      msgs(`# A\n> s\n## S\n- [a](https://a.com/x)\n${'x'.repeat(501_000)}`)[0],
     ).toContain('500 KB');
   });
 });

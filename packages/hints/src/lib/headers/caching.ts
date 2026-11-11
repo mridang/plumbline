@@ -154,7 +154,7 @@ export function noVarySearchFindings(value: string | null): Finding[] {
     return [finding('warning', "The 'No-Vary-Search' header is empty.")];
   }
   for (const member of members) {
-    const key = member.split(/[=;]/)[0]?.trim() ?? '';
+    const key = member.split(/[=;]/, 1)[0]?.trim() ?? '';
     if (!NO_VARY_SEARCH_KEYS.has(key)) {
       return [
         finding(

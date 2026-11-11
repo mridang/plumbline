@@ -134,8 +134,10 @@ describe('applyFilter', () => {
     const sorted = sortRows(applyFilter(ROWS, { status: null, paused: true }));
     const clustered = clusterRows(sorted);
     const repos = clustered.map((row) => row.repo);
-    expect(repos.join()).toBe(
-      [...new Set(repos)].flatMap((r) => repos.filter((x) => x === r)).join(),
+    expect(repos.join(',')).toBe(
+      [...new Set(repos)]
+        .flatMap((r) => repos.filter((x) => x === r))
+        .join(','),
     );
   });
 });

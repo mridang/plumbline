@@ -7,7 +7,7 @@
  * - `*`: public access
  * - echoes the requesting origin and allows credentials: universal access,
  *   which exposes the site to CSRF-style attacks
- * - anything else: restricted to specific origins
+ * - anything else: restricted to specific origins.
  */
 import { finding, type Finding } from './finding.js';
 
@@ -47,21 +47,24 @@ export function analyzeCors({
 
 export function corsFindings(input: CorsInput): Finding[] {
   switch (analyzeCors(input)) {
-    case 'universal':
+    case 'universal': {
       return [
         finding(
           'error',
           'Content is visible via cross-origin resource sharing (CORS) file or headers, and credentials can be sent. Your site could be vulnerable to CSRF attacks. If credentialed access is required from specific origins, ensure Access-Control-Allow-Origin can only be set to those origins, rather than reflecting the Origin header. If public non-credentialed access is required, set Access-Control-Allow-Origin to * and omit the Access-Control-Allow-Credentials header. Otherwise, omit both headers.',
         ),
       ];
-    case 'public':
+    }
+    case 'public': {
       return [
         finding(
           'hint',
           'Public content is visible via cross-origin resource sharing (CORS) Access-Control-Allow-Origin header.',
         ),
       ];
-    default:
+    }
+    default: {
       return [];
+    }
   }
 }

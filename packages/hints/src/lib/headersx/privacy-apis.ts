@@ -15,9 +15,8 @@ import { finding, type Finding } from '../headers/finding.js';
  * reports that the response takes part in attribution reporting (a privacy
  * signal worth surfacing) and warns when the registration is not valid JSON,
  * since the browser then silently ignores it.
- *
- * @param source the `Attribution-Reporting-Register-Source` value, or null.
- * @param trigger the `Attribution-Reporting-Register-Trigger` value, or null.
+ * @param source - The `Attribution-Reporting-Register-Source` value, or null.
+ * @param trigger - The `Attribution-Reporting-Register-Trigger` value, or null.
  */
 export function attributionReportingFindings(
   source: string | null,

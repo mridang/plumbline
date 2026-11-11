@@ -134,7 +134,8 @@ export async function signatureOf(
   }
   const text = findings
     .map(
-      (found) => `${found.id}\n${found.message.replace(/\d+(\.\d+)?/g, '#')}`,
+      (found) =>
+        `${found.id}\n${found.message.replaceAll(/\d+(\.\d+)?/g, '#')}`,
     )
     .toSorted()
     .join('\n\n');
@@ -347,7 +348,7 @@ export async function syncIssues(
   const reported = byCheck(reportedFindings(report.findings, report.level));
   const all = byCheck(report.findings);
   const stored = await issuesOfHost(db, repo, host);
-  const notRun = new Set(report.notRun ?? []);
+  const notRun = new Set(report.notRun);
 
   for (const [check, found] of reported) {
     try {

@@ -1,7 +1,7 @@
 /**
  * The JSON Schema of `plumbline.yaml`.
  *
- *   GET /schemas/plumbline.schema.json → 200 the schema, 304 when `If-None-Match` is its ETag
+ *   GET /schemas/plumbline.schema.json → 200 the schema, 304 when `If-None-Match` is its ETag.
  *
  * A document for editors, not part of the REST contract, so it lives outside
  * `/api` (the `api-design` skill) and is not in `openapi.json`. The behaviour is

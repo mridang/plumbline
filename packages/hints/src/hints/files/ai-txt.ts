@@ -5,7 +5,7 @@ import { checkFile } from './shared.js';
 
 /**
  * Checks that /ai.txt is valid in the aitxt.ing or Spawning format.
- * Source: https://llmstxtvalidator.dev
+ * Source: https://llmstxtvalidator.dev.
  */
 export default defineHint({
   id: 'ai-txt',

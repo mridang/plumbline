@@ -39,7 +39,7 @@ describe('stripJsonComments', () => {
   });
 
   it('keeps an escaped quote inside a string', () => {
-    expect(JSON.parse(stripJsonComments('{"a": "q\\"//z"}'))).toEqual({
+    expect(JSON.parse(stripJsonComments(String.raw`{"a": "q\"//z"}`))).toEqual({
       a: 'q"//z',
     });
   });

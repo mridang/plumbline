@@ -48,10 +48,9 @@ describe('moveFocus', () => {
   const press = (key: string, active: number) => {
     const focused: number[] = [];
     const tabs = [0, 1, 2].map((n) => {
-      const element = {
+      return {
         focus: () => focused.push(n),
       } as unknown as HTMLElement;
-      return element;
     });
     Object.defineProperty(globalThis, 'document', {
       value: { activeElement: tabs[active] },

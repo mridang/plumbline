@@ -42,7 +42,7 @@ describe('collectRpki', () => {
     rpki.client = {
       async check(ip) {
         seen.push(ip);
-        return { asn: 64500, prefix: 'p', status: 'valid' };
+        return { asn: 64_500, prefix: 'p', status: 'valid' };
       },
     };
     expect((await webRpki('example.test')).map((e) => e.ip)).toEqual([
@@ -96,7 +96,7 @@ describe('collectRpki', () => {
       '2001:db8::1',
     ]);
     expect(most).toBe(3);
-    expect(finished[finished.length - 1]).toBe('192.0.2.1');
+    expect(finished.at(-1)).toBe('192.0.2.1');
   });
 
   it('skips only the addresses the validator fails on', async () => {

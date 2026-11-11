@@ -46,9 +46,11 @@ export function unchunk(bytes: Uint8Array): Uint8Array {
     if (end + 1 >= bytes.length) {
       throw new ProbeError('the response ended inside a chunk header');
     }
-    const size = parseInt(
-      new TextDecoder().decode(bytes.subarray(at, end)).split(';')[0]?.trim() ??
-        '',
+    const size = Number.parseInt(
+      new TextDecoder()
+        .decode(bytes.subarray(at, end))
+        .split(';', 1)[0]
+        ?.trim() ?? '',
       16,
     );
     if (!Number.isFinite(size) || size < 0) {
@@ -88,20 +90,24 @@ export function decode(
   try {
     switch (coding) {
       case 'gzip':
-      case 'x-gzip':
+      case 'x-gzip': {
         return new Uint8Array(
           gunzipSync(bytes, { maxOutputLength: MAX_BYTES }),
         );
-      case 'deflate':
+      }
+      case 'deflate': {
         return new Uint8Array(
           inflateSync(bytes, { maxOutputLength: MAX_BYTES }),
         );
-      case 'br':
+      }
+      case 'br': {
         return new Uint8Array(
           brotliDecompressSync(bytes, { maxOutputLength: MAX_BYTES }),
         );
-      default:
+      }
+      default: {
         return bytes;
+      }
     }
   } catch (error) {
     throw new ProbeError(
@@ -132,7 +138,7 @@ async function once(
 ): Promise<Response> {
   const tls = url.protocol === 'https:';
   const request: HttpRequest = {
-    host: url.hostname.replace(/^\[|\]$/g, ''),
+    host: url.hostname.replaceAll(/^\[|\]$/g, ''),
     port: url.port === '' ? (tls ? 443 : 80) : Number(url.port),
     tls,
     method,

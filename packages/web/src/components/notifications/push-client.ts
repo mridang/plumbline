@@ -81,8 +81,8 @@ export class PushError extends Error {
 
 /** Read the server's answer, or throw its refusal. */
 async function checked(response: Response): Promise<Response> {
-  if (response.status === 401 && typeof window !== 'undefined') {
-    window.location.assign('/login');
+  if (response.status === 401 && globalThis.window !== undefined) {
+    globalThis.location.assign('/login');
   }
   if (!response.ok) {
     throw await problemError(response);
@@ -117,8 +117,7 @@ export async function currentSubscription(
 /**
  * Turn notifications on for this browser: ask permission, subscribe with the
  * server's key and register the subscription for the signed-in person.
- *
- * @throws {@link PushError} when permission is refused.
+ * @throws {@link PushError} When permission is refused.
  */
 export async function enablePush(host: PushHost): Promise<BrowserSubscription> {
   const permission =
@@ -180,8 +179,7 @@ export async function disablePush(host: PushHost): Promise<void> {
 
 /**
  * Send this browser a test notification.
- *
- * @throws {@link PushError} when this browser has no subscription.
+ * @throws {@link PushError} When this browser has no subscription.
  */
 export async function sendTest(host: PushHost): Promise<void> {
   const subscription = await currentSubscription(host);
@@ -219,9 +217,9 @@ export function browserCapabilities(): PushCapabilities {
     maxTouchPoints: navigator.maxTouchPoints,
     standalone:
       (navigator as { standalone?: boolean }).standalone === true ||
-      window.matchMedia('(display-mode: standalone)').matches,
+      globalThis.matchMedia('(display-mode: standalone)').matches,
     hasServiceWorker: 'serviceWorker' in navigator,
-    hasPushManager: 'PushManager' in window,
-    hasNotification: 'Notification' in window,
+    hasPushManager: 'PushManager' in globalThis,
+    hasNotification: 'Notification' in globalThis,
   };
 }

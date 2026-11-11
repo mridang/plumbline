@@ -91,8 +91,9 @@ function parseSClient(args: readonly string[]): {
     const arg = args[i] ?? '';
     const next = args[i + 1] ?? '';
     switch (arg) {
-      case 's_client':
+      case 's_client': {
         break;
+      }
       case '-connect': {
         const match = /^\[?([^\]]+?)\]?:(\d+)$/.exec(next);
         host = match?.[1] ?? '';
@@ -100,28 +101,34 @@ function parseSClient(args: readonly string[]): {
         i += 1;
         break;
       }
-      case '-servername':
+      case '-servername': {
         servername = next;
         i += 1;
         break;
-      case '-starttls':
+      }
+      case '-starttls': {
         starttls = next === 'smtp' ? 'smtp' : undefined;
         i += 1;
         break;
-      case '-sess_out':
+      }
+      case '-sess_out': {
         sessionOut = next;
         i += 1;
         break;
-      case '-sess_in':
+      }
+      case '-sess_in': {
         sessionIn = next;
         i += 1;
         break;
-      case '-early_data':
+      }
+      case '-early_data': {
         earlyDataFile = next;
         i += 1;
         break;
-      default:
+      }
+      default: {
         flags.push(arg);
+      }
     }
   }
   return {
@@ -138,7 +145,7 @@ function parseSClient(args: readonly string[]): {
 
 /** A name for a session file the probe keeps: the path with what is not a letter or digit made safe. */
 function sessionName(path: string): string {
-  return path.replace(/[^A-Za-z0-9]/g, '_').slice(-80);
+  return path.replaceAll(/[^A-Za-z0-9]/g, '_').slice(-80);
 }
 
 /** Replaces the network clients of the checks, once. */
@@ -403,7 +410,7 @@ function install(): void {
         ? { sessionOut: sessionName(parsed.sessionOut) }
         : {}),
       ...(parsed.sessionIn ? { sessionIn: sessionName(parsed.sessionIn) } : {}),
-      ...(earlyData !== undefined ? { earlyData } : {}),
+      ...(earlyData === undefined ? {} : { earlyData }),
       input: options.input ?? [],
       delayMs: options.inputDelayMs ?? 0,
       timeoutMs: options.timeoutMs ?? 15_000,

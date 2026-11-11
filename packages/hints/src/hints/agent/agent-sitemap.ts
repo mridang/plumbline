@@ -1,7 +1,7 @@
 import { agentHint } from './define-agent-hint.js';
 
 /**
- * isitagentready.com check. Discoverability: a sitemap lets agents enumerate pages without crawling.
+ * Isitagentready.com check. Discoverability: a sitemap lets agents enumerate pages without crawling.
  * The logic lives in `src/lib/agent`; failures are reported as advice.
  */
 export default agentHint({

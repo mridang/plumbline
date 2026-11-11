@@ -13,11 +13,13 @@ interface CloudflareEnv extends Cloudflare.Env {
   SESSION_SECRET: string;
   /** Secret that signs scan tokens. Required: with none, scans are refused. */
   SCAN_SECRET: string;
+
   /**
-   * Public origin, e.g. https://plumbline.apps.mrida.ng. Optional; derived
+   * Public origin, e.g. Https://plumbline.apps.mrida.ng. Optional; derived
    * from the request when unset (local dev).
    */
   APP_URL?: string;
+
   /**
    * The GitHub App: its numeric id, its URL name, its OAuth client id and
    * secret, its private key (PKCS#1 or PKCS#8 PEM) and the secret GitHub signs

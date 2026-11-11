@@ -1,4 +1,5 @@
 /* eslint-disable tailwindcss/no-custom-classname -- the widget's classes are defined in src/views/styles.ts, not in a CSS file. */
+
 /**
  * @packageDocumentation
  *
@@ -147,17 +148,20 @@ export function ReportScreen({
   const body = (() => {
     switch (state.phase) {
       case 'connecting':
-      case 'waiting':
+      case 'waiting': {
         return (
           <LoadingCard
             noun="the report"
             request={state.phase === 'waiting' ? state.request : undefined}
           />
         );
-      case 'failed':
+      }
+      case 'failed': {
         return <MessageCard reason={state.reason} message={state.message} />;
-      case 'ready':
+      }
+      case 'ready': {
         return <ReportCard data={state.data} onOpenLink={onOpenLink} />;
+      }
     }
   })();
   return (

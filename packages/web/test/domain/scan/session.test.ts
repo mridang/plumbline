@@ -142,10 +142,13 @@ describe('runScan', () => {
   it('shows the problem when the address or the run is refused', async () => {
     const refused = (status: number, detail: string): typeof fetch =>
       (async () =>
-        new Response(JSON.stringify({ detail }), {
-          status,
-          headers: { 'content-type': 'application/problem+json' },
-        })) as typeof fetch;
+        Response.json(
+          { detail },
+          {
+            status,
+            headers: { 'content-type': 'application/problem+json' },
+          },
+        )) as typeof fetch;
     await expect(
       runScan(
         'x',
@@ -158,12 +161,14 @@ describe('runScan', () => {
         'x',
         { onStart: () => undefined, onOutcome: () => undefined },
         {
-          transport: transport(
-            () =>
-              new Response(JSON.stringify({ detail: 'Not available.' }), {
+          transport: transport(() =>
+            Response.json(
+              { detail: 'Not available.' },
+              {
                 status: 503,
                 headers: { 'content-type': 'application/problem+json' },
-              }),
+              },
+            ),
           ),
         },
       ),

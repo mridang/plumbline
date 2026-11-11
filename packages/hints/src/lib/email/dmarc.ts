@@ -45,7 +45,7 @@ const URI_SIZE = /^[0-9]+[kmgtKMGT]?$/u;
 const KEYWORD = /^[A-Za-z0-9-]*[A-Za-z0-9]$/u;
 
 /** Trims spaces only; DMARC's grammar allows no other whitespace. */
-const trimSpaces = (text: string): string => text.replace(/^ +| +$/gu, '');
+const trimSpaces = (text: string): string => text.replaceAll(/^ +| +$/gu, '');
 
 /** Validates one `dmarc-uri`: a URI with an optional `!size` limit. */
 function isValidUri(uri: string): boolean {
@@ -99,18 +99,20 @@ function setDirective(
       }
       return true;
     }
-    case 'psd':
+    case 'psd': {
       if (!/^[ynuYNU]$/u.test(value)) {
         return false;
       }
       directives.psd = value.toLowerCase() as 'y' | 'n' | 'u';
       return true;
-    case 't':
+    }
+    case 't': {
       if (!/^[ynYN]$/u.test(value)) {
         return false;
       }
       directives.testing = value.toLowerCase() as 'y' | 'n';
       return true;
+    }
     case 'rua':
     case 'ruf': {
       const uris = parseUriList(value);
@@ -125,18 +127,20 @@ function setDirective(
       return true;
     }
     case 'adkim':
-    case 'aspf':
+    case 'aspf': {
       if (!/^[rsRS]$/u.test(value)) {
         return false;
       }
       directives[tag] = value.toLowerCase() as 'r' | 's';
       return true;
-    case 'ri':
+    }
+    case 'ri': {
       if (!/^[0-9]+$/u.test(value)) {
         return false;
       }
       directives.ainterval = value;
       return true;
+    }
     case 'fo': {
       const options = parseColonList(value, (item) => /^[01dsDS]$/u.test(item));
       if (!options) {
@@ -153,14 +157,16 @@ function setDirective(
       directives.rfmt = formats;
       return true;
     }
-    case 'pct':
+    case 'pct': {
       if (!/^[0-9]{1,3}$/u.test(value)) {
         return false;
       }
       directives.percent = value;
       return true;
-    default:
+    }
+    default: {
       return false;
+    }
   }
 }
 
@@ -178,7 +184,7 @@ export function parseDmarc(record: string): DmarcRecord | null {
   const directives: DmarcDirectives = {};
   const pieces = rest === '' ? [] : rest.split(';').map(trimSpaces);
   // One trailing separator is allowed, which leaves an empty last piece.
-  if (pieces.length > 0 && pieces[pieces.length - 1] === '') {
+  if (pieces.length > 0 && pieces.at(-1) === '') {
     pieces.pop();
   }
   const seen = new Set<string>();

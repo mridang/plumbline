@@ -30,7 +30,7 @@ describe('ads-txt', () => {
       hint,
       serve('example.com, 1, DIRECT', 'text/html; charset=utf-8'),
     );
-    expect(problems.map((p) => p.message).join()).toContain(
+    expect(problems.map((p) => p.message).join(',')).toContain(
       "served as 'text/html'",
     );
   });
@@ -46,7 +46,7 @@ describe('ads-txt', () => {
 
   it('reports an invalid relationship', async () => {
     const problems = await runHint(hint, serve('example.com, 1, PARTNER'));
-    expect(problems.map((p) => p.message).join()).toContain(
+    expect(problems.map((p) => p.message).join(',')).toContain(
       'must be DIRECT or RESELLER',
     );
   });

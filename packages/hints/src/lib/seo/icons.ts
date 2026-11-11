@@ -27,7 +27,7 @@ export function getIconLinks(doc: DocumentLike): IconLink[] {
 
 /** The path of an icon URL without query string or fragment, lower-cased. */
 function pathOf(href: string): string {
-  return href.split(/[?#]/)[0].toLowerCase();
+  return href.split(/[?#]/, 1)[0].toLowerCase();
 }
 
 /** True for an SVG icon, by MIME type or file extension. */

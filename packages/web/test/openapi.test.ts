@@ -61,9 +61,9 @@ const routeFiles = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
     entry.isDirectory()
       ? routeFiles(join(dir, entry.name))
-      : entry.name === 'route.ts'
+      : (entry.name === 'route.ts'
         ? [join(dir, entry.name)]
-        : [],
+        : []),
   );
 
 /** The path a route file serves, with `[x]` written `{x}`. */
@@ -71,7 +71,7 @@ const pathOf = (file: string): string =>
   '/api/' +
   relative(API, file)
     .replace(/\/?route\.ts$/, '')
-    .replace(/\[([a-z_]+)\]/g, '{$1}');
+    .replaceAll(/\[([a-z_]+)\]/g, '{$1}');
 
 /**
  * The routes kept only so that an address still registered outside the code
@@ -270,7 +270,7 @@ describe('what the controllers do, against what the spec says', () => {
       const params = Object.fromEntries(names.map((name) => [name, 'x']));
       const answer = await handler(
         new Request(
-          `https://plumbline.test${path.replace(/\{[a-z_]+\}/g, 'x')}`,
+          `https://plumbline.test${path.replaceAll(/\{[a-z_]+\}/g, 'x')}`,
           {
             method,
             headers: { 'content-type': 'application/json' },

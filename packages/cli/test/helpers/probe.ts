@@ -1,5 +1,3 @@
-import { deflateSync, gzipSync } from 'node:zlib';
-
 import {
   ProbeClient,
   type ProbeTransport,
@@ -49,8 +47,6 @@ export function chunked(...pieces: string[]): Buffer {
     `${pieces.map((piece) => `${Buffer.byteLength(piece).toString(16)}\r\n${piece}\r\n`).join('')}0\r\n\r\n`,
   );
 }
-
-export { deflateSync, gzipSync };
 
 /** A fake probe: `answer` decides each request; every request is kept in `sent`. */
 export function fakeProbe(
@@ -105,3 +101,5 @@ export function handshakeAnswer(
     compression: false,
   };
 }
+
+export { deflateSync, gzipSync } from 'node:zlib';

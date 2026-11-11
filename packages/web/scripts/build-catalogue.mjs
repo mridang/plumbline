@@ -18,8 +18,7 @@
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
 import extraHints from '@mridang/webhint-hint-plumbline';
 import { ALIASES } from '@mridang/webhint-hint-plumbline/dist/core/groups.js';
@@ -37,7 +36,7 @@ import {
   TAG_IDS,
 } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const root = resolve(import.meta.dirname, '..');
 const outDir = resolve(root, 'dist');
 
 /** A string field of `docs`, or the fallback. */

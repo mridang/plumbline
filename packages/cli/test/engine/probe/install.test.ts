@@ -58,7 +58,7 @@ rpki.client = {
     ) {
       throw new Error('down');
     }
-    return { asn: 64500, prefix: '192.0.2.0/24', status: 'valid' };
+    return { asn: 64_500, prefix: '192.0.2.0/24', status: 'valid' };
   },
 };
 
@@ -326,7 +326,7 @@ describe('the other checks', () => {
           '-sess_out',
           '/tmp/webhint-0rtt-ab/session.pem',
         ],
-        { input: ['', 'Q\n'], inputDelayMs: 500, timeoutMs: 20000 },
+        { input: ['', 'Q\n'], inputDelayMs: 500, timeoutMs: 20_000 },
       ),
     );
     expect(run).toEqual({

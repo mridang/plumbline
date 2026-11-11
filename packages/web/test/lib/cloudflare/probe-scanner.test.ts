@@ -93,10 +93,11 @@ function probe(options: ProbeOptions = {}) {
           ? await new Response(init.body as BodyInit).text()
           : '';
         switch (path) {
-          case '/v1/roots':
+          case '/v1/roots': {
             return new Response(
               '-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----\n',
             );
+          }
           case '/v1/http': {
             if (body.includes('path=/\n')) {
               asked.push(/host=(.*)/.exec(body)?.[1] ?? '');
@@ -118,18 +119,19 @@ function probe(options: ProbeOptions = {}) {
               httpAnswer(404, [['Content-Type', 'text/plain']], 'no'),
             );
           }
-          case '/v1/handshakes':
-            return new Response(
-              JSON.stringify({
-                results: body
-                  .split('--\n')
-                  .map(() => ({ error: 'handshake failed: no answer' })),
-              }),
-            );
-          case '/v1/connect':
+          case '/v1/handshakes': {
+            return Response.json({
+              results: body
+                .split('--\n')
+                .map(() => ({ error: 'handshake failed: no answer' })),
+            });
+          }
+          case '/v1/connect': {
             return new Response('{"reachable":false}');
-          default:
+          }
+          default: {
             return new Response('{"error":"not here"}', { status: 502 });
+          }
         }
       },
     }),
@@ -159,9 +161,12 @@ const realFetch = globalThis.fetch;
 beforeEach(() => {
   // The checks ask a DNS-over-HTTPS resolver for names; the tests never touch the internet.
   globalThis.fetch = (async () =>
-    new Response(JSON.stringify({ Status: 3, Answer: [] }), {
-      headers: { 'content-type': 'application/dns-json' },
-    })) as typeof fetch;
+    Response.json(
+      { Status: 3, Answer: [] },
+      {
+        headers: { 'content-type': 'application/dns-json' },
+      },
+    )) as typeof fetch;
 });
 
 afterEach(() => {
@@ -182,19 +187,16 @@ describe('ProbeScanner, a scan', () => {
     );
     const out = await lines(response);
     expect(out[0]).toMatchObject({ type: 'ready' });
-    expect(out[out.length - 1]).toEqual({ type: 'end' });
+    expect(out.at(-1)).toEqual({ type: 'end' });
     const done = out.filter((line) => line.type === 'done');
     expect(done.length).toBeGreaterThan(250);
     expect(
       done.find((line) => line.outcome?.id === 'alt-svc')?.outcome?.status,
     ).toBe('passed');
     // Only the network is asked of the probe: pages and files, handshakes, connection tests.
-    expect([...new Set(log.map((line) => line.split(' ')[2]))].sort()).toEqual([
-      '/healthz',
-      '/v1/connect',
-      '/v1/handshakes',
-      '/v1/http',
-    ]);
+    expect(
+      [...new Set(log.map((line) => line.split(' ', 3)[2]))].sort(),
+    ).toEqual(['/healthz', '/v1/connect', '/v1/handshakes', '/v1/http']);
   });
 
   it('breaks the stream when the probe is down, so whoever reads it knows to try again', async () => {
@@ -385,7 +387,7 @@ describe('ProbeScanner, the job of the queue', () => {
       init?: RequestInit,
     ) =>
       String(input).includes('cloudflare-dns.com')
-        ? new Response(JSON.stringify({ Status: 3, Answer: [] }))
+        ? Response.json({ Status: 3, Answer: [] })
         : github(input, init)) as typeof fetch;
     return { db, make, requested };
   };
@@ -412,7 +414,7 @@ describe('ProbeScanner, the job of the queue', () => {
     const { make } = await setup();
     const { container, log } = probe();
     await make(container).fetch(post());
-    expect(log.filter((line) => line.startsWith('idle')).at(-1)).toBe(
+    expect(log.findLast((line) => line.startsWith('idle'))).toBe(
       `idle ${AFTER_JOB_IDLE_MS}`,
     );
   });

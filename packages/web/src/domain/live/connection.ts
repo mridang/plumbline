@@ -114,9 +114,9 @@ export function browserEnvironment(): Environment {
     visible: () => document.visibilityState === 'visible',
     onVisibilityChange: (handler) =>
       listen(document, 'visibilitychange', handler),
-    onPageHide: (handler) => listen(window, 'pagehide', handler),
+    onPageHide: (handler) => listen(globalThis, 'pagehide', handler),
     onPageShow: (handler) =>
-      listen<PageTransitionEvent>(window, 'pageshow', (event) =>
+      listen<PageTransitionEvent>(globalThis, 'pageshow', (event) =>
         handler(event.persisted),
       ),
     setTimeout: (handler, ms) => setTimeout(handler, ms),

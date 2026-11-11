@@ -205,11 +205,13 @@ async function deploymentsOf(
           and(
             eq(suiteRuns.user_id, owner),
             inArray(suiteRuns.host, group),
-            sql`${suiteRuns.id} = (
-              select max(r.id) from suite_runs r
-              where r.user_id = ${suiteRuns.user_id}
-                and r.host = ${suiteRuns.host}
-                and r.kind = 'deployment')`,
+            sql`
+              ${suiteRuns.id} = (
+                            select max(r.id) from suite_runs r
+                            where r.user_id = ${suiteRuns.user_id}
+                              and r.host = ${suiteRuns.host}
+                              and r.kind = 'deployment')
+            `,
           ),
         );
       for (const row of rows) {
@@ -326,6 +328,6 @@ export async function overviewOf(
       open_issues: repo === null ? 0 : (issues.get(repo) ?? 0),
     }))
     .toSorted((a, b) =>
-      a.repo === null ? 1 : b.repo === null ? -1 : a.repo.localeCompare(b.repo),
+      a.repo === null ? 1 : (b.repo === null ? -1 : a.repo.localeCompare(b.repo)),
     );
 }

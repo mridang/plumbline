@@ -2,7 +2,7 @@
 
 /** Counts characters the way a reader does (code points, not UTF-16 units). */
 export function charLength(text: string): number {
-  return Array.from(text).length;
+  return [...text].length;
 }
 
 /** True when the text starts with an `http://` or `https://` URL. */
@@ -12,7 +12,7 @@ export function startsWithUrl(text: string): boolean {
 
 /** Collapses case and whitespace so two texts can be compared. */
 export function normalizeText(text: string): string {
-  return text.trim().replace(/\s+/g, ' ').toLowerCase();
+  return text.trim().replaceAll(/\s+/g, ' ').toLowerCase();
 }
 
 /** Words that are naturally repeated and never count as stuffing. */

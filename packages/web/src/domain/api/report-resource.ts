@@ -24,12 +24,12 @@ const STATUSES: readonly OutcomeStatus[] = [
 /** How serious a finding is. */
 type FindingLevel = 'error' | 'warning' | 'hint' | 'information';
 
-const LEVELS: readonly FindingLevel[] = [
+const LEVELS: ReadonlySet<FindingLevel> = new Set([
   'error',
   'warning',
   'hint',
   'information',
-];
+]);
 
 /** A page a finding points to for more on the problem or its fix. */
 export interface StoredLink {
@@ -123,7 +123,7 @@ function findingOf(raw: unknown): StoredFinding | undefined {
   if (
     message === undefined ||
     resource === undefined ||
-    !LEVELS.includes(level as FindingLevel)
+    !LEVELS.has(level as FindingLevel)
   ) {
     return undefined;
   }
@@ -136,10 +136,10 @@ function findingOf(raw: unknown): StoredFinding | undefined {
     resource,
     message,
     level: level as FindingLevel,
-    ...(snippet !== undefined ? { snippet } : {}),
-    ...(language !== undefined ? { language } : {}),
-    ...(line !== undefined ? { line } : {}),
-    ...(column !== undefined ? { column } : {}),
+    ...(snippet === undefined ? {} : { snippet }),
+    ...(language === undefined ? {} : { language }),
+    ...(line === undefined ? {} : { line }),
+    ...(column === undefined ? {} : { column }),
     ...(links.length > 0 ? { links } : {}),
   };
 }
@@ -176,7 +176,7 @@ function outcomeOf(raw: unknown, index: number): Parsed<StoredOutcome> {
     value: {
       id,
       status: status as OutcomeStatus,
-      ...(reason !== undefined ? { reason } : {}),
+      ...(reason === undefined ? {} : { reason }),
       findings,
     },
   };
@@ -200,9 +200,7 @@ export function parseReportInput(
   const errors: string[] = unknownFields(body, ['url', 'outcomes']);
   const rawUrl = body['url'];
   let url: string | undefined;
-  if (typeof rawUrl !== 'string') {
-    errors.push('url: required.');
-  } else {
+  if (typeof rawUrl === 'string') {
     try {
       const parsed = new URL(rawUrl);
       const sameSite =
@@ -218,6 +216,8 @@ export function parseReportInput(
     } catch {
       errors.push('url: not a valid address.');
     }
+  } else {
+    errors.push('url: required.');
   }
   const rawOutcomes = body['outcomes'];
   const outcomes: StoredOutcome[] = [];

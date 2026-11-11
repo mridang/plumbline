@@ -245,9 +245,34 @@ describe('the schema and the reader', () => {
 
   it('agree on every value a level can be written as', () => {
     const values: unknown[] = [
-      ...['off', 'on', 'warn', 'warning', 'error', 'loud', 'ERROR', ''],
-      ...[true, false, 0, 1, 2, 3, -1, 1.5, '0', '1', '2', '3'],
-      ...[['error'], [0], [true], [], ['error', 'off'], [['error']], null, {}],
+      'off',
+      'on',
+      'warn',
+      'warning',
+      'error',
+      'loud',
+      'ERROR',
+      '',
+      true,
+      false,
+      0,
+      1,
+      2,
+      3,
+      -1,
+      1.5,
+      '0',
+      '1',
+      '2',
+      '3',
+      ['error'],
+      [0],
+      [true],
+      [],
+      ['error', 'off'],
+      [['error']],
+      null,
+      {},
     ];
     for (const value of values) {
       const accepted = validate({ rules: { 'seo-viewport': value } });

@@ -11,6 +11,7 @@ export interface CookieRecord {
   domain: string;
   /** The Path attribute, `/` when absent (unknown for script cookies). */
   path: string;
+
   /**
    * `session` when the cookie has no expiry, `persistent` when it has one and
    * `unknown` for cookies read from `document.cookie`, which hides expiry.
@@ -57,7 +58,7 @@ export function parseSetCookie(
   now: number = Date.now(),
 ): CookieRecord | null {
   const [pair, ...attributes] = header.split(';').map((part) => part.trim());
-  const name = pair.split('=')[0]?.trim();
+  const name = pair.split('=', 1)[0]?.trim();
   if (!name || !pair.includes('=')) {
     return null;
   }
@@ -73,16 +74,18 @@ export function parseSetCookie(
     const [key, ...rest] = attribute.split('=');
     const value = rest.join('=').trim();
     switch (key.trim().toLowerCase()) {
-      case 'domain':
+      case 'domain': {
         if (value) {
           domain = normalizeHost(value);
         }
         break;
-      case 'path':
+      }
+      case 'path': {
         if (value.startsWith('/')) {
           path = value;
         }
         break;
+      }
       case 'expires': {
         const time = Date.parse(value);
         if (!Number.isNaN(time)) {
@@ -90,20 +93,24 @@ export function parseSetCookie(
         }
         break;
       }
-      case 'max-age':
+      case 'max-age': {
         if (/^-?\d+$/.test(value)) {
           maxAge = Number(value);
         }
         break;
-      case 'secure':
+      }
+      case 'secure': {
         secure = true;
         break;
-      case 'httponly':
+      }
+      case 'httponly': {
         httpOnly = true;
         break;
-      case 'samesite':
+      }
+      case 'samesite': {
         sameSite = value || null;
         break;
+      }
     }
   }
   if (!domainMatches(origin, domain)) {
@@ -153,7 +160,7 @@ export function cookiesFromDocument(
     .map((part) => part.trim())
     .filter((part) => part.includes('='))
     .map((part) => ({
-      name: part.split('=')[0].trim(),
+      name: part.split('=', 1)[0].trim(),
       domain: normalizeHost(pageHost),
       path: '/',
       lifetime: 'unknown' as const,

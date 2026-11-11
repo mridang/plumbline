@@ -10,7 +10,7 @@
  * - SameSite set to something invalid (or `None` without `Secure`)
  * - anti-CSRF cookie without SameSite
  * - session cookie without HttpOnly
- * - session cookie without Secure
+ * - session cookie without Secure.
  *
  * A "session" cookie is one whose name contains `login` or `sess`; an
  * anti-CSRF cookie has `csrf` in its name.
@@ -34,7 +34,7 @@ const IGNORED_COOKIES = new Set(['heroku-session-affinity']);
 export function parseSetCookie(raw: string): Cookie | null {
   const [pair = '', ...attributes] = raw.trim().split(';');
   const equals = pair.indexOf('=');
-  const name = (equals < 0 ? '' : pair.slice(0, equals)).trim();
+  const name = (equals === -1 ? '' : pair.slice(0, equals)).trim();
   if (name === '') {
     return null;
   }
@@ -46,26 +46,37 @@ export function parseSetCookie(raw: string): Cookie | null {
   };
   for (const attribute of attributes) {
     const at = attribute.indexOf('=');
-    const key = (at < 0 ? attribute : attribute.slice(0, at))
+    const key = (at === -1 ? attribute : attribute.slice(0, at))
       .trim()
       .toLowerCase();
     const value =
-      at < 0
+      at === -1
         ? ''
         : attribute
             .slice(at + 1)
             .trim()
             .toLowerCase();
-    if (key === 'secure') {
-      cookie.secure = true;
-    } else if (key === 'httponly') {
-      cookie.httpOnly = true;
-    } else if (key === 'samesite') {
-      if (['lax', 'strict', 'none'].includes(value)) {
-        cookie.sameSite = value;
-      } else {
-        cookie.sameSiteInvalid = true;
+    switch (key) {
+      case 'secure': {
+        cookie.secure = true;
+
+        break;
       }
+      case 'httponly': {
+        cookie.httpOnly = true;
+
+        break;
+      }
+      case 'samesite': {
+        if (['lax', 'strict', 'none'].includes(value)) {
+          cookie.sameSite = value;
+        } else {
+          cookie.sameSiteInvalid = true;
+        }
+
+        break;
+      }
+      // No default
     }
   }
   return cookie;

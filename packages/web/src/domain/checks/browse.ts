@@ -128,7 +128,7 @@ export function filterRules(
 
 /** The rules of a rule set, in catalogue order. */
 export function rulesOfSet(id: string): readonly Check[] {
-  const members = new Set(findRuleSet(id)?.members ?? []);
+  const members = new Set(findRuleSet(id)?.members);
   return CHECKS.filter((check) => members.has(check.id));
 }
 

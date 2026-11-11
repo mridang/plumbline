@@ -26,6 +26,7 @@ export interface HintSpec {
   reference?: string;
   /** Defaults to `site`, which runs once per scan. */
   scope?: HintScope;
+
   /**
    * JSON schema for the hint's options, as webhint expects it. Leave it out
    * for a hint without options.
@@ -150,4 +151,4 @@ export function defineHint(spec: HintSpec): HintDefinition {
   };
 }
 
-export { Category };
+export { Category } from '@hint/utils-types';

@@ -133,7 +133,7 @@ export const ogDescriptionMissing: MetaCheck = ({ meta }) =>
 /**
  * `opengraph-description-too-long`: an og:description over 160 characters may
  * be cut off. Reported as a warning. (The info-level "slightly long" rule
- * overlaps on 161 to 200.)
+ * overlaps on 161 to 200.).
  */
 export const ogDescriptionTooLong: MetaCheck = ({ meta }) => {
   const text = meta('og:description');

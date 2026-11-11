@@ -46,14 +46,25 @@ const emptyGroups = <T>(): Grouped<T> => ({
 
 /** Adds an item to the group for its rating. */
 function addRated<T>(groups: Grouped<T>, rating: Rating, item: T): void {
-  if (rating === 'good') {
-    groups.good.push(item);
-  } else if (rating === 'sufficient') {
-    groups.sufficient.push(item);
-  } else if (rating === 'phase-out') {
-    groups.phaseOut.push(item);
-  } else {
-    groups.bad.push(item);
+  switch (rating) {
+    case 'good': {
+      groups.good.push(item);
+
+      break;
+    }
+    case 'sufficient': {
+      groups.sufficient.push(item);
+
+      break;
+    }
+    case 'phase-out': {
+      groups.phaseOut.push(item);
+
+      break;
+    }
+    default: {
+      groups.bad.push(item);
+    }
   }
 }
 
@@ -216,11 +227,10 @@ export interface CipherOrderEvaluation {
  * The test does not apply when the server accepts nothing below
  * "sufficient" or only TLS 1.3 (`onlyTls13`), because TLS 1.3 suites are
  * all acceptable.
- *
- * @param accepted - the cipher suites accepted below TLS 1.3
- * @param choose - connects offering the ciphers in order and returns the
- *   cipher the server picked, or null when the connection failed
- * @param onlyTls13 - true when the server accepts no version below TLS 1.3
+ * @param accepted - The cipher suites accepted below TLS 1.3.
+ * @param choose - Connects offering the ciphers in order and returns the
+ * cipher the server picked, or null when the connection failed.
+ * @param onlyTls13 - True when the server accepts no version below TLS 1.3.
  */
 export async function evaluateCipherOrder(
   accepted: readonly CipherInfo[],

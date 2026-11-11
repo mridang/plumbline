@@ -78,7 +78,6 @@ function checkSubscription(
 
 /**
  * The person's own subscription named by the `{id}` of the path.
- *
  * @throws The 404 problem for an id that is not a subscription of theirs.
  */
 async function ownSubscription(

@@ -98,39 +98,65 @@ describe('guardedFetch', () => {
   beforeAll(async () => {
     server = createServer((req, res) => {
       const path = req.url ?? '/';
-      if (path === '/loop') {
-        res.writeHead(302, { location: '/loop' });
-        res.end();
-      } else if (path === '/to-ok') {
-        res.writeHead(301, { location: '/ok' });
-        res.end();
-      } else if (path === '/gzip') {
-        res.writeHead(200, {
-          'content-type': 'text/plain',
-          'content-encoding': 'gzip',
-        });
-        res.end(zlib.gzipSync('squeezed'));
-      } else if (path === '/big') {
-        res.writeHead(200);
-        res.end(Buffer.alloc(5000, 97));
-      } else if (path === '/slow') {
-        setTimeout(() => res.end('late'), 2000);
-      } else if (path === '/none') {
-        res.writeHead(204);
-        res.end();
-      } else if (path === '/cookies') {
-        res.writeHead(200, { 'set-cookie': ['a=1', 'b=2'] });
-        res.end('ok');
-      } else if (path === '/echo') {
-        const chunks: Buffer[] = [];
-        req.on('data', (c: Buffer) => chunks.push(c));
-        req.on('end', () => {
-          res.writeHead(200, { 'x-method': req.method ?? '' });
-          res.end(Buffer.concat(chunks));
-        });
-      } else {
-        res.writeHead(200, { 'content-type': 'text/plain' });
-        res.end('ok');
+      switch (path) {
+        case '/loop': {
+          res.writeHead(302, { location: '/loop' });
+          res.end();
+
+          break;
+        }
+        case '/to-ok': {
+          res.writeHead(301, { location: '/ok' });
+          res.end();
+
+          break;
+        }
+        case '/gzip': {
+          res.writeHead(200, {
+            'content-type': 'text/plain',
+            'content-encoding': 'gzip',
+          });
+          res.end(zlib.gzipSync('squeezed'));
+
+          break;
+        }
+        case '/big': {
+          res.writeHead(200);
+          res.end(Buffer.alloc(5000, 97));
+
+          break;
+        }
+        case '/slow': {
+          setTimeout(() => res.end('late'), 2000);
+
+          break;
+        }
+        case '/none': {
+          res.writeHead(204);
+          res.end();
+
+          break;
+        }
+        case '/cookies': {
+          res.writeHead(200, { 'set-cookie': ['a=1', 'b=2'] });
+          res.end('ok');
+
+          break;
+        }
+        case '/echo': {
+          const chunks: Buffer[] = [];
+          req.on('data', (c: Buffer) => chunks.push(c));
+          req.on('end', () => {
+            res.writeHead(200, { 'x-method': req.method ?? '' });
+            res.end(Buffer.concat(chunks));
+          });
+
+          break;
+        }
+        default: {
+          res.writeHead(200, { 'content-type': 'text/plain' });
+          res.end('ok');
+        }
       }
     });
     await new Promise<void>((resolve) =>

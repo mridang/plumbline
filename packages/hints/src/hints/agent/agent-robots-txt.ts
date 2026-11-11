@@ -1,7 +1,7 @@
 import { agentHint } from './define-agent-hint.js';
 
 /**
- * isitagentready.com check. Discoverability: agents read /robots.txt first to learn what they may crawl (RFC 9309).
+ * Isitagentready.com check. Discoverability: agents read /robots.txt first to learn what they may crawl (RFC 9309).
  * The logic lives in `src/lib/agent`; failures are reported as advice.
  */
 export default agentHint({

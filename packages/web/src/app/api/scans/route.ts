@@ -1,7 +1,7 @@
 /**
  * The scans.
  *
- *   POST /api/scans {url} → 201 + Location {id, url, expires_at}
+ *   POST /api/scans {url} → 201 + Location {id, url, expires_at}.
  *
  * The behaviour lives in the `scansCollection` controller; this file only
  * mounts it.

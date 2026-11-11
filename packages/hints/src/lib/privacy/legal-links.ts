@@ -113,7 +113,7 @@ export function findLegalLink(
     if (!href || href === '#' || isNotAPage(href)) {
       continue;
     }
-    const text = (element.textContent ?? '').replace(/\s+/g, ' ').trim();
+    const text = (element.textContent ?? '').replaceAll(/\s+/g, ' ').trim();
     if (text.length > MAX_TEXT_LENGTH) {
       continue;
     }

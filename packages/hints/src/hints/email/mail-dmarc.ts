@@ -61,21 +61,32 @@ export default defineHint({
         false,
         (name) => lookupTxt(dns.client, name),
       );
-      if (status === 'invalid_syntax') {
-        mail.report('Your DMARC policy is *not* syntactically correct.', {
-          severity: Severity.error,
-          codeSnippet: records[0],
-        });
-      } else if (status === 'invalid_p_sp') {
-        mail.report('Your DMARC policy is *not* sufficiently strict.', {
-          severity: Severity.error,
-          codeSnippet: records[0],
-        });
-      } else if (status === 'invalid_external') {
-        mail.report(
-          'The domain of the external mail address following `rua=` and/or `ruf=` has *no* (valid) authorisation record for receiving DMARC reports for the tested domain.',
-          { severity: Severity.warning, codeSnippet: records[0] },
-        );
+      switch (status) {
+        case 'invalid_syntax': {
+          mail.report('Your DMARC policy is *not* syntactically correct.', {
+            severity: Severity.error,
+            codeSnippet: records[0],
+          });
+
+          break;
+        }
+        case 'invalid_p_sp': {
+          mail.report('Your DMARC policy is *not* sufficiently strict.', {
+            severity: Severity.error,
+            codeSnippet: records[0],
+          });
+
+          break;
+        }
+        case 'invalid_external': {
+          mail.report(
+            'The domain of the external mail address following `rua=` and/or `ruf=` has *no* (valid) authorisation record for receiving DMARC reports for the tested domain.',
+            { severity: Severity.warning, codeSnippet: records[0] },
+          );
+
+          break;
+        }
+        // No default
       }
     });
   },

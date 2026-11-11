@@ -31,11 +31,11 @@ describe('parseCaa', () => {
   it('parses the generic format', () => {
     // flags 0, tag "issue", value "ca.test"
     const hex = '00056973737565' + Buffer.from('ca.test').toString('hex');
-    expect(parseCaa(`\\# 14 ${hex}`)).toEqual(rec('issue', 'ca.test'));
+    expect(parseCaa(String.raw`\# 14 ${hex}`)).toEqual(rec('issue', 'ca.test'));
   });
   it('rejects garbage and truncated generic data', () => {
     expect(parseCaa('???')).toBeNull();
-    expect(parseCaa('\\# 3 000a')).toBeNull();
+    expect(parseCaa(String.raw`\# 3 000a`)).toBeNull();
   });
 });
 

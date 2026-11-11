@@ -6,7 +6,7 @@
 
 /** The part of a DOM element these readers use. */
 interface ElementLike {
-  /** webhint's DOM wrapper exposes `nodeName`; browsers also have `tagName`. */
+  /** Webhint's DOM wrapper exposes `nodeName`; browsers also have `tagName`. */
   nodeName?: string;
   tagName?: string;
   getAttribute(name: string): string | null;
@@ -162,7 +162,7 @@ export async function mapWithConcurrency<T, R>(
   limit: number,
   fn: (item: T) => Promise<R>,
 ): Promise<R[]> {
-  const results: R[] = new Array<R>(items.length);
+  const results: R[] = Array.from({ length: items.length });
   let next = 0;
   const worker = async (): Promise<void> => {
     for (;;) {

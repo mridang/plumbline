@@ -28,14 +28,16 @@ describe('apple-app-site-association', () => {
 
   it('reports a wrong content type', async () => {
     const problems = await runHint(hint, at(EXPECTED, valid, 'text/plain'));
-    expect(problems.map((p) => p.message).join()).toContain(
+    expect(problems.map((p) => p.message).join(',')).toContain(
       "served as 'text/plain'",
     );
   });
 
   it('reports invalid JSON', async () => {
     const problems = await runHint(hint, at(EXPECTED, 'nope'));
-    expect(problems.map((p) => p.message).join()).toContain('not valid JSON');
+    expect(problems.map((p) => p.message).join(',')).toContain(
+      'not valid JSON',
+    );
   });
 
   it('reports a file declaring no known service', async () => {
@@ -43,13 +45,15 @@ describe('apple-app-site-association', () => {
       hint,
       at(EXPECTED, JSON.stringify({ x: 1 })),
     );
-    expect(problems.map((p) => p.message).join()).toContain(
+    expect(problems.map((p) => p.message).join(',')).toContain(
       'declares none of applinks',
     );
   });
 
   it('flags a file found only at the legacy location', async () => {
     const problems = await runHint(hint, at(LEGACY, valid));
-    expect(problems.map((p) => p.message).join()).toContain('legacy location');
+    expect(problems.map((p) => p.message).join(',')).toContain(
+      'legacy location',
+    );
   });
 });

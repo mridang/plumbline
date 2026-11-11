@@ -181,8 +181,8 @@ export async function consumeScans(
         attempt: message.attempts,
         error,
       });
-      await releasePending(deps.db, key, seq).catch((failure: unknown) =>
-        console.error('scan job lease not released', key, failure),
+      await releasePending(deps.db, key, seq).catch((error_: unknown) =>
+        console.error('scan job lease not released', key, error_),
       );
       message.retry({ delaySeconds: backoffSeconds(message.attempts) });
     }

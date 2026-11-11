@@ -5,7 +5,7 @@ import { checkFile } from './shared.js';
 
 /**
  * Checks that /llms.txt follows the llmstxt.org format.
- * Source: https://llmstxt.org
+ * Source: https://llmstxt.org.
  */
 export default defineHint({
   id: 'llms-txt',

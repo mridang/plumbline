@@ -37,6 +37,7 @@ export interface KnownSites {
    * be read (the sites it declared before are left alone).
    */
   readonly declared?: readonly string[] | null;
+
   /**
    * The hosts the Wrangler routes and the Website field suggest, or null when
    * they were not read (the fallback sites found before are left alone).

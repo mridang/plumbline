@@ -53,16 +53,16 @@ export const START_TIMEOUT_MS = 60_000;
 const RETRY_MS = 250;
 
 /** How long a container that has finished its job may stay up, in milliseconds. */
-export const AFTER_JOB_IDLE_MS = 5_000;
+export const AFTER_JOB_IDLE_MS = 5000;
 
 /** A probe call that takes longer than this is logged, with what it was about, in milliseconds. */
-export const SLOW_PROBE_MS = 3_000;
+export const SLOW_PROBE_MS = 3000;
 
 /** What a probe request is about, for a log: the route and the host, port and path it names. */
 export function aboutRequest(path: string, body: string): string {
   // For a batch, the first item stands for it.
   const fields = Object.fromEntries(
-    (body.split('--\n')[0] ?? '')
+    (body.split('--\n', 1)[0] ?? '')
       .split('\n')
       .map((line) => line.split(/=(.*)/s).slice(0, 2))
       .filter(([key]) =>

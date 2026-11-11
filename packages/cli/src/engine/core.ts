@@ -60,6 +60,7 @@ export interface ScanEnvironment {
   assertScannable(url: URL): Promise<void>;
   /** Puts in place what the checks reach the network through; returns the function that removes it. */
   install(): () => void;
+
   /**
    * Whether an error loading the page is the environment's own fault (the probe is down), not
    * the site's: such an error is thrown, so the scan is tried again and not recorded as a site

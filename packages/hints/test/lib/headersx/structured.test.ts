@@ -18,7 +18,7 @@ describe('topLevelMembers', () => {
   });
 
   it('returns null for an empty value', () => {
-    expect(topLevelMembers('   ')).toBeNull();
+    expect(topLevelMembers(' '.repeat(3))).toBeNull();
   });
 });
 

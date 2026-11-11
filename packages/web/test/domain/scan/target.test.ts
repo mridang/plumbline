@@ -55,7 +55,7 @@ describe('readTarget', () => {
 
   it.each([
     ['', 'Enter a domain or a URL to scan.'],
-    ['   ', 'Enter a domain or a URL to scan.'],
+    [' '.repeat(3), 'Enter a domain or a URL to scan.'],
     [`${'a'.repeat(2050)}.com`, 'That address is too long.'],
     ['https://exa mple.com', 'That is not a domain or a URL.'],
     ['ftp://example.com', 'Only http and https addresses can be scanned.'],

@@ -47,8 +47,7 @@ interface AgentScore {
 /**
  * Parses 'Agent readiness score 27/100, level 1 "Basic Web Presence".
  * Discoverability 50 (2/4); ...'.
- *
- * @param message The agent-score finding message.
+ * @param message - The agent-score finding message.
  * @returns The score, or `undefined` when the message has another shape.
  */
 function parseAgentScore(message: string): AgentScore | undefined {
@@ -129,11 +128,12 @@ function renderFinding(finding: Finding): string {
           : ''
       }</pre>`
     : '';
-  const docs = (finding.documentation ?? []).length
-    ? `<p class="docs">Further reading: ${(finding.documentation ?? [])
-        .map((d) => link(d.link, d.text))
-        .join(', ')}</p>`
-    : '';
+  const docs =
+    (finding.documentation ?? []).length > 0
+      ? `<p class="docs">Further reading: ${(finding.documentation ?? [])
+          .map((d) => link(d.link, d.text))
+          .join(', ')}</p>`
+      : '';
   return `<li class="finding"><span class="sev ${label}">${label}</span> <span class="msg">${escapeHtml(finding.message)}</span><div class="res">${link(finding.resource)}${where}</div>${code}${docs}</li>`;
 }
 
@@ -177,7 +177,7 @@ function renderHintHead(block: HintBlock): string {
   ].filter(Boolean);
   const meta =
     facts.length > 0
-      ? `<p class="muted">${escapeHtml(facts.join(' \u00b7 '))}</p>`
+      ? `<p class="muted">${escapeHtml(facts.join(' \u00B7 '))}</p>`
       : '';
   return `${description}${meta}${reference}${renderOrigins(info.origins)}${info.id.startsWith('extra/') ? '' : renderStockButtons(info.id)}`;
 }
@@ -207,7 +207,7 @@ function renderPassed(blocks: readonly HintBlock[]): string {
 
 /** Makes a section key safe to use inside an id attribute. */
 function anchor(key: string): string {
-  return `sec-${key.replace(/[^a-z0-9-]/gi, '-')}`;
+  return `sec-${key.replaceAll(/[^a-z0-9-]/gi, '-')}`;
 }
 
 /** Renders one section of the report. */
@@ -318,8 +318,7 @@ apply();
 
 /**
  * Renders the whole report.
- *
- * @param data Scan target, date, hints that ran and all findings.
+ * @param data - Scan target, date, hints that ran and all findings.
  * @returns A complete HTML document as a string.
  */
 export function generateReport(data: ReportData): string {

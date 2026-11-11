@@ -10,7 +10,7 @@ import { runHint } from '../../helpers/run-hint.js';
 const page = (body: (thirdParty: string, own: string) => string) => ({
   '/': (req: { headers: { host?: string } }) => {
     const host = req.headers.host ?? '';
-    const port = host.split(':')[1];
+    const port = host.split(':', 2)[1];
     return {
       headers: { 'content-type': 'text/html; charset=utf-8' },
       body: `<!doctype html><html lang="en"><head><title>t</title></head><body>${body(

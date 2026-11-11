@@ -153,7 +153,7 @@ export function altSvcFindings(value: string | null): Finding[] {
   }
   const services = value
     .split(',')
-    .map((service) => service.trim().split(';')[0]?.trim() ?? '')
+    .map((service) => service.trim().split(';', 1)[0]?.trim() ?? '')
     .filter(Boolean);
   const malformed = services.some((service) => !/^[^=]+=.+$/.test(service));
   if (services.length === 0 || malformed) {
@@ -164,7 +164,7 @@ export function altSvcFindings(value: string | null): Finding[] {
       ),
     ];
   }
-  const protocols = services.map((service) => service.split('=')[0]);
+  const protocols = services.map((service) => service.split('=', 1)[0]);
   return [
     finding(
       'hint',

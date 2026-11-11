@@ -9,7 +9,7 @@ const SERVICES = ['applinks', 'webcredentials', 'appclips'];
  * the modern `appIDs` array or the legacy single `appID`, and lists URL
  * matching rules under the modern `components` array or the legacy `paths`
  * array. Apple's reference:
- * https://developer.apple.com/documentation/xcode/supporting-associated-domains
+ * https://developer.apple.com/documentation/xcode/supporting-associated-domains.
  */
 function validateDetail(
   detail: unknown,
@@ -67,13 +67,13 @@ function validateApplinks(value: unknown, issues: FileIssue[]): void {
   }
   const details = value['details'];
   if (details !== undefined) {
-    if (!Array.isArray(details)) {
+    if (Array.isArray(details)) {
+      details.forEach((detail, i) => validateDetail(detail, i, issues));
+    } else {
       issues.push({
         severity: 'error',
         message: "'applinks.details' must be an array.",
       });
-    } else {
-      details.forEach((detail, i) => validateDetail(detail, i, issues));
     }
   }
 }

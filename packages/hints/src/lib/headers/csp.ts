@@ -15,7 +15,9 @@ import { headerValues, type HeaderBag } from './http-headers.js';
 export type CspMap = Map<string, Set<string>>;
 
 /** Thrown for a policy the parser rejects. */
-export class CspParseError extends Error {}
+export class CspParseError extends Error {
+  name = 'CspParseError';
+}
 
 const compareString = new Intl.Collator('en').compare;
 
@@ -79,7 +81,7 @@ function pathPartMatch(pathA: string, pathB: string): boolean {
  */
 export function parseCsp(cspList: string[]): CspMap {
   const cleanList = cspList.map((policy) =>
-    policy.replace(/[\r\n]/g, '').trim(),
+    policy.replaceAll(/[\r\n]/g, '').trim(),
   );
   if (cleanList.length === 0) {
     return new Map();
@@ -211,7 +213,7 @@ export function parseCspLoose(
     return result;
   }
   const parts = policy
-    .replace(/\n/g, ';')
+    .replaceAll('\n', ';')
     .trim()
     .split(';')
     .map((part) => part.trim())
@@ -291,12 +293,12 @@ const PASSIVE_DIRECTIVES = new Set(['img-src', 'media-src']);
 const NONCES_HASHES = ["'sha256-", "'sha384-", "'sha512-", "'nonce-"];
 
 /** Results Observatory counts as passing, besides the default one. */
-const PASSING: readonly CspResultCode[] = [
+const PASSING: ReadonlySet<CspResultCode> = new Set([
   'csp-implemented-with-no-unsafe',
   'csp-implemented-with-no-unsafe-default-src-none',
   'csp-implemented-with-unsafe-inline-in-style-src-only',
   'csp-implemented-with-insecure-scheme-in-passive-content-only',
-];
+]);
 
 const intersects = (
   set: Iterable<string>,
@@ -406,7 +408,7 @@ export function analyzeCsp(input: CspInput): CspAnalysis {
   // 'strict-dynamic' needs a nonce/hash; it then makes browsers ignore
   // scheme/host sources, 'self' and 'unsafe-inline'.
   if (hasNonceOrHash(scriptSrc) && scriptSrc.has("'strict-dynamic'")) {
-    for (const source of [...scriptSrc]) {
+    for (const source of scriptSrc) {
       if (
         DANGEROUSLY_BROAD.some((broad) => source.startsWith(broad)) ||
         source === "'self'" ||
@@ -488,7 +490,7 @@ export function analyzeCsp(input: CspInput): CspAnalysis {
 
   const decided: CspResultCode = result ?? 'csp-implemented-with-no-unsafe';
   analysis.result = decided;
-  if (PASSING.includes(decided)) {
+  if (PASSING.has(decided)) {
     analysis.pass = true;
     // A passing policy with a repeated report-uri/report-to is flagged.
     if (csp.has(DUPLICATE_WARNINGS_KEY)) {

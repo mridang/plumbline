@@ -26,6 +26,7 @@ export interface CheckDefinition {
   /** The hint id, for example `agent-robots-txt`. */
   id: string;
   category: AgentCategory;
+
   /**
    * False for checks reported but not counted: isitagentready.com counts
    * 4/1/2/8 checks in the first four categories, so the newest protocols

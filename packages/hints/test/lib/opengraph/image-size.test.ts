@@ -92,7 +92,7 @@ describe('sniffImage', () => {
       0,
       0,
       ...payload,
-      ...new Array(20).fill(0),
+      ...Array.from({ length: 20 }).fill(0),
     );
 
   it('reads a lossy WebP (VP8)', () => {

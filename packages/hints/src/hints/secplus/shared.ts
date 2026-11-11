@@ -13,12 +13,15 @@ import type { Page } from '../../core/page.js';
 /** Maps a library {@link FindingSeverity} onto webhint's {@link Severity}. */
 function toSeverity(severity: FindingSeverity): Severity {
   switch (severity) {
-    case 'error':
+    case 'error': {
       return Severity.error;
-    case 'warning':
+    }
+    case 'warning': {
       return Severity.warning;
-    case 'hint':
+    }
+    case 'hint': {
       return Severity.hint;
+    }
   }
 }
 

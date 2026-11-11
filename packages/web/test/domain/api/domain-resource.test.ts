@@ -78,7 +78,7 @@ describe('parseHost', () => {
   });
 
   it('refuses blank text', () => {
-    expect(parseHost('   ')).toEqual({
+    expect(parseHost(' '.repeat(3))).toEqual({
       ok: false,
       errors: ['host: required.'],
     });
@@ -142,7 +142,9 @@ describe('parseCheckNames', () => {
   });
 
   it('refuses more than 500 names', () => {
-    expect(parseCheckNames(Array(501).fill('accept-ch'), 'checks')).toEqual({
+    expect(
+      parseCheckNames(Array.from({ length: 501 }).fill('accept-ch'), 'checks'),
+    ).toEqual({
       ok: false,
       errors: ['checks: at most 500 entries.'],
     });

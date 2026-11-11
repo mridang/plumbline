@@ -32,7 +32,7 @@ export interface PrivacyArtifacts {
  * Maps Lighthouse's `resourceType` (a `RESOURCE_TYPES` value such as `Script`,
  * `Stylesheet`, `Image`) onto the lower-cased webhint resource type the privacy
  * library keys on. Only the types that matter to `classifyRequests` need an
- * explicit entry: its `ACTIVE_TYPES` set (which decides active vs. passive
+ * explicit entry: its `ACTIVE_TYPES` set (which decides active vs. Passive
  * mixed content) uses `script`, `css`, `html`, `font` and `manifest`. Anything
  * else is lower-cased as-is and treated as passive, which is the safe default
  * for an advisory hint.

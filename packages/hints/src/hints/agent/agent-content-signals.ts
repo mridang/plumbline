@@ -1,7 +1,7 @@
 import { agentHint } from './define-agent-hint.js';
 
 /**
- * isitagentready.com check. Bot access control: states whether content may be used for ai-train, search and ai-input.
+ * Isitagentready.com check. Bot access control: states whether content may be used for ai-train, search and ai-input.
  * The logic lives in `src/lib/agent`; failures are reported as advice.
  */
 export default agentHint({

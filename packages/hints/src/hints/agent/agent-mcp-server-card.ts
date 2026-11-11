@@ -1,7 +1,7 @@
 import { agentHint } from './define-agent-hint.js';
 
 /**
- * isitagentready.com check. Discovery: SEP-1649 / SEP-2127 server cards describe an MCP server before connecting.
+ * Isitagentready.com check. Discovery: SEP-1649 / SEP-2127 server cards describe an MCP server before connecting.
  * The logic lives in `src/lib/agent`; failures are reported as advice.
  */
 export default agentHint({

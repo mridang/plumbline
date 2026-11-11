@@ -3,7 +3,7 @@
  *
  *   POST /api/scans/{id}/run → 200, application/x-ndjson: `ready` with the
  *   page and the list of checks, a `done` line per check as it finishes, then
- *   `end`; or `unreachable` when the page did not answer
+ *   `end`; or `unreachable` when the page did not answer.
  *
  * The behaviour lives in the `scanRun` controller; this file only mounts it.
  */

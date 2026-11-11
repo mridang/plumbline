@@ -170,7 +170,7 @@ export function parseConfig(text: string, path: string): LoadedConfig {
   } catch (error) {
     const reason = String(error instanceof Error ? error.message : error);
     return empty(path, [
-      `${path} could not be read: ${reason.split('\n')[0] ?? reason}`,
+      `${path} could not be read: ${reason.split('\n', 1)[0] ?? reason}`,
     ]);
   }
   if (raw === null || raw === undefined) {

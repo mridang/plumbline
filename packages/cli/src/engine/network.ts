@@ -36,7 +36,7 @@ export function contentTypeOf(value: string | undefined): {
       .map((p) => p.trim())
       .find((p) => p.toLowerCase().startsWith('charset='))
       ?.slice('charset='.length)
-      .replace(/"/g, '')
+      .replaceAll('"', '')
       .toLowerCase() ?? '';
   return { mediaType: essence.trim().toLowerCase(), charset };
 }

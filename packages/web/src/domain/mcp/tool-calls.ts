@@ -360,7 +360,7 @@ const DOMAIN_TOOLS: Readonly<
 
 /** The arguments a tool takes, as one line the assistant can follow. */
 function usage(schema: JsonSchema): string {
-  const required = new Set(schema.required ?? []);
+  const required = new Set(schema.required);
   const names = Object.keys(schema.properties ?? {}).map((key) =>
     required.has(key) ? `${key} (required)` : key,
   );
@@ -376,7 +376,6 @@ type Checked = { readonly args: Args } | { readonly refusal: ToolResult };
  * The arguments of a call, checked against the tool's input schema. Arguments
  * that do not fit come back as an `isError` result naming each problem (the
  * spec lists input validation among tool execution errors).
- *
  * @throws {InvalidToolArguments} If `arguments` is not an object at all.
  */
 function checkedArguments(
@@ -400,8 +399,7 @@ function checkedArguments(
 
 /**
  * Execute a `tools/call` for `user`.
- *
- * @param openDatabase How the database is opened; tests pass their own.
+ * @param openDatabase - How the database is opened; tests pass their own.
  * @throws {UnknownTool} If no such tool exists.
  * @throws {InvalidToolArguments} If the request has no tool name, or its
  *   `arguments` is not an object.

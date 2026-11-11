@@ -129,7 +129,7 @@ describe('evaluateCipherOrder', () => {
     const offers: string[][] = [];
     const result = await evaluateCipherOrder(accepted, (offered) => {
       offers.push(offered.map((c) => c.standardName));
-      return Promise.resolve(offered[offered.length - 1]);
+      return Promise.resolve(offered.at(-1));
     });
     expect(result).toEqual({ status: 'good', violation: null });
     expect(offers).toEqual([
@@ -155,7 +155,7 @@ describe('evaluateCipherOrder', () => {
       [cipher(chacha), cipher(PHASE_OUT), cipher(GOOD)],
       (list) => {
         offered = list;
-        return Promise.resolve(list[list.length - 1]);
+        return Promise.resolve(list.at(-1));
       },
     );
     expect(offered.map((c) => c.standardName)).toEqual([

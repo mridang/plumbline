@@ -269,11 +269,11 @@ export async function checkDeployment(
     limits.maxSites,
   );
   // The sites are checked together: most of a check is waiting for the site.
-  const outcomes = await inBatches(
+  return await inBatches(
     sites,
     limits.concurrency,
     async (site): Promise<SiteOutcome> => {
-      const previous = (await latestRuns(db, userId, site.host, 1))[0];
+      const [previous] = await latestRuns(db, userId, site.host, 1);
       // A report is kept by commit: a commit that has been checked is not
       // checked again, however long ago, unless the rules changed (force). A
       // new commit is checked as soon as it is deployed.
@@ -293,5 +293,4 @@ export async function checkDeployment(
       );
     },
   );
-  return outcomes;
 }

@@ -13,7 +13,7 @@ describe('digestFindings', () => {
   });
 
   it('warns when the value is not a dictionary', () => {
-    const [f] = digestFindings('Repr-Digest', '   ');
+    const [f] = digestFindings('Repr-Digest', ' '.repeat(3));
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain('dictionary');
   });

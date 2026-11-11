@@ -46,6 +46,7 @@ export function RelativeTime({
 }: Readonly<{
   /** The moment, as an ISO timestamp. */
   at: string;
+
   /**
    * The server's clock when the page was made, in milliseconds. Leave it out
    * only where nothing is drawn on the server (a result that appears after a

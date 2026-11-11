@@ -66,7 +66,7 @@ export default defineHint({
                   return null;
                 }
                 const line =
-                  `${host} ${ip} ${result.prefix ?? ''} AS${result.asn}`.replace(
+                  `${host} ${ip} ${result.prefix ?? ''} AS${result.asn}`.replaceAll(
                     / +/gu,
                     ' ',
                   );

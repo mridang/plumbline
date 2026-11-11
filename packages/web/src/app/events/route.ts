@@ -3,7 +3,7 @@
  * events. A stream of its own protocol, not a REST resource, so it sits outside
  * `/api` (as the other streams of the sibling apps do).
  *
- *   GET /events → 200 text/event-stream (401 without a session)
+ *   GET /events → 200 text/event-stream (401 without a session).
  *
  * One stream per open dashboard, served by the person's `UserHub`. A client
  * that reconnects is replayed what it missed (`Last-Event-ID`, or `after`).

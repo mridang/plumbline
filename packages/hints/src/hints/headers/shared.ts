@@ -48,6 +48,7 @@ export interface Snippet {
   value?: string | string[] | null;
   /** The recommended value, shown as the header to add when none was sent. */
   suggest?: string;
+
   /**
    * The `<meta>` the policy was declared in. Webhint then derives the line,
    * column and code from the element, so no header line is added.

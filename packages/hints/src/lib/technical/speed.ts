@@ -137,10 +137,10 @@ export function imageFormatFindings(
   let legacy = 0;
   let modern = 0;
   for (const image of images) {
-    const formats = image.urls.map(imageFormat);
-    if (image.hasModernSource || formats.includes('modern')) {
+    const formats = new Set(image.urls.map(imageFormat));
+    if (image.hasModernSource || formats.has('modern')) {
       modern += 1;
-    } else if (formats.includes('legacy')) {
+    } else if (formats.has('legacy')) {
       legacy += 1;
     }
   }

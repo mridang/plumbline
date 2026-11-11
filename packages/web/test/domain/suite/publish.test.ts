@@ -518,7 +518,7 @@ describe('syncIssues: when the problem is gone', () => {
     await syncIssues(api, db, report([]));
     const back = await syncIssues(api, db, report([error]));
     expect(back.get('seo-viewport')).toBe('reopened');
-    const edit = requests.filter((r) => r.method === 'PATCH').at(-1);
+    const edit = requests.findLast((r) => r.method === 'PATCH');
     expect(edit?.body).toMatchObject({
       state: 'open',
       state_reason: 'reopened',

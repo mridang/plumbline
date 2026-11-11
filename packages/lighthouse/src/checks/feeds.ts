@@ -91,18 +91,18 @@ function fromHint(
 /** The three plugin-able feed-discovery checks. */
 export const feedsChecks: readonly AuditCheck[] = [
   fromHint(feedDiscoveryHint, (artifacts) =>
-    artifacts.MainDocumentContent !== undefined
-      ? feedDiscovery(documentOf(artifacts))
-      : null,
+    artifacts.MainDocumentContent === undefined
+      ? null
+      : feedDiscovery(documentOf(artifacts)),
   ),
   fromHint(oembedDiscoveryHint, (artifacts) =>
-    artifacts.MainDocumentContent !== undefined
-      ? oembedDiscovery(documentOf(artifacts))
-      : null,
+    artifacts.MainDocumentContent === undefined
+      ? null
+      : oembedDiscovery(documentOf(artifacts)),
   ),
   fromHint(opensearchDiscoveryHint, (artifacts) =>
-    artifacts.MainDocumentContent !== undefined
-      ? opensearchDiscovery(documentOf(artifacts))
-      : null,
+    artifacts.MainDocumentContent === undefined
+      ? null
+      : opensearchDiscovery(documentOf(artifacts)),
   ),
 ];
