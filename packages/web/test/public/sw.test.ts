@@ -82,6 +82,7 @@ function loadWorker(options: {
       return new Response('from the network');
     },
   });
+  // eslint-disable-next-line sonarjs/code-eval -- the shipped worker script is a classic script that must run against a stubbed `self` in an isolated vm context; vm.Script and vm.runInContext are both flagged, and an ES import cannot take a fake global
   new vm.Script(SW_SOURCE).runInContext(context);
   return { listeners, calls, windows };
 }
