@@ -9,7 +9,7 @@ const be32 = (n: number) => [
   n & 255,
 ];
 const le16 = (n: number) => [n & 255, n >> 8];
-const ascii = (s: string) => [...s].map((c) => c.codePointAt(0));
+const ascii = (s: string) => [...s].map((c) => c.codePointAt(0) ?? 0);
 
 describe('sniffImage', () => {
   it('reads a PNG', () => {
