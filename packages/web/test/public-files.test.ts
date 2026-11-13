@@ -3,10 +3,11 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { BRAND_NAME, BRAND_URL, SECURITY_CONTACT } from '@/app/_brand';
-import { ROOT } from './helpers/root.js';
+
+const PACKAGE = path.resolve(import.meta.dirname, '..');
 
 const read = (name: string): Promise<string> =>
-  readFile(path.join(ROOT, 'public', name), 'utf8');
+  readFile(path.join(PACKAGE, 'public', name), 'utf8');
 
 const LLMS = await read('llms.txt');
 const SECURITY_POLICY = await read('security-policy.txt');

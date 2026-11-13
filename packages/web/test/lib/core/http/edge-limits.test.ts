@@ -17,7 +17,8 @@ import {
 } from '@/lib/core/http';
 import { DISCOVERY_PATHS, EDGE_LIMITS, STATIC_PREFIXES } from '@/lib/core/http';
 import { vector } from '../../../helpers/data.js';
-import { ROOT } from '../../../helpers/root.js';
+
+const PACKAGE = path.resolve(import.meta.dirname, '../../../..');
 
 /** A static file under the app's own first static prefix. */
 const staticFile = `${STATIC_PREFIXES[0] ?? '/'}static/x.js`;
@@ -240,7 +241,7 @@ describe('tooManyRequests', () => {
   });
 });
 
-const WRANGLER = await readFile(path.join(ROOT, 'wrangler.jsonc'), 'utf8');
+const WRANGLER = await readFile(path.join(PACKAGE, 'wrangler.jsonc'), 'utf8');
 
 describe('wrangler.jsonc', () => {
   const parsed = ts.parseConfigFileTextToJson('wrangler.jsonc', WRANGLER)

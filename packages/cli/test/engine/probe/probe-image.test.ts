@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { afterAll, beforeAll, describe, expect, it, jest } from '@jest/globals';
@@ -7,6 +8,8 @@ import { ProbeError } from '../../../src/engine/probe/protocol.js';
 import { execFileAsync } from '../../helpers/exec.js';
 import { vector } from '../../helpers/data.js';
 
+const REPOSITORY = fileURLToPath(new URL('../../../../../', import.meta.url));
+
 /**
  * The real probe: the image is built from `probe/Dockerfile` (which runs the C
  * self-test), started, and asked what it must answer without the internet. It
@@ -15,8 +18,6 @@ import { vector } from '../../helpers/data.js';
  */
 jest.setTimeout(900_000);
 
-/** The probe's build context, wherever Jest was started from. */
-const PROBE = fileURLToPath(new URL('../../../../../probe', import.meta.url));
 const IMAGE = 'plumbline-probe:spec';
 const NAME = `plumbline-probe-spec-${process.pid}`;
 let base = '';
@@ -38,7 +39,7 @@ async function post(
 }
 
 beforeAll(async () => {
-  await docker('build', '-t', IMAGE, PROBE);
+  await docker('build', '-t', IMAGE, path.resolve(REPOSITORY, 'probe'));
   await docker('run', '-d', '--name', NAME, '-P', IMAGE);
   const ports = await docker('port', NAME, '8080/tcp');
   const mapped = ports.split('\n', 1)[0] ?? '';

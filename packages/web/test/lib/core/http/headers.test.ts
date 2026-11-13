@@ -12,7 +12,8 @@ import {
   PUBLIC_PAGES,
   RARELY_CHANGING,
 } from '@/lib/core/http';
-import { ROOT } from '../../../helpers/root.js';
+
+const PACKAGE = path.resolve(import.meta.dirname, '../../../..');
 
 const at = (pathname: string) => new Request(`https://app.test${pathname}`);
 
@@ -274,14 +275,14 @@ describe('SECURITY_HEADERS', () => {
 
 describe('public/_headers', () => {
   it('gives static files the same security headers as the Worker gives pages', async () => {
-    const file = await readFile(path.join(ROOT, 'public/_headers'), 'utf8');
+    const file = await readFile(path.join(PACKAGE, 'public/_headers'), 'utf8');
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
       expect(file).toContain(`${name}: ${value}`);
     }
   });
 
   it('gives static files the default resource policy and detaches it where files are open', async () => {
-    const file = await readFile(path.join(ROOT, 'public/_headers'), 'utf8');
+    const file = await readFile(path.join(PACKAGE, 'public/_headers'), 'utf8');
     expect(file).toContain(
       `Cross-Origin-Resource-Policy: ${resourcePolicyFor('/some/file')}`,
     );

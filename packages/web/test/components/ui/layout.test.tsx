@@ -5,7 +5,8 @@ import { describe, expect, it } from '@jest/globals';
 
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 import { classOf, html } from '../render';
-import { ROOT } from '../../helpers/root.js';
+
+const PACKAGE = path.resolve(import.meta.dirname, '../../..');
 
 /** The Eyebrow tags in a file that set a colour class through className. */
 function colourOffenders(file: string, source: string): string[] {
@@ -69,7 +70,7 @@ describe('Eyebrow', () => {
         }
       }
     };
-    await walk(path.join(ROOT, 'src'));
+    await walk(path.join(PACKAGE, 'src'));
     expect(offenders).toEqual([]);
   });
 });
