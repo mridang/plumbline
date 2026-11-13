@@ -1,4 +1,6 @@
 import { readdir } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /** Options Jest accepts only at the top level, never inside a project. */
 const GLOBAL_ONLY = new Set(['reporters', 'coverageReporters']);
@@ -9,6 +11,8 @@ const GLOBAL_ONLY = new Set(['reporters', 'coverageReporters']);
  * Each package keeps the standard, identical `jest.config.mjs`, so it can also
  * run on its own from its directory. Jest rejects the reporter options inside
  * a project, so they are dropped here and set once for the whole run below.
+ * The setup and teardown paths are made absolute so they do not depend on the
+ * directory the tools read this file from.
  *
  * @returns {Promise<object[]>} one Jest project per package that has a config.
  */
@@ -24,7 +28,15 @@ const packageProjects = async () => {
         const project = Object.fromEntries(
           Object.entries(config).filter(([key]) => !GLOBAL_ONLY.has(key)),
         );
-        return { ...project, rootDir: `<rootDir>/packages/${name}` };
+        const rootDir = fileURLToPath(
+          new URL(`packages/${name}/`, import.meta.url),
+        );
+        return {
+          ...project,
+          rootDir,
+          globalSetup: path.join(rootDir, project.globalSetup),
+          globalTeardown: path.join(rootDir, project.globalTeardown),
+        };
       } catch {
         return undefined;
       }
