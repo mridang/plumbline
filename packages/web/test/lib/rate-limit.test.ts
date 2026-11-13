@@ -13,8 +13,9 @@ import {
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { APP_MIGRATIONS, migrationSql } from './core/db/migrations';
+import { packageDirectorySync } from 'package-directory';
 
-const PACKAGE = path.resolve(import.meta.dirname, '../..');
+const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 const SOURCE = await readFile(
   path.join(PACKAGE, 'src/lib/rate-limit.ts'),

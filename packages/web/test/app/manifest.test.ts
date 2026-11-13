@@ -5,8 +5,9 @@ import path from 'node:path';
 import { BACKGROUND_COLOR, THEME_COLOR } from '@/app/_brand';
 import manifest from '@/app/manifest';
 import { pngSize } from '../png';
+import { packageDirectorySync } from 'package-directory';
 
-const PACKAGE = path.resolve(import.meta.dirname, '../..');
+const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 /** The names of the chunks a PNG file is made of, in order. */
 async function pngChunks(file: string): Promise<readonly string[]> {

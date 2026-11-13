@@ -2,8 +2,9 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
+import { packageDirectorySync } from 'package-directory';
 
-const PACKAGE = path.resolve(import.meta.dirname, '../..');
+const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 const css = await readFile(
   path.join(PACKAGE, 'src', 'app', 'globals.css'),

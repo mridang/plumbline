@@ -12,8 +12,9 @@ import {
 import { forgetIssue, saveIssue } from '@/domain/db/suite';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import { packageDirectorySync } from 'package-directory';
 
-const PACKAGE = path.resolve(import.meta.dirname, '../../..');
+const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 const empty = () => sqliteDatabase(...APP_MIGRATIONS);
 const issue = (

@@ -12,8 +12,9 @@ import path from 'node:path';
 import { ROUTE_MODULES } from './helpers/route-modules';
 import { APP_MIGRATIONS } from './lib/core/db/migrations';
 import { installCloudflareContext, sqliteD1 } from './lib/core/db/sqlite-d1';
+import { packageDirectorySync } from 'package-directory';
 
-const PACKAGE = path.resolve(import.meta.dirname, '..');
+const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 // A route that signs a person out reads the cookie jar of the request in
 // flight; a test has none, so it gets an empty one.

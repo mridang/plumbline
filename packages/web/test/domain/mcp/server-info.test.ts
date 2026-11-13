@@ -13,8 +13,9 @@ import {
   UI_EXTENSION_ID,
 } from '@/domain/mcp/server-info';
 import { TOOLS } from '@/domain/mcp/tool-definitions';
+import { packageDirectorySync } from 'package-directory';
 
-const PACKAGE = path.resolve(import.meta.dirname, '../../..');
+const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 const root = PACKAGE;
 

@@ -1,7 +1,8 @@
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
+import { packageDirectorySync } from 'package-directory';
 
-const PACKAGE = path.resolve(import.meta.dirname, '../../../..');
+const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 const DIRECTORY = path.join(PACKAGE, 'migrations');
 

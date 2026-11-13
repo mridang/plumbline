@@ -5,8 +5,9 @@ import { describe, expect, it } from '@jest/globals';
 
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 import { classOf, html } from '../render';
+import { packageDirectorySync } from 'package-directory';
 
-const PACKAGE = path.resolve(import.meta.dirname, '../../..');
+const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 /** The Eyebrow tags in a file that set a colour class through className. */
 function colourOffenders(file: string, source: string): string[] {

@@ -17,8 +17,9 @@ import {
 } from '@/domain/db/domains';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import { packageDirectorySync } from 'package-directory';
 
-const PACKAGE = path.resolve(import.meta.dirname, '../../..');
+const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 /** A database with every migration applied and nothing in it. */
 const empty = () => sqliteDatabase(...APP_MIGRATIONS);

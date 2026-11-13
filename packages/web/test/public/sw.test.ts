@@ -2,8 +2,9 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import vm from 'node:vm';
+import { packageDirectorySync } from 'package-directory';
 
-const PACKAGE = path.resolve(import.meta.dirname, '../..');
+const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 type Listener = (event: never) => void;
 

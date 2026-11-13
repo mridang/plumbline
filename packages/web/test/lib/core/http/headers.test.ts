@@ -12,8 +12,9 @@ import {
   PUBLIC_PAGES,
   RARELY_CHANGING,
 } from '@/lib/core/http';
+import { packageDirectorySync } from 'package-directory';
 
-const PACKAGE = path.resolve(import.meta.dirname, '../../../..');
+const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 const at = (pathname: string) => new Request(`https://app.test${pathname}`);
 

@@ -6,8 +6,9 @@ import ts from 'typescript';
 
 import { INTERACTIVE_SHARDS } from '@/domain/scan/run';
 import { SCAN_DEAD_LETTER_NAME, SCAN_QUEUE_NAME } from '@/domain/suite/queue';
+import { packageDirectorySync } from 'package-directory';
 
-const PACKAGE = path.resolve(import.meta.dirname, '..');
+const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 interface Wrangler {
   containers: {
