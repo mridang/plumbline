@@ -14,8 +14,10 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { APP_MIGRATIONS, migrationSql } from './core/db/migrations';
 
+const PACKAGE = path.resolve(import.meta.dirname, '../..');
+
 const SOURCE = await readFile(
-  path.join(process.cwd(), 'src/lib/rate-limit.ts'),
+  path.join(PACKAGE, 'src/lib/rate-limit.ts'),
   'utf8',
 );
 const HIT_SQL = /const HIT_SQL = `([^`]*)`/.exec(SOURCE)?.[1] ?? '';

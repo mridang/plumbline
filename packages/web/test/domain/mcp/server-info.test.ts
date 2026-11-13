@@ -14,7 +14,9 @@ import {
 } from '@/domain/mcp/server-info';
 import { TOOLS } from '@/domain/mcp/tool-definitions';
 
-const root = process.cwd();
+const PACKAGE = path.resolve(import.meta.dirname, '../../..');
+
+const root = PACKAGE;
 
 /** The width and height written in a PNG file's header. */
 async function pngSize(file: string): Promise<string> {

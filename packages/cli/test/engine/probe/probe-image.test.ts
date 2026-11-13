@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { afterAll, beforeAll, describe, expect, it, jest } from '@jest/globals';
 
@@ -6,6 +7,8 @@ import { ProbeClient } from '../../../src/engine/probe/client.js';
 import { ProbeError } from '../../../src/engine/probe/protocol.js';
 import { execFileAsync } from '../../helpers/exec.js';
 import { vector } from '../../helpers/data.js';
+
+const REPOSITORY = fileURLToPath(new URL('../../../../../', import.meta.url));
 
 /**
  * The real probe: the image is built from `probe/Dockerfile` (which runs the C
@@ -36,7 +39,7 @@ async function post(
 }
 
 beforeAll(async () => {
-  await docker('build', '-t', IMAGE, path.resolve(process.cwd(), 'probe'));
+  await docker('build', '-t', IMAGE, path.resolve(REPOSITORY, 'probe'));
   await docker('run', '-d', '--name', NAME, '-P', IMAGE);
   const ports = await docker('port', NAME, '8080/tcp');
   const mapped = ports.split('\n', 1)[0] ?? '';

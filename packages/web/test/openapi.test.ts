@@ -13,6 +13,8 @@ import { ROUTE_MODULES } from './helpers/route-modules';
 import { APP_MIGRATIONS } from './lib/core/db/migrations';
 import { installCloudflareContext, sqliteD1 } from './lib/core/db/sqlite-d1';
 
+const PACKAGE = path.resolve(import.meta.dirname, '..');
+
 // A route that signs a person out reads the cookie jar of the request in
 // flight; a test has none, so it gets an empty one.
 jest.unstable_mockModule('next/headers', () => ({
@@ -32,7 +34,7 @@ interface Operation {
 }
 
 const document = JSON.parse(
-  await readFile(path.join(process.cwd(), 'openapi.json'), 'utf8'),
+  await readFile(path.join(PACKAGE, 'openapi.json'), 'utf8'),
 ) as {
   openapi: string;
   paths: Record<string, Record<string, Operation>>;
@@ -43,7 +45,7 @@ const document = JSON.parse(
 };
 
 const METHODS = ['get', 'post', 'put', 'patch', 'delete'] as const;
-const API = path.join(process.cwd(), 'src/app/api');
+const API = path.join(PACKAGE, 'src/app/api');
 
 const documented = (): Map<string, Operation> => {
   const found = new Map<string, Operation>();

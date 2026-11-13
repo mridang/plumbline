@@ -3,8 +3,10 @@ import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
 
+const PACKAGE = path.resolve(import.meta.dirname, '../..');
+
 const css = await readFile(
-  path.join(process.cwd(), 'src', 'app', 'globals.css'),
+  path.join(PACKAGE, 'src', 'app', 'globals.css'),
   'utf8',
 );
 

@@ -13,6 +13,8 @@ import { forgetIssue, saveIssue } from '@/domain/db/suite';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
+const PACKAGE = path.resolve(import.meta.dirname, '../../..');
+
 const empty = () => sqliteDatabase(...APP_MIGRATIONS);
 const issue = (
   number: number,
@@ -211,7 +213,7 @@ describe('migration 0017_issue_per_check', () => {
     `);
     raw.exec(
       await readFile(
-        path.join(process.cwd(), 'migrations', '0017_issue_per_check.sql'),
+        path.join(PACKAGE, 'migrations', '0017_issue_per_check.sql'),
         'utf8',
       ),
     );

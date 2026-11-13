@@ -4,8 +4,10 @@ import path from 'node:path';
 
 import { BRAND_NAME, BRAND_URL, SECURITY_CONTACT } from '@/app/_brand';
 
+const PACKAGE = path.resolve(import.meta.dirname, '..');
+
 const read = (name: string): Promise<string> =>
-  readFile(path.join(process.cwd(), 'public', name), 'utf8');
+  readFile(path.join(PACKAGE, 'public', name), 'utf8');
 
 const LLMS = await read('llms.txt');
 const SECURITY_POLICY = await read('security-policy.txt');

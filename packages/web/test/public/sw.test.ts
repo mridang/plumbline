@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import vm from 'node:vm';
 
+const PACKAGE = path.resolve(import.meta.dirname, '../..');
+
 type Listener = (event: never) => void;
 
 /** What the worker did with a fetch event. */
@@ -13,10 +15,7 @@ type Handled = { answered: boolean; response: Promise<Response> | null };
  * network that either works (`online`) or fails, and a browser that does or
  * does not support navigation preload. Returns the listeners it registered.
  */
-const SW_SOURCE = await readFile(
-  path.join(process.cwd(), 'public/sw.js'),
-  'utf8',
-);
+const SW_SOURCE = await readFile(path.join(PACKAGE, 'public/sw.js'), 'utf8');
 
 function loadWorker(options: {
   online: boolean;
