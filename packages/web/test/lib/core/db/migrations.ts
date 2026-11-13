@@ -1,7 +1,8 @@
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
+import { ROOT } from '../../../helpers/root.js';
 
-const DIRECTORY = path.join(process.cwd(), 'migrations');
+const DIRECTORY = path.join(ROOT, 'migrations');
 
 /**
  * Every migration file, in order: what a database looks like once all of them

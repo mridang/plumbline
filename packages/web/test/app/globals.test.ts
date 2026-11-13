@@ -2,9 +2,10 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
+import { ROOT } from '../helpers/root.js';
 
 const css = await readFile(
-  path.join(process.cwd(), 'src', 'app', 'globals.css'),
+  path.join(ROOT, 'src', 'app', 'globals.css'),
   'utf8',
 );
 

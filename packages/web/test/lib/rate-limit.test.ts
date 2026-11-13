@@ -13,11 +13,9 @@ import {
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { APP_MIGRATIONS, migrationSql } from './core/db/migrations';
+import { ROOT } from '../helpers/root.js';
 
-const SOURCE = await readFile(
-  path.join(process.cwd(), 'src/lib/rate-limit.ts'),
-  'utf8',
-);
+const SOURCE = await readFile(path.join(ROOT, 'src/lib/rate-limit.ts'), 'utf8');
 const HIT_SQL = /const HIT_SQL = `([^`]*)`/.exec(SOURCE)?.[1] ?? '';
 /** The whole schema, every migration in order: the rate-limit table is one of them. */
 const SCHEMA = APP_MIGRATIONS.map((file) => migrationSql(file)).join('\n');

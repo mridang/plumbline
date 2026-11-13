@@ -12,6 +12,7 @@ import {
 import { forgetIssue, saveIssue } from '@/domain/db/suite';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import { ROOT } from '../../helpers/root.js';
 
 const empty = () => sqliteDatabase(...APP_MIGRATIONS);
 const issue = (
@@ -211,7 +212,7 @@ describe('migration 0017_issue_per_check', () => {
     `);
     raw.exec(
       await readFile(
-        path.join(process.cwd(), 'migrations', '0017_issue_per_check.sql'),
+        path.join(ROOT, 'migrations', '0017_issue_per_check.sql'),
         'utf8',
       ),
     );

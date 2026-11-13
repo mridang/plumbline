@@ -17,6 +17,7 @@ import {
 } from '@/domain/db/domains';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import { ROOT } from '../../helpers/root.js';
 
 /** A database with every migration applied and nothing in it. */
 const empty = () => sqliteDatabase(...APP_MIGRATIONS);
@@ -348,7 +349,7 @@ describe('migration 0020_site_sources', () => {
     );
     raw.exec(
       await readFile(
-        path.join(process.cwd(), 'migrations', '0020_site_sources.sql'),
+        path.join(ROOT, 'migrations', '0020_site_sources.sql'),
         'utf8',
       ),
     );
@@ -377,7 +378,7 @@ describe('migration 0012_registry_domains', () => {
     );
     raw.exec(
       await readFile(
-        path.join(process.cwd(), 'migrations', '0012_registry_domains.sql'),
+        path.join(ROOT, 'migrations', '0012_registry_domains.sql'),
         'utf8',
       ),
     );

@@ -6,6 +6,7 @@ import ts from 'typescript';
 
 import { INTERACTIVE_SHARDS } from '@/domain/scan/run';
 import { SCAN_DEAD_LETTER_NAME, SCAN_QUEUE_NAME } from '@/domain/suite/queue';
+import { ROOT } from './helpers/root.js';
 
 interface Wrangler {
   containers: {
@@ -33,7 +34,7 @@ interface Wrangler {
 
 const config = ts.parseConfigFileTextToJson(
   'wrangler.jsonc',
-  await readFile(path.join(process.cwd(), 'wrangler.jsonc'), 'utf8'),
+  await readFile(path.join(ROOT, 'wrangler.jsonc'), 'utf8'),
 ).config as Wrangler;
 
 const probe = config.containers.find(

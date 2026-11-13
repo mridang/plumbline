@@ -1,4 +1,4 @@
-import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { afterAll, beforeAll, describe, expect, it, jest } from '@jest/globals';
 
@@ -15,6 +15,8 @@ import { vector } from '../../helpers/data.js';
  */
 jest.setTimeout(900_000);
 
+/** The probe's build context, wherever Jest was started from. */
+const PROBE = fileURLToPath(new URL('../../../../../probe', import.meta.url));
 const IMAGE = 'plumbline-probe:spec';
 const NAME = `plumbline-probe-spec-${process.pid}`;
 let base = '';
@@ -36,7 +38,7 @@ async function post(
 }
 
 beforeAll(async () => {
-  await docker('build', '-t', IMAGE, path.resolve(process.cwd(), 'probe'));
+  await docker('build', '-t', IMAGE, PROBE);
   await docker('run', '-d', '--name', NAME, '-P', IMAGE);
   const ports = await docker('port', NAME, '8080/tcp');
   const mapped = ports.split('\n', 1)[0] ?? '';

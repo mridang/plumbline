@@ -5,6 +5,7 @@ import path from 'node:path';
 import { BACKGROUND_COLOR, THEME_COLOR } from '@/app/_brand';
 import manifest from '@/app/manifest';
 import { pngSize } from '../png';
+import { ROOT } from '../helpers/root.js';
 
 /** The names of the chunks a PNG file is made of, in order. */
 async function pngChunks(file: string): Promise<readonly string[]> {
@@ -43,7 +44,7 @@ describe('web app manifest', () => {
 
   it('points every icon at a file that exists', async () => {
     for (const icon of m.icons ?? []) {
-      const exists = await access(path.join(process.cwd(), 'public', icon.src))
+      const exists = await access(path.join(ROOT, 'public', icon.src))
         .then(() => true)
         .catch(() => false);
       expect(exists).toBe(true);
@@ -53,7 +54,7 @@ describe('web app manifest', () => {
   it('declares each icon at the size the file really has', async () => {
     for (const icon of m.icons ?? []) {
       const { width, height } = await pngSize(
-        path.join(process.cwd(), 'public', icon.src),
+        path.join(ROOT, 'public', icon.src),
       );
       expect(icon.sizes).toBe(`${width}x${height}`);
     }
@@ -91,7 +92,7 @@ describe('web app manifest', () => {
     const shots = m.screenshots ?? [];
     for (const shot of shots) {
       const { width, height } = await pngSize(
-        path.join(process.cwd(), 'public', shot.src),
+        path.join(ROOT, 'public', shot.src),
       );
       expect(shot.sizes).toBe(`${width}x${height}`);
       expect(Math.min(width, height)).toBeGreaterThanOrEqual(320);
@@ -112,16 +113,14 @@ describe('web app manifest', () => {
   it('carries no text or camera metadata in the screenshots, which are public', async () => {
     const allowed = new Set(['IHDR', 'PLTE', 'tRNS', 'pHYs', 'IDAT', 'IEND']);
     for (const shot of m.screenshots ?? []) {
-      const chunks = await pngChunks(
-        path.join(process.cwd(), 'public', shot.src),
-      );
+      const chunks = await pngChunks(path.join(ROOT, 'public', shot.src));
       expect(chunks.filter((c) => !allowed.has(c))).toEqual([]);
     }
   });
 
   it('keeps each screenshot below the weight of the page it advertises', async () => {
     for (const shot of m.screenshots ?? []) {
-      const info = await stat(path.join(process.cwd(), 'public', shot.src));
+      const info = await stat(path.join(ROOT, 'public', shot.src));
       const bytes = info.size;
       expect(bytes).toBeLessThan(300 * 1024);
     }
@@ -132,7 +131,7 @@ describe('web app manifest', () => {
       expect(shortcut.icons).toHaveLength(1);
       for (const icon of shortcut.icons ?? []) {
         const { width, height } = await pngSize(
-          path.join(process.cwd(), 'public', icon.src),
+          path.join(ROOT, 'public', icon.src),
         );
         expect(icon.sizes).toBe(`${width}x${height}`);
         // web.dev: a single 192px icon is the size to ship when one has to do.
