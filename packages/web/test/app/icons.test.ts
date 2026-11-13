@@ -4,8 +4,11 @@ import path from 'node:path';
 
 import { BRAND_NAME } from '@/app/_brand';
 import { pngIsOpaque, pngSize } from '../png';
+import { packageDirectorySync } from 'package-directory';
 
-const app = (name: string) => path.join(process.cwd(), 'src/app', name);
+const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
+
+const app = (name: string) => path.join(PACKAGE, 'src/app', name);
 
 // The icon and social-image files under src/app are binaries, so one group
 // checks them all.

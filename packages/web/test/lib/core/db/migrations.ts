@@ -1,7 +1,10 @@
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
+import { packageDirectorySync } from 'package-directory';
 
-const DIRECTORY = path.join(process.cwd(), 'migrations');
+const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
+
+const DIRECTORY = path.join(PACKAGE, 'migrations');
 
 /**
  * Every migration file, in order: what a database looks like once all of them

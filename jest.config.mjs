@@ -1,37 +1,52 @@
+import { readdir } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/** Options Jest accepts only at the top level, never inside a project. */
+const GLOBAL_ONLY = new Set(['reporters', 'coverageReporters']);
+
+/**
+ * Loads every workspace package's own Jest config as a Jest project.
+ *
+ * Each package keeps the standard, identical `jest.config.mjs`, so it can also
+ * run on its own from its directory. Jest rejects the reporter options inside
+ * a project, so they are dropped here and set once for the whole run below.
+ * The setup and teardown paths are made absolute so they do not depend on the
+ * directory the tools read this file from.
+ *
+ * @returns {Promise<object[]>} one Jest project per package that has a config.
+ */
+const packageProjects = async () => {
+  const packages = await readdir(new URL('packages/', import.meta.url));
+  const loaded = await Promise.all(
+    packages.map(async (name) => {
+      try {
+        // eslint-disable-next-line no-unsanitized/method -- name comes from this repository's own packages directory
+        const { default: config } = await import(
+          `./packages/${name}/jest.config.mjs`
+        );
+        const project = Object.fromEntries(
+          Object.entries(config).filter(([key]) => !GLOBAL_ONLY.has(key)),
+        );
+        const rootDir = fileURLToPath(
+          new URL(`packages/${name}/`, import.meta.url),
+        );
+        return {
+          ...project,
+          rootDir,
+          globalSetup: path.join(rootDir, project.globalSetup),
+          globalTeardown: path.join(rootDir, project.globalTeardown),
+        };
+      } catch {
+        return undefined;
+      }
+    }),
+  );
+  return loaded.filter(Boolean);
+};
+
 export default {
-  preset: 'ts-jest/presets/default-esm',
-  transform: {
-    '^.+\\.m?[tj]sx?$': [
-      'ts-jest',
-      {
-        useESM: true,
-        tsconfig: 'tsconfig.jest.json',
-      },
-    ],
-  },
-  testEnvironment: 'node',
-  testMatch: ['**/*.+(spec|test).[tj]s?(x)'],
-  moduleFileExtensions: [
-    'ts',
-    'tsx',
-    'js',
-    'mjs',
-    'jsx',
-    'mts',
-    'json',
-    'node',
-  ],
-  // The web app has its own Jest config (its `@/` alias and JSX), and the
-  // root `test` script runs it after this one.
-  testPathIgnorePatterns: [
-    '/node_modules/',
-    '/frontend/',
-    '/dist/',
-    '/packages/web/',
-  ],
-  resetModules: false,
-  globalSetup: './packages/hints/test/setup.ts',
-  globalTeardown: './packages/hints/test/teardown.ts',
+  projects: await packageProjects(),
   collectCoverage: true,
   coverageDirectory: './.out',
   collectCoverageFrom: [
@@ -40,12 +55,7 @@ export default {
     '!**/*.d.ts',
   ],
   coverageReporters: ['lcov', 'text'],
-  coveragePathIgnorePatterns: ['/dist/', '/node_modules/'],
   testTimeout: 60_000,
-  extensionsToTreatAsEsm: ['.ts', '.tsx', '.mts'],
-  moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.js$': '$1',
-  },
   reporters: [
     'default',
     [

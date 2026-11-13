@@ -13,8 +13,11 @@ import {
   UI_EXTENSION_ID,
 } from '@/domain/mcp/server-info';
 import { TOOLS } from '@/domain/mcp/tool-definitions';
+import { packageDirectorySync } from 'package-directory';
 
-const root = process.cwd();
+const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
+
+const root = PACKAGE;
 
 /** The width and height written in a PNG file's header. */
 async function pngSize(file: string): Promise<string> {
