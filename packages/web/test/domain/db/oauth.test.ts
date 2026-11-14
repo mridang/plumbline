@@ -1,3 +1,4 @@
+import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import {
@@ -12,10 +13,51 @@ import {
 import { MAX_LIVE_GRANTS_PER_APP, OAUTH_LIMITS } from '@/lib/oauth';
 import type { RateLimitStore } from '@/lib/rate-limit';
 import { fakeDb } from '../../lib/core/db/fake-db';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 import { quietSecurityLogs } from '../../lib/oauth/quiet-logs';
 
 quietSecurityLogs();
+
+describe('the background sweep reads by index', () => {
+  /** The plan of one statement, as one line of text. */
+  const planOf = (sql: string) =>
+    sqliteDatabase(...APP_MIGRATIONS)
+      .raw.prepare(`EXPLAIN QUERY PLAN ${sql}`)
+      .all()
+      .map((row) => String(row['detail']))
+      .join(' ');
+
+  it('finds revoked grants by their revocation time', () => {
+    const plan = planOf("DELETE FROM oauth_grants WHERE revoked_at < 'x'");
+    expect(plan).toContain('idx_oauth_grants_revoked_used');
+    expect(plan).not.toContain('SCAN');
+  });
+
+  it('finds idle grants through the same index', () => {
+    const plan = planOf(
+      "UPDATE oauth_grants SET revoked_at = 'x' WHERE revoked_at IS NULL AND coalesce(last_used_at, created_at) < 'y'",
+    );
+    expect(plan).toContain('idx_oauth_grants_revoked_used');
+    expect(plan).not.toContain('SCAN');
+  });
+
+  it('finds unused registered clients by kind and age', () => {
+    const plan = planOf(
+      "DELETE FROM oauth_clients WHERE kind = 'dcr' AND created_at < 'x'",
+    );
+    expect(plan).toContain('idx_oauth_clients_kind_created');
+    expect(plan).not.toContain('SCAN');
+  });
+
+  it('finds stale metadata documents by kind and fetch time', () => {
+    const plan = planOf(
+      "DELETE FROM oauth_clients WHERE kind = 'cimd' AND fetched_at < 'x'",
+    );
+    expect(plan).toContain('idx_oauth_clients_kind_fetched');
+    expect(plan).not.toContain('SCAN');
+  });
+});
 
 /** A rate-limit store that never refuses. */
 const open: RateLimitStore = {
@@ -186,7 +228,7 @@ describe('D1OAuthStore', () => {
           redirect_uri: 'https://app.example/cb',
           redirect_uri_sent: false,
           code_challenge: 'ch',
-          scope: 'checks:read checks:write',
+          scope: `${SCOPE_READ} ${SCOPE_WRITE}`,
           resource: 'r',
           expires_at: 99,
           grant_id: null,
@@ -199,7 +241,7 @@ describe('D1OAuthStore', () => {
       redirectUri: 'https://app.example/cb',
       redirectUriSent: false,
       codeChallenge: 'ch',
-      scope: ['checks:read', 'checks:write'],
+      scope: [SCOPE_READ, SCOPE_WRITE],
       resource: 'r',
       expiresAt: 99,
       grantId: null,
@@ -256,7 +298,7 @@ describe('D1OAuthStore', () => {
               id: 'g',
               user_id: 7,
               client_id: 'c',
-              scope: 'checks:read',
+              scope: SCOPE_READ,
               resource: 'r',
               revoked_at: null,
               last_used_at: '1970-01-01T00:16:40.000Z',
@@ -273,7 +315,7 @@ describe('D1OAuthStore', () => {
         id: 'g',
         userId: 7,
         clientId: 'c',
-        scope: ['checks:read'],
+        scope: [SCOPE_READ],
         resource: 'r',
         revoked: false,
         lastUsedAt: 1000,
@@ -291,7 +333,7 @@ describe('D1OAuthStore', () => {
               id: 'g',
               user_id: 7,
               client_id: 'c',
-              scope: 'checks:read',
+              scope: SCOPE_READ,
               resource: 'r',
               revoked_at: '2026-01-01T00:00:00.000Z',
               last_used_at: null,
@@ -346,7 +388,7 @@ describe('D1OAuthStore', () => {
         id: 'g',
         userId: 7,
         clientId: 'c',
-        scope: ['checks:read'],
+        scope: [SCOPE_READ],
         resource: 'r',
       },
       pair,
@@ -369,7 +411,7 @@ describe('listConnectedApps', () => {
     const grant = {
       id: 'g1',
       client_id: 'dcr_abc',
-      scope: 'checks:read checks:write',
+      scope: `${SCOPE_READ} ${SCOPE_WRITE}`,
       created_at: '2026-01-01T00:00:00.000Z',
       last_used_at: null,
     };
@@ -385,7 +427,7 @@ describe('listConnectedApps', () => {
       {
         grantId: 'g1',
         name: 'Claude',
-        scope: ['checks:read', 'checks:write'],
+        scope: [SCOPE_READ, SCOPE_WRITE],
         installs: 1,
         domain: null,
         logoUri: null,
@@ -449,7 +491,7 @@ function seedGrant(
   createdAt: string,
   revokedAt: string | null = null,
   lastUsedAt: string | null = null,
-  scope = 'checks:read checks:write',
+  scope = `${SCOPE_READ} ${SCOPE_WRITE}`,
 ) {
   raw
     .prepare(
@@ -483,7 +525,7 @@ const grantRecord = (id: string, userId = 7, clientId = 'c1') => ({
   id,
   userId,
   clientId,
-  scope: ['checks:read'],
+  scope: [SCOPE_READ],
   resource: 'r',
 });
 
@@ -541,7 +583,7 @@ describe('against a real SQLite database', () => {
       redirectUri: 'https://app.example/cb',
       redirectUriSent,
       codeChallenge: 'ch',
-      scope: ['checks:read'],
+      scope: [SCOPE_READ],
       resource: 'r',
       expiresAt: 99,
       grantId: null,
@@ -565,7 +607,7 @@ describe('against a real SQLite database', () => {
         .prepare(
           'INSERT INTO oauth_codes (code_hash, client_id, user_id, redirect_uri, code_challenge, scope, resource, expires_at) VALUES (?, ?, 1, ?, ?, ?, ?, 99)',
         )
-        .run('old', 'c1', 'u', 'ch', 'checks:read', 'r');
+        .run('old', 'c1', 'u', 'ch', SCOPE_READ, 'r');
       expect(await new D1OAuthStore(db).findCode('old')).toMatchObject({
         redirectUriSent: true,
       });
@@ -773,7 +815,7 @@ describe('against a real SQLite database, connected apps', () => {
         {
           grantId: 'g-new',
           name: 'Name of c1',
-          scope: ['checks:read', 'checks:write'],
+          scope: [SCOPE_READ, SCOPE_WRITE],
           installs: 2,
           domain: null,
           logoUri: null,
@@ -799,7 +841,7 @@ describe('against a real SQLite database, connected apps', () => {
         '2026-02-01T00:00:00.000Z',
         null,
         null,
-        'checks:write',
+        SCOPE_WRITE,
       );
       seedGrant(
         raw,
@@ -809,12 +851,12 @@ describe('against a real SQLite database, connected apps', () => {
         '2026-03-01T00:00:00.000Z',
         null,
         null,
-        'checks:read',
+        SCOPE_READ,
       );
       expect(await listConnectedApps(db, 7)).toEqual([
         expect.objectContaining({
           grantId: 'g-read',
-          scope: ['checks:read', 'checks:write'],
+          scope: [SCOPE_READ, SCOPE_WRITE],
           installs: 2,
         }),
       ]);
