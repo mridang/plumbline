@@ -12,7 +12,11 @@
 import { isDomainId, parseHost } from '@/domain/api/domain-resource';
 import { isReportId } from '@/domain/api/report-resource';
 import { type Database } from '@/domain/db/client';
-import { type Domain, findDomainByHost, getDomain } from '@/domain/db/domains';
+import {
+  type Domain,
+  findDomainByHost,
+  getDomain,
+} from '@/domain/db/domains';
 import { getReport, latestReport } from '@/domain/db/reports';
 import { type User } from '@/domain/db/users';
 import {

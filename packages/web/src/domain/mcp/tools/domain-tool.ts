@@ -12,7 +12,10 @@
  */
 
 import { type Domain } from '@/domain/db/domains';
-import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
+import {
+  type ToolContent,
+  type ToolContext,
+} from '@/domain/mcp/tool-context';
 import { ownDomain } from '@/domain/mcp/tools/domain-support';
 import { McpTool, type ToolArgs, type ToolResult } from '@/lib/mcp';
 
@@ -25,6 +28,12 @@ export abstract class DomainTool<TName extends string> extends McpTool<
   ToolContext,
   ToolContent
 > {
+  /**
+   * Everything these tools do goes through the database, so a failure anywhere
+   * in one of them is a failure of it rather than a mistake in this code.
+   */
+  override readonly backend = 'the database';
+
   /**
    * Find the domain the call names and hand it to {@link handleForDomain}, or
    * answer why not. A `domain` that is not a host, URL or id, and one that

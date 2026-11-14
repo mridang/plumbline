@@ -6,7 +6,10 @@
  */
 
 import { overviewOf } from '@/domain/db/live';
-import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
+import {
+  type ToolContent,
+  type ToolContext,
+} from '@/domain/mcp/tool-context';
 import {
   type JsonSchema,
   McpTool,
@@ -35,6 +38,8 @@ export class ListRepositoriesTool extends McpTool<
   };
 
   readonly annotations: ToolAnnotations = READS;
+
+  override readonly backend = 'the database';
 
   override async handle(
     _args: ToolArgs,

@@ -6,12 +6,16 @@
  */
 
 import { type Domain } from '@/domain/db/domains';
-import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
+import {
+  type ToolContent,
+  type ToolContext,
+} from '@/domain/mcp/tool-context';
 import { domainLink } from '@/domain/mcp/tool-results';
 import { CLI_COMMAND } from '@/domain/mcp/tools/domain-support';
 import { DomainTool } from '@/domain/mcp/tools/domain-tool';
 import { DOMAIN } from '@/domain/mcp/tools/schemas';
 import {
+  type ArgumentSpellings,
   type JsonSchema,
   READS,
   textResult,
@@ -36,6 +40,10 @@ export class ScanDomainTool extends DomainTool<'scan_domain'> {
   };
 
   readonly annotations: ToolAnnotations = READS;
+
+  override readonly spellings: ArgumentSpellings = {
+    aliases: { host: 'domain', url: 'domain' },
+  };
 
   protected override async handleForDomain(
     domain: Readonly<Domain>,

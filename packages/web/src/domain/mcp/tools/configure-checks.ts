@@ -12,11 +12,15 @@ import {
   expandSelection,
 } from '@/domain/checks/catalogue';
 import { type Domain, setDomainChecks } from '@/domain/db/domains';
-import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
+import {
+  type ToolContent,
+  type ToolContext,
+} from '@/domain/mcp/tool-context';
 import { checkName } from '@/domain/mcp/tool-results';
 import { DomainTool } from '@/domain/mcp/tools/domain-tool';
 import { CHECK_NAMES, DOMAIN } from '@/domain/mcp/tools/schemas';
 import {
+  type ArgumentSpellings,
   errorResult,
   type JsonSchema,
   stringListArg,
@@ -58,6 +62,11 @@ export class ConfigureChecksTool extends DomainTool<'configure_checks'> {
   };
 
   readonly annotations: ToolAnnotations = writes({ idempotent: true });
+
+  override readonly spellings: ArgumentSpellings = {
+    aliases: { host: 'domain', url: 'domain', checks: 'enable' },
+    listsOfText: ['enable', 'disable'],
+  };
 
   protected override async handleForDomain(
     domain: Readonly<Domain>,

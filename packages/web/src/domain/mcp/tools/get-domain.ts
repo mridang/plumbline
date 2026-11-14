@@ -8,11 +8,15 @@
 import { CHECKS, enabledChecks } from '@/domain/checks/catalogue';
 import { type Domain } from '@/domain/db/domains';
 import { listReports } from '@/domain/db/reports';
-import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
+import {
+  type ToolContent,
+  type ToolContext,
+} from '@/domain/mcp/tool-context';
 import { domainLink, tallyLine } from '@/domain/mcp/tool-results';
 import { DomainTool } from '@/domain/mcp/tools/domain-tool';
 import { DOMAIN } from '@/domain/mcp/tools/schemas';
 import {
+  type ArgumentSpellings,
   type JsonSchema,
   READS,
   textResult,
@@ -37,6 +41,10 @@ export class GetDomainTool extends DomainTool<'get_domain'> {
   };
 
   readonly annotations: ToolAnnotations = READS;
+
+  override readonly spellings: ArgumentSpellings = {
+    aliases: { host: 'domain', url: 'domain' },
+  };
 
   protected override async handleForDomain(
     domain: Readonly<Domain>,

@@ -6,7 +6,10 @@
  */
 
 import { type Domain } from '@/domain/db/domains';
-import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
+import {
+  type ToolContent,
+  type ToolContext,
+} from '@/domain/mcp/tool-context';
 import { reportResult } from '@/domain/mcp/tool-results';
 import { namedReport } from '@/domain/mcp/tools/domain-support';
 import { DomainTool } from '@/domain/mcp/tools/domain-tool';
@@ -18,6 +21,7 @@ import {
 } from '@/domain/mcp/tools/schemas';
 import { REPORT_RESOURCE_URI } from '@/domain/mcp/ui-resources';
 import {
+  type ArgumentSpellings,
   errorResult,
   type JsonSchema,
   READS,
@@ -57,6 +61,10 @@ export class GetReportTool extends DomainTool<'get_report'> {
   };
 
   readonly annotations: ToolAnnotations = READS;
+
+  override readonly spellings: ArgumentSpellings = {
+    aliases: { host: 'domain', url: 'domain' },
+  };
 
   protected override async handleForDomain(
     domain: Readonly<Domain>,

@@ -7,10 +7,14 @@
 
 import { deleteDomain, type Domain } from '@/domain/db/domains';
 import { deleteReportsOf } from '@/domain/db/reports';
-import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
+import {
+  type ToolContent,
+  type ToolContext,
+} from '@/domain/mcp/tool-context';
 import { DomainTool } from '@/domain/mcp/tools/domain-tool';
 import { DOMAIN } from '@/domain/mcp/tools/schemas';
 import {
+  type ArgumentSpellings,
   type JsonSchema,
   textResult,
   type ToolAnnotations,
@@ -38,6 +42,10 @@ export class RemoveDomainTool extends DomainTool<'remove_domain'> {
     destructive: true,
     idempotent: true,
   });
+
+  override readonly spellings: ArgumentSpellings = {
+    aliases: { host: 'domain', url: 'domain' },
+  };
 
   protected override async handleForDomain(
     domain: Readonly<Domain>,
