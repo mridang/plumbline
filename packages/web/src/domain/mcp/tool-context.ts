@@ -6,10 +6,10 @@
  * failures are worth explaining to an assistant.
  */
 
-import { NoExplanations, ReadWriteScopes } from '@/lib/mcp';
+import { ReadWriteScopes, type FailureExplainer } from '@/lib/mcp';
 import type { DomainListData, ReportData } from '@/domain/mcp/ui-types';
 import type { User } from '@/domain/db/users';
-import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+import { SCOPE_READ, SCOPE_WRITE, explainFailure } from '@/domain/mcp/app';
 import {
   liveToolServices,
   type ToolServices,
@@ -47,8 +47,5 @@ export type ToolContent = ReportData | DomainListData;
 /** Which sign-in a call needs, by what the tool says about its own effects. */
 export const TOOL_SCOPES = new ReadWriteScopes(SCOPE_READ, SCOPE_WRITE);
 
-/**
- * This app has no recoverable failure of its own: a failure is either a backend
- * failure or a mistake in this code.
- */
-export const TOOL_FAILURES = new NoExplanations();
+/** How this app words what an assistant is told about a failure. */
+export const TOOL_FAILURES: FailureExplainer = { explain: explainFailure };
