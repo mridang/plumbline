@@ -127,13 +127,12 @@ export const DOMAIN_LIST_OUTPUT_SCHEMA = {
 } as const;
 
 /** A domain: its host name or any URL on it, never blank. */
-export const DOMAIN = {
-  type: 'string',
-  minLength: 1,
-  maxLength: 2048,
-  pattern: NOT_BLANK,
-  description: 'The domain, such as example.com, or any URL on it.',
-} as const;
+export const DOMAIN = z
+  .string()
+  .min(1)
+  .max(2048)
+  .regex(new RegExp(NOT_BLANK))
+  .describe('The domain, such as example.com, or any URL on it.');
 
 /** A list of check ids or group names. */
 export const CHECK_NAMES = z
