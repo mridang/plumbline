@@ -52,6 +52,13 @@ let notProvided: undefined;
 const respond = (body: string, status = 200) =>
   jest.fn<typeof fetch>(async () => new Response(body, { status }));
 
+/** A copy of a document with one key left out, as if the client never sent it. */
+function withoutKey(document: Record<string, unknown>, key: string) {
+  return Object.fromEntries(
+    Object.entries(document).filter(([name]) => name !== key),
+  );
+}
+
 describe('isMetadataDocumentUrl', () => {
   it('accepts an https URL with a path', () => {
     expect(isMetadataDocumentUrl(URL_ID)).toBe(true);
@@ -172,6 +179,11 @@ describe('parseClientMetadataDocument', () => {
       URL_ID,
     );
     expect(result.ok).toBe(false);
+  });
+
+  it('rejects a private_key_jwt client whose document omits jwks_uri entirely', () => {
+    const document = withoutKey(CHATGPT_DOCUMENT, 'jwks_uri');
+    expect(parseClientMetadataDocument(document, URL_ID).ok).toBe(false);
   });
 
   it('accepts a private_key_jwt client that names no algorithm', () => {
