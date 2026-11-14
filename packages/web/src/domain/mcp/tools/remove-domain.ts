@@ -12,13 +12,13 @@ import { DomainTool } from '@/domain/mcp/tools/domain-tool';
 import { DOMAIN } from '@/domain/mcp/tools/schemas';
 import {
   type ArgumentSpellings,
-  type JsonSchema,
   textResult,
   type ToolAnnotations,
   type ToolArgs,
   type ToolResult,
   writes,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class RemoveDomainTool extends DomainTool<'remove_domain'> {
   readonly name = 'remove_domain';
@@ -28,12 +28,11 @@ export class RemoveDomainTool extends DomainTool<'remove_domain'> {
   readonly description =
     "Removes a domain from the user's list, with all of its saved reports.";
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: { domain: DOMAIN },
-    required: ['domain'],
-  };
+  readonly input = z
+    .object({
+      domain: DOMAIN,
+    })
+    .strict();
 
   readonly annotations: ToolAnnotations = writes({
     destructive: true,

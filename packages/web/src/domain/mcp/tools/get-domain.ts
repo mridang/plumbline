@@ -14,13 +14,13 @@ import { DomainTool } from '@/domain/mcp/tools/domain-tool';
 import { DOMAIN } from '@/domain/mcp/tools/schemas';
 import {
   type ArgumentSpellings,
-  type JsonSchema,
   READS,
   textResult,
   type ToolAnnotations,
   type ToolArgs,
   type ToolResult,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class GetDomainTool extends DomainTool<'get_domain'> {
   readonly name = 'get_domain';
@@ -30,12 +30,11 @@ export class GetDomainTool extends DomainTool<'get_domain'> {
   readonly description =
     "Shows one of the user's domains: which checks run for it (or that all do), the ones switched off, and how its newest scan went.";
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: { domain: DOMAIN },
-    required: ['domain'],
-  };
+  readonly input = z
+    .object({
+      domain: DOMAIN,
+    })
+    .strict();
 
   readonly annotations: ToolAnnotations = READS;
 

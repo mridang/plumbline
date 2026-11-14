@@ -8,7 +8,6 @@
 import { overviewOf } from '@/domain/db/live';
 import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
 import {
-  type JsonSchema,
   McpTool,
   READS,
   textResult,
@@ -16,6 +15,7 @@ import {
   type ToolArgs,
   type ToolResult,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class ListRepositoriesTool extends McpTool<
   'list_repositories',
@@ -29,10 +29,7 @@ export class ListRepositoriesTool extends McpTool<
   readonly description =
     'Lists the repositories whose sites the user can see on their Plumbline dashboard: the ones they added themselves and every site of the GitHub repositories they have access to, with how each site stands now (checking, failing, with warnings, all clear, not answering or not checked yet).';
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-  };
+  readonly input = z.object({}).strict();
 
   readonly annotations: ToolAnnotations = READS;
 

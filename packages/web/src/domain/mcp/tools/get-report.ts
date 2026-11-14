@@ -27,6 +27,7 @@ import {
   type ToolArgs,
   type ToolResult,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class GetReportTool extends DomainTool<'get_report'> {
   readonly name = 'get_report';
@@ -36,19 +37,16 @@ export class GetReportTool extends DomainTool<'get_report'> {
   readonly description =
     "Shows a saved report of one of the user's domains: when it was scanned, how many checks passed, warned, failed and were skipped, and what each failing or warning check found. The newest report unless `report` names an older one (from list_reports).";
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
+  readonly input = z
+    .object({
       domain: DOMAIN,
-      report: {
-        type: 'string',
-        maxLength: 64,
-        description: 'The id of an older report, from list_reports.',
-      },
-    },
-    required: ['domain'],
-  };
+      report: z
+        .string()
+        .max(64)
+        .describe('The id of an older report, from list_reports.')
+        .optional(),
+    })
+    .strict();
 
   override readonly outputSchema: JsonSchema = REPORT_OUTPUT_SCHEMA;
 

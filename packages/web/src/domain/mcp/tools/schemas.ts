@@ -10,7 +10,8 @@
  * `domain` means from one tool should not meet a different rule in the next.
  */
 
-import { NOT_BLANK } from '@/lib/mcp';
+import { NOT_BLANK, writes } from '@/lib/mcp';
+import { z } from 'zod';
 
 /**
  * The `_meta` that links a tool to the View that draws its result, and the
@@ -135,23 +136,22 @@ export const DOMAIN = {
 } as const;
 
 /** A list of check ids or group names. */
-export const CHECK_NAMES = {
-  type: 'array',
-  maxItems: 500,
-  items: { type: 'string', minLength: 1, maxLength: 100, pattern: NOT_BLANK },
-} as const;
+export const CHECK_NAMES = z
+  .array(z.string().min(1).max(100).regex(new RegExp(NOT_BLANK)))
+  .max(500);
 
 /** The furthest into a result an `offset` may reach. */
 export const OFFSET_MAX = 10_000;
 
 /** `offset`: how many results to skip, to read the next page of a long result. */
-export const OFFSET = {
-  type: 'integer',
-  minimum: 0,
-  maximum: OFFSET_MAX,
-  description:
+export const OFFSET = z
+  .int()
+  .min(0)
+  .max(OFFSET_MAX)
+  .default(0)
+  .describe(
     'How many results to skip, to read the next page (default 0). A result that was cut short says which offset comes next.',
-} as const;
+  );
 
 /** How many checks one page of `list_checks` holds when no `limit` is given. */
 export const CHECKS_PAGE_DEFAULT = 50;

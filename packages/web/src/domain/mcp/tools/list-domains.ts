@@ -23,6 +23,7 @@ import {
   type ToolArgs,
   type ToolResult,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class ListDomainsTool extends McpTool<
   'list_domains',
@@ -36,10 +37,7 @@ export class ListDomainsTool extends McpTool<
   readonly description =
     "Lists the user's domains, with how many checks run for each and how its newest scan went.";
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-  };
+  readonly input = z.object({}).strict();
 
   override readonly outputSchema: JsonSchema = DOMAIN_LIST_OUTPUT_SCHEMA;
 

@@ -13,13 +13,13 @@ import { DomainTool } from '@/domain/mcp/tools/domain-tool';
 import { DOMAIN } from '@/domain/mcp/tools/schemas';
 import {
   type ArgumentSpellings,
-  type JsonSchema,
   READS,
   textResult,
   type ToolAnnotations,
   type ToolArgs,
   type ToolResult,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class ScanDomainTool extends DomainTool<'scan_domain'> {
   readonly name = 'scan_domain';
@@ -29,12 +29,11 @@ export class ScanDomainTool extends DomainTool<'scan_domain'> {
   readonly description =
     "Says how to scan one of the user's domains: the Plumbline page that runs its checks in the browser and saves a report, and the CLI command that runs every check (TLS and mail included) on the user's own machine. The checks never run on the server, so this starts nothing by itself.";
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: { domain: DOMAIN },
-    required: ['domain'],
-  };
+  readonly input = z
+    .object({
+      domain: DOMAIN,
+    })
+    .strict();
 
   readonly annotations: ToolAnnotations = READS;
 

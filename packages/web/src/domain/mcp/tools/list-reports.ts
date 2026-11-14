@@ -14,13 +14,13 @@ import { DOMAIN } from '@/domain/mcp/tools/schemas';
 import { countOf } from '@/lib/intl';
 import {
   type ArgumentSpellings,
-  type JsonSchema,
   READS,
   textResult,
   type ToolAnnotations,
   type ToolArgs,
   type ToolResult,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class ListReportsTool extends DomainTool<'list_reports'> {
   readonly name = 'list_reports';
@@ -30,12 +30,11 @@ export class ListReportsTool extends DomainTool<'list_reports'> {
   readonly description =
     "Lists the saved reports of one of the user's domains, newest first, with their ids and counts.";
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: { domain: DOMAIN },
-    required: ['domain'],
-  };
+  readonly input = z
+    .object({
+      domain: DOMAIN,
+    })
+    .strict();
 
   readonly annotations: ToolAnnotations = READS;
 

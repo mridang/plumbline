@@ -19,7 +19,6 @@ import { CHECK_NAMES, DOMAIN } from '@/domain/mcp/tools/schemas';
 import {
   type ArgumentSpellings,
   errorResult,
-  type JsonSchema,
   stringListArg,
   textResult,
   type ToolAnnotations,
@@ -27,6 +26,7 @@ import {
   type ToolResult,
   writes,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class ConfigureChecksTool extends DomainTool<'configure_checks'> {
   readonly name = 'configure_checks';
@@ -36,27 +36,21 @@ export class ConfigureChecksTool extends DomainTool<'configure_checks'> {
   readonly description =
     "Chooses which checks run for one of the user's domains: `enable` and `disable` take check ids or group names (tls, owasp, seo, …), and `all` switches every check on first. Returns how many checks now run.";
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
+  readonly input = z
+    .object({
       domain: DOMAIN,
-      all: {
-        type: 'boolean',
-        description:
-          'Switch every check on before applying enable and disable.',
-      },
-      enable: {
-        ...CHECK_NAMES,
-        description: 'Check ids or group names to switch on.',
-      },
-      disable: {
-        ...CHECK_NAMES,
-        description: 'Check ids or group names to switch off.',
-      },
-    },
-    required: ['domain'],
-  };
+      all: z
+        .boolean()
+        .describe('Switch every check on before applying enable and disable.')
+        .optional(),
+      enable: CHECK_NAMES.describe(
+        'Check ids or group names to switch on.',
+      ).optional(),
+      disable: CHECK_NAMES.describe(
+        'Check ids or group names to switch off.',
+      ).optional(),
+    })
+    .strict();
 
   readonly annotations: ToolAnnotations = writes({ idempotent: true });
 

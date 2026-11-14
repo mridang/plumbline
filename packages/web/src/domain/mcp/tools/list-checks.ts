@@ -20,7 +20,7 @@ import {
 import { countOf } from '@/lib/intl';
 import {
   errorResult,
-  type JsonSchema,
+  limitArg,
   McpTool,
   numberArg,
   offsetArg,
@@ -31,6 +31,7 @@ import {
   type ToolArgs,
   type ToolResult,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class ListChecksTool extends McpTool<
   'list_checks',
@@ -44,29 +45,29 @@ export class ListChecksTool extends McpTool<
   readonly description =
     'Lists the checks Plumbline can run, with their ids, names, groups and what each looks at, 50 at a time in id order. Narrow it to one group (a source such as owasp or a topic such as tls) or to checks whose id, name or description contains some text. Without arguments it starts with the list of groups.';
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      group: {
-        type: 'string',
-        maxLength: 100,
-        description: 'Only the checks in this group, such as tls or seo.',
-      },
-      query: {
-        type: 'string',
-        maxLength: 200,
-        description: 'Only checks whose id, name or description has this text.',
-      },
-      limit: {
-        type: 'integer',
-        minimum: 1,
-        maximum: CHECKS_PAGE_MAX,
-        description: `Most checks to return (default ${CHECKS_PAGE_DEFAULT}, at most ${CHECKS_PAGE_MAX}).`,
-      },
+  readonly input = z
+    .object({
+      group: z
+        .string()
+        .max(100)
+        .describe('Only the checks in this group, such as tls or seo.')
+        .optional(),
+      query: z
+        .string()
+        .max(200)
+        .describe('Only checks whose id, name or description has this text.')
+        .optional(),
+      limit: z
+        .int()
+        .min(1)
+        .max(CHECKS_PAGE_MAX)
+        .describe(
+          `Most checks to return (default ${CHECKS_PAGE_DEFAULT}, at most ${CHECKS_PAGE_MAX}).`,
+        )
+        .optional(),
       offset: OFFSET,
-    },
-  };
+    })
+    .strict();
 
   readonly annotations: ToolAnnotations = READS;
 
