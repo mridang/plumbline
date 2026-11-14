@@ -6,10 +6,7 @@
  */
 
 import { overviewOf } from '@/domain/db/live';
-import {
-  type ToolContent,
-  type ToolContext,
-} from '@/domain/mcp/tool-context';
+import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
 import {
   type JsonSchema,
   McpTool,

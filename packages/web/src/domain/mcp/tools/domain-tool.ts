@@ -12,10 +12,7 @@
  */
 
 import { type Domain } from '@/domain/db/domains';
-import {
-  type ToolContent,
-  type ToolContext,
-} from '@/domain/mcp/tool-context';
+import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
 import { ownDomain } from '@/domain/mcp/tools/domain-support';
 import { McpTool, type ToolArgs, type ToolResult } from '@/lib/mcp';
 

@@ -8,10 +8,7 @@
 import { CHECKS, enabledChecks } from '@/domain/checks/catalogue';
 import { listDomains } from '@/domain/db/domains';
 import { listReports } from '@/domain/db/reports';
-import {
-  type ToolContent,
-  type ToolContext,
-} from '@/domain/mcp/tool-context';
+import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
 import { domainListResult } from '@/domain/mcp/tool-results';
 import {
   DOMAIN_LIST_OUTPUT_SCHEMA,

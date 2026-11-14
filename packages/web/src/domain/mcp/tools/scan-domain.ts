@@ -6,10 +6,7 @@
  */
 
 import { type Domain } from '@/domain/db/domains';
-import {
-  type ToolContent,
-  type ToolContext,
-} from '@/domain/mcp/tool-context';
+import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
 import { domainLink } from '@/domain/mcp/tool-results';
 import { CLI_COMMAND } from '@/domain/mcp/tools/domain-support';
 import { DomainTool } from '@/domain/mcp/tools/domain-tool';

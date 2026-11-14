@@ -10,7 +10,7 @@
  * `domain` means from one tool should not meet a different rule in the next.
  */
 
-import { NOT_BLANK, writes } from '@/lib/mcp';
+import { NOT_BLANK } from '@/lib/mcp';
 
 /**
  * The `_meta` that links a tool to the View that draws its result, and the

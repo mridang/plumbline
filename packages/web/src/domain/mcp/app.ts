@@ -3,10 +3,16 @@
  *
  * What this app's connector has of its own, read by the shared OAuth and MCP
  * code (`lib/oauth/`, `lib/mcp/`): the names of its two scopes and what they
- * allow in words, which tools only read, the name its protected resource goes
- * by, and the looser spellings of tool arguments it accepts. Everything in
- * those libraries is the same in every app.
+ * allow in words, the name its protected resource goes by, which scopes it
+ * offers and what its own failures mean. Everything in those libraries is the
+ * same in every app.
+ *
+ * What a single tool forgives or advertises is not here: a tool carries that
+ * itself, in `tools/<tool>.ts`.
  */
+
+import { BackendFailureError } from '@/lib/mcp';
+import { SITE_URL } from '@/utils/site';
 
 /** May see domains, their checks and their reports. */
 export const SCOPE_READ = 'checks:read';
@@ -41,9 +47,12 @@ export const SUPPORTED_SCOPES = [SCOPE_READ, SCOPE_WRITE] as const;
  * words to tell it, or undefined when the failure is not one of them.
  *
  * It lives here rather than in the call path because what can go wrong is the
- * app's own business: every app's `tool-calls.ts` is the same file. This app has
- * no such failure of its own yet, so nothing is recognised here.
+ * app's own business: every app's `tool-calls.ts` is the same file. A failure of
+ * a named service is already recorded by the time this is asked; this only
+ * words what the assistant is told, which for this app names the site to open.
  */
-export function explainFailure(_error: unknown): string | undefined {
-  return undefined;
+export function explainFailure(error: unknown): string | undefined {
+  return error instanceof BackendFailureError
+    ? `Something went wrong with ${error.service}, so that did not work. Try again in a minute; if it keeps failing, tell the user to open ${SITE_URL}.`
+    : undefined;
 }

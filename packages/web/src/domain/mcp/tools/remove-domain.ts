@@ -7,10 +7,7 @@
 
 import { deleteDomain, type Domain } from '@/domain/db/domains';
 import { deleteReportsOf } from '@/domain/db/reports';
-import {
-  type ToolContent,
-  type ToolContext,
-} from '@/domain/mcp/tool-context';
+import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
 import { DomainTool } from '@/domain/mcp/tools/domain-tool';
 import { DOMAIN } from '@/domain/mcp/tools/schemas';
 import {

@@ -11,10 +11,7 @@ import {
   GROUPS,
   isGroup,
 } from '@/domain/checks/catalogue';
-import {
-  type ToolContent,
-  type ToolContext,
-} from '@/domain/mcp/tool-context';
+import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
 import {
   CHECKS_PAGE_DEFAULT,
   CHECKS_PAGE_MAX,
@@ -24,7 +21,6 @@ import { countOf } from '@/lib/intl';
 import {
   errorResult,
   type JsonSchema,
-  limitArg,
   McpTool,
   numberArg,
   offsetArg,
