@@ -154,12 +154,12 @@ export async function verifyClientAssertion(
     return invalid('The client_assertion is not valid.');
   }
   const { exp, jti } = verified.payload;
-  const validJti =
-    typeof jti === 'string' && jti !== '' && jti.length <= MAX_JTI_LENGTH;
+  const badJti =
+    typeof jti !== 'string' || jti === '' || jti.length > MAX_JTI_LENGTH;
   if (
     exp === undefined ||
     exp > now + MAX_ASSERTION_LIFETIME_SECONDS ||
-    !validJti
+    badJti
   ) {
     return invalid('The client_assertion is not valid.');
   }
