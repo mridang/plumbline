@@ -16,12 +16,11 @@ export {
 export {
   ASSERTION_ALGORITHMS,
   type CachedDocument,
+  type ClientAuth,
   type ClientBusy,
   type ClientFetch,
-  type ClientAuth,
   type ClientParse,
   DEFAULT_DOCUMENT_TTL_SECONDS,
-  documentTtlSeconds,
   FETCH_USER_AGENT,
   fetchClientMetadata,
   isClientBusy,
@@ -35,11 +34,12 @@ export {
   MAX_STALE_DOCUMENT_SECONDS,
   MIN_DOCUMENT_TTL_SECONDS,
   type OAuthClient,
+  documentTtlSeconds,
   parseClientMetadataDocument,
   parseRegistration,
   parseRegistrationText,
-  readCappedText,
   type Registration,
+  readCappedText,
   registrationResponse,
 } from './client';
 export {
@@ -92,8 +92,8 @@ export {
   isAcceptableRedirectUri,
   isLoopbackHost,
   isPrivateHost,
-  redirectKind,
   type RedirectKind,
+  redirectKind,
   redirectUriMatches,
 } from './redirect-uri';
 export {
@@ -121,9 +121,9 @@ export {
   SCOPE_READ,
   SCOPE_WRITE,
   type Scope,
+  type ScopedMessage,
   scopeForMessage,
   scopeForTool,
-  type ScopedMessage,
   SUPPORTED_SCOPES,
 } from './scopes';
 export {
@@ -139,11 +139,10 @@ export {
   type SecurityEvent,
   type SecurityFields,
 } from './security-log';
-export { sweepSometimes, type Sweeps } from './sweep';
+export { type Sweeps, sweepSometimes } from './sweep';
 export {
   ACCESS_TTL_SECONDS,
   authenticateAccessToken,
-  type AccessIdentity,
   CODE_TTL_SECONDS,
   type CodeExchange,
   type CodeRecord,
@@ -151,11 +150,12 @@ export {
   exchangeRefreshToken,
   type GrantRecord,
   issueAuthorizationCode,
+  type AccessIdentity,
   type OAuthFailure,
   type OAuthStore,
+  type RefreshExchange,
   REFRESH_GRACE_SECONDS,
   REFRESH_TTL_SECONDS,
-  type RefreshExchange,
   revokeToken,
   type TokenRecord,
   type TokenResponse,

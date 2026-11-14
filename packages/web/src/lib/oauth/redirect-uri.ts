@@ -86,14 +86,12 @@ function mappedIpv4(host: string): string | undefined {
  */
 export function isLoopbackHost(host: string): boolean {
   const ipv4 = ipv4Octets(mappedIpv4(host) ?? host);
-  if (ipv4 !== undefined && (ipv4[0] === 127 || ipv4.every((n) => n === 0))) {
+  if (host === 'localhost' || host.endsWith('.localhost')) {
     return true;
   }
   return (
-    host === 'localhost' ||
-    host.endsWith('.localhost') ||
-    host === '[::1]' ||
-    host === '[::]'
+    ['[::1]', '[::]'].includes(host) ||
+    (ipv4 !== undefined && (ipv4[0] === 127 || ipv4.every((n) => n === 0)))
   );
 }
 
@@ -107,16 +105,13 @@ export function isPrivateHost(host: string): boolean {
   const ipv4 = ipv4Octets(mappedIpv4(host) ?? host);
   if (ipv4) {
     const [a = 0, b = 0] = ipv4;
-    if (a === 10 || (a === 192 && b === 168)) {
-      return true;
-    }
-    if (a === 172 && b >= 16 && b <= 31) {
-      return true;
-    }
-    if (a === 169 && b === 254) {
-      return true;
-    }
-    return a === 100 && b >= 64 && b <= 127;
+    return [
+      a === 10,
+      a === 172 && b >= 16 && b <= 31,
+      a === 192 && b === 168,
+      a === 169 && b === 254,
+      a === 100 && b >= 64 && b <= 127,
+    ].some(Boolean);
   }
   if (host.startsWith('[')) {
     return /^\[(f[cd][0-9a-f]{2}|fe[89ab][0-9a-f]):/.test(host);
@@ -221,8 +216,11 @@ export function redirectUriMatches(
   }
   return registered.some((r) => {
     const have = parseUrl(r);
+    if (have === undefined) {
+      return false;
+    }
     return (
-      have?.protocol === 'http:' &&
+      have.protocol === 'http:' &&
       have.hostname === want.hostname &&
       have.pathname === want.pathname &&
       have.search === want.search
