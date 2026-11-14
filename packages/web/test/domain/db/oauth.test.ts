@@ -28,33 +28,26 @@ describe('the background sweep reads by index', () => {
       .map((row) => String(row['detail']))
       .join(' ');
 
-  it('finds revoked grants by their revocation time', () => {
-    const plan = planOf("DELETE FROM oauth_grants WHERE revoked_at < 'x'");
-    expect(plan).toContain('idx_oauth_grants_revoked_used');
-    expect(plan).not.toContain('SCAN');
-  });
-
-  it('finds idle grants through the same index', () => {
-    const plan = planOf(
+  it.each([
+    [
+      "DELETE FROM oauth_grants WHERE revoked_at < 'x'",
+      'idx_oauth_grants_revoked_used',
+    ],
+    [
       "UPDATE oauth_grants SET revoked_at = 'x' WHERE revoked_at IS NULL AND coalesce(last_used_at, created_at) < 'y'",
-    );
-    expect(plan).toContain('idx_oauth_grants_revoked_used');
-    expect(plan).not.toContain('SCAN');
-  });
-
-  it('finds unused registered clients by kind and age', () => {
-    const plan = planOf(
+      'idx_oauth_grants_revoked_used',
+    ],
+    [
       "DELETE FROM oauth_clients WHERE kind = 'dcr' AND created_at < 'x'",
-    );
-    expect(plan).toContain('idx_oauth_clients_kind_created');
-    expect(plan).not.toContain('SCAN');
-  });
-
-  it('finds stale metadata documents by kind and fetch time', () => {
-    const plan = planOf(
+      'idx_oauth_clients_kind_created',
+    ],
+    [
       "DELETE FROM oauth_clients WHERE kind = 'cimd' AND fetched_at < 'x'",
-    );
-    expect(plan).toContain('idx_oauth_clients_kind_fetched');
+      'idx_oauth_clients_kind_fetched',
+    ],
+  ])('seeks %s through its index', (sql, index) => {
+    const plan = planOf(sql);
+    expect(plan).toContain(index);
     expect(plan).not.toContain('SCAN');
   });
 });
