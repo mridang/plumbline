@@ -20,7 +20,6 @@ import {
 import { countOf } from '@/lib/intl';
 import {
   errorResult,
-  limitArg,
   McpTool,
   numberArg,
   offsetArg,

@@ -10,7 +10,7 @@
  * `domain` means from one tool should not meet a different rule in the next.
  */
 
-import { NOT_BLANK, writes } from '@/lib/mcp';
+import { NOT_BLANK } from '@/lib/mcp';
 import { z } from 'zod';
 
 /**
