@@ -25,7 +25,7 @@ import {
   replyIdOf,
   withoutId,
 } from '@/lib/mcp';
-import { HTTP_SCHEME } from '../../helpers/data.js';
+import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
 const META = 'io.modelcontextprotocol/protocolVersion';
 const CAPS = 'io.modelcontextprotocol/clientCapabilities';
@@ -654,7 +654,7 @@ describe('isAllowedOrigin', () => {
       'https://evil.example',
       'https://claude.ai.evil.example',
       'https://notclaude.ai',
-      `${HTTP_SCHEME}claude.ai`,
+      urls.claudeAi,
       'https://claude.ai/path',
       'null',
       'not a url',
@@ -707,9 +707,7 @@ describe('isAllowedOrigin', () => {
     expect(isAllowedOrigin('https://tool.example:8443', self, setting)).toBe(
       false,
     );
-    expect(isAllowedOrigin(`${HTTP_SCHEME}tool.example`, self, setting)).toBe(
-      false,
-    );
+    expect(isAllowedOrigin(urls.toolExample, self, setting)).toBe(false);
     expect(isAllowedOrigin('https://sub.tool.example', self, setting)).toBe(
       false,
     );
