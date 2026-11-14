@@ -56,8 +56,8 @@
     "@hint/utils-types": "^1.2.0",
     "@mridang/webhint-formatter-plumbline": "*",
     "@mridang/webhint-hint-plumbline": "*",
-    "@oclif/core": "^5.1.10",
-    "@oclif/plugin-help": "^7.0.6",
+    "@oclif/core": "^5.1.12",
+    "@oclif/plugin-help": "^7.0.7",
     "@oclif/plugin-not-found": "^4.0.7",
     "hint": "^7.1.0"
   },
