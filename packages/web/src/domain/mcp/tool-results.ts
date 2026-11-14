@@ -18,31 +18,16 @@ import type {
 } from '@/domain/mcp/ui-types';
 import { SITE_URL } from '@/utils/site';
 
-/** One piece of text in a tool result. */
-export interface TextContent {
-  readonly type: 'text';
-  readonly text: string;
-}
+import { textResult, type ToolResult } from '@/lib/mcp';
+import type { ToolContent } from '@/domain/mcp/tool-context';
 
-/** The result of a `tools/call`, as the protocol wants it. */
-export interface ToolResult {
-  /** What the model reads. */
-  readonly content: readonly TextContent[];
-  /** What the report or list view draws, for the tools that have one. */
-  readonly structuredContent?: ReportData | DomainListData;
-  /** True when the call failed in a way the assistant should relay. */
-  readonly isError?: boolean;
-}
-
-/** A plain-text tool result. */
-export function textResult(body: string): ToolResult {
-  return { content: [{ type: 'text', text: body }] };
-}
-
-/** A plain-text tool result that tells the assistant the call did not work. */
-export function errorResult(body: string): ToolResult {
-  return { ...textResult(body), isError: true };
-}
+export {
+  dataResult,
+  errorResult,
+  type TextContent,
+  textResult,
+  type ToolResult,
+} from '@/lib/mcp';
 
 /** The page on plumbline that shows a domain and runs its checks. */
 export function domainLink(domain: Readonly<Pick<Domain, 'id'>>): string {
@@ -137,7 +122,7 @@ export function reportText(data: Readonly<ReportData>): string {
 export function reportResult(
   domain: Readonly<Domain>,
   report: Readonly<Report>,
-): ToolResult {
+): ToolResult<ToolContent> {
   const data = reportData(domain, report);
   return { ...textResult(reportText(data)), structuredContent: data };
 }
@@ -150,7 +135,7 @@ export function domainListResult(
     readonly latest?: ReportSummary;
   }[],
   totalChecks: number,
-): ToolResult {
+): ToolResult<ToolContent> {
   const data: DomainListData = {
     total_checks: totalChecks,
     link: DOMAINS_LINK,

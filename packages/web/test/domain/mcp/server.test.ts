@@ -269,7 +269,11 @@ describe('the tool catalogue', () => {
     // that the dispatcher does not know the tool.
     const isUnknown = async (name: string): Promise<boolean> => {
       try {
-        await callTool(someone, { name, arguments: {} }, () => db);
+        await callTool(
+          someone,
+          { name, arguments: {} },
+          { openDatabase: () => db },
+        );
         return false;
       } catch (error) {
         return error instanceof UnknownToolError;
@@ -809,7 +813,11 @@ describe('every reply parses with the SDK’s own schema for its method', () => 
       const { db } = sqliteDatabase(...APP_MIGRATIONS);
       await addDomain(db, someone.id, 'example.com');
       const run = (args: Record<string, unknown>) =>
-        callToolOrExplain(someone, { name, arguments: args }, () => db);
+        callToolOrExplain(
+          someone,
+          { name, arguments: args },
+          { openDatabase: () => db },
+        );
       const results = await Promise.all([
         run({ domain: 'example.com' }),
         run({}),

@@ -3,10 +3,16 @@
  *
  * What this app's connector has of its own, read by the shared OAuth and MCP
  * code (`lib/oauth/`, `lib/mcp/`): the names of its two scopes and what they
- * allow in words, which tools only read, the name its protected resource goes
- * by, and the looser spellings of tool arguments it accepts. Everything in
- * those libraries is the same in every app.
+ * allow in words, the name its protected resource goes by, which scopes it
+ * offers and what its own failures mean. Everything in those libraries is the
+ * same in every app.
+ *
+ * What a single tool forgives or advertises is not here: a tool carries that
+ * itself, in `tools/<tool>.ts`.
  */
+
+import { BackendFailureError } from '@/lib/mcp';
+import { SITE_URL } from '@/utils/site';
 
 /** May see domains, their checks and their reports. */
 export const SCOPE_READ = 'checks:read';
@@ -27,48 +33,26 @@ export const SCOPE_TEXT: Readonly<Record<string, string>> = {
  */
 export const READ_ONLY_TEXT = 'see domains and reports';
 
-/**
- * Tools that only read. Anything not listed here is treated as a write, so a
- * newly added tool is protected by default until someone classifies it.
- * Scanning counts as reading: it runs the checks and keeps nothing.
- */
-export const READ_ONLY_TOOLS: ReadonlySet<string> = new Set([
-  'list_checks',
-  'list_domains',
-  'list_repositories',
-  'get_domain',
-  'get_report',
-  'list_reports',
-  'scan_domain',
-]);
-
 /** The name of the protected resource, in its RFC 9728 metadata. */
 export const RESOURCE_NAME = 'Plumbline domains';
 
 /**
- * Older or looser spellings of a tool's arguments, and the canonical name each
- * one stands for. The catalogue lists only the canonical names (so a model sees
- * one way to say each thing, and the input schemas stay closed), but a
- * connector that cached an earlier catalogue, or a model that carries an
- * argument over from a similar tool, must not start failing: its spelling is
- * renamed before the arguments are checked. A domain is often sent as a `host`
- * or a `url`.
+ * The scopes this app offers. A scope that is named above but left out here is
+ * understood and never granted, so a call that needs it is refused.
  */
-export const ARGUMENT_ALIASES: Readonly<
-  Record<string, Readonly<Record<string, string>>>
-> = {
-  get_domain: { host: 'domain', url: 'domain' },
-  get_report: { host: 'domain', url: 'domain' },
-  list_reports: { host: 'domain', url: 'domain' },
-  scan_domain: { host: 'domain', url: 'domain' },
-  remove_domain: { host: 'domain', url: 'domain' },
-  configure_checks: { host: 'domain', url: 'domain', checks: 'enable' },
-};
+export const SUPPORTED_SCOPES = [SCOPE_READ, SCOPE_WRITE] as const;
 
 /**
- * Arguments that are declared as a list of text but that models often send as
- * one piece of text ("csp-header"). That text is wrapped into a one-item list.
+ * The failures of this app's own making that an assistant can act on, as the
+ * words to tell it, or undefined when the failure is not one of them.
+ *
+ * It lives here rather than in the call path because what can go wrong is the
+ * app's own business: every app's `tool-calls.ts` is the same file. A failure of
+ * a named service is already recorded by the time this is asked; this only
+ * words what the assistant is told, which for this app names the site to open.
  */
-export const LISTS_OF_TEXT: Readonly<Record<string, readonly string[]>> = {
-  configure_checks: ['enable', 'disable'],
-};
+export function explainFailure(error: unknown): string | undefined {
+  return error instanceof BackendFailureError
+    ? `Something went wrong with ${error.service}, so that did not work. Try again in a minute; if it keeps failing, tell the user to open ${SITE_URL}.`
+    : undefined;
+}

@@ -92,11 +92,15 @@ export function isPlainObject(
  * The id to echo for a request: its own when it is a string or an integer (the
  * only ids JSON-RPC in MCP allows), otherwise null.
  */
-export function replyIdOf(value: unknown): ReplyId {
-  return typeof value === 'string' ||
+function isReplyId(value: unknown): value is string | number {
+  return (
+    typeof value === 'string' ||
     (typeof value === 'number' && Number.isSafeInteger(value))
-    ? value
-    : null;
+  );
+}
+
+export function replyIdOf(value: unknown): ReplyId {
+  return isReplyId(value) ? value : null;
 }
 
 /**
@@ -155,10 +159,9 @@ export function isModernRequest(message: ProtocolMessage): boolean {
   return declaredVersion(message) === MODERN_VERSION;
 }
 
-/** The HTTP statuses a refusal may carry. */
+/** What to send when a request is refused: an HTTP status plus a JSON-RPC error body. */
 type RefusalStatus = 400 | 403 | 404 | 413 | 429;
 
-/** What to send when a request is refused: an HTTP status plus a JSON-RPC error body. */
 export interface ProtocolRefusal {
   readonly status: RefusalStatus;
   /** Extra response headers (`Retry-After`, `WWW-Authenticate`). */

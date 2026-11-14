@@ -1,4 +1,6 @@
 {
+  "claudeAi": "http://claude.ai",
+  "ftp": "ftp://",
   "http": "http://",
-  "ftp": "ftp://"
+  "toolExample": "http://tool.example"
 }
