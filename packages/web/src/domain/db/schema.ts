@@ -130,22 +130,29 @@ export const reports = sqliteTable(
  * Metadata Document (cached; `fetched_at` says how fresh). `redirect_uris` is a
  * JSON array.
  */
-export const oauthClients = sqliteTable('oauth_clients', {
-  client_id: text('client_id').primaryKey(),
-  kind: text('kind').notNull(),
-  client_name: text('client_name').notNull(),
-  redirect_uris: text('redirect_uris').notNull(),
-  created_at: text('created_at').notNull(),
-  fetched_at: text('fetched_at'),
-  /** Until when a fetched document may be reused (from its cache headers); null for older rows and registered clients. */
-  expires_at: text('expires_at'),
-  /** How the client proves itself at the token endpoint: `none` (PKCE only) or `private_key_jwt`. */
-  auth_method: text('auth_method').notNull().default('none'),
-  /** Where the client publishes the keys it signs assertions with; set only for `private_key_jwt`. */
-  jwks_uri: text('jwks_uri'),
-  /** The picture the client publishes for itself; set only for a client fetched from its metadata document. */
-  logo_uri: text('logo_uri'),
-});
+export const oauthClients = sqliteTable(
+  'oauth_clients',
+  {
+    client_id: text('client_id').primaryKey(),
+    kind: text('kind').notNull(),
+    client_name: text('client_name').notNull(),
+    redirect_uris: text('redirect_uris').notNull(),
+    created_at: text('created_at').notNull(),
+    fetched_at: text('fetched_at'),
+    /** Until when a fetched document may be reused (from its cache headers); null for older rows and registered clients. */
+    expires_at: text('expires_at'),
+    /** How the client proves itself at the token endpoint: `none` (PKCE only) or `private_key_jwt`. */
+    auth_method: text('auth_method').notNull().default('none'),
+    /** Where the client publishes the keys it signs assertions with; set only for `private_key_jwt`. */
+    jwks_uri: text('jwks_uri'),
+    /** The picture the client publishes for itself; set only for a client fetched from its metadata document. */
+    logo_uri: text('logo_uri'),
+  },
+  (table) => [
+    index('idx_oauth_clients_kind_created').on(table.kind, table.created_at),
+    index('idx_oauth_clients_kind_fetched').on(table.kind, table.fetched_at),
+  ],
+);
 
 /** Client assertions already accepted (by `jti`), kept until they expire so none is used twice. */
 export const oauthAssertions = sqliteTable(
@@ -178,6 +185,10 @@ export const oauthGrants = sqliteTable(
     index('idx_oauth_grants_user').on(table.user_id),
     index('idx_oauth_grants_user_client').on(table.user_id, table.client_id),
     index('idx_oauth_grants_client').on(table.client_id),
+    index('idx_oauth_grants_revoked_used').on(
+      table.revoked_at,
+      sql`coalesce(${table.last_used_at}, ${table.created_at})`,
+    ),
   ],
 );
 
