@@ -2,12 +2,11 @@ import { describe, expect, it } from '@jest/globals';
 import Ajv2020 from 'ajv/dist/2020.js';
 
 import { unsupportedKeywords, validateJson, type JsonSchema } from '@/lib/mcp';
+import { TOOLS, toolNamed } from '@/domain/mcp/tool-definitions';
 import {
   CHECKS_PAGE_DEFAULT,
   CHECKS_PAGE_MAX,
-  TOOLS,
-  toolNamed,
-} from '@/domain/mcp/tool-definitions';
+} from '@/domain/mcp/tools/schemas';
 import {
   APP_RESOURCES,
   DOMAIN_LIST_RESOURCE_URI,
@@ -256,7 +255,7 @@ describe('what each tool says about signing in', () => {
     (name, tool) => {
       const expected = [{ type: 'oauth2', scopes: [scopeForTool(name)] }];
       expect(tool.securitySchemes).toEqual(expected);
-      expect(tool._meta.securitySchemes).toEqual(expected);
+      expect(tool._meta['securitySchemes']).toEqual(expected);
     },
   );
 });

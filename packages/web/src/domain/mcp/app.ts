@@ -27,48 +27,23 @@ export const SCOPE_TEXT: Readonly<Record<string, string>> = {
  */
 export const READ_ONLY_TEXT = 'see domains and reports';
 
-/**
- * Tools that only read. Anything not listed here is treated as a write, so a
- * newly added tool is protected by default until someone classifies it.
- * Scanning counts as reading: it runs the checks and keeps nothing.
- */
-export const READ_ONLY_TOOLS: ReadonlySet<string> = new Set([
-  'list_checks',
-  'list_domains',
-  'list_repositories',
-  'get_domain',
-  'get_report',
-  'list_reports',
-  'scan_domain',
-]);
-
 /** The name of the protected resource, in its RFC 9728 metadata. */
 export const RESOURCE_NAME = 'Plumbline domains';
 
 /**
- * Older or looser spellings of a tool's arguments, and the canonical name each
- * one stands for. The catalogue lists only the canonical names (so a model sees
- * one way to say each thing, and the input schemas stay closed), but a
- * connector that cached an earlier catalogue, or a model that carries an
- * argument over from a similar tool, must not start failing: its spelling is
- * renamed before the arguments are checked. A domain is often sent as a `host`
- * or a `url`.
+ * The scopes this app offers. A scope that is named above but left out here is
+ * understood and never granted, so a call that needs it is refused.
  */
-export const ARGUMENT_ALIASES: Readonly<
-  Record<string, Readonly<Record<string, string>>>
-> = {
-  get_domain: { host: 'domain', url: 'domain' },
-  get_report: { host: 'domain', url: 'domain' },
-  list_reports: { host: 'domain', url: 'domain' },
-  scan_domain: { host: 'domain', url: 'domain' },
-  remove_domain: { host: 'domain', url: 'domain' },
-  configure_checks: { host: 'domain', url: 'domain', checks: 'enable' },
-};
+export const SUPPORTED_SCOPES = [SCOPE_READ, SCOPE_WRITE] as const;
 
 /**
- * Arguments that are declared as a list of text but that models often send as
- * one piece of text ("csp-header"). That text is wrapped into a one-item list.
+ * The failures of this app's own making that an assistant can act on, as the
+ * words to tell it, or undefined when the failure is not one of them.
+ *
+ * It lives here rather than in the call path because what can go wrong is the
+ * app's own business: every app's `tool-calls.ts` is the same file. This app has
+ * no such failure of its own yet, so nothing is recognised here.
  */
-export const LISTS_OF_TEXT: Readonly<Record<string, readonly string[]>> = {
-  configure_checks: ['enable', 'disable'],
-};
+export function explainFailure(_error: unknown): string | undefined {
+  return undefined;
+}

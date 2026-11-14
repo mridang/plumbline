@@ -60,7 +60,7 @@ const LIST_DATA = domainListResult(
 /** The output schema a tool advertises. */
 function outputSchemaOf(name: string): object {
   const tool = toolNamed(name);
-  return tool && 'outputSchema' in tool ? tool.outputSchema : {};
+  return tool?.outputSchema ?? {};
 }
 
 describe('ReportData', () => {
