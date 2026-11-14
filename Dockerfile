@@ -6,7 +6,7 @@
 # amd64 runner goes through QEMU; there is no cross-compilation to do).
 
 # --- Builder: install every workspace dependency and compile to dist/ -------
-FROM node:24-bookworm-slim AS builder
+FROM node:25-bookworm-slim AS builder
 
 # puppeteer-core (pulled in by @hint/connector-puppeteer) never downloads a
 # browser, but set the flag anyway so an `npm ci` cannot reach out for one.
@@ -30,7 +30,7 @@ RUN npm run build
 RUN npm prune --omit=dev
 
 # --- Runtime: Node + Chromium + the built server ----------------------------
-FROM node:24-bookworm-slim AS runtime
+FROM node:25-bookworm-slim AS runtime
 
 # Chromium and the fonts it needs to render pages. `--no-install-recommends`
 # keeps the layer small; the font packages cover Latin, CJK and emoji so the
