@@ -1,6 +1,6 @@
 {
   "name": "@mridang/webhint-hint-plumbline",
-  "version": "0.15.3",
+  "version": "0.15.4",
   "type": "module",
   "scripts": {
     "build": "tsc --build",
