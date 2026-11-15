@@ -16,7 +16,8 @@
     "prepack": "tsc --build",
     "test": "tsc --build && npm run build:views --workspace packages/web && jest --verbose --config=jest.config.mjs",
     "test:debug": "tsc --build && npm run build:views --workspace packages/web && jest --verbose --config=jest.config.mjs --detectOpenHandles",
-    "test:watch": "npm run test -- --watch"
+    "test:watch": "npm run test -- --watch",
+    "typecheck": "tsc --noEmit"
   },
   "author": {
     "name": "Mridang Agarwalla",
