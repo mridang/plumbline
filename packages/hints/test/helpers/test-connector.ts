@@ -21,9 +21,9 @@ async function toNetworkData(
 ): Promise<NetworkData> {
   const rawContent = Buffer.from(await response.arrayBuffer());
   const headers: HttpHeaders = {};
-  response.headers.forEach((value, key) => {
+  for (const [key, value] of response.headers.entries()) {
     headers[key.toLowerCase()] = value;
-  });
+  }
   // Fetch folds repeated Set-Cookie headers into one string, which cannot be
   // split safely because cookie dates contain commas, so keep them as a list.
   const cookies = response.headers.getSetCookie();

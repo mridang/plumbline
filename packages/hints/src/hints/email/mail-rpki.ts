@@ -59,7 +59,7 @@ export default defineHint({
             }
           }
           return Promise.all(
-            [...addresses].map(async (ip) => {
+            Array.from(addresses, async (ip) => {
               try {
                 const result = await rpki.client.check(ip);
                 if (result.asn === null) {

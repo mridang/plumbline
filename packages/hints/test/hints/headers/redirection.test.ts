@@ -5,6 +5,12 @@ import { Severity } from '@hint/utils-types';
 import { runHint } from '../../helpers/run-hint.js';
 import { HTTP_SCHEME } from '../../helpers/data.js';
 
+/** Matches the root URL of the local test server. */
+const LOCAL_ROOT_URL = /^http:\/\/127\.0\.0\.1:\d+\/$/;
+
+/** Matches a 200 response line for the root URL of the local test server. */
+const LOCAL_ROOT_RESPONSE = /^200 http:\/\/127\.0\.0\.1:\d+\/$/;
+
 const original = redirectionClient.fetch;
 
 /**
@@ -39,7 +45,7 @@ describe('redirection', () => {
       hop === 0 ? [301, `https://${url.host}/`] : [200],
     );
     expect(await runHint(hint, {})).toEqual([]);
-    expect(asked[0]).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/$/);
+    expect(asked[0]).toMatch(LOCAL_ROOT_URL);
   });
 
   it('passes when http is not reachable', async () => {
@@ -51,9 +57,7 @@ describe('redirection', () => {
     fakeSite(() => [200]);
     const problems = await runHint(hint, {});
     expect(problems).toHaveLength(1);
-    expect(problems[0]?.sourceCode).toMatch(
-      /^200 http:\/\/127\.0\.0\.1:\d+\/$/,
-    );
+    expect(problems[0]?.sourceCode).toMatch(LOCAL_ROOT_RESPONSE);
     expect(problems[0]?.message).toContain(
       'Does not redirect to an HTTPS site',
     );

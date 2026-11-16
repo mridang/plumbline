@@ -1,6 +1,12 @@
 import { truncate } from './local-storage.js';
 import { isSameParty, normalizeHost } from './registrable-domain.js';
 
+/** Matches an optionally negative integer. */
+const SIGNED_INTEGER = /^-?\d+$/;
+
+/** Matches a comma that separates two cookies. */
+const COOKIE_SEPARATOR = /,(?=\s*[^;,=\s]+=)/;
+
 /** Webbkoll cuts cookie names to this many characters when listing them. */
 const COOKIE_NAME_LENGTH = 20;
 
@@ -34,7 +40,7 @@ export interface CookieRecord {
  */
 export function splitSetCookie(value: string): string[] {
   return value
-    .split(/,(?=\s*[^;,=\s]+=)/)
+    .split(COOKIE_SEPARATOR)
     .map((part) => part.trim())
     .filter((part) => part.length > 0);
 }
@@ -94,7 +100,7 @@ export function parseSetCookie(
         break;
       }
       case 'max-age': {
-        if (/^-?\d+$/.test(value)) {
+        if (SIGNED_INTEGER.test(value)) {
           maxAge = Number(value);
         }
         break;

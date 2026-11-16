@@ -20,11 +20,14 @@ describe('checkApiCatalog', () => {
     expect(result.passed).toBe(true);
   });
   it('accepts service-meta and item links', async () => {
-    for (const rel of ['service-meta', 'item']) {
+    for (const relationship of ['service-meta', 'item']) {
       const env = fakeEnv({
         [key]: {
           linkset: [
-            { anchor: 'https://example.com/api', [rel]: [{ href: '/x' }] },
+            {
+              anchor: 'https://example.com/api',
+              [relationship]: [{ href: '/x' }],
+            },
           ],
         },
       });

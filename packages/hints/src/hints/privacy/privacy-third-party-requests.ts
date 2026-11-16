@@ -35,9 +35,10 @@ export default defineHint({
         const host = new URL(request.url).hostname.toLowerCase();
         counts.set(host, (counts.get(host) ?? 0) + 1);
       }
-      const hosts = [...counts]
-        .map(([host, count]) => `${host}: ${count}`)
-        .join('\n');
+      const hosts = Array.from(
+        counts,
+        ([host, count]) => `${host}: ${count}`,
+      ).join('\n');
       context.report(
         collected.pageUrl,
         `${total} third-party ${total === 1 ? 'request' : 'requests'} ` +

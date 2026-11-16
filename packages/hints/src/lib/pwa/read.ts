@@ -1,3 +1,5 @@
+/** Matches an absolute or scheme-relative URL prefix. */
+const SCHEME_RELATIVE_OR_ABSOLUTE_URL = /^(?:[a-z][a-z0-9+.-]*:)?\/\//i;
 /**
  * Readers that pull the Progressive-Web-App install signals out of a parsed
  * HTML document. They read only the tiny slice of the DOM described below, so
@@ -29,8 +31,8 @@ export interface DocumentLike {
  * token match is case-insensitive and tolerates extra tokens
  * (`rel="manifest foo"`), mirroring how browsers resolve the manifest link.
  */
-export function getManifestHref(doc: DocumentLike): string | null {
-  const element = doc.querySelector('link[rel~="manifest" i]');
+export function getManifestHref(parsedDocument: DocumentLike): string | null {
+  const element = parsedDocument.querySelector('link[rel~="manifest" i]');
   if (!element) {
     return null;
   }
@@ -47,7 +49,7 @@ export function getManifestHref(doc: DocumentLike): string | null {
  * rule flags.
  */
 export function isAbsoluteHref(href: string): boolean {
-  return /^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(href) || href.startsWith('/');
+  return SCHEME_RELATIVE_OR_ABSOLUTE_URL.test(href) || href.startsWith('/');
 }
 
 /**
@@ -56,8 +58,8 @@ export function isAbsoluteHref(href: string): boolean {
  * theme-color (`<meta name="theme-color" media="(prefers-color-scheme: dark)">`)
  * still counts: the presence of any theme-color meta is what the rule checks.
  */
-export function getThemeColorMeta(doc: DocumentLike): string | null {
-  const element = doc.querySelector('meta[name="theme-color" i]');
+export function getThemeColorMeta(parsedDocument: DocumentLike): string | null {
+  const element = parsedDocument.querySelector('meta[name="theme-color" i]');
   if (!element) {
     return null;
   }

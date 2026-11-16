@@ -8,6 +8,9 @@ import {
 } from '../../lib/email/on-mail-domain.js';
 import { mailNet } from '../../lib/email/net.js';
 
+/** Matches the prefix of an IPv4-mapped IPv6 address. */
+const IPV4_MAPPED_IPV6_PREFIX = /^::ffff:/iu;
+
 /** DNS record type number of an AAAA record. */
 const AAAA = 28;
 
@@ -51,7 +54,7 @@ export default defineHint({
               .filter((record) => record.type === AAAA)
               .map((record) => record.data)
               // IPv4-mapped IPv6 addresses give no IPv6 connectivity.
-              .filter((ip) => isIPv6(ip) && !/^::ffff:/iu.test(ip));
+              .filter((ip) => isIPv6(ip) && !IPV4_MAPPED_IPV6_PREFIX.test(ip));
           }
         } catch {
           // A failed lookup says nothing about the server; skip it.

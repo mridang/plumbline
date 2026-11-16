@@ -4,6 +4,9 @@ import { findBrowser } from '../src/browser.js';
 import { allHintIds, hintCatalogue, hintConfig, scan } from '../src/scan.js';
 import { serve } from './helpers/serve.js';
 
+/** Locale-aware comparator used to sort strings deterministically. */
+const collator = new Intl.Collator();
+
 describe('the Puppeteer page shim', () => {
   it('keeps page.removeListener, which the connector calls and newer Puppeteer renamed to off', () => {
     const require = createRequire(import.meta.url);
@@ -21,7 +24,7 @@ describe('allHintIds', () => {
 
   it('is sorted and free of duplicates', () => {
     const ids = [...allHintIds];
-    expect(ids).toEqual([...ids].toSorted((a, b) => a.localeCompare(b)));
+    expect(ids).toEqual([...ids].toSorted(collator.compare));
     expect(new Set(ids).size).toBe(ids.length);
   });
 

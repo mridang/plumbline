@@ -2,7 +2,9 @@ import { describe, expect, it } from '@jest/globals';
 import { validateAppleAppSiteAssociation } from '../../../src/lib/wellknown/apple-app-site-association.js';
 
 const msgs = (v: unknown) =>
-  validateAppleAppSiteAssociation(JSON.stringify(v)).map((i) => i.message);
+  validateAppleAppSiteAssociation(JSON.stringify(v)).map(
+    (index) => index.message,
+  );
 
 describe('validateAppleAppSiteAssociation', () => {
   it('accepts modern applinks with appIDs and components', () => {

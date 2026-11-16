@@ -1,12 +1,12 @@
-import { Category, defineHint } from '../../core/define-hint.js';
+import { Category, defineHint } from '../../core/define-hint.js'; // eslint-disable-line unicorn/prevent-abbreviations -- file name is the permanent hint id that configs and docs reference
 import { headerValue } from '../../core/http.js';
 import { onPage } from '../../core/page.js';
 import {
-  domRelLinks,
-  headerRelLinks,
-  type RelLink,
+  domRelationshipLinks,
+  headerRelationshipLinks,
+  type RelationshipLink,
 } from '../../lib/discovery/links.js';
-import { relMeFindings } from '../../lib/discovery/rel-me.js';
+import { relationshipMeFindings } from '../../lib/discovery/rel-me.js';
 import { reportFindings } from '../headers/shared.js';
 
 /**
@@ -25,11 +25,11 @@ export default defineHint({
   reference: 'https://microformats.org/wiki/rel-me',
   setup(context) {
     onPage(context, (page) => {
-      const links: RelLink[] = [
-        ...domRelLinks(page.document),
-        ...headerRelLinks(headerValue(page.headers, 'link')),
+      const links: RelationshipLink[] = [
+        ...domRelationshipLinks(page.document),
+        ...headerRelationshipLinks(headerValue(page.headers, 'link')),
       ];
-      reportFindings(page, relMeFindings(links));
+      reportFindings(page, relationshipMeFindings(links));
     });
   },
 });

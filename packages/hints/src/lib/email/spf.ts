@@ -1,5 +1,35 @@
 import { isIPv6 } from '#net';
 
+/** Matches a label made only of letters and digits. */
+const ALPHANUMERIC_LABEL = /^[A-Za-z0-9]+$/u;
+
+/** Matches a string that contains a letter. */
+const CONTAINS_LETTER = /[A-Za-z]/u;
+
+/** Matches a label with letters, digits and hyphens after its first hyphen. */
+const HYPHENATED_LABEL = /^[A-Za-z0-9]+-[A-Za-z0-9-]*$/u;
+
+/** Matches a string that ends in a letter or a digit. */
+const ENDS_ALPHANUMERIC = /[A-Za-z0-9]$/u;
+
+/** Matches an optional IPv4 and IPv6 prefix length at the end of a term. */
+const CIDR_SUFFIX = /(?:\/\d{1,2})?(?:\/\/\d{1,3})?$/u;
+
+/** Matches an IPv6 prefix length from 0 to 128. */
+const IPV6_PREFIX_LENGTH = /^(?:12[0-8]|1[01]\d|[1-9]\d|\d)$/u;
+
+/** Matches a leading SPF qualifier character. */
+const QUALIFIER_PREFIX = /^[+\-?~]/u;
+
+/** Matches an `a` or `mx` mechanism and captures its argument. */
+const ADDRESS_MECHANISM = /^(a|mx)(.*)$/iu;
+
+/** Matches a `name=value` modifier and captures both parts. */
+const MODIFIER_PAIR = /^([A-Za-z][A-Za-z0-9\-_.]*)=(.*)$/u;
+
+/** Matches the `v=spf1` tag at the start of a record. */
+const SPF_VERSION_TAG = /^v=spf1/iu;
+
 /**
  * A parser for SPF records, ported from Internet.nl's `spf_parser.py`, which
  * follows the collected ABNF in section 12 of RFC 7208. Instead of a parser
@@ -46,12 +76,10 @@ const MACRO_STRING =
 
 /** `toplabel` of RFC 7208: must contain a letter or a hyphen between alphanum. */
 function isToplabel(label: string): boolean {
-  if (/^[A-Za-z0-9]+$/u.test(label)) {
-    return /[A-Za-z]/u.test(label);
+  if (ALPHANUMERIC_LABEL.test(label)) {
+    return CONTAINS_LETTER.test(label);
   }
-  return (
-    /^[A-Za-z0-9]+-[A-Za-z0-9-]*$/u.test(label) && /[A-Za-z0-9]$/u.test(label)
-  );
+  return HYPHENATED_LABEL.test(label) && ENDS_ALPHANUMERIC.test(label);
 }
 
 const IPV4_OCTET = '(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])';
@@ -88,7 +116,7 @@ function isValidDomainWithCidr(argument: string): boolean {
   const rest = argument.slice(1);
   // Printable characters include `/`, so the whole rest is also a domain
   // specification; try it without a trailing CIDR first, then as is.
-  const cidr = /(?:\/\d{1,2})?(?:\/\/\d{1,3})?$/u.exec(rest)?.[0] ?? '';
+  const cidr = CIDR_SUFFIX.exec(rest)?.[0] ?? '';
   const stripped = rest.slice(0, rest.length - cidr.length);
   if (DUAL_CIDR.test(cidr) && isValidDomainSpec(stripped)) {
     return true;
@@ -101,15 +129,12 @@ function isValidIp6(argument: string): boolean {
   if (lengthParts.length > 1 || !isIPv6(address)) {
     return false;
   }
-  return (
-    lengthParts.length === 0 ||
-    /^(?:12[0-8]|1[01]\d|[1-9]\d|\d)$/u.test(lengthParts[0])
-  );
+  return lengthParts.length === 0 || IPV6_PREFIX_LENGTH.test(lengthParts[0]);
 }
 
 /** Parses one term, or returns null when it is not valid. */
 function parseTerm(raw: string): SpfTerm | null {
-  const qualifierMatch = /^[+\-?~]/u.exec(raw);
+  const qualifierMatch = QUALIFIER_PREFIX.exec(raw);
   const qualifier = (qualifierMatch?.[0] as SpfQualifier | undefined) ?? null;
   const body = qualifier ? raw.slice(1) : raw;
   const lower = body.toLowerCase();
@@ -146,7 +171,7 @@ function parseTerm(raw: string): SpfTerm | null {
     const value = body.slice(4);
     return isValidDomainSpec(value) ? term('ptr', value) : null;
   }
-  const dual = /^(a|mx)(.*)$/iu.exec(body);
+  const dual = ADDRESS_MECHANISM.exec(body);
   if (dual && isValidDomainWithCidr(dual[2])) {
     const kind = dual[1].toLowerCase() as 'a' | 'mx';
     return term(kind, dual[2].startsWith(':') ? dual[2].slice(1) : null);
@@ -156,7 +181,7 @@ function parseTerm(raw: string): SpfTerm | null {
   if (qualifier) {
     return null;
   }
-  const modifier = /^([A-Za-z][A-Za-z0-9\-_.]*)=(.*)$/u.exec(body);
+  const modifier = MODIFIER_PAIR.exec(body);
   if (!modifier || !MACRO_STRING.test(modifier[2])) {
     return null;
   }
@@ -173,7 +198,7 @@ function parseTerm(raw: string): SpfTerm | null {
  * with spaces; the version `v=spf1` is case insensitive.
  */
 export function parseSpf(record: string): SpfRecord | null {
-  if (!/^v=spf1/iu.test(record)) {
+  if (!SPF_VERSION_TAG.test(record)) {
     return null;
   }
   const rest = record.slice(6);

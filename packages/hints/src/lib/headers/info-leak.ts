@@ -8,6 +8,15 @@
  */
 import { finding, type Finding } from './finding.js';
 
+/** Matches a leading `product/version` token. */
+const PRODUCT_TOKEN_PREFIX = /^\S*\/\S*\s*/;
+
+/** Matches a single ASCII letter. */
+const ANY_LETTER = /[a-z]/i;
+
+/** Matches a single digit. */
+const ANY_DIGIT = /\d/;
+
 /**
  * `Server` identifies the software handling the request. A bare product name
  * (`Server: nginx`) is accepted, but a value that also discloses a version or
@@ -15,7 +24,7 @@ import { finding, type Finding } from './finding.js';
  * or `Apache/2.4 (Ubuntu)`) is reported so the version can be hidden.
  */
 export function serverBannerFindings(value: string | null): Finding[] {
-  if (value === null || !/\d/.test(value)) {
+  if (value === null || !ANY_DIGIT.test(value)) {
     return [];
   }
   return [
@@ -72,7 +81,7 @@ export function viaFindings(value: string | null): Finding[] {
   const namesSoftware = value
     .split(',')
     .map((hop) => hop.trim())
-    .some((hop) => /[a-z]/i.test(hop.replace(/^\S*\/\S*\s*/, '')));
+    .some((hop) => ANY_LETTER.test(hop.replace(PRODUCT_TOKEN_PREFIX, '')));
   return namesSoftware
     ? [
         finding(

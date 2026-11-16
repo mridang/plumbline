@@ -1,6 +1,12 @@
 import type { TxtLookup } from '../email/txt.js';
 import type { Finding } from './finding.js';
 
+/** Matches an `https://` prefix. */
+const HTTPS_PREFIX = /^https:\/\//iu;
+
+/** Matches an `.svg` extension at the end of a URL path. */
+const SVG_EXTENSION = /\.svg(\?|#|$)/iu;
+
 /**
  * BIMI (Brand Indicators for Message Identification) lets a domain publish the
  * logo mail clients show next to authenticated mail. It is a TXT record at
@@ -122,13 +128,13 @@ export function checkBimi(domain: string, txt: TxtLookup): Finding[] {
       severity: 'error',
       codeSnippet: record,
     });
-  } else if (!/^https:\/\//iu.test(logo)) {
+  } else if (!HTTPS_PREFIX.test(logo)) {
     findings.push({
       message: 'Your BIMI `l` logo URL must be served over `https:`.',
       severity: 'error',
       codeSnippet: `l=${logo}`,
     });
-  } else if (/\.svg(\?|#|$)/iu.test(logo)) {
+  } else if (SVG_EXTENSION.test(logo)) {
     // An HTTPS logo that points to an SVG file is acceptable.
   } else {
     findings.push({
@@ -139,7 +145,7 @@ export function checkBimi(domain: string, txt: TxtLookup): Finding[] {
     });
   }
 
-  if (authority !== '' && !/^https:\/\//iu.test(authority)) {
+  if (authority !== '' && !HTTPS_PREFIX.test(authority)) {
     findings.push({
       message: 'Your BIMI `a` certificate URL must be served over `https:`.',
       severity: 'error',

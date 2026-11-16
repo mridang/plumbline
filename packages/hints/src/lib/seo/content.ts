@@ -10,6 +10,33 @@
  */
 import { finding, type Finding } from '../headers/finding.js';
 
+/** Compares words in the default locale order. */
+const collator = new Intl.Collator();
+
+/** Matches whitespace or title separator punctuation. */
+const TITLE_TRAILING_PUNCTUATION = /[\s.…»›→>]/u;
+
+/** Matches an `http:` or `https:` protocol. */
+const HTTP_OR_HTTPS_PROTOCOL = /^https?:$/;
+
+/** Matches a link prefix that does not point to a page. */
+const NON_PAGE_LINK_PREFIX = /^(#|mailto:|tel:|javascript:|data:)/i;
+
+/** Matches a leading `www.`. */
+const WWW_PREFIX = /^www\./;
+
+/** Matches a percent-encoded byte. */
+const PERCENT_ESCAPE = /%[0-9a-f]{2}/i;
+
+/** Matches a word made of numbers, apostrophes and hyphens. */
+const NUMERIC_WORD = /^[\p{N}'’-]+$/u;
+
+/** Matches an apostrophe or hyphen. */
+const APOSTROPHE_OR_HYPHEN = /['’-]/;
+
+/** Matches leading apostrophes and hyphens. */
+const LEADING_APOSTROPHES = /^['’-]+/;
+
 /** Roctify lists no page per check, so every Roctify hint links the tool. */
 export const ROCTIFY_REF = 'https://roctify.com/tools/seo-checker';
 
@@ -119,12 +146,11 @@ export interface Keyword {
 export function topKeywords(text: string, limit = 5): Keyword[] {
   const counts = new Map<string, number>();
   for (const raw of wordsOf(text)) {
-    const word = trimEnd(raw.toLowerCase().replace(/^['’-]+/, ''), /['’-]/);
-    if (
-      word.length < 3 ||
-      STOP_WORDS.has(word) ||
-      /^[\p{N}'’-]+$/u.test(word)
-    ) {
+    const word = trimEnd(
+      raw.toLowerCase().replace(LEADING_APOSTROPHES, ''),
+      APOSTROPHE_OR_HYPHEN,
+    );
+    if (word.length < 3 || STOP_WORDS.has(word) || NUMERIC_WORD.test(word)) {
       continue;
     }
     counts.set(word, (counts.get(word) ?? 0) + 1);
@@ -132,7 +158,7 @@ export function topKeywords(text: string, limit = 5): Keyword[] {
   return [...counts.entries()]
     .filter(([, count]) => count >= 2)
     .map(([word, count]) => ({ word, count }))
-    .toSorted((a, b) => b.count - a.count || a.word.localeCompare(b.word))
+    .toSorted((a, b) => b.count - a.count || collator.compare(a.word, b.word))
     .slice(0, limit);
 }
 
@@ -196,7 +222,7 @@ export function friendlyUrlFindings(url: string): Finding[] {
   if (path.includes('_')) {
     problem('The URL path has underscores; separate words with hyphens.');
   }
-  if (/%[0-9a-f]{2}/i.test(path)) {
+  if (PERCENT_ESCAPE.test(path)) {
     problem('The URL path has encoded characters; use plain ASCII words.');
   }
   const segments = path.split('/').filter((segment) => segment !== '');
@@ -221,7 +247,7 @@ export interface LinkInfo {
 
 /** Hosts compare equal with or without a leading `www.`. */
 function bareHost(host: string): string {
-  return host.toLowerCase().replace(/^www\./, '');
+  return host.toLowerCase().replace(WWW_PREFIX, '');
 }
 
 /** Warns when the page links nowhere or only to other sites. */
@@ -239,12 +265,12 @@ export function linkFindings(
   let internal = 0;
   for (const { href } of links) {
     const trimmed = href.trim();
-    if (/^(#|mailto:|tel:|javascript:|data:)/i.test(trimmed)) {
+    if (NON_PAGE_LINK_PREFIX.test(trimmed)) {
       continue;
     }
     try {
       const target = new URL(trimmed, page);
-      if (/^https?:$/.test(target.protocol)) {
+      if (HTTP_OR_HTTPS_PROTOCOL.test(target.protocol)) {
         total += 1;
         internal += bareHost(target.host) === bareHost(page.host) ? 1 : 0;
       }
@@ -316,7 +342,7 @@ export function anchorProblem(anchor: AnchorInfo): AnchorProblem | null {
     return 'empty';
   }
   const lowered = shown.toLowerCase();
-  const normal = trimEnd(lowered, /[\s.…»›→>]/u).trim();
+  const normal = trimEnd(lowered, TITLE_TRAILING_PUNCTUATION).trim();
   return GENERIC_ANCHORS.has(normal) ? 'generic' : null;
 }
 

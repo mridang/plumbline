@@ -1,3 +1,11 @@
+/** Matches a run of whitespace or commas. */
+const WHITESPACE_OR_COMMA_RUN = /[\s,]+/;
+
+/** Matches an opening SVG tag. */
+const SVG_OPEN_TAG = /<svg\b[^>]*>/i;
+
+/** Matches a pixel length such as `100px`. */
+const PIXEL_LENGTH = /^([\d.]+)\s*(?:px)?$/i;
 /**
  * Reads the format and pixel size of an image from its header bytes, in pure
  * TypeScript. Supports PNG, JPEG, GIF, WebP and SVG.
@@ -46,13 +54,13 @@ function gif(b: Uint8Array): ImageInfo | null {
 
 function jpeg(b: Uint8Array): ImageInfo | null {
   const v = new DataView(b.buffer, b.byteOffset, b.byteLength);
-  let i = 2;
+  let index = 2;
   // Walk the marker segments until a start-of-frame marker is found.
-  while (i + 9 < b.length) {
-    const marker = b[i + 1];
+  while (index + 9 < b.length) {
+    const marker = b[index + 1];
 
-    if (b[i] !== 0xff || marker === 0xff) {
-      i += 1;
+    if (b[index] !== 0xff || marker === 0xff) {
+      index += 1;
       continue;
     }
     // SOF0..SOF15 except DHT (C4), JPG (C8) and DAC (CC) carry the size.
@@ -60,11 +68,11 @@ function jpeg(b: Uint8Array): ImageInfo | null {
     if (marker >= 0xc0 && marker <= 0xcf && !SOF_EXCLUDED.has(marker)) {
       return {
         format: 'jpeg',
-        height: v.getUint16(i + 5),
-        width: v.getUint16(i + 7),
+        height: v.getUint16(index + 5),
+        width: v.getUint16(index + 7),
       };
     }
-    i += 2 + v.getUint16(i + 2);
+    index += 2 + v.getUint16(index + 2);
   }
   return null;
 }
@@ -104,26 +112,26 @@ function webp(b: Uint8Array): ImageInfo | null {
 
 /** Parses a CSS length such as `1200` or `630px`; other units are rejected. */
 function svgLength(value: string | undefined): number | null {
-  const m = /^([\d.]+)\s*(?:px)?$/i.exec((value ?? '').trim());
+  const m = PIXEL_LENGTH.exec((value ?? '').trim());
   return m ? Number(m[1]) : null;
 }
 
 function svg(text: string): ImageInfo | null {
-  const tag = /<svg\b[^>]*>/i.exec(text)?.[0];
+  const tag = SVG_OPEN_TAG.exec(text)?.[0];
   if (!tag) {
     return null;
   }
-  const attr = (name: string) =>
+  const attribute = (name: string) =>
     new RegExp(String.raw`\s${name}\s*=\s*["']([^"']*)["']`, 'i').exec(
       tag,
     )?.[1];
-  let width = svgLength(attr('width'));
-  let height = svgLength(attr('height'));
+  let width = svgLength(attribute('width'));
+  let height = svgLength(attribute('height'));
   if (width === null || height === null) {
     // Fall back to the viewBox when width/height are missing or relative.
-    const box = attr('viewBox')
+    const box = attribute('viewBox')
       ?.trim()
-      .split(/[\s,]+/)
+      .split(WHITESPACE_OR_COMMA_RUN)
       .map(Number);
     if (box?.length === 4 && box.every((n) => Number.isFinite(n))) {
       width = box[2];

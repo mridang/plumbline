@@ -8,6 +8,9 @@ import type { AuditCheck } from '../../src/checks/types.js';
 import { readJsonLd } from '@mridang/webhint-hint-plumbline/dist/lib/geo/json-ld.js';
 import { recipeFindings } from '@mridang/webhint-hint-plumbline/dist/lib/richresults/checks.js';
 
+/** Matches a check id that belongs to the rich results section. */
+const RICHRESULTS_ID_PREFIX = /^richresults-/;
+
 // The same DOM parser webhint feeds its hints: the equivalence test builds the "webhint side" of the check with it, exactly as the hint does.
 
 /** Builds the artifact bag a richresults check reads: only the served HTML. */
@@ -44,7 +47,7 @@ describe('the richresults registry', () => {
   it('registers all ten checks in the section the taxonomy gives them', () => {
     expect(richresultsChecks).toHaveLength(10);
     for (const c of richresultsChecks) {
-      expect(c.id).toMatch(/^richresults-/);
+      expect(c.id).toMatch(RICHRESULTS_ID_PREFIX);
       expect(c.section).toBe(PLACEMENT[c.id]?.section);
       expect(c.section).toBe('seo');
     }
@@ -101,8 +104,8 @@ describe('the richresults check matches the webhint hint for a fixture', () => {
     '</head><body></body></html>';
 
   it('recipe yields the hint findings', async () => {
-    const doc = createHTMLDocument(fixture, 'https://x.test/');
-    const hintFindings = recipeFindings(readJsonLd(doc));
+    const parsedDocument = createHTMLDocument(fixture, 'https://x.test/');
+    const hintFindings = recipeFindings(readJsonLd(parsedDocument));
     const lhFindings = await check('richresults-recipe').run(
       artifacts(fixture),
       context(),

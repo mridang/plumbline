@@ -41,7 +41,7 @@ describe('the sections', () => {
 
 describe('the metadata stamped on a hint', () => {
   it('carries the placement, the tier and where the hint came from', () => {
-    const docs = hints.csp.meta.docs as {
+    const documentation = hints.csp.meta.docs as {
       section?: string;
       sectionTitle?: string;
       sectionOrder?: number;
@@ -57,20 +57,20 @@ describe('the metadata stamped on a hint', () => {
       origins?: { source: string }[];
     };
     const placement = PLACEMENT.csp;
-    expect(docs.section).toBe(placement.section);
-    expect(docs.sectionTitle).toBeTruthy();
-    expect(docs.sectionOrder).toBe(
+    expect(documentation.section).toBe(placement.section);
+    expect(documentation.sectionTitle).toBeTruthy();
+    expect(documentation.sectionOrder).toBe(
       SECTIONS.findIndex((section) => section.id === placement.section),
     );
-    expect(docs.group).toBeTruthy();
-    expect(docs.groupTitle).toBeTruthy();
-    expect(docs.subsection).toBe(placement.subsection);
-    expect(docs.tags).toEqual([...placement.tags]);
-    expect(docs.tier).toBe(placement.tier);
-    expect(docs.target).toBe(placement.target);
-    expect(docs.control).toBe(placement.control);
-    expect(docs.since).toBe(placement.since);
-    expect(docs.added).toBe(placement.added);
-    expect(docs.origins?.length).toBeGreaterThan(0);
+    expect(documentation.group).toBeTruthy();
+    expect(documentation.groupTitle).toBeTruthy();
+    expect(documentation.subsection).toBe(placement.subsection);
+    expect(documentation.tags).toEqual([...placement.tags]);
+    expect(documentation.tier).toBe(placement.tier);
+    expect(documentation.target).toBe(placement.target);
+    expect(documentation.control).toBe(placement.control);
+    expect(documentation.since).toBe(placement.since);
+    expect(documentation.added).toBe(placement.added);
+    expect(documentation.origins?.length).toBeGreaterThan(0);
   });
 });

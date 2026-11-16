@@ -3,6 +3,10 @@ import hint from '../../../src/hints/privacy/privacy-cookies.js';
 import { runHint } from '../../helpers/run-hint.js';
 import { setEvaluate } from '../../helpers/test-connector.js';
 
+/** Matches the Set-Cookie header reported as the source code of the problem. */
+const SET_COOKIE_SOURCE =
+  /^Set-Cookie: sid; Domain=127\.0\.0\.1; Path=\/; Expires=.+; Secure; HttpOnly; SameSite=Strict$/;
+
 afterEach(() => {
   setEvaluate(() => {
     throw new Error('evaluate is not configured for this test');
@@ -61,9 +65,7 @@ describe('privacy-cookies', () => {
       'First-party cookies: 127.0.0.1 sid (expires ',
     );
     expect(problems[0].message).toContain('Secure, HttpOnly, SameSite=Strict');
-    expect(problems[0].sourceCode).toMatch(
-      /^Set-Cookie: sid; Domain=127\.0\.0\.1; Path=\/; Expires=.+; Secure; HttpOnly; SameSite=Strict$/,
-    );
+    expect(problems[0].sourceCode).toMatch(SET_COOKIE_SOURCE);
     expect(problems[0].sourceCode).not.toContain('sid=');
   });
 

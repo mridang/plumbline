@@ -113,7 +113,7 @@ describe('probes with a fake openssl', () => {
   });
 
   it('reports another failure to run as failed', async () => {
-    failWith(undefined);
+    failWith();
     const outcome = await testCompression(target);
     expect(outcome.kind).toBe('failed');
   });

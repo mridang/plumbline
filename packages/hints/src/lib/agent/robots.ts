@@ -6,7 +6,26 @@ import {
   missingReason,
   result,
   urlOf,
-} from './util.js';
+} from './utility.js';
+
+/** Matches any character that ends a line. */
+const LINE_BREAK_CHARACTER = /[\n\r\u2028\u2029]/;
+
+/** Matches a line break, with or without a carriage return. */
+const LINE_BREAK = /\r?\n/;
+
+/** Matches a `Name: value` directive line and captures both parts. */
+const DIRECTIVE_LINE = /^([A-Za-z-]+)\s*:(.*)$/;
+
+/** Matches a `text/plain` content type. */
+const PLAIN_TEXT_CONTENT_TYPE = /^text\/plain/i;
+
+/** Matches the start of a sitemap or sitemap index document. */
+const SITEMAP_ROOT =
+  /^\s*(<\?xml[^>]*\?>\s*)?(<!--[\s\S]*?-->\s*)*<(\w+:)?(urlset|sitemapindex)[\s>]/;
+
+/** Matches a `signal=yes|no` pair and captures both parts. */
+const CONTENT_SIGNAL_PAIR = /^\s*([a-z-]+)\s*=\s*(yes|no)\s*$/i;
 
 /**
  * Drops a trailing comment: from the first `#` that has no line terminator
@@ -14,7 +33,7 @@ import {
  */
 function stripComment(line: string): string {
   let from = line.length;
-  while (from > 0 && !/[\n\r\u2028\u2029]/.test(line[from - 1])) {
+  while (from > 0 && !LINE_BREAK_CHARACTER.test(line[from - 1])) {
     from -= 1;
   }
   const hash = line.indexOf('#', from);
@@ -41,10 +60,10 @@ export function parseRobots(body: string): Robots {
     contentSignals: [],
     agentmaps: [],
   };
-  for (const raw of body.split(/\r?\n/)) {
+  for (const raw of body.split(LINE_BREAK)) {
     // Comments start at `#` and run to the end of the line.
     const line = stripComment(raw).trim();
-    const match = /^([A-Za-z-]+)\s*:(.*)$/.exec(line);
+    const match = DIRECTIVE_LINE.exec(line);
     if (!match) {
       continue;
     }
@@ -117,7 +136,7 @@ export async function checkRobotsTxt(env: AgentEnv): Promise<CheckResult> {
       robotsEvidence(env, probe),
     );
   }
-  if (!/^text\/plain/i.test(probe.contentType)) {
+  if (!PLAIN_TEXT_CONTENT_TYPE.test(probe.contentType)) {
     return result(
       id,
       'discoverability',
@@ -152,12 +171,7 @@ export async function checkRobotsTxt(env: AgentEnv): Promise<CheckResult> {
 
 /** A sitemap is valid when it is an XML `urlset` or `sitemapindex`. */
 export function isSitemap(probe: Probe | null): boolean {
-  return (
-    isOk(probe) &&
-    /^\s*(<\?xml[^>]*\?>\s*)?(<!--[\s\S]*?-->\s*)*<(\w+:)?(urlset|sitemapindex)[\s>]/.test(
-      probe.body,
-    )
-  );
+  return isOk(probe) && SITEMAP_ROOT.test(probe.body);
 }
 
 /**
@@ -292,7 +306,7 @@ const CONTENT_SIGNALS: ReadonlySet<string> = new Set([
 export function parseContentSignal(value: string): Record<string, boolean> {
   const signals: Record<string, boolean> = {};
   for (const part of value.split(',')) {
-    const match = /^\s*([a-z-]+)\s*=\s*(yes|no)\s*$/i.exec(part);
+    const match = CONTENT_SIGNAL_PAIR.exec(part);
     if (match && CONTENT_SIGNALS.has(match[1].toLowerCase())) {
       signals[match[1].toLowerCase()] = match[2].toLowerCase() === 'yes';
     }

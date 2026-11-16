@@ -1,5 +1,11 @@
 import { isAbsoluteUrl, splitLines, type FileIssue } from './issue.js';
 
+/** Matches a leading slash or asterisk. */
+const SLASH_OR_STAR_PREFIX = /^[/*]/;
+
+/** Matches a `key=value` pair of letters. */
+const KEY_EQUALS_VALUE_PAIR = /^([a-z-]+)=([a-z]+)$/i;
+
 /** RFC 9309 section 2.5: parsers must handle at least 500 KiB. */
 const ROBOTS_MAX_BYTES = 500 * 1024;
 
@@ -24,7 +30,7 @@ export function validateContentSignal(value: string): string | null {
   }
   const seen = new Set<string>();
   for (const part of value.split(',')) {
-    const pair = /^([a-z-]+)=([a-z]+)$/i.exec(part.trim());
+    const pair = KEY_EQUALS_VALUE_PAIR.exec(part.trim());
     if (!pair) {
       return `Invalid Content-Signal entry '${part.trim()}', expected name=yes or name=no.`;
     }
@@ -50,6 +56,108 @@ interface Group {
   rules: { kind: string; value: string }[];
 }
 
+/** The running state of the line scan of a robots.txt file. */
+interface ParseState {
+  groups: Group[];
+  current: Group | null;
+  /** True while the current group has only seen User-agent lines so far. */
+  collectingAgents: boolean;
+  anySignal: boolean;
+}
+
+/** Applies one directive of a robots.txt file to the scan state. */
+function applyDirective(
+  state: ParseState,
+  key: string,
+  value: string,
+  line: number,
+  at: (severity: FileIssue['severity'], message: string) => number,
+): void {
+  switch (key) {
+    case 'user-agent': {
+      if (value === '') {
+        at('error', 'User-agent needs a product token or *.');
+      }
+      // A User-agent after a rule starts a new group.
+      if (!state.current || !state.collectingAgents) {
+        state.current = { agents: [], line, hasSignal: false, rules: [] };
+        state.groups.push(state.current);
+      }
+      state.current.agents.push(value.toLowerCase());
+      state.collectingAgents = true;
+      break;
+    }
+    case 'allow':
+    case 'disallow': {
+      if (!state.current) {
+        at('error', `'${key}' appears before any User-agent line.`);
+        break;
+      }
+      state.collectingAgents = false;
+      if (value !== '' && !SLASH_OR_STAR_PREFIX.test(value)) {
+        at('error', `The ${key} path '${value}' must start with '/'.`);
+      }
+      state.current.rules.push({ kind: key, value });
+      break;
+    }
+    case 'sitemap': {
+      if (!isAbsoluteUrl(value)) {
+        at('error', `The Sitemap '${value}' is not an absolute http(s) URL.`);
+      }
+      break;
+    }
+    case 'content-signal': {
+      state.anySignal = true;
+      const problem = validateContentSignal(value);
+      if (problem) {
+        at('error', problem);
+      }
+      if (state.current) {
+        state.current.hasSignal = true;
+        state.collectingAgents = false;
+      } else {
+        at(
+          'warning',
+          'Content-Signal appears before any User-agent line, so no group carries it.',
+        );
+      }
+      break;
+    }
+    default: {
+      if (state.current) {
+        state.collectingAgents = false;
+      }
+    }
+  }
+}
+
+/** Scans one line of a robots.txt file, ignoring blanks and comments. */
+function processLine(
+  state: ParseState,
+  raw: string,
+  line: number,
+  issues: FileIssue[],
+): void {
+  const content = raw.split('#', 1)[0].trim();
+  if (content === '') {
+    return;
+  }
+  const at = (severity: FileIssue['severity'], message: string) =>
+    issues.push({ severity, message, line, snippet: raw.trim() });
+  const colon = content.indexOf(':');
+  if (colon < 1) {
+    at('error', "Invalid line, expected 'directive: value'.");
+    return;
+  }
+  const key = content.slice(0, colon).trim().toLowerCase();
+  const value = content.slice(colon + 1).trim();
+  if (KNOWN.has(key)) {
+    applyDirective(state, key, value, line, at);
+  } else {
+    at('warning', `Unknown directive '${key}'.`);
+  }
+}
+
 /** Validates the text of a robots.txt file against RFC 9309. */
 export function validateRobotsTxt(text: string): FileIssue[] {
   const issues: FileIssue[] = [];
@@ -66,89 +174,16 @@ export function validateRobotsTxt(text: string): FileIssue[] {
     });
     return issues;
   }
-  const groups: Group[] = [];
-  let current: Group | null = null;
-  // True while the current group has only seen User-agent lines so far.
-  let collectingAgents = false;
-  let anySignal = false;
-
-  splitLines(text).forEach((raw, index) => {
-    const line = index + 1;
-    const content = raw.split('#', 1)[0].trim();
-    if (content === '') {
-      return;
-    }
-    const at = (severity: FileIssue['severity'], message: string) =>
-      issues.push({ severity, message, line, snippet: raw.trim() });
-    const colon = content.indexOf(':');
-    if (colon < 1) {
-      at('error', "Invalid line, expected 'directive: value'.");
-      return;
-    }
-    const key = content.slice(0, colon).trim().toLowerCase();
-    const value = content.slice(colon + 1).trim();
-    if (!KNOWN.has(key)) {
-      at('warning', `Unknown directive '${key}'.`);
-      return;
-    }
-    switch (key) {
-      case 'user-agent': {
-        if (value === '') {
-          at('error', 'User-agent needs a product token or *.');
-        }
-        // A User-agent after a rule starts a new group.
-        if (!current || !collectingAgents) {
-          current = { agents: [], line, hasSignal: false, rules: [] };
-          groups.push(current);
-        }
-        current.agents.push(value.toLowerCase());
-        collectingAgents = true;
-        break;
-      }
-      case 'allow':
-      case 'disallow': {
-        if (!current) {
-          at('error', `'${key}' appears before any User-agent line.`);
-          break;
-        }
-        collectingAgents = false;
-        if (value !== '' && !/^[/*]/.test(value)) {
-          at('error', `The ${key} path '${value}' must start with '/'.`);
-        }
-        current.rules.push({ kind: key, value });
-        break;
-      }
-      case 'sitemap': {
-        if (!isAbsoluteUrl(value)) {
-          at('error', `The Sitemap '${value}' is not an absolute http(s) URL.`);
-        }
-        break;
-      }
-      case 'content-signal': {
-        anySignal = true;
-        const problem = validateContentSignal(value);
-        if (problem) {
-          at('error', problem);
-        }
-        if (current) {
-          current.hasSignal = true;
-          collectingAgents = false;
-        } else {
-          at(
-            'warning',
-            'Content-Signal appears before any User-agent line, so no group carries it.',
-          );
-        }
-        break;
-      }
-      default: {
-        if (current) {
-          collectingAgents = false;
-        }
-      }
-    }
-  });
-
+  const state: ParseState = {
+    groups: [],
+    current: null,
+    collectingAgents: false,
+    anySignal: false,
+  };
+  for (const [index, raw] of splitLines(text).entries()) {
+    processLine(state, raw, index + 1, issues);
+  }
+  const { groups, anySignal } = state;
   if (groups.length === 0) {
     issues.push({
       severity: 'warning',

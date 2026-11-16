@@ -45,6 +45,12 @@ import {
   type RemoteCertificate,
 } from './protocol.js';
 
+/** Captures the host (optionally in brackets) and the port of a `host:port` pair. */
+const HOST_AND_PORT = /^\[?([^\]]+?)\]?:(\d+)$/;
+
+/** Matches a `chunked` transfer encoding. */
+const CHUNKED_ENCODING = /chunked/i;
+
 /** What the scan that is running here uses: its probe, and the DNS answers it has already had. */
 interface ScanScope {
   readonly client: ProbeClient;
@@ -92,43 +98,43 @@ function parseSClient(args: readonly string[]): {
   let sessionOut: string | undefined;
   let sessionIn: string | undefined;
   let earlyDataFile: string | undefined;
-  for (let i = 0; i < args.length; i += 1) {
-    const arg = args[i] ?? '';
-    const next = args[i + 1] ?? '';
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index] ?? '';
+    const next = args[index + 1] ?? '';
     switch (arg) {
       case 's_client': {
         break;
       }
       case '-connect': {
-        const match = /^\[?([^\]]+?)\]?:(\d+)$/.exec(next);
+        const match = HOST_AND_PORT.exec(next);
         host = match?.[1] ?? '';
         port = Number(match?.[2] ?? 0);
-        i += 1;
+        index += 1;
         break;
       }
       case '-servername': {
         servername = next;
-        i += 1;
+        index += 1;
         break;
       }
       case '-starttls': {
         starttls = next === 'smtp' ? 'smtp' : undefined;
-        i += 1;
+        index += 1;
         break;
       }
       case '-sess_out': {
         sessionOut = next;
-        i += 1;
+        index += 1;
         break;
       }
       case '-sess_in': {
         sessionIn = next;
-        i += 1;
+        index += 1;
         break;
       }
       case '-early_data': {
         earlyDataFile = next;
-        i += 1;
+        index += 1;
         break;
       }
       default: {
@@ -365,7 +371,8 @@ function installNetworkClient(): void {
       });
       const chunked = answer.headers.some(
         ([name, value]) =>
-          name.toLowerCase() === 'transfer-encoding' && /chunked/i.test(value),
+          name.toLowerCase() === 'transfer-encoding' &&
+          CHUNKED_ENCODING.test(value),
       );
       const body = chunked ? unchunk(answer.body) : answer.body;
       return {

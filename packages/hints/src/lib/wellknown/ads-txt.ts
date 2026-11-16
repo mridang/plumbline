@@ -29,6 +29,77 @@ function stripComment(line: string): string {
   return (hash === -1 ? line : line.slice(0, hash)).trim();
 }
 
+/** Checks a `NAME=value` variable line. */
+function checkVariable(content: string, eq: number, line: number): FileIssue[] {
+  const name = content.slice(0, eq).trim().toLowerCase();
+  const value = content.slice(eq + 1).trim();
+  if (!VARIABLES.has(name)) {
+    return [
+      {
+        severity: 'warning',
+        line,
+        snippet: content,
+        message: `Unknown variable '${content.slice(0, eq).trim()}'; expected one of CONTACT, SUBDOMAIN, OWNERDOMAIN, MANAGERDOMAIN, INVENTORYPARTNERDOMAIN.`,
+      },
+    ];
+  }
+  if (value === '') {
+    return [
+      {
+        severity: 'error',
+        line,
+        snippet: content,
+        message: `The '${content.slice(0, eq).trim()}' variable has no value.`,
+      },
+    ];
+  }
+  // A known variable with a value is valid.
+  return [];
+}
+
+/** Checks a data record line: comma-separated fields, spaces not significant. */
+function checkRecord(content: string, line: number): FileIssue[] {
+  const fields = content.split(',').map((field) => field.trim());
+  if (fields.length < 3) {
+    return [
+      {
+        severity: 'error',
+        line,
+        snippet: content,
+        message:
+          'Malformed record; expected at least domain, publisher account id and DIRECT or RESELLER.',
+      },
+    ];
+  }
+  const issues: FileIssue[] = [];
+  const [domain, publisherId, relationship] = fields;
+  if (domain === '') {
+    issues.push({
+      severity: 'error',
+      line,
+      snippet: content,
+      message: 'The advertising system domain (first field) is empty.',
+    });
+  }
+  if (publisherId === '') {
+    issues.push({
+      severity: 'error',
+      line,
+      snippet: content,
+      message: 'The publisher account id (second field) is empty.',
+    });
+  }
+  if (!RELATIONSHIPS.has(relationship.toLowerCase())) {
+    issues.push({
+      severity: 'error',
+      line,
+      snippet: content,
+      message: `The account relationship (third field) must be DIRECT or RESELLER, not '${relationship}'.`,
+    });
+  }
+  return issues;
+}
+
 /**
  * Validates the text of an ads.txt or app-ads.txt file against the IAB Tech
  * Lab "ads.txt" specification v1.1. The grammar is line based: blank lines
@@ -42,80 +113,21 @@ export function validateAdsTxt(text: string): FileIssue[] {
   const lines = splitLines(text);
   let records = 0;
 
-  lines.forEach((raw, index) => {
+  for (const [index, raw] of lines.entries()) {
     const line = index + 1;
     const content = stripComment(raw);
-    // Blank lines and comment-only lines carry no record.
-    if (content === '') {
-      return;
-    }
-
     // A variable line has the form NAME=value, where NAME contains no comma
     // (a data record's first field is a domain and never contains `=`).
     const eq = content.indexOf('=');
-    if (eq !== -1 && !content.slice(0, eq).includes(',')) {
-      const name = content.slice(0, eq).trim().toLowerCase();
-      const value = content.slice(eq + 1).trim();
-      if (!VARIABLES.has(name)) {
-        issues.push({
-          severity: 'warning',
-          line,
-          snippet: content,
-          message: `Unknown variable '${content.slice(0, eq).trim()}'; expected one of CONTACT, SUBDOMAIN, OWNERDOMAIN, MANAGERDOMAIN, INVENTORYPARTNERDOMAIN.`,
-        });
-      } else if (value === '') {
-        issues.push({
-          severity: 'error',
-          line,
-          snippet: content,
-          message: `The '${content.slice(0, eq).trim()}' variable has no value.`,
-        });
-      } else {
-        // A known variable with a value is valid.
-      }
-      return;
+    if (content === '') {
+      // Blank lines and comment-only lines carry no record.
+    } else if (eq !== -1 && !content.slice(0, eq).includes(',')) {
+      issues.push(...checkVariable(content, eq, line));
+    } else {
+      records += 1;
+      issues.push(...checkRecord(content, line));
     }
-
-    // Otherwise it is a data record: comma-separated fields, whitespace
-    // around each field is not significant (section 3.4).
-    const fields = content.split(',').map((field) => field.trim());
-    records += 1;
-    if (fields.length < 3) {
-      issues.push({
-        severity: 'error',
-        line,
-        snippet: content,
-        message:
-          'Malformed record; expected at least domain, publisher account id and DIRECT or RESELLER.',
-      });
-      return;
-    }
-    const [domain, publisherId, relationship] = fields;
-    if (domain === '') {
-      issues.push({
-        severity: 'error',
-        line,
-        snippet: content,
-        message: 'The advertising system domain (first field) is empty.',
-      });
-    }
-    if (publisherId === '') {
-      issues.push({
-        severity: 'error',
-        line,
-        snippet: content,
-        message: 'The publisher account id (second field) is empty.',
-      });
-    }
-    if (!RELATIONSHIPS.has(relationship.toLowerCase())) {
-      issues.push({
-        severity: 'error',
-        line,
-        snippet: content,
-        message: `The account relationship (third field) must be DIRECT or RESELLER, not '${relationship}'.`,
-      });
-    }
-  });
+  }
 
   // A file with no variable and no data record is not a useful ads.txt.
   if (records === 0) {

@@ -378,10 +378,10 @@ function multiScriptPage(): string {
     () => `<script>${inlineJs}</script>`,
   ).join('');
   // Ten images, two of them missing their alt attribute (80% coverage).
-  const images = Array.from({ length: 10 }, (_unused, i) =>
-    i < 8
-      ? `<img src="/i${i}.png" alt="image ${i}">`
-      : `<img src="/i${i}.png">`,
+  const images = Array.from({ length: 10 }, (_unused, index) =>
+    index < 8
+      ? `<img src="/i${index}.png" alt="image ${index}">`
+      : `<img src="/i${index}.png">`,
   ).join('');
   return `<!doctype html><html><head>${scripts}</head><body><h1>Title</h1><h2>Section</h2>${images}</body></html>`;
 }
@@ -422,9 +422,9 @@ describe('the technical checks match the webhint hint for a fixture', () => {
   // so the Lighthouse findings must equal the webhint-side findings exactly.
   it('heading-hierarchy yields the hint findings', async () => {
     const html = '<h1>a</h1><h3>b</h3>';
-    const doc = createHTMLDocument(html, 'https://x.test/');
+    const parsedDocument = createHTMLDocument(html, 'https://x.test/');
     const hintFindings = headingHierarchyFindings(
-      firstSkippedLevel(headingLevels(doc)),
+      firstSkippedLevel(headingLevels(parsedDocument)),
     );
     const lhFindings = await check('technical-heading-hierarchy').run(
       artifacts({ MainDocumentContent: html }),
@@ -436,8 +436,8 @@ describe('the technical checks match the webhint hint for a fixture', () => {
 
   it('image-alt-coverage yields the hint findings', async () => {
     const html = '<img src=a><img src=b alt="x">';
-    const doc = createHTMLDocument(html, 'https://x.test/');
-    const hintFindings = imageAltCoverageFindings(altCoverage(doc));
+    const parsedDocument = createHTMLDocument(html, 'https://x.test/');
+    const hintFindings = imageAltCoverageFindings(altCoverage(parsedDocument));
     const lhFindings = await check('technical-image-alt-coverage').run(
       artifacts({ MainDocumentContent: html }),
       context(),

@@ -1,10 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 import { emailHints } from '../../../src/hints/email/index.js';
 
+const collator = new Intl.Collator();
+
 describe('emailHints', () => {
   it('lists the twenty-seven mail hints', () => {
     expect(
-      emailHints.map((hint) => hint.id).toSorted((a, b) => a.localeCompare(b)),
+      emailHints.map((hint) => hint.id).toSorted(collator.compare),
     ).toEqual([
       'mail-caa',
       'mail-cert-hostname',

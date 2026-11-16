@@ -2,6 +2,9 @@ import { Severity } from '@hint/utils-types';
 import { splitLines, type FileIssue } from '../../lib/files/issue.js';
 import type { Site } from '../../core/page.js';
 
+/** Matches the `utf-8` charset name, with or without the hyphen. */
+const UTF8_CHARSET = /^utf-?8$/i;
+
 /** Maps the lib finding severity to the webhint severity. */
 const SEVERITY = {
   error: Severity.error,
@@ -55,7 +58,7 @@ export async function checkFile(
     );
   }
   // A charset is only meaningful for the text formats; JSON is always UTF-8.
-  if (charset && !/^utf-?8$/i.test(charset)) {
+  if (charset && !UTF8_CHARSET.test(charset)) {
     site.report(url, `${o.label} should be UTF-8 encoded, not '${charset}'.`, {
       severity: Severity.error,
     });

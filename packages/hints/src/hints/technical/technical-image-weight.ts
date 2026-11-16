@@ -37,8 +37,8 @@ export default defineHint({
           return null;
         }
       });
-      urls.forEach((url, i) => {
-        const bytes = sizes[i];
+      for (const [index, url] of urls.entries()) {
+        const bytes = sizes[index];
         // An unreachable image (null size) cannot be measured and is skipped;
         // the shared check turns a measured size into its finding, or null when
         // the image is light enough to pass.
@@ -50,7 +50,7 @@ export default defineHint({
             codeSnippet: `${formatKb(bytes)} (${bytes} bytes)`,
           });
         }
-      });
+      }
     });
   },
 });

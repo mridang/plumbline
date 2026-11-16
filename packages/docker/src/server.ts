@@ -15,6 +15,9 @@ import {
   type ScanResult,
 } from '@mridang/plumbline';
 
+/** Matches a URL that starts with an http or https scheme. */
+const HTTP_URL_PREFIX = /^https?:\/\//;
+
 /** The release version of the scanner, stamped into the image at build time. */
 const SCANNER_VERSION = process.env.SCANNER_VERSION ?? 'dev';
 
@@ -81,7 +84,7 @@ async function handleScan(
     return;
   }
 
-  if (typeof body.url !== 'string' || !/^https?:\/\//.test(body.url)) {
+  if (typeof body.url !== 'string' || !HTTP_URL_PREFIX.test(body.url)) {
     sendJson(res, 400, { error: 'url must be an http(s) URL' });
     return;
   }
@@ -137,7 +140,7 @@ async function handleRun(
     sendJson(res, 400, { error: 'body must be valid JSON' });
     return;
   }
-  if (typeof body.url !== 'string' || !/^https?:\/\//.test(body.url)) {
+  if (typeof body.url !== 'string' || !HTTP_URL_PREFIX.test(body.url)) {
     sendJson(res, 400, { error: 'url must be an http(s) URL' });
     return;
   }

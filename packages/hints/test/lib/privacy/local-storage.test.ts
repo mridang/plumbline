@@ -26,7 +26,7 @@ describe('parseStorage', () => {
     expect(parseStorage('not json')).toEqual([]);
     expect(parseStorage('[1]')).toEqual([]);
     expect(parseStorage(null)).toEqual([]);
-    expect(parseStorage(undefined)).toEqual([]);
+    expect(parseStorage()).toEqual([]);
     expect(parseStorage('{}')).toEqual([]);
   });
 });

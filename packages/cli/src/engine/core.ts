@@ -11,6 +11,9 @@ import {
 import { fetchResource } from './network.js';
 import { ScanRefusedError } from './scannable.js';
 
+/** Matches a finding that says a probe could not test or connect. */
+const COULD_NOT_TEST_OR_CONNECT = /\bcould not (test|connect)\b/i;
+
 /**
  * Running every check against a site and reporting as they finish. The server
  * streams these events as lines of JSON to whoever asked for the scan:
@@ -81,7 +84,7 @@ export function neutralWhenUntested(outcome: HintOutcome): HintOutcome {
     outcome.findings.every(
       (finding) =>
         finding.level === 'hint' &&
-        /\bcould not (test|connect)\b/i.test(finding.message),
+        COULD_NOT_TEST_OR_CONNECT.test(finding.message),
     )
   ) {
     return skipped(

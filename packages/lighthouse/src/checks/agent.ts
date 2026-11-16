@@ -25,7 +25,7 @@ import { finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/findin
 import { checkLinkHeaders } from '@mridang/webhint-hint-plumbline/dist/lib/agent/link-headers.js';
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import { agentEnv } from '../adapt-agent.js';
-import { hintDocs } from '../meta.js';
+import { hintDocumentation } from '../meta.js';
 import type { AuditCheck } from './types.js';
 
 // The compiled webhint hint, imported only for its metadata (name, description,
@@ -44,15 +44,15 @@ function fromHint(
   definition: HintDefinition,
   config: Pick<AuditCheck, 'scoreMode' | 'run'>,
 ): AuditCheck {
-  const docs = hintDocs(definition);
+  const documentation = hintDocumentation(definition);
   return {
     id: definition.id,
     // The agent hints are placed in `ai`; fall back defensively rather
     // than emit an empty group.
-    section: docs.section ?? 'ai',
-    title: docs.name,
-    description: docs.description,
-    reference: docs.url,
+    section: documentation.section ?? 'ai',
+    title: documentation.name,
+    description: documentation.description,
+    reference: documentation.url,
     scoreMode: config.scoreMode,
     requiredArtifacts: AGENT_ARTIFACTS,
     run: config.run,
@@ -77,7 +77,7 @@ export const agentChecks: readonly AuditCheck[] = [
         // A pass has nothing to report (the check sets no informational note).
         return [];
       }
-      const name = hintDocs(agentLinkHeadersHint).name;
+      const name = hintDocumentation(agentLinkHeadersHint).name;
       return [finding('warning', `${name}: ${outcome.detail}`)];
     },
   }),

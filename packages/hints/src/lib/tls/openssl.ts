@@ -16,6 +16,40 @@ import { join } from '#path';
 import { SCAN_RENEGOTIATION_LIMIT } from './constants.js';
 import type { TlsTarget } from './client.js';
 
+/** Matches an early data evidence line. */
+const EARLY_DATA_EVIDENCE_LINE = /^Early data was/i;
+
+/** Matches an extended master secret evidence line. */
+const EXTENDED_MASTER_SECRET_EVIDENCE_LINE = /^Extended master secret:/i;
+
+/** Matches a secure renegotiation evidence line. */
+const SECURE_RENEGOTIATION_EVIDENCE_LINE = /^Secure Renegotiation IS/i;
+
+/** Matches a compression evidence line. */
+const COMPRESSION_EVIDENCE_LINE = /^Compression:/;
+
+/** Matches a rejected or unsent early data line. */
+const EARLY_DATA_NOT_ACCEPTED = /Early data was (rejected|not sent)/i;
+
+/** Matches an accepted early data line. */
+const EARLY_DATA_ACCEPTED = /Early data was accepted/i;
+
+/** Matches the extended master secret result. */
+const EXTENDED_MASTER_SECRET_RESULT = /Extended master secret: (yes|no)/i;
+
+/** Matches the compression methods length in a trace. */
+const COMPRESSION_METHODS_LENGTH = /compression_methods \(len=(\d+)\)/;
+
+/** Matches the negotiated compression line. */
+const COMPRESSION_LINE = /^Compression: (\S+)/m;
+
+/** Matches an unsupported secure renegotiation line. */
+const SECURE_RENEGOTIATION_UNSUPPORTED =
+  /Secure Renegotiation IS NOT supported/i;
+
+/** Matches a supported secure renegotiation line. */
+const SECURE_RENEGOTIATION_SUPPORTED = /Secure Renegotiation IS supported/i;
+
 /** What a finished `openssl` process printed. */
 export interface OpensslRun {
   stdout: string;
@@ -164,10 +198,10 @@ function opensslEvidence(
 export function parseSecureRenegotiation(
   output: string,
 ): 'supported' | 'not-supported' | null {
-  if (/Secure Renegotiation IS supported/i.test(output)) {
+  if (SECURE_RENEGOTIATION_SUPPORTED.test(output)) {
     return 'supported';
   }
-  if (/Secure Renegotiation IS NOT supported/i.test(output)) {
+  if (SECURE_RENEGOTIATION_UNSUPPORTED.test(output)) {
     return 'not-supported';
   }
   return null;
@@ -175,7 +209,7 @@ export function parseSecureRenegotiation(
 
 /** The compression method negotiated, from the `Compression:` line. */
 export function parseCompression(output: string): string | null {
-  const match = /^Compression: (\S+)/m.exec(output);
+  const match = COMPRESSION_LINE.exec(output);
   return match ? match[1].toLowerCase() : null;
 }
 
@@ -185,24 +219,24 @@ export function parseCompression(output: string): string | null {
  * the test could never find compression.
  */
 export function parseCanCompress(trace: string): boolean {
-  const match = /compression_methods \(len=(\d+)\)/.exec(trace);
+  const match = COMPRESSION_METHODS_LENGTH.exec(trace);
   return match ? Number(match[1]) > 1 : false;
 }
 
 /** Whether the Extended Master Secret was used in the session. */
 export function parseExtendedMasterSecret(output: string): boolean | null {
-  const match = /Extended master secret: (yes|no)/i.exec(output);
+  const match = EXTENDED_MASTER_SECRET_RESULT.exec(output);
   return match ? match[1].toLowerCase() === 'yes' : null;
 }
 
 /** Whether the server accepted 0-RTT early data on resumption. */
 export function parseEarlyData(output: string): boolean | null {
-  if (/Early data was accepted/i.test(output)) {
+  if (EARLY_DATA_ACCEPTED.test(output)) {
     return true;
   }
   // `rejected`: sent but refused. `not sent`: the server's ticket did not
   // allow early data at all, which is the best configuration.
-  if (/Early data was (rejected|not sent)/i.test(output)) {
+  if (EARLY_DATA_NOT_ACCEPTED.test(output)) {
     return false;
   }
   return null;
@@ -218,7 +252,7 @@ export function countRenegotiations(output: string): number {
   return output
     .split('RENEGOTIATING')
     .slice(1)
-    .filter((part) => /SSL negotiation finished successfully/.test(part))
+    .filter((part) => part.includes('SSL negotiation finished successfully'))
     .length;
 }
 
@@ -239,7 +273,12 @@ export async function testCompression(
   if (parseCompression(output) === null) {
     return { kind: 'failed', reason: 'no TLS 1.2 handshake' };
   }
-  const evidence = opensslEvidence(target, args, output, /^Compression:/);
+  const evidence = opensslEvidence(
+    target,
+    args,
+    output,
+    COMPRESSION_EVIDENCE_LINE,
+  );
   if (!parseCanCompress(output)) {
     return { kind: 'ok', value: 'cannot-compress', evidence };
   }
@@ -273,7 +312,7 @@ export async function testSecureRenegotiation(
           target,
           args,
           output,
-          /^Secure Renegotiation IS/i,
+          SECURE_RENEGOTIATION_EVIDENCE_LINE,
         ),
       };
 }
@@ -305,7 +344,7 @@ export async function testClientRenegotiation(
   return {
     kind: 'ok',
     value: count,
-    evidence: `${opensslEvidence(target, args, output, /^Secure Renegotiation IS/i)}\nclient renegotiations completed: ${count} (sent ${SCAN_RENEGOTIATION_LIMIT})`,
+    evidence: `${opensslEvidence(target, args, output, SECURE_RENEGOTIATION_EVIDENCE_LINE)}\nclient renegotiations completed: ${count} (sent ${SCAN_RENEGOTIATION_LIMIT})`,
   };
 }
 
@@ -332,7 +371,7 @@ export async function testExtendedMasterSecret(
           target,
           args,
           output,
-          /^Extended master secret:/i,
+          EXTENDED_MASTER_SECRET_EVIDENCE_LINE,
         ),
       };
 }
@@ -382,7 +421,7 @@ export async function testZeroRtt(
             target,
             resumeArgs,
             output,
-            /^Early data was/i,
+            EARLY_DATA_EVIDENCE_LINE,
           ),
         };
   } finally {

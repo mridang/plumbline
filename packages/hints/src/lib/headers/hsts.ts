@@ -15,6 +15,12 @@
 import { finding, type Finding, type Profile } from './finding.js';
 import { isBareHost, registrableDomain } from './registrable-domain.js';
 
+/** Matches a string made only of digits. */
+const DIGITS_ONLY = /^\d+$/;
+
+/** Matches a double-quoted string and captures its content. */
+const QUOTED_STRING = /^"(.*)"$/;
+
 /** Six months, Observatory's threshold. */
 const SIX_MONTHS = 15_552_000;
 
@@ -63,11 +69,8 @@ export function parseHsts(header: string): Hsts {
     seen.add(name);
     switch (name) {
       case 'max-age': {
-        const value = rest
-          .join('=')
-          .trim()
-          .replace(/^"(.*)"$/, '$1');
-        if (!/^\d+$/.test(value)) {
+        const value = rest.join('=').trim().replace(QUOTED_STRING, '$1');
+        if (!DIGITS_ONLY.test(value)) {
           return invalid('max-age is not a number');
         }
         result.maxAge = Number.parseInt(value.slice(0, 128), 10);

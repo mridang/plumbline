@@ -5,6 +5,9 @@ import path from 'node:path';
 
 import { pathExists } from './helpers/fs.js';
 
+/** Captures the body of a leading `---` delimited front matter block. */
+const FRONT_MATTER_BLOCK = /^---\n([\s\S]*?)\n---\n/;
+
 /** The skills package, and the repository it lives in. */
 const PACKAGE = fileURLToPath(new URL('..', import.meta.url));
 const REPOSITORY = path.join(PACKAGE, '..', '..');
@@ -20,7 +23,7 @@ async function json(...parts: string[]): Promise<Record<string, unknown>> {
 /** The front matter of a Markdown file, as `key: value` pairs. */
 async function frontMatter(file: string): Promise<Record<string, string>> {
   const text = await readFile(file, 'utf8');
-  const block = /^---\n([\s\S]*?)\n---\n/.exec(text)?.[1] ?? '';
+  const block = FRONT_MATTER_BLOCK.exec(text)?.[1] ?? '';
   return Object.fromEntries(
     block.split('\n').flatMap((line) => {
       const at = line.indexOf(':');

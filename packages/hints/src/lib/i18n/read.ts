@@ -1,3 +1,5 @@
+/** Matches a simple language or language-region tag. */
+const SIMPLE_LANGUAGE_TAG = /^[a-z]{2}(-[a-z]{2})?$/i;
 /**
  * Readers and validators that pull internationalisation link relations out of
  * a parsed HTML document: the `hreflang` alternates, the `rel="alternate"`
@@ -61,9 +63,9 @@ export interface PaginationLink<E extends ElementLike = ElementLike> {
  * as long as it contains the `alternate` token.
  */
 export function getHreflangLinks<E extends ElementLike>(
-  doc: TypedDocument<E>,
+  parsedDocument: TypedDocument<E>,
 ): HreflangLink<E>[] {
-  return doc
+  return parsedDocument
     .querySelectorAll('link[rel~="alternate" i][hreflang]')
     .map((element) => ({
       hreflang: (element.getAttribute('hreflang') ?? '').trim(),
@@ -78,9 +80,9 @@ export function getHreflangLinks<E extends ElementLike>(
  * mobile URL.
  */
 export function getAlternateMediaLinks<E extends ElementLike>(
-  doc: TypedDocument<E>,
+  parsedDocument: TypedDocument<E>,
 ): AlternateMediaLink<E>[] {
-  return doc
+  return parsedDocument
     .querySelectorAll('link[rel~="alternate" i][media]')
     .map((element) => ({
       media: (element.getAttribute('media') ?? '').trim(),
@@ -91,15 +93,15 @@ export function getAlternateMediaLinks<E extends ElementLike>(
 
 /** Returns every `<link rel="prev">` and `<link rel="next">`, in document order. */
 export function getPaginationLinks<E extends ElementLike>(
-  doc: TypedDocument<E>,
+  parsedDocument: TypedDocument<E>,
 ): PaginationLink<E>[] {
-  const prev = doc
+  const previous = parsedDocument
     .querySelectorAll('link[rel~="prev" i]')
     .map((element) => ({ rel: 'prev' as const, element }));
-  const next = doc
+  const next = parsedDocument
     .querySelectorAll('link[rel~="next" i]')
     .map((element) => ({ rel: 'next' as const, element }));
-  return [...prev, ...next].map(({ rel, element }) => ({
+  return [...previous, ...next].map(({ rel, element }) => ({
     rel,
     href: (element.getAttribute('href') ?? '').trim(),
     element,
@@ -120,7 +122,7 @@ export function isValidHreflang(value: string): boolean {
   if (trimmed.toLowerCase() === 'x-default') {
     return true;
   }
-  return /^[a-z]{2}(-[a-z]{2})?$/i.test(trimmed);
+  return SIMPLE_LANGUAGE_TAG.test(trimmed);
 }
 
 /**

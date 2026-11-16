@@ -10,7 +10,7 @@ describe('escapeHtml', () => {
   });
 
   it('treats undefined as empty', () => {
-    expect(escapeHtml(undefined)).toBe('');
+    expect(escapeHtml()).toBe('');
   });
 });
 

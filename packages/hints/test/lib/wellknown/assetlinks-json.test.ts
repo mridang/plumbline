@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { validateAssetlinksJson } from '../../../src/lib/wellknown/assetlinks-json.js';
 
 const msgs = (v: unknown) =>
-  validateAssetlinksJson(JSON.stringify(v)).map((i) => i.message);
+  validateAssetlinksJson(JSON.stringify(v)).map((index) => index.message);
 
 const androidStatement = {
   relation: ['delegate_permission/common.handle_all_urls'],

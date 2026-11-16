@@ -1,7 +1,10 @@
-import { Category, defineHint } from '../../core/define-hint.js';
+import { Category, defineHint } from '../../core/define-hint.js'; // eslint-disable-line unicorn/prevent-abbreviations -- file name is the permanent hint id that configs and docs reference
 import { onPage } from '../../core/page.js';
 import { getPaginationLinks, isAbsoluteHttpUrl } from '../../lib/i18n/read.js';
-import { paginationRel, MDN_LINK_REL_REF } from '../../lib/i18n/checks.js';
+import {
+  paginationRel as paginationRelationship,
+  MDN_LINK_REL_REF,
+} from '../../lib/i18n/checks.js';
 import { toSeverity } from './to-severity.js';
 
 const REF = MDN_LINK_REL_REF;
@@ -26,16 +29,16 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      const findings = paginationRel(page.document);
+      const findings = paginationRelationship(page.document);
       const elements = getPaginationLinks(page.document)
         .filter((link) => !isAbsoluteHttpUrl(link.href))
         .map((link) => link.element);
-      findings.forEach((found, index) => {
+      for (const [index, found] of findings.entries()) {
         page.report(found.message, {
           severity: toSeverity(found.severity),
           element: elements[index],
         });
-      });
+      }
     });
   },
 });

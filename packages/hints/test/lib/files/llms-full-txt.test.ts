@@ -1,7 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 import { validateLlmsFullTxt } from '../../../src/lib/files/llms-full-txt.js';
 
-const msgs = (t: string) => validateLlmsFullTxt(t).map((i) => i.message);
+const msgs = (t: string) =>
+  validateLlmsFullTxt(t).map((index) => index.message);
 
 describe('validateLlmsFullTxt', () => {
   it('accepts valid markdown', () => {
@@ -16,8 +17,8 @@ describe('validateLlmsFullTxt', () => {
     expect(msgs('## A\ntext')[0]).toContain('H1');
   });
   it('rejects an unclosed fence', () => {
-    const i = validateLlmsFullTxt('# A\n```js\ncode');
-    expect(i[0].line).toBe(2);
+    const index = validateLlmsFullTxt('# A\n```js\ncode');
+    expect(index[0].line).toBe(2);
   });
   it('rejects empty headings', () => {
     expect(msgs('# A\ntext\n##')[0]).toContain('empty');
@@ -30,7 +31,7 @@ describe('validateLlmsFullTxt', () => {
     expect(msgs('# A')[0]).toContain('no content');
   });
   it('gives a size hint for huge files', () => {
-    const i = validateLlmsFullTxt(`# A\n${'x'.repeat(600 * 1000)}`);
-    expect(i[0].severity).toBe('warning');
+    const index = validateLlmsFullTxt(`# A\n${'x'.repeat(600 * 1000)}`);
+    expect(index[0].severity).toBe('warning');
   });
 });

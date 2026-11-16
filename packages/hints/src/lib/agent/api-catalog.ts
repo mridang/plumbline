@@ -7,7 +7,7 @@ import {
   pretty,
   result,
   urlOf,
-} from './util.js';
+} from './utility.js';
 
 /**
  * API Catalog (RFC 9727): `/.well-known/api-catalog`, asked for as
@@ -40,7 +40,7 @@ export async function checkApiCatalog(env: AgentEnv): Promise<CheckResult> {
       isRecord(entry) &&
       isText(entry.anchor) &&
       ['service-desc', 'service-doc', 'service-meta', 'status', 'item'].some(
-        (rel) => Array.isArray(entry[rel]),
+        (relationship) => Array.isArray(entry[relationship]),
       ),
   );
   return valid.length > 0

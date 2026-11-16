@@ -7,6 +7,18 @@
  */
 import { finding, type Finding } from './finding.js';
 
+/** Matches a parenthesised list value and captures its content. */
+const PARENTHESISED_LIST_VALUE = /=\s*\((.*)\)\s*$/;
+
+/** Matches a `blocked-destinations` dictionary member. */
+const BLOCKED_DESTINATIONS_MEMBER = /^blocked-destinations\s*=/;
+
+/** Matches an `https://` prefix. */
+const HTTPS_PREFIX = /^https:\/\//i;
+
+/** Matches a double-quoted string and captures its content. */
+const QUOTED_STRING = /^"(.*)"$/;
+
 /**
  * Splits a structured-field dictionary into its `key=value` members at the
  * top-level commas, ignoring commas inside quoted strings. Returns null when
@@ -65,8 +77,8 @@ export function reportingEndpointsFindings(value: string | null): Finding[] {
         ),
       ];
     }
-    const url = /^"(.*)"$/.exec(raw)?.[1];
-    if (url === undefined || !/^https:\/\//i.test(url)) {
+    const url = QUOTED_STRING.exec(raw)?.[1];
+    if (url === undefined || !HTTPS_PREFIX.test(url)) {
       return [
         finding(
           'warning',
@@ -160,7 +172,7 @@ export function integrityPolicyFindings(
   }
   const members = dictionaryMembers(value);
   const blocked = members?.find((member) =>
-    /^blocked-destinations\s*=/.test(member),
+    BLOCKED_DESTINATIONS_MEMBER.test(member),
   );
   if (!members || !blocked) {
     return [
@@ -170,7 +182,7 @@ export function integrityPolicyFindings(
       ),
     ];
   }
-  const list = /=\s*\((.*)\)\s*$/.exec(blocked)?.[1];
+  const list = PARENTHESISED_LIST_VALUE.exec(blocked)?.[1];
   if (list === undefined || list.trim() === '') {
     return [
       finding(

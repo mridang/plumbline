@@ -33,7 +33,7 @@ import {
   acceptPostFindings,
 } from '@mridang/webhint-hint-plumbline/dist/lib/headersx/accept-method.js';
 import { mainResponse } from '../network.js';
-import { hintDocs } from '../meta.js';
+import { hintDocumentation } from '../meta.js';
 import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata.
@@ -60,13 +60,13 @@ function fromHint(
   definition: HintDefinition,
   config: Pick<AuditCheck, 'scoreMode' | 'run'>,
 ): AuditCheck {
-  const docs = hintDocs(definition);
+  const documentation = hintDocumentation(definition);
   return {
     id: definition.id,
-    section: docs.section ?? 'hardening',
-    title: docs.name,
-    description: docs.description,
-    reference: docs.url,
+    section: documentation.section ?? 'hardening',
+    title: documentation.name,
+    description: documentation.description,
+    reference: documentation.url,
     scoreMode: config.scoreMode,
     requiredArtifacts: HEADER_ARTIFACTS,
     run: config.run,

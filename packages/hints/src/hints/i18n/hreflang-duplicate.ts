@@ -42,12 +42,12 @@ export default defineHint({
           );
         })
         .map((link) => link.element);
-      findings.forEach((found, index) => {
+      for (const [index, found] of findings.entries()) {
         page.report(found.message, {
           severity: toSeverity(found.severity),
           element: elements[index],
         });
-      });
+      }
     });
   },
 });

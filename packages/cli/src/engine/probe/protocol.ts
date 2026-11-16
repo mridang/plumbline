@@ -7,6 +7,9 @@
  * never a half-filled result handed on to a check.
  */
 
+/** Matches a carriage return or a line feed. */
+const LINE_BREAK = /[\r\n]/;
+
 /** A probe that failed, refused, timed out or answered something that is not the protocol. */
 export class ProbeError extends Error {
   public constructor(message: string) {
@@ -41,7 +44,7 @@ export function encodeItem(fields: Readonly<Record<string, Field>>): string {
       ? (value as readonly string[])
       : [value]) {
       const text = one === true ? '1' : String(one);
-      if (/[\r\n]/.test(text)) {
+      if (LINE_BREAK.test(text)) {
         throw new ProbeError(`${key} holds a line break`);
       }
       lines.push(`${key}=${text}`);
@@ -170,8 +173,8 @@ function listOfText(value: unknown, what: string): string[] {
 export function fromBase64(value: string): Uint8Array {
   const raw = atob(value);
   const bytes = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i += 1) {
-    bytes[i] = raw.codePointAt(i) ?? 0;
+  for (let index = 0; index < raw.length; index += 1) {
+    bytes[index] = raw.codePointAt(index) ?? 0;
   }
   return bytes;
 }

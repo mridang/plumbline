@@ -71,6 +71,6 @@ function metaDocument(
 export function ogMetaReader(
   metaElements: readonly MetaElementArtifact[],
 ): (key: string) => string | null {
-  const doc = metaDocument(metaElements);
-  return (key: string) => metaValue(doc, key);
+  const parsedDocument = metaDocument(metaElements);
+  return (key: string) => metaValue(parsedDocument, key);
 }

@@ -1,7 +1,7 @@
 import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onSite } from '../../core/page.js';
-import { siteHost } from '../../lib/network/dns-util.js';
+import { siteHost } from '../../lib/network/dns-utility.js';
 import {
   daneExistence,
   daneValidity,

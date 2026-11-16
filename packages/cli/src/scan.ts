@@ -36,12 +36,15 @@ interface HintCtor {
   meta?: { docs?: Record<string, unknown> };
 }
 
+/** Locale-aware comparator used to sort hint ids deterministically. */
+const collator = new Intl.Collator();
+
 /** The hint map the hints package default-exports, keyed by bare hint id. */
 const hintMap = extraHints as unknown as Record<string, HintCtor>;
 
 /** Every hint id the package ships, without the `extra/` prefix. */
 export const allHintIds: readonly string[] = Object.freeze(
-  Object.keys(hintMap).toSorted((a, b) => a.localeCompare(b)),
+  Object.keys(hintMap).toSorted(collator.compare),
 );
 
 /** The hint constructors for a list of ids, for the formatter's `resources`. */
@@ -71,21 +74,39 @@ export interface HintMeta {
 
 /** Reads the stamped metadata off one hint, defaulting anything missing. */
 function metaOf(id: string): HintMeta {
-  const docs = hintMap[id]?.meta?.docs ?? {};
+  const documentation = hintMap[id]?.meta?.docs ?? {};
   return {
     id,
-    name: typeof docs.name === 'string' ? docs.name : id,
-    description: typeof docs.description === 'string' ? docs.description : '',
-    category: typeof docs.category === 'string' ? docs.category : 'other',
-    groups: Array.isArray(docs.groups)
-      ? docs.groups.filter((g): g is string => typeof g === 'string')
+    name: typeof documentation.name === 'string' ? documentation.name : id,
+    description:
+      typeof documentation.description === 'string'
+        ? documentation.description
+        : '',
+    category:
+      typeof documentation.category === 'string'
+        ? documentation.category
+        : 'other',
+    groups: Array.isArray(documentation.groups)
+      ? documentation.groups.filter((g): g is string => typeof g === 'string')
       : [],
-    ...(typeof docs.section === 'string' ? { section: docs.section } : {}),
-    ...(typeof docs.tier === 'string' ? { tier: docs.tier } : {}),
-    ...(typeof docs.target === 'string' ? { target: docs.target } : {}),
-    ...(typeof docs.control === 'string' ? { control: docs.control } : {}),
-    ...(Array.isArray(docs.tags)
-      ? { tags: docs.tags.filter((t): t is string => typeof t === 'string') }
+    ...(typeof documentation.section === 'string'
+      ? { section: documentation.section }
+      : {}),
+    ...(typeof documentation.tier === 'string'
+      ? { tier: documentation.tier }
+      : {}),
+    ...(typeof documentation.target === 'string'
+      ? { target: documentation.target }
+      : {}),
+    ...(typeof documentation.control === 'string'
+      ? { control: documentation.control }
+      : {}),
+    ...(Array.isArray(documentation.tags)
+      ? {
+          tags: documentation.tags.filter(
+            (t): t is string => typeof t === 'string',
+          ),
+        }
       : {}),
   };
 }

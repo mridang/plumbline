@@ -7,6 +7,10 @@
 import type { HttpHeaders } from '@hint/utils-types';
 import { headerValue } from '../../core/http.js';
 
+/** Matches a bot-specific robots directive. */
+const BOT_SPECIFIC_ROBOTS_DIRECTIVE =
+  /^\s*(?:googlebot|bingbot|[a-z0-9_-]+)\s*:\s*(?=noindex|nofollow|none)/i;
+
 /** The part of a DOM element these readers use. */
 interface ElementLike {
   textContent: string;
@@ -20,8 +24,8 @@ export interface DocumentLike {
 }
 
 /** Returns the trimmed, whitespace collapsed text of the `<title>`, or null when there is none. */
-export function getTitle(doc: DocumentLike): string | null {
-  const element = doc.querySelector('title:not(svg title)');
+export function getTitle(parsedDocument: DocumentLike): string | null {
+  const element = parsedDocument.querySelector('title:not(svg title)');
   if (!element) {
     return null;
   }
@@ -29,8 +33,10 @@ export function getTitle(doc: DocumentLike): string | null {
 }
 
 /** Returns the trimmed content of `<meta name="description">`, or null when the tag is absent. */
-export function getMetaDescription(doc: DocumentLike): string | null {
-  const element = doc.querySelector('meta[name="description" i]');
+export function getMetaDescription(
+  parsedDocument: DocumentLike,
+): string | null {
+  const element = parsedDocument.querySelector('meta[name="description" i]');
   if (!element) {
     return null;
   }
@@ -38,13 +44,13 @@ export function getMetaDescription(doc: DocumentLike): string | null {
 }
 
 /** Counts the `<h1>` elements of the page. */
-export function countH1(doc: DocumentLike): number {
-  return doc.querySelectorAll('h1').length;
+export function countH1(parsedDocument: DocumentLike): number {
+  return parsedDocument.querySelectorAll('h1').length;
 }
 
 /** Returns the trimmed `lang` of `<html>`, or null when absent or blank. */
-export function getHtmlLang(doc: DocumentLike): string | null {
-  const element = doc.querySelector('html');
+export function getHtmlLang(parsedDocument: DocumentLike): string | null {
+  const element = parsedDocument.querySelector('html');
   const lang = element?.getAttribute('lang')?.trim() ?? '';
   return lang === '' ? null : lang;
 }
@@ -63,9 +69,9 @@ function normalizeDirectives(directives: string[]): string[] {
  * Returns the lower-cased directives of every `<meta name="robots">`,
  * `googlebot` and `bingbot` tag, for example `['noindex', 'nofollow']`.
  */
-export function getRobotsDirectives(doc: DocumentLike): string[] {
+export function getRobotsDirectives(parsedDocument: DocumentLike): string[] {
   return normalizeDirectives(
-    doc
+    parsedDocument
       .querySelectorAll(
         'meta[name="robots" i], meta[name="googlebot" i], meta[name="bingbot" i]',
       )
@@ -87,12 +93,7 @@ export function getRobotsHeaderDirectives(
   return normalizeDirectives(
     value
       .split(',')
-      .map((part) =>
-        part.replace(
-          /^\s*(?:googlebot|bingbot|[a-z0-9_-]+)\s*:\s*(?=noindex|nofollow|none)/i,
-          '',
-        ),
-      ),
+      .map((part) => part.replace(BOT_SPECIFIC_ROBOTS_DIRECTIVE, '')),
   );
 }
 
@@ -106,11 +107,11 @@ type RobotsSource<E> =
  * neither does.
  */
 export function findRobotsSource<E extends ElementLike>(
-  doc: { querySelectorAll(selector: string): E[] },
+  parsedDocument: { querySelectorAll(selector: string): E[] },
   headers: HttpHeaders | undefined,
   directive: string,
 ): RobotsSource<E> | null {
-  const element = doc
+  const element = parsedDocument
     .querySelectorAll(
       'meta[name="robots" i], meta[name="googlebot" i], meta[name="bingbot" i]',
     )
@@ -130,8 +131,8 @@ export function findRobotsSource<E extends ElementLike>(
 }
 
 /** Returns the `href` of `<link rel="canonical">`, or null when absent. */
-export function getCanonical(doc: DocumentLike): string | null {
-  const element = doc.querySelector('link[rel~="canonical" i]');
+export function getCanonical(parsedDocument: DocumentLike): string | null {
+  const element = parsedDocument.querySelector('link[rel~="canonical" i]');
   if (!element) {
     return null;
   }
@@ -141,8 +142,8 @@ export function getCanonical(doc: DocumentLike): string | null {
 }
 
 /** True when the page carries a JSON-LD block that parses to a non-empty object or array (a `@graph` is an object). */
-export function hasJsonLd(doc: DocumentLike): boolean {
-  return doc
+export function hasJsonLd(parsedDocument: DocumentLike): boolean {
+  return parsedDocument
     .querySelectorAll('script[type="application/ld+json" i]')
     .some((element) => {
       try {

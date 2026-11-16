@@ -11,6 +11,9 @@ import type { Problem } from '@hint/utils-types';
 import { generateReport } from './render.js';
 import type { Finding, HintInfo, Origin } from './sections.js';
 
+/** Matches a dash at the end of a string. */
+const TRAILING_DASH = /-$/;
+
 /** The extra fields our hints stamp on `meta.docs`; webhint does not type them. */
 interface Extras {
   groups?: unknown;
@@ -70,7 +73,7 @@ function fileName(target: string): string {
     .replaceAll('.', '-')
     .replaceAll('/', '-')
     .replaceAll(/[?=]/g, '-query-')
-    .replace(/-$/, '');
+    .replace(TRAILING_DASH, '');
   return `${name || 'report'}.html`;
 }
 

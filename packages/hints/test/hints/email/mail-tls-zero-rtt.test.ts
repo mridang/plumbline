@@ -9,6 +9,10 @@ import {
   restoreOpenssl,
 } from '../../lib/tls/fake-openssl.js';
 
+/** Matches the openssl s_client command line reported as the source code of a problem. */
+const OPENSSL_STARTTLS_COMMAND =
+  /^\$ openssl s_client -connect 127\.0\.0\.1:\d+ -starttls smtp /;
+
 afterEach(() => {
   restoreProbe();
   restoreOpenssl();
@@ -55,9 +59,7 @@ describe('mail-tls-zero-rtt', () => {
     expect(problems[0].message).toBe(
       '127.0.0.1: Your mail server supports 0-RTT, which is *not* secure.',
     );
-    expect(problems[0].sourceCode).toMatch(
-      /^\$ openssl s_client -connect 127\.0\.0\.1:\d+ -starttls smtp /,
-    );
+    expect(problems[0].sourceCode).toMatch(OPENSSL_STARTTLS_COMMAND);
     expect(problems[0].sourceCode).toContain('Early data was accepted');
   });
 });

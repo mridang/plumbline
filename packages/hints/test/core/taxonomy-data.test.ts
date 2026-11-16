@@ -19,13 +19,16 @@ import {
   TIERS,
 } from '../../src/core/taxonomy-data.js';
 
-const ids = Object.keys(hints).toSorted((a, b) => a.localeCompare(b));
+/** Matches a year and month such as 2025-03. */
+const ADDED_MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+const collator = new Intl.Collator();
+
+const ids = Object.keys(hints).toSorted(collator.compare);
 
 describe('the taxonomy data', () => {
   it('places every hint, and only hints that exist', () => {
-    expect(
-      Object.keys(PLACEMENT).toSorted((a, b) => a.localeCompare(b)),
-    ).toEqual(ids);
+    expect(Object.keys(PLACEMENT).toSorted(collator.compare)).toEqual(ids);
   });
 
   it('gives every hint a section, tier, target, control, month and version', () => {
@@ -51,7 +54,7 @@ describe('the taxonomy data', () => {
       });
       expect({
         id,
-        added: /^\d{4}-(0[1-9]|1[0-2])$/.test(placement.added),
+        added: ADDED_MONTH.test(placement.added),
       }).toEqual({
         id,
         added: true,
@@ -98,10 +101,8 @@ describe('the taxonomy data', () => {
 
   it('lists every section in exactly one display group', () => {
     const listed = GROUP_DEFS.flatMap((group) => group.sections);
-    expect([...listed].toSorted((a, b) => a.localeCompare(b))).toEqual(
-      SECTION_DEFS.map((section) => section.id).toSorted((a, b) =>
-        a.localeCompare(b),
-      ),
+    expect([...listed].toSorted(collator.compare)).toEqual(
+      SECTION_DEFS.map((section) => section.id).toSorted(collator.compare),
     );
     for (const section of SECTION_DEFS) {
       const group = GROUP_DEFS.find((g) => g.sections.includes(section.id));

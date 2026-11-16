@@ -25,8 +25,8 @@ function readTlv(buffer: Buffer, offset: number): Tlv {
 
     const count = length & 0x7f;
     length = 0;
-    for (let i = 0; i < count; i++) {
-      length = length * 256 + (buffer[start + i] ?? 0);
+    for (let index = 0; index < count; index++) {
+      length = length * 256 + (buffer[start + index] ?? 0);
     }
     start += count;
   }

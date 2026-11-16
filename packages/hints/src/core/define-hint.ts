@@ -80,7 +80,7 @@ export function defineHint(spec: HintSpec): HintDefinition {
   // reference, where the hint is placed in the taxonomy and where it came from.
   const placement = PLACEMENT[spec.id];
   const section = SECTIONS.find((s) => s.id === placement?.section);
-  const docs: HintMetadata['docs'] & {
+  const documentation: HintMetadata['docs'] & {
     url?: string;
     groups: readonly Group[];
     section?: string;
@@ -127,7 +127,7 @@ export function defineHint(spec: HintSpec): HintDefinition {
     origins: ORIGINS[spec.id] ?? [],
   };
   const meta: HintMetadata = {
-    docs,
+    docs: documentation,
     getDescription: () => spec.description,
     getName: () => spec.name,
     id: `extra/${spec.id}`,

@@ -1,5 +1,17 @@
 import { createPublicKey } from '#crypto';
 
+/** Matches a `tag=value` pair and captures both parts. */
+const TAG_VALUE_PAIR = /^([A-Za-z]\w*)\s*=([\s\S]*)$/u;
+
+/** Matches a colon-separated list of hash algorithm names. */
+const HASH_ALGORITHM_LIST = /^[A-Za-z0-9]+(?:\s*:\s*[A-Za-z0-9]+)*$/u;
+
+/** Matches a wildcard or a colon-separated list of service types. */
+const SERVICE_TYPE_LIST = /^(?:\*|[A-Za-z0-9-]+(?:\s*:\s*[A-Za-z0-9-]+)*)$/u;
+
+/** Matches a colon-separated list of flags. */
+const FLAG_LIST = /^[A-Za-z0-9-]*(?:\s*:\s*[A-Za-z0-9-]+)*$/u;
+
 /**
  * A validator for DKIM key records (RFC 6376 section 3.6.1), the TXT record
  * published at `<selector>._domainkey.<domain>`. Internet.nl only checks
@@ -69,7 +81,7 @@ export function parseDkim(record: string): DkimRecord {
   }
   const tags = new Map<string, string>();
   for (const [index, piece] of pieces.entries()) {
-    const match = /^([A-Za-z]\w*)\s*=([\s\S]*)$/u.exec(piece);
+    const match = TAG_VALUE_PAIR.exec(piece);
     if (!match) {
       errors.push(`'${piece}' is not a tag=value pair.`);
     } else if (tags.has(match[1])) {
@@ -114,24 +126,18 @@ export function parseDkim(record: string): DkimRecord {
   }
 
   const hashes = tags.get('h');
-  if (
-    hashes !== undefined &&
-    !/^[A-Za-z0-9]+(?:\s*:\s*[A-Za-z0-9]+)*$/u.test(hashes)
-  ) {
+  if (hashes !== undefined && !HASH_ALGORITHM_LIST.test(hashes)) {
     errors.push("The 'h' tag must be a colon separated list of hash names.");
   }
   const services = tags.get('s');
-  if (
-    services !== undefined &&
-    !/^(?:\*|[A-Za-z0-9-]+(?:\s*:\s*[A-Za-z0-9-]+)*)$/u.test(services)
-  ) {
+  if (services !== undefined && !SERVICE_TYPE_LIST.test(services)) {
     errors.push(
       "The 's' tag must be '*' or a colon separated list of services.",
     );
   }
   const flags = tags.get('t');
   if (flags !== undefined) {
-    if (/^[A-Za-z0-9-]*(?:\s*:\s*[A-Za-z0-9-]+)*$/u.test(flags)) {
+    if (FLAG_LIST.test(flags)) {
       result.testing = flags
         .split(':')
         .map((flag) => flag.trim().toLowerCase())

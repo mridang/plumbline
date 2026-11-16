@@ -22,6 +22,9 @@ import {
 } from '../../helpers/probe.js';
 import { vector } from '../../helpers/data.js';
 
+/** Matches a value made only of word characters. */
+const WORD_CHARACTERS_ONLY = /^\w+$/;
+
 /** A probe that answers each path with `answers[path]`, and keeps what it was sent. */
 function probeFor(
   answers: Record<string, (body: string) => string>,
@@ -351,7 +354,7 @@ describe('the other checks', () => {
       delay: '500',
       timeout: '20000',
     });
-    expect(linesOf(body)['sess_out']).toMatch(/^\w+$/);
+    expect(linesOf(body)['sess_out']).toMatch(WORD_CHARACTERS_ONLY);
   });
 });
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it } from '@jest/globals'; // eslint-disable-line unicorn/prevent-abbreviations -- file name mirrors the permanent hint id of the code it covers
 import hint from '../../../src/hints/i18n/pagination-rel.js';
 import { runHint } from '../../helpers/run-hint.js';
 

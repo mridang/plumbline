@@ -1,5 +1,11 @@
 import { isAbsoluteUrl, splitLines, type FileIssue } from './issue.js';
 
+/** Matches a trailing slash. */
+const TRAILING_SLASH = /\/$/;
+
+/** Matches a trailing colon. */
+const TRAILING_COLON = /:$/;
+
 const RFC3339 =
   /^\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}(\.\d+)?([Zz]|[+-]\d{2}:\d{2})$/;
 const LANG_TAG = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
@@ -31,7 +37,7 @@ function stripSignature(
   if (!lines[0]?.startsWith('-----BEGIN PGP SIGNED MESSAGE-----')) {
     return { body: lines, offset: 0 };
   }
-  const blank = lines.findIndex((l, i) => i > 0 && l.trim() === '');
+  const blank = lines.findIndex((l, index) => index > 0 && l.trim() === '');
   const sig = lines.findIndex((l) =>
     l.startsWith('-----BEGIN PGP SIGNATURE-----'),
   );
@@ -70,28 +76,27 @@ export function validateSecurityTxt(
   const { body, offset } = stripSignature(splitLines(text), issues);
   const fields: Record<string, { value: string; line: number }[]> = {};
 
-  body.forEach((raw, i) => {
-    const line = i + offset + 1;
+  for (const [index, raw] of body.entries()) {
+    const line = index + offset + 1;
     const trimmed = raw.trim();
-    if (trimmed === '' || trimmed.startsWith('#')) {
-      return;
-    }
     const colon = trimmed.indexOf(':');
-    if (colon < 1) {
+    if (trimmed === '' || trimmed.startsWith('#')) {
+      // Blank lines and comments carry no field.
+    } else if (colon < 1) {
       issues.push({
         severity: 'error',
         line,
         snippet: trimmed,
         message: "Invalid line, expected 'Field: value'.",
       });
-      return;
+    } else {
+      const name = trimmed.slice(0, colon).trim().toLowerCase();
+      // Dash-escaped lines in signed files start with "- ".
+      const value = trimmed.slice(colon + 1).trim();
+      fields[name] ??= [];
+      fields[name].push({ value, line });
     }
-    const name = trimmed.slice(0, colon).trim().toLowerCase();
-    // Dash-escaped lines in signed files start with "- ".
-    const value = trimmed.slice(colon + 1).trim();
-    fields[name] ??= [];
-    fields[name].push({ value, line });
-  });
+  }
 
   for (const required of ['contact', 'expires']) {
     if (!fields[required]) {
@@ -146,7 +151,7 @@ export function validateSecurityTxt(
       const snippet = `${field[0].toUpperCase()}${field.slice(1)}: ${value}`;
       let scheme = '';
       try {
-        scheme = new URL(value).protocol.replace(/:$/, '');
+        scheme = new URL(value).protocol.replace(TRAILING_COLON, '');
       } catch {
         issues.push({
           severity: 'error',
@@ -208,9 +213,11 @@ export function validateSecurityTxt(
   }
 
   if (options.url && fields['canonical']) {
-    const wanted = options.url.replace(/\/$/, '');
+    const wanted = options.url.replace(TRAILING_SLASH, '');
     if (
-      !fields['canonical'].some((c) => c.value.replace(/\/$/, '') === wanted)
+      !fields['canonical'].some(
+        (c) => c.value.replace(TRAILING_SLASH, '') === wanted,
+      )
     ) {
       issues.push({
         severity: 'warning',

@@ -12,7 +12,7 @@ export interface HstsClient {
 }
 
 export const hstsClient: HstsClient = {
-  async fetchHeader(url) {
+  async fetchHeader(url): Promise<string | null | undefined> {
     try {
       const response = await globalThis.fetch(url, { redirect: 'follow' });
       return response.headers.get('strict-transport-security');

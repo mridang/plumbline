@@ -1,5 +1,8 @@
 import { UsageError } from './options.js';
 
+/** Matches a string that starts with a URL scheme such as `https://`. */
+const URL_SCHEME_PREFIX = /^[a-z][a-z0-9+.-]*:\/\//i;
+
 /**
  * Turns what was typed after `scan` into the absolute URL webhint scans. A
  * bare domain (`example.com`, `example.com/blog`) is taken to mean its HTTPS
@@ -15,7 +18,7 @@ export function normalizeTarget(input: string): string {
     throw new UsageError('scan needs a URL or a domain to scan');
   }
   // Anything with a scheme is taken as written; everything else is a host.
-  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)
+  const withScheme = URL_SCHEME_PREFIX.test(trimmed)
     ? trimmed
     : `https://${trimmed}`;
   let url: URL;

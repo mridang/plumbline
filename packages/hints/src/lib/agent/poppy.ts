@@ -9,7 +9,7 @@ import {
   pretty,
   result,
   urlOf,
-} from './util.js';
+} from './utility.js';
 
 /**
  * Personal Agent Protocol (Poppy): `/.well-known/poppy.json` over HTTPS
@@ -23,14 +23,14 @@ import {
 export async function checkPoppy(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-poppy';
   const probe = await env.probe('/.well-known/poppy.json');
-  const doc = parseJsonObject(probe);
+  const parsedDocument = parseJsonObject(probe);
   const resource = probe?.url ?? urlOf(env, '/.well-known/poppy.json');
   const fail = (detail: string, snippet?: string) =>
     result(id, 'discovery', false, detail, {
       resource,
-      snippet: snippet ?? pretty(doc),
+      snippet: snippet ?? pretty(parsedDocument),
     });
-  if (!doc) {
+  if (!parsedDocument) {
     return fail(
       `${missingReason('/.well-known/poppy.json', probe)}.`,
       pretty({
@@ -43,10 +43,13 @@ export async function checkPoppy(env: AgentEnv): Promise<CheckResult> {
   if (!env.origin.startsWith('https://') && !isLoopback(env.host)) {
     return fail('poppy.json must be served over HTTPS.');
   }
-  if (doc.protocol_version !== '0.1' && doc.protocol_version !== '0.2') {
+  if (
+    parsedDocument.protocol_version !== '0.1' &&
+    parsedDocument.protocol_version !== '0.2'
+  ) {
     return fail('protocol_version must be "0.1" or "0.2".');
   }
-  const org = doc.organization;
+  const org = parsedDocument.organization;
   if (!isRecord(org) || !isText(org.name) || !isText(org.domain)) {
     return fail('organization needs a name and a domain.');
   }
@@ -55,10 +58,10 @@ export async function checkPoppy(env: AgentEnv): Promise<CheckResult> {
       `organization.domain ${org.domain} does not match ${env.host}.`,
     );
   }
-  if (!['agent', 'apis', 'web'].some((key) => key in doc)) {
+  if (!['agent', 'apis', 'web'].some((key) => key in parsedDocument)) {
     return fail('One of agent, apis or web is required.');
   }
-  const auth = doc.auth;
+  const auth = parsedDocument.auth;
   if (isRecord(auth) && isText(auth.issuer)) {
     let base = auth.issuer;
     while (base.endsWith('/')) {

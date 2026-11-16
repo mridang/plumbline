@@ -2,6 +2,9 @@ import type { HintContext } from 'hint';
 import extraHints from '@mridang/webhint-hint-plumbline';
 import { SECTIONS } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 
+/** Locale-aware comparator used to sort hint ids deterministically. */
+const collator = new Intl.Collator();
+
 /**
  * The hints as the scan engine sees them: each one's description for the
  * report (its section, the sources it comes from, who fixes what it finds) and
@@ -59,13 +62,13 @@ export interface CatalogueEntry {
   readonly ctor: HintClass;
 }
 
-/** A string field of `docs`, or `fallback`. */
+/** A string field of `documentation`, or `fallback`. */
 function text(
-  docs: Readonly<Record<string, unknown>>,
+  documentation: Readonly<Record<string, unknown>>,
   key: string,
   fallback: string,
 ): string {
-  const value = docs[key];
+  const value = documentation[key];
   return typeof value === 'string' ? value : fallback;
 }
 
@@ -91,14 +94,14 @@ function originsOf(value: unknown): HintOrigin[] {
     if (source === undefined || url === undefined) {
       return [];
     }
-    const docsUrl = stringOf(origin['docsUrl']);
+    const documentationUrl = stringOf(origin['docsUrl']);
     return [
       {
         source,
         title:
           stringOf(origin['title']) || (stringOf(origin['upstreamId']) ?? url),
         url,
-        ...(docsUrl ? { docsUrl } : {}),
+        ...(documentationUrl ? { docsUrl: documentationUrl } : {}),
         summary: stringOf(origin['summary']) ?? '',
       },
     ];
@@ -107,28 +110,28 @@ function originsOf(value: unknown): HintOrigin[] {
 
 /** The catalogue entry of one hint class. */
 export function entryOf(id: string, ctor: HintClass): CatalogueEntry {
-  const docs = ctor.meta?.docs ?? {};
-  const order = docs['sectionOrder'];
-  const reference = docs['url'];
-  const section = text(docs, 'section', 'other');
+  const documentation = ctor.meta?.docs ?? {};
+  const order = documentation['sectionOrder'];
+  const reference = documentation['url'];
+  const section = text(documentation, 'section', 'other');
   const fixer = FIXERS.get(section);
-  const groups = docs['groups'];
-  const tags = docs['tags'];
-  const group = stringOf(docs['group']);
-  const subsection = stringOf(docs['subsection']);
-  const tier = stringOf(docs['tier']);
-  const target = stringOf(docs['target']);
-  const control = stringOf(docs['control']);
-  const added = stringOf(docs['added']);
+  const groups = documentation['groups'];
+  const tags = documentation['tags'];
+  const group = stringOf(documentation['group']);
+  const subsection = stringOf(documentation['subsection']);
+  const tier = stringOf(documentation['tier']);
+  const target = stringOf(documentation['target']);
+  const control = stringOf(documentation['control']);
+  const added = stringOf(documentation['added']);
   return {
     ctor,
     info: {
       id,
-      name: text(docs, 'name', id),
-      description: text(docs, 'description', ''),
+      name: text(documentation, 'name', id),
+      description: text(documentation, 'description', ''),
       ...(typeof reference === 'string' ? { reference } : {}),
       section,
-      sectionTitle: text(docs, 'sectionTitle', 'Other'),
+      sectionTitle: text(documentation, 'sectionTitle', 'Other'),
       sectionOrder: typeof order === 'number' ? order : Number.MAX_SAFE_INTEGER,
       groups: Array.isArray(groups)
         ? groups.filter((group): group is string => typeof group === 'string')
@@ -143,7 +146,7 @@ export function entryOf(id: string, ctor: HintClass): CatalogueEntry {
       ...(control ? { control } : {}),
       ...(added ? { added } : {}),
       ...(fixer ? { fixer } : {}),
-      origins: originsOf(docs['origins']),
+      origins: originsOf(documentation['origins']),
     },
   };
 }
@@ -156,7 +159,7 @@ export function catalogue(
   >,
 ): CatalogueEntry[] {
   return Object.keys(hints)
-    .toSorted((a, b) => a.localeCompare(b))
+    .toSorted(collator.compare)
     .flatMap((id) => {
       const ctor = hints[id];
       return ctor ? [entryOf(id, ctor)] : [];

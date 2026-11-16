@@ -36,16 +36,22 @@ export interface ContentStats {
  * Measures the `<main>` element (or the body when there is none). Returns
  * null when the document has neither.
  */
-export function measureContent(doc: ContentDocument): ContentStats | null {
-  const root = doc.querySelector('main') ?? doc.querySelector('body');
+export function measureContent(
+  parsedDocument: ContentDocument,
+): ContentStats | null {
+  const root =
+    parsedDocument.querySelector('main') ??
+    parsedDocument.querySelector('body');
   if (root === null) {
     return null;
   }
   const headingCount = root.querySelectorAll(HEADINGS).length;
   const paragraphCount = Array.from(
     root.querySelectorAll('p, li'),
-    (el) => el,
-  ).filter((el) => el.textContent.trim().length > PARAGRAPH_MIN_LENGTH).length;
+    (element) => element,
+  ).filter(
+    (element) => element.textContent.trim().length > PARAGRAPH_MIN_LENGTH,
+  ).length;
 
   let maxUnstructuredLength = 0;
   let unstructuredIndex = -1;

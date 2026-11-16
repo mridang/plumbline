@@ -110,7 +110,7 @@ import {
   metaHttpEquivContents,
   referrerSources,
 } from '../adapt.js';
-import { hintDocs } from '../meta.js';
+import { hintDocumentation } from '../meta.js';
 import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
@@ -162,6 +162,12 @@ import timingAllowOriginHint from '@mridang/webhint-hint-plumbline/dist/hints/he
 import altSvcHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/alt-svc.js';
 import retryAfterHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/retry-after.js';
 
+/** Matches a `frame-ancestors` directive in a CSP header value. */
+const CSP_FRAME_ANCESTORS = /(^|;)\s*frame-ancestors\b/i;
+
+/** Matches a `max-age` directive in a Cache-Control header value. */
+const CACHE_CONTROL_MAX_AGE = /(^|,)\s*max-age\s*=/i;
+
 /** The artifact set the header checks read (plus `MetaElements` where noted). */
 const HEADER_ARTIFACTS = ['DevtoolsLog', 'URL'] as const;
 const HEADER_AND_META_ARTIFACTS = [
@@ -188,15 +194,15 @@ function fromHint(
     requiredArtifacts: readonly string[];
   },
 ): AuditCheck {
-  const docs = hintDocs(definition);
+  const documentation = hintDocumentation(definition);
   return {
     id: definition.id,
     // Every header hint is placed in the taxonomy, so `section` is always set;
     // fall back to site protection defensively rather than emit an empty group.
-    section: docs.section ?? 'hardening',
-    title: docs.name,
-    description: docs.description,
-    reference: docs.url,
+    section: documentation.section ?? 'hardening',
+    title: documentation.name,
+    description: documentation.description,
+    reference: documentation.url,
     scoreMode: config.scoreMode,
     requiredArtifacts: config.requiredArtifacts,
     run: config.run,
@@ -271,7 +277,7 @@ export const headersChecks: readonly AuditCheck[] = [
       const cspFrameAncestors = headerValues(
         main.headers,
         'content-security-policy',
-      ).some((value) => /(^|;)\s*frame-ancestors\b/i.test(value));
+      ).some((value) => CSP_FRAME_ANCESTORS.test(value));
       return frameOptionsFindings({
         header: firstHeader(main.headers, 'x-frame-options'),
         cspFrameAncestors,
@@ -798,7 +804,7 @@ export const headersChecks: readonly AuditCheck[] = [
       const cacheControl = firstHeader(main.headers, 'cache-control') ?? '';
       return expiresFindings(
         firstHeader(main.headers, 'expires'),
-        /(^|,)\s*max-age\s*=/i.test(cacheControl),
+        CACHE_CONTROL_MAX_AGE.test(cacheControl),
       );
     },
   }),

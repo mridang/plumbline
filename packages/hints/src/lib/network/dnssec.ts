@@ -3,7 +3,12 @@
  * runs its own validating resolver; we ask the validating resolver behind
  * `dns.client` and read its AD (authenticated data) flag.
  */
-import { findNameservers, safeQuery, answersOfType, RR } from './dns-util.js';
+import {
+  findNameservers,
+  safeQuery,
+  answersOfType,
+  RR,
+} from './dns-utility.js';
 
 /**
  * - `secure`: the answer was validated (AD set).

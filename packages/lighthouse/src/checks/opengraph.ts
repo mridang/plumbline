@@ -12,7 +12,7 @@
  * `Finding[]`). The webhint hint (through `src/lib/opengraph/define.ts`) and
  * each check below both call those functions, so the thresholds, text and
  * severity can never drift between the two. Metadata (title, description,
- * reference, section) is still borrowed from the compiled hint via `hintDocs`,
+ * reference, section) is still borrowed from the compiled hint via `hintDocumentation`,
  * so none of it is restated. Scoring is the plugin's own concern and is the one
  * thing decided here, per check.
  *
@@ -63,7 +63,7 @@ import {
   twitterTitleMissing,
 } from '@mridang/webhint-hint-plumbline/dist/lib/opengraph/checks.js';
 import { ogMetaReader } from '../adapt-opengraph.js';
-import { hintDocs } from '../meta.js';
+import { hintDocumentation } from '../meta.js';
 import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
@@ -121,15 +121,15 @@ function fromHint(
   scoreMode: AuditCheck['scoreMode'],
   rule: MetaRuleFn,
 ): AuditCheck {
-  const docs = hintDocs(definition);
+  const documentation = hintDocumentation(definition);
   return {
     id: definition.id,
     // Every Open Graph/Twitter hint is placed under 'sharing' in the
     // taxonomy; fall back to it defensively rather than emit an empty group.
-    section: docs.section ?? 'sharing',
-    title: docs.name,
-    description: docs.description,
-    reference: docs.url,
+    section: documentation.section ?? 'sharing',
+    title: documentation.name,
+    description: documentation.description,
+    reference: documentation.url,
     scoreMode,
     requiredArtifacts: META_ARTIFACTS,
     run: (artifacts) => {

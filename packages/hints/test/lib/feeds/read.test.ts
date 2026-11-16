@@ -13,22 +13,22 @@ const parse = (html: string): DocumentLike =>
 
 describe('getFeedLinks', () => {
   it('finds RSS and Atom alternate links', () => {
-    const doc = parse(
+    const parsedDocument = parse(
       '<link rel="alternate" type="application/rss+xml" href="https://x.test/f.xml">' +
         '<link rel="alternate" type="application/atom+xml" href="/a.xml">',
     );
-    expect(getFeedLinks(doc)).toEqual([
+    expect(getFeedLinks(parsedDocument)).toEqual([
       { type: 'application/rss+xml', href: 'https://x.test/f.xml' },
       { type: 'application/atom+xml', href: '/a.xml' },
     ]);
   });
 
   it('matches a multi-valued rel and ignores non-feed types', () => {
-    const doc = parse(
+    const parsedDocument = parse(
       '<link rel="home alternate" type="application/rss+xml" href="/f">' +
         '<link rel="alternate" type="text/html" href="/p">',
     );
-    expect(getFeedLinks(doc)).toHaveLength(1);
+    expect(getFeedLinks(parsedDocument)).toHaveLength(1);
   });
 
   it('returns nothing when no feed link is present', () => {
@@ -38,20 +38,20 @@ describe('getFeedLinks', () => {
 
 describe('getOembedLinks', () => {
   it('finds JSON and XML oEmbed links', () => {
-    const doc = parse(
+    const parsedDocument = parse(
       '<link rel="alternate" type="application/json+oembed" href="/o.json">' +
         '<link rel="alternate" type="text/xml+oembed" href="/o.xml">',
     );
-    expect(getOembedLinks(doc)).toHaveLength(2);
+    expect(getOembedLinks(parsedDocument)).toHaveLength(2);
   });
 });
 
 describe('getOpenSearchLinks', () => {
   it('finds the OpenSearch search link', () => {
-    const doc = parse(
+    const parsedDocument = parse(
       '<link rel="search" type="application/opensearchdescription+xml" href="/os.xml">',
     );
-    expect(getOpenSearchLinks(doc)).toEqual([
+    expect(getOpenSearchLinks(parsedDocument)).toEqual([
       {
         type: 'application/opensearchdescription+xml',
         href: '/os.xml',
@@ -60,7 +60,9 @@ describe('getOpenSearchLinks', () => {
   });
 
   it('ignores a search link of another type', () => {
-    const doc = parse('<link rel="search" type="text/html" href="/s">');
-    expect(getOpenSearchLinks(doc)).toEqual([]);
+    const parsedDocument = parse(
+      '<link rel="search" type="text/html" href="/s">',
+    );
+    expect(getOpenSearchLinks(parsedDocument)).toEqual([]);
   });
 });

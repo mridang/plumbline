@@ -8,6 +8,9 @@ import {
 } from '../../src/engine/core.js';
 import { ScanRefusedError } from '../../src/engine/scannable.js';
 
+/** Locale-aware comparator used to sort strings deterministically. */
+const collator = new Intl.Collator();
+
 const page = (): Response =>
   new Response('<html><head><title>x</title></head><body>hi</body></html>', {
     status: 200,
@@ -64,7 +67,7 @@ describe('runScanWith', () => {
       out
         .filter((event) => event.type === 'done')
         .map((event) => (event as { outcome: { id: string } }).outcome.id)
-        .toSorted((a, b) => a.localeCompare(b)),
+        .toSorted(collator.compare),
     ).toEqual(['alt-svc', 'x-powered-by']);
     expect(installed).toEqual(['on', 'off']);
   });

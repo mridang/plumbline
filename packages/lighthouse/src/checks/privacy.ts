@@ -41,7 +41,7 @@ import {
 import { classifyRequests } from '@mridang/webhint-hint-plumbline/dist/lib/privacy/requests.js';
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import { privacyNetwork } from '../adapt-privacy.js';
-import { hintDocs } from '../meta.js';
+import { hintDocumentation } from '../meta.js';
 import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
@@ -64,15 +64,15 @@ function fromHint(
   definition: HintDefinition,
   config: Pick<AuditCheck, 'scoreMode' | 'run'>,
 ): AuditCheck {
-  const docs = hintDocs(definition);
+  const documentation = hintDocumentation(definition);
   return {
     id: definition.id,
     // Every privacy hint is placed in `privacy`; fall back defensively
     // rather than emit an empty group.
-    section: docs.section ?? 'privacy',
-    title: docs.name,
-    description: docs.description,
-    reference: docs.url,
+    section: documentation.section ?? 'privacy',
+    title: documentation.name,
+    description: documentation.description,
+    reference: documentation.url,
     scoreMode: config.scoreMode,
     requiredArtifacts: PRIVACY_ARTIFACTS,
     run: config.run,

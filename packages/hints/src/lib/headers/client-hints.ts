@@ -8,6 +8,12 @@
 import { finding, type Finding } from './finding.js';
 import { splitList } from './http-headers.js';
 
+/** Matches a string made only of digits. */
+const DIGITS_ONLY = /^\d+$/;
+
+/** Matches a non-empty `key=value` pair. */
+const KEY_EQUALS_VALUE = /^[^=]+=.+$/;
+
 /** A structured-field token, the shape a client-hint name takes. */
 const TOKEN = /^[A-Za-z*][A-Za-z0-9:/!#$%&'*+.^_`|~-]*$/;
 
@@ -155,7 +161,7 @@ export function altSvcFindings(value: string | null): Finding[] {
     .split(',')
     .map((service) => service.trim().split(';', 1)[0]?.trim() ?? '')
     .filter(Boolean);
-  const malformed = services.some((service) => !/^[^=]+=.+$/.test(service));
+  const malformed = services.some((service) => !KEY_EQUALS_VALUE.test(service));
   if (services.length === 0 || malformed) {
     return [
       finding(
@@ -192,7 +198,7 @@ export function retryAfterFindings(
   }
   const trimmed = value.trim();
   const valid =
-    /^\d+$/.test(trimmed) ||
+    DIGITS_ONLY.test(trimmed) ||
     (IMF_FIXDATE.test(trimmed) && !Number.isNaN(Date.parse(trimmed)));
   return valid
     ? []

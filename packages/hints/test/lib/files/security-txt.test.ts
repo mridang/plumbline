@@ -5,7 +5,7 @@ import { HTTP_SCHEME } from '../../helpers/data.js';
 const now = new Date('2026-01-01T00:00:00Z');
 const ok = 'Contact: mailto:s@a.com\nExpires: 2026-06-01T00:00:00Z\n';
 const msgs = (t: string, url?: string) =>
-  validateSecurityTxt(t, { now, url }).map((i) => i.message);
+  validateSecurityTxt(t, { now, url }).map((index) => index.message);
 
 describe('validateSecurityTxt', () => {
   it('accepts a minimal file', () => {
@@ -18,8 +18,8 @@ describe('validateSecurityTxt', () => {
     ]);
   });
   it('rejects malformed lines', () => {
-    const i = validateSecurityTxt(`${ok}junk`, { now });
-    expect(i[0].line).toBe(3);
+    const index = validateSecurityTxt(`${ok}junk`, { now });
+    expect(index[0].line).toBe(3);
   });
   it('rejects duplicate Expires', () => {
     expect(msgs(`${ok}Expires: 2026-07-01T00:00:00Z`)[0]).toContain(
@@ -37,11 +37,11 @@ describe('validateSecurityTxt', () => {
     ).toContain('expired');
   });
   it('warns when Expires is over a year away', () => {
-    const i = validateSecurityTxt(
+    const index = validateSecurityTxt(
       'Contact: mailto:a@b.c\nExpires: 2028-06-01T00:00:00Z',
       { now },
     );
-    expect(i[0].severity).toBe('warning');
+    expect(index[0].severity).toBe('warning');
   });
   it('rejects http and invalid contact URIs', () => {
     expect(msgs(`${ok}Contact: ${HTTP_SCHEME}a.com`)[0]).toContain('HTTPS');

@@ -103,10 +103,10 @@ async function fetchImage(context: HintContext, url: string): Promise<OgImage> {
  */
 async function resolveImage(
   context: HintContext,
-  doc: MetaDocument,
+  parsedDocument: MetaDocument,
   pageUrl: string,
 ): Promise<OgImage | null> {
-  const src = metaValue(doc, 'og:image');
+  const src = metaValue(parsedDocument, 'og:image');
   if (src === null) {
     return null;
   }
@@ -130,14 +130,14 @@ export function defineOgHint(rule: OgRule): HintDefinition {
     reference: articleUrl(rule.slug),
     setup(context) {
       onPage(context, async (page) => {
-        const doc = page.document as unknown as MetaDocument;
+        const parsedDocument = page.document as unknown as MetaDocument;
         // Only the image-fetch rules need the downloaded file; everything else
         // reads tags only, so no network request is made for them.
         const image = rule.fetchImage
-          ? await resolveImage(context, doc, page.url)
+          ? await resolveImage(context, parsedDocument, page.url)
           : null;
         const findings = rule.run({
-          meta: (key) => metaValue(doc, key),
+          meta: (key) => metaValue(parsedDocument, key),
           image,
         });
         if (findings.length === 0) {
@@ -147,12 +147,12 @@ export function defineOgHint(rule: OgRule): HintDefinition {
         // the rule's metadata (not its predicate), so they are the same for
         // every finding this rule can return.
         const tagKey = rule.image ? 'og:image' : rule.at;
-        const tag = tagKey ? metaElement(doc, tagKey) : null;
+        const tag = tagKey ? metaElement(parsedDocument, tagKey) : null;
         const head = page.document.querySelector('head');
         const element = (tag ??
           head ??
           page.document.documentElement) as unknown as HTMLElement;
-        const src = rule.image ? metaValue(doc, 'og:image') : null;
+        const src = rule.image ? metaValue(parsedDocument, 'og:image') : null;
         const resource = src === null ? page.url : resolveUrl(src, page.url);
         for (const { message, severity } of findings) {
           context.report(resource, `${message} See ${articleUrl(rule.slug)}`, {

@@ -1,3 +1,17 @@
+/** Matches a string of lowercase letters. */
+const LOWERCASE_LETTERS_ONLY = /^[a-z]+$/;
+
+/** Matches a functional colour such as `rgb()`. */
+const FUNCTIONAL_COLOUR = /^(?:rgb|rgba|hsl|hsla)\([^)]*\)$/;
+
+/** Matches a hex colour. */
+const HEX_COLOUR = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/;
+
+/** Matches a run of whitespace. */
+const WHITESPACE_RUN = /\s+/;
+
+/** Matches the start of a query or fragment. */
+const QUERY_OR_FRAGMENT_START = /[?#]/;
 /**
  * Pure helpers for the Web App Manifest, a fetched JSON document. These parse
  * the manifest text and read the members the W3C Web App Manifest spec and the
@@ -113,7 +127,10 @@ export function isPngIcon(icon: ManifestIcon): boolean {
     return icon.type.toLowerCase() === 'image/png';
   }
   // No type declared: fall back to the file extension, ignoring any query.
-  return icon.src.split(/[?#]/, 1)[0].toLowerCase().endsWith('.png');
+  return icon.src
+    .split(QUERY_OR_FRAGMENT_START, 1)[0]
+    .toLowerCase()
+    .endsWith('.png');
 }
 
 /**
@@ -122,7 +139,7 @@ export function isPngIcon(icon: ManifestIcon): boolean {
  * icon that satisfies every size requirement.
  */
 export function iconHasSize(icon: ManifestIcon, px: number): boolean {
-  const tokens = icon.sizes.toLowerCase().split(/\s+/).filter(Boolean);
+  const tokens = icon.sizes.toLowerCase().split(WHITESPACE_RUN).filter(Boolean);
   return tokens.some((token) => token === 'any' || token === `${px}x${px}`);
 }
 
@@ -155,12 +172,12 @@ export function isValidColor(value: unknown): boolean {
   if (colour === '') {
     return false;
   }
-  if (/^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/.test(colour)) {
+  if (HEX_COLOUR.test(colour)) {
     return true;
   }
-  if (/^(?:rgb|rgba|hsl|hsla)\([^)]*\)$/.test(colour)) {
+  if (FUNCTIONAL_COLOUR.test(colour)) {
     return true;
   }
   // A CSS named colour, `transparent` or `currentColor`: letters only.
-  return /^[a-z]+$/.test(colour);
+  return LOWERCASE_LETTERS_ONLY.test(colour);
 }

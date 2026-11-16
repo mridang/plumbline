@@ -5,7 +5,11 @@
  * a tier, a target, who controls its fix and the month it was added. See
  * README.md for the policy; the data is the single source of truth.
  */
-import { GROUP_DEFS, SECTION_DEFS, type GroupDef } from './taxonomy-data.js';
+import {
+  GROUP_DEFS,
+  SECTION_DEFS,
+  type GroupDefinition,
+} from './taxonomy-data.js';
 
 export {
   AUDIENCE_TAGS,
@@ -25,12 +29,12 @@ export {
 } from './taxonomy-data.js';
 export type {
   Control,
-  GroupDef,
+  GroupDefinition,
   HowToFix,
   Placement,
-  ProfileDef,
-  SectionDef,
-  SetDef,
+  ProfileDefinition,
+  SectionDefinition,
+  SetDefinition,
   SetKind,
   Target,
   Tier,
@@ -60,19 +64,19 @@ export interface Section {
  * sections of a group in the order the group lists them.
  */
 export const SECTIONS: readonly Section[] = GROUP_DEFS.flatMap(
-  (group: GroupDef) => group.sections.map((id) => ({ group, id })),
+  (group: GroupDefinition) => group.sections.map((id) => ({ group, id })),
 ).map(({ group, id }, order) => {
-  const def = SECTION_DEFS.find((section) => section.id === id);
-  if (!def) {
+  const definition = SECTION_DEFS.find((section) => section.id === id);
+  if (!definition) {
     throw new Error(`Group ${group.id} lists unknown section ${id}`);
   }
   return {
     id,
-    title: def.title,
-    description: def.scope,
-    fixer: def.fixer,
-    intro: def.intro,
-    defaultOn: def.defaultOn !== false,
+    title: definition.title,
+    description: definition.scope,
+    fixer: definition.fixer,
+    intro: definition.intro,
+    defaultOn: definition.defaultOn !== false,
     group: group.id,
     groupTitle: group.title,
     order,

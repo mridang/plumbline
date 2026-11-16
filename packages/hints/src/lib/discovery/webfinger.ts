@@ -10,6 +10,9 @@
  */
 import { finding, type Finding } from '../headers/finding.js';
 
+/** Matches a JRD or JSON media type. */
+const JRD_CONTENT_TYPE = /application\/jrd\+json|application\/json/i;
+
 /** The response observed when probing the endpoint without a `resource`. */
 export interface WebfingerResponse {
   statusCode: number;
@@ -43,7 +46,7 @@ export function webfingerFindings(
   }
   // A 200 to a resource-less request must still be a JRD; validate the type
   // and that the body parses as a JRD object (subject and/or links).
-  if (!/application\/jrd\+json|application\/json/i.test(response.mediaType)) {
+  if (!JRD_CONTENT_TYPE.test(response.mediaType)) {
     return [
       finding(
         'warning',

@@ -16,7 +16,7 @@ import {
 } from '../../../src/lib/technical/read.js';
 import { HTTP_SCHEME } from '../../helpers/data.js';
 
-const doc = (body: string, head = '') =>
+const parsedDocument = (body: string, head = '') =>
   createHTMLDocument(
     `<!doctype html><html><head>${head}</head><body>${body}</body></html>`,
     `${HTTP_SCHEME}x.test/`,
@@ -24,9 +24,9 @@ const doc = (body: string, head = '') =>
 
 describe('headings', () => {
   it('reads levels in order', () => {
-    expect(headingLevels(doc('<h1>a</h1><h3>b</h3><h2>c</h2>'))).toEqual([
-      1, 3, 2,
-    ]);
+    expect(
+      headingLevels(parsedDocument('<h1>a</h1><h3>b</h3><h2>c</h2>')),
+    ).toEqual([1, 3, 2]);
   });
   it('finds a skipped level', () => {
     expect(firstSkippedLevel([1, 2, 4])).toEqual({ from: 2, to: 4, index: 2 });
@@ -39,14 +39,14 @@ describe('headings', () => {
 
 describe('altCoverage', () => {
   it('is null without images or without gaps', () => {
-    expect(altCoverage(doc(''))).toBeNull();
+    expect(altCoverage(parsedDocument(''))).toBeNull();
     expect(
-      altCoverage(doc('<img src="a" alt=""><img src="b" alt="b">')),
+      altCoverage(parsedDocument('<img src="a" alt=""><img src="b" alt="b">')),
     ).toBeNull();
   });
   it('warns from 80% coverage', () => {
     const img = '<img src="a" alt="a">'.repeat(4) + '<img src="b">';
-    expect(altCoverage(doc(img))).toEqual({
+    expect(altCoverage(parsedDocument(img))).toEqual({
       total: 5,
       missing: 1,
       percent: 80,
@@ -54,18 +54,23 @@ describe('altCoverage', () => {
     });
   });
   it('fails below 80% coverage', () => {
-    const result = altCoverage(doc('<img src="a"><img src="b" alt="b">'));
+    const result = altCoverage(
+      parsedDocument('<img src="a"><img src="b" alt="b">'),
+    );
     expect(result).toMatchObject({ percent: 50, failing: true });
   });
 });
 
 describe('robotsAdvanced', () => {
   it('is empty without the tag', () => {
-    expect(robotsAdvanced(doc(''))).toMatchObject({ content: '' });
+    expect(robotsAdvanced(parsedDocument(''))).toMatchObject({ content: '' });
   });
   it('splits present and missing directives', () => {
     const r = robotsAdvanced(
-      doc('', '<meta name="robots" content="Max-Snippet:-1, index">'),
+      parsedDocument(
+        '',
+        '<meta name="robots" content="Max-Snippet:-1, index">',
+      ),
     );
     expect(r.present).toEqual(['max-snippet']);
     expect(r.missing).toEqual(['max-image-preview', 'max-video-preview']);
@@ -74,7 +79,7 @@ describe('robotsAdvanced', () => {
 
 describe('imageUrls', () => {
   it('resolves, dedupes and drops data and malformed sources', () => {
-    const d = doc(
+    const d = parsedDocument(
       '<img src="/a.png"><img src="/a.png"><img src="data:image/png;base64,AA"><img src="http://[bad"><img>',
     );
     expect(imageUrls(d, `${HTTP_SCHEME}x.test/p`)).toEqual([
@@ -145,10 +150,10 @@ describe('redirectVerdict', () => {
 
 describe('canonical and twitter readers', () => {
   it('reads the canonical href', () => {
-    expect(canonicalHref(doc('', '<link rel="canonical" href=" /x ">'))).toBe(
-      '/x',
-    );
-    expect(canonicalHref(doc(''))).toBeNull();
+    expect(
+      canonicalHref(parsedDocument('', '<link rel="canonical" href=" /x ">')),
+    ).toBe('/x');
+    expect(canonicalHref(parsedDocument(''))).toBeNull();
   });
   it('accepts absolute and relative URLs that resolve', () => {
     expect(resolvesAsUrl('https://a.test/x', 'https://b.test/')).toBe(true);
@@ -163,10 +168,14 @@ describe('canonical and twitter readers', () => {
   });
   it('reads the twitter card', () => {
     expect(
-      twitterCardType(doc('', '<meta name="twitter:card" content=" app ">')),
+      twitterCardType(
+        parsedDocument('', '<meta name="twitter:card" content=" app ">'),
+      ),
     ).toBe('app');
     expect(
-      twitterCardType(doc('', '<meta name="twitter:card" content="">')),
+      twitterCardType(
+        parsedDocument('', '<meta name="twitter:card" content="">'),
+      ),
     ).toBeNull();
   });
 });

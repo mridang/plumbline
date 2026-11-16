@@ -42,8 +42,8 @@ export const OPENSEARCH_DISCOVERY_REF =
  * relative or empty feed URL cannot be resolved by most feed readers, which
  * fetch it out of the page's context.
  */
-export function feedDiscovery(doc: DocumentLike): Finding[] {
-  const links = getFeedLinks(doc);
+export function feedDiscovery(parsedDocument: DocumentLike): Finding[] {
+  const links = getFeedLinks(parsedDocument);
   if (links.length === 0) {
     return [
       finding(
@@ -71,8 +71,8 @@ export function feedDiscovery(doc: DocumentLike): Finding[] {
  * a declared link with a missing `href` is a `warning` (the endpoint URL is
  * mandatory). OEmbed permits a relative `href`, so only an empty one is flagged.
  */
-export function oembedDiscovery(doc: DocumentLike): Finding[] {
-  const links = getOembedLinks(doc);
+export function oembedDiscovery(parsedDocument: DocumentLike): Finding[] {
+  const links = getOembedLinks(parsedDocument);
   if (links.length === 0) {
     return [
       finding(
@@ -99,8 +99,8 @@ export function oembedDiscovery(doc: DocumentLike): Finding[] {
  * `href` is a `warning`, since the browser resolves and fetches the
  * description document from that URL.
  */
-export function opensearchDiscovery(doc: DocumentLike): Finding[] {
-  const links = getOpenSearchLinks(doc);
+export function opensearchDiscovery(parsedDocument: DocumentLike): Finding[] {
+  const links = getOpenSearchLinks(parsedDocument);
   if (links.length === 0) {
     return [
       finding(

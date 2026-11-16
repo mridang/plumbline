@@ -11,6 +11,9 @@ import {
 } from '../../helpers/probe.js';
 import { vector } from '../../helpers/data.js';
 
+/** Locale-aware comparator used to sort strings deterministically. */
+const collator = new Intl.Collator();
+
 const batchOf = (count: number): string =>
   JSON.stringify({
     results: Array.from({ length: count }, () => handshakeAnswer()),
@@ -155,9 +158,7 @@ describe('web and mail lanes', () => {
       request.body.split('--\n').map((item) => linesOf(item)['host']),
     );
     expect(
-      hosts
-        .map((list) => list.join(','))
-        .toSorted((a, b) => a.localeCompare(b)),
+      hosts.map((list) => list.join(',')).toSorted(collator.compare),
     ).toEqual(['a.test,b.test', 'mx.test,mx2.test']);
   });
 

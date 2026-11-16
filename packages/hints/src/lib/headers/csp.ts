@@ -11,6 +11,9 @@
 import { finding, type Finding } from './finding.js';
 import { headerValues, type HeaderBag } from './http-headers.js';
 
+/** Matches a run of whitespace. */
+const WHITESPACE_RUN = /\s+/;
+
 /** A parsed policy: directive name to its set of sources. */
 export type CspMap = Map<string, Set<string>>;
 
@@ -61,8 +64,8 @@ function pathPartMatch(pathA: string, pathB: string): boolean {
   if (!exactMatch) {
     listA.pop();
   }
-  for (const [i, elementA] of listA.entries()) {
-    const elementB = listB.at(i);
+  for (const [index, elementA] of listA.entries()) {
+    const elementB = listB.at(index);
     if (elementB === undefined) {
       return false;
     }
@@ -89,24 +92,34 @@ function noteDuplicate(
 
 /** Marks which adjacent sources in a sorted list survive the merge. */
 function markSurvivors(combined: SourceEntry[]): void {
-  for (let i = 1; i < combined.length; i++) {
-    const source = combined[i];
-    const prev = combined[i - 1];
-    if (!source || !prev) {
+  for (let index = 1; index < combined.length; index++) {
+    const source = combined[index];
+    const previous = combined[index - 1];
+    if (!source || !previous) {
       continue;
     }
     // Within one policy a longer source that starts with a shorter one
     // is superfluous (example.com/foo and example.com/foobar).
-    if (source.index === prev.index && source.source.startsWith(prev.source)) {
+    if (
+      source.index === previous.index &&
+      source.source.startsWith(previous.source)
+    ) {
       source.keep = false;
     }
     // Across policies a source has to exist in both to count.
     if (
-      source.index !== prev.index &&
-      pathPartMatch(prev.source, source.source)
+      source.index !== previous.index &&
+      pathPartMatch(previous.source, source.source)
     ) {
       source.keep = true;
     }
+  }
+}
+
+/** Marks every source as not yet confirmed by a later policy. */
+function resetKeep(sources: SourceEntry[]): void {
+  for (const source of sources) {
+    source.keep = false;
   }
 }
 
@@ -135,7 +148,9 @@ export function parseCsp(cspList: string[]): CspMap {
   for (const [policyIndex, policy] of cleanList.entries()) {
     const seenInThisPolicy = new Set<string>();
 
-    for (const entry of policy.split(';').map((e) => e.trim().split(/\s+/))) {
+    for (const entry of policy
+      .split(';')
+      .map((part) => part.trim().split(WHITESPACE_RUN))) {
       const [directiveEntry, ...valueEntries] = entry;
       if (!directiveEntry) {
         continue;
@@ -183,9 +198,7 @@ export function parseCsp(cspList: string[]): CspMap {
       // With more policies to come, everything from the first one must be
       // re-confirmed by the later ones.
       if (policyIndex === 0 && cleanList.length > 1) {
-        (csp.get(directive) ?? []).forEach((source) => {
-          source.keep = false;
-        });
+        resetKeep(csp.get(directive) ?? []);
       }
     }
   }
@@ -231,7 +244,7 @@ export function parseCspLoose(
     .map((part) => part.trim())
     .filter((part) => part.length >= 6);
   for (const part of parts) {
-    const [name = '', ...values] = part.split(/\s+/);
+    const [name = '', ...values] = part.split(WHITESPACE_RUN);
     if (result.has(name)) {
       continue;
     }

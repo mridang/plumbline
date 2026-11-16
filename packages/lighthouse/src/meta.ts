@@ -10,12 +10,12 @@
  * `ctor.meta.docs`, augmenting webhint's own `docs` type with our extra fields
  * (`url`, `section`, ...). Those extras are not described by the published
  * `HintMetadata` type, so they are read through the narrow structural type
- * {@link WebhintDocs} below.
+ * {@link WebhintDocumentation} below.
  */
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 
 /** The subset of a hint's compiled `docs` this plugin borrows. */
-export interface WebhintDocs {
+export interface WebhintDocumentation {
   /** The hint's human-readable name. */
   name: string;
   /** The hint's one-sentence description. */
@@ -36,6 +36,8 @@ export interface WebhintDocs {
  * published `HintMetadata` type; the shape is produced by this repo, so reading
  * it structurally is safe.
  */
-export function hintDocs(definition: HintDefinition): WebhintDocs {
-  return definition.ctor.meta.docs as unknown as WebhintDocs;
+export function hintDocumentation(
+  definition: HintDefinition,
+): WebhintDocumentation {
+  return definition.ctor.meta.docs as unknown as WebhintDocumentation;
 }

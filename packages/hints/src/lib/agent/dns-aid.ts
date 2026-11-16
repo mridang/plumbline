@@ -1,6 +1,15 @@
 import type { DnsType } from '../../core/dns.js';
 import type { AgentEnv, CheckResult } from './types.js';
-import { result } from './util.js';
+import { result } from './utility.js';
+
+/** Matches a single whitespace character. */
+const WHITESPACE_CHARACTER = /\s/;
+
+/** Matches a string made only of digits. */
+const DIGITS_ONLY = /^\d+$/;
+
+/** Matches any character that ends a line. */
+const LINE_BREAK_CHARACTER = /[\n\r\u2028\u2029]/;
 
 /** The record types queried at each `_agents` label. */
 const QUERIES: readonly { label: string; types: readonly DnsType[] }[] = [
@@ -35,20 +44,20 @@ export function isServiceModeRecord(data: string): boolean {
  * line.
  */
 function serviceParams(text: string): string | null {
-  const space = text.search(/\s/);
-  if (space === -1 || !/^\d+$/.test(text.slice(0, space))) {
+  const space = text.search(WHITESPACE_CHARACTER);
+  if (space === -1 || !DIGITS_ONLY.test(text.slice(0, space))) {
     return null;
   }
   if (Number(text.slice(0, space)) === 0) {
     return null;
   }
   const afterPriority = text.slice(space).trimStart();
-  const end = afterPriority.search(/\s/);
+  const end = afterPriority.search(WHITESPACE_CHARACTER);
   if (afterPriority === '') {
     return null;
   }
   const params = end === -1 ? '' : afterPriority.slice(end).trimStart();
-  return /[\n\r\u2028\u2029]/.test(params) ? null : params;
+  return LINE_BREAK_CHARACTER.test(params) ? null : params;
 }
 
 /**

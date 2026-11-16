@@ -47,7 +47,7 @@ export function findNodesOfType(
   const found: Record<string, unknown>[] = [];
   const visit = (current: unknown): void => {
     if (Array.isArray(current)) {
-      current.forEach((item) => visit(item));
+      for (const item of current) visit(item);
       return;
     }
     const node = asObject(current);

@@ -1,5 +1,8 @@
 import type { AgentEnv, CheckResult } from './types.js';
-import { evidenceFor, result } from './util.js';
+import { evidenceFor, result } from './utility.js';
+
+/** Matches a `text/markdown` content type. */
+const MARKDOWN_CONTENT_TYPE = /^text\/markdown/i;
 
 /**
  * Markdown negotiation: `GET /` with `Accept: text/markdown` is answered
@@ -10,7 +13,7 @@ export async function checkMarkdownNegotiation(
 ): Promise<CheckResult> {
   const id = 'agent-markdown-negotiation';
   const probe = await env.probe('/', { accept: 'text/markdown' });
-  if (probe && /^text\/markdown/i.test(probe.contentType)) {
+  if (probe && MARKDOWN_CONTENT_TYPE.test(probe.contentType)) {
     // UNVERIFIED: `x-markdown-tokens` is not in Cloudflare's documentation;
     // isitagentready.com reads it as an optional hint of the document size.
     const tokens = probe.headers['x-markdown-tokens'];

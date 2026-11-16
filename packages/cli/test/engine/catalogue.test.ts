@@ -6,9 +6,13 @@ import {
 } from '../../src/engine/catalogue.js';
 
 /** A hint class with the given `meta.docs`. */
-function hintWith(docs: Record<string, unknown> | undefined): HintClass {
+function hintWith(
+  documentation: Record<string, unknown> | undefined,
+): HintClass {
   return class {
-    public static readonly meta = docs ? { docs } : undefined;
+    public static readonly meta = documentation
+      ? { docs: documentation }
+      : undefined;
   } as unknown as HintClass;
 }
 
@@ -83,7 +87,7 @@ describe('entryOf', () => {
   });
 
   it('falls back for a hint with no docs', () => {
-    expect(entryOf('plain', hintWith(undefined)).info).toEqual({
+    expect(entryOf('plain', hintWith()).info).toEqual({
       id: 'plain',
       name: 'plain',
       description: '',
@@ -123,7 +127,9 @@ describe('entryOf', () => {
 describe('catalogue', () => {
   it('lists the given hints by id, in order', () => {
     expect(
-      catalogue({ b: hintWith({}), a: hintWith({}) }).map((e) => e.info.id),
+      catalogue({ b: hintWith({}), a: hintWith({}) }).map(
+        (entry) => entry.info.id,
+      ),
     ).toEqual(['a', 'b']);
   });
 

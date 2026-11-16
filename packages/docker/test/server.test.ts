@@ -42,9 +42,7 @@ function listen(scan: ScanFn, run?: RunFn): Promise<void> {
   );
 }
 
-afterEach(
-  () => new Promise((resolve) => server.close(() => resolve(undefined))),
-);
+afterEach(() => new Promise((resolve) => server.close(() => resolve())));
 
 describe('the scan server', () => {
   beforeEach(() => listen(fakeScan));

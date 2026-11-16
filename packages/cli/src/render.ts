@@ -2,6 +2,9 @@ import { severityRank } from './exit-code.js';
 import type { Finding, Report } from './report.js';
 import type { HintMeta } from './scan.js';
 
+/** Matches the `extra/` prefix webhint puts on a hint id. */
+const EXTRA_PREFIX = /^extra\//;
+
 /** One finding as `plumbline scan --format json` prints it. */
 export interface JsonFinding {
   /** The bare hint id, the same form `--only` and `--skip` take. */
@@ -26,7 +29,7 @@ export interface JsonCheck {
 
 /** Findings carry the `extra/<id>` key webhint reports; the CLI shows bare ids. */
 function bareId(hintId: string): string {
-  return hintId.replace(/^extra\//, '');
+  return hintId.replace(EXTRA_PREFIX, '');
 }
 
 /** Most serious first, then by hint id, so output is stable between runs. */
@@ -100,7 +103,7 @@ export function formatFindings(
   }
   // Map keeps insertion order, and findings were inserted most serious
   // first, so hints come out ordered by their worst finding.
-  const blocks = [...groups].map(([id, findings]) => {
+  const blocks = Array.from(groups, ([id, findings]) => {
     const name = hints.find((hint) => hint.id === id)?.name;
     const heading = name && name !== id ? `${id} (${name})` : id;
     const lines = findings.map((finding) => {

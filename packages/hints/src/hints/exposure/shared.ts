@@ -1,6 +1,9 @@
 import { Severity } from '@hint/utils-types';
 import type { Site } from '../../core/page.js';
 
+/** Matches a line break, with or without a carriage return. */
+const LINE_BREAK = /\r?\n/;
+
 /**
  * Fetches a path and returns its body only when the server answered `200`.
  * A `404`, a redirect, a `403` or a failed request all mean "not exposed",
@@ -32,7 +35,7 @@ export function reportExposure(
   evidence?: string,
 ): void {
   const url = new URL(path, site.url).href;
-  const snippet = evidence?.split(/\r?\n/, 1)[0]?.slice(0, 200);
+  const snippet = evidence?.split(LINE_BREAK, 1)[0]?.slice(0, 200);
   site.report(url, message, {
     severity: Severity.error,
     ...(snippet ? { codeSnippet: snippet } : {}),

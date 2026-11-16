@@ -38,7 +38,7 @@ const packageProjects = async () => {
           globalTeardown: path.join(rootDir, project.globalTeardown),
         };
       } catch {
-        return undefined;
+        return;
       }
     }),
   );

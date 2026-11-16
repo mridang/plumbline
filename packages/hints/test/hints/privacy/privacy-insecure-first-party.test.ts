@@ -2,6 +2,9 @@ import { describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/privacy/privacy-insecure-first-party.js';
 import { runHint } from '../../helpers/run-hint.js';
 
+/** Matches a resource URL that ends in /a.png. */
+const IMAGE_RESOURCE = /\/a\.png$/;
+
 // The test server only speaks http, so every first-party subresource is a
 // plain http request; Webbkoll lists those whatever the page's scheme.
 describe('privacy-insecure-first-party', () => {
@@ -19,7 +22,7 @@ describe('privacy-insecure-first-party', () => {
     });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('/a.png');
-    expect(problems[0].resource).toMatch(/\/a\.png$/);
+    expect(problems[0].resource).toMatch(IMAGE_RESOURCE);
     expect(problems[0].sourceCode).toContain('<img src="http://');
     expect(problems[0].sourceCode).toContain('/a.png');
     expect(problems[0].location.line).toBe(0);

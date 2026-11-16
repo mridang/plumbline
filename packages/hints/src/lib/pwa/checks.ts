@@ -59,8 +59,8 @@ export const THEME_COLOR_META_REF =
  * cannot be installed; a relative `href` resolves differently depending on the
  * page it is served from, which breaks the link on nested routes.
  */
-export function manifestLinked(doc: DocumentLike): Finding[] {
-  const href = getManifestHref(doc);
+export function manifestLinked(parsedDocument: DocumentLike): Finding[] {
+  const href = getManifestHref(parsedDocument);
   if (href === null) {
     return [
       finding(
@@ -85,8 +85,8 @@ export function manifestLinked(doc: DocumentLike): Finding[] {
  * the browser toolbar and address bar as soon as the page loads (before the
  * manifest is fetched), so it complements the manifest's `theme_color`.
  */
-export function themeColorMeta(doc: DocumentLike): Finding[] {
-  if (getThemeColorMeta(doc) === null) {
+export function themeColorMeta(parsedDocument: DocumentLike): Finding[] {
+  if (getThemeColorMeta(parsedDocument) === null) {
     return [
       finding(
         'hint',

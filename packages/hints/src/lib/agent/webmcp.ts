@@ -1,5 +1,5 @@
 import type { AgentEnv, CheckResult } from './types.js';
-import { isRecord, result } from './util.js';
+import { isRecord, result } from './utility.js';
 
 /**
  * Runs in the page. The WebMCP explainer attaches the API to the document:

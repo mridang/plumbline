@@ -8,7 +8,19 @@ import {
   pretty,
   result,
   urlOf,
-} from './util.js';
+} from './utility.js';
+
+/** Matches a well-formed `urn:air:` identifier. */
+const URN_AIR_IDENTIFIER = /^urn:air:(?=[^:]+\.[^:])[^:]+:[^:]+(:[^:]+)*$/;
+
+/** Matches a `<link>` tag whose `rel` is `ard` or `ai-catalog`. */
+const ARD_LINK_TAG = /<link\b[^>]*\brel=["']?(?:ard|ai-catalog)["']?[^>]*>/i;
+
+/** Matches an `href` attribute and captures its value. */
+const HREF_ATTRIBUTE = /\bhref=["']?([^"'\s>]+)/i;
+
+/** Matches an HTTP or HTTPS URL inside text. */
+const HTTP_URL = /https?:\/\/[^\s"';]+/;
 
 /**
  * Where a catalog lives: `/.well-known/ard.json` (agenticresourcediscovery.org
@@ -31,10 +43,7 @@ export function entryProblems(entry: unknown): string[] {
   if (!isRecord(entry)) return ['entry is not an object'];
   const problems: string[] = [];
   const identifier = entry.identifier ?? entry.id;
-  if (
-    !isText(identifier) ||
-    !/^urn:air:(?=[^:]+\.[^:])[^:]+:[^:]+(:[^:]+)*$/.test(identifier)
-  ) {
+  if (!isText(identifier) || !URN_AIR_IDENTIFIER.test(identifier)) {
     problems.push(
       'identifier must be urn:air:<publisher domain>:[<ns>:]<name>',
     );
@@ -67,11 +76,11 @@ export function catalogProblems(
   if (!Array.isArray(entries) || entries.length === 0) {
     problems.push('entries is empty');
   } else {
-    entries.forEach((entry, index) => {
+    for (const [index, entry] of entries.entries()) {
       for (const problem of entryProblems(entry)) {
         problems.push(`entry ${index}: ${problem}`);
       }
-    });
+    }
   }
   return problems;
 }
@@ -82,15 +91,13 @@ async function candidates(env: AgentEnv): Promise<string[]> {
   const robots = await loadRobots(env);
   urls.push(...(robots?.agentmaps ?? []));
   const home = await env.probe('/');
-  const link = /<link\b[^>]*\brel=["']?(?:ard|ai-catalog)["']?[^>]*>/i.exec(
-    home?.body ?? '',
-  );
-  const href = link && /\bhref=["']?([^"'\s>]+)/i.exec(link[0]);
+  const link = ARD_LINK_TAG.exec(home?.body ?? '');
+  const href = link && HREF_ATTRIBUTE.exec(link[0]);
   if (href) urls.push(href[1]);
   try {
     const txt = await env.dns.query(`_catalog._agents.${env.host}`, 'TXT');
     for (const answer of txt.answers) {
-      const url = /https?:\/\/[^\s"';]+/.exec(answer.data);
+      const url = HTTP_URL.exec(answer.data);
       if (url) urls.push(url[0]);
     }
   } catch {

@@ -1,5 +1,17 @@
 import { domainToASCII } from '#url';
 
+/** Matches a character outside printable ASCII. */
+const NON_PRINTABLE_ASCII = /[^\u0020-\u007E]/;
+
+/** Matches leading dots. */
+const LEADING_DOTS = /^\.+/;
+
+/** Matches characters valid in an IPv6 literal. */
+const IPV6_LITERAL_CHARS = /^[0-9a-f:.]+$/i;
+
+/** Matches a dotted IPv4 literal. */
+const IPV4_LITERAL = /^\d{1,3}(\.\d{1,3}){3}$/;
+
 /**
  * A small, dependency free stand-in for the Public Suffix List.
  *
@@ -78,16 +90,16 @@ const GENERIC_SECOND_LEVEL: ReadonlySet<string> = new Set([
 /** True for dotted IPv4 and for IPv6 literals (with or without brackets). */
 export function isIpAddress(host: string): boolean {
   const bare = host.replaceAll(/^\[|\]$/g, '');
-  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(bare)) {
+  if (IPV4_LITERAL.test(bare)) {
     return true;
   }
-  return bare.includes(':') && /^[0-9a-f:.]+$/i.test(bare);
+  return bare.includes(':') && IPV6_LITERAL_CHARS.test(bare);
 }
 
 /** Removes every trailing dot, scanning once from the end. */
 function stripTrailingDots(value: string): string {
   let end = value.length;
-  while (end > 0 && value[end - 1] === '.') {
+  while (end > 0 && value.codePointAt(end - 1) === 46) {
     end -= 1;
   }
   return value.slice(0, end);
@@ -96,11 +108,11 @@ function stripTrailingDots(value: string): string {
 /** Lower cases a host and removes trailing dots and IPv6 brackets. */
 export function normalizeHost(host: string): string {
   const cleaned = stripTrailingDots(host.trim().toLowerCase())
-    .replace(/^\.+/, '')
+    .replace(LEADING_DOTS, '')
     .replaceAll(/^\[|\]$/g, '');
   // Hosts from URLs are already punycode; a `Domain` attribute may carry
   // Unicode, which must compare equal to its punycode form.
-  return /[^\u0020-\u007E]/.test(cleaned)
+  return NON_PRINTABLE_ASCII.test(cleaned)
     ? domainToASCII(cleaned) || cleaned
     : cleaned;
 }

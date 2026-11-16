@@ -74,24 +74,27 @@ describe('runScan', () => {
     base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   });
 
-  afterAll(
-    () => new Promise((resolve) => server.close(() => resolve(undefined))),
-  );
+  afterAll(() => new Promise((resolve) => server.close(() => resolve())));
 
   it('tells what is to run, then each result as it finishes, then ends', async () => {
     const events = await eventsOf(`${base}/`, {
       allowPrivate: true,
       entries: [failing('a-bad', 'nope'), passing('b-good')],
     });
-    expect(events.map((e) => e.type)).toEqual(['ready', 'done', 'done', 'end']);
+    expect(events.map((event) => event.type)).toEqual([
+      'ready',
+      'done',
+      'done',
+      'end',
+    ]);
     const ready = events[0];
     expect(ready).toMatchObject({
       type: 'ready',
       finalUrl: `${base}/`,
       status: 200,
     });
-    const outcomes = events.flatMap((e) =>
-      e.type === 'done' ? [e.outcome] : [],
+    const outcomes = events.flatMap((event) =>
+      event.type === 'done' ? [event.outcome] : [],
     );
     expect(Object.fromEntries(outcomes.map((o) => [o.id, o.status]))).toEqual({
       'a-bad': 'failed',
@@ -109,7 +112,9 @@ describe('runScan', () => {
       entries: [failing('a-bad', 'nope'), passing('b-good')],
     });
     expect(
-      events.flatMap((e) => (e.type === 'done' ? [e.outcome.id] : [])),
+      events.flatMap((event) =>
+        event.type === 'done' ? [event.outcome.id] : [],
+      ),
     ).toEqual(['b-good']);
   });
 
@@ -135,7 +140,7 @@ describe('runScan', () => {
     ['ftp://example.com/', 'Only http and https'],
   ])('refuses to scan %s', async (address, reason) => {
     const events = await eventsOf(address, { entries: [passing('b-good')] });
-    expect(events.map((e) => e.type)).toEqual(['unreachable', 'end']);
+    expect(events.map((event) => event.type)).toEqual(['unreachable', 'end']);
     expect(JSON.stringify(events[0])).toContain(reason);
   });
 
@@ -146,7 +151,7 @@ describe('runScan', () => {
       concurrency: 1,
       entries: [passing('b-good')],
     });
-    const done = events.find((e) => e.type === 'done');
+    const done = events.find((event) => event.type === 'done');
     expect(done).toMatchObject({
       outcome: {
         status: 'skipped',

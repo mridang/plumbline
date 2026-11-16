@@ -1,6 +1,9 @@
 import { GROUPS, type Group } from './core/groups.js';
 import { PLACEMENT, SECTION_DEFS, type Tier } from './core/taxonomy-data.js';
 
+/** Orders hint ids in the default locale order. */
+const collator = new Intl.Collator();
+
 /** The name webhint knows this package by, used as the prefix of hint ids. */
 export const PACKAGE_NAME = '@mridang/webhint-hint-plumbline';
 
@@ -32,7 +35,7 @@ export function buildPresets(
         parsers: ['html'],
         hints: Object.fromEntries(
           [...byGroup[group]]
-            .toSorted((a, b) => a.localeCompare(b))
+            .toSorted(collator.compare)
             .map((id) => [`${PACKAGE_NAME}/${id}`, 'default']),
         ),
       },
@@ -54,7 +57,7 @@ function presetOf(ids: readonly string[]): Preset {
     parsers: ['html'],
     hints: Object.fromEntries(
       [...ids]
-        .toSorted((a, b) => a.localeCompare(b))
+        .toSorted(collator.compare)
         .map((id) => [`${PACKAGE_NAME}/${id}`, 'default']),
     ),
   };

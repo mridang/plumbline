@@ -92,8 +92,8 @@ const DESCRIPTION_MIN = 50;
 // ---- Title -----------------------------------------------------------------
 
 /** Error when the page has no `<title>` or an empty one. */
-export function titleMissing(doc: DocumentLike): Finding[] {
-  const title = getTitle(doc);
+export function titleMissing(parsedDocument: DocumentLike): Finding[] {
+  const title = getTitle(parsedDocument);
   if (title === null || title === '') {
     return [
       finding(
@@ -106,8 +106,8 @@ export function titleMissing(doc: DocumentLike): Finding[] {
 }
 
 /** Warning when the `<title>` is longer than {@link TITLE_MAX}. */
-export function titleTooLong(doc: DocumentLike): Finding[] {
-  const title = getTitle(doc);
+export function titleTooLong(parsedDocument: DocumentLike): Finding[] {
+  const title = getTitle(parsedDocument);
   if (title !== null && title.length > TITLE_MAX) {
     return [
       finding(
@@ -123,8 +123,8 @@ export function titleTooLong(doc: DocumentLike): Finding[] {
  * Hint when the `<title>` is shorter than {@link TITLE_MIN}. An absent or empty
  * title is the error-level `seo-title-missing` case, not a too-short finding.
  */
-export function titleTooShort(doc: DocumentLike): Finding[] {
-  const title = getTitle(doc);
+export function titleTooShort(parsedDocument: DocumentLike): Finding[] {
+  const title = getTitle(parsedDocument);
   if (title !== null && title !== '' && title.length < TITLE_MIN) {
     return [
       finding(
@@ -139,8 +139,10 @@ export function titleTooShort(doc: DocumentLike): Finding[] {
 // ---- Meta description ------------------------------------------------------
 
 /** Error when the page has no `<meta name="description">`. */
-export function metaDescriptionMissing(doc: DocumentLike): Finding[] {
-  if (getMetaDescription(doc) === null) {
+export function metaDescriptionMissing(
+  parsedDocument: DocumentLike,
+): Finding[] {
+  if (getMetaDescription(parsedDocument) === null) {
     return [
       finding(
         'error',
@@ -152,8 +154,10 @@ export function metaDescriptionMissing(doc: DocumentLike): Finding[] {
 }
 
 /** Hint when the meta description is longer than {@link DESCRIPTION_MAX}. */
-export function metaDescriptionTooLong(doc: DocumentLike): Finding[] {
-  const description = getMetaDescription(doc);
+export function metaDescriptionTooLong(
+  parsedDocument: DocumentLike,
+): Finding[] {
+  const description = getMetaDescription(parsedDocument);
   if (description !== null && description.length > DESCRIPTION_MAX) {
     return [
       finding(
@@ -169,8 +173,10 @@ export function metaDescriptionTooLong(doc: DocumentLike): Finding[] {
  * Hint when the meta description is shorter than {@link DESCRIPTION_MIN}. A
  * missing tag is `seo-meta-description-missing`; an empty one counts as short.
  */
-export function metaDescriptionTooShort(doc: DocumentLike): Finding[] {
-  const description = getMetaDescription(doc);
+export function metaDescriptionTooShort(
+  parsedDocument: DocumentLike,
+): Finding[] {
+  const description = getMetaDescription(parsedDocument);
   if (description !== null && description.length < DESCRIPTION_MIN) {
     return [
       finding(
@@ -185,8 +191,8 @@ export function metaDescriptionTooShort(doc: DocumentLike): Finding[] {
 // ---- Headings --------------------------------------------------------------
 
 /** Warning when the page has no `<h1>`. */
-export function h1Missing(doc: DocumentLike): Finding[] {
-  if (countH1(doc) === 0) {
+export function h1Missing(parsedDocument: DocumentLike): Finding[] {
+  if (countH1(parsedDocument) === 0) {
     return [
       finding(
         'warning',
@@ -198,8 +204,8 @@ export function h1Missing(doc: DocumentLike): Finding[] {
 }
 
 /** Hint when the page has more than one `<h1>`. */
-export function h1Multiple(doc: DocumentLike): Finding[] {
-  const count = countH1(doc);
+export function h1Multiple(parsedDocument: DocumentLike): Finding[] {
+  const count = countH1(parsedDocument);
   if (count > 1) {
     return [
       finding(
@@ -214,8 +220,8 @@ export function h1Multiple(doc: DocumentLike): Finding[] {
 // ---- Language --------------------------------------------------------------
 
 /** Warning when `<html>` has no `lang` attribute. */
-export function htmlLangMissing(doc: DocumentLike): Finding[] {
-  if (getHtmlLang(doc) === null) {
+export function htmlLangMissing(parsedDocument: DocumentLike): Finding[] {
+  if (getHtmlLang(parsedDocument) === null) {
     return [
       finding(
         'warning',
@@ -234,10 +240,10 @@ export function htmlLangMissing(doc: DocumentLike): Finding[] {
  * re-derived by the caller for the report's `element`/`codeSnippet`.
  */
 export function robotsNoindex(
-  doc: DocumentLike,
+  parsedDocument: DocumentLike,
   headers: HttpHeaders | undefined,
 ): Finding[] {
-  if (findRobotsSource(doc, headers, 'noindex')) {
+  if (findRobotsSource(parsedDocument, headers, 'noindex')) {
     return [
       finding(
         'warning',
@@ -250,10 +256,10 @@ export function robotsNoindex(
 
 /** Hint when a robots tag (or the `X-Robots-Tag` header) carries `nofollow`. */
 export function robotsNofollow(
-  doc: DocumentLike,
+  parsedDocument: DocumentLike,
   headers: HttpHeaders | undefined,
 ): Finding[] {
-  if (findRobotsSource(doc, headers, 'nofollow')) {
+  if (findRobotsSource(parsedDocument, headers, 'nofollow')) {
     return [
       finding(
         'hint',
@@ -267,8 +273,8 @@ export function robotsNofollow(
 // ---- Canonical -------------------------------------------------------------
 
 /** Hint when the page declares no `<link rel="canonical">`. */
-export function canonicalMissing(doc: DocumentLike): Finding[] {
-  if (getCanonical(doc) === null) {
+export function canonicalMissing(parsedDocument: DocumentLike): Finding[] {
+  if (getCanonical(parsedDocument) === null) {
     return [
       finding(
         'hint',
@@ -285,10 +291,10 @@ export function canonicalMissing(doc: DocumentLike): Finding[] {
  * one is flagged here.
  */
 export function canonicalMismatch(
-  doc: DocumentLike,
+  parsedDocument: DocumentLike,
   pageUrl: string,
 ): Finding[] {
-  const canonical = getCanonical(doc);
+  const canonical = getCanonical(parsedDocument);
   if (canonical !== null && !sameUrl(canonical, pageUrl)) {
     return [
       finding(
@@ -303,8 +309,8 @@ export function canonicalMismatch(
 // ---- Structured data -------------------------------------------------------
 
 /** Hint when the page carries no JSON-LD structured data. */
-export function structuredDataMissing(doc: DocumentLike): Finding[] {
-  if (!hasJsonLd(doc)) {
+export function structuredDataMissing(parsedDocument: DocumentLike): Finding[] {
+  if (!hasJsonLd(parsedDocument)) {
     return [
       finding(
         'hint',
@@ -323,8 +329,8 @@ export function structuredDataMissing(doc: DocumentLike): Finding[] {
 // predicate alone.
 
 /** Hint when the page declares no favicon `<link>` at all. */
-export function faviconMissing(doc: DocumentLike): Finding[] {
-  if (getIconLinks(doc).length === 0) {
+export function faviconMissing(parsedDocument: DocumentLike): Finding[] {
+  if (getIconLinks(parsedDocument).length === 0) {
     return [
       finding(
         'hint',
@@ -336,8 +342,10 @@ export function faviconMissing(doc: DocumentLike): Finding[] {
 }
 
 /** Warning when the page declares no `.ico` or `.png` favicon (SVG does not count). */
-export function faviconIcoOrPngMissing(doc: DocumentLike): Finding[] {
-  const icons = getIconLinks(doc);
+export function faviconIcoOrPngMissing(
+  parsedDocument: DocumentLike,
+): Finding[] {
+  const icons = getIconLinks(parsedDocument);
   if (!icons.some((icon) => isIcoIcon(icon) || isPngIcon(icon))) {
     return [
       finding(
@@ -350,8 +358,8 @@ export function faviconIcoOrPngMissing(doc: DocumentLike): Finding[] {
 }
 
 /** Hint when the page declares no 32x32 PNG favicon. */
-export function favicon32Missing(doc: DocumentLike): Finding[] {
-  const icons = getIconLinks(doc);
+export function favicon32Missing(parsedDocument: DocumentLike): Finding[] {
+  const icons = getIconLinks(parsedDocument);
   if (!icons.some((icon) => isPng32Icon(icon))) {
     return [
       finding(
@@ -364,8 +372,8 @@ export function favicon32Missing(doc: DocumentLike): Finding[] {
 }
 
 /** Hint when the page declares no SVG favicon. */
-export function faviconSvgMissing(doc: DocumentLike): Finding[] {
-  const icons = getIconLinks(doc);
+export function faviconSvgMissing(parsedDocument: DocumentLike): Finding[] {
+  const icons = getIconLinks(parsedDocument);
   if (!icons.some((icon) => isSvgIcon(icon))) {
     return [
       finding(

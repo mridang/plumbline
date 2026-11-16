@@ -16,6 +16,9 @@ import {
 } from '@mridang/webhint-hint-plumbline/dist/lib/seo/checks.js';
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/seo/read.js';
 
+/** Locale-aware comparator used to sort check ids deterministically. */
+const collator = new Intl.Collator();
+
 /** Parses markup with the same DOM implementation the webhint hints use. */
 const parse = (html: string): DocumentLike =>
   createHTMLDocument(html, 'https://x.test/') as DocumentLike;
@@ -33,8 +36,11 @@ function meta(entry: {
 }
 
 /** A minimal link-element artifact entry (only `rel` and `href` are read). */
-function link(rel: string, href: string): Artifacts['LinkElements'][number] {
-  return { rel, href } as Artifacts['LinkElements'][number];
+function link(
+  relationship: string,
+  href: string,
+): Artifacts['LinkElements'][number] {
+  return { rel: relationship, href } as Artifacts['LinkElements'][number];
 }
 
 /**
@@ -171,7 +177,7 @@ describe('the seo registry', () => {
     const numeric = seoChecks
       .filter((c) => c.scoreMode === 'numeric')
       .map((c) => c.id)
-      .toSorted((a, b) => a.localeCompare(b));
+      .toSorted(collator.compare);
     expect(numeric).toEqual([
       'seo-h1-missing',
       'seo-html-lang-missing',

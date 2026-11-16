@@ -8,7 +8,13 @@ import {
   pretty,
   result,
   urlOf,
-} from './util.js';
+} from './utility.js';
+
+/** Matches a valid skill name: lower-case letters, digits and single hyphens. */
+const SKILL_NAME_FORMAT = /^(?!-)(?!.*--)[a-z0-9-]{1,64}(?<!-)$/;
+
+/** Matches a `sha256:` digest followed by 64 hexadecimal digits. */
+const SHA256_DIGEST = /^sha256:[0-9a-f]{64}$/;
 
 /**
  * Paths where an MCP server card may live. UNVERIFIED: SEP-1649 (draft)
@@ -120,15 +126,15 @@ export async function checkMcpServerCard(env: AgentEnv): Promise<CheckResult> {
     const entries = Array.isArray(catalog?.entries) ? catalog.entries : [];
     for (const entry of entries) {
       if (!isRecord(entry) || entry.type !== MCP_CARD_TYPE) continue;
-      let doc: Record<string, unknown> | undefined;
+      let parsedDocument: Record<string, unknown> | undefined;
       if (isRecord(entry.data)) {
-        doc = entry.data;
+        parsedDocument = entry.data;
       } else if (isText(entry.url)) {
-        doc = parseJsonObject(await env.probe(entry.url));
+        parsedDocument = parseJsonObject(await env.probe(entry.url));
       } else {
         // Without embedded data or a url there is no card to check.
       }
-      const card = doc && validCard(doc);
+      const card = parsedDocument && validCard(parsedDocument);
       if (card) {
         return result(id, 'discovery', true, `${path} lists ${card}.`);
       }
@@ -242,10 +248,7 @@ export const SKILLS_SCHEMA =
 export function skillProblems(skill: unknown): string[] {
   if (!isRecord(skill)) return ['is not an object'];
   const problems: string[] = [];
-  if (
-    !isText(skill.name) ||
-    !/^(?!-)(?!.*--)[a-z0-9-]{1,64}(?<!-)$/.test(skill.name)
-  ) {
+  if (!isText(skill.name) || !SKILL_NAME_FORMAT.test(skill.name)) {
     problems.push(
       'name must be 1-64 lowercase letters, digits and single hyphens',
     );
@@ -257,7 +260,7 @@ export function skillProblems(skill: unknown): string[] {
     problems.push('description must be 1-1024 characters');
   }
   if (!isText(skill.url)) problems.push('url is missing');
-  if (!isText(skill.digest) || !/^sha256:[0-9a-f]{64}$/.test(skill.digest)) {
+  if (!isText(skill.digest) || !SHA256_DIGEST.test(skill.digest)) {
     problems.push('digest must be sha256:<64 lowercase hex>');
   }
   return problems;

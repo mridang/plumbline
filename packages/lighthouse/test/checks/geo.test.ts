@@ -215,11 +215,11 @@ function multiScriptPage(): string {
   const inlineJs = `var payload = ${JSON.stringify({ data: 'x'.repeat(5000) })};`;
   const scripts = Array.from(
     { length: 50 },
-    (_unused, i) =>
+    (_unused, index) =>
       `<script type="application/ld+json">${JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'Thing',
-        id: i,
+        id: index,
         blob,
       })}</script>` + `<script>${inlineJs}</script>`,
   ).join('');
@@ -270,8 +270,10 @@ describe('the geo checks match the webhint hint for a fixture', () => {
     '</div></body></html>';
 
   it('structured-data-invalid yields the hint findings', async () => {
-    const doc = createHTMLDocument(fixture, 'https://x.test/');
-    const hintFindings = structuredDataInvalidFindings(readJsonLd(doc));
+    const parsedDocument = createHTMLDocument(fixture, 'https://x.test/');
+    const hintFindings = structuredDataInvalidFindings(
+      readJsonLd(parsedDocument),
+    );
     const lhFindings = await check('geo-structured-data-invalid').run(
       artifacts(fixture),
       context(),
@@ -281,8 +283,8 @@ describe('the geo checks match the webhint hint for a fixture', () => {
   });
 
   it('content-extraction yields the hint findings', async () => {
-    const doc = createHTMLDocument(fixture, 'https://x.test/');
-    const stats = measureContent(doc);
+    const parsedDocument = createHTMLDocument(fixture, 'https://x.test/');
+    const stats = measureContent(parsedDocument);
     const hintFindings = stats ? contentExtractionFindings(stats) : null;
     const lhFindings = await check('geo-content-extraction').run(
       artifacts(fixture),

@@ -57,7 +57,7 @@ const groups = Object.fromEntries(
  * checks (whose webhint hint is context-specific) are shown but not scored, so
  * they weigh 0; every other check weighs 1.
  */
-const auditRefs = checks.map((check) => ({
+const auditReferences = checks.map((check) => ({
   id: `webhint-${check.id}`,
   weight: check.scoreMode === 'informative' ? 0 : 1,
   group: check.section,
@@ -68,7 +68,7 @@ const category = {
   title: 'Webhint extra',
   description:
     'Extra audits that reuse the plumbline check logic for the checks Lighthouse can run from its own artifacts.',
-  auditRefs,
+  auditRefs: auditReferences,
 };
 
 /** The plugin manifest Lighthouse loads via `--plugins`. */

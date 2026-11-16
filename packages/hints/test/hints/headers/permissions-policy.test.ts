@@ -3,6 +3,13 @@ import hint from '../../../src/hints/headers/permissions-policy.js';
 import { DISABLED_FEATURES } from '../../../src/lib/headers/permissions-policy.js';
 import { runHint } from '../../helpers/run-hint.js';
 
+/** Matches a source code that starts with the accelerometer feature of a Permissions-Policy header. */
+const PERMISSIONS_POLICY_ACCELEROMETER_SOURCE =
+  /^Permissions-Policy: accelerometer=\(\), /;
+
+/** Matches a message that names the camera feature. */
+const CAMERA_FEATURE_MENTION = / camera[,.]/;
+
 const full = [
   ...DISABLED_FEATURES.map((f) => `${f}=()`),
   'sync-xhr=(self)',
@@ -24,7 +31,7 @@ describe('permissions-policy', () => {
   it('reports a missing header', async () => {
     const problems = await runHint(hint, page());
     expect(problems[0]?.sourceCode).toMatch(
-      /^Permissions-Policy: accelerometer=\(\), /,
+      PERMISSIONS_POLICY_ACCELEROMETER_SOURCE,
     );
     expect(problems[0]?.message).toContain('was not specified');
   });
@@ -37,6 +44,6 @@ describe('permissions-policy', () => {
     );
     expect(problems[0]?.message).toContain('microphone');
     expect(problems[0]?.message).toContain('geolocation');
-    expect(problems[0]?.message).not.toMatch(/ camera[,.]/);
+    expect(problems[0]?.message).not.toMatch(CAMERA_FEATURE_MENTION);
   });
 });

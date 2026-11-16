@@ -9,6 +9,10 @@ import {
   restoreOpenssl,
 } from '../../lib/tls/fake-openssl.js';
 
+/** Matches the openssl s_client command line reported as the source code of a problem. */
+const OPENSSL_STARTTLS_COMMAND =
+  /^\$ openssl s_client -connect 127\.0\.0\.1:\d+ -starttls smtp /;
+
 afterEach(() => {
   restoreProbe();
   restoreOpenssl();
@@ -52,9 +56,7 @@ describe('mail-tls-renegotiation-client', () => {
     expect(problems[0].message).toBe(
       '127.0.0.1: Your mail server allows for client-initiated renegotiation, which could have negative impact on the availability of your mail server.',
     );
-    expect(problems[0].sourceCode).toMatch(
-      /^\$ openssl s_client -connect 127\.0\.0\.1:\d+ -starttls smtp /,
-    );
+    expect(problems[0].sourceCode).toMatch(OPENSSL_STARTTLS_COMMAND);
     expect(problems[0].sourceCode).toContain(
       'client renegotiations completed: 11',
     );

@@ -8,14 +8,20 @@
  * Source: W3C Webmention (https://www.w3.org/TR/webmention/).
  */
 import { finding, type Finding } from '../headers/finding.js';
-import { isAbsoluteUrl, withRel, type RelLink } from './links.js';
+import {
+  isAbsoluteUrl,
+  withRelationship,
+  type RelationshipLink,
+} from './links.js';
 
 /**
  * Evaluates the Webmention endpoint of a page.
  * @param links - Every relation link found in the DOM and `Link` header.
  */
-export function webmentionFindings(links: readonly RelLink[]): Finding[] {
-  const endpoints = withRel(links, 'webmention');
+export function webmentionFindings(
+  links: readonly RelationshipLink[],
+): Finding[] {
+  const endpoints = withRelationship(links, 'webmention');
   if (endpoints.length === 0) {
     return [];
   }

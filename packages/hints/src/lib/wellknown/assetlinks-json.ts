@@ -97,6 +97,7 @@ export function validateAssetlinksJson(text: string): FileIssue[] {
       message: 'The file contains no statements.',
     });
   }
-  root.forEach((statement, i) => validateStatement(statement, i, issues));
+  for (const [index, statement] of root.entries())
+    validateStatement(statement, index, issues);
   return issues;
 }

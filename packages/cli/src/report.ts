@@ -5,6 +5,12 @@ import { Severity, type Problem } from '@hint/utils-types';
 import ExtraFormatter from '@mridang/webhint-formatter-plumbline';
 import { hintCtors, type HintMeta, type ScanResult } from './scan.js';
 
+/** Matches the `extra/` prefix webhint puts on a hint id. */
+const EXTRA_PREFIX = /^extra\//;
+
+/** Matches a dash at the end of a string. */
+const TRAILING_DASH = /-$/;
+
 /** One finding in the JSON report, flattened from a webhint `Problem`. */
 export interface Finding {
   hintId: string;
@@ -42,7 +48,7 @@ export interface Report {
 /** Looks up a hint's catalogue entry so a finding can carry its groups. */
 function metaFor(hintId: string, hints: HintMeta[]): HintMeta | undefined {
   // Problems report the prefixed id (`extra/<id>`); the catalogue is bare.
-  const bare = hintId.replace(/^extra\//, '');
+  const bare = hintId.replace(EXTRA_PREFIX, '');
   return hints.find((h) => h.id === bare);
 }
 
@@ -109,7 +115,7 @@ function slug(target: string): string {
     .replaceAll('.', '-')
     .replaceAll('/', '-')
     .replaceAll(/[?=]/g, '-query-')
-    .replace(/-$/, '');
+    .replace(TRAILING_DASH, '');
   return name || 'report';
 }
 

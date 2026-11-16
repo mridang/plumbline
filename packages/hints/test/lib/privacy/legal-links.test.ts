@@ -22,7 +22,7 @@ interface FakeElement {
  * A fake document. `a[href]` returns only the anchors with an address, and
  * `a[href], link[href]` the anchors and `<link>`s with one, as a DOM would.
  */
-function doc(elements: readonly FakeElement[]): DocumentLike {
+function document_(elements: readonly FakeElement[]): DocumentLike {
   return {
     querySelectorAll: (selector: string) =>
       elements
@@ -43,7 +43,7 @@ describe('findLegalLink', () => {
   it('finds a privacy policy by the link text', () => {
     expect(
       findLegalLink(
-        doc([{ tag: 'a', text: 'Privacy Policy', href: '/legal/p1' }]),
+        document_([{ tag: 'a', text: 'Privacy Policy', href: '/legal/p1' }]),
         'privacy-policy',
       ),
     ).toBe('/legal/p1');
@@ -52,7 +52,9 @@ describe('findLegalLink', () => {
   it('finds a privacy policy by its address when the text says nothing', () => {
     expect(
       findLegalLink(
-        doc([{ tag: 'a', text: 'Read more', href: '/en/privacy-notice' }]),
+        document_([
+          { tag: 'a', text: 'Read more', href: '/en/privacy-notice' },
+        ]),
         'privacy-policy',
       ),
     ).toBe('/en/privacy-notice');
@@ -71,9 +73,9 @@ describe('findLegalLink', () => {
     ['Nutzungsbedingungen', 'terms-of-service'],
     ['Algemene voorwaarden', 'terms-of-service'],
   ] as const)('reads “%s” as the %s', (text, page) => {
-    expect(findLegalLink(doc([{ tag: 'a', text, href: '/x' }]), page)).toBe(
-      '/x',
-    );
+    expect(
+      findLegalLink(document_([{ tag: 'a', text, href: '/x' }]), page),
+    ).toBe('/x');
   });
 
   it.each([
@@ -84,15 +86,15 @@ describe('findLegalLink', () => {
     ['/datenschutz', 'privacy-policy'],
     ['https://example.com/privacy?lang=en', 'privacy-policy'],
   ] as const)('reads the address %s as the %s', (href, page) => {
-    expect(findLegalLink(doc([{ tag: 'a', text: 'Here', href }]), page)).toBe(
-      href,
-    );
+    expect(
+      findLegalLink(document_([{ tag: 'a', text: 'Here', href }]), page),
+    ).toBe(href);
   });
 
   it('does not take a word that merely contains “tos” or “agb” for the terms', () => {
     expect(
       findLegalLink(
-        doc([
+        document_([
           { tag: 'a', text: 'Photos', href: '/photos' },
           { tag: 'a', text: 'Bags', href: '/bagbuilder' },
         ]),
@@ -106,7 +108,7 @@ describe('findLegalLink', () => {
     (href) => {
       expect(
         findLegalLink(
-          doc([{ tag: 'a', text: 'Read', href }]),
+          document_([{ tag: 'a', text: 'Read', href }]),
           'terms-of-service',
         ),
       ).toBeUndefined();
@@ -116,7 +118,7 @@ describe('findLegalLink', () => {
   it('does not take an article slug that mentions the terms for them', () => {
     expect(
       findLegalLink(
-        doc([
+        document_([
           {
             tag: 'a',
             text: '',
@@ -131,7 +133,7 @@ describe('findLegalLink', () => {
   it('reads the page from any short segment, not only the last', () => {
     expect(
       findLegalLink(
-        doc([{ tag: 'a', text: 'Read', href: '/privacy-policy/en' }]),
+        document_([{ tag: 'a', text: 'Read', href: '/privacy-policy/en' }]),
         'privacy-policy',
       ),
     ).toBe('/privacy-policy/en');
@@ -140,7 +142,7 @@ describe('findLegalLink', () => {
   it('does not take a “how-tos” segment for the terms', () => {
     expect(
       findLegalLink(
-        doc([
+        document_([
           {
             tag: 'a',
             text: 'Customize Copilot',
@@ -155,7 +157,7 @@ describe('findLegalLink', () => {
   it('does not read a headline that mentions the page as a link to it', () => {
     expect(
       findLegalLink(
-        doc([
+        document_([
           {
             tag: 'a',
             text: 'New privacy terms and conditions agreed for cloud services in the EU',
@@ -170,7 +172,7 @@ describe('findLegalLink', () => {
   it('still reads a short footer link of fifty characters', () => {
     expect(
       findLegalLink(
-        doc([{ tag: 'a', text: 'Terms'.padEnd(50, '.'), href: '/x' }]),
+        document_([{ tag: 'a', text: 'Terms'.padEnd(50, '.'), href: '/x' }]),
         'terms-of-service',
       ),
     ).toBe('/x');
@@ -179,13 +181,13 @@ describe('findLegalLink', () => {
   it('takes a link with the registered relation, on <a> or <link>, whatever its text', () => {
     expect(
       findLegalLink(
-        doc([{ tag: 'link', rel: 'privacy-policy', href: '/p' }]),
+        document_([{ tag: 'link', rel: 'privacy-policy', href: '/p' }]),
         'privacy-policy',
       ),
     ).toBe('/p');
     expect(
       findLegalLink(
-        doc([
+        document_([
           { tag: 'a', rel: 'nofollow Terms-Of-Service', text: '§', href: '/t' },
         ]),
         'terms-of-service',
@@ -196,7 +198,7 @@ describe('findLegalLink', () => {
   it('prefers the registered relation over a link that only names the page', () => {
     expect(
       findLegalLink(
-        doc([
+        document_([
           { tag: 'a', text: 'Privacy', href: '/blog/privacy-tips' },
           { tag: 'link', rel: 'privacy-policy', href: '/policy' },
         ]),
@@ -208,7 +210,7 @@ describe('findLegalLink', () => {
   it('does not read a <link> by its address alone', () => {
     expect(
       findLegalLink(
-        doc([{ tag: 'link', rel: 'stylesheet', href: '/privacy.css' }]),
+        document_([{ tag: 'link', rel: 'stylesheet', href: '/privacy.css' }]),
         'privacy-policy',
       ),
     ).toBeUndefined();
@@ -219,7 +221,7 @@ describe('findLegalLink', () => {
     (href) => {
       expect(
         findLegalLink(
-          doc([{ tag: 'a', text: 'Privacy', href }]),
+          document_([{ tag: 'a', text: 'Privacy', href }]),
           'privacy-policy',
         ),
       ).toBeUndefined();
@@ -228,12 +230,15 @@ describe('findLegalLink', () => {
 
   it('ignores anchors without an address', () => {
     expect(
-      findLegalLink(doc([{ tag: 'a', text: 'Privacy' }]), 'privacy-policy'),
+      findLegalLink(
+        document_([{ tag: 'a', text: 'Privacy' }]),
+        'privacy-policy',
+      ),
     ).toBeUndefined();
   });
 
   it('is undefined on a page with no links', () => {
-    expect(findLegalLink(doc([]), 'terms-of-service')).toBeUndefined();
+    expect(findLegalLink(document_([]), 'terms-of-service')).toBeUndefined();
   });
 });
 
@@ -241,7 +246,7 @@ describe('privacyPolicyLinkMissing', () => {
   it('finds nothing when the page links its privacy policy', () => {
     expect(
       privacyPolicyLinkMissing(
-        doc([{ tag: 'a', text: 'Privacy', href: '/privacy' }]),
+        document_([{ tag: 'a', text: 'Privacy', href: '/privacy' }]),
       ),
     ).toEqual([]);
   });
@@ -249,7 +254,7 @@ describe('privacyPolicyLinkMissing', () => {
   it('warns, with the reference, when it does not', () => {
     expect(
       privacyPolicyLinkMissing(
-        doc([{ tag: 'a', text: 'Terms', href: '/terms' }]),
+        document_([{ tag: 'a', text: 'Terms', href: '/terms' }]),
       ),
     ).toEqual([
       {
@@ -264,7 +269,7 @@ describe('termsOfServiceLinkMissing', () => {
   it('finds nothing when the page links its terms', () => {
     expect(
       termsOfServiceLinkMissing(
-        doc([{ tag: 'a', text: 'Terms of use', href: '/legal' }]),
+        document_([{ tag: 'a', text: 'Terms of use', href: '/legal' }]),
       ),
     ).toEqual([]);
   });
@@ -272,7 +277,7 @@ describe('termsOfServiceLinkMissing', () => {
   it('warns, with the reference, when it does not', () => {
     expect(
       termsOfServiceLinkMissing(
-        doc([{ tag: 'a', text: 'Privacy', href: '/privacy' }]),
+        document_([{ tag: 'a', text: 'Privacy', href: '/privacy' }]),
       ),
     ).toEqual([
       {
@@ -298,7 +303,7 @@ function generate(
   count: number,
 ): string {
   let text = '';
-  for (let i = 0; i < count; i += 1) {
+  for (let index = 0; index < count; index += 1) {
     text += pieces[Math.floor(random() * pieces.length)];
   }
   return text;
@@ -357,7 +362,7 @@ describe('TEXT and PATH', () => {
 
   it('matches the old patterns on seeded random text', () => {
     const random = seeded(4);
-    for (let i = 0; i < 20_000; i += 1) {
+    for (let index = 0; index < 20_000; index += 1) {
       const text = generate(random, words, 4);
       expect(TEXT['terms-of-service'].test(text)).toBe(oldText.test(text));
       expect(PATH['terms-of-service'].test(text)).toBe(oldPath.test(text));

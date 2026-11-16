@@ -11,6 +11,9 @@ import {
 } from '../../../src/lib/agent/robots.js';
 import { fakeEnv } from './fake-env.js';
 
+/** Matches a robots.txt directive and captures its field name and value. */
+const ROBOTS_DIRECTIVE = /^([A-Za-z-]+)\s*:(.*)$/;
+
 const SITEMAP =
   '<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>';
 
@@ -209,7 +212,7 @@ describe('parseRobots comment stripping against the former regex', () => {
     new RegExp(parts.join(''), flags);
   const former = (line: string): string[] => {
     const text = line.replace(old('', '#', '.*$'), '').trim();
-    const match = /^([A-Za-z-]+)\s*:(.*)$/.exec(text);
+    const match = ROBOTS_DIRECTIVE.exec(text);
     const value = match?.[2].trim();
     return value ? [value] : [];
   };

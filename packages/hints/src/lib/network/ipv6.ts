@@ -11,7 +11,13 @@ import {
   ipv4Addresses,
   ipv6Addresses,
   type Zone,
-} from './dns-util.js';
+} from './dns-utility.js';
+
+/** Matches a single whitespace character. */
+const WHITESPACE_CHAR = /\s/;
+
+/** Matches whitespace or the end of a tag. */
+const WHITESPACE_OR_TAG_END = /[\s>]/;
 
 /** Seconds Internet.nl waits for a connection; we use the same 4 seconds. */
 const CONNECT_TIMEOUT_MS = 4000;
@@ -206,7 +212,7 @@ const SCRIPT_OR_STYLE = /<(?:script|style)\b/gi;
 
 function skipSpace(html: string, index: number): number {
   let next = index;
-  while (next < html.length && /\s/.test(html[next])) {
+  while (next < html.length && WHITESPACE_CHAR.test(html[next])) {
     next += 1;
   }
   return next;
@@ -229,7 +235,7 @@ function nonceEnd(html: string, at: number): number | null {
     return close + 1;
   }
   let end = value;
-  while (end < html.length && !/[\s>]/.test(html[end])) {
+  while (end < html.length && !WHITESPACE_OR_TAG_END.test(html[end])) {
     end += 1;
   }
   return end > value ? end : null;
@@ -247,7 +253,7 @@ function findNonce(
 ): { start: number; end: number } | null {
   let at = from;
   while (at < limit) {
-    if (/\s/.test(html[at])) {
+    if (WHITESPACE_CHAR.test(html[at])) {
       const start = at;
       at = skipSpace(html, at);
       const end = nonceEnd(html, at);

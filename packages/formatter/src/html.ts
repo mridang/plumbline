@@ -4,6 +4,9 @@
  * it reaches the page, so the report cannot be used to inject markup.
  */
 
+/** Matches a URL that starts with an http or https scheme, in any case. */
+const HTTP_URL_PREFIX = /^https?:\/\//i;
+
 const ESCAPES: Readonly<Record<string, string>> = {
   '&': '&amp;',
   '<': '&lt;',
@@ -30,7 +33,7 @@ export function escapeHtml(value: string | undefined): string {
  */
 export function safeUrl(url: string | undefined): string | undefined {
   const trimmed = (url ?? '').trim();
-  return /^https?:\/\//i.test(trimmed) ? trimmed : undefined;
+  return HTTP_URL_PREFIX.test(trimmed) ? trimmed : undefined;
 }
 
 /**

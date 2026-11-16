@@ -118,8 +118,8 @@ describe('parseXml tag scanning', () => {
   });
 
   it('scans a 100k character tag', () => {
-    const attrs = 'x="1" '.repeat(20_000);
-    const root = parseXml(`<a ${attrs}/>`);
+    const attributes = 'x="1" '.repeat(20_000);
+    const root = parseXml(`<a ${attributes}/>`);
     expect(root?.attrs['x']).toBe('1');
   });
 });
@@ -139,7 +139,7 @@ function generate(
   count: number,
 ): string {
   let text = '';
-  for (let i = 0; i < count; i += 1) {
+  for (let index = 0; index < count; index += 1) {
     text += pieces[Math.floor(random() * pieces.length)];
   }
   return text;
@@ -151,7 +151,7 @@ describe('ATTRIBUTE_PATTERN', () => {
     String.raw`(?:\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+)))?`,
   ].join('');
   const all = (text: string, pattern: string): unknown[] =>
-    [...text.matchAll(new RegExp(pattern, 'g'))].map((m) => [m.index, ...m]);
+    Array.from(text.matchAll(new RegExp(pattern, 'g')), (m) => [m.index, ...m]);
 
   it.each([
     `a="1" b='2' c=3 d`,
@@ -165,7 +165,7 @@ describe('ATTRIBUTE_PATTERN', () => {
   it('matches the old pattern on seeded random text', () => {
     const random = seeded(2);
     const pieces = ['a', 'b', '=', ' ', '"', "'", '>', '/', '1'];
-    for (let i = 0; i < 10_000; i += 1) {
+    for (let index = 0; index < 10_000; index += 1) {
       const text = generate(random, pieces, 14);
       expect(all(text, ATTRIBUTE_PATTERN)).toEqual(all(text, old));
     }

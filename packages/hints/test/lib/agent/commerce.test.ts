@@ -85,8 +85,10 @@ describe('checkAcp', () => {
     ['api_base_url', without(acp, 'api_base_url')],
     ['transports', { ...acp, transports: ['mcp'] }],
     ['capabilities', { ...acp, capabilities: [] }],
-  ])('fails without a valid %s', async (field, doc) => {
-    const r = await checkAcp(fakeEnv({ '/.well-known/acp.json': doc }));
+  ])('fails without a valid %s', async (field, parsedDocument) => {
+    const r = await checkAcp(
+      fakeEnv({ '/.well-known/acp.json': parsedDocument }),
+    );
     expect(r.passed).toBe(false);
     expect(r.detail).toContain(field);
   });
