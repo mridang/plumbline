@@ -48,7 +48,9 @@ describe('installations', () => {
     expect(await saveInstallation(db, 1, 100, 'acme-renamed')).toBe(true);
     await saveInstallation(db, 2, 200, 'other');
     const installations = await listInstallations(db, 1);
-    expect(installations.map((i) => i.account_login)).toEqual(['acme-renamed']);
+    expect(installations.map((index) => index.account_login)).toEqual([
+      'acme-renamed',
+    ]);
     expect(await ownerOfInstallation(db, 100)).toBe(1);
     expect(await ownerOfInstallation(db, 999)).toBeUndefined();
   });
@@ -109,7 +111,7 @@ describe('repositories', () => {
       }
       return prepare(sql);
     };
-    const names = Array.from({ length: 180 }, (_, i) => `a/r${i}`);
+    const names = Array.from({ length: 180 }, (_, index) => `a/r${index}`);
     await saveRepos(
       made.db,
       1,

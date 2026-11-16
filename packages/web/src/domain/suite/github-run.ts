@@ -42,6 +42,7 @@ import {
 import { findingsOf, type StoredFinding } from '@/domain/suite/diff';
 import {
   closeUndeployed,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- exported name used across modules; renaming would change the module API
   newBudget,
   noteDeferred,
   originOf,

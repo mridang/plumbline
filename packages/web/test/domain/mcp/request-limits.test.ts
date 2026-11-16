@@ -25,7 +25,7 @@ const streamed = (pieces: readonly Uint8Array[]) =>
     method: 'POST',
     body: new ReadableStream<Uint8Array>({
       start(controller) {
-        pieces.forEach((piece) => controller.enqueue(piece));
+        for (const piece of pieces) controller.enqueue(piece);
         controller.close();
       },
     }),

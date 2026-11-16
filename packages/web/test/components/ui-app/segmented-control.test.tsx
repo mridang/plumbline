@@ -6,6 +6,21 @@ import {
 } from '@/components/ui-app/segmented-control';
 import { html } from '../render';
 
+/** Matches pressed segment classes. */
+const PRESSED_SEGMENT_CLASSES =
+  /aria-pressed="true"[^>]*class="[^"]*bg-surface/;
+
+/** Matches unpressed segment classes. */
+const UNPRESSED_SEGMENT_CLASSES =
+  /aria-pressed="false"[^>]*class="[^"]*text-muted/;
+
+/** Matches all button label. */
+const ALL_BUTTON_LABEL = />All<\/button>/;
+
+/** Matches cards view current link. */
+const CARDS_VIEW_CURRENT_LINK =
+  /aria-current="true"[^>]*href="\/dashboard\?view=cards"|href="\/dashboard\?view=cards"[^>]*aria-current="true"/;
+
 const OPTIONS = [
   { value: 'problems', label: 'Problems', count: 47 },
   { value: 'failed', label: 'Failed', count: 15 },
@@ -30,14 +45,14 @@ describe('SegmentedControl', () => {
   });
 
   it('lifts the pressed choice off the track', () => {
-    expect(out).toMatch(/aria-pressed="true"[^>]*class="[^"]*bg-surface/);
-    expect(out).toMatch(/aria-pressed="false"[^>]*class="[^"]*text-muted/);
+    expect(out).toMatch(PRESSED_SEGMENT_CLASSES);
+    expect(out).toMatch(UNPRESSED_SEGMENT_CLASSES);
   });
 
   it('draws the count after the label when there is one', () => {
     expect(out).toContain('Problems<span');
     expect(out).toContain('>47<');
-    expect(out).toMatch(/>All<\/button>/);
+    expect(out).toMatch(ALL_BUTTON_LABEL);
   });
 
   it('is never a submit button', () => {
@@ -63,9 +78,7 @@ describe('SegmentedLinks', () => {
     expect(links).toContain('aria-label="View"');
     expect(links).toContain('href="/dashboard"');
     expect(links.match(/aria-current="true"/g)).toHaveLength(1);
-    expect(links).toMatch(
-      /aria-current="true"[^>]*href="\/dashboard\?view=cards"|href="\/dashboard\?view=cards"[^>]*aria-current="true"/,
-    );
+    expect(links).toMatch(CARDS_VIEW_CURRENT_LINK);
   });
 
   it('shares the look of the buttons', () => {

@@ -16,6 +16,9 @@ import { reports, suiteRuns } from '@/domain/db/schema';
 import type { Report } from '@/domain/db/reports';
 import type { SuiteRunKind } from '@/domain/db/suite';
 
+/** The listed id of a server run: `s` and a number with no leading zero. */
+const SUITE_RUN_ID = /^s[1-9]\d{0,15}$/;
+
 /** How a run started: a person pressed "Run checks", or the server did. */
 export type RunKind = 'manual' | SuiteRunKind;
 
@@ -61,7 +64,7 @@ export function suiteRunId(id: number): string {
 
 /** The number in a server run's listed id, or undefined when it is not one. */
 export function suiteRunNumber(id: string): number | undefined {
-  return /^s[1-9]\d{0,15}$/.test(id) ? Number(id.slice(1)) : undefined;
+  return SUITE_RUN_ID.test(id) ? Number(id.slice(1)) : undefined;
 }
 
 /** The outcomes in stored JSON (anything unreadable counts as none). */

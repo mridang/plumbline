@@ -7,6 +7,13 @@ import SetPage, {
 import { RULE_SET_DEFS, findRuleSet } from '@/domain/checks/sets';
 import { htmlAt } from '../../../../../components/render';
 
+/** Matches open group details with class. */
+const OPEN_GROUP_DETAILS_WITH_CLASS =
+  /<details[^>]*open=""[^>]*class="group\/s/;
+
+/** Matches open group details. */
+const OPEN_GROUP_DETAILS = /<details[^>]*open=""[^>]*group\/s/;
+
 const pageHtml = async (
   set: string[],
   search: Record<string, string> = {},
@@ -46,16 +53,16 @@ describe('a rule set page', () => {
     )) {
       expect(out).toContain(`>${id}</span>`);
     }
-    expect(out).not.toMatch(/<details[^>]*open=""[^>]*class="group\/s/);
+    expect(out).not.toMatch(OPEN_GROUP_DETAILS_WITH_CLASS);
   });
 
   it('opens every area for ?open=all and a filtered list', async () => {
     expect(await pageHtml(['recommended'], { open: 'all' })).toMatch(
-      /<details[^>]*open=""[^>]*group\/s/,
+      OPEN_GROUP_DETAILS,
     );
     const filtered = await pageHtml(['recommended'], { q: 'strict-transport' });
     expect(filtered).toContain('>hsts</span>');
-    expect(filtered).toMatch(/<details[^>]*open=""[^>]*group\/s/);
+    expect(filtered).toMatch(OPEN_GROUP_DETAILS);
   });
 
   it('opens the row of one rule with what it checks and how to fix it', async () => {

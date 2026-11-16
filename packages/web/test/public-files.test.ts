@@ -5,6 +5,19 @@ import path from 'node:path';
 import { BRAND_NAME, BRAND_URL, SECURITY_CONTACT } from '@/app/_brand';
 import { packageDirectorySync } from 'package-directory';
 
+/** Matches a blockquote line. */
+const BLOCKQUOTE_LINE = /\n> .+/;
+/** Matches a level-two heading line. */
+const H2_HEADING_LINE = /\n## .+/;
+/** Matches the "What to expect" text. */
+const WHAT_TO_EXPECT = /What to expect/;
+/** Matches the "In scope" text. */
+const IN_SCOPE = /In scope/;
+/** Matches the "Out of scope" text. */
+const OUT_OF_SCOPE = /Out of scope/;
+/** Matches the "good faith" text. */
+const GOOD_FAITH = /good faith/;
+
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 const read = (name: string): Promise<string> =>
@@ -24,12 +37,15 @@ describe('public/llms.txt', () => {
 
   it('follows the llms.txt shape: a title, a summary and sections of links', () => {
     expect(text.startsWith(`# ${BRAND_NAME}\n`)).toBe(true);
-    expect(text).toMatch(/\n> .+/);
-    expect(text).toMatch(/\n## .+/);
+    expect(text).toMatch(BLOCKQUOTE_LINE);
+    expect(text).toMatch(H2_HEADING_LINE);
   });
 
   it('links only to this site, outside the Optional section', () => {
-    const links = [...main.matchAll(/\]\((https?:[^)]+)\)/g)].map((m) => m[1]!);
+    const links = Array.from(
+      main.matchAll(/\]\((https?:[^)]+)\)/g),
+      (m) => m[1]!,
+    );
     expect(links.length).toBeGreaterThan(0);
     for (const link of links) {
       expect(link.startsWith(`${BRAND_URL}/`)).toBe(true);
@@ -60,10 +76,10 @@ describe('public/security-policy.txt', () => {
   });
 
   it('says what to expect, what is in scope and that good faith is safe', () => {
-    expect(text).toMatch(/What to expect/);
-    expect(text).toMatch(/In scope/);
-    expect(text).toMatch(/Out of scope/);
-    expect(text).toMatch(/good faith/);
+    expect(text).toMatch(WHAT_TO_EXPECT);
+    expect(text).toMatch(IN_SCOPE);
+    expect(text).toMatch(OUT_OF_SCOPE);
+    expect(text).toMatch(GOOD_FAITH);
   });
 
   it('is ASCII, since it is served with no charset', () => {

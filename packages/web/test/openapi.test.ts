@@ -14,6 +14,21 @@ import { APP_MIGRATIONS } from './lib/core/db/migrations';
 import { installCloudflareContext, sqliteD1 } from './lib/core/db/sqlite-d1';
 import { packageDirectorySync } from 'package-directory';
 
+/** Matches route file suffix. */
+const ROUTE_FILE_SUFFIX = /\/?route\.ts$/;
+
+/** Matches trailing slash. */
+const TRAILING_SLASH = /\/$/;
+
+/** Matches openapi 31 version. */
+const OPENAPI_31_VERSION = /^3\.1\./;
+
+/** Matches snake case name. */
+const SNAKE_CASE_NAME = /^[a-z][a-z0-9_]*$/;
+
+/** Matches hyphen or trailing slash. */
+const HYPHEN_OR_TRAILING_SLASH = /(?:-|\/$)/;
+
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 // A route that signs a person out reads the cookie jar of the request in
@@ -79,7 +94,7 @@ const pathOf = (file: string): string =>
   '/api/' +
   path
     .relative(API, file)
-    .replace(/\/?route\.ts$/, '')
+    .replace(ROUTE_FILE_SUFFIX, '')
     .replaceAll(
       /\[([a-z_-]+)\]/g,
       (_, name: string) => `{${name.replaceAll('-', '_')}}`,
@@ -107,7 +122,7 @@ const registered = async (): Promise<
 > => {
   const found = [];
   for (const file of await routeFiles(API)) {
-    const path = pathOf(file).replace(/\/$/, '');
+    const path = pathOf(file).replace(TRAILING_SLASH, '');
     if (ALIASES.has(path)) {
       continue;
     }
@@ -154,7 +169,7 @@ describe('openapi.json and the route files', () => {
   it('has a module in the test table for every route file, and a route file for every module', async () => {
     const routeList = await routeFiles(API);
     const files = routeList
-      .map((file) => pathOf(file).replace(/\/$/, ''))
+      .map((file) => pathOf(file).replace(TRAILING_SLASH, ''))
       .filter((path) => !ALIASES.has(path));
     expect(files.toSorted((a, b) => Number(a > b) - Number(a < b))).toEqual(
       Object.keys(ROUTE_MODULES).toSorted(
@@ -164,7 +179,7 @@ describe('openapi.json and the route files', () => {
   });
 
   it('is OpenAPI 3.1', () => {
-    expect(document.openapi).toMatch(/^3\.1\./);
+    expect(document.openapi).toMatch(OPENAPI_31_VERSION);
   });
 
   it('describes every method of every route under /api, and nothing else', () => {
@@ -180,7 +195,7 @@ describe('openapi.json and the route files', () => {
   });
 
   it('gives every operation its own id, a tag and a summary', () => {
-    const ids = [...documented().values()].map((op) => op.operationId);
+    const ids = Array.from(documented().values(), (op) => op.operationId);
     expect(new Set(ids).size).toBe(ids.length);
     for (const [key, op] of documented()) {
       expect([key, Boolean(op.operationId)]).toEqual([key, true]);
@@ -239,7 +254,7 @@ describe('openapi.json and the route files', () => {
     const bad: string[] = [];
     const walk = (value: unknown, where: string): void => {
       if (Array.isArray(value)) {
-        value.forEach((item, at) => walk(item, `${where}[${at}]`));
+        for (const [at, item] of value.entries()) walk(item, `${where}[${at}]`);
       } else if (value && typeof value === 'object') {
         const record = value as Json;
         const properties = record['properties'];
@@ -249,7 +264,7 @@ describe('openapi.json and the route files', () => {
             : [];
         bad.push(
           ...names
-            .filter((name) => !/^[a-z][a-z0-9_]*$/.test(name))
+            .filter((name) => !SNAKE_CASE_NAME.test(name))
             .map((name) => `${where}.${name}`),
         );
         for (const [name, child] of Object.entries(record)) {
@@ -265,7 +280,7 @@ describe('openapi.json and the route files', () => {
 
   it('has no path segment that is a verb or has a hyphen, and no trailing slash', () => {
     for (const path of Object.keys(document.paths)) {
-      expect(path).not.toMatch(/(?:-|\/$)/);
+      expect(path).not.toMatch(HYPHEN_OR_TRAILING_SLASH);
     }
   });
 });
@@ -293,7 +308,10 @@ describe('what the controllers do, against what the spec says', () => {
   )(
     '%s answers 401 as a problem to a request with no session',
     async (_key, path, method, handler) => {
-      const names = [...path.matchAll(/\{([a-z_]+)\}/g)].map((m) => m[1] ?? '');
+      const names = Array.from(
+        path.matchAll(/\{([a-z_]+)\}/g),
+        (m) => m[1] ?? '',
+      );
       const params = Object.fromEntries(names.map((name) => [name, 'x']));
       const answer = await handler(
         new Request(

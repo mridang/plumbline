@@ -119,9 +119,9 @@ export async function identify(
     login: user.login,
     name: user.name ?? null,
     picture: user.avatar_url ?? null,
-    installations: installations.map((i) => ({
-      id: i.id,
-      account: i.account?.login ?? user.login,
+    installations: installations.map((index) => ({
+      id: index.id,
+      account: index.account?.login ?? user.login,
     })),
   };
 }

@@ -178,7 +178,9 @@ export class GitHubApi {
       `/repos/${fullName}/git/trees/${encodeURIComponent(branch)}?recursive=1`,
       TreeSchema,
     );
-    return tree.tree.filter((e) => e.type === 'blob').map((e) => e.path);
+    return tree.tree
+      .filter((entry) => entry.type === 'blob')
+      .map((entry) => entry.path);
   }
 
   /** Opens an issue. */

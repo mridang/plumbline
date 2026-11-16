@@ -17,6 +17,16 @@ import {
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 
+/** Shared collator for locale-aware ordering. */
+const collator = new Intl.Collator();
+
+/** Matches a full scan of the domains table. */
+const SCAN_DOMAINS_PLAN = /SCAN domains/;
+/** Matches a full scan of the suite_runs table. */
+const SCAN_SUITE_RUNS_PLAN = /SCAN suite_runs/;
+/** Matches a full scan of the suite_check_issues table. */
+const SCAN_SUITE_CHECK_ISSUES_PLAN = /SCAN suite_check_issues/;
+
 const made = () => {
   const { d1, raw } = sqliteD1(...APP_MIGRATIONS);
   return { db: createDatabase(d1), raw };
@@ -223,7 +233,7 @@ describe('overviewOf, with the last deployment and the open issues', () => {
     expect(
       repo?.sites
         .map((s) => [s.host, s.deployed_at, s.sha])
-        .toSorted(([a], [b]) => String(a).localeCompare(String(b))),
+        .toSorted(([a], [b]) => collator.compare(String(a), String(b))),
     ).toEqual([
       ['a.test', '2026-01-01T01:00:00.000Z', 'aaaaaaa2'],
       ['b.test', null, null],
@@ -309,7 +319,7 @@ describe('overviewOf, with the last deployment and the open issues', () => {
       .all('acme/a', 1, 1, '2020')
       .map((row) => String(row['detail']))
       .join(' | ');
-    expect(plan).not.toMatch(/SCAN domains/);
+    expect(plan).not.toMatch(SCAN_DOMAINS_PLAN);
   });
 
   it('answers from the indexes: no scan of the run history or the issues', async () => {
@@ -327,12 +337,12 @@ describe('overviewOf, with the last deployment and the open issues', () => {
         1,
         'a.test',
       ),
-    ).not.toMatch(/SCAN suite_runs/);
+    ).not.toMatch(SCAN_SUITE_RUNS_PLAN);
     expect(
       plan(
         "select repo, count(*) from suite_check_issues where repo in (?) and state = 'open' group by repo",
         'acme/site',
       ),
-    ).not.toMatch(/SCAN suite_check_issues/);
+    ).not.toMatch(SCAN_SUITE_CHECK_ISSUES_PLAN);
   });
 });

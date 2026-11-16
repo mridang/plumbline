@@ -78,7 +78,7 @@ export function LiveOverview({
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<Sort>(DEFAULT_SORT);
 
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     if (typeof EventSource === 'undefined') {
       return undefined;
     }

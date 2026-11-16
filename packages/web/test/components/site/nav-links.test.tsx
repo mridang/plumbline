@@ -9,6 +9,9 @@ import {
 } from '@/components/site/nav-links';
 import { htmlAt } from '../render';
 
+/** Matches the current-page docs link. */
+const DOCS_CURRENT_LINK = /aria-current="page"[^>]*>Docs</;
+
 const DASHBOARD = SIGNED_IN_LINKS[0]!;
 
 describe('isCurrent', () => {
@@ -53,7 +56,7 @@ describe('NavLinks', () => {
       pathname: '/docs',
     });
     expect(out.match(/aria-current="page"/g)).toHaveLength(1);
-    expect(out).toMatch(/aria-current="page"[^>]*>Docs</);
+    expect(out).toMatch(DOCS_CURRENT_LINK);
   });
 });
 

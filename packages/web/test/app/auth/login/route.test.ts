@@ -17,6 +17,9 @@ import {
   installEnv,
 } from '../../../domain/auth/auth-test-kit';
 
+/** Matches the sign-in state prefix. */
+const SIGNIN_STATE_PREFIX = /^signin\./;
+
 // The redirect path answers a NextResponse (it sets cookies); the 503 path
 // answers a plain problem Response. Only the redirect cases read cookies.
 const redirect = async (request: NextRequest): Promise<NextResponse> =>
@@ -57,7 +60,7 @@ describe('GET /auth/login', () => {
   it('keeps the same one-time state in the address and in an httpOnly cookie', async () => {
     const res = await redirect(appRequest('GET', '/auth/login'));
     const state = locationOf(res)?.searchParams.get('state');
-    expect(state).toMatch(/^signin\./);
+    expect(state).toMatch(SIGNIN_STATE_PREFIX);
     expect(res.cookies.get(STATE_COOKIE)).toMatchObject({
       value: state,
       httpOnly: true,

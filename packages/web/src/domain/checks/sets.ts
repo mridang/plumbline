@@ -30,6 +30,7 @@ import {
 export type RuleSetKind = SetKind;
 
 /** One rule set and the checks it holds. */
+// eslint-disable-next-line unicorn/prevent-abbreviations -- exported type name that other modules import
 export interface RuleSetDef {
   /** The name a configuration file extends, such as `plumbline:recommended`. */
   readonly id: string;

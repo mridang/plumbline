@@ -8,6 +8,12 @@ import {
 import { NOT_INSTALLER } from '@/components/repos/checks-messages';
 import { htmlAt } from '../render';
 
+/** Matches aria describedby attribute. */
+const ARIA_DESCRIBEDBY_ATTRIBUTE = /aria-describedby="([^"]+)"/;
+
+/** Matches disabled button. */
+const DISABLED_BUTTON = /<button[^>]*\sdisabled[\s=>]/;
+
 const INSTALLER = { canManage: true, fileOff: false } as const;
 
 describe('ChecksSwitch', () => {
@@ -43,7 +49,7 @@ describe('ChecksSwitch, who may flip it', () => {
     const out = htmlAt(
       <ChecksSwitch repo="acme/site" paused={false} control={INSTALLER} />,
     );
-    expect(out).not.toMatch(/<button[^>]*\sdisabled[\s=>]/);
+    expect(out).not.toMatch(DISABLED_BUTTON);
     expect(out).not.toContain('aria-describedby');
     expect(out).not.toContain(NOT_INSTALLER);
   });
@@ -57,8 +63,8 @@ describe('ChecksSwitch, who may flip it', () => {
       />,
     );
     expect(out).toContain('role="switch"');
-    expect(out).toMatch(/<button[^>]*\sdisabled[\s=>]/);
-    const described = /aria-describedby="([^"]+)"/.exec(out)?.[1];
+    expect(out).toMatch(DISABLED_BUTTON);
+    const described = ARIA_DESCRIBEDBY_ATTRIBUTE.exec(out)?.[1];
     expect(described).toBeDefined();
     expect(out).toContain(`id="${described}"`);
     expect(out).toContain(NOT_INSTALLER);
@@ -72,7 +78,7 @@ describe('ChecksSwitch, who may flip it', () => {
         control={{ canManage: true, fileOff: true }}
       />,
     );
-    expect(out).toMatch(/<button[^>]*\sdisabled[\s=>]/);
+    expect(out).toMatch(DISABLED_BUTTON);
     expect(out).toContain('Turned off in plumbline.yaml');
     expect(out).not.toContain(NOT_INSTALLER);
   });
@@ -97,7 +103,7 @@ describe('ChecksMenuItem', () => {
     expect(off).toContain('Turn checks off');
     expect(on).toContain('Turn checks on');
     expect(off).toContain('type="button"');
-    expect(off).not.toMatch(/<button[^>]*\sdisabled[\s=>]/);
+    expect(off).not.toMatch(DISABLED_BUTTON);
   });
 
   it('is disabled, with the reason beside it, when the viewer may not flip the switch', () => {
@@ -108,7 +114,7 @@ describe('ChecksMenuItem', () => {
         onRequest={() => 0}
       />,
     );
-    expect(out).toMatch(/<button[^>]*\sdisabled[\s=>]/);
+    expect(out).toMatch(DISABLED_BUTTON);
     expect(out).toContain('aria-describedby');
     expect(out).toContain(NOT_INSTALLER);
   });

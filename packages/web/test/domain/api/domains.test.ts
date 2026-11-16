@@ -14,6 +14,9 @@ import {
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
 
+/** Matches a string starting with a quote. */
+const STARTS_WITH_QUOTE = /^"/;
+
 /** Who is signed in; null means nobody (or a session that has been ended). */
 const session: { uid: number | null } = { uid: 7 };
 
@@ -139,7 +142,7 @@ describe('GET /api/domains/{id}', () => {
     expect([res.status, body.host, res.headers.get('etag')]).toEqual([
       200,
       'example.com',
-      expect.stringMatching(/^"/),
+      expect.stringMatching(STARTS_WITH_QUOTE),
     ]);
   });
 

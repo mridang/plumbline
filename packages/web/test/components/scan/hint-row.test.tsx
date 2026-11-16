@@ -11,6 +11,13 @@ import type { IssueRef } from '@/domain/db/issue-history';
 import type { Finding, HintOutcome } from '@/domain/scan/outcome';
 import { html } from '../render';
 
+/** Matches the time element with the expected timestamp. */
+const ISO_TIME_ELEMENT_PATTERN =
+  /<time[^>]*dateTime="2026-01-01T00:00:00.000Z"/;
+
+/** Matches the closing summary tag. */
+const SUMMARY_CLOSE_PATTERN = /<\/summary>/;
+
 /** A check with the given outcome. */
 const hint = (
   status: HintOutcome['status'],
@@ -126,7 +133,7 @@ describe('HintRow, as a row of the report', () => {
         hint={hint('skipped', { reason: 'Took longer than 45 seconds.' })}
       />,
     );
-    expect(out).toMatch(/<\/summary>/);
+    expect(out).toMatch(SUMMARY_CLOSE_PATTERN);
     expect(out.slice(0, out.indexOf('</summary>'))).toContain(
       'Took longer than 45 seconds.',
     );
@@ -366,7 +373,7 @@ describe('the GitHub issues of a check', () => {
     expect(out).toContain('Open</span>');
     expect(out).toContain('Closed — fixed</span>');
     expect(out).toContain('Closed by a person</span>');
-    expect(out).toMatch(/<time[^>]*dateTime="2026-01-01T00:00:00.000Z"/);
+    expect(out).toMatch(ISO_TIME_ELEMENT_PATTERN);
   });
 
   it('counts them in the summary, naming the issue when there is one', () => {

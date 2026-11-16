@@ -211,7 +211,7 @@ describe('POST /api/scans/{id}/run', () => {
 
   it('answers 503 as a problem when there is no scanner, or it does not answer', async () => {
     const { id } = await issueScanId('https://example.com/', SECRET);
-    const call = (namespace: ReturnType<typeof streaming> | undefined) =>
+    const call = (namespace?: ReturnType<typeof streaming>) =>
       createScanRun(
         () => SECRET,
         () => namespace,
@@ -224,7 +224,7 @@ describe('POST /api/scans/{id}/run', () => {
           }),
           routeFor(id),
         );
-    const none = await call(undefined);
+    const none = await call();
     expect(none.status).toBe(503);
     expect(none.headers.get('content-type')).toBe('application/problem+json');
     const down = await call({

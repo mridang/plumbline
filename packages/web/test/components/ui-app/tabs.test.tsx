@@ -4,6 +4,16 @@ import type { KeyboardEvent } from 'react';
 import { TabList, TabPanel, moveFocus, tabId } from '@/components/ui-app/tabs';
 import { html } from '../render';
 
+/** Matches the first tab link. */
+const FIRST_TAB_LINK = /<a[^>]*role="tab"[^>]*href="\/r\?site=a\.test"/;
+/** Matches the selected second tab link. */
+const SELECTED_SECOND_TAB_LINK =
+  /aria-selected="true"[^>]*href="\/r\?site=b\.test"/;
+/** Matches an unselected tab. */
+const UNSELECTED_TAB = /aria-selected="false"[^>]*tabindex="-1"/;
+/** Matches a selected tab. */
+const SELECTED_TAB = /aria-selected="true"[^>]*tabindex="0"/;
+
 const TABS = [
   { key: 'a.test', label: 'a.test', href: '/r?site=a.test' },
   { key: 'b.test', label: 'b.test', href: '/r?site=b.test' },
@@ -22,14 +32,14 @@ describe('TabList and TabPanel', () => {
   it('is a labelled tab list of links, one of them selected', () => {
     expect(out).toContain('role="tablist"');
     expect(out).toContain('aria-label="Sites"');
-    expect(out).toMatch(/<a[^>]*role="tab"[^>]*href="\/r\?site=a\.test"/);
+    expect(out).toMatch(FIRST_TAB_LINK);
     expect(out.match(/aria-selected="true"/g)).toHaveLength(1);
-    expect(out).toMatch(/aria-selected="true"[^>]*href="\/r\?site=b\.test"/);
+    expect(out).toMatch(SELECTED_SECOND_TAB_LINK);
   });
 
   it('puts only the selected tab in the tab order', () => {
-    expect(out).toMatch(/aria-selected="false"[^>]*tabindex="-1"/);
-    expect(out).toMatch(/aria-selected="true"[^>]*tabindex="0"/);
+    expect(out).toMatch(UNSELECTED_TAB);
+    expect(out).toMatch(SELECTED_TAB);
   });
 
   it('ties the panel to the tab that opens it', () => {

@@ -12,6 +12,9 @@ import {
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
 
+/** Matches a quoted hexadecimal entity tag. */
+const QUOTED_HEX_ETAG_PATTERN = /^"[0-9a-f]+"$/;
+
 let restore: () => void;
 let db: ReturnType<typeof createDatabase>;
 
@@ -43,7 +46,7 @@ describe('GET /badge/{owner}/{repo}/{signature}.svg', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain('image/svg+xml');
     expect(response.headers.get('cache-control')).toBe('no-cache');
-    expect(response.headers.get('etag')).toMatch(/^"[0-9a-f]+"$/);
+    expect(response.headers.get('etag')).toMatch(QUOTED_HEX_ETAG_PATTERN);
     expect(await response.text()).toContain('85%');
   });
 

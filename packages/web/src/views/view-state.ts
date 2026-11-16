@@ -81,7 +81,7 @@ export function isPending<T>(state: ViewState<T>): boolean {
  * arguments say nothing useful.
  */
 export function describeRequest(
-  args: Readonly<Record<string, unknown>> | undefined,
+  args?: Readonly<Record<string, unknown>>,
 ): string | undefined {
   const label = REQUEST_ARGUMENTS.map((name) => args?.[name]).find(
     (value): value is string =>

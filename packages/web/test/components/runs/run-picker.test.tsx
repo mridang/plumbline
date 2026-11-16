@@ -5,6 +5,9 @@ import type { RunSummary } from '@/domain/db/runs';
 
 import { htmlAt } from '../render';
 
+/** Matches a details element that is open. */
+const OPEN_DETAILS_PATTERN = /<details[^>]*\sopen/;
+
 const NOW = Date.parse('2026-11-01T12:00:00.000Z');
 
 const run = (extra: Partial<RunSummary>): RunSummary => ({
@@ -52,7 +55,7 @@ describe('RunPicker', () => {
     const out = draw([run({ id: 'a' }), run({ id: 'b' })], 'a');
     expect(out).toContain('Full history');
     expect(out).toContain('2 runs');
-    expect(out).not.toMatch(/<details[^>]*\sopen/);
+    expect(out).not.toMatch(OPEN_DETAILS_PATTERN);
     expect(out).toContain('Runs of site.example.com, newest first');
   });
 

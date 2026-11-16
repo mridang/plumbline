@@ -44,7 +44,7 @@ enabled: true                # false turns every check of this repository off
  * The documentation: the ways to run the checks, the API, the MCP server and
  * the rules file. The same for everyone, so it may be indexed and kept.
  */
-export default function DocsPage(): ReactElement {
+export default function DocumentationPage(): ReactElement {
   const ruleSets = RULE_SET_DEFS.filter((set) => set.kind !== 'section').map(
     (set) => set.id,
   );

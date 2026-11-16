@@ -9,11 +9,12 @@ import { cn } from '@/components/ui/cn';
 export function CodeBlock({
   children,
   label,
-  className,
+  className: cssClasses,
 }: Readonly<{
   children: string;
   /** What the block is, for people who hear the page. */
   label: string;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
   className?: string;
 }>): ReactElement {
   return (
@@ -22,7 +23,7 @@ export function CodeBlock({
       aria-label={label}
       className={cn(
         'rounded-control border border-line bg-night px-4 py-3 font-mono text-[0.8125rem] leading-relaxed wrap-break-word whitespace-pre-wrap text-on-night',
-        className,
+        cssClasses,
       )}
     >
       <code>{children}</code>

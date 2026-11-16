@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   SIGN_IN_PURPOSE,
   checkState,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- newState is the name exported by the module under test
   newState,
   purposeOf,
 } from '@/lib/web-security';

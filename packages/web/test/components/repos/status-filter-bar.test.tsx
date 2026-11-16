@@ -4,8 +4,12 @@ import { NO_FILTER, countsOf } from '@/components/repos/site-filter';
 import { StatusFilterBar } from '@/components/repos/status-filter-bar';
 import { htmlAt } from '../render';
 
+/** Matches the pressed failing filter button. */
+const PRESSED_FAILING_BUTTON =
+  /aria-pressed="true"[^>]*>(?:<[^>]+>)*[^<]*Failing/;
+
 const labels = (html: string): string[] =>
-  [...html.matchAll(/<button[^>]*>(.*?)<\/button>/g)].map((m) =>
+  Array.from(html.matchAll(/<button[^>]*>(.*?)<\/button>/g), (m) =>
     m[1]!
       .split('<')
       .map((piece, index) =>
@@ -56,9 +60,7 @@ describe('StatusFilterBar', () => {
       />,
     );
     expect(failing.match(/aria-pressed="true"/g)).toHaveLength(2);
-    expect(failing).toMatch(
-      /aria-pressed="true"[^>]*>(?:<[^>]+>)*[^<]*Failing/,
-    );
+    expect(failing).toMatch(PRESSED_FAILING_BUTTON);
   });
 
   it('is a labelled group of real buttons', () => {

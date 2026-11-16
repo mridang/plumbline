@@ -27,7 +27,7 @@ describe('isRecord', () => {
     expect(isRecord([])).toBe(true);
     expect(isRecord(null)).toBe(false);
     expect(isRecord('text')).toBe(false);
-    expect(isRecord(undefined)).toBe(false);
+    expect(isRecord()).toBe(false);
   });
 });
 
@@ -66,7 +66,7 @@ describe('textOf', () => {
   });
 
   it('is empty for no content', () => {
-    expect(textOf(undefined)).toBe('');
+    expect(textOf()).toBe('');
     expect(textOf([])).toBe('');
   });
 });

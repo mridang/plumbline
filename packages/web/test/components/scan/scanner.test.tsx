@@ -9,6 +9,11 @@ import {
 import type { Scan } from '@/components/scan/scan-results';
 import { html } from '../render';
 
+/** Matches the scan submit button. */
+const SCAN_SUBMIT_BUTTON = /<button[^>]*type="submit"[^>]*>Scan<\/button>/;
+/** Matches the rate limit alert. */
+const TOO_MANY_SCANS_ALERT = /<p role="alert"[^>]*>Too many scans<\/p>/;
+
 /** A scan of one page, under way unless `finishedAt` is given. */
 const scan = (finishedAt?: number): Scan => ({
   finalUrl: 'https://example.com/',
@@ -25,7 +30,7 @@ describe('Scanner', () => {
     expect(out).toContain('role="search"');
     expect(out).toContain('<label for="domain"');
     expect(out).toContain('placeholder="example.com"');
-    expect(out).toMatch(/<button[^>]*type="submit"[^>]*>Scan<\/button>/);
+    expect(out).toMatch(SCAN_SUBMIT_BUTTON);
   });
 
   it('shows no results before a scan', () => {
@@ -63,6 +68,6 @@ describe('ScanStatus', () => {
   it('says why a scan could not run, as an alert', () => {
     expect(
       html(<ScanStatus state={{ kind: 'error', message: 'Too many scans' }} />),
-    ).toMatch(/<p role="alert"[^>]*>Too many scans<\/p>/);
+    ).toMatch(TOO_MANY_SCANS_ALERT);
   });
 });

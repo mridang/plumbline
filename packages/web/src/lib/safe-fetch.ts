@@ -30,6 +30,12 @@ const DEFAULT_USER_AGENT = 'safe-fetch';
 /** The longest address we will follow; real links are far shorter. */
 const MAX_URL_LENGTH = 2048;
 
+/** A single trailing dot, as in a fully qualified host name. */
+const TRAILING_DOT = /\.$/;
+
+/** A host made only of digits and dots, such as an IPv4 address. */
+const NUMERIC_HOST = /^[\d.]+$/;
+
 /** Name endings that are not on the public web (private networks, reserved names). */
 const NOT_PUBLIC =
   /\.(local|localhost|localdomain|internal|intranet|private|lan|home|corp|test|invalid|example|arpa)$/;
@@ -59,11 +65,11 @@ export function isPublicWebUrl(value: string): boolean {
     return false;
   }
   // `localhost.` is the same host as `localhost`.
-  const host = url.hostname.toLowerCase().replace(/\.$/, '');
+  const host = url.hostname.toLowerCase().replace(TRAILING_DOT, '');
   return !(
     !host.includes('.') ||
     host.startsWith('[') ||
-    /^[\d.]+$/.test(host) ||
+    NUMERIC_HOST.test(host) ||
     NOT_PUBLIC.test(host)
   );
 }

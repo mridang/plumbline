@@ -8,6 +8,7 @@ import {
   isServerHref,
   TextLink,
 } from '@/components/ui/button';
+// eslint-disable-next-line unicorn/no-keyword-prefix -- classOf is the name exported by the shared render helper
 import { classOf, html } from '../render';
 
 describe('buttonClass', () => {
@@ -31,6 +32,7 @@ describe('buttonClass', () => {
   });
 
   it('adds the caller’s own layout classes', () => {
+    // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the option name of buttonClass
     expect(buttonClass({ className: 'max-md:hidden' })).toContain(
       'max-md:hidden',
     );

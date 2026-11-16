@@ -12,6 +12,12 @@ import {
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 
+/** Matches a full table scan of the pending scans table. */
+const PENDING_SCANS_FULL_SCAN_PATTERN = /SCAN pending_scans/;
+
+/** Matches use of the pending scans enqueued index. */
+const PENDING_SCANS_INDEX_PATTERN = /idx_pending_scans_enqueued/;
+
 const made = () => {
   const { d1, raw } = sqliteD1(...APP_MIGRATIONS);
   return { db: createDatabase(d1), raw };
@@ -161,15 +167,15 @@ describe('query plans', () => {
         'k',
         T0,
       ),
-    ).not.toMatch(/SCAN pending_scans/);
+    ).not.toMatch(PENDING_SCANS_FULL_SCAN_PATTERN);
     expect(
       plan('delete from pending_scans where key = ? and seq = 1', 'k'),
-    ).not.toMatch(/SCAN pending_scans/);
+    ).not.toMatch(PENDING_SCANS_FULL_SCAN_PATTERN);
     expect(
       plan(
         'select key from pending_scans where enqueued_at < ? order by enqueued_at limit 5',
         T0,
       ),
-    ).toMatch(/idx_pending_scans_enqueued/);
+    ).toMatch(PENDING_SCANS_INDEX_PATTERN);
   });
 });

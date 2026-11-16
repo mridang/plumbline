@@ -19,6 +19,15 @@ import {
   type AssertionDeps,
 } from '../../../src/lib/oauth/client-auth';
 
+/** Matches the signed client assertion message. */
+const SIGNED_CLIENT_ASSERTION = /signed client_assertion/;
+/** Matches the "too large" message. */
+const TOO_LARGE = /too large/;
+/** Matches the key fetch failure message. */
+const KEYS_NOT_FETCHED = /keys could not be fetched/;
+/** Matches the "already used" message. */
+const ALREADY_USED = /already used/;
+
 const CLIENT = 'https://chatgpt.com/oauth/client.json';
 const JWKS_URI = 'https://chatgpt.com/oauth/jwks.json';
 const ENDPOINT = 'https://site.example/oauth/token';
@@ -123,12 +132,12 @@ describe('verifyClientAssertion', () => {
       NOW,
     );
     expect(result).toMatchObject({ ok: false, error: 'invalid_client' });
-    expect(result?.description).toMatch(/signed client_assertion/);
+    expect(result?.description).toMatch(SIGNED_CLIENT_ASSERTION);
   });
 
   it('refuses an assertion that is too large', async () => {
     const result = await verify('x'.repeat(MAX_ASSERTION_LENGTH + 1));
-    expect(result?.description).toMatch(/too large/);
+    expect(result?.description).toMatch(TOO_LARGE);
   });
 
   it('refuses when the client keys cannot be fetched', async () => {
@@ -136,7 +145,7 @@ describe('verifyClientAssertion', () => {
       ...deps(),
       fetchJwks: async () => undefined,
     });
-    expect(result?.description).toMatch(/keys could not be fetched/);
+    expect(result?.description).toMatch(KEYS_NOT_FETCHED);
   });
 
   it.each([
@@ -197,7 +206,7 @@ describe('verifyClientAssertion', () => {
     const assertion = await sign();
     expect(await verify(assertion, d)).toBeUndefined();
     const replay = await verify(assertion, d);
-    expect(replay?.description).toMatch(/already used/);
+    expect(replay?.description).toMatch(ALREADY_USED);
     expect(await verify(await sign({ jti: 'jti-2' }), d)).toBeUndefined();
   });
 

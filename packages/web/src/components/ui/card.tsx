@@ -25,11 +25,12 @@ const PADDING = {
 export function Card<Tag extends ElementType = 'div'>({
   as,
   padding = 'md',
-  className,
+  className: cssClasses,
   ...props
 }: Readonly<{
   as?: Tag;
   padding?: keyof typeof PADDING;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
   className?: string;
 }> &
   Omit<
@@ -42,7 +43,7 @@ export function Card<Tag extends ElementType = 'div'>({
       className={cn(
         'rounded-card border border-line bg-white',
         PADDING[padding],
-        className,
+        cssClasses,
       )}
       {...props}
     />

@@ -22,12 +22,13 @@ export function RepoLabel({
   repo,
   href,
   size = 'md',
-  className,
+  className: cssClasses,
 }: Readonly<{
   repo: string;
   /** Where the name leads; defaults to the repository's page. `false` leaves it as text. */
   href?: string | false;
   size?: 'md' | 'lg';
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
   className?: string;
 }>): ReactElement {
   const { owner, name } = splitRepo(repo);
@@ -43,7 +44,7 @@ export function RepoLabel({
       className={cn(
         'inline-flex min-w-0 items-center gap-2',
         size === 'lg' ? 'text-xl sm:text-2xl' : 'text-sm',
-        className,
+        cssClasses,
       )}
     >
       <GithubIcon

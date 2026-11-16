@@ -77,8 +77,8 @@ describe('enqueueDueSites', () => {
 
   it('takes only a batch of sites at a time', async () => {
     const db = createDatabase(sqliteD1(...APP_MIGRATIONS).d1);
-    for (let i = 0; i < SCHEDULED_BATCH + 2; i += 1) {
-      await addDomain(db, 1, `h${i}.test`, 'acme/a');
+    for (let index = 0; index < SCHEDULED_BATCH + 2; index += 1) {
+      await addDomain(db, 1, `h${index}.test`, 'acme/a');
     }
     const q = queue();
     expect(await enqueueDueSites(db, q, { now: () => start })).toBe(
@@ -203,7 +203,7 @@ describe('resyncStaleInstallation', () => {
     const sync = jest
       .fn<(user: number, installation: number) => Promise<void>>()
       .mockRejectedValueOnce(new Error('down'))
-      .mockResolvedValue(undefined);
+      .mockResolvedValue();
     await resyncStaleInstallation(db, sync, () => later);
     await resyncStaleInstallation(db, sync, () => later);
     expect(sync.mock.calls).toEqual([

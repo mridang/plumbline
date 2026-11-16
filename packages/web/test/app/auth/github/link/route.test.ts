@@ -11,6 +11,15 @@ import { NextRequest } from 'next/server';
 import { installCloudflareContext } from '../../../../lib/core/db/sqlite-d1';
 import { GITHUB_ENV } from '../../../../domain/github/github-test-kit';
 
+/** Matches http only flag. */
+const HTTP_ONLY_FLAG = /httponly/i;
+
+/** Matches secure flag. */
+const SECURE_FLAG = /secure/i;
+
+/** Matches github state prefix. */
+const GITHUB_STATE_PREFIX = /^github\./;
+
 const state: { user: { id: number } | null } = { user: { id: 1 } };
 jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
@@ -43,15 +52,15 @@ describe('GET /auth/github/link', () => {
     expect(cookie).toContain(
       `plumbline_github_state=${target.searchParams.get('state')}`,
     );
-    expect(cookie).toMatch(/httponly/i);
-    expect(cookie).toMatch(/secure/i);
+    expect(cookie).toMatch(HTTP_ONLY_FLAG);
+    expect(cookie).toMatch(SECURE_FLAG);
   });
 
   it('sends the person to install the app with ?install', async () => {
     const res = await get('?install=1');
     const target = new URL(res.headers.get('location') ?? '');
     expect(target.pathname).toBe('/apps/plumbline-test/installations/new');
-    expect(target.searchParams.get('state')).toMatch(/^github\./);
+    expect(target.searchParams.get('state')).toMatch(GITHUB_STATE_PREFIX);
   });
 
   it('sends someone who is not signed in to sign in first', async () => {

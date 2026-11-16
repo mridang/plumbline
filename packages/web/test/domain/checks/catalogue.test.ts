@@ -22,6 +22,12 @@ import {
   TIERS,
 } from '@/domain/checks/catalogue';
 
+/** Matches http url prefix. */
+const HTTP_URL_PREFIX = /^https?:\/\//;
+
+/** Matches year month format. */
+const YEAR_MONTH_FORMAT = /^\d{4}-\d{2}$/;
+
 const ALL = CHECKS.map((check) => check.id);
 
 describe('CHECKS', () => {
@@ -59,7 +65,7 @@ describe('CHECKS', () => {
         (origin) =>
           origin.source === '' ||
           origin.title === '' ||
-          !/^https?:\/\//.test(origin.url) ||
+          !HTTP_URL_PREFIX.test(origin.url) ||
           origin.summary === '',
       ),
     ).toEqual([]);
@@ -72,7 +78,9 @@ describe('CHECKS', () => {
 
 describe('SECTIONS', () => {
   it('lists the sections in report order, each described and with who fixes it', () => {
-    expect(SECTIONS.map((s) => s.order)).toEqual(SECTIONS.map((_, i) => i));
+    expect(SECTIONS.map((s) => s.order)).toEqual(
+      SECTIONS.map((_, index) => index),
+    );
     expect(
       SECTIONS.filter(
         (s) => s.title === '' || s.description === '' || !s.fixer,
@@ -130,7 +138,7 @@ describe('the taxonomy of a check', () => {
       expect(TIERS).toContain(check.tier);
       expect(TARGETS).toContain(check.target);
       expect(CONTROLS).toContain(check.control);
-      expect(check.added).toMatch(/^\d{4}-\d{2}$/);
+      expect(check.added).toMatch(YEAR_MONTH_FORMAT);
       expect(check.since).toBeGreaterThanOrEqual(1);
     }
   });

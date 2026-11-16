@@ -19,6 +19,9 @@ import {
   userRepositories,
 } from '@/domain/db/schema';
 
+/** Orders repository names as `localeCompare` does, without a collator per call. */
+const collator = new Intl.Collator();
+
 /** How many events of one person are kept. */
 export const KEEP_EVENTS = 200;
 
@@ -321,19 +324,17 @@ export async function overviewOf(
     });
     byRepo.set(row.repo, sites);
   }
-  return [...byRepo]
-    .map(([repo, sites]) => ({
-      repo,
-      sites,
-      open_issues: repo === null ? 0 : (issues.get(repo) ?? 0),
-    }))
-    .toSorted((a, b) => {
-      if (a.repo === null) {
-        return 1;
-      }
-      if (b.repo === null) {
-        return -1;
-      }
-      return a.repo.localeCompare(b.repo);
-    });
+  return Array.from(byRepo, ([repo, sites]) => ({
+    repo,
+    sites,
+    open_issues: repo === null ? 0 : (issues.get(repo) ?? 0),
+  })).toSorted((a, b) => {
+    if (a.repo === null) {
+      return 1;
+    }
+    if (b.repo === null) {
+      return -1;
+    }
+    return collator.compare(a.repo, b.repo);
+  });
 }

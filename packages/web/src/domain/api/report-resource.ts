@@ -11,6 +11,12 @@ import type { Report, ReportCounts, ReportSummary } from '@/domain/db/reports';
 import { findCheck, isCheckId } from '@/domain/checks/catalogue';
 import { unknownFields, type Parsed } from '@/domain/api/domain-resource';
 
+/** An http or https address. */
+const HTTP_URL = /^https?:\/\//;
+
+/** A UUID in its lower-case text form. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
 /** How one check ended. */
 export type OutcomeStatus = 'failed' | 'warned' | 'passed' | 'skipped';
 
@@ -97,7 +103,7 @@ function linksOf(value: unknown): StoredLink[] {
       const record = raw as Readonly<Record<string, unknown>>;
       const url = textOf(record['url']);
       const text = textOf(record['text']);
-      return url !== undefined && /^https?:\/\//.test(url)
+      return url !== undefined && HTTP_URL.test(url)
         ? [{ url, text: text || url }]
         : [];
     })
@@ -225,7 +231,7 @@ export function parseReportInput(
     errors.push('outcomes: must be a list of at least one outcome.');
   } else {
     const seen = new Set<string>();
-    rawOutcomes.forEach((raw, index) => {
+    for (const [index, raw] of rawOutcomes.entries()) {
       const outcome = outcomeOf(raw, index);
       if (!outcome.ok) {
         errors.push(...outcome.errors);
@@ -237,7 +243,7 @@ export function parseReportInput(
         seen.add(outcome.value.id);
         outcomes.push(outcome.value);
       }
-    });
+    }
   }
   if (errors.length > 0 || url === undefined) {
     return { ok: false, errors: errors.slice(0, 20) };
@@ -281,7 +287,5 @@ export function reportResource(report: Readonly<Report>): ReportResource {
 
 /** Whether a path segment can be a report id (the ids are UUIDs). */
 export function isReportId(raw: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
-    raw,
-  );
+  return UUID.test(raw);
 }

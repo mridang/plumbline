@@ -2,6 +2,9 @@ import { describe, expect, it } from '@jest/globals';
 
 import { badgeSvg } from '@/domain/badge/svg';
 
+/** Matches width attribute. */
+const WIDTH_ATTRIBUTE = /width="(\d+)"/;
+
 describe('badgeSvg', () => {
   it('is an SVG that names both parts for assistive technology', () => {
     const svg = badgeSvg('plumbline', '98%', '#2da44e');
@@ -11,7 +14,7 @@ describe('badgeSvg', () => {
   });
 
   it('is wider for longer text', () => {
-    const width = (svg: string) => Number(/width="(\d+)"/.exec(svg)?.[1]);
+    const width = (svg: string) => Number(WIDTH_ATTRIBUTE.exec(svg)?.[1]);
     expect(width(badgeSvg('plumbline', 'not checked', '#999'))).toBeGreaterThan(
       width(badgeSvg('plumbline', '9%', '#999')),
     );

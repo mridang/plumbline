@@ -3,6 +3,12 @@ import { describe, expect, it } from '@jest/globals';
 import { BAR_STEPS, CountsBar, stepsOf } from '@/components/ui-app/counts-bar';
 import { html } from '../render';
 
+/** Matches the failed segment sized to twenty percent. */
+const FAILED_SEGMENT_WIDTH_PATTERN = /bg-failed w-\[20%\]/;
+
+/** Matches the warned segment sized to thirty percent. */
+const WARNED_SEGMENT_WIDTH_PATTERN = /bg-warned w-\[30%\]/;
+
 describe('stepsOf', () => {
   it('gives one step to each finding, red first', () => {
     expect(stepsOf(2, 3)).toEqual({ failed: 2, warned: 3 });
@@ -27,8 +33,8 @@ describe('CountsBar', () => {
 
   it('draws a red and an amber segment of the right width, with no inline style', () => {
     const out = html(<CountsBar failed={2} warned={3} />);
-    expect(out).toMatch(/bg-failed w-\[20%\]/);
-    expect(out).toMatch(/bg-warned w-\[30%\]/);
+    expect(out).toMatch(FAILED_SEGMENT_WIDTH_PATTERN);
+    expect(out).toMatch(WARNED_SEGMENT_WIDTH_PATTERN);
     expect(out).not.toContain('style=');
   });
 

@@ -42,7 +42,7 @@ function snapshot(): number {
 export function RelativeTime({
   at,
   now,
-  className,
+  className: cssClasses,
 }: Readonly<{
   /** The moment, as an ISO timestamp. */
   at: string;
@@ -53,6 +53,7 @@ export function RelativeTime({
    * scan has run in the browser).
    */
   now?: number;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
   className?: string;
 }>): ReactElement {
   const current = useSyncExternalStore(
@@ -64,7 +65,7 @@ export function RelativeTime({
     <time
       dateTime={at}
       title={`${formatTimestamp(at)} UTC`}
-      className={className}
+      className={cssClasses}
     >
       {relativeTime(at, new Date(current))}
     </time>

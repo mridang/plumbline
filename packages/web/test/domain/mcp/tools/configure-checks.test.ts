@@ -11,6 +11,9 @@ import { type ToolResult } from '@/domain/mcp/tool-results';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../../lib/core/db/sqlite-db';
 
+/** Matches the "and more" suffix. */
+const AND_MORE_SUFFIX = /, and more\.$/;
+
 const USER = { id: 1 } as User;
 const TOTAL = CHECKS.length;
 const TLS = checksInGroup('tls').length;
@@ -122,7 +125,7 @@ describe('configure_checks', () => {
           disable: ['tls'],
         }),
       ),
-    ).toMatch(/, and more\.$/);
+    ).toMatch(AND_MORE_SUFFIX);
   });
 
   it('stores every check as all, so a check added later runs too', async () => {

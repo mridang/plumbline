@@ -1,3 +1,6 @@
+/** A string of digits and nothing else. */
+const DIGITS_ONLY = /^\d+$/;
+
 /** A server-sent event. */
 export interface SseFrame {
   /** The event name; omitted for the default `message` event. */
@@ -56,7 +59,7 @@ export function parseResume(
     if (
       candidate !== undefined &&
       candidate !== null &&
-      /^\d+$/.test(candidate.trim())
+      DIGITS_ONLY.test(candidate.trim())
     ) {
       return Number(candidate.trim());
     }

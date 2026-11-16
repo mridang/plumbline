@@ -193,7 +193,7 @@ describe('addresses on GitHub', () => {
 
 describe('viewOf and dashboardHref', () => {
   it('shows the table unless the address asks for cards', () => {
-    expect(viewOf(undefined)).toBe('table');
+    expect(viewOf()).toBe('table');
     expect(viewOf('cards')).toBe('cards');
     expect(viewOf('grid')).toBe('table');
   });

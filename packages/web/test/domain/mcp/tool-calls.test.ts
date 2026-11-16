@@ -15,6 +15,13 @@ import {
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
+/** Matches invalid get domain arguments. */
+const INVALID_GET_DOMAIN_ARGUMENTS =
+  /^Invalid arguments for get_domain: .*`domain` is required.*The arguments are: domain \(required\)\.$/;
+
+/** Matches no arguments suffix. */
+const NO_ARGUMENTS_SUFFIX = /This tool takes no arguments\.$/;
+
 const USER = { id: 1 } as User;
 
 /** A fresh database, and a way to call a tool against it. */
@@ -95,15 +102,13 @@ describe('callTool — the request', () => {
 
   it('says what was wrong and what the tool takes', async () => {
     const result = await setup().call('get_domain', {});
-    expect(textOf(result)).toMatch(
-      /^Invalid arguments for get_domain: .*`domain` is required.*The arguments are: domain \(required\)\.$/,
-    );
+    expect(textOf(result)).toMatch(INVALID_GET_DOMAIN_ARGUMENTS);
   });
 
   it('says when a tool takes no arguments', async () => {
     expect(
       textOf(await setup().call('list_domains', { domain: 'example.com' })),
-    ).toMatch(/This tool takes no arguments\.$/);
+    ).toMatch(NO_ARGUMENTS_SUFFIX);
   });
 
   it('opens no database for arguments that do not fit', async () => {

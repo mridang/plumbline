@@ -38,6 +38,9 @@ import {
   subscriptionId,
 } from '@/lib/push/subscription-id';
 
+/** Matches an address that starts with `https://`. */
+const HTTPS_URL_PREFIX = /^https:\/\//;
+
 /** The signed-in caller and the subscription the path names, if it names one. */
 interface PushContext {
   readonly uid: number;
@@ -58,7 +61,7 @@ function checkSubscription(
   const { endpoint, keys } = body;
   const { p256dh, auth } = (keys ?? {}) as Readonly<Record<string, unknown>>;
   const errors: string[] = unknownFields(body, ['endpoint', 'keys']);
-  if (typeof endpoint !== 'string' || !/^https:\/\//.test(endpoint)) {
+  if (typeof endpoint !== 'string' || !HTTPS_URL_PREFIX.test(endpoint)) {
     errors.push('endpoint: must be an https URL.');
   }
   if (typeof p256dh !== 'string' || !p256dh) {
@@ -194,7 +197,6 @@ export function createSubscriptionItem(
       await new PushSubscriptionRepository(getDatabase()).remove(
         found.endpoint,
       );
-      return undefined;
     },
     encode: () => noContent(),
   });
@@ -260,7 +262,6 @@ export function createSubscriptionTests(
           'Try turning notifications off and on again.',
         );
       }
-      return undefined;
     },
     encode: () => noContent(),
   });

@@ -15,6 +15,10 @@ import { quietSecurityLogs } from './quiet-logs';
 import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import { HTTP_SCHEME } from '../../helpers/data.js';
 
+/** Matches printable ascii without quote or backslash. */
+const PRINTABLE_ASCII_WITHOUT_QUOTE_OR_BACKSLASH =
+  /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/;
+
 // A field the request leaves out: its key stays present, so an override can unset it.
 let notProvided: undefined;
 
@@ -257,7 +261,7 @@ describe('grantedScope', () => {
     const asked = [SCOPE_READ, SCOPE_WRITE] as const;
     expect(grantedScope(asked, 'write')).toEqual(asked);
     expect(grantedScope(asked, null)).toEqual(asked);
-    expect(grantedScope(asked, undefined)).toEqual(asked);
+    expect(grantedScope(asked)).toEqual(asked);
     expect(grantedScope(asked, 'anything else')).toEqual(asked);
     expect(grantedScope(asked, 'read')).toEqual([SCOPE_READ]);
   });
@@ -330,7 +334,7 @@ describe('error_description is printable ASCII without quotes or backslashes (RF
     const result = await check(overrides);
     expect(result.ok).toBe(false);
     expect(!result.ok && result.description).toMatch(
-      /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/,
+      PRINTABLE_ASCII_WITHOUT_QUOTE_OR_BACKSLASH,
     );
   });
 });

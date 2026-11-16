@@ -10,6 +10,9 @@ import {
   type Level,
 } from '@/domain/suite/rules';
 
+/** Matches a lowercase hexadecimal string of 16 characters. */
+const HEX_16_PATTERN = /^[0-9a-f]{16}$/;
+
 describe('the rule sets', () => {
   it('start from the recommended one', () => {
     expect(DEFAULT_RULE_SET).toBe('plumbline:recommended');
@@ -132,7 +135,7 @@ describe('fingerprintOf', () => {
       ]),
     );
     expect(one).toBe(other);
-    expect(one).toMatch(/^[0-9a-f]{16}$/);
+    expect(one).toMatch(HEX_16_PATTERN);
   });
 
   it('differs when a level differs or a rule is added', async () => {

@@ -19,6 +19,7 @@ import {
   ISSUE_LABEL,
   MAX_NEW_ISSUES,
   closeUndeployed,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- newBudget is the name exported by the module under test
   newBudget,
   noteDeferred,
   originOf,
@@ -32,6 +33,12 @@ import {
 import { github, lines, said } from '../../helpers/fake-github';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
+
+/** Matches a lowercase hexadecimal string of 16 characters. */
+const HEX_16_PATTERN = /^[0-9a-f]{16}$/;
+
+/** Matches the title of an issue raised for the site. */
+const ISSUE_TITLE_PATTERN = /^\[Plumbline\] .+ on site\.test$/;
 
 const database = () => createDatabase(sqliteD1(...APP_MIGRATIONS).d1);
 
@@ -96,13 +103,16 @@ const open = (
     reopens,
   });
 
+/** Compares strings in the default locale order, built once. */
+const collator = new Intl.Collator();
+
 describe('signatureOf', () => {
   it('is empty for no findings, and the same for the same findings in any order', async () => {
     expect(await signatureOf([])).toBe('');
     expect(await signatureOf([error, other])).toBe(
       await signatureOf([other, error]),
     );
-    expect(await signatureOf([error])).toMatch(/^[0-9a-f]{16}$/);
+    expect(await signatureOf([error])).toMatch(HEX_16_PATTERN);
   });
 
   it('differs when the findings differ', async () => {
@@ -127,7 +137,7 @@ describe('syncIssues: opening', () => {
       'POST /repos/acme/site/issues',
     ]);
     expect(requests[0]?.body).toMatchObject({
-      title: expect.stringMatching(/^\[Plumbline\] .+ on site\.test$/),
+      title: expect.stringMatching(ISSUE_TITLE_PATTERN),
       labels: [ISSUE_LABEL],
     });
     expect(String(requests[0]?.body['body'])).toContain(
@@ -160,8 +170,8 @@ describe('syncIssues: opening', () => {
     const issues = await issuesOf(db, 'acme/site', 'site.test');
     expect(
       issues
-        .map((i) => [i.number, i.state, ...i.checks])
-        .toSorted((a, b) => String(a).localeCompare(String(b))),
+        .map((index) => [index.number, index.state, ...index.checks])
+        .toSorted((a, b) => collator.compare(String(a), String(b))),
     ).toEqual([
       [21, 'open', 'seo-viewport'],
       [22, 'open', 'seo-http-status'],
@@ -371,7 +381,7 @@ describe('syncIssues: while a problem lasts', () => {
     expect(
       results
         .map((r) => r.get('seo-viewport'))
-        .toSorted((a, b) => (a ?? '').localeCompare(b ?? '')),
+        .toSorted((a, b) => collator.compare(a ?? '', b ?? '')),
     ).toEqual(['none', 'opened']);
   });
 

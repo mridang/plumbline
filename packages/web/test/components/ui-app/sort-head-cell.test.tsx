@@ -3,6 +3,9 @@ import { describe, expect, it } from '@jest/globals';
 import { SortHeadCell } from '@/components/ui-app/sort-head-cell';
 import { html } from '../render';
 
+/** Matches the Status sort button. */
+const STATUS_BUTTON_PATTERN = /<button[^>]*type="button"[^>]*>Status/;
+
 const cell = (direction: 'ascending' | 'descending' | null, align?: 'end') =>
   html(
     <table>
@@ -24,7 +27,7 @@ describe('SortHeadCell', () => {
   it('is a column heading with a button that sorts by it', () => {
     const out = cell(null);
     expect(out).toContain('scope="col"');
-    expect(out).toMatch(/<button[^>]*type="button"[^>]*>Status/);
+    expect(out).toMatch(STATUS_BUTTON_PATTERN);
   });
 
   it('says how the column is sorted with aria-sort', () => {

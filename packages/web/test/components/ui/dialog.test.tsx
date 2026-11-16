@@ -16,6 +16,19 @@ import {
 } from '@/components/ui/dialog';
 import { html } from '../render';
 
+/** Captures the aria-describedby id. */
+const ARIA_DESCRIBEDBY_PATTERN = /aria-describedby="([^"]+)"/;
+
+/** Captures the aria-labelledby id. */
+const ARIA_LABELLEDBY_PATTERN = /aria-labelledby="([^"]+)"/;
+
+/** Matches an empty dialog element. */
+const EMPTY_DIALOG_PATTERN = /<dialog[^>]*><\/dialog>/;
+
+/** Matches the open button trigger with its shadow class. */
+const OPEN_BUTTON_PATTERN =
+  /<button type="button" class="shadow-sm">Open<\/button>/;
+
 /** A dialog with a title and a description, open or closed as told. */
 const sample = (open: boolean, props: { showClose?: boolean } = {}) =>
   html(
@@ -31,10 +44,8 @@ const sample = (open: boolean, props: { showClose?: boolean } = {}) =>
 describe('Dialog', () => {
   it('has a button that opens it, and no content while it is closed', () => {
     const out = sample(false);
-    expect(out).toMatch(
-      /<button type="button" class="shadow-sm">Open<\/button>/,
-    );
-    expect(out).toMatch(/<dialog[^>]*><\/dialog>/);
+    expect(out).toMatch(OPEN_BUTTON_PATTERN);
+    expect(out).toMatch(EMPTY_DIALOG_PATTERN);
     expect(out).not.toContain('Filters');
   });
 
@@ -46,8 +57,8 @@ describe('Dialog', () => {
 
   it('is named and described by its title and description', () => {
     const out = sample(true);
-    const labelledBy = /aria-labelledby="([^"]+)"/.exec(out)?.[1];
-    const describedBy = /aria-describedby="([^"]+)"/.exec(out)?.[1];
+    const labelledBy = ARIA_LABELLEDBY_PATTERN.exec(out)?.[1];
+    const describedBy = ARIA_DESCRIBEDBY_PATTERN.exec(out)?.[1];
     expect(labelledBy).toBeDefined();
     expect(out).toContain(`<h2 id="${labelledBy}">`);
     expect(out).toContain(`<p id="${describedBy}">`);

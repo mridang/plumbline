@@ -389,7 +389,7 @@ export function resolveRules(
       } else if (isCheckId(id)) {
         levels.set(id, level);
       } else if (id.includes(':') && isGroup(id)) {
-        checksInGroup(id).forEach((check) => levels.set(check.id, level));
+        for (const check of checksInGroup(id)) levels.set(check.id, level);
       } else {
         problems.push(`Unknown rule "${id}" in ${where}.`);
       }

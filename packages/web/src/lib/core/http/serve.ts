@@ -18,7 +18,12 @@
  * limits is in its own `extras.ts`, which has the same exports everywhere.
  */
 
-import { buildCsp, cspSurfaceFor, forwardedHeaders, newNonce } from './csp';
+import {
+  buildCsp,
+  cspSurfaceFor,
+  forwardedHeaders,
+  newNonce as createNonce,
+} from './csp';
 import {
   edgeCache,
   edgeCacheKey,
@@ -154,7 +159,7 @@ async function answer(
   // Each page gets its own Content Security Policy, with a one-time number the
   // app puts on its scripts. The approval screen may not be framed by anyone,
   // not even this site.
-  const nonce = newNonce();
+  const nonce = createNonce();
   const csp = buildCsp(nonce, cspSurfaceFor(new URL(request.url).pathname));
   const key =
     cache !== undefined &&

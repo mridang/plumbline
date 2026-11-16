@@ -16,11 +16,12 @@ export const COPIED_MS = 1500;
 export function CopyButton({
   value,
   label,
-  className,
+  className: cssClasses,
 }: Readonly<{
   value: string;
   /** What is copied, read out with the button. */
   label: string;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
   className?: string;
 }>): ReactElement {
   const [copied, setCopied] = useState(false);
@@ -36,7 +37,7 @@ export function CopyButton({
       }}
       className={cn(
         'focus-ring-flush grid size-7 place-items-center rounded-control text-subtle hover:bg-ink/6 hover:text-ink motion-safe:transition',
-        className,
+        cssClasses,
       )}
     >
       {copied ? (

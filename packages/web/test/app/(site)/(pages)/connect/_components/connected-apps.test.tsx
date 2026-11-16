@@ -7,6 +7,12 @@ import {
 import type { ConnectedApp } from '@/domain/connected-apps';
 import { html } from '../../../../../components/render';
 
+/** Matches a bare disabled attribute on an element. */
+const DISABLED_ATTRIBUTE_PATTERN = /\sdisabled(=|\s|>)/;
+
+/** Matches the loading status paragraph. */
+const LOADING_STATUS_PATTERN = /<p[^>]*role="status"[^>]*>Loading…<\/p>/;
+
 const APP: ConnectedApp = {
   id: 'g1',
   name: 'Claude',
@@ -22,7 +28,7 @@ const item = (app: ConnectedApp, busy = false) =>
 describe('ConnectedApps', () => {
   it('says it is loading until the list arrives, politely', () => {
     const out = html(<ConnectedApps />);
-    expect(out).toMatch(/<p[^>]*role="status"[^>]*>Loading…<\/p>/);
+    expect(out).toMatch(LOADING_STATUS_PATTERN);
   });
 
   it('does not show a list or an error before then', () => {
@@ -77,7 +83,7 @@ describe('ConnectedAppItem', () => {
 
   it('has a Disconnect button named after the app, disabled while it works', () => {
     expect(item(APP)).toContain('aria-label="Disconnect Claude"');
-    expect(item(APP)).not.toMatch(/\sdisabled(=|\s|>)/);
+    expect(item(APP)).not.toMatch(DISABLED_ATTRIBUTE_PATTERN);
     const busy = item(APP, true);
     expect(busy).toContain('disabled');
     expect(busy).toContain('Disconnecting…');

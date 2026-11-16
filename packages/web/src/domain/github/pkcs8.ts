@@ -8,6 +8,10 @@
 
 import { base64ToBytes, bytesToBase64 } from '@/utils/base64';
 
+/** A PKCS#1 RSA private key in PEM form, capturing its base64 body. */
+const RSA_PRIVATE_KEY_PEM =
+  /-----BEGIN RSA PRIVATE KEY-----([\s\S]+?)-----END RSA PRIVATE KEY-----/;
+
 /** The DER header of an `rsaEncryption` algorithm identifier. */
 const RSA_ALGORITHM = new Uint8Array([
   48, 13, 6, 9, 42, 134, 72, 134, 247, 13, 1, 1, 1, 5, 0,
@@ -47,10 +51,7 @@ function der(tag: number, ...body: Uint8Array[]): Uint8Array {
  */
 export function toPkcs8(pem: string): string {
   const text = pem.replaceAll(String.raw`\n`, '\n').replaceAll('&', '\n');
-  const match =
-    /-----BEGIN RSA PRIVATE KEY-----([\s\S]+?)-----END RSA PRIVATE KEY-----/.exec(
-      text,
-    );
+  const match = RSA_PRIVATE_KEY_PEM.exec(text);
   if (match === null) {
     return text;
   }

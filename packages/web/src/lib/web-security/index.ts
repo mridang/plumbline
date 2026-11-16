@@ -7,6 +7,7 @@
 export { isSameOriginPost } from './csrf';
 export {
   checkState,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- exported name that callers import
   newState,
   purposeOf,
   SIGN_IN_PURPOSE,

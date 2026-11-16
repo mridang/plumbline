@@ -21,6 +21,9 @@ import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 import { HTTP_SCHEME } from '../../../helpers/data.js';
 
+/** Matches authorization code prefix. */
+const CODE_PREFIX = /^cdn_/;
+
 /** Who is signed in; null means nobody. */
 /** `ended`: the person signed out everywhere, though the cookie itself still verifies. */
 const session: { uid: number | null; ended: boolean } = {
@@ -110,7 +113,7 @@ describe('POST /oauth/consent', () => {
     );
     expect(location.searchParams.get('state')).toBe('xyz');
     expect(location.searchParams.get('iss')).toBe(ORIGIN);
-    expect(location.searchParams.get('code')).toMatch(/^cdn_/);
+    expect(location.searchParams.get('code')).toMatch(CODE_PREFIX);
     expect(raw.prepare('SELECT COUNT(*) AS n FROM oauth_codes').get()).toEqual({
       n: 1,
     });

@@ -19,6 +19,15 @@ import { cloudflareWorkersStub } from '../../helpers/cloudflare-workers-stub';
 import { APP_MIGRATIONS } from '../core/db/migrations';
 import { sqliteD1 } from '../core/db/sqlite-d1';
 
+/** Compares strings in the default locale order, built once. */
+const collator = new Intl.Collator();
+
+/** Matches host form field. */
+const HOST_FORM_FIELD = /host=(.*)/;
+
+/** Matches slow probe log line. */
+const SLOW_PROBE_LOG_LINE = /^slow probe call \d+ ms: \/v1\/connect /;
+
 jest.unstable_mockModule('cloudflare:workers', cloudflareWorkersStub, {
   virtual: true,
 } as never);
@@ -100,7 +109,7 @@ function probe(options: ProbeOptions = {}) {
           }
           case '/v1/http': {
             if (body.includes('path=/\n')) {
-              asked.push(/host=(.*)/.exec(body)?.[1] ?? '');
+              asked.push(HOST_FORM_FIELD.exec(body)?.[1] ?? '');
               return (
                 options.page?.() ??
                 new Response(
@@ -174,7 +183,7 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-const made = (container: unknown) =>
+const made = (container?: unknown) =>
   new ProbeScanner({ container } as never, {} as never);
 
 describe('ProbeScanner, a scan', () => {
@@ -196,7 +205,7 @@ describe('ProbeScanner, a scan', () => {
     // Only the network is asked of the probe: pages and files, handshakes, connection tests.
     expect(
       [...new Set(log.map((line) => line.split(' ', 3)[2]))].toSorted((a, b) =>
-        (a ?? '').localeCompare(b ?? ''),
+        collator.compare(a ?? '', b ?? ''),
       ),
     ).toEqual(['/healthz', '/v1/connect', '/v1/handshakes', '/v1/http']);
   });
@@ -258,11 +267,7 @@ describe('ProbeScanner, slow probe calls', () => {
     await response.text();
     const logged = warn.mock.calls.map((call) => String(call[0]));
     expect(logged.length).toBeGreaterThan(0);
-    expect(
-      logged.every((line) =>
-        /^slow probe call \d+ ms: \/v1\/connect /.test(line),
-      ),
-    ).toBe(true);
+    expect(logged.every((line) => SLOW_PROBE_LOG_LINE.test(line))).toBe(true);
   });
 
   it('logs nothing when every call is quick', async () => {
@@ -323,7 +328,7 @@ describe('ProbeScanner, the container', () => {
   });
 
   it('answers 503 when no container is bound', async () => {
-    const response = await made(undefined).fetch(
+    const response = await made().fetch(
       new Request('https://scanner.internal/healthz'),
     );
     expect(response.status).toBe(503);

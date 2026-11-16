@@ -9,6 +9,13 @@ import { type ToolResult } from '@/domain/mcp/tool-results';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../../lib/core/db/sqlite-db';
 
+/** Matches the groups line that mentions tls. */
+const GROUPS_LINE_PATTERN = /^Groups: .*\btls\b.*\.$/;
+
+/** Matches the message for an unknown group that lists the groups. */
+const UNKNOWN_GROUP_PATTERN =
+  /^There is no group "nope"\. The groups are .*tls/;
+
 const USER = { id: 1 } as User;
 const TOTAL = CHECKS.length;
 const TLS = checksInGroup('tls').length;
@@ -39,7 +46,7 @@ afterEach(() => {
 describe('list_checks', () => {
   it('starts with the groups', async () => {
     expect(textOf(await setup().call('list_checks')).split('\n', 1)[0]).toMatch(
-      /^Groups: .*\btls\b.*\.$/,
+      GROUPS_LINE_PATTERN,
     );
   });
 
@@ -67,9 +74,7 @@ describe('list_checks', () => {
   it('refuses a group that does not exist, naming the ones that do', async () => {
     const result = await setup().call('list_checks', { group: 'nope' });
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toMatch(
-      /^There is no group "nope"\. The groups are .*tls/,
-    );
+    expect(textOf(result)).toMatch(UNKNOWN_GROUP_PATTERN);
   });
 
   it('finds checks by any case of the text', async () => {

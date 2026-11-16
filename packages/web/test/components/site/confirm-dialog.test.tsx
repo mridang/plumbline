@@ -3,6 +3,9 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { ConfirmDialog } from '@/components/site/confirm-dialog';
 import { html } from '../render';
 
+/** Matches closed by any dialog. */
+const CLOSED_BY_ANY_DIALOG = /<dialog[^>]*closedby="any"/;
+
 /** A confirmation, open or closed as told. */
 const sample = (open: boolean) =>
   html(
@@ -26,7 +29,7 @@ describe('ConfirmDialog', () => {
   });
 
   it('is a native modal dialog that cannot be dismissed by accident', () => {
-    expect(sample(true)).toMatch(/<dialog[^>]*closedby="any"/);
+    expect(sample(true)).toMatch(CLOSED_BY_ANY_DIALOG);
   });
 
   it('shows nothing of the question while closed', () => {

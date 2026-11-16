@@ -17,6 +17,9 @@ import type { OAuthClient } from '@/lib/oauth/client';
 import { SCOPE_TEXT } from '@/domain/mcp/app';
 import { parseUrl } from '@/utils/url';
 
+/** A single printable ASCII character. */
+const PRINTABLE_ASCII_CHARACTER = /^[\u0021-\u007E]$/;
+
 /** The longest client name we show. */
 export const MAX_DISPLAY_NAME_LENGTH = 100;
 
@@ -116,13 +119,11 @@ export const APP_SCHEME_WARNING =
  * a look-alike or a direction-changing character onto the screen.
  */
 function asciiOnly(text: string): string {
-  return [...text]
-    .map((ch) =>
-      /^[\u0021-\u007E]$/.test(ch)
-        ? ch
-        : String.raw`\u{${(ch.codePointAt(0) ?? 0).toString(16)}}`,
-    )
-    .join('');
+  return Array.from(text, (ch) =>
+    PRINTABLE_ASCII_CHARACTER.test(ch)
+      ? ch
+      : String.raw`\u{${(ch.codePointAt(0) ?? 0).toString(16)}}`,
+  ).join('');
 }
 
 /** Whether one host is the other or a subdomain of it, so a site and its own app subdomain count as related. */

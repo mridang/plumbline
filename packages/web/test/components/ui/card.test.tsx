@@ -1,7 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { Card } from '@/components/ui/card';
+// eslint-disable-next-line unicorn/no-keyword-prefix -- classOf is the shared test helper exported by render.ts
 import { classOf, html } from '../render';
+
+/** Matches padding class. */
+const PADDING_CLASS = /\bp-\d/;
 
 describe('Card', () => {
   it('is a white, bordered, rounded box with room inside', () => {
@@ -23,7 +27,7 @@ describe('Card', () => {
       'p-6 sm:p-8',
     );
     expect(classOf(html(<Card padding="none">x</Card>), 'div')).not.toMatch(
-      /\bp-\d/,
+      PADDING_CLASS,
     );
   });
 

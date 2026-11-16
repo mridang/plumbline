@@ -22,6 +22,9 @@ import { RULE_SET_DEFS } from '@/domain/checks/sets';
 import { DEFAULT_RULE_SET } from '@/domain/suite/rules';
 import { HTTP_SCHEME } from '../../helpers/data.js';
 
+/** Compares strings in the default locale order, built once. */
+const collator = new Intl.Collator();
+
 const schema = buildSchema();
 const validate = new Ajv2020({ strict: true }).compile(schema);
 
@@ -180,9 +183,7 @@ describe('buildSchema', () => {
 
   it('has every key of the reader, with the same names', () => {
     expect(
-      Object.keys(schema['properties'] as object).toSorted((a, b) =>
-        a.localeCompare(b),
-      ),
+      Object.keys(schema['properties'] as object).toSorted(collator.compare),
     ).toEqual([
       'deployments',
       'dispatch',
@@ -208,10 +209,8 @@ describe('buildSchema', () => {
   it('lists every check of the catalogue as a rule, with its name and what it looks at', () => {
     const rules = (schema['$defs'] as Record<string, JsonSchema>)['rules'];
     const properties = rules?.['properties'] as Record<string, JsonSchema>;
-    expect(
-      Object.keys(properties).toSorted((a, b) => a.localeCompare(b)),
-    ).toEqual(
-      CHECKS.map((check) => check.id).toSorted((a, b) => a.localeCompare(b)),
+    expect(Object.keys(properties).toSorted(collator.compare)).toEqual(
+      CHECKS.map((check) => check.id).toSorted(collator.compare),
     );
     for (const check of CHECKS) {
       expect(properties[check.id]).toMatchObject({
@@ -227,15 +226,13 @@ describe('buildSchema', () => {
     expect(
       ((name['anyOf'] as JsonSchema[])[0]!['oneOf'] as { const: string }[])
         .map((set) => set.const)
-        .toSorted((a, b) => a.localeCompare(b)),
-    ).toEqual(
-      RULE_SET_DEFS.map((set) => set.id).toSorted((a, b) => a.localeCompare(b)),
-    );
+        .toSorted(collator.compare),
+    ).toEqual(RULE_SET_DEFS.map((set) => set.id).toSorted(collator.compare));
     expect(
       Object.keys(defs['environments']?.['properties'] as object).toSorted(
-        (a, b) => a.localeCompare(b),
+        collator.compare,
       ),
-    ).toEqual([...ENVIRONMENTS].toSorted((a, b) => a.localeCompare(b)));
+    ).toEqual([...ENVIRONMENTS].toSorted(collator.compare));
     expect(defs['extends']?.['default']).toBe(DEFAULT_RULE_SET);
   });
 

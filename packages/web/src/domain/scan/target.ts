@@ -13,6 +13,12 @@
  * cooldown between scans of a page is keyed by (see `cooldown.ts`).
  */
 
+/** A dotted-quad IPv4 literal. */
+const IPV4_LITERAL = /^\d{1,3}(\.\d{1,3}){3}$/;
+
+/** A leading `scheme://`. */
+const SCHEME_PREFIX = /^[a-z][a-z0-9+.-]*:\/\//i;
+
 /** What reading the input came to: the URL to scan, or why it cannot be. */
 export type Target =
   | { readonly ok: true; readonly url: URL }
@@ -57,7 +63,7 @@ function nameOf(pair: string): string {
 }
 
 /** Whether a query parameter is a tracking one: a `utm_` tag or a known click id. */
-function isTrackingParam(name: string): boolean {
+function isTrackingParameter(name: string): boolean {
   const lower = name.toLowerCase();
   return lower.startsWith('utm_') || TRACKING_PARAMS.has(lower);
 }
@@ -81,7 +87,7 @@ export function canonicalUrl(input: URL): URL {
     .slice(1)
     .split('&')
     .filter((pair) => pair !== '')
-    .filter((pair) => !isTrackingParam(nameOf(pair)));
+    .filter((pair) => !isTrackingParameter(nameOf(pair)));
   kept.sort((a, b) => {
     const [x, y] = [nameOf(a), nameOf(b)];
     if (x < y) {
@@ -96,7 +102,7 @@ export function canonicalUrl(input: URL): URL {
 /** The name without any dots at its end. */
 function stripTrailingDots(name: string): string {
   let end = name.length;
-  while (end > 0 && name[end - 1] === '.') {
+  while (end > 0 && name.codePointAt(end - 1) === 46) {
     end -= 1;
   }
   return name.slice(0, end);
@@ -104,7 +110,7 @@ function stripTrailingDots(name: string): string {
 
 /** Whether a hostname is an IPv4 or IPv6 literal. */
 function isIpLiteral(hostname: string): boolean {
-  return /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname) || hostname.startsWith('[');
+  return IPV4_LITERAL.test(hostname) || hostname.startsWith('[');
 }
 
 /**
@@ -122,7 +128,7 @@ export function readTarget(input: string): Target {
   if (trimmed.length > MAX_LENGTH) {
     return { ok: false, reason: 'That address is too long.' };
   }
-  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)
+  const withScheme = SCHEME_PREFIX.test(trimmed)
     ? trimmed
     : `https://${trimmed}`;
   let url: URL;

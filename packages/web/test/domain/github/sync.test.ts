@@ -52,6 +52,9 @@ function githubWith(
   return new GitHubApi('t', fetcher);
 }
 
+/** Compares strings in the default locale order, built once. */
+const collator = new Intl.Collator();
+
 describe('analyseRepo', () => {
   it('finds the hosts of a deployed application', async () => {
     const api = githubWith({
@@ -107,7 +110,7 @@ describe('syncInstallation', () => {
     expect(
       domains
         .map((d) => [d.host, d.repo])
-        .toSorted(([a], [b]) => String(a).localeCompare(String(b))),
+        .toSorted(([a], [b]) => collator.compare(String(a), String(b))),
     ).toEqual([
       ['site.example.com', 'o/site'],
       ['two.example.com', 'o/site2'],
@@ -135,8 +138,8 @@ describe('syncInstallation', () => {
   it('reads an account with well over a hundred repositories, the last one included', async () => {
     const { db } = sqliteDatabase(...APP_MIGRATIONS);
     const many: Record<string, { files: Record<string, string> }> = {};
-    for (let i = 0; i < 140; i += 1) {
-      many[`o/r${i}`] = { files: {} };
+    for (let index = 0; index < 140; index += 1) {
+      many[`o/r${index}`] = { files: {} };
     }
     many['o/zlast'] = {
       files: { 'wrangler.jsonc': '{"route": "last.example.com/*"}' },
@@ -164,8 +167,8 @@ describe('syncInstallation', () => {
 
   it('stops adding domains at the limit', async () => {
     const { db } = sqliteDatabase(...APP_MIGRATIONS);
-    for (let i = 0; i < MAX_DOMAINS - 1; i += 1) {
-      await addDomain(db, 7, `d${i}.example.com`);
+    for (let index = 0; index < MAX_DOMAINS - 1; index += 1) {
+      await addDomain(db, 7, `d${index}.example.com`);
     }
     const api = githubWith({
       'o/a': { files: {}, homepage: 'https://a.example.com' },
@@ -257,7 +260,7 @@ describe('syncInstallation, where the sites come from', () => {
     const domains = await listDomains(db, 7);
     return domains
       .map((d) => [d.host, d.source])
-      .toSorted((a, b) => String(a).localeCompare(String(b)));
+      .toSorted((a, b) => collator.compare(String(a), String(b)));
   };
 
   it('takes the sites a plumbline.yaml declares, and not the routes or the Website field', async () => {

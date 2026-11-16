@@ -4,6 +4,11 @@ import { PROMPT_DEFINITIONS, getPrompt } from '@/domain/mcp/prompts';
 import { RpcError } from '@/lib/mcp';
 import { TOOLS } from '@/domain/mcp/tool-definitions';
 
+/** Matches a kebab-case name. */
+const KEBAB_CASE_NAME = /^[a-z]+(?:-[a-z]+)*$/;
+/** Matches text of at most 400 characters. */
+const AT_MOST_400_CHARS = /^.{0,400}$/s;
+
 /** The opening message's text. */
 function textOf(name: string, args?: unknown): string {
   return getPrompt(name, args).messages[0]?.content.text ?? '';
@@ -42,7 +47,7 @@ describe('PROMPT_DEFINITIONS', () => {
     const names = PROMPT_DEFINITIONS.map((p) => p.name);
     expect(new Set(names).size).toBe(names.length);
     for (const name of names) {
-      expect(name).toMatch(/^[a-z]+(?:-[a-z]+)*$/);
+      expect(name).toMatch(KEBAB_CASE_NAME);
     }
   });
 
@@ -55,7 +60,7 @@ describe('PROMPT_DEFINITIONS', () => {
       textOf('choose-checks', { domain: 'example.com' }),
     ];
     const mentioned = texts.flatMap((text) =>
-      [...text.matchAll(/\b[a-z]+(?:_[a-z]+)+\b/g)].map((m) => m[0]),
+      Array.from(text.matchAll(/\b[a-z]+(?:_[a-z]+)+\b/g), (m) => m[0]),
     );
     expect(mentioned.length).toBeGreaterThan(0);
     for (const name of mentioned) {
@@ -114,13 +119,13 @@ describe('getPrompt', () => {
   });
 
   it('answers as a single user message', () => {
-    const result = getPrompt('my-domains', undefined);
+    const result = getPrompt('my-domains');
     expect(result.messages).toHaveLength(1);
     expect(result.messages[0]?.role).toBe('user');
   });
 
   it('describes the result as the prompt is described', () => {
-    expect(getPrompt('my-domains', undefined).description).toBe(
+    expect(getPrompt('my-domains').description).toBe(
       PROMPT_DEFINITIONS[1]?.description,
     );
   });
@@ -128,7 +133,7 @@ describe('getPrompt', () => {
   it('repeats only the start of an absurdly long prompt name', () => {
     expect(() => getPrompt('x'.repeat(100_000), {})).toThrow(
       expect.objectContaining({
-        message: expect.stringMatching(/^.{0,400}$/s),
+        message: expect.stringMatching(AT_MOST_400_CHARS),
       }),
     );
   });

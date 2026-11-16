@@ -54,7 +54,7 @@ export default async function ReportPage({
           <p className="text-muted">Nothing found.</p>
         ) : (
           <ul className="grid grid-cols-1 gap-4">
-            {[...byRule].map(([rule, found]) => {
+            {Array.from(byRule, ([rule, found]) => {
               const check = findCheck(rule);
               return (
                 <li key={rule}>

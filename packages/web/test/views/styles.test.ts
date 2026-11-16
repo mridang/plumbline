@@ -4,6 +4,30 @@ import { APP_STYLES } from '@/views/app';
 import { DARK_PALETTE, LIGHT_PALETTE } from '@/views/palette';
 import { STYLES } from '@/views/styles';
 
+/** Matches the secondary background variable with a colour fallback. */
+const BACKGROUND_FALLBACK_PATTERN = /var\(--color-background-secondary, #/;
+
+/** Matches a css url function. */
+const CSS_URL_PATTERN = /url\(/;
+
+/** Matches a list-style of none. */
+const LIST_STYLE_NONE_PATTERN = /list-style:\s*none/;
+
+/** Captures the focus outline offset. */
+const OUTLINE_OFFSET_PATTERN = /outline-offset: (\d+)px/;
+
+/** Captures the focus outline width. */
+const OUTLINE_WIDTH_PATTERN = /outline: (\d+)px/;
+
+/** Captures the pixel padding added to the top safe area. */
+const SAFE_TOP_PADDING_PATTERN = /calc\((\d+)px \+ var\(--safe-top/;
+
+/** Matches the sans font variable. */
+const SANS_FONT_VARIABLE_PATTERN = /var\(--font-sans,/;
+
+/** Matches the screen reader only rule that clips the element. */
+const SR_ONLY_CLIP_PATTERN = /\.sr-only \{[^}]*clip-path:inset\(50%\)/;
+
 describe('STYLES', () => {
   it('follows the host’s theme, with the operating system only as a fallback', () => {
     expect(STYLES).toContain(':root[data-theme="dark"]');
@@ -11,8 +35,8 @@ describe('STYLES', () => {
   });
 
   it('uses the host’s variables, with fallbacks for hosts that send none', () => {
-    expect(STYLES).toMatch(/var\(--color-background-secondary, #/);
-    expect(STYLES).toMatch(/var\(--font-sans,/);
+    expect(STYLES).toMatch(BACKGROUND_FALLBACK_PATTERN);
+    expect(STYLES).toMatch(SANS_FONT_VARIABLE_PATTERN);
   });
 
   it('keeps controls clear of the safe area and large enough to tap', () => {
@@ -27,7 +51,7 @@ describe('STYLES', () => {
 
   it('loads nothing: no imports, no remote urls', () => {
     expect(STYLES).not.toContain('@import');
-    expect(STYLES).not.toMatch(/url\(/);
+    expect(STYLES).not.toMatch(CSS_URL_PATTERN);
   });
 
   it('leaves the page background transparent so the host shows through', () => {
@@ -50,12 +74,10 @@ function declaration(selector: string, property: string): string {
 describe('keyboard focus', () => {
   it('leaves room at the frame edge for the whole focus ring', () => {
     const ring =
-      Number(/outline: (\d+)px/.exec(STYLES)?.[1]) +
-      Number(/outline-offset: (\d+)px/.exec(STYLES)?.[1]);
+      Number(OUTLINE_WIDTH_PATTERN.exec(STYLES)?.[1]) +
+      Number(OUTLINE_OFFSET_PATTERN.exec(STYLES)?.[1]);
     const base = Number(
-      /calc\((\d+)px \+ var\(--safe-top/.exec(
-        declaration('.wrap', 'padding'),
-      )?.[1],
+      SAFE_TOP_PADDING_PATTERN.exec(declaration('.wrap', 'padding'))?.[1],
     );
     expect(ring).toBe(4);
     expect(base).toBeGreaterThanOrEqual(ring);
@@ -76,13 +98,13 @@ describe('text sizes', () => {
 
 describe('assistive text', () => {
   it('has a visually hidden class for text only screen readers get', () => {
-    expect(STYLES).toMatch(/\.sr-only \{[^}]*clip-path:inset\(50%\)/);
+    expect(STYLES).toMatch(SR_ONLY_CLIP_PATTERN);
   });
 });
 
 describe('lists', () => {
   it('hide their markers without `none`, which makes WebKit drop the list meaning', () => {
-    expect(STYLES).not.toMatch(/list-style:\s*none/);
+    expect(STYLES).not.toMatch(LIST_STYLE_NONE_PATTERN);
     expect(STYLES.match(/list-style-type:""/g)?.length).toBeGreaterThanOrEqual(
       4,
     );

@@ -103,7 +103,7 @@ export async function fingerprintOf(
     'SHA-256',
     new TextEncoder().encode(text),
   );
-  return [...new Uint8Array(digest).subarray(0, 8)]
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('');
+  return Array.from(new Uint8Array(digest).subarray(0, 8), (byte) =>
+    byte.toString(16).padStart(2, '0'),
+  ).join('');
 }

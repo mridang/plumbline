@@ -99,7 +99,6 @@ export function createGithubLink(
         throw problems.notFound('GitHub account');
       }
       await unlinkAccount(db, uid);
-      return undefined;
     },
     encode: () => noContent(),
   });

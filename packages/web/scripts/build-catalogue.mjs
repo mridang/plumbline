@@ -39,17 +39,19 @@ import {
 const root = path.resolve(import.meta.dirname, '..');
 const outDir = path.resolve(root, 'dist');
 
-/** A string field of `docs`, or the fallback. */
-function text(docs, key, fallback) {
-  return typeof docs[key] === 'string' ? docs[key] : fallback;
+/** A string field of `documentation`, or the fallback. */
+function text(documentation, key, fallback) {
+  return typeof documentation[key] === 'string' ? documentation[key] : fallback;
 }
 
 /** Who usually makes the fix for a check in each report section. */
 const FIXERS = new Map(SECTIONS.map((s) => [s.id, s.fixer]));
 
 /** The upstream checks a hint came from, in the API's own spelling. */
-function originsOf(docs) {
-  return (Array.isArray(docs.origins) ? docs.origins : []).map((origin) => ({
+function originsOf(documentation) {
+  return (
+    Array.isArray(documentation.origins) ? documentation.origins : []
+  ).map((origin) => ({
     source: origin.source,
     title: origin.title || origin.upstreamId,
     url: origin.url,
@@ -61,32 +63,36 @@ function originsOf(docs) {
 const checks = Object.keys(extraHints)
   .toSorted((a, b) => Number(a > b) - Number(a < b))
   .map((id) => {
-    const docs = extraHints[id]?.meta?.docs ?? {};
-    const fixer = FIXERS.get(docs.section);
+    const documentation = extraHints[id]?.meta?.docs ?? {};
+    const fixer = FIXERS.get(documentation.section);
     return {
       id,
-      name: text(docs, 'name', id),
-      description: text(docs, 'description', ''),
-      groups: Array.isArray(docs.groups) ? [...docs.groups] : [],
-      section: text(docs, 'section', 'other'),
-      section_title: text(docs, 'sectionTitle', 'Other'),
+      name: text(documentation, 'name', id),
+      description: text(documentation, 'description', ''),
+      groups: Array.isArray(documentation.groups)
+        ? [...documentation.groups]
+        : [],
+      section: text(documentation, 'section', 'other'),
+      section_title: text(documentation, 'sectionTitle', 'Other'),
       section_order:
-        typeof docs.sectionOrder === 'number'
-          ? docs.sectionOrder
+        typeof documentation.sectionOrder === 'number'
+          ? documentation.sectionOrder
           : Number.MAX_SAFE_INTEGER,
-      group: text(docs, 'group', 'other'),
-      subsection: text(docs, 'subsection', ''),
+      group: text(documentation, 'group', 'other'),
+      subsection: text(documentation, 'subsection', ''),
       ...(PLACEMENT[id]?.note ? { note: PLACEMENT[id].note } : {}),
-      tags: Array.isArray(docs.tags) ? [...docs.tags] : [],
-      tier: text(docs, 'tier', 'advanced'),
-      target: text(docs, 'target', 'web'),
-      control: text(docs, 'control', 'deployer'),
-      since: typeof docs.since === 'number' ? docs.since : 1,
-      added: text(docs, 'added', ''),
+      tags: Array.isArray(documentation.tags) ? [...documentation.tags] : [],
+      tier: text(documentation, 'tier', 'advanced'),
+      target: text(documentation, 'target', 'web'),
+      control: text(documentation, 'control', 'deployer'),
+      since: typeof documentation.since === 'number' ? documentation.since : 1,
+      added: text(documentation, 'added', ''),
       ...(HOW_TO_FIX[id] ? { how_to_fix: HOW_TO_FIX[id] } : {}),
-      ...(typeof docs.url === 'string' ? { reference: docs.url } : {}),
+      ...(typeof documentation.url === 'string'
+        ? { reference: documentation.url }
+        : {}),
       ...(fixer ? { fixer } : {}),
-      origins: originsOf(docs),
+      origins: originsOf(documentation),
     };
   });
 
@@ -101,7 +107,8 @@ const sections = SECTIONS.map((section) => ({
   group: section.group,
   group_title: section.groupTitle,
   default_on:
-    SECTION_DEFS.find((def) => def.id === section.id)?.defaultOn !== false,
+    SECTION_DEFS.find((definition) => definition.id === section.id)
+      ?.defaultOn !== false,
 }));
 
 /** The display groups, in order. */

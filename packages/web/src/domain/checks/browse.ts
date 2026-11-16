@@ -20,6 +20,12 @@ import {
 } from '@/domain/checks/catalogue';
 import { findRuleSet } from '@/domain/checks/sets';
 
+/** The `plumbline:` prefix of a rule set id. */
+const PLUMBLINE_PREFIX = /^plumbline:/;
+
+/** One or more whitespace characters, where a search query splits into words. */
+const WHITESPACE_RUN = /\s+/;
+
 /** A query string as Next hands it over. */
 export type SearchParams = Readonly<
   Record<string, string | readonly string[] | undefined>
@@ -83,7 +89,7 @@ export const OVERVIEW_PATH = '/checks';
 
 /** The address of a rule set's page: `plumbline:seo/advanced` is `/checks/sets/seo/advanced`. */
 export function setPath(id: string): string {
-  return `${OVERVIEW_PATH}/sets/${id.replace(/^plumbline:/, '')}`;
+  return `${OVERVIEW_PATH}/sets/${id.replace(PLUMBLINE_PREFIX, '')}`;
 }
 
 /** The rule set a page address stands for, or undefined. */
@@ -114,7 +120,7 @@ function passes(check: Check, view: View): boolean {
     `${check.id} ${check.name} ${check.description} ${check.tags.join(' ')}`,
   );
   return foldText(view.q)
-    .split(/\s+/)
+    .split(WHITESPACE_RUN)
     .every((word) => hay.includes(word));
 }
 

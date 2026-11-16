@@ -10,6 +10,9 @@ import {
 } from '../../../lib/core/db/sqlite-d1';
 import { GITHUB_ENV } from '../../../domain/github/github-test-kit';
 
+/** Matches uuid format. */
+const UUID_FORMAT = /^[0-9a-f-]{36}$/;
+
 let restore: () => void;
 
 const start = (query = '') =>
@@ -34,7 +37,7 @@ describe('GET /auth/github', () => {
       'https://plumbline.test/auth/github/callback',
     );
     const state = location.searchParams.get('state');
-    expect(state).toMatch(/^[0-9a-f-]{36}$/);
+    expect(state).toMatch(UUID_FORMAT);
     expect(response.headers.get('set-cookie')).toContain(
       `plumbline_oauth_state=${state}`,
     );

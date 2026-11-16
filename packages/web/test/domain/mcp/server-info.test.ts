@@ -15,6 +15,18 @@ import {
 import { TOOLS } from '@/domain/mcp/tool-definitions';
 import { packageDirectorySync } from 'package-directory';
 
+/** Matches the statement that domains come from the user GitHub account. */
+const DOMAINS_FROM_GITHUB_PATTERN = /Domains come from the user's GitHub/;
+
+/** Matches the instruction that a host name or any URL on it is accepted. */
+const HOST_OR_URL_PATTERN = /host name \(example\.com\) or any URL on it/;
+
+/** Matches the instruction that something never happens on this server. */
+const NEVER_ON_THIS_SERVER_PATTERN = /never on this server/;
+
+/** Matches the instruction to remove a domain only on request. */
+const REMOVE_DOMAIN_ONLY_PATTERN = /remove_domain only when the user asks/;
+
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 const root = PACKAGE;
@@ -85,13 +97,14 @@ describe('CAPABILITIES', () => {
 
 describe('INSTRUCTIONS', () => {
   it('say that the checks never run on the server, and where they do', () => {
-    expect(INSTRUCTIONS).toMatch(/never on this server/);
+    expect(INSTRUCTIONS).toMatch(NEVER_ON_THIS_SERVER_PATTERN);
     expect(INSTRUCTIONS).toContain('scan_domain');
   });
 
   it('only name tools that exist', () => {
     const names = TOOLS.map((t) => t.name) as readonly string[];
-    const mentioned = [...INSTRUCTIONS.matchAll(/\b[a-z]+(?:_[a-z]+)+\b/g)].map(
+    const mentioned = Array.from(
+      INSTRUCTIONS.matchAll(/\b[a-z]+(?:_[a-z]+)+\b/g),
       (m) => m[0],
     );
     expect(mentioned.length).toBeGreaterThan(5);
@@ -105,12 +118,12 @@ describe('INSTRUCTIONS', () => {
   });
 
   it('say that a domain may be given as a host name or as any URL on it', () => {
-    expect(INSTRUCTIONS).toMatch(/host name \(example\.com\) or any URL on it/);
+    expect(INSTRUCTIONS).toMatch(HOST_OR_URL_PATTERN);
   });
 
   it('say domains come from GitHub and keep remove_domain for when the user asks', () => {
-    expect(INSTRUCTIONS).toMatch(/Domains come from the user's GitHub/);
-    expect(INSTRUCTIONS).toMatch(/remove_domain only when the user asks/);
+    expect(INSTRUCTIONS).toMatch(DOMAINS_FROM_GITHUB_PATTERN);
+    expect(INSTRUCTIONS).toMatch(REMOVE_DOMAIN_ONLY_PATTERN);
     expect(INSTRUCTIONS).not.toContain('add_domain');
   });
 });

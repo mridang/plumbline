@@ -9,6 +9,9 @@ import {
   sessionIsCurrent,
 } from '@/lib/session';
 
+/** Matches session secret name. */
+const SESSION_SECRET_NAME = /SESSION_SECRET/;
+
 const SECRET = 'test-session-secret-value';
 // A claim the payload leaves out: its key stays present, so the test can check it is dropped.
 let notProvided: undefined;
@@ -241,7 +244,7 @@ describe('requireSessionSecret', () => {
   });
 
   it('refuses when there is none, rather than falling back to a value anyone could guess', () => {
-    expect(() => requireSessionSecret(undefined)).toThrow(/SESSION_SECRET/);
-    expect(() => requireSessionSecret('')).toThrow(/SESSION_SECRET/);
+    expect(() => requireSessionSecret()).toThrow(SESSION_SECRET_NAME);
+    expect(() => requireSessionSecret('')).toThrow(SESSION_SECRET_NAME);
   });
 });

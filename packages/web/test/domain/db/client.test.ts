@@ -8,6 +8,9 @@ import {
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
 
+/** Compares strings in the default locale order, built once. */
+const collator = new Intl.Collator();
+
 describe('createDatabase', () => {
   it('keeps the binding it was given as $client', () => {
     const { d1 } = sqliteD1();
@@ -18,10 +21,8 @@ describe('createDatabase', () => {
     const { d1 } = sqliteD1();
     const exported = Object.keys(await import('@/domain/db/schema'));
     expect(
-      Object.keys(createDatabase(d1).query).toSorted((a, b) =>
-        a.localeCompare(b),
-      ),
-    ).toEqual(exported.toSorted((a, b) => a.localeCompare(b)));
+      Object.keys(createDatabase(d1).query).toSorted(collator.compare),
+    ).toEqual(exported.toSorted(collator.compare));
   });
 
   it('knows the app’s tables for relational queries', async () => {

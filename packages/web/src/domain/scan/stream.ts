@@ -79,7 +79,7 @@ export async function readScan(
       pending += decoder.decode(value, { stream: true });
       const lines = pending.split('\n');
       pending = lines.pop() ?? '';
-      lines.forEach((line) => handle(line));
+      for (const line of lines) handle(line);
     }
     pending += decoder.decode();
     handle(pending);

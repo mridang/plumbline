@@ -107,8 +107,8 @@ describe('recordRun, the history columns and latestRuns', () => {
 
   it('keeps only the newest runs of a host', async () => {
     const db = database();
-    for (let i = 0; i < RUNS_KEPT + 3; i += 1) {
-      await recordRun(db, run('a.test', `run ${i}`));
+    for (let index = 0; index < RUNS_KEPT + 3; index += 1) {
+      await recordRun(db, run('a.test', `run ${index}`));
     }
     await recordRun(db, run('b.test', 'untouched'));
     const runs = await latestRuns(db, 1, 'a.test', 100);
@@ -266,7 +266,9 @@ describe('the issue of a check: issueOf, saveIssue, issueNumbered and forgetIssu
       issue(9, 'dismissed'),
     );
     const history = await historyOf(db, SITE, A);
-    expect(history.map((i) => [i.number, i.state, i.checks])).toEqual(
+    expect(
+      history.map((index) => [index.number, index.state, index.checks]),
+    ).toEqual(
       expect.arrayContaining([
         [7, 'fixed', ['seo-viewport']],
         [9, 'dismissed', ['seo-viewport']],
@@ -281,7 +283,9 @@ describe('the issue of a check: issueOf, saveIssue, issueNumbered and forgetIssu
     await saveIssue(db, SITE, A, 'seo-links', issue(3, 'fixed'));
     await saveIssue(db, 'acme/other', A, 'seo-links', issue(4, 'open'));
     const openIssues = await openIssuesOf(db, SITE);
-    expect(openIssues.map((i) => [i.host, i.check, i.number])).toEqual([
+    expect(
+      openIssues.map((index) => [index.host, index.check, index.number]),
+    ).toEqual([
       [A, 'seo-viewport', 1],
       ['b.test', 'seo-links', 2],
     ]);
@@ -428,7 +432,7 @@ describe('the issues of the old kind, one for each host', () => {
     });
     expect(await legacyIssueOf(db, SITE, 'c.test')).toBeUndefined();
     const legacy = await legacyIssuesOf(db, SITE);
-    expect(legacy.map((i) => [i.host, i.number])).toEqual([
+    expect(legacy.map((index) => [index.host, index.number])).toEqual([
       [A, 12],
       ['b.test', 13],
     ]);

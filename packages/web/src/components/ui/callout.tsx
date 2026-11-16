@@ -29,18 +29,19 @@ const SHAPES = {
 export function Callout({
   tone = 'neutral',
   shape = 'inline',
-  className,
+  className: cssClasses,
   children,
 }: Readonly<{
   tone?: keyof typeof TONES;
   shape?: keyof typeof SHAPES;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
   className?: string;
   children: ReactNode;
 }>): ReactElement {
   return (
     <div
       role={tone === 'error' ? 'alert' : undefined}
-      className={cn(TONES[tone], SHAPES[shape], className)}
+      className={cn(TONES[tone], SHAPES[shape], cssClasses)}
     >
       {children}
     </div>

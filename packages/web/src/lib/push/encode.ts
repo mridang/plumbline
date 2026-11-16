@@ -14,8 +14,8 @@ export function b64uDecode(input: string): Uint8Array {
   const padded = std + PAD.repeat((4 - (std.length % 4)) % 4);
   const bin = atob(padded);
   const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i += 1) {
-    out[i] = bin.codePointAt(i) ?? 0;
+  for (let index = 0; index < bin.length; index += 1) {
+    out[index] = bin.codePointAt(index) ?? 0;
   }
   return out;
 }

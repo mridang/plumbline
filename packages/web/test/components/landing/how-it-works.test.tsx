@@ -8,10 +8,10 @@ describe('HowItWorks', () => {
 
   it('tells the three steps in order, numbered', () => {
     expect(STEPS).toHaveLength(3);
-    STEPS.forEach((step, index) => {
+    for (const [index, step] of STEPS.entries()) {
       expect(out).toContain(`>${step.title}</h3>`);
       expect(out).toContain(`0${index + 1}`);
-    });
+    }
   });
 
   it('lists the steps as an ordered list', () => {

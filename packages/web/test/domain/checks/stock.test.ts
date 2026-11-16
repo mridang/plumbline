@@ -3,13 +3,16 @@ import { describe, expect, it } from '@jest/globals';
 import { isCheckId } from '@/domain/checks/catalogue';
 import { STOCK_HINTS } from '@/domain/checks/stock';
 
+/** Matches an https URL prefix. */
+const HTTPS_URL_PREFIX = /^https:\/\//;
+
 describe('the stock hints', () => {
   it('have each id once, a name and a link', () => {
     const ids = STOCK_HINTS.map((hint) => hint.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const hint of STOCK_HINTS) {
       expect(hint.name).toBeTruthy();
-      expect(hint.url).toMatch(/^https:\/\//);
+      expect(hint.url).toMatch(HTTPS_URL_PREFIX);
     }
   });
 

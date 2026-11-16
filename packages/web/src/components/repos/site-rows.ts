@@ -18,11 +18,14 @@ import {
 import { WORST_FIRST } from '@/components/repos/site-state';
 import type { RepoStatus, SiteStatus } from '@/domain/db/live';
 
+/** Orders names the way the viewer's locale does. */
+const NAME_COLLATOR = new Intl.Collator();
+
 /** How the dashboard can be shown: as a table or as cards. */
 export type View = 'table' | 'cards';
 
 /** The view in the address, or the table when it says nothing, or something else. */
-export function viewOf(value: string | undefined): View {
+export function viewOf(value?: string): View {
   return value === 'cards' ? 'cards' : 'table';
 }
 
@@ -124,7 +127,7 @@ export function sortRows(
         return rank(a) - rank(b);
       }
       case 'site': {
-        return nameOf(a).localeCompare(nameOf(b));
+        return NAME_COLLATOR.compare(nameOf(a), nameOf(b));
       }
       case 'deployed': {
         // Most recent first when ascending, as people read "latest".
@@ -139,7 +142,8 @@ export function sortRows(
     }
   };
   return rows.toSorted(
-    (a, b) => sign * compare(a, b) || nameOf(a).localeCompare(nameOf(b)),
+    (a, b) =>
+      sign * compare(a, b) || NAME_COLLATOR.compare(nameOf(a), nameOf(b)),
   );
 }
 
@@ -180,7 +184,7 @@ export function groupRows(rows: readonly SiteRow[]): RepoStatus[] {
     group.sites.push(row.site);
     groups.set(key, group);
   }
-  return [...groups.values()].map((group) => ({
+  return Array.from(groups.values(), (group) => ({
     repo: group.repo,
     sites: group.sites,
     open_issues: group.openIssues,

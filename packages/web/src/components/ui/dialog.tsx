@@ -224,7 +224,7 @@ function useMounted(open: boolean): boolean {
     setWasOpen(open);
     setLeaving(!open);
   }
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     if (!leaving) {
       return undefined;
     }
@@ -266,7 +266,7 @@ const VARIANTS = {
 /** The dimmed backdrop and the content panel together. */
 export function DialogContent({
   variant = 'full',
-  className,
+  className: cssClasses,
   children,
   closeLabel = 'Close',
   showClose = true,
@@ -303,7 +303,7 @@ export function DialogContent({
 
   // A click outside closes a dialog that can be dismissed. The browser does it
   // itself under `closedby="any"`; this is only for the ones that cannot.
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     const dialog = ref.current;
     if (!dialog || !dismissable || supportsLightDismiss(dialog)) {
       return undefined;
@@ -327,7 +327,7 @@ export function DialogContent({
       className={cn(
         'fixed m-0 overflow-y-auto bg-paper p-0 text-ink backdrop:bg-ink/50',
         VARIANTS[variant],
-        className,
+        cssClasses,
       )}
       {...props}
     >

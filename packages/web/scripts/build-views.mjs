@@ -28,6 +28,9 @@ import path from 'node:path';
 const root = path.resolve(import.meta.dirname, '..');
 const outDir = path.resolve(root, 'dist/views');
 
+/** The index module of zod's locales, wherever the package manager put it. */
+const ZOD_LOCALES_INDEX = /zod[\\/]v4[\\/]locales[\\/]index\.js$/;
+
 /** Whether a file exists. */
 async function exists(file) {
   try {
@@ -74,14 +77,11 @@ const VIEWS = VIEW_CANDIDATES.filter((_name, index) => VIEW_HAS_ENTRY[index])
 const slimZodLocales = {
   name: 'slim-zod-locales',
   setup(build) {
-    build.onLoad(
-      { filter: /zod[\\/]v4[\\/]locales[\\/]index\.js$/ },
-      (args) => ({
-        contents: "export { default as en } from './en.js';",
-        resolveDir: path.dirname(args.path),
-        loader: 'js',
-      }),
-    );
+    build.onLoad({ filter: ZOD_LOCALES_INDEX }, (args) => ({
+      contents: "export { default as en } from './en.js';",
+      resolveDir: path.dirname(args.path),
+      loader: 'js',
+    }));
   },
 };
 
