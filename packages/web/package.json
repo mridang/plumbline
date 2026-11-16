@@ -61,7 +61,7 @@
     "eslint-plugin-drizzle": "^0.2.3",
     "hint": "^7.1.13",
     "jose": "^6.2.14",
-    "next": "16.4.2",
+    "next": "16.4.6",
     "package-directory": "^8.2.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
