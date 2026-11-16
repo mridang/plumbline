@@ -184,7 +184,7 @@ export async function mapWithConcurrency<T, R>(
     }
   };
   const count = Math.max(1, Math.min(limit, items.length));
-  await Promise.all(Array.from({ length: count }, () => worker()));
+  await Promise.all(Array.from({ length: count }, async () => worker()));
   return results;
 }
 

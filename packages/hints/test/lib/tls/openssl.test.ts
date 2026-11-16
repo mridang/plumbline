@@ -14,7 +14,6 @@ import {
   testSecureRenegotiation,
   testZeroRtt,
   type OpensslExec,
-  type OpensslRun,
 } from '../../../src/lib/tls/openssl.js';
 import { execFileAsync } from '../../helpers/exec.js';
 import { startServer } from './local-server.js';
@@ -35,9 +34,9 @@ const target = { host: '127.0.0.1', port: 4433 };
 /** Makes `openssl.exec` return the output and records the arguments. */
 function fake(stdout: string, stderr = ''): string[][] {
   const calls: string[][] = [];
-  const exec: OpensslExec = (args) => {
+  const exec: OpensslExec = async (args) => {
     calls.push([...args]);
-    return Promise.resolve({ stdout, stderr, code: 0 } as OpensslRun);
+    return { stdout, stderr, code: 0 };
   };
   openssl.exec = exec;
   return calls;
@@ -45,8 +44,9 @@ function fake(stdout: string, stderr = ''): string[][] {
 
 /** Makes `openssl.exec` fail the way a missing or broken binary does. */
 function failWith(code: string | undefined): void {
-  openssl.exec = () =>
-    Promise.reject(Object.assign(new Error('spawn openssl'), { code }));
+  openssl.exec = async () => {
+    throw Object.assign(new Error('spawn openssl'), { code });
+  };
 }
 
 describe('parsers', () => {
@@ -290,7 +290,7 @@ describe('probes with a fake openssl', () => {
 
   it('stops the 0-RTT test when the second run cannot start', async () => {
     let runs = 0;
-    openssl.exec = () => {
+    openssl.exec = async () => {
       runs += 1;
       return runs === 1
         ? Promise.resolve({ stdout: '', stderr: '', code: 0 })

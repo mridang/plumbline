@@ -20,7 +20,7 @@ beforeEach(() => {
 });
 afterEach(() => restore());
 
-const get = (id: string) =>
+const get = async (id: string) =>
   GET(new Request('https://plumbline.test/api/previews/x'), {
     params: Promise.resolve({ id }),
   });

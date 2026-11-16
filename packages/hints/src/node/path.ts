@@ -5,6 +5,4 @@
  * `imports` in package.json).
  */
 
-import path from 'node:path';
-
-export const join = path.join;
+export { join } from 'node:path';

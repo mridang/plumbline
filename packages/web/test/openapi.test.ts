@@ -151,7 +151,7 @@ const registered = async (): Promise<
 const resolve = (schema: Json | undefined): Json | undefined => {
   const ref = schema?.['$ref'];
   return typeof ref === 'string'
-    ? (document.components.schemas[ref.split('/').pop() ?? ''] as Json)
+    ? document.components.schemas[ref.split('/').pop() ?? '']!
     : schema;
 };
 
@@ -159,7 +159,7 @@ const resolve = (schema: Json | undefined): Json | undefined => {
 const response = (value: Json): Json => {
   const ref = value['$ref'];
   return typeof ref === 'string'
-    ? (document.components.responses[ref.split('/').pop() ?? ''] as Json)
+    ? document.components.responses[ref.split('/').pop() ?? '']!
     : value;
 };
 

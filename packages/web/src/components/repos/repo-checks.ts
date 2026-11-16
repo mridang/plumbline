@@ -8,7 +8,7 @@ import { ensureOk } from '@/components/api/problem-message';
 export async function setRepoChecks(
   repo: string,
   on: boolean,
-  transport: typeof fetch = (url, init) => fetch(url, init),
+  transport: typeof fetch = async (url, init) => fetch(url, init),
 ): Promise<void> {
   const path = repo
     .split('/')

@@ -30,7 +30,7 @@ const SLOW_PROBE_LOG_LINE = /^slow probe call \d+ ms: \/v1\/connect /;
 
 jest.unstable_mockModule('cloudflare:workers', cloudflareWorkersStub, {
   virtual: true,
-} as never);
+});
 
 const {
   ProbeScanner,
@@ -98,9 +98,7 @@ function probe(options: ProbeOptions = {}) {
         if (options.down) {
           throw new Error('Network connection lost');
         }
-        const body = init?.body
-          ? await new Response(init.body as BodyInit).text()
-          : '';
+        const body = init?.body ? await new Response(init.body).text() : '';
         switch (path) {
           case '/v1/roots': {
             return new Response(
@@ -169,13 +167,13 @@ const realFetch = globalThis.fetch;
 
 beforeEach(() => {
   // The checks ask a DNS-over-HTTPS resolver for names; the tests never touch the internet.
-  globalThis.fetch = (async () =>
+  globalThis.fetch = async () =>
     Response.json(
       { Status: 3, Answer: [] },
       {
         headers: { 'content-type': 'application/dns-json' },
       },
-    )) as typeof fetch;
+    );
 });
 
 afterEach(() => {
@@ -392,13 +390,15 @@ describe('ProbeScanner, the job of the queue', () => {
     });
     // The checks' own DNS-over-HTTPS calls go to a stand-in; GitHub's go to the fake.
     const github = globalThis.fetch;
-    globalThis.fetch = (async (
+    globalThis.fetch = async (
       input: Parameters<typeof fetch>[0],
       init?: RequestInit,
-    ) =>
-      String(input).includes('cloudflare-dns.com')
+    ) => {
+      const url = input instanceof Request ? input.url : String(input);
+      return url.includes('cloudflare-dns.com')
         ? Response.json({ Status: 3, Answer: [] })
-        : github(input, init)) as typeof fetch;
+        : github(input, init);
+    };
     return { db, make, requested };
   };
 

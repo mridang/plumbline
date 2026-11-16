@@ -47,11 +47,11 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-const post = (headers: Record<string, string> = {}) =>
+const post = async (headers: Record<string, string> = {}) =>
   syncs.POST(
     new Request(`${ORIGIN}/api/github/syncs`, { method: 'POST', headers }),
   );
-const del = (headers: Record<string, string> = {}) =>
+const del = async (headers: Record<string, string> = {}) =>
   link.DELETE(
     new Request(`${ORIGIN}/api/users/self/github`, {
       method: 'DELETE',

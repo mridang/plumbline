@@ -54,7 +54,7 @@ function inputOf(name: string): JsonSchema {
 
 /** The `_meta` of a tool, as a plain record. */
 function metaOf(name: string): Readonly<Record<string, unknown>> {
-  return (toolNamed(name)?._meta ?? {}) as Readonly<Record<string, unknown>>;
+  return toolNamed(name)?._meta ?? {};
 }
 
 /** Compares strings in the default locale order, built once. */

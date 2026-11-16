@@ -117,19 +117,19 @@ export function NotificationSettings(): ReactElement {
           status={status}
           busy={busy}
           onEnable={() =>
-            run(async () => {
+            void run(async () => {
               await enablePush(browserHost());
               return 'Notifications are on.';
             })
           }
           onDisable={() =>
-            run(async () => {
+            void run(async () => {
               await disablePush(browserHost());
               return 'Notifications are off.';
             })
           }
           onTest={() =>
-            run(async () => {
+            void run(async () => {
               await sendTest(browserHost());
               return 'Test notification sent.';
             })

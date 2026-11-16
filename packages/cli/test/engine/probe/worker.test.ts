@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { ProbeClient } from '../../../src/engine/probe/client.js';
+import type { ProbeClient } from '../../../src/engine/probe/client.js';
 import { runWorkerScan } from '../../../src/engine/probe/worker.js';
 import type { ScanEvent } from '../../../src/engine/core.js';
 import { fakeProbe, httpAnswer, linesOf, ok } from '../../helpers/probe.js';
@@ -13,7 +13,7 @@ function site(): ReturnType<typeof fakeProbe> {
   return fakeProbe((path, body) => {
     if (path === '/v1/http') {
       return ok(
-        linesOf(body)['path'] === '/'
+        linesOf(body).path === '/'
           ? httpAnswer(
               200,
               [

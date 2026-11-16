@@ -134,7 +134,9 @@ describe('saveReport', () => {
       expect(path.basename(saved.json)).toBe(
         path.basename(saved.html, '.html') + '.json',
       );
-      const written = JSON.parse(await readFile(saved.json, 'utf8'));
+      const written = JSON.parse(await readFile(saved.json, 'utf8')) as {
+        summary: { total: number };
+      };
       expect(written.summary.total).toBe(1);
       const html = await readFile(saved.html, 'utf8');
       expect(html).toContain('<html');

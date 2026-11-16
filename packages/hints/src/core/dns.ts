@@ -78,6 +78,7 @@ function dohClient(
       const response = await fetchImpl(url, {
         headers: { accept: 'application/dns-json' },
       });
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- Response.json() is Promise<unknown> when this package is built, so the assertion is required; only the root lint program sees the generic json<T>() from the Workers types
       const body = (await response.json()) as DohBody;
       return {
         status: body.Status,

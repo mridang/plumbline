@@ -43,7 +43,7 @@ async function startScan(
     body: JSON.stringify({ url: input }),
   });
   await ensureOk(response);
-  return (await response.json()) as { id: string };
+  return response.json<{ id: string }>();
 }
 
 /**
@@ -55,7 +55,7 @@ async function startScan(
 export async function runScan(
   input: string,
   callbacks: ScanCallbacks,
-  { transport = (url, init) => fetch(url, init), only }: ScanOptions = {},
+  { transport = async (url, init) => fetch(url, init), only }: ScanOptions = {},
 ): Promise<void> {
   const scan = await startScan(input, transport);
   const response = await transport(

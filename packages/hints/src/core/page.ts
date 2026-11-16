@@ -32,6 +32,7 @@ export function onPage(
   context.on('fetch::end::html', (event) => {
     status = event.response.statusCode;
   });
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises -- webhint's context.on types its listener as returning void, but the engine awaits it; dropping the async would stop the scan waiting for this handler
   context.on('traverse::end', async (event) => {
     await check({
       url: url || event.resource,
@@ -53,7 +54,7 @@ export interface Site {
   url: URL;
   origin: string;
   /** Fetches a path or URL from the site; null when the request fails. */
-  fetch(target: string, headers?: object): Promise<NetworkData | null>;
+  fetch: (target: string, headers?: object) => Promise<NetworkData | null>;
   /** Reports a problem against a resource of the site. */
   report(
     resource: string,
@@ -75,6 +76,7 @@ export function onSite(
   context.on('scan::start', (event) => {
     target = event.resource;
   });
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises -- webhint's context.on types its listener as returning void, but the engine awaits it; dropping the async would stop the scan waiting for this handler
   context.on('scan::end', async (event) => {
     const url = new URL(target || event.resource);
     await check({

@@ -56,7 +56,7 @@ beforeEach(async () => {
 afterEach(() => restore());
 
 /** A request to turn the checks of `owner/repo` off (PUT) or on (DELETE). */
-const call = (
+const call = async (
   method: 'PUT' | 'DELETE',
   owner: string,
   repo: string,

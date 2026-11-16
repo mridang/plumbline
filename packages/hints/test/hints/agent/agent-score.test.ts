@@ -10,13 +10,12 @@ const original = dns.client;
 
 beforeEach(() => {
   dns.client = {
-    query: () =>
-      Promise.resolve({
-        status: 3,
-        authenticated: false,
-        answers: [],
-        authority: [],
-      }),
+    query: async () => ({
+      status: 3,
+      authenticated: false,
+      answers: [],
+      authority: [],
+    }),
   };
   setEvaluate(() => ({ api: false, tools: 0, forms: 0 }));
 });

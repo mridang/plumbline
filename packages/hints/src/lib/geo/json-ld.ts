@@ -101,7 +101,7 @@ export function containsSpeakable(value: unknown): boolean {
   if (node === null) {
     return false;
   }
-  if (nodeHasType(node, 'SpeakableSpecification') || node['speakable']) {
+  if (nodeHasType(node, 'SpeakableSpecification') || node.speakable) {
     return true;
   }
   return '@graph' in node ? containsSpeakable(node['@graph']) : false;
@@ -141,7 +141,7 @@ export function findEntityNode(value: unknown): Record<string, unknown> | null {
 
 /** True when `sameAs` is a non-empty array or a non-blank string. */
 export function hasNonEmptySameAs(node: Record<string, unknown>): boolean {
-  const sameAs = node['sameAs'];
+  const sameAs = node.sameAs;
   if (Array.isArray(sameAs)) {
     return sameAs.length > 0;
   }

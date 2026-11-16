@@ -13,12 +13,12 @@
 import { finding, type Finding } from './finding.js';
 
 export interface RedirectionClient {
-  fetch(url: string, init: { redirect: 'manual' }): Promise<Response>;
+  fetch: (url: string, init: { redirect: 'manual' }) => Promise<Response>;
 }
 
 /** The client the hint uses; tests replace `fetch`. */
 export const redirectionClient: RedirectionClient = {
-  fetch: (url, init) => globalThis.fetch(url, init),
+  fetch: async (url, init) => globalThis.fetch(url, init),
 };
 
 export interface Hop {

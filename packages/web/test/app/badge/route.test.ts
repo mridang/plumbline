@@ -55,7 +55,8 @@ describe('GET /badge/{owner}/{repo}/{signature}.svg', () => {
     const signature = await signRepo('secret', 'acme/site');
     const first = await get('acme/site', signature);
     const tag = first.headers.get('etag') ?? '';
-    const [owner = '', name = ''] = ['acme', 'site'];
+    const owner = 'acme';
+    const name = 'site';
     const again = await GET(
       new Request('https://plumbline.test/badge', {
         headers: { 'if-none-match': tag },

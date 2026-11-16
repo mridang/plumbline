@@ -37,10 +37,7 @@ export function isStringArray(value: unknown): value is string[] {
  * parsed value. Every JSON validator opens with this so the common
  * "not valid JSON" path is identical across hints.
  */
-export function parsedOrIssue(
-  text: string,
-  issues: FileIssue[],
-): unknown | undefined {
+export function parsedOrIssue(text: string, issues: FileIssue[]): unknown {
   const { value, error } = parseJson(text);
   if (error !== undefined) {
     issues.push({

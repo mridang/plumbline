@@ -8,7 +8,7 @@ import {
 } from '../../lib/email/fakes.js';
 import { HTTP_SCHEME } from '../../helpers/data.js';
 
-const run = (txt: Record<string, FakeAnswer>) =>
+const run = async (txt: Record<string, FakeAnswer>) =>
   runMailHint(hint, {
     dns: fakeDns({ 'example.test MX': ['10 mx.example.test.'], ...txt }),
   });

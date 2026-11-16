@@ -63,11 +63,7 @@ import {
   titleTooShort,
 } from '@mridang/webhint-hint-plumbline/dist/lib/seo/checks.js';
 import { mainResponse } from '../network.js';
-import {
-  httpHeadersFromBag,
-  seoDocument,
-  type LinkElementArtifact,
-} from '../adapt-seo.js';
+import { httpHeadersFromBag, seoDocument } from '../adapt-seo.js';
 import { hintDocumentation } from '../meta.js';
 import type { AuditCheck } from './types.js';
 
@@ -117,8 +113,7 @@ function pageUrl(artifacts: Artifacts): string {
 function documentOf(artifacts: Artifacts): DocumentLike {
   return seoDocument({
     MetaElements: artifacts.MetaElements ?? [],
-    LinkElements: (artifacts.LinkElements ??
-      []) as readonly LinkElementArtifact[],
+    LinkElements: artifacts.LinkElements ?? [],
     MainDocumentContent: artifacts.MainDocumentContent ?? '',
     url: pageUrl(artifacts),
   });

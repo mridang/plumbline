@@ -25,7 +25,7 @@ import { HTTP_SCHEME } from '../../helpers/data.js';
 
 /** Parses markup with the same DOM implementation webhint uses. */
 const parse = (html: string): DocumentLike =>
-  createHTMLDocument(html, `${HTTP_SCHEME}example.com/`) as DocumentLike;
+  createHTMLDocument(html, `${HTTP_SCHEME}example.com/`);
 
 describe('titleMissing', () => {
   it('reports an absent or empty title as an error', () => {

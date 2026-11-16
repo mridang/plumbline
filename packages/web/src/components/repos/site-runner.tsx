@@ -96,7 +96,10 @@ export function SiteRunner({
     setSavedUntil(Date.now() + MANUAL_RUN_INTERVAL_SECONDS * 1000);
     router.refresh();
   };
-  const { state, run } = useScan({ only: checks, onFinished: save });
+  const { state, run } = useScan({
+    only: checks,
+    onFinished: (scan) => void save(scan),
+  });
   const running = isRunning(state);
   let label: ReactNode;
   if (running) {

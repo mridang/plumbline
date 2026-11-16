@@ -211,26 +211,28 @@ describe('applyDocumentContext and applyHostContext', () => {
 describe('requestMode', () => {
   it('reports the mode the host actually set, which can differ from the request', async () => {
     const { app } = await session((bridge) => {
-      bridge.onrequestdisplaymode = () => Promise.resolve({ mode: 'inline' });
+      bridge.onrequestdisplaymode = async () => ({ mode: 'inline' });
     });
     expect(await requestMode(app, undefined, 'fullscreen')).toBe('inline');
   });
 
   it('falls back to ChatGPT’s bridge when the standard request fails', async () => {
     const { app } = await session((bridge) => {
-      bridge.onrequestdisplaymode = () =>
-        Promise.reject(new Error('not supported'));
+      bridge.onrequestdisplaymode = async () => {
+        throw new Error('not supported');
+      };
     });
     const openai: OpenAiApi = {
-      requestDisplayMode: () => Promise.resolve({ mode: 'fullscreen' }),
+      requestDisplayMode: async () => ({ mode: 'fullscreen' }),
     };
     expect(await requestMode(app, openai, 'fullscreen')).toBe('fullscreen');
   });
 
   it('is undefined when nothing gave a recognisable answer', async () => {
     const { app } = await session((bridge) => {
-      bridge.onrequestdisplaymode = () =>
-        Promise.reject(new Error('not supported'));
+      bridge.onrequestdisplaymode = async () => {
+        throw new Error('not supported');
+      };
     });
     expect(await requestMode(app, undefined, 'fullscreen')).toBeUndefined();
     expect(await requestMode(null, undefined, 'fullscreen')).toBeUndefined();
@@ -238,7 +240,9 @@ describe('requestMode', () => {
       await requestMode(
         null,
         {
-          requestDisplayMode: () => Promise.reject(new Error('no')),
+          requestDisplayMode: async () => {
+            throw new Error('no');
+          },
         },
         'fullscreen',
       ),
@@ -251,9 +255,9 @@ describe('sendFollowUpMessage', () => {
     const received: unknown[] = [];
     const { app } = await session((bridge) => {
       // eslint-disable-next-line unicorn/prefer-add-event-listener -- the bridge's addEventListener only takes void notification handlers; onmessage is the request handler that must return the host's result
-      bridge.onmessage = (params) => {
+      bridge.onmessage = async (params) => {
         received.push(params);
-        return Promise.resolve({});
+        return {};
       };
     });
     expect(
@@ -281,9 +285,9 @@ describe('sendFollowUpMessage', () => {
     const received: unknown[] = [];
     const { app } = await session((bridge) => {
       // eslint-disable-next-line unicorn/prefer-add-event-listener -- the bridge's addEventListener only takes void notification handlers; onmessage is the request handler that must return the host's result
-      bridge.onmessage = (params) => {
+      bridge.onmessage = async (params) => {
         received.push(params);
-        return Promise.resolve({});
+        return {};
       };
     });
     const openai: OpenAiApi = {
@@ -300,13 +304,15 @@ describe('sendFollowUpMessage', () => {
     const received: unknown[] = [];
     const { app } = await session((bridge) => {
       // eslint-disable-next-line unicorn/prefer-add-event-listener -- the bridge's addEventListener only takes void notification handlers; onmessage is the request handler that must return the host's result
-      bridge.onmessage = (params) => {
+      bridge.onmessage = async (params) => {
         received.push(params);
-        return Promise.resolve({});
+        return {};
       };
     });
     const openai: OpenAiApi = {
-      sendFollowUpMessage: () => Promise.reject(new Error('refused')),
+      sendFollowUpMessage: async () => {
+        throw new Error('refused');
+      },
     };
     expect(await sendFollowUpMessage(app, openai, 'hello')).toBe(true);
     expect(received).toHaveLength(1);
@@ -315,7 +321,7 @@ describe('sendFollowUpMessage', () => {
   it('reports false when the host refuses the message or there is no route', async () => {
     const { app } = await session((bridge) => {
       // eslint-disable-next-line unicorn/prefer-add-event-listener -- the bridge's addEventListener only takes void notification handlers; onmessage is the request handler that must return the host's result
-      bridge.onmessage = () => Promise.resolve({ isError: true });
+      bridge.onmessage = async () => ({ isError: true });
     });
     expect(await sendFollowUpMessage(app, undefined, 'hello')).toBe(false);
     expect(await sendFollowUpMessage(null, undefined, 'hello')).toBe(false);
@@ -326,12 +332,12 @@ describe('runServerTool', () => {
   it('runs the tool with the arguments and reads the structured result', async () => {
     const calls: unknown[] = [];
     const { app } = await session((bridge) => {
-      bridge.oncalltool = (params) => {
+      bridge.oncalltool = async (params) => {
         calls.push(params);
-        return Promise.resolve({
+        return {
           content: [{ type: 'text', text: 'ok' }],
           structuredContent: { n: 7 },
-        });
+        };
       };
     });
     const outcome = await runServerTool(
@@ -348,7 +354,9 @@ describe('runServerTool', () => {
 
   it('turns a failing call into an error message instead of rejecting', async () => {
     const { app } = await session((bridge) => {
-      bridge.oncalltool = () => Promise.reject(new Error('Tool is down.'));
+      bridge.oncalltool = async () => {
+        throw new Error('Tool is down.');
+      };
     });
     const outcome = await runServerTool(
       app,

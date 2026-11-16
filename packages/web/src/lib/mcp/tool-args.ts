@@ -101,5 +101,6 @@ export function canonicalArguments(
  * `String()` (so `5` is "5"). Unlike {@link stringArg} it does not trim.
  */
 export function textArg(value: unknown): string {
+  // eslint-disable-next-line @typescript-eslint/no-base-to-string -- tool arguments arrive as arbitrary JSON and the tools coerce any scalar (and, as before, an object) to text; narrowing would change what a caller gets
   return String(value ?? '');
 }

@@ -35,6 +35,9 @@ import { HTTP_SCHEME } from '../../helpers/data.js';
 /** Matches an issue number reference. */
 const ISSUE_REFERENCE_PATTERN = /#\d/;
 
+/** Matches a control character, which could start a new line or block. */
+const CONTROL_CHARACTER = /\p{Cc}/u;
+
 /** Matches the closing code fence. */
 const JSON_FENCE_CLOSE_PATTERN = /\n```$/;
 
@@ -232,7 +235,7 @@ describe('dataBlock', () => {
       block
         .replace(JSON_FENCE_OPEN_PATTERN, '')
         .replace(JSON_FENCE_CLOSE_PATTERN, ''),
-    );
+    ) as Record<string, unknown>;
 
   it('is JSON with the counts, the links and each finding with its rule name', () => {
     const data = parse(
@@ -448,9 +451,7 @@ describe('safeText', () => {
 
   it('cannot start a new line or block', () => {
     const text = safeText('a\n\n# heading\r\n- item\u0000');
-    expect([...text].filter((char) => (char.codePointAt(0) ?? 0) < 32)).toEqual(
-      [],
-    );
+    expect(CONTROL_CHARACTER.test(text)).toBe(false);
   });
 
   it('is no longer than a sentence', () => {

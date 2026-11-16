@@ -39,7 +39,11 @@ describe('dnssecState', () => {
 
   it('is error when the lookup throws', async () => {
     restore = installDns({});
-    dns.client = { query: () => Promise.reject(new Error('down')) };
+    dns.client = {
+      query: async () => {
+        throw new Error('down');
+      },
+    };
     expect(await dnssecState('example.test')).toBe('error');
   });
 });

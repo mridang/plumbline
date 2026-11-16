@@ -65,7 +65,7 @@ export async function inBatches<T, R>(
   for (let at = 0; at < items.length; at += Math.max(1, size)) {
     results.push(
       ...(await Promise.all(
-        items.slice(at, at + Math.max(1, size)).map((item) => task(item)),
+        items.slice(at, at + Math.max(1, size)).map(async (item) => task(item)),
       )),
     );
   }

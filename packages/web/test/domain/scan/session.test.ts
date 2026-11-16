@@ -27,14 +27,14 @@ const ndjson = (...lines: unknown[]): string =>
 
 /** A transport that starts a scan and then answers the run with `run`. */
 function transport(run: () => Response, calls: string[] = []): typeof fetch {
-  return (async (input: unknown, init?: RequestInit) => {
+  return async (input: unknown, init?: RequestInit) => {
     const path = String(input);
     calls.push(`${init?.method ?? 'GET'} ${path}`);
     if (path === '/api/scans') {
       return Response.json({ id: 'abc.def' }, { status: 201 });
     }
     return run();
-  }) as typeof fetch;
+  };
 }
 
 const READY = {
@@ -140,15 +140,16 @@ describe('runScan', () => {
   });
 
   it('shows the problem when the address or the run is refused', async () => {
-    const refused = (status: number, detail: string): typeof fetch =>
-      (async () =>
+    const refused =
+      (status: number, detail: string): typeof fetch =>
+      async () =>
         Response.json(
           { detail },
           {
             status,
             headers: { 'content-type': 'application/problem+json' },
           },
-        )) as typeof fetch;
+        );
     await expect(
       runScan(
         'x',

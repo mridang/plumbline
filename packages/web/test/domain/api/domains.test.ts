@@ -56,11 +56,11 @@ beforeEach(() => {
 afterEach(() => restore());
 
 /** A GET of the collection with the given query. */
-const list = (query = '') =>
+const list = async (query = '') =>
   collection.GET(new Request(`${ORIGIN}/api/domains${query}`));
 
 /** A request to one domain. */
-const call = (
+const call = async (
   method: 'GET' | 'PATCH' | 'DELETE',
   id: string,
   init: RequestInit = {},
@@ -70,7 +70,7 @@ const call = (
   });
 
 /** A merge patch of one domain. */
-const patch = (
+const patch = async (
   id: string,
   body: unknown,
   headers: Record<string, string> = {},
@@ -85,16 +85,16 @@ describe('GET /api/domains', () => {
     seed(OTHER, 7, 'b.example', '2026-01-02');
     seed(ID, 7, 'a.example', '2026-01-01');
     const res = await list();
-    const body = (await res.json()) as {
+    const body = await res.json<{
       items: { host: string }[];
-    };
+    }>();
     expect(body.items.map((d) => d.host)).toEqual(['a.example', 'b.example']);
   });
 
   it('shows nobody else’s domains', async () => {
     seed(ID, 8, 'a.example');
     const res = await list();
-    const body = (await res.json()) as { items: unknown[] };
+    const body = await res.json<{ items: unknown[] }>();
     expect(body.items).toEqual([]);
   });
 
@@ -107,13 +107,13 @@ describe('GET /api/domains', () => {
     seed(ID, 7, 'a.example', '2026-01-01');
     seed(OTHER, 7, 'b.example', '2026-01-02');
     const firstPage = await list('?limit=1');
-    const first = (await firstPage.json()) as {
+    const first = await firstPage.json<{
       next: string;
-    };
+    }>();
     const nextPage = await list(new URL(first.next).search);
-    const second = (await nextPage.json()) as {
+    const second = await nextPage.json<{
       items: { host: string }[];
-    };
+    }>();
     expect(second.items.map((d) => d.host)).toEqual(['b.example']);
   });
 
@@ -138,7 +138,7 @@ describe('GET /api/domains/{id}', () => {
   it('answers the domain with an entity tag', async () => {
     seed(ID, 7, 'example.com');
     const res = await call('GET', ID);
-    const body = (await res.json()) as { host: string };
+    const body = await res.json<{ host: string }>();
     expect([res.status, body.host, res.headers.get('etag')]).toEqual([
       200,
       'example.com',
@@ -169,10 +169,10 @@ describe('PATCH /api/domains/{id}', () => {
 
   it('chooses the checks that run', async () => {
     const res = await patch(ID, { checks: ['accept-ch'] });
-    const body = (await res.json()) as {
+    const body = await res.json<{
       checks: string[];
       all_checks: boolean;
-    };
+    }>();
     expect([res.status, body.checks, body.all_checks]).toEqual([
       200,
       ['accept-ch'],
@@ -183,18 +183,18 @@ describe('PATCH /api/domains/{id}', () => {
   it('keeps the choice', async () => {
     await patch(ID, { checks: ['accept-ch'] });
     const res = await call('GET', ID);
-    const body = (await res.json()) as {
+    const body = await res.json<{
       checks: string[];
-    };
+    }>();
     expect(body.checks).toEqual(['accept-ch']);
   });
 
   it('goes back to every check for null', async () => {
     await patch(ID, { checks: ['accept-ch'] });
     const res = await patch(ID, { checks: null });
-    const body = (await res.json()) as {
+    const body = await res.json<{
       all_checks: boolean;
-    };
+    }>();
     expect(body.all_checks).toBe(true);
   });
 
@@ -212,7 +212,7 @@ describe('PATCH /api/domains/{id}', () => {
 
   it('answers 400 for checks that do not exist', async () => {
     const res = await patch(ID, { checks: ['nope'] });
-    const body = (await res.json()) as { errors: string[] };
+    const body = await res.json<{ errors: string[] }>();
     expect([res.status, body.errors]).toEqual([
       400,
       ['checks: "nope" is not a check or a group.'],

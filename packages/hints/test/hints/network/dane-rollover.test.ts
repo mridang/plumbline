@@ -11,7 +11,7 @@ const SHA = (n: number): string => n.toString(16).padStart(2, '0').repeat(32);
 const tlsa = (data: string[], ad = true): Zone => ({
   '_443._tcp.example.test': { TLSA: { data, ad } },
 });
-const run = (zone: Zone) => {
+const run = async (zone: Zone) => {
   restore = installDns(zone);
   return runHint(hint);
 };

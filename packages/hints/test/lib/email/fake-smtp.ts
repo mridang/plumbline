@@ -71,7 +71,7 @@ export async function startSmtp(options: SmtpOptions = {}): Promise<FakeSmtp> {
   );
   return {
     port: (server.address() as AddressInfo).port,
-    close: () =>
+    close: async () =>
       new Promise<void>((resolve) => {
         for (const socket of sockets) {
           socket.destroy();

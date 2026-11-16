@@ -22,7 +22,7 @@ const CATALOGUE: HintMeta[] = [
 ];
 
 /** Runs `plumbline checks` with `argv` against the test catalogue. */
-function run(argv: string[]) {
+async function run(argv: string[]) {
   const [, ...rest] = argv;
   return runCommand(Checks, rest, {
     catalogue: () => CATALOGUE,

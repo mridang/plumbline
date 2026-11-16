@@ -15,7 +15,7 @@ const USER = { id: 1 } as User;
 /** A fresh database, and a way to call a tool against it. */
 function setup() {
   const { db, raw } = sqliteDatabase(...APP_MIGRATIONS);
-  const call = (
+  const call = async (
     name: string,
     args?: unknown,
     user: Readonly<User> = USER,

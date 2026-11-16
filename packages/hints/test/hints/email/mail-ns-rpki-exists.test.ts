@@ -13,10 +13,8 @@ const dns = fakeDns({
 
 /** A RPKI client answering from a table; unknown addresses are not routed. */
 const rpki = (table: Record<string, RpkiResult>): RpkiClient => ({
-  check: (ip) =>
-    Promise.resolve(
-      table[ip] ?? { asn: null, prefix: null, status: 'unknown' },
-    ),
+  check: async (ip) =>
+    table[ip] ?? { asn: null, prefix: null, status: 'unknown' },
 });
 
 const valid = (prefix: string): RpkiResult => ({

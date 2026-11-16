@@ -9,7 +9,7 @@ import {
 
 const sha = (n: number): string => n.toString(16).padStart(2, '0').repeat(32);
 
-const run = (tlsa: FakeAnswer) =>
+const run = async (tlsa: FakeAnswer) =>
   runMailHint(hint, {
     dns: fakeDns({
       'example.test MX': ['10 mx.example.test.'],

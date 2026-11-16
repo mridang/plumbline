@@ -71,7 +71,7 @@ describe('buildTaxonomyPresets', () => {
   const ids = Object.keys(registry);
   const presets = buildTaxonomyPresets(ids);
   const names = (name: string) =>
-    Object.keys(presets[name]!.hints).map((id) =>
+    Object.keys(presets[name].hints).map((id) =>
       id.slice(PACKAGE_NAME.length + 1),
     );
 
@@ -80,14 +80,14 @@ describe('buildTaxonomyPresets', () => {
       sorted(
         ids.filter(
           (id) =>
-            PLACEMENT[id]!.tier === 'recommended' &&
-            SECTION_DEFS.find((s) => s.id === PLACEMENT[id]!.section)
+            PLACEMENT[id].tier === 'recommended' &&
+            SECTION_DEFS.find((s) => s.id === PLACEMENT[id].section)
               ?.defaultOn !== false,
         ),
       ),
     );
     expect(sorted(names('plumbline-experimental'))).toEqual(
-      sorted(ids.filter((id) => PLACEMENT[id]!.tier === 'experimental')),
+      sorted(ids.filter((id) => PLACEMENT[id].tier === 'experimental')),
     );
     expect(names('plumbline-all')).toHaveLength(ids.length);
   });
@@ -108,7 +108,7 @@ describe('buildTaxonomyPresets', () => {
 
   it('leaves out checks the registry does not know', () => {
     expect(
-      Object.keys(buildTaxonomyPresets(['csp'])['plumbline-all']!.hints),
+      Object.keys(buildTaxonomyPresets(['csp'])['plumbline-all'].hints),
     ).toEqual([`${PACKAGE_NAME}/csp`]);
   });
 });

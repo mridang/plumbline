@@ -26,7 +26,7 @@ afterEach(() => {
   network.get = realNetwork.get;
 });
 
-const listen = (server: Server): Promise<number> =>
+const listen = async (server: Server): Promise<number> =>
   new Promise((resolve) =>
     server.listen(0, '127.0.0.1', () =>
       resolve((server.address() as AddressInfo).port),
@@ -53,7 +53,7 @@ describe('httpGetByIp', () => {
       seenHost = req.headers.host ?? '';
       res.end('hello');
     });
-    const port = await listen(server as unknown as Server);
+    const port = await listen(server);
     try {
       const r = await httpGetByIp('site.test', '127.0.0.1', port, false);
       expect(r).toEqual({ status: 200, body: 'hello' });

@@ -33,7 +33,7 @@ export function validateGpcJson(text: string): FileIssue[] {
 
   // `gpc` states whether the server honours Global Privacy Control and must
   // be a boolean.
-  if (typeof root['gpc'] !== 'boolean') {
+  if (typeof root.gpc !== 'boolean') {
     issues.push({
       severity: 'error',
       message: "The required 'gpc' field must be a boolean.",
@@ -41,7 +41,7 @@ export function validateGpcJson(text: string): FileIssue[] {
   }
 
   // `lastUpdate` is a required ISO 8601 date string.
-  const lastUpdate = root['lastUpdate'];
+  const lastUpdate = root.lastUpdate;
   if (typeof lastUpdate !== 'string') {
     issues.push({
       severity: 'error',

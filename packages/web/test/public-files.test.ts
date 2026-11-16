@@ -20,7 +20,7 @@ const GOOD_FAITH = /good faith/;
 
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
-const read = (name: string): Promise<string> =>
+const read = async (name: string): Promise<string> =>
   readFile(path.join(PACKAGE, 'public', name), 'utf8');
 
 const LLMS = await read('llms.txt');

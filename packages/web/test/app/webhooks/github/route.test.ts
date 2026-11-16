@@ -68,7 +68,7 @@ afterEach(() => {
 });
 
 /** A delivery of `event` with this payload, signed unless `signature` says otherwise. */
-const deliver = (
+const deliver = async (
   event: string,
   payload: unknown,
   signature?: string | null,
@@ -288,7 +288,10 @@ describe('POST /webhooks/github, deployment_status', () => {
         .select({ job: pendingScans.job })
         .from(pendingScans);
       expect(waiting).toHaveLength(1);
-      expect(JSON.parse(waiting[0]?.job ?? '{}').deployed.sha).toBe('def');
+      expect(
+        (JSON.parse(waiting[0]?.job ?? '{}') as { deployed: { sha: string } })
+          .deployed.sha,
+      ).toBe('def');
     });
 
     it('leaves one job for a delivery GitHub sends again', async () => {
@@ -458,7 +461,7 @@ describe('POST /webhooks/github, issues', () => {
       );
     });
 
-    const stored = () =>
+    const stored = async () =>
       issueOf(
         createDatabase(made.d1),
         'acme/site',

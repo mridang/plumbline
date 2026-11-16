@@ -49,7 +49,7 @@ export async function runScan(
   await runScanWith(
     {
       fetch: guardedFetch(options),
-      assertScannable: (url) => assertPublicHost(url, options),
+      assertScannable: async (url) => assertPublicHost(url, options),
       install: () => installGuard(options),
     },
     address,

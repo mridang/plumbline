@@ -37,7 +37,7 @@ function parseLine(text: string): ScanLine | undefined {
   if (typeof value !== 'object' || value === null || !('type' in value)) {
     throw new ProblemError('The scan sent something unreadable.');
   }
-  const { type } = value as { type: unknown };
+  const { type } = value;
   // A line of a kind this page does not know is skipped, so the scanner can
   // grow new lines without breaking pages that are already open.
   return typeof type === 'string' &&

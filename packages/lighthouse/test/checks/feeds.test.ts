@@ -15,7 +15,7 @@ import {
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/feeds/read.js';
 
 const parse = (html: string): DocumentLike =>
-  createHTMLDocument(html, 'https://x.test/') as DocumentLike;
+  createHTMLDocument(html, 'https://x.test/');
 
 /** Builds the artifacts the feed-discovery checks read. */
 function artifacts(html: string): Artifacts {

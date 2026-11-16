@@ -83,7 +83,7 @@ export function createLive(db: Database, env: Readonly<LiveEnv>): Live {
               privateKey: env.VAPID_PRIVATE_KEY,
               subject: env.VAPID_SUBJECT,
             },
-            { fetcher: (input, init) => fetch(input, init) },
+            { fetcher: async (input, init) => fetch(input, init) },
           ),
           subscriptions,
         )

@@ -38,7 +38,7 @@ export function fakeGitHub(
 ): string[] {
   const requested: string[] = [];
   jest.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
-    const url = String(input);
+    const url = input instanceof Request ? input.url : String(input);
     requested.push(`${init?.method ?? 'GET'} ${url}`);
     const key = Object.keys(answers).find((prefix) => url.startsWith(prefix));
     if (!key) {

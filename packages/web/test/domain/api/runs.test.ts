@@ -66,13 +66,13 @@ function seedRun(ranAt: string, outcomes: string | null = OUTCOMES) {
     .run(ranAt, outcomes);
 }
 
-const list = (query = '', id = DOMAIN) =>
+const list = async (query = '', id = DOMAIN) =>
   collection.GET(
     new Request(`${ORIGIN}/api/domains/${id}/runs${query}`),
     params(id),
   );
 
-const read = (runId: string, id = DOMAIN) =>
+const read = async (runId: string, id = DOMAIN) =>
   item.GET(
     new Request(`${ORIGIN}/api/domains/${id}/runs/${runId}`),
     params(id, runId),
@@ -94,7 +94,7 @@ describe('GET /api/domains/{id}/runs', () => {
     const response = await list();
     expect(response.status).toBe(200);
     expect(response.headers.get('cache-control')).toBe('private, no-cache');
-    const body = (await response.json()) as { items: unknown[] };
+    const body = await response.json<{ items: unknown[] }>();
     expect(body.items).toEqual([
       {
         id: 's1',
@@ -125,14 +125,14 @@ describe('GET /api/domains/{id}/runs', () => {
     seedRun('2026-01-01T12:00:00.000Z');
     seedRun('2026-01-01T11:00:00.000Z');
     const firstPage = await list('?limit=2');
-    const first = (await firstPage.json()) as {
+    const first = await firstPage.json<{
       items: { id: string }[];
       next?: string;
-    };
+    }>();
     expect(first.items.map((r) => r.id)).toEqual(['s1', 's2']);
     expect(first.next).toEqual(expect.any(String));
     const secondPage = await list(new URL(first.next ?? '').search);
-    const second = (await secondPage.json()) as { items: { id: string }[] };
+    const second = await secondPage.json<{ items: { id: string }[] }>();
     expect(second.items.map((r) => r.id)).toEqual([REPORT]);
     expect(second).not.toHaveProperty('next');
   });

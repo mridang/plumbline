@@ -77,8 +77,8 @@ describe('reportHosts', () => {
 describe('checkDmarcPolicy', () => {
   const lookups =
     (table: Record<string, TxtLookup>) =>
-    (name: string): Promise<TxtLookup> =>
-      Promise.resolve(table[name] ?? { status: 'nxdomain' });
+    async (name: string): Promise<TxtLookup> =>
+      table[name] ?? { status: 'nxdomain' };
 
   it('accepts a strict record with internal destinations', async () => {
     const status = await checkDmarcPolicy(

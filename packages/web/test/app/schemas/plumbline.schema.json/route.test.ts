@@ -9,14 +9,14 @@ const QUOTED_ETAG = /^"[0-9a-f]{32}"$/;
 
 const URL_OF = `https://plumbline.test${SCHEMA_PATH}`;
 
-const get = (headers: Record<string, string> = {}) =>
+const get = async (headers: Record<string, string> = {}) =>
   GET(new Request(URL_OF, { headers }));
 
 describe('GET /schemas/plumbline.schema.json', () => {
   it('answers 200 with the schema, named by the address it is served at', async () => {
     const res = await get();
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { $id: string; $schema: string };
+    const body = await res.json<{ $id: string; $schema: string }>();
     expect(body.$id).toBe(SCHEMA_URL);
     expect(body.$schema).toBe('https://json-schema.org/draft/2020-12/schema');
   });

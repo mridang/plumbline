@@ -20,16 +20,15 @@ export const realIt = hasOpenssl ? it : it.skip;
 
 /** Makes every `openssl` run print `stdout` and `stderr`. */
 export function fakeOpenssl(stdout: string, stderr = ''): void {
-  const exec: OpensslExec = () => Promise.resolve({ stdout, stderr, code: 0 });
+  const exec: OpensslExec = async () => ({ stdout, stderr, code: 0 });
   openssl.exec = exec;
 }
 
 /** Makes `openssl` look as if it were not installed. */
 export function missingOpenssl(): void {
-  openssl.exec = () =>
-    Promise.reject(
-      Object.assign(new Error('spawn openssl'), { code: 'ENOENT' }),
-    );
+  openssl.exec = async () => {
+    throw Object.assign(new Error('spawn openssl'), { code: 'ENOENT' });
+  };
 }
 
 /** Restores the real runner; call it in `afterEach`. */

@@ -6,5 +6,5 @@
  */
 const scope = globalThis as unknown as Record<string, unknown>;
 
-scope['__filename'] ??= '/plumbline/worker.js';
-scope['__dirname'] ??= '/plumbline';
+scope.__filename ??= '/plumbline/worker.js';
+scope.__dirname ??= '/plumbline';

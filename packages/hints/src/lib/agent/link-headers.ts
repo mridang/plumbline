@@ -86,7 +86,7 @@ const AGENT_RELS: ReadonlySet<string> = new Set([
 export async function checkLinkHeaders(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-link-headers';
   const probe = await env.probe('/');
-  const header = probe?.headers['link'];
+  const header = probe?.headers.link;
   if (!header) {
     return result(
       id,

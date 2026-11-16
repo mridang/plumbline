@@ -75,7 +75,7 @@ beforeEach(async () => {
 afterEach(() => restore());
 
 /** Render the page for a domain id and the picked report. */
-function render(
+async function render(
   id: string,
   report?: string,
   view?: string,
@@ -101,7 +101,7 @@ async function page(
 }
 
 /** Save a report of the domain with this many failed checks. */
-function report(failed: number, message = 'No CSP') {
+async function report(failed: number, message = 'No CSP') {
   return saveReport(db, 1, domain.id, {
     url: 'https://example.com/',
     passed: 0,

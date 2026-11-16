@@ -71,10 +71,7 @@ function pageUrl(artifacts: Artifacts): string {
  */
 function documentOf(artifacts: Artifacts): DocumentLike {
   const html = artifacts.MainDocumentContent ?? '';
-  return createHTMLDocument(
-    html,
-    pageUrl(artifacts) || 'http://localhost/',
-  ) as unknown as DocumentLike;
+  return createHTMLDocument(html, pageUrl(artifacts) || 'http://localhost/');
 }
 
 /**

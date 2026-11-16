@@ -22,9 +22,6 @@ const IOS_DEVICE_PATTERN = /iPhone|iPad|iPod/;
 /** Safari's `Version/<number>` token. */
 const SAFARI_VERSION_PATTERN = /Version\/[\d.]+/;
 
-/** Safari's `Safari/` token. */
-const SAFARI_TOKEN_PATTERN = /Safari\//;
-
 /** The `localStorage` key that remembers the tip was dismissed. */
 export const IOS_HINT_STORAGE_KEY = `${BRAND_NAME.toLowerCase()}:ios-install-hint-dismissed`;
 
@@ -87,7 +84,7 @@ export function isIosSafari(
   return (
     isIosDevice(userAgent, maxTouchPoints) &&
     SAFARI_VERSION_PATTERN.test(userAgent) &&
-    SAFARI_TOKEN_PATTERN.test(userAgent) &&
+    userAgent.includes('Safari/') &&
     !NOT_SAFARI.test(userAgent)
   );
 }

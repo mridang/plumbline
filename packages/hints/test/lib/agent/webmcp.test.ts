@@ -3,7 +3,7 @@ import { checkWebMcp, WEBMCP_SCRIPT } from '../../../src/lib/agent/webmcp.js';
 import { fakeEnv } from './fake-env.js';
 
 const withPage = (value: unknown) =>
-  fakeEnv({}, { evaluate: () => Promise.resolve(value) });
+  fakeEnv({}, { evaluate: async () => value });
 
 describe('checkWebMcp', () => {
   it('passes with registered tools', async () => {
@@ -27,7 +27,14 @@ describe('checkWebMcp', () => {
     expect(r.detail).toContain('No browser');
   });
   it('fails when evaluation throws', async () => {
-    const env = fakeEnv({}, { evaluate: () => Promise.reject(new Error('x')) });
+    const env = fakeEnv(
+      {},
+      {
+        evaluate: async () => {
+          throw new Error('x');
+        },
+      },
+    );
     const r = await checkWebMcp(env);
     expect(r.detail).toContain('could not be evaluated');
   });

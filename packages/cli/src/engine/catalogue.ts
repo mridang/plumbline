@@ -89,20 +89,19 @@ function originsOf(value: unknown): HintOrigin[] {
       return [];
     }
     const origin = raw as Readonly<Record<string, unknown>>;
-    const source = stringOf(origin['source']);
-    const url = stringOf(origin['url']);
+    const source = stringOf(origin.source);
+    const url = stringOf(origin.url);
     if (source === undefined || url === undefined) {
       return [];
     }
-    const documentationUrl = stringOf(origin['docsUrl']);
+    const documentationUrl = stringOf(origin.docsUrl);
     return [
       {
         source,
-        title:
-          stringOf(origin['title']) || (stringOf(origin['upstreamId']) ?? url),
+        title: stringOf(origin.title) || (stringOf(origin.upstreamId) ?? url),
         url,
         ...(documentationUrl ? { docsUrl: documentationUrl } : {}),
-        summary: stringOf(origin['summary']) ?? '',
+        summary: stringOf(origin.summary) ?? '',
       },
     ];
   });
@@ -111,18 +110,21 @@ function originsOf(value: unknown): HintOrigin[] {
 /** The catalogue entry of one hint class. */
 export function entryOf(id: string, ctor: HintClass): CatalogueEntry {
   const documentation = ctor.meta?.docs ?? {};
-  const order = documentation['sectionOrder'];
-  const reference = documentation['url'];
+  const {
+    sectionOrder: order,
+    url: reference,
+    groups,
+    tags,
+    origins,
+  } = documentation;
   const section = text(documentation, 'section', 'other');
   const fixer = FIXERS.get(section);
-  const groups = documentation['groups'];
-  const tags = documentation['tags'];
-  const group = stringOf(documentation['group']);
-  const subsection = stringOf(documentation['subsection']);
-  const tier = stringOf(documentation['tier']);
-  const target = stringOf(documentation['target']);
-  const control = stringOf(documentation['control']);
-  const added = stringOf(documentation['added']);
+  const group = stringOf(documentation.group);
+  const subsection = stringOf(documentation.subsection);
+  const tier = stringOf(documentation.tier);
+  const target = stringOf(documentation.target);
+  const control = stringOf(documentation.control);
+  const added = stringOf(documentation.added);
   return {
     ctor,
     info: {
@@ -146,17 +148,14 @@ export function entryOf(id: string, ctor: HintClass): CatalogueEntry {
       ...(control ? { control } : {}),
       ...(added ? { added } : {}),
       ...(fixer ? { fixer } : {}),
-      origins: originsOf(documentation['origins']),
+      origins: originsOf(origins),
     },
   };
 }
 
 /** Every hint of the package, by id, as catalogue entries. */
 export function catalogue(
-  hints: Readonly<Record<string, HintClass>> = extraHints as unknown as Record<
-    string,
-    HintClass
-  >,
+  hints: Readonly<Record<string, HintClass>> = extraHints,
 ): CatalogueEntry[] {
   return Object.keys(hints)
     .toSorted(collator.compare)

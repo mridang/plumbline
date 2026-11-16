@@ -25,11 +25,11 @@ export type OptionsRequester = (url: URL) => Promise<OptionsResult | null>;
  * reading the `Allow` header of the response. Returns null on any error so a
  * probe failure is simply "not applicable" rather than a thrown scan.
  */
-const defaultOptionsRequester: OptionsRequester = (url) =>
+const defaultOptionsRequester: OptionsRequester = async (url) =>
   new Promise((resolve) => {
     const send = url.protocol === 'https:' ? httpsRequest : httpRequest;
     const req = send(url, { method: 'OPTIONS' }, (res) => {
-      const allow = res.headers['allow'];
+      const allow = res.headers.allow;
       // Drain and discard the body so the socket is freed.
       res.resume();
       resolve({

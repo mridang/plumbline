@@ -6,7 +6,7 @@ import { sqliteD1 } from '../core/db/sqlite-d1';
 
 jest.unstable_mockModule('cloudflare:workers', cloudflareWorkersStub, {
   virtual: true,
-} as never);
+});
 
 const { UserHub, MAX_REPLAY } = await import('@/lib/cloudflare/user-hub');
 
@@ -48,7 +48,7 @@ function setup() {
         .run(user, JSON.stringify({ type: 'started', n }));
     }
   };
-  const open = (headers: Record<string, string> = {}, query = '') =>
+  const open = async (headers: Record<string, string> = {}, query = '') =>
     hub.fetch(
       new Request(`https://hub.internal/events/people/${PERSON}${query}`, {
         headers,

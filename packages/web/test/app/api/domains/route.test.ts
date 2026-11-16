@@ -41,7 +41,7 @@ describe('/api/domains', () => {
       )
       .run();
     const res = await GET(new Request(URL, { headers: { cookie } }));
-    const body = (await res.json()) as { items: { host: string }[] };
+    const body = await res.json<{ items: { host: string }[] }>();
     expect(body.items.map((d) => d.host)).toEqual(['example.com']);
   });
 

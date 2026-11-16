@@ -99,7 +99,7 @@ describe('handleMcpMessage routing', () => {
   const MODERN_META = {
     _meta: { 'io.modelcontextprotocol/protocolVersion': '2026-07-28' },
   };
-  const send = (message: Record<string, unknown>) =>
+  const send = async (message: Record<string, unknown>) =>
     handleMcpMessage(someone, { jsonrpc: '2.0', id: 1, ...message });
 
   it('answers the handshake with a version both sides speak', async () => {
@@ -302,7 +302,7 @@ describe('handleMcpMessage — the newest revision', () => {
     },
   };
   const SERVER_INFO_KEY = 'io.modelcontextprotocol/serverInfo';
-  const send = (
+  const send = async (
     message: Record<string, unknown>,
     runTool?: ToolRunner,
   ): Promise<JsonRpcResponse | null> =>
@@ -525,7 +525,7 @@ describe('handleMcpMessage — refusals', () => {
   const neverRun: ToolRunner = async () => {
     throw new Error('the tool must not run');
   };
-  const send = (
+  const send = async (
     message: Record<string, unknown>,
     runTool: ToolRunner = neverRun,
   ) =>
@@ -734,7 +734,7 @@ describe('handleMcpMessage — refusals', () => {
 });
 
 describe('lists with only one page', () => {
-  const list = (
+  const list = async (
     params: Record<string, unknown> | undefined,
     method = 'resources/list',
   ) => handleMcpMessage(someone, { jsonrpc: '2.0', id: 1, method, params });
@@ -817,7 +817,7 @@ describe('every reply parses with the SDK’s own schema for its method', () => 
     async (name) => {
       const { db } = sqliteDatabase(...APP_MIGRATIONS);
       await addDomain(db, someone.id, 'example.com');
-      const run = (args: Record<string, unknown>) =>
+      const run = async (args: Record<string, unknown>) =>
         callToolOrExplain(
           someone,
           { name, arguments: args },

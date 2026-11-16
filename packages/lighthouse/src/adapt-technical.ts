@@ -44,7 +44,7 @@ type ImageElement = Artifacts.ImageElement;
  * checks, which read no URLs.
  */
 export function htmlDocument(html: string, base: string): TechDocumentLike {
-  return createHTMLDocument(html, base) as unknown as TechDocumentLike;
+  return createHTMLDocument(html, base);
 }
 
 /**

@@ -198,7 +198,7 @@ function installDnsCache(): void {
   // open at once, and each query is one.
   const resolver = dns.client;
   dns.client = {
-    query: (name, type) => {
+    query: async (name, type) => {
       const answers = scope.getStore()?.answers;
       if (!answers) {
         return resolver.query(name, type);
@@ -221,7 +221,7 @@ function installRpkiCache(): void {
   // and each answer is two round trips to a web service: within one scan, one lookup per address.
   const validator = rpki.client;
   rpki.client = {
-    check: (ip) => {
+    check: async (ip) => {
       const routes = scope.getStore()?.routes;
       if (!routes) {
         return validator.check(ip);
@@ -245,7 +245,7 @@ function installTlsHandshakeCache(): void {
   // handshake is made once. A handshake the server would not complete is an answer and is
   // kept; one the probe could not make (it was not there) is not.
   const connectWithNode = tlsProbe.connect;
-  tlsProbe.connect = (target, options) => {
+  tlsProbe.connect = async (target, options) => {
     const scanned = scope.getStore();
     if (!scanned) {
       return connectWithNode(target, options);
@@ -254,7 +254,7 @@ function installTlsHandshakeCache(): void {
     let handshake = scanned.handshakes.get(key);
     if (!handshake) {
       const { client, handshakes } = scanned;
-      handshake = remoteConnect((request) =>
+      handshake = remoteConnect(async (request) =>
         client
           .handshake({
             host: request.host,
@@ -294,7 +294,7 @@ function installTlsHandshakeCache(): void {
 function installMailClient(): void {
   const nodeMail = mailNet.client;
   mailNet.client = {
-    tcpReachable: (ip, port) => {
+    tcpReachable: async (ip, port) => {
       const client = scope.getStore()?.client;
       return client
         ? client.reachable(ip, port)

@@ -34,5 +34,5 @@ export default defineMailTlsHint({
   name: 'Mail server certificates match the host name',
   description:
     'Checks that the host names of the mail servers (MX) match a name on their certificates.',
-  check: (site) => checkCertHostname(site, mismatchSeverity),
+  check: async (site) => checkCertHostname(site, mismatchSeverity),
 });

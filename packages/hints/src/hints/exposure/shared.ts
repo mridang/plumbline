@@ -17,7 +17,7 @@ export async function fetchIfReachable(
   path: string,
 ): Promise<string | null> {
   const data = await site.fetch(path);
-  if (!data || data.response.statusCode !== 200) {
+  if (data?.response.statusCode !== 200) {
     return null;
   }
   return data.response.body.content;

@@ -74,7 +74,9 @@ function github(
     calls.push({
       method,
       path,
-      body: JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>,
+      body: JSON.parse(
+        typeof init?.body === 'string' ? init.body : '{}',
+      ) as Record<string, unknown>,
     });
     const failing = Object.keys(fail).find((part) => path.includes(part));
     if (failing) {
@@ -131,7 +133,7 @@ const setup = async () => {
 };
 
 /** Runs a deployment without the pause between writes to GitHub. */
-const deploy = (
+const deploy = async (
   db: Parameters<typeof handleDeployment>[0],
   cfg: Parameters<typeof handleDeployment>[1],
   installation: number,
@@ -921,7 +923,7 @@ describe('handleDeployment of a preview', () => {
       sha: 'abc1234',
       errors: 1,
     });
-    expect(String((check?.body['output'] as { text: string }).text)).toContain(
+    expect((check?.body['output'] as { text: string }).text).toContain(
       `https://plumbline.test/api/previews/${id}`,
     );
   });
@@ -985,9 +987,7 @@ describe('handleDeployment of a preview', () => {
     });
     const check = calls.at(-1);
     expect(check?.body['conclusion']).toBe('failure');
-    const summary = String(
-      (check?.body['output'] as { summary: string }).summary,
-    );
+    const summary = (check?.body['output'] as { summary: string }).summary;
     // A DNS check, which the server could not make before, is reported at the level the file gives it.
     expect(summary).toContain('- **error**: it is wrong');
     expect(summary).toContain('Rules from `plumbline.yaml`.');

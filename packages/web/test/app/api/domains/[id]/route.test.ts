@@ -39,7 +39,7 @@ beforeEach(async () => {
 afterEach(() => restore());
 
 /** A PATCH of the domain's checks. */
-const patch = (headers: Record<string, string>) =>
+const patch = async (headers: Record<string, string>) =>
   PATCH(
     new Request(URL, {
       method: 'PATCH',
@@ -61,9 +61,9 @@ describe('/api/domains/:id', () => {
 
   it('chooses the checks of the domain', async () => {
     const res = await patch({ cookie });
-    const body = (await res.json()) as {
+    const body = await res.json<{
       checks: string[];
-    };
+    }>();
     expect(body.checks).toEqual(['accept-ch']);
   });
 

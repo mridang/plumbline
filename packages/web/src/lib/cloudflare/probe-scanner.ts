@@ -47,7 +47,7 @@ const KEY_VALUE_SEPARATOR = /=(.*)/s;
 const PORT = 8080;
 
 /** The container's address on the internal Durable Object channel; no TLS exists there. */
-const CHANNEL = `${'http'}://probe`;
+const CHANNEL = `http://probe`;
 
 /** How long the container may be idle before it stops, in milliseconds. */
 export const IDLE_MS = 120_000;
@@ -70,9 +70,12 @@ export function aboutRequest(path: string, body: string): string {
   const fields = Object.fromEntries(
     (body.split('--\n', 1)[0] ?? '')
       .split('\n')
-      .map((line) => line.split(KEY_VALUE_SEPARATOR).slice(0, 2))
+      .map((line): [string, string | undefined] => {
+        const [key = '', value] = line.split(KEY_VALUE_SEPARATOR);
+        return [key, value];
+      })
       .filter(([key]) =>
-        ['host', 'port', 'ip', 'path', 'starttls'].includes(key ?? ''),
+        ['host', 'port', 'ip', 'path', 'starttls'].includes(key),
       ),
   );
   const items =
@@ -116,7 +119,9 @@ export class ProbeScanner extends DurableObject<CloudflareEnv> {
     >();
     const writer = writable.getWriter();
     const encoder = new TextEncoder();
-    const client = new ProbeClient((path, text) => this.callProbe(path, text));
+    const client = new ProbeClient(async (path, text) =>
+      this.callProbe(path, text),
+    );
     void (async () => {
       try {
         await runWorkerScan(
@@ -140,7 +145,7 @@ export class ProbeScanner extends DurableObject<CloudflareEnv> {
 
   /** Answer `POST /run`: the stream of a scan. */
   private async run(request: Request): Promise<Response> {
-    const body = (await request.json()) as { url?: unknown };
+    const body = await request.json<{ url?: unknown }>();
     if (typeof body.url !== 'string') {
       return new Response('The scan needs a url.', { status: 400 });
     }
@@ -161,13 +166,16 @@ export class ProbeScanner extends DurableObject<CloudflareEnv> {
    */
   private async perform(job: Readonly<ScanJob>): Promise<void> {
     const db = createDatabase(this.env.DB);
-    let trouble: unknown;
+    let trouble: Error | undefined;
     const run = async (url: string): Promise<SuiteRun> => {
       try {
         return await this.scan(url);
       } catch (error) {
         if (!(error instanceof SiteUnreachableError)) {
-          trouble = error;
+          trouble =
+            error instanceof Error
+              ? error
+              : new Error('The scan failed.', { cause: error });
         }
         throw error;
       }
@@ -213,7 +221,7 @@ export class ProbeScanner extends DurableObject<CloudflareEnv> {
   private async runJob(request: Request): Promise<Response> {
     let job: ScanJob;
     try {
-      job = (await request.json()) as ScanJob;
+      job = await request.json<ScanJob>();
     } catch {
       return new Response('The job is not JSON.', { status: 400 });
     }

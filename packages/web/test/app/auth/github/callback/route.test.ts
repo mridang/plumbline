@@ -40,7 +40,7 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-const call = (
+const call = async (
   query: string,
   cookie: string | null = 'plumbline_oauth_state=s1',
 ) =>

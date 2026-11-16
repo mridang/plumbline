@@ -47,9 +47,7 @@ describe('inBatches', () => {
   });
 
   it('treats a size below one as one', async () => {
-    expect(await inBatches([1, 2], 0, (n) => Promise.resolve(n))).toEqual([
-      1, 2,
-    ]);
+    expect(await inBatches([1, 2], 0, async (n) => n)).toEqual([1, 2]);
   });
 });
 

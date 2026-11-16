@@ -26,8 +26,8 @@ const GOOD: StarttlsProbe = {
 
 /** A net client whose STARTTLS probe returns `probe` for every host. */
 const net = (probe: Partial<StarttlsProbe>): MailNetClient => ({
-  tcpReachable: () => Promise.resolve(true),
-  probeStarttls: () => Promise.resolve({ ...GOOD, ...probe }),
+  tcpReachable: async () => true,
+  probeStarttls: async () => ({ ...GOOD, ...probe }),
 });
 
 let smtp: FakeSmtp | null = null;

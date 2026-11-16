@@ -19,7 +19,7 @@ afterEach(() => {
 const zone = {
   'example.test': { A: { data: ['192.0.2.9'] } },
 };
-const run = (r: RpkiResult) => {
+const run = async (r: RpkiResult) => {
   restore = installDns(zone);
   rpki.client = { check: async () => r };
   return runHint(hint);

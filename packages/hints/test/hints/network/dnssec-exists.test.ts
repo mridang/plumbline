@@ -6,7 +6,7 @@ import { runHint } from '../../helpers/run-hint.js';
 
 let restore: () => void = () => undefined;
 afterEach(() => restore());
-const run = (zone: Zone) => {
+const run = async (zone: Zone) => {
   restore = installDns(zone);
   return runHint(hint);
 };
@@ -37,7 +37,11 @@ describe('dnssec-exists', () => {
 
   it('warns when the resolver fails', async () => {
     restore = installDns({});
-    dns.client = { query: () => Promise.reject(new Error('down')) };
+    dns.client = {
+      query: async () => {
+        throw new Error('down');
+      },
+    };
     const problems = await runHint(hint);
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('error occurred');

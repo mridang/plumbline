@@ -84,6 +84,7 @@ export default class ExtraFormatter implements IFormatter {
    * @param problems - All findings of the scan.
    * @param options - Webhint's formatter options.
    */
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises -- webhint's IFormatter.format is typed void, but the CLI awaits the formatter and the report is written asynchronously
   public async format(
     problems: Problem[],
     options: FormatterOptions = {},
@@ -95,7 +96,7 @@ export default class ExtraFormatter implements IFormatter {
         id: ctor.meta.id,
         name: ctor.meta.docs?.name ?? ctor.meta.id,
         description: ctor.meta.docs?.description ?? '',
-        category: String(ctor.meta.docs?.category ?? 'other'),
+        category: ctor.meta.docs?.category ?? 'other',
         groups: texts(extras.groups),
         url: text(extras.url),
         section: text(extras.section),

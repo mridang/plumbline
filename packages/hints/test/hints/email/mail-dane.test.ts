@@ -23,21 +23,20 @@ const digest = (selector: 0 | 1): string =>
 
 const TLSA = '_25._tcp.mx.example.test TLSA';
 
-const run = (tlsa: FakeAnswer, probe: Partial<StarttlsProbe> = {}) => {
+const run = async (tlsa: FakeAnswer, probe: Partial<StarttlsProbe> = {}) => {
   const net: MailNetClient = {
-    tcpReachable: () => Promise.resolve(true),
-    probeStarttls: () =>
-      Promise.resolve({
-        reachable: true,
-        starttls: true,
-        tlsVersion: 'TLSv1.3',
-        trusted: false,
-        trustError: null,
-        hostnameMatches: true,
-        certificates: [cert.raw],
-        error: null,
-        ...probe,
-      }),
+    tcpReachable: async () => true,
+    probeStarttls: async () => ({
+      reachable: true,
+      starttls: true,
+      tlsVersion: 'TLSv1.3',
+      trusted: false,
+      trustError: null,
+      hostnameMatches: true,
+      certificates: [cert.raw],
+      error: null,
+      ...probe,
+    }),
   };
   return runMailHint(hint, {
     dns: fakeDns({ 'example.test MX': ['10 mx.example.test.'], [TLSA]: tlsa }),

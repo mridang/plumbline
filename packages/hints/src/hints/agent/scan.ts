@@ -43,7 +43,7 @@ function createState(context: HintContext, site: Site): ScanState {
   const env: AgentEnv = {
     origin: site.origin,
     host: site.url.hostname,
-    probe(path, headers = {}) {
+    async probe(path, headers = {}) {
       const key = `${path}\n${JSON.stringify(headers)}`;
       let pending = cache.get(key);
       if (!pending) {
@@ -55,8 +55,11 @@ function createState(context: HintContext, site: Site): ScanState {
       return pending;
     },
     // Read `dns.client` at call time so a test can swap in a fake.
-    dns: { query: (name, type) => dns.client.query(name, type) },
-    evaluate: (code) => context.evaluate(code),
+    dns: { query: async (name, type) => dns.client.query(name, type) },
+    evaluate: async (code) => {
+      const result: unknown = await context.evaluate(code);
+      return result;
+    },
   };
   return { env, results: new Map() };
 }
@@ -71,7 +74,7 @@ function stateFor(context: HintContext, site: Site): ScanState {
 }
 
 /** Runs (once per scan) the check with the given hint id. */
-export function resultFor(
+export async function resultFor(
   context: HintContext,
   site: Site,
   id: string,
@@ -91,7 +94,7 @@ export async function allResults(
   site: Site,
 ): Promise<{ results: CheckResult[]; commerceDetected: boolean }> {
   const results = await Promise.all(
-    CHECKS.map((check) => resultFor(context, site, check.id)),
+    CHECKS.map(async (check) => resultFor(context, site, check.id)),
   );
   const commerceDetected = await detectCommerceSignals(
     stateFor(context, site).env,

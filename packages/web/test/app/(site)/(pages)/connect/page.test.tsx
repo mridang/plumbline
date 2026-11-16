@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import type { ReactElement } from 'react';
 
 import { html } from '../../../../components/render';
 
@@ -42,7 +41,7 @@ beforeEach(() => {
 
 /** The page as the signed-in person sees it. */
 async function page(): Promise<string> {
-  return html((await ConnectPage()) as ReactElement);
+  return html(await ConnectPage());
 }
 
 describe('ConnectPage', () => {

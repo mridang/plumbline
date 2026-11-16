@@ -139,7 +139,7 @@ export async function accessibleRepositories(
 ): Promise<string[]> {
   const api = new GitHubApi(accessToken, fetcher);
   const lists = await Promise.all(
-    installations.map((installation) =>
+    installations.map(async (installation) =>
       api.list(
         `/user/installations/${installation.id}/repositories`,
         z.object({

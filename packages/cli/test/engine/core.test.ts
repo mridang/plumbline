@@ -25,8 +25,8 @@ function environment(over: Partial<ScanEnvironment> = {}): {
   return {
     installed,
     env: {
-      fetch: (() => Promise.resolve(page())) as typeof fetch,
-      assertScannable: () => Promise.resolve(),
+      fetch: async () => page(),
+      assertScannable: async () => {},
       install: () => {
         installed.push('on');
         return () => installed.push('off');
@@ -74,8 +74,9 @@ describe('runScanWith', () => {
 
   it('says why a page could not be scanned when the address is refused, and still ends and removes what it installed', async () => {
     const { env, installed } = environment({
-      assertScannable: () =>
-        Promise.reject(new ScanRefusedError('Port 22 cannot be fetched')),
+      assertScannable: async () => {
+        throw new ScanRefusedError('Port 22 cannot be fetched');
+      },
     });
     const out = await events(env, 'https://example.com:22/');
     expect(out).toEqual([
@@ -89,7 +90,9 @@ describe('runScanWith', () => {
     const cause = new Error('socket hang up');
     const diagnose = jest.fn();
     const { env } = environment({
-      fetch: (() => Promise.reject(cause)) as typeof fetch,
+      fetch: async () => {
+        throw cause;
+      },
     });
     const out = await events(env, 'https://example.com/', { diagnose });
     expect(out[0]).toEqual({
@@ -121,9 +124,9 @@ describe('runScanWith', () => {
   it('asks the site once for a file however many checks ask for it', async () => {
     const seen: string[] = [];
     const { env } = environment({
-      fetch: ((input: string) => {
-        seen.push(String(input));
-        return Promise.resolve(page());
+      fetch: (async (input: string) => {
+        seen.push(input);
+        return page();
       }) as unknown as typeof fetch,
     });
     await events(env, 'https://example.com/', {

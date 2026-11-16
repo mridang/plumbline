@@ -50,7 +50,9 @@ describe('lookupMailServers', () => {
     const servfail = fakeDns({ 'a.test MX': { status: 2 } });
     expect(await lookupMailServers(servfail, 'a.test')).toEqual([]);
     const broken: DnsClient = {
-      query: () => Promise.reject(new Error('down')),
+      query: async () => {
+        throw new Error('down');
+      },
     };
     expect(await lookupMailServers(broken, 'a.test')).toEqual([]);
   });

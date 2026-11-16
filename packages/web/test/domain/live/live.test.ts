@@ -128,7 +128,9 @@ describe('createLive, for everyone who can see the repository', () => {
     });
     expect(
       fetched.mock.calls
-        .map((call) => String(call[0]))
+        .map((call) =>
+          call[0] instanceof Request ? call[0].url : String(call[0]),
+        )
         .toSorted((a, b) => Number(a > b) - Number(a < b)),
     ).toEqual(['https://push.test/device', 'https://push.test/member']);
   });
@@ -208,7 +210,10 @@ describe('createLive', () => {
       warnings: 1,
     });
     expect(fetched).toHaveBeenCalledTimes(1);
-    expect(String(fetched.mock.calls[0]?.[0])).toBe('https://push.test/device');
+    const [first] = fetched.mock.calls[0] ?? [];
+    expect(first instanceof Request ? first.url : String(first)).toBe(
+      'https://push.test/device',
+    );
   });
 
   it('sends nothing when the number of problems did not change', async () => {

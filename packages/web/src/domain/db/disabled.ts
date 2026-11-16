@@ -160,7 +160,7 @@ function visibleTo(
           ),
         ),
     ),
-  ) as SQL;
+  )!;
 }
 
 /**

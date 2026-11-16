@@ -30,7 +30,7 @@ export function createMailNetClient(
   const connect = options.connect ?? defaultConnect;
   const timeoutMs = options.timeoutMs ?? 10_000;
   return {
-    tcpReachable(ip, port) {
+    async tcpReachable(ip, port) {
       return new Promise((resolve) => {
         const socket = connect(ip, port, ip.includes(':') ? 6 : 4);
         const finish = (reachable: boolean): void => {
@@ -43,7 +43,7 @@ export function createMailNetClient(
         socket.once('error', () => finish(false));
       });
     },
-    probeStarttls(host) {
+    async probeStarttls(host) {
       return probeStarttls(host, {
         connect,
         tlsOptions: options.tlsOptions,

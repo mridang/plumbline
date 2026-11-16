@@ -214,7 +214,7 @@ export class ProbeClient {
   }
 
   /** One handshake. It rejects with a {@link ProbeError} when the server would not complete one. */
-  public handshake(request: HandshakeRequest): Promise<HandshakeAnswer> {
+  public async handshake(request: HandshakeRequest): Promise<HandshakeAnswer> {
     const item = encodeItem({
       host: request.host,
       port: request.port,

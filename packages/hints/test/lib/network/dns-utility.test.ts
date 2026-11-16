@@ -39,7 +39,9 @@ describe('dns-util', () => {
   it('returns null when the resolver throws', async () => {
     const real = dns.client;
     dns.client = {
-      query: () => Promise.reject(new Error('down')),
+      query: async () => {
+        throw new Error('down');
+      },
     };
     try {
       expect(await safeQuery('a.test', 'A')).toBeNull();

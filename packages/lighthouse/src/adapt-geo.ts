@@ -37,6 +37,5 @@ export function geoDocument(
   html: string,
   base: string,
 ): JsonLdDocument & ContentDocument {
-  return createHTMLDocument(html, base) as unknown as JsonLdDocument &
-    ContentDocument;
+  return createHTMLDocument(html, base);
 }

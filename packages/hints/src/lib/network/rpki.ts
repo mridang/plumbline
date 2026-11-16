@@ -29,7 +29,7 @@ export async function collectRpki(hosts: string[]): Promise<IpRpki[]> {
         ...(await ipv6Addresses(host)),
       ];
       return Promise.all(
-        ips.map((ip) =>
+        ips.map(async (ip) =>
           rpki.client
             .check(ip)
             .then((result): IpRpki | null => ({ host, ip, result }))
@@ -42,7 +42,8 @@ export async function collectRpki(hosts: string[]): Promise<IpRpki[]> {
   return perHost.flat().filter((entry): entry is IpRpki => entry !== null);
 }
 
-export const webRpki = (host: string): Promise<IpRpki[]> => collectRpki([host]);
+export const webRpki = async (host: string): Promise<IpRpki[]> =>
+  collectRpki([host]);
 
 /** The addresses of the site's name servers. */
 export async function nsRpki(host: string): Promise<IpRpki[]> {

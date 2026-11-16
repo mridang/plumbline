@@ -23,7 +23,7 @@ export async function runWorkerScan(
   options: CoreOptions = {},
 ): Promise<void> {
   const fetcher = probeFetch(client);
-  await withProbe(client, () =>
+  await withProbe(client, async () =>
     runScanWith(
       {
         fetch: fetcher,
@@ -37,10 +37,8 @@ export async function runWorkerScan(
           const original = globalThis.fetch;
           // The checks that fetch the site's own files with the global `fetch` get the probe's
           // view of it; the scan's other calls (DNS-over-HTTPS) keep the real one.
-          globalThis.fetch = ((input, init) =>
-            isSiteRequest(input)
-              ? fetcher(input, init)
-              : original(input, init)) as typeof fetch;
+          globalThis.fetch = async (input, init) =>
+            isSiteRequest(input) ? fetcher(input, init) : original(input, init);
           return () => {
             globalThis.fetch = original;
           };

@@ -90,7 +90,7 @@ export function validateLlmsTxt(text: string): FileIssue[] {
   let section: { name: string; line: number; items: number } | null = null;
   const names = new Set<string>();
   const closeSection = () => {
-    if (section && section.items === 0) {
+    if (section?.items === 0) {
       issues.push({
         severity: 'warning',
         line: section.line,

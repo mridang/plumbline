@@ -200,7 +200,7 @@ describe('overviewOf, for people who can see a repository on GitHub', () => {
 });
 
 describe('overviewOf, with the last deployment and the open issues', () => {
-  const run = (
+  const run = async (
     db: ReturnType<typeof made>['db'],
     host: string,
     sha: string,

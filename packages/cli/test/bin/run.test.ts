@@ -16,7 +16,7 @@ describe('bin/run.js', () => {
   });
 
   it('exists and starts with a node shebang', async () => {
-    const file = new URL(manifest.bin['plumbline'], PACKAGE);
+    const file = new URL(manifest.bin.plumbline, PACKAGE);
     expect(await pathExists(file)).toBe(true);
     const text = await readFile(file, 'utf8');
     expect(text.startsWith('#!/usr/bin/env node')).toBe(true);

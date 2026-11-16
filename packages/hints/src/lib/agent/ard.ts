@@ -133,7 +133,7 @@ export async function checkArd(env: AgentEnv): Promise<CheckResult> {
     false,
     lastProblems.length > 0
       ? `The AI catalog is invalid: ${lastProblems[0]}.`
-      : await notFound(urls.slice(0, 2), (url) => env.probe(url)),
+      : await notFound(urls.slice(0, 2), async (url) => env.probe(url)),
     invalid && lastProblems.length > 0
       ? { resource: invalid.url, snippet: pretty(invalid.catalog) }
       : {

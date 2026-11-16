@@ -126,9 +126,9 @@ async function subscribeWithServerKey(
       credentials: 'same-origin',
     }),
   );
-  const { vapid_public_key: vapidPublicKey } = (await configuration.json()) as {
+  const { vapid_public_key: vapidPublicKey } = await configuration.json<{
     vapid_public_key: string;
-  };
+  }>();
   return manager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: keyBytes(vapidPublicKey),
@@ -216,8 +216,8 @@ export function browserHost(): PushHost {
       return registration.pushManager;
     },
     permission: () => Notification.permission,
-    requestPermission: () => Notification.requestPermission(),
-    fetcher: (input, init) => fetch(input, init),
+    requestPermission: async () => Notification.requestPermission(),
+    fetcher: async (input, init) => fetch(input, init),
   };
 }
 

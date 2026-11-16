@@ -222,7 +222,7 @@ describe('buildSchema', () => {
 
   it('lists every rule set, and the environments of the reader', () => {
     const defs = schema['$defs'] as Record<string, JsonSchema>;
-    const name = (defs['extends']?.['anyOf'] as JsonSchema[])[0] as JsonSchema;
+    const name = (defs['extends']?.['anyOf'] as JsonSchema[])[0]!;
     expect(
       ((name['anyOf'] as JsonSchema[])[0]!['oneOf'] as { const: string }[])
         .map((set) => set.const)

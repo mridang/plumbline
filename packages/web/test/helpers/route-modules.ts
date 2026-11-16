@@ -9,37 +9,40 @@
 export const ROUTE_MODULES: Readonly<
   Record<string, () => Promise<Record<string, unknown>>>
 > = {
-  '/api/checks': () => import('@/app/api/checks/route'),
-  '/api/domains': () => import('@/app/api/domains/route'),
-  '/api/domains/{id}': () => import('@/app/api/domains/[id]/route'),
-  '/api/domains/{id}/reports': () =>
+  '/api/checks': async () => import('@/app/api/checks/route'),
+  '/api/domains': async () => import('@/app/api/domains/route'),
+  '/api/domains/{id}': async () => import('@/app/api/domains/[id]/route'),
+  '/api/domains/{id}/reports': async () =>
     import('@/app/api/domains/[id]/reports/route'),
-  '/api/domains/{id}/reports/{report_id}': () =>
+  '/api/domains/{id}/reports/{report_id}': async () =>
     import('@/app/api/domains/[id]/reports/[report-id]/route'),
-  '/api/domains/{id}/issues': () =>
+  '/api/domains/{id}/issues': async () =>
     import('@/app/api/domains/[id]/issues/route'),
-  '/api/domains/{id}/runs': () => import('@/app/api/domains/[id]/runs/route'),
-  '/api/domains/{id}/runs/{run_id}': () =>
+  '/api/domains/{id}/runs': async () =>
+    import('@/app/api/domains/[id]/runs/route'),
+  '/api/domains/{id}/runs/{run_id}': async () =>
     import('@/app/api/domains/[id]/runs/[run-id]/route'),
-  '/api/github/syncs': () => import('@/app/api/github/syncs/route'),
-  '/api/previews/{id}': () => import('@/app/api/previews/[id]/route'),
-  '/api/push/configuration': () => import('@/app/api/push/configuration/route'),
-  '/api/scans': () => import('@/app/api/scans/route'),
-  '/api/scans/{id}/run': () => import('@/app/api/scans/[id]/run/route'),
-  '/api/sessions': () => import('@/app/api/sessions/route'),
-  '/api/sessions/self': () => import('@/app/api/sessions/self/route'),
-  '/api/users/self': () => import('@/app/api/users/self/route'),
-  '/api/users/self/connections': () =>
+  '/api/github/syncs': async () => import('@/app/api/github/syncs/route'),
+  '/api/previews/{id}': async () => import('@/app/api/previews/[id]/route'),
+  '/api/push/configuration': async () =>
+    import('@/app/api/push/configuration/route'),
+  '/api/scans': async () => import('@/app/api/scans/route'),
+  '/api/scans/{id}/run': async () => import('@/app/api/scans/[id]/run/route'),
+  '/api/sessions': async () => import('@/app/api/sessions/route'),
+  '/api/sessions/self': async () => import('@/app/api/sessions/self/route'),
+  '/api/users/self': async () => import('@/app/api/users/self/route'),
+  '/api/users/self/connections': async () =>
     import('@/app/api/users/self/connections/route'),
-  '/api/users/self/connections/{grant_id}': () =>
+  '/api/users/self/connections/{grant_id}': async () =>
     import('@/app/api/users/self/connections/[grant-id]/route'),
-  '/api/users/self/github': () => import('@/app/api/users/self/github/route'),
-  '/api/users/self/repositories/disabled/{owner}/{repo}': () =>
+  '/api/users/self/github': async () =>
+    import('@/app/api/users/self/github/route'),
+  '/api/users/self/repositories/disabled/{owner}/{repo}': async () =>
     import('@/app/api/users/self/repositories/disabled/[owner]/[repo]/route'),
-  '/api/users/self/push/subscriptions': () =>
+  '/api/users/self/push/subscriptions': async () =>
     import('@/app/api/users/self/push/subscriptions/route'),
-  '/api/users/self/push/subscriptions/{id}': () =>
+  '/api/users/self/push/subscriptions/{id}': async () =>
     import('@/app/api/users/self/push/subscriptions/[id]/route'),
-  '/api/users/self/push/subscriptions/{id}/tests': () =>
+  '/api/users/self/push/subscriptions/{id}/tests': async () =>
     import('@/app/api/users/self/push/subscriptions/[id]/tests/route'),
 };

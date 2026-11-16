@@ -13,11 +13,11 @@ function fetchOf(
   answers: (url: string) => Response,
   seen: { url: string; headers: Record<string, string> }[] = [],
 ): typeof fetch {
-  return (async (input: unknown, init?: RequestInit) => {
+  return async (input: unknown, init?: RequestInit) => {
     const url = String(input);
     seen.push({ url, headers: init?.headers as Record<string, string> });
     return answers(url);
-  }) as typeof fetch;
+  };
 }
 
 describe('GitHubApi', () => {
@@ -124,10 +124,11 @@ describe('GitHubApi, writes and size limits', () => {
         type: string;
       }[] = [];
       const fetcher = (async (input: unknown, init?: RequestInit) => {
+        const sent = typeof init?.body === 'string' ? init.body : '';
         requests.push({
           method: init?.method ?? '',
-          url: String(input),
-          body: init?.body ? JSON.parse(String(init.body)) : undefined,
+          url: input instanceof Request ? input.url : String(input),
+          body: sent ? (JSON.parse(sent) as unknown) : undefined,
           type: String(
             (init?.headers as Record<string, string>)['Content-Type'],
           ),
@@ -139,13 +140,15 @@ describe('GitHubApi, writes and size limits', () => {
 
     it('reads with GET and no body', async () => {
       const requests: string[] = [];
-      const api = new GitHubApi('t', (async (
-        _input: unknown,
-        init?: RequestInit,
-      ) => {
-        requests.push(`${init?.method} ${String(init?.body)}`);
-        return Response.json({ a: 1 });
-      }) as typeof fetch);
+      const api = new GitHubApi(
+        't',
+        async (_input: unknown, init?: RequestInit) => {
+          requests.push(
+            `${init?.method} ${typeof init?.body === 'string' ? init.body : 'undefined'}`,
+          );
+          return Response.json({ a: 1 });
+        },
+      );
       await api.json('/x', z.object({ a: z.number() }));
       expect(requests).toEqual(['GET undefined']);
     });
@@ -215,7 +218,7 @@ describe('GitHubApi, writes and size limits', () => {
 
   describe('reading a file with a size limit', () => {
     const api = (body: string) =>
-      new GitHubApi('t', (async () => new Response(body)) as typeof fetch);
+      new GitHubApi('t', async () => new Response(body));
 
     it('returns a file that fits, as it would without the limit', async () => {
       expect(await api('abc').text('/x', 10)).toBe('abc');

@@ -76,7 +76,7 @@ export class GitHubApi {
     private readonly token: string,
     fetcher: typeof fetch = fetch,
   ) {
-    this.#fetch = (input, init) => fetcher(input, init);
+    this.#fetch = async (input, init) => fetcher(input, init);
   }
 
   async #send(
@@ -164,7 +164,7 @@ export class GitHubApi {
   }
 
   /** The repositories an installation token can reach. */
-  repositories(): Promise<Repo[]> {
+  async repositories(): Promise<Repo[]> {
     return this.list(
       '/installation/repositories',
       z.object({ repositories: z.array(RepoSchema) }),
@@ -184,7 +184,7 @@ export class GitHubApi {
   }
 
   /** Opens an issue. */
-  openIssue(
+  async openIssue(
     fullName: string,
     issue: Readonly<{ title: string; body: string; labels?: string[] }>,
   ): Promise<IssueRef> {
@@ -192,7 +192,7 @@ export class GitHubApi {
   }
 
   /** Changes an issue: its text, or whether it is open. */
-  editIssue(
+  async editIssue(
     fullName: string,
     number: number,
     change: Readonly<{
@@ -277,7 +277,7 @@ export class GitHubApi {
   }
 
   /** One file of a repository, as text, at most `maxBytes` long when that is given. */
-  file(
+  async file(
     fullName: string,
     path: string,
     branch: string,

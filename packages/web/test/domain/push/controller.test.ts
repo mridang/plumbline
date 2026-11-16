@@ -64,7 +64,7 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-const post = (body: unknown) =>
+const post = async (body: unknown) =>
   collection.POST(
     new Request(`${ORIGIN}/api/users/self/push/subscriptions`, {
       method: 'POST',

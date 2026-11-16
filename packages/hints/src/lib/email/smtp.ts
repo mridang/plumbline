@@ -57,8 +57,8 @@ class ReplyReader {
   private buffer = '';
   private closed: Error | null = null;
   private waiting: {
-    resolve(reply: Reply): void;
-    reject(error: Error): void;
+    resolve: (reply: Reply) => void;
+    reject: (error: Error) => void;
   } | null = null;
 
   private readonly onData = (chunk: Buffer): void => {
@@ -110,7 +110,7 @@ class ReplyReader {
     }
   }
 
-  public reply(timeoutMs: number): Promise<Reply> {
+  public async reply(timeoutMs: number): Promise<Reply> {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.waiting = null;
@@ -136,7 +136,7 @@ class ReplyReader {
 }
 
 /** Waits for a socket event, failing on `error` or after a timeout. */
-function waitFor(
+async function waitFor(
   socket: Socket,
   event: 'connect' | 'secureConnect',
   timeoutMs: number,
@@ -282,9 +282,7 @@ export async function probeStarttls(
     // Node reports the verification error as a code, or leaves it undefined.
     const rawAuthorizationError: unknown = secure.authorizationError;
     const authorizationError =
-      rawAuthorizationError === undefined
-        ? null
-        : String(rawAuthorizationError);
+      typeof rawAuthorizationError === 'string' ? rawAuthorizationError : null;
     // Node folds the host name check into `authorized`; tell the two apart.
     const nameMismatch = authorizationError === 'ERR_TLS_CERT_ALTNAME_INVALID';
     const result: StarttlsProbe = {

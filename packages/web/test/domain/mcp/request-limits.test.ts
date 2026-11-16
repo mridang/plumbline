@@ -163,7 +163,7 @@ describe('checkRateLimits', () => {
   it('lets a user make their allowance of tool calls and refuses the next', async () => {
     const { store } = memoryStore();
     const outcomes = await Promise.all(
-      Array.from({ length: 121 }, () =>
+      Array.from({ length: 121 }, async () =>
         checkRateLimits(someone, [call], deps(store)),
       ),
     );
@@ -183,7 +183,7 @@ describe('checkRateLimits', () => {
   it('names the request it refuses, when there was just the one', async () => {
     const { store } = memoryStore();
     await Promise.all(
-      Array.from({ length: 120 }, () =>
+      Array.from({ length: 120 }, async () =>
         checkRateLimits(someone, [call], deps(store)),
       ),
     );
@@ -200,7 +200,7 @@ describe('checkRateLimits', () => {
   it('counts the rest separately, so listing is not starved by calling', async () => {
     const { store, counters } = memoryStore();
     await Promise.all(
-      Array.from({ length: 121 }, () =>
+      Array.from({ length: 121 }, async () =>
         checkRateLimits(someone, [call], deps(store)),
       ),
     );
@@ -213,7 +213,7 @@ describe('checkRateLimits', () => {
   it('counts each user on their own', async () => {
     const { store } = memoryStore();
     await Promise.all(
-      Array.from({ length: 121 }, () =>
+      Array.from({ length: 121 }, async () =>
         checkRateLimits(someone, [call], deps(store)),
       ),
     );
@@ -225,7 +225,7 @@ describe('checkRateLimits', () => {
   it('tells the user how long is left in the window', async () => {
     const { store } = memoryStore();
     await Promise.all(
-      Array.from({ length: 120 }, () =>
+      Array.from({ length: 120 }, async () =>
         checkRateLimits(someone, [call], deps(store)),
       ),
     );
@@ -291,7 +291,7 @@ describe('chargeRefusedBody', () => {
   it('refuses with a 429 and Retry-After once the junk has used up the allowance', async () => {
     const { store } = memoryStore();
     const outcomes = await Promise.all(
-      Array.from({ length: MCP_RATE_LIMITS.request.limit + 1 }, () =>
+      Array.from({ length: MCP_RATE_LIMITS.request.limit + 1 }, async () =>
         chargeRefusedBody(someone, deps(store)),
       ),
     );
@@ -306,7 +306,7 @@ describe('chargeRefusedBody', () => {
   it('counts each user on their own', async () => {
     const { store } = memoryStore();
     await Promise.all(
-      Array.from({ length: MCP_RATE_LIMITS.request.limit + 1 }, () =>
+      Array.from({ length: MCP_RATE_LIMITS.request.limit + 1 }, async () =>
         chargeRefusedBody(someone, deps(store)),
       ),
     );

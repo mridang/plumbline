@@ -1,3 +1,4 @@
+import type { IncomingMessage } from 'node:http';
 import { describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/seo/seo-meta-description-too-short.js';
 import { runHint } from '../../helpers/run-hint.js';
@@ -13,7 +14,7 @@ function pageRoutes(
   headFor?: (url: string) => string,
 ) {
   return {
-    '/': (req: import('node:http').IncomingMessage) => ({
+    '/': (req: IncomingMessage) => ({
       headers: { 'content-type': 'text/html; charset=utf-8' },
       body: `<!doctype html>${parts.html ?? '<html lang="en">'}<head><title>A fine page title</title>${
         headFor ? headFor(`http://${req.headers.host}/`) : parts.head

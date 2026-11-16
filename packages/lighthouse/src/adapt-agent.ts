@@ -75,10 +75,11 @@ export async function agentEnv(
     host,
     // A plugin can only read the main document, so every probe path resolves to
     // it; `checkLinkHeaders` only ever probes `/`, the home page.
-    probe: () => Promise.resolve(probe),
+    probe: async () => probe,
     dns: {
-      query: () =>
-        Promise.reject(new Error('DNS is unavailable in a Lighthouse plugin.')),
+      query: async () => {
+        throw new Error('DNS is unavailable in a Lighthouse plugin.');
+      },
     },
   };
 }

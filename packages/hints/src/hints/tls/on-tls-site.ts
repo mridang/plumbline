@@ -45,9 +45,9 @@ export interface TlsSite {
    * Reports a failed rule (an error unless told otherwise) with the evidence
    * it rests on, shown as the code snippet of the finding.
    */
-  report(message: string, codeSnippet: string, severity?: Severity): void;
+  report: (message: string, codeSnippet: string, severity?: Severity) => void;
   /** Reports that the check could not be made, as information. */
-  couldNotTest(reason: string): void;
+  couldNotTest: (reason: string) => void;
 }
 
 /**

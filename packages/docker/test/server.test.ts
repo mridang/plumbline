@@ -31,7 +31,7 @@ const fakeScan: ScanFn = async () => ({ problems: [problem()], hints: [HINT] });
 let server: Server;
 let base: string;
 
-function listen(scan: ScanFn, run?: RunFn): Promise<void> {
+async function listen(scan: ScanFn, run?: RunFn): Promise<void> {
   server = createScanServer({ scan, run });
   return new Promise((resolve) =>
     server.listen(0, '127.0.0.1', () => {
@@ -42,10 +42,10 @@ function listen(scan: ScanFn, run?: RunFn): Promise<void> {
   );
 }
 
-afterEach(() => new Promise((resolve) => server.close(() => resolve())));
+afterEach(async () => new Promise((resolve) => server.close(() => resolve())));
 
 describe('the scan server', () => {
-  beforeEach(() => listen(fakeScan));
+  beforeEach(async () => listen(fakeScan));
 
   it('answers the health check', async () => {
     const res = await fetch(`${base}/healthz`);
@@ -55,7 +55,7 @@ describe('the scan server', () => {
 
   it('lists the hint catalogue', async () => {
     const res = await fetch(`${base}/hints`);
-    const body = (await res.json()) as { hints: unknown[] };
+    const body = await res.json<{ hints: unknown[] }>();
     expect(res.status).toBe(200);
     expect(body.hints.length).toBeGreaterThan(0);
   });
@@ -66,10 +66,10 @@ describe('the scan server', () => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ url: 'https://example.com/' }),
     });
-    const body = (await res.json()) as {
+    const body = await res.json<{
       summary: { total: number };
       findings: { severity: string }[];
-    };
+    }>();
     expect(res.status).toBe(200);
     expect(body.summary.total).toBe(1);
     expect(body.findings[0].severity).toBe('error');
@@ -106,7 +106,7 @@ describe('the scan server', () => {
 });
 
 describe('when a scan throws', () => {
-  beforeEach(() =>
+  beforeEach(async () =>
     listen(async () => {
       throw new Error('browser crashed');
     }),
@@ -117,7 +117,7 @@ describe('when a scan throws', () => {
       method: 'POST',
       body: JSON.stringify({ url: 'https://example.com/' }),
     });
-    const body = (await res.json()) as { error: string; detail: string };
+    const body = await res.json<{ error: string; detail: string }>();
     expect(res.status).toBe(500);
     expect(body.detail).toContain('browser crashed');
   });
@@ -130,7 +130,7 @@ const fakeRun: RunFn = async (url, emit) => {
 };
 
 describe('POST /run', () => {
-  beforeEach(() => listen(fakeScan, fakeRun));
+  beforeEach(async () => listen(fakeScan, fakeRun));
 
   it('streams the scan as one JSON object per line', async () => {
     const res = await fetch(`${base}/run`, {
@@ -141,10 +141,9 @@ describe('POST /run', () => {
     expect(res.headers.get('content-type')).toContain('application/x-ndjson');
     const text = await res.text();
     const lines = text.trim().split('\n');
-    expect(lines.map((line) => JSON.parse(line).type)).toEqual([
-      'ready',
-      'end',
-    ]);
+    expect(
+      lines.map((line) => (JSON.parse(line) as { type: string }).type),
+    ).toEqual(['ready', 'end']);
   });
 
   it.each([
@@ -161,7 +160,7 @@ describe('POST /run', () => {
 });
 
 describe('POST /run when the scan throws', () => {
-  beforeEach(() =>
+  beforeEach(async () =>
     listen(fakeScan, async () => {
       throw new Error('out of memory');
     }),
@@ -176,7 +175,7 @@ describe('POST /run when the scan throws', () => {
     const events = text
       .trim()
       .split('\n')
-      .map((line) => JSON.parse(line));
+      .map((line) => JSON.parse(line) as unknown);
     expect(events).toEqual([
       { type: 'unreachable', detail: 'out of memory' },
       { type: 'end' },

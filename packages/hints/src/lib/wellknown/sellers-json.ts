@@ -9,7 +9,7 @@ const SELLER_TYPES = new Set(['publisher', 'intermediary', 'both']);
 
 /** True when a confidentiality flag is set (the spec uses the integer 1). */
 function isConfidential(seller: Record<string, unknown>): boolean {
-  return seller['is_confidential'] === 1 || seller['is_confidential'] === true;
+  return seller.is_confidential === 1 || seller.is_confidential === true;
 }
 
 /** Checks that `identifiers` is an array of `{name, value}` string pairs. */
@@ -24,8 +24,8 @@ function checkIdentifiers(identifiers: unknown): FileIssue[] {
   }
   return identifiers.flatMap((entry: unknown, index): FileIssue[] =>
     !isObject(entry) ||
-    typeof entry['name'] !== 'string' ||
-    typeof entry['value'] !== 'string'
+    typeof entry.name !== 'string' ||
+    typeof entry.value !== 'string'
       ? [
           {
             severity: 'error',
@@ -59,7 +59,7 @@ export function validateSellersJson(text: string): FileIssue[] {
   }
 
   // `version` is required and identifies the schema revision (section 3.3).
-  if (typeof root['version'] !== 'string' || root['version'].trim() === '') {
+  if (typeof root.version !== 'string' || root.version.trim() === '') {
     issues.push({
       severity: 'error',
       message: "The required 'version' field is missing or not a string.",
@@ -67,8 +67,8 @@ export function validateSellersJson(text: string): FileIssue[] {
   }
   // `contact_email` is optional, but when present it must be a string.
   if (
-    root['contact_email'] !== undefined &&
-    typeof root['contact_email'] !== 'string'
+    root.contact_email !== undefined &&
+    typeof root.contact_email !== 'string'
   ) {
     issues.push({
       severity: 'error',
@@ -76,11 +76,11 @@ export function validateSellersJson(text: string): FileIssue[] {
     });
   }
   // `identifiers` is optional; when present it is an array of {name, value}.
-  if (root['identifiers'] !== undefined) {
-    issues.push(...checkIdentifiers(root['identifiers']));
+  if (root.identifiers !== undefined) {
+    issues.push(...checkIdentifiers(root.identifiers));
   }
 
-  const sellers = root['sellers'];
+  const sellers = root.sellers;
   if (!Array.isArray(sellers)) {
     issues.push({
       severity: 'error',
@@ -98,7 +98,7 @@ export function validateSellersJson(text: string): FileIssue[] {
       });
       continue;
     }
-    const id = seller['seller_id'];
+    const id = seller.seller_id;
     if (typeof id !== 'string' || id.trim() === '') {
       issues.push({
         severity: 'error',
@@ -114,7 +114,7 @@ export function validateSellersJson(text: string): FileIssue[] {
       seenIds.add(id);
     }
 
-    const type = seller['seller_type'];
+    const type = seller.seller_type;
     if (typeof type !== 'string' || !SELLER_TYPES.has(type.toLowerCase())) {
       issues.push({
         severity: 'error',
@@ -124,16 +124,13 @@ export function validateSellersJson(text: string): FileIssue[] {
 
     // name and domain are required unless the seller is confidential.
     if (!isConfidential(seller)) {
-      if (typeof seller['name'] !== 'string' || seller['name'].trim() === '') {
+      if (typeof seller.name !== 'string' || seller.name.trim() === '') {
         issues.push({
           severity: 'error',
           message: `sellers[${index}] must have a 'name' unless it is confidential.`,
         });
       }
-      if (
-        typeof seller['domain'] !== 'string' ||
-        seller['domain'].trim() === ''
-      ) {
+      if (typeof seller.domain !== 'string' || seller.domain.trim() === '') {
         issues.push({
           severity: 'error',
           message: `sellers[${index}] must have a 'domain' unless it is confidential.`,

@@ -156,20 +156,20 @@ interface RunContext extends ScanContext {
  */
 export function createScanRun(
   secret: SecretSource = secretFromEnv,
-  namespace: () => ScannerNamespace | undefined = () =>
-    getEnv().PROBE as unknown as ScannerNamespace | undefined,
+  namespace: () => ScannerNamespace | undefined = () => getEnv().PROBE,
   cooldown: () => CooldownDeps = liveCooldownDeps,
 ): ApiController<RunContext> {
   return new ApiController<RunContext>({
-    context: async (_request, route) => ({
-      scan: await scanOf(route, secret),
-      id: ((await route.params) ?? {})['id'] ?? '',
-    }),
+    context: async (_request, route) => {
+      const scan = await scanOf(route, secret);
+      const params = await route.params;
+      return { scan, id: params?.['id'] ?? '' };
+    },
   }).on<AbortSignal, Response>({
     method: 'POST',
     decode: async (request) => request.signal,
     handle: async (signal, context) => {
-      const { scan, id } = context as RunContext;
+      const { scan, id } = context;
       const target = namespace();
       if (!target) {
         throw notAvailable();

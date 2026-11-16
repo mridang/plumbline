@@ -15,7 +15,7 @@ import {
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/pwa/read.js';
 
 const parse = (html: string): DocumentLike =>
-  createHTMLDocument(html, 'https://x.test/') as DocumentLike;
+  createHTMLDocument(html, 'https://x.test/');
 
 /** Builds the artifacts a PWA check reads: the raw HTML and the page URL. */
 function artifacts(html: string): Artifacts {

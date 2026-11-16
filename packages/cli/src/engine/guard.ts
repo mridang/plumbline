@@ -192,7 +192,7 @@ export function guardedLookup(
     ) => void;
     let lookupOptions: dns.LookupOptions = {};
     if (typeof optionsOrHandler === 'object' && optionsOrHandler !== null) {
-      lookupOptions = optionsOrHandler as dns.LookupOptions;
+      lookupOptions = optionsOrHandler;
     } else if (typeof optionsOrHandler === 'number') {
       lookupOptions = { family: optionsOrHandler };
     } else {
@@ -203,7 +203,7 @@ export function guardedLookup(
         respond(failure);
         return;
       }
-      const list = addresses as unknown as dns.LookupAddress[];
+      const list = addresses;
       const refused = options.allowPrivate
         ? undefined
         : list.find((entry) => !isPublicAddress(entry.address));
@@ -340,7 +340,7 @@ function bodyless(status: number): boolean {
 }
 
 /** Sends one request, without following a redirect. */
-function once(
+async function once(
   url: URL,
   method: string,
   headers: Record<string, string>,
@@ -352,7 +352,7 @@ function once(
     const transport = url.protocol === 'https:' ? https : http;
     const request = transport.request(
       url,
-      { method, headers, signal, lookup: lookup as never },
+      { method, headers, signal, lookup: lookup },
       resolve,
     );
     request.on('error', reject);

@@ -65,7 +65,7 @@ beforeEach(async () => {
 afterEach(() => restore());
 
 /** Render the page, with the `view` query parameter if given. */
-function render(
+async function render(
   view?: string,
   extra: Readonly<{ status?: string; paused?: string }> = {},
 ): Promise<ReactElement> {

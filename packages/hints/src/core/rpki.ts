@@ -37,6 +37,7 @@ function ripeStatClient(
     const url = new URL(`${base}/${path}/data.json`);
     url.searchParams.set('resource', resource);
     const response = await fetchImpl(url);
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- Response.json() is Promise<unknown> when this package is built, so the assertion is required; only the root lint program sees the generic json<T>() from the Workers types
     return (await response.json()) as T;
   };
 
@@ -52,6 +53,7 @@ function ripeStatClient(
       url.searchParams.set('resource', `AS${asn}`);
       url.searchParams.set('prefix', prefix);
       const response = await fetchImpl(url);
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- Response.json() is Promise<unknown> when this package is built, so the assertion is required; only the root lint program sees the generic json<T>() from the Workers types
       const body = (await response.json()) as RpkiValidationBody;
       const status = body.data?.status?.toLowerCase();
       return {

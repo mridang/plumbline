@@ -23,8 +23,8 @@ function validateDetail(
     });
     return;
   }
-  const hasAppId = typeof detail['appID'] === 'string';
-  const hasAppIds = isStringArray(detail['appIDs']);
+  const hasAppId = typeof detail.appID === 'string';
+  const hasAppIds = isStringArray(detail.appIDs);
   if (!hasAppId && !hasAppIds) {
     issues.push({
       severity: 'error',
@@ -32,16 +32,13 @@ function validateDetail(
     });
   }
   // One of components (modern) or paths (legacy) carries the match rules.
-  if (
-    detail['components'] !== undefined &&
-    !Array.isArray(detail['components'])
-  ) {
+  if (detail.components !== undefined && !Array.isArray(detail.components)) {
     issues.push({
       severity: 'error',
       message: `applinks.details[${index}].components must be an array.`,
     });
   }
-  if (detail['paths'] !== undefined && !isStringArray(detail['paths'])) {
+  if (detail.paths !== undefined && !isStringArray(detail.paths)) {
     issues.push({
       severity: 'error',
       message: `applinks.details[${index}].paths must be an array of strings.`,
@@ -59,13 +56,13 @@ function validateApplinks(value: unknown, issues: FileIssue[]): void {
     return;
   }
   // Apple requires `apps` to be present and empty (historical compatibility).
-  if (value['apps'] !== undefined && !isStringArray(value['apps'])) {
+  if (value.apps !== undefined && !isStringArray(value.apps)) {
     issues.push({
       severity: 'error',
       message: "'applinks.apps' must be an array.",
     });
   }
-  const details = value['details'];
+  const details = value.details;
   if (details !== undefined) {
     if (Array.isArray(details)) {
       for (const [index, detail] of details.entries())
@@ -92,7 +89,7 @@ function validateAppsService(
     });
     return;
   }
-  if (!isStringArray(value['apps'])) {
+  if (!isStringArray(value.apps)) {
     issues.push({
       severity: 'error',
       message: `'${name}.apps' must be an array of app identifiers.`,
@@ -130,14 +127,14 @@ export function validateAppleAppSiteAssociation(text: string): FileIssue[] {
     });
   }
 
-  if (root['applinks'] !== undefined) {
-    validateApplinks(root['applinks'], issues);
+  if (root.applinks !== undefined) {
+    validateApplinks(root.applinks, issues);
   }
-  if (root['webcredentials'] !== undefined) {
-    validateAppsService('webcredentials', root['webcredentials'], issues);
+  if (root.webcredentials !== undefined) {
+    validateAppsService('webcredentials', root.webcredentials, issues);
   }
-  if (root['appclips'] !== undefined) {
-    validateAppsService('appclips', root['appclips'], issues);
+  if (root.appclips !== undefined) {
+    validateAppsService('appclips', root.appclips, issues);
   }
 
   return issues;

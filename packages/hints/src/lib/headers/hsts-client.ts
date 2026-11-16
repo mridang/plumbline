@@ -8,7 +8,7 @@ export interface HstsClient {
    * Returns the header of `url`, null when the page answered without one and
    * undefined when the request failed.
    */
-  fetchHeader(url: string): Promise<string | null | undefined>;
+  fetchHeader: (url: string) => Promise<string | null | undefined>;
 }
 
 export const hstsClient: HstsClient = {

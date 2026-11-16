@@ -142,9 +142,8 @@ describe('OPTIONS /mcp', () => {
   it('refuses a preflight from an origin we do not know', async () => {
     const res = await OPTIONS(request('OPTIONS', { origin: OTHER }));
     expect(res.status).toBe(403);
-    expect(((await res.json()) as { error: { code: number } }).error.code).toBe(
-      -32_600,
-    );
+    const body = await res.json<{ error: { code: number } }>();
+    expect(body.error.code).toBe(-32_600);
   });
 });
 
@@ -213,10 +212,10 @@ describe('with a valid token', () => {
     const res = await POST(request('POST', bearer(token), rpc('tools/list')));
     expect(res.status).toBe(200);
     expect(res.headers.get('cache-control')).toBe('no-store');
-    const body = (await res.json()) as {
+    const body = await res.json<{
       id: number;
       result: { tools: { name: string }[] };
-    };
+    }>();
     expect(body.id).toBe(1);
     expect(body.result.tools.map((tool) => tool.name)).toContain(READ_TOOL);
   });

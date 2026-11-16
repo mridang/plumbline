@@ -39,10 +39,10 @@ export type FakeAnswer =
  */
 export function fakeDns(table: Record<string, FakeAnswer>): DnsClient {
   return {
-    query(name, type): Promise<DnsResponse> {
+    async query(name, type): Promise<DnsResponse> {
       const entry = table[`${name} ${type}`];
       const spec = Array.isArray(entry) ? { data: entry } : (entry ?? {});
-      return Promise.resolve({
+      return {
         status: spec.status ?? 0,
         authenticated: spec.authenticated ?? false,
         answers: (spec.data ?? []).map((data) => ({
@@ -52,7 +52,7 @@ export function fakeDns(table: Record<string, FakeAnswer>): DnsClient {
           data,
         })),
         authority: [],
-      });
+      };
     },
   };
 }

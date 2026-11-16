@@ -210,7 +210,10 @@ describe('plumbline scan', () => {
   });
   it('reports a failed scan that threw a non-error', async () => {
     const result = await run(['scan', 'example.com'], {
-      scan: () => Promise.reject('boom'),
+      scan: async () => {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error -- the test needs a scan that throws a non-Error value
+        throw 'boom';
+      },
     });
     expect(result.stderr).toContain('failed: boom');
   });

@@ -36,7 +36,7 @@ function fallbackRoute(path: string): Route {
   };
 }
 
-function listen(routes: Routes): Promise<Server> {
+async function listen(routes: Routes): Promise<Server> {
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     const path = (req.url ?? '/').split('?', 1)[0];
     const entry = routes[path];

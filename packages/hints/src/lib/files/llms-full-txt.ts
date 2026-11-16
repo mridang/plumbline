@@ -68,7 +68,7 @@ function scanLine(
   if (fenceMatch) {
     if (!state.fence) {
       state.fence = { marker: fenceMatch[1][0], line };
-    } else if (fenceMatch[1][0] === state.fence.marker) {
+    } else if (fenceMatch[1].startsWith(state.fence.marker)) {
       state.fence = null;
     } else {
       // A fence of another marker inside a fence is just content.

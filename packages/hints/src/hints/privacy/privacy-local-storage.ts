@@ -21,6 +21,7 @@ export default defineHint({
     context.on('scan::start', (event) => {
       url = event.resource;
     });
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises -- webhint's context.on types its listener as returning void, but the engine awaits it; dropping the async would stop the scan waiting for this handler
     context.on('scan::end', async () => {
       let entries;
       try {

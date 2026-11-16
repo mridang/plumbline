@@ -21,9 +21,6 @@ const HEX_TRIPLE_ETAG = /^[0-9a-f]+-[0-9a-f]+-[0-9a-f]+$/i;
 /** Matches a double-quoted string and captures its content. */
 const QUOTED_STRING = /^"(.*)"$/;
 
-/** Matches a weak ETag prefix. */
-const WEAK_ETAG_PREFIX = /^W\//;
-
 /** The preferred IMF-fixdate HTTP-date, plus the two obsolete formats. */
 const IMF_FIXDATE =
   /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d\d (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d\d\d\d \d\d:\d\d:\d\d GMT$/;
@@ -48,7 +45,7 @@ export function etagFindings(value: string | null): Finding[] {
     return [];
   }
   const tag = value.trim();
-  const opaque = WEAK_ETAG_PREFIX.test(tag) ? tag.slice(2) : tag;
+  const opaque = tag.startsWith('W/') ? tag.slice(2) : tag;
   const inner = QUOTED_STRING.exec(opaque)?.[1];
   if (inner !== undefined && HEX_TRIPLE_ETAG.test(inner)) {
     return [

@@ -21,7 +21,7 @@ import { tlsProbe, connectWithNode } from '../../../src/lib/tls/client.js';
 const FIXTURES = new URL('../../fixtures/tls/', import.meta.url);
 
 /** Reads a fixture file by name. */
-export function fixture(name: string): Promise<Buffer> {
+export async function fixture(name: string): Promise<Buffer> {
   return readFile(new URL(name, FIXTURES));
 }
 
@@ -83,7 +83,7 @@ export async function startServer(
   return {
     server,
     port,
-    close: () =>
+    close: async () =>
       new Promise<void>((resolve) => {
         server.close(() => resolve());
         for (const socket of sockets) {
@@ -178,7 +178,7 @@ export async function startMailServer(
   return {
     port: (server.address() as AddressInfo).port,
     upgrades: () => upgrades,
-    close: () =>
+    close: async () =>
       new Promise<void>((resolve) => {
         server.close(() => resolve());
         for (const socket of sockets) {
