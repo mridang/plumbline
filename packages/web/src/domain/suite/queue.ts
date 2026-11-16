@@ -227,6 +227,6 @@ export const handleScanQueue: ExportedHandlerQueueHandler<
   const namespace = env.PROBE as unknown as ScannerNamespace | undefined;
   await consumeScans(batch, {
     db: createDatabase(env.DB),
-    run: (name, job) => runJobThrough(namespace, name, job),
+    run: async (name, job) => runJobThrough(namespace, name, job),
   });
 };

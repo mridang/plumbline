@@ -46,7 +46,7 @@ describe('/api/domains/:id/reports/:report_id', () => {
 
   it('reads the report of the person the session cookie names', async () => {
     const res = await GET(new Request(URL, { headers: { cookie } }), params);
-    const body = (await res.json()) as { id: string };
+    const body = await res.json<{ id: string }>();
     expect(body.id).toBe(REPORT);
   });
 

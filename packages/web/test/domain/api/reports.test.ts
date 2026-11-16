@@ -67,14 +67,14 @@ afterEach(() => restore());
 const params = (id = DOMAIN) => ({ params: Promise.resolve({ id }) });
 
 /** A GET of the domain's reports with the given query. */
-const list = (query = '', id = DOMAIN) =>
+const list = async (query = '', id = DOMAIN) =>
   collection.GET(
     new Request(`${ORIGIN}/api/domains/${id}/reports${query}`),
     params(id),
   );
 
 /** A POST of a report body. */
-const post = (
+const post = async (
   body: unknown,
   id = DOMAIN,
   headers: Record<string, string> = {},
@@ -89,7 +89,7 @@ const post = (
   );
 
 /** A GET of one report. */
-const read = (reportId: string, id = DOMAIN) =>
+const read = async (reportId: string, id = DOMAIN) =>
   item.GET(new Request(`${ORIGIN}${reportPath(id, reportId)}`), {
     params: Promise.resolve({ id, 'report-id': reportId }),
   });
@@ -104,14 +104,14 @@ describe('GET /api/domains/{id}/reports', () => {
     seedReport('r-old', 7, '2026-01-01');
     seedReport('r-new', 7, '2026-01-02');
     const response = await list();
-    const body = (await response.json()) as { items: { id: string }[] };
+    const body = await response.json<{ items: { id: string }[] }>();
     expect(body.items.map((r) => r.id)).toEqual(['r-new', 'r-old']);
   });
 
   it('leaves the outcomes out', async () => {
     seedReport('r1', 7, '2026-01-01');
     const response = await list();
-    const body = (await response.json()) as { items: object[] };
+    const body = await response.json<{ items: object[] }>();
     expect(body.items[0]).not.toHaveProperty('outcomes');
   });
 
@@ -119,18 +119,18 @@ describe('GET /api/domains/{id}/reports', () => {
     seedReport('r-old', 7, '2026-01-01');
     seedReport('r-new', 7, '2026-01-02');
     const firstPage = await list('?limit=1');
-    const first = (await firstPage.json()) as { next: string };
+    const first = await firstPage.json<{ next: string }>();
     const secondPage = await list(new URL(first.next).search);
-    const second = (await secondPage.json()) as {
+    const second = await secondPage.json<{
       items: { id: string }[];
-    };
+    }>();
     expect(second.items.map((r) => r.id)).toEqual(['r-old']);
   });
 
   it('hands out no next link on the last page', async () => {
     seedReport('r1', 7, '2026-01-01');
     const response = await list('?limit=1');
-    const body = (await response.json()) as object;
+    const body = await response.json<object>();
     expect(body).not.toHaveProperty('next');
   });
 
@@ -174,9 +174,8 @@ describe('POST /api/domains/{id}/reports and the five-minute limit', () => {
     const wait = Number(refused.headers.get('retry-after'));
     expect(wait).toBeGreaterThan(290);
     expect(wait).toBeLessThanOrEqual(300);
-    expect(((await refused.json()) as { detail: string }).detail).toContain(
-      'try again in',
-    );
+    const body = await refused.json<{ detail: string }>();
+    expect(body.detail).toContain('try again in');
   });
 
   it('allows another report once five minutes have passed, and keeps only the refused one out', async () => {
@@ -186,7 +185,7 @@ describe('POST /api/domains/{id}/reports and the five-minute limit', () => {
     const refused = await post(good);
     expect(refused.status).toBe(429);
     const listed = await list();
-    const body = (await listed.json()) as { items: unknown[] };
+    const body = await listed.json<{ items: unknown[] }>();
     expect(body.items).toHaveLength(2);
   });
 
@@ -226,7 +225,7 @@ describe('POST /api/domains/{id}/reports and the five-minute limit', () => {
 describe('POST /api/domains/{id}/reports', () => {
   it('saves the report with 201 and its address', async () => {
     const res = await post(good);
-    const body = (await res.json()) as { id: string };
+    const body = await res.json<{ id: string }>();
     expect([res.status, res.headers.get('location')]).toEqual([
       201,
       `${ORIGIN}${reportPath(DOMAIN, body.id)}`,
@@ -235,28 +234,28 @@ describe('POST /api/domains/{id}/reports', () => {
 
   it('counts the outcomes itself', async () => {
     const response = await post(good);
-    const body = (await response.json()) as { failed: number };
+    const body = await response.json<{ failed: number }>();
     expect(body.failed).toBe(1);
   });
 
   it('names each check in the answer', async () => {
     const response = await post(good);
-    const body = (await response.json()) as {
+    const body = await response.json<{
       outcomes: { name: string }[];
-    };
+    }>();
     expect(typeof body.outcomes[0]?.name).toBe('string');
   });
 
   it('keeps the report', async () => {
     const created = await post(good);
-    const body = (await created.json()) as { id: string };
+    const body = await created.json<{ id: string }>();
     const response = await read(body.id);
     expect(response.status).toBe(200);
   });
 
   it('answers 400 with the reasons for a report that is not well formed', async () => {
     const res = await post({ ...good, url: 'https://elsewhere.example/' });
-    const body = (await res.json()) as { errors: string[] };
+    const body = await res.json<{ errors: string[] }>();
     expect([res.status, body.errors]).toEqual([
       400,
       ['url: must be an http or https address on example.com.'],
@@ -298,7 +297,7 @@ describe('GET /api/domains/{id}/reports/{report_id}', () => {
   it('answers the report with its outcomes', async () => {
     seedReport(REPORT, 7, '2026-01-01');
     const res = await read(REPORT);
-    const body = (await res.json()) as { outcomes: { id: string }[] };
+    const body = await res.json<{ outcomes: { id: string }[] }>();
     expect([res.status, body.outcomes.map((o) => o.id)]).toEqual([
       200,
       ['accept-ch'],

@@ -107,7 +107,7 @@ export function validateSecurityTxt(
     }
   }
 
-  const expires = fields['expires'] ?? [];
+  const expires = fields.expires ?? [];
   if (expires.length > 1) {
     issues.push({
       severity: 'error',
@@ -212,16 +212,16 @@ export function validateSecurityTxt(
     }
   }
 
-  if (options.url && fields['canonical']) {
+  if (options.url && fields.canonical) {
     const wanted = options.url.replace(TRAILING_SLASH, '');
     if (
-      !fields['canonical'].some(
+      !fields.canonical.some(
         (c) => c.value.replace(TRAILING_SLASH, '') === wanted,
       )
     ) {
       issues.push({
         severity: 'warning',
-        line: fields['canonical'][0].line,
+        line: fields.canonical[0].line,
         message: `No 'Canonical' field matches the URL the file was served from (${options.url}).`,
       });
     }

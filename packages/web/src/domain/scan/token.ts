@@ -30,7 +30,7 @@ export interface ScanClaim {
 }
 
 /** The HMAC key for `secret`. */
-function keyFor(secret: string): Promise<CryptoKey> {
+async function keyFor(secret: string): Promise<CryptoKey> {
   return crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(secret),

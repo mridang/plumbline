@@ -6,12 +6,12 @@ import { CHECKS, checksInGroup } from '@/domain/checks/catalogue';
 const { GET } = createChecksCollection().handlers();
 
 /** A GET of the list with the given query. */
-const list = (query = '') =>
+const list = async (query = '') =>
   GET(new Request(`https://plumbline.test/api/checks${query}`));
 
 /** The ids on a page. */
 async function idsOf(res: Response): Promise<string[]> {
-  const body = (await res.json()) as { items: { id: string }[] };
+  const body = await res.json<{ items: { id: string }[] }>();
   return body.items.map((check) => check.id);
 }
 
@@ -35,7 +35,7 @@ describe('GET /api/checks', () => {
 
   it('carries on from where the last page stopped', async () => {
     const page = await list('?limit=2');
-    const first = (await page.json()) as { next: string };
+    const first = await page.json<{ next: string }>();
     expect(await idsOf(await list(new URL(first.next).search))).toEqual(
       CHECKS.slice(2, 4).map((check) => check.id),
     );

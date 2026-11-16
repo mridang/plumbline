@@ -28,7 +28,7 @@ export async function fetchManifest(
   }
   const url = new URL(href, site.url).href;
   const data = await site.fetch(url);
-  if (!data || data.response.statusCode !== 200) {
+  if (data?.response.statusCode !== 200) {
     const status = data ? ` (HTTP ${data.response.statusCode})` : '';
     site.report(
       url,

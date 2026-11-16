@@ -30,7 +30,7 @@ const { GET } = await import('@/app/auth/github/link/route');
 let restore: () => void;
 afterEach(() => restore());
 
-const get = (query = '') =>
+const get = async (query = '') =>
   GET(new NextRequest(`https://plumbline.test/auth/github/link${query}`));
 
 describe('GET /auth/github/link', () => {

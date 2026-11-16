@@ -77,10 +77,11 @@ function browser(options: {
   existing?: boolean;
   responses?: Record<string, number>;
 }) {
+  const unsubscribe = jest.fn(async () => true);
   const subscription: BrowserSubscription = {
     endpoint: ENDPOINT,
     toJSON: () => ({ endpoint: ENDPOINT, keys: { p256dh: 'p', auth: 'a' } }),
-    unsubscribe: jest.fn(async () => true),
+    unsubscribe,
   };
   const subscribe = jest.fn<(options: unknown) => Promise<BrowserSubscription>>(
     async () => subscription,
@@ -93,8 +94,8 @@ function browser(options: {
     }),
     permission: () => options.permission ?? 'default',
     requestPermission: async () => options.asked ?? 'granted',
-    fetcher: (async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
+    fetcher: async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = input instanceof Request ? input.url : String(input);
       calls.push({ url, method: init?.method ?? 'GET', body: init?.body });
       const status =
         options.responses?.[`${init?.method ?? 'GET'} ${url}`] ?? 200;
@@ -102,9 +103,9 @@ function browser(options: {
       return url.endsWith('configuration')
         ? Response.json({ vapid_public_key: 'AQID' })
         : new Response(body, { status });
-    }) as typeof fetch,
+    },
   };
-  return { host, subscription, subscribe, calls };
+  return { host, subscription, subscribe, unsubscribe, calls };
 }
 
 describe('enablePush', () => {
@@ -156,7 +157,7 @@ describe('enablePush', () => {
 
 describe('disablePush', () => {
   it('forgets the subscription on the server and in the browser', async () => {
-    const { host, subscription, calls } = browser({ existing: true });
+    const { host, unsubscribe, calls } = browser({ existing: true });
     await disablePush(host);
     const id = await subscriptionId(ENDPOINT);
     expect(calls).toEqual([
@@ -165,17 +166,17 @@ describe('disablePush', () => {
         url: `/api/users/self/push/subscriptions/${id}`,
       }),
     ]);
-    expect(subscription.unsubscribe).toHaveBeenCalled();
+    expect(unsubscribe).toHaveBeenCalled();
   });
 
   it('still unsubscribes when the server had already forgotten it', async () => {
     const id = await subscriptionId(ENDPOINT);
-    const { host, subscription } = browser({
+    const { host, unsubscribe } = browser({
       existing: true,
       responses: { [`DELETE /api/users/self/push/subscriptions/${id}`]: 404 },
     });
     await disablePush(host);
-    expect(subscription.unsubscribe).toHaveBeenCalled();
+    expect(unsubscribe).toHaveBeenCalled();
   });
 
   it('does nothing without a subscription', async () => {

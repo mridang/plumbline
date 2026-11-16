@@ -16,7 +16,7 @@ export const ACCEPT_ENCODING =
 export type EncodingProbe = (url: URL) => Promise<string | null>;
 
 /** Real probe: reads only the response headers, never the body. */
-export const probeContentEncoding: EncodingProbe = (url) =>
+export const probeContentEncoding: EncodingProbe = async (url) =>
   new Promise((resolve) => {
     const make = url.protocol === 'https:' ? httpsRequest : httpRequest;
     const req = make(

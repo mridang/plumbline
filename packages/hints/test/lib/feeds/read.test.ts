@@ -9,7 +9,7 @@ import {
 
 /** Parses markup with the same DOM implementation webhint uses. */
 const parse = (html: string): DocumentLike =>
-  createHTMLDocument(html, 'https://x.test/') as DocumentLike;
+  createHTMLDocument(html, 'https://x.test/');
 
 describe('getFeedLinks', () => {
   it('finds RSS and Atom alternate links', () => {

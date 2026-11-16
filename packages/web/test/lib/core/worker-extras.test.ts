@@ -7,7 +7,7 @@ import { cloudflareWorkersStub } from '../../helpers/cloudflare-workers-stub';
 
 jest.unstable_mockModule('cloudflare:workers', cloudflareWorkersStub, {
   virtual: true,
-} as never);
+});
 
 const {
   default: extraHandlers,

@@ -6,7 +6,7 @@ import { CHECKS } from '@/domain/checks/catalogue';
 describe('GET /api/checks', () => {
   it('answers the first page of checks', async () => {
     const res = await GET(new Request('https://plumbline.test/api/checks'));
-    const body = (await res.json()) as { items: { id: string }[] };
+    const body = await res.json<{ items: { id: string }[] }>();
     expect(body.items[0]?.id).toBe(CHECKS[0]?.id);
   });
 

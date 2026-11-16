@@ -666,7 +666,7 @@ describe('checkSite, when the scheduled re-check comes round', () => {
     const rows = await dueSites(db, '9999-01-01T00:00:00.000Z', 10);
     return rows.map((due) => due.host);
   };
-  const dueBefore = (db: Awaited<ReturnType<typeof setup>>) =>
+  const dueBefore = async (db: Awaited<ReturnType<typeof setup>>) =>
     dueSites(db, '2026-11-06T00:00:00.000Z', 10).then((rows) =>
       rows.map((due) => due.host),
     );

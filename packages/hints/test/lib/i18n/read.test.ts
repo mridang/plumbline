@@ -16,7 +16,7 @@ const parse = (html: string): DocumentLike =>
   createHTMLDocument(
     `<!doctype html><html><head>${html}</head><body></body></html>`,
     'https://x.test/',
-  ) as DocumentLike;
+  );
 
 describe('getHreflangLinks', () => {
   it('returns hreflang alternates in document order with trimmed values', () => {

@@ -51,7 +51,7 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
 }
 
 /** Reads the whole request body, rejecting anything larger than 1 MiB. */
-function readBody(req: IncomingMessage): Promise<string> {
+async function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
     let size = 0;
@@ -202,7 +202,7 @@ export interface ServerOptions {
 /** Creates the HTTP server without starting it (used by tests). */
 export function createScanServer(options: ServerOptions = {}): Server {
   const scan = options.scan ?? defaultScan;
-  const run = options.run ?? ((url, emit) => defaultRun(url, emit));
+  const run = options.run ?? (async (url, emit) => defaultRun(url, emit));
   return createServer((req, res) => handle(req, res, scan, run));
 }
 

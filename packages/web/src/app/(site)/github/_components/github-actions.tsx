@@ -11,7 +11,7 @@ import { ConfirmDialog } from '@/components/site/confirm-dialog';
 export async function callOn(
   path: string,
   method: 'POST' | 'DELETE',
-  transport: typeof fetch = (url, init) => fetch(url, init),
+  transport: typeof fetch = async (url, init) => fetch(url, init),
 ): Promise<void> {
   await ensureOk(await transport(path, { method }));
 }

@@ -73,7 +73,7 @@ export async function fetchResource(
       redirect: 'manual',
     });
     const headers = headersOf(response.headers);
-    const location = headers['location'];
+    const location = headers.location;
     if (
       isRedirect(response.status) &&
       location &&
@@ -98,7 +98,7 @@ export async function fetchResource(
         body: {
           content,
           rawContent,
-          rawResponse: () => Promise.resolve(rawContent),
+          rawResponse: async () => rawContent,
         },
         charset,
         headers,

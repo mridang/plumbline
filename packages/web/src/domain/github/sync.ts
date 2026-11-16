@@ -15,7 +15,7 @@ import {
 import { listRepos, saveRepos, type AnalysedRepo } from '@/domain/db/github';
 import { loadConfig } from '@/domain/suite/github-run';
 
-import { GitHubApi, type Repo } from './api';
+import type { GitHubApi, Repo } from './api';
 import { deploymentHosts } from './deployments';
 import { isReal, reconcileSites } from './sites';
 
@@ -65,7 +65,7 @@ export async function analyseRepo(
     const paths = await api.filePaths(repo.full_name, repo.default_branch);
     fallback = await deploymentHosts({
       paths,
-      read: (path) => api.file(repo.full_name, path, repo.default_branch),
+      read: async (path) => api.file(repo.full_name, path, repo.default_branch),
       // A fork carries the upstream project's website, which is not this account's site.
       homepage: repo.fork ? null : repo.homepage,
     });
@@ -98,7 +98,7 @@ async function inBatches<T, R>(
   for (let at = 0; at < items.length; at += CONCURRENCY) {
     out.push(
       ...(await Promise.all(
-        items.slice(at, at + CONCURRENCY).map((item) => work(item)),
+        items.slice(at, at + CONCURRENCY).map(async (item) => work(item)),
       )),
     );
   }
@@ -119,7 +119,9 @@ export async function syncInstallation(
 ): Promise<SyncResult> {
   const listed = await api.repositories();
   const repos = listed.filter((repo) => !repo.archived).slice(0, MAX_REPOS);
-  const analysed = await inBatches(repos, (repo) => analyseRepo(api, repo));
+  const analysed = await inBatches(repos, async (repo) =>
+    analyseRepo(api, repo),
+  );
   // Settle each repository's sites from what its file and routes say, and what
   // its deployments have already reported (those are in the database).
   let domainsAdded = 0;

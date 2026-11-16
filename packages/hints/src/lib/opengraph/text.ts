@@ -4,7 +4,7 @@ const HTTP_OR_HTTPS_PREFIX = /^https?:\/\//i;
 
 /** Counts characters the way a reader does (code points, not UTF-16 units). */
 export function charLength(text: string): number {
-  return [...text].length;
+  return text.match(/./gsu)?.length ?? 0;
 }
 
 /** True when the text starts with an `http://` or `https://` URL. */

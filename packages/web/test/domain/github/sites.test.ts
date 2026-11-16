@@ -32,7 +32,7 @@ async function hostsOf(db: Db, user = 1) {
   return sites.map(([host]) => host);
 }
 
-const seed = (
+const seed = async (
   db: Db,
   host: string,
   source: SiteSource,

@@ -47,8 +47,8 @@ describe('the skills', () => {
       const meta = await frontMatter(
         path.join(PACKAGE, 'skills', name, 'SKILL.md'),
       );
-      expect(meta['name']).toBe(name);
-      expect((meta['description'] ?? '').length).toBeGreaterThan(40);
+      expect(meta.name).toBe(name);
+      expect((meta.description ?? '').length).toBeGreaterThan(40);
     },
   );
 
@@ -72,12 +72,12 @@ describe('the Claude Code plugin', () => {
   const pkg = PKG;
 
   it('is named plumbline and leaves its version to the package release', () => {
-    expect(plugin['name']).toBe('plumbline');
+    expect(plugin.name).toBe('plumbline');
     expect(plugin).not.toHaveProperty('version');
   });
 
   it('ships its manifest, commands and skills in the npm package', () => {
-    expect(pkg['files']).toEqual(['.claude-plugin', 'commands', 'skills']);
+    expect(pkg.files).toEqual(['.claude-plugin', 'commands', 'skills']);
   });
 
   it('has an audit command that runs the CLI with what it is given', async () => {
@@ -91,7 +91,7 @@ describe('the Claude Code plugin', () => {
 });
 
 describe('the marketplace', () => {
-  const plugins = MARKETPLACE['plugins'] as { name: string; source: string }[];
+  const plugins = MARKETPLACE.plugins as { name: string; source: string }[];
 
   it('lists the plugin from this package', () => {
     expect(plugins).toEqual([

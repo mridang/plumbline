@@ -59,7 +59,7 @@ export default defineHint({
         records[0],
         mail.domain,
         false,
-        (name) => lookupTxt(dns.client, name),
+        async (name) => lookupTxt(dns.client, name),
       );
       switch (status) {
         case 'invalid_syntax': {

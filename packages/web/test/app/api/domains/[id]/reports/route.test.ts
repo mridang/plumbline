@@ -39,7 +39,7 @@ beforeEach(async () => {
 afterEach(() => restore());
 
 /** A POST of one scan's outcome. */
-const save = (headers: Record<string, string>) =>
+const save = async (headers: Record<string, string>) =>
   POST(
     new Request(URL, {
       method: 'POST',
@@ -65,7 +65,7 @@ describe('/api/domains/:id/reports', () => {
   it('lists the saved reports', async () => {
     await save({ cookie });
     const res = await GET(new Request(URL, { headers: { cookie } }), params);
-    const body = (await res.json()) as { items: unknown[] };
+    const body = await res.json<{ items: unknown[] }>();
     expect(body.items).toHaveLength(1);
   });
 

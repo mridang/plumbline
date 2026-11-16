@@ -81,7 +81,7 @@ export function newBudget(max = MAX_NEW_ISSUES): IssueBudget {
 }
 
 /** Waits {@link WRITE_PAUSE_MS}. */
-export function pauseBetweenWrites(): Promise<void> {
+export async function pauseBetweenWrites(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, WRITE_PAUSE_MS));
 }
 
@@ -161,7 +161,7 @@ export function originOf(
   sha: string | null,
 ): () => Promise<string> {
   let answer: Promise<string> | undefined;
-  return () => {
+  return async () => {
     answer ??= (async () => {
       if (!sha) {
         return 'the latest deployment';
@@ -326,7 +326,7 @@ export async function syncIssues(
   now = new Date(),
 ): Promise<Map<string, IssueAction>> {
   const { repo, host, sha, source, level, findings, notRun } = report;
-  const pause = report.pause ?? (() => Promise.resolve());
+  const pause = report.pause ?? (async () => {});
   const origin = report.origin ?? originOf(api, repo, sha);
   const budget = report.budget ?? newBudget();
   const context: CloseContext = {
@@ -538,7 +538,7 @@ export async function closeUndeployed(
 ): Promise<void> {
   const { repo, hosts, sha, source } = input;
   const reason = input.reason ?? 'undeployed';
-  const pause = input.pause ?? (() => Promise.resolve());
+  const pause = input.pause ?? (async () => {});
   const origin = originOf(api, repo, sha);
   for (const issue of await openIssuesOf(db, repo)) {
     if (hosts.has(issue.host)) {

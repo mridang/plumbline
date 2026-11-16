@@ -56,7 +56,7 @@ const data = (html: string): NetworkData =>
 
 const fetchContent: FetchContent = async () => data('<html></html>');
 
-const page = () =>
+const page = async () =>
   loadPage(new URL('https://example.com/'), async () =>
     data('<html><head><title>t</title></head><body></body></html>'),
   );
@@ -218,6 +218,7 @@ describe('runHint', () => {
     let headers: unknown;
     await runHint(
       entry((context) =>
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises -- webhint's context.on types its listener as returning void, but the engine awaits it; dropping the async would stop the scan waiting for this handler
         context.on('scan::end', async () => {
           headers = context.pageHeaders;
           const fetched = await context.fetchContent('https://example.com/x');
@@ -261,7 +262,8 @@ describe('runHint', () => {
   it('skips a hint that runs out of time', async () => {
     const outcome = await runHint(
       entry((context) =>
-        context.on('scan::end', () => new Promise(() => undefined)),
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises -- webhint's context.on types its listener as returning void, but the engine awaits it; dropping the async would stop the scan waiting for this handler
+        context.on('scan::end', async () => new Promise(() => undefined)),
       ),
       await page(),
       fetchContent,
@@ -275,7 +277,12 @@ describe('runHint', () => {
 
   it('skips a hint that asks the page to run script', async () => {
     const outcome = await runHint(
-      entry((context) => context.on('scan::end', () => context.evaluate('1'))),
+      entry((context) =>
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises -- webhint's context.on types its listener as returning void, but the engine awaits it; dropping the async would stop the scan waiting for this handler
+        context.on('scan::end', async () => {
+          await context.evaluate('1');
+        }),
+      ),
       await page(),
       fetchContent,
     );

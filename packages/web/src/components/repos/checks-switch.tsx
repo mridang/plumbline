@@ -73,7 +73,7 @@ export function useRepoChecks(
           title={`Turn off checks for ${repo}?`}
           description={PAUSE_WARNING}
           confirmLabel="Turn off checks"
-          onConfirm={() => apply(false)}
+          onConfirm={() => void apply(false)}
         />
       ),
   };

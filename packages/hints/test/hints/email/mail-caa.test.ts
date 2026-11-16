@@ -3,7 +3,7 @@ import { Severity } from '@hint/utils-types';
 import hint from '../../../src/hints/email/mail-caa.js';
 import { fakeDns, runMailHint } from '../../lib/email/fakes.js';
 
-const run = (table: Record<string, string[]>) =>
+const run = async (table: Record<string, string[]>) =>
   runMailHint(hint, {
     dns: fakeDns({ 'example.test MX': ['10 mx.example.test.'], ...table }),
   });

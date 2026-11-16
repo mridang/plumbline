@@ -7,7 +7,7 @@ import {
 
 /** A fake OPTIONS requester that always returns the given Allow header. */
 function fakeRequester(allow: string | null): OptionsRequester {
-  return () => Promise.resolve({ allow });
+  return async () => ({ allow });
 }
 
 describe('the http-methods hint', () => {
@@ -33,9 +33,7 @@ describe('the http-methods hint', () => {
   });
 
   it('passes when the probe fails or sends no Allow', async () => {
-    const problems = await runHint(
-      httpMethodsHint(() => Promise.resolve(null)),
-    );
+    const problems = await runHint(httpMethodsHint(async () => null));
     expect(problems).toHaveLength(0);
   });
 

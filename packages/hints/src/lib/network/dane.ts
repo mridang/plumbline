@@ -36,7 +36,7 @@ export type ChainFetcher = (
 ) => Promise<PresentedChain | null>;
 
 /** Real TLS connection that reads the presented chain. */
-const fetchChain: ChainFetcher = (host, port) =>
+const fetchChain: ChainFetcher = async (host, port) =>
   new Promise((resolve) => {
     const socket = tlsConnect({
       host,
@@ -50,7 +50,7 @@ const fetchChain: ChainFetcher = (host, port) =>
       const chain: Buffer[] = [];
       let cert = socket.getPeerCertificate(true);
       const seen = new Set<string>();
-      while (cert && cert.raw && !seen.has(cert.fingerprint256)) {
+      while (cert?.raw && !seen.has(cert.fingerprint256)) {
         seen.add(cert.fingerprint256);
         chain.push(cert.raw);
         cert = cert.issuerCertificate;

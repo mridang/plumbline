@@ -283,7 +283,7 @@ export function breadcrumbFindings(blocks: JsonLdBlocks): Finding[] {
   const parsedDocument = DOCS.breadcrumb;
   for (const node of nodesOfType(blocks, ['BreadcrumbList'])) {
     const label = typeLabel(node, 'BreadcrumbList');
-    const value = node['itemListElement'];
+    const value = node.itemListElement;
     const items = Array.isArray(value)
       ? value
       : [value].filter((entry) => asObject(entry) !== null);
@@ -351,8 +351,8 @@ export function jobPostingFindings(blocks: JsonLdBlocks): Finding[] {
       }
     }
     const remote =
-      typeof node['jobLocationType'] === 'string' &&
-      node['jobLocationType'].toUpperCase() === 'TELECOMMUTE';
+      typeof node.jobLocationType === 'string' &&
+      node.jobLocationType.toUpperCase() === 'TELECOMMUTE';
     if (!remote && !hasValue(node, 'jobLocation')) {
       findings.push(missingRequired(label, 'jobLocation', parsedDocument));
     }
@@ -415,7 +415,7 @@ export function websiteSearchActionFindings(blocks: JsonLdBlocks): Finding[] {
   const parsedDocument = DOCS.searchaction;
   for (const node of nodesOfType(blocks, ['WebSite'])) {
     const label = typeLabel(node, 'WebSite');
-    const raw = node['potentialAction'];
+    const raw = node.potentialAction;
     const actions = Array.isArray(raw)
       ? raw
       : [raw].filter((entry) => entry !== undefined);

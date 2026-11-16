@@ -223,7 +223,7 @@ export function statusOf(findings: readonly Finding[]): HintStatus {
 }
 
 /** `promise`, or a {@link TimedOutError} once `ms` have passed. */
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_resolve, reject) => {
     timer = setTimeout(() => reject(new TimedOutError(ms)), ms);
@@ -279,8 +279,8 @@ function contextFor(
       }
     },
     fetchContent,
-    evaluate(): Promise<never> {
-      return Promise.reject(new NeedsBrowserError());
+    async evaluate(): Promise<never> {
+      throw new NeedsBrowserError();
     },
     isInHead: () => false,
   };
@@ -382,7 +382,7 @@ export async function runHint(
     try {
       await withTimeout(
         Promise.all(
-          (running.handlers.get(name) ?? []).map((handler) =>
+          (running.handlers.get(name) ?? []).map(async (handler) =>
             Promise.resolve().then(() => handler(event)),
           ),
         ),

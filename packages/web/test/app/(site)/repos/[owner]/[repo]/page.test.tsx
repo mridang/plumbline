@@ -77,7 +77,7 @@ beforeEach(async () => {
 afterEach(() => restore());
 
 /** Render the page for a repository. */
-function render(
+async function render(
   owner: string,
   repo: string,
   query: { site?: string; report?: string; view?: string } = {},

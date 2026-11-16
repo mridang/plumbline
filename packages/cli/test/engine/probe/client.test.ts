@@ -41,7 +41,7 @@ describe('handshake', () => {
     expect(sent[0]?.path).toBe('/v1/handshakes');
     const items =
       sent[0]?.body.split('--\n').map((item) => linesOf(item)) ?? [];
-    expect(items.map((item) => item['host'])).toEqual([
+    expect(items.map((item) => item.host)).toEqual([
       'a.test',
       'b.test',
       'c.test',
@@ -68,7 +68,7 @@ describe('handshake', () => {
     );
     const client = new ProbeClient(small.transport, { size: 2, waitMs: 1 });
     await Promise.all(
-      [1, 2, 3, 4, 5].map((n) =>
+      [1, 2, 3, 4, 5].map(async (n) =>
         client.handshake({ host: `${n}.test`, port: 443 }),
       ),
     );
@@ -107,14 +107,16 @@ describe('handshake', () => {
       'rejected',
       'rejected',
     ]);
-    expect((results[0] as PromiseRejectedResult).reason.message).toContain(
-      'answered 1 handshakes for 2',
-    );
+    expect(
+      ((results[0] as PromiseRejectedResult).reason as Error).message,
+    ).toContain('answered 1 handshakes for 2');
   });
 
   it('rejects when the probe cannot be reached, answers 500, or says something that is not JSON', async () => {
     const unreachable = new ProbeClient(
-      () => Promise.reject(new Error('Network connection lost')),
+      async () => {
+        throw new Error('Network connection lost');
+      },
       { waitMs: 1 },
     );
     await expect(
@@ -155,7 +157,7 @@ describe('web and mail lanes', () => {
       client.handshake({ host: 'mx2.test', port: 25, starttls: 'smtp' }),
     ]);
     const hosts = sent.map((request) =>
-      request.body.split('--\n').map((item) => linesOf(item)['host']),
+      request.body.split('--\n').map((item) => linesOf(item).host),
     );
     expect(
       hosts.map((list) => list.join(',')).toSorted(collator.compare),
@@ -208,7 +210,9 @@ describe('web and mail lanes', () => {
     });
     const client = new ProbeClient(transport, { mailInFlight: 2 });
     await Promise.all(
-      Array.from({ length: 8 }, (_v, n) => client.reachable(`10.0.0.${n}`, 25)),
+      Array.from({ length: 8 }, async (_v, n) =>
+        client.reachable(`10.0.0.${n}`, 25),
+      ),
     );
     expect(most).toBe(2);
   });
@@ -251,7 +255,7 @@ describe('busy probe', () => {
     });
     const client = new ProbeClient(transport, { inFlight: 3 });
     await Promise.all(
-      Array.from({ length: 10 }, (_v, n) =>
+      Array.from({ length: 10 }, async (_v, n) =>
         client.reachable(vector('ip1_1_1_1'), 80 + n),
       ),
     );
@@ -262,7 +266,7 @@ describe('busy probe', () => {
 describe('the other requests', () => {
   it('asks for a connection test with its timeout, and treats a refused address as not reachable', async () => {
     const { client, sent } = fakeProbe((_path, body) =>
-      linesOf(body)['host'] === vector('ip10_0_0_1')
+      linesOf(body).host === vector('ip10_0_0_1')
         ? { status: 502, text: '{"error":"not a public address"}' }
         : ok('{"reachable":true}'),
     );

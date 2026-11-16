@@ -6,7 +6,7 @@ import { Severity } from '@hint/utils-types';
 
 let restore: () => void = () => undefined;
 afterEach(() => restore());
-const run = (zone: Zone) => {
+const run = async (zone: Zone) => {
   restore = installDns(zone);
   return runHint(hint);
 };

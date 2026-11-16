@@ -18,7 +18,7 @@ const collator = new Intl.Collator();
 
 /** Parses markup with the same DOM implementation the webhint hints use. */
 const parse = (html: string): DocumentLike =>
-  createHTMLDocument(html, 'https://x.test/') as DocumentLike;
+  createHTMLDocument(html, 'https://x.test/');
 
 /** Wraps a head fragment into a full document. */
 function document_(head: string): string {

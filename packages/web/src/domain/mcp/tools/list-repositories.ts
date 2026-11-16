@@ -6,7 +6,7 @@
  */
 
 import { overviewOf } from '@/domain/db/live';
-import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
 import {
   McpTool,
   READS,

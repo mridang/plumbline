@@ -45,7 +45,7 @@ export interface View {
 /** The first value of a parameter. */
 function first(value: string | readonly string[] | undefined): string {
   return (
-    (Array.isArray(value) ? value[0] : (value as string | undefined)) ?? ''
+    (typeof value === 'string' || value === undefined ? value : value[0]) ?? ''
   ).trim();
 }
 

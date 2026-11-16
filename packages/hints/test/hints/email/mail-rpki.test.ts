@@ -11,14 +11,12 @@ const dns = fakeDns({
 
 /** A RPKI client answering from a table; unknown addresses are not routed. */
 const rpki = (table: Record<string, RpkiResult | Error>): RpkiClient => ({
-  check: (ip) => {
+  check: async (ip) => {
     const entry = table[ip];
     if (entry instanceof Error) {
-      return Promise.reject(entry);
+      throw entry;
     }
-    return Promise.resolve(
-      entry ?? { asn: null, prefix: null, status: 'unknown' },
-    );
+    return entry ?? { asn: null, prefix: null, status: 'unknown' };
   },
 });
 

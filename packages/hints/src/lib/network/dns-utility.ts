@@ -34,7 +34,7 @@ export const RR = {
  * default is the URL's own host name; tests replace `hostOf` because the
  * test server is only reachable by IP address.
  */
-export const target: { hostOf(url: URL): string } = {
+export const target: { hostOf: (url: URL) => string } = {
   hostOf: (url) => url.hostname,
 };
 

@@ -99,7 +99,7 @@ export function neutralWhenUntested(outcome: HintOutcome): HintOutcome {
 /** A fetch of a resource that asks the target once for an address however a check asks for it. */
 function cachedFetchContent(fetcher: typeof fetch): FetchContent {
   const cache = new Map<string, Promise<NetworkData>>();
-  return (url, headers = {}) => {
+  return async (url, headers = {}) => {
     const href = new URL(url).href;
     const key = `${href}\n${JSON.stringify(headers)}`;
     let pending = cache.get(key);
@@ -170,7 +170,7 @@ export async function runScanWith(
       }
     };
     await Promise.all(
-      Array.from({ length: options.concurrency ?? 8 }, () => worker()),
+      Array.from({ length: options.concurrency ?? 8 }, async () => worker()),
     );
   } finally {
     uninstall();

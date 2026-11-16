@@ -78,7 +78,7 @@ describe('the TLS handshake', () => {
             ),
         }),
     });
-    const result = await withProbe(client, () =>
+    const result = await withProbe(client, async () =>
       tlsProbe.connect(
         { host: 'example.com', port: 443 },
         {
@@ -114,9 +114,9 @@ describe('the TLS handshake', () => {
           results: body.split('--\n').map(() => handshakeAnswer()),
         }),
     });
-    const ask = (ciphers: string) =>
+    const ask = async (ciphers: string) =>
       tlsProbe.connect({ host: 'same.test', port: 443 }, { ciphers });
-    const [a, b, c] = await withProbe(client, () =>
+    const [a, b, c] = await withProbe(client, async () =>
       Promise.all([ask('AES128'), ask('AES128'), ask('AES256')]),
     );
     expect(a).toBe(b);
@@ -124,7 +124,7 @@ describe('the TLS handshake', () => {
     expect(sent.flatMap((request) => request.body.split('--\n'))).toHaveLength(
       2,
     );
-    await withProbe(client, () => ask('AES128'));
+    await withProbe(client, async () => ask('AES128'));
     expect(sent.flatMap((request) => request.body.split('--\n'))).toHaveLength(
       3,
     );
@@ -173,7 +173,7 @@ describe('the TLS handshake', () => {
         JSON.stringify({ results: [{ error: 'handshake failed: no answer' }] }),
     });
     await expect(
-      withProbe(client, () =>
+      withProbe(client, async () =>
         tlsProbe.connect({ host: 'example.com', port: 443 }, {}),
       ),
     ).rejects.toThrow('handshake failed');
@@ -186,12 +186,12 @@ describe('the connections of the mail and IPv6 checks', () => {
       '/v1/connect': () => '{"reachable":true}',
     });
     await expect(
-      withProbe(client, () =>
+      withProbe(client, async () =>
         network.connect(vector('ip2606_4700__1'), 53, 4000),
       ),
     ).resolves.toBe(true);
     await expect(
-      withProbe(client, () =>
+      withProbe(client, async () =>
         mailNet.client.tcpReachable(vector('ip1_2_3_4'), 25),
       ),
     ).resolves.toBe(true);
@@ -205,7 +205,7 @@ describe('the connections of the mail and IPv6 checks', () => {
   it('counts an address the probe will not connect to, or cannot be asked about, as not answering', async () => {
     const refused = probeFor({});
     await expect(
-      withProbe(refused.client, () =>
+      withProbe(refused.client, async () =>
         network.connect(vector('ip10_0_0_1'), 80, 4000),
       ),
     ).resolves.toBe(false);
@@ -225,7 +225,7 @@ describe('the connections of the mail and IPv6 checks', () => {
           error: null,
         }),
     });
-    const probe = await withProbe(client, () =>
+    const probe = await withProbe(client, async () =>
       mailNet.client.probeStarttls('mx.example.com'),
     );
     expect(probe).toMatchObject({
@@ -235,7 +235,7 @@ describe('the connections of the mail and IPv6 checks', () => {
     });
     expect(probe.certificates[0]?.toString()).toBe('der');
     const down = probeFor({});
-    const failed = await withProbe(down.client, () =>
+    const failed = await withProbe(down.client, async () =>
       mailNet.client.probeStarttls('mx.example.com'),
     );
     expect(failed).toMatchObject({ reachable: false, starttls: false });
@@ -247,7 +247,7 @@ describe('the connections of the mail and IPv6 checks', () => {
       '/v1/http': () =>
         httpAnswer(200, [['Content-Type', 'text/html']], 'hello'),
     });
-    const web = await withProbe(client, () =>
+    const web = await withProbe(client, async () =>
       network.get('example.com', vector('ip2606_4700__1'), 443, true),
     );
     expect(web).toEqual({ status: 200, body: 'hello' });
@@ -257,7 +257,7 @@ describe('the connections of the mail and IPv6 checks', () => {
       port: '443',
       tls: '1',
     });
-    const none = await withProbe(probeFor({}).client, () =>
+    const none = await withProbe(probeFor({}).client, async () =>
       network.get('example.com', '::1', 443, true),
     );
     expect(none).toBeNull();
@@ -273,7 +273,7 @@ describe('the other checks', () => {
           ['Content-Encoding', 'gzip'],
         ]),
     });
-    const encoding = await withProbe(client, () =>
+    const encoding = await withProbe(client, async () =>
       compression.probe(new URL('https://example.com/a?b=1')),
     );
     expect(encoding).toBe('br, gzip');
@@ -281,7 +281,7 @@ describe('the other checks', () => {
     expect(sent[0]?.body).toContain(
       'header=accept-encoding: br, compress, deflate',
     );
-    const down = await withProbe(probeFor({}).client, () =>
+    const down = await withProbe(probeFor({}).client, async () =>
       compression.probe(new URL('https://example.com/')),
     );
     expect(down).toBeNull();
@@ -300,13 +300,13 @@ describe('the other checks', () => {
           ],
         }),
     });
-    const chain = await withProbe(client, () =>
+    const chain = await withProbe(client, async () =>
       dane.fetchChain('mx.example.com', 25),
     );
     expect(chain?.chain.map((der) => der.toString())).toEqual(['leaf', 'root']);
     expect(chain?.pkixValid).toBe(false);
     expect(
-      await withProbe(probeFor({}).client, () =>
+      await withProbe(probeFor({}).client, async () =>
         dane.fetchChain('mx.example.com', 25),
       ),
     ).toBeNull();
@@ -322,7 +322,7 @@ describe('the other checks', () => {
           files: {},
         }),
     });
-    const run = await withProbe(client, () =>
+    const run = await withProbe(client, async () =>
       openssl.exec(
         [
           's_client',
@@ -354,7 +354,7 @@ describe('the other checks', () => {
       delay: '500',
       timeout: '20000',
     });
-    expect(linesOf(body)['sess_out']).toMatch(WORD_CHARACTERS_ONLY);
+    expect(linesOf(body).sess_out).toMatch(WORD_CHARACTERS_ONLY);
   });
 });
 
@@ -371,7 +371,7 @@ describe('DNS answers', () => {
     });
     expect(first).toEqual({ same: true, other: false });
     expect(asked).toEqual(['A Example.com', 'MX example.com']);
-    await withProbe(client, () => dns.client.query('example.com', 'A'));
+    await withProbe(client, async () => dns.client.query('example.com', 'A'));
     expect(asked).toEqual(['A Example.com', 'MX example.com', 'A example.com']);
   });
 
@@ -396,7 +396,7 @@ describe('DNS answers', () => {
 describe('route validation', () => {
   it('looks an address up once within a scan, however many checks ask, and again in the next scan', async () => {
     const { client } = probeFor({});
-    const [a, b] = await withProbe(client, () =>
+    const [a, b] = await withProbe(client, async () =>
       Promise.all([
         rpki.client.check('192.0.2.1'),
         rpki.client.check('192.0.2.1'),
@@ -404,7 +404,7 @@ describe('route validation', () => {
     );
     expect(a).toBe(b);
     expect(looked.filter((ip) => ip === '192.0.2.1')).toHaveLength(1);
-    await withProbe(client, () => rpki.client.check('192.0.2.1'));
+    await withProbe(client, async () => rpki.client.check('192.0.2.1'));
     expect(looked.filter((ip) => ip === '192.0.2.1')).toHaveLength(2);
   });
 

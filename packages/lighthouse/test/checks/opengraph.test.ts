@@ -74,10 +74,7 @@ function check(id: string): AuditCheck {
 async function run(
   id: string,
   metas: readonly Meta[],
-): Promise<
-  | readonly import('@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js').Finding[]
-  | null
-> {
+): Promise<readonly Finding[] | null> {
   return check(id).run(artifacts(metas), context());
 }
 

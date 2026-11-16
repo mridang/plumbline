@@ -88,7 +88,7 @@ const report = (
 });
 
 /** Stores an open issue for a check, as the app would have after opening it. */
-const open = (
+const open = async (
   db: ReturnType<typeof database>,
   check: string,
   number: number,
@@ -673,7 +673,7 @@ describe('syncIssues: when the rules change', () => {
 });
 
 describe('syncIssues: an issue a person closed', () => {
-  const dismissed = (
+  const dismissed = async (
     db: ReturnType<typeof database>,
     signature: string,
     reopens: number,

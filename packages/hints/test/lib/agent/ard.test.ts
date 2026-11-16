@@ -135,7 +135,11 @@ describe('checkArd', () => {
   });
   it('fails when no catalog is found, even if DNS errors', async () => {
     const env = fakeEnv();
-    env.dns = { query: () => Promise.reject(new Error('down')) };
+    env.dns = {
+      query: async () => {
+        throw new Error('down');
+      },
+    };
     const result = await checkArd(env);
     expect(result.detail).toContain('/.well-known/ard.json was not found');
   });

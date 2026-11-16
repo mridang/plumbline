@@ -11,7 +11,7 @@ const dns = fakeDns({
 });
 
 const rpki = (result: RpkiResult): RpkiClient => ({
-  check: () => Promise.resolve(result),
+  check: async () => result,
 });
 
 describe('mail-ns-rpki-valid', () => {

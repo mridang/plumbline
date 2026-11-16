@@ -1,14 +1,9 @@
 import { createHTMLDocument } from '@hint/utils-dom';
 import { describe, expect, it } from '@jest/globals';
-import {
-  measureContent,
-  type ContentDocument,
-} from '../../../src/lib/geo/content.js';
+import { measureContent } from '../../../src/lib/geo/content.js';
 
 const measure = (html: string) =>
-  measureContent(
-    createHTMLDocument(html, 'https://example.com/') as ContentDocument,
-  );
+  measureContent(createHTMLDocument(html, 'https://example.com/'));
 
 const LONG = 'x'.repeat(31);
 

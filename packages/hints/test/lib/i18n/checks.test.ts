@@ -15,7 +15,7 @@ const parse = (head: string): DocumentLike =>
   createHTMLDocument(
     `<!doctype html><html><head>${head}</head><body></body></html>`,
     'https://x.test/',
-  ) as DocumentLike;
+  );
 
 describe('hreflangReturn', () => {
   it('passes when every alternate is an absolute URL', () => {

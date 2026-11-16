@@ -13,7 +13,7 @@ function fetchOf(
   answers: Record<string, () => Response>,
   seen: string[] = [],
 ): typeof fetch {
-  return (async (input: unknown, init?: RequestInit) => {
+  return async (input: unknown, init?: RequestInit) => {
     const url = String(input);
     seen.push(`${init?.method ?? 'GET'} ${url}`);
     const key = Object.keys(answers).find((prefix) => url.startsWith(prefix));
@@ -21,7 +21,7 @@ function fetchOf(
       throw new Error(`unexpected ${url}`);
     }
     return answers[key]!();
-  }) as typeof fetch;
+  };
 }
 
 describe('authorizeUrl and installUrl', () => {

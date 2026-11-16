@@ -20,5 +20,5 @@ export default defineMailTlsHint({
   name: 'Mail server certificates chain to a trusted root',
   description:
     'Checks that the certificates of the mail servers (MX) chain to a trusted root, with all intermediates sent.',
-  check: (site) => checkCertTrust(site, Severity.hint),
+  check: async (site) => checkCertTrust(site, Severity.hint),
 });

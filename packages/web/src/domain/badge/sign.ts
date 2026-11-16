@@ -13,7 +13,7 @@
 const LENGTH = 20;
 
 /** A secret as an HMAC key. */
-function keyOf(secret: string): Promise<CryptoKey> {
+async function keyOf(secret: string): Promise<CryptoKey> {
   return crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(secret),

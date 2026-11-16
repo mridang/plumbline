@@ -6,7 +6,6 @@ import {
   it,
   jest,
 } from '@jest/globals';
-import type { ReactElement } from 'react';
 
 import { createDatabase, type Database } from '@/domain/db/client';
 import { addDomain } from '@/domain/db/domains';
@@ -64,20 +63,17 @@ beforeEach(() => {
 afterEach(() => restore());
 
 /** The search params Next hands the page, as a promise. */
-function searchParamsOf(
+async function searchParamsOf(
   error?: string,
 ): Promise<{ error: string | undefined }> {
-  return Promise.resolve({ error });
+  return { error };
 }
 
 /** The page as it renders for the current user. */
 async function page(error?: string): Promise<string> {
-  return htmlAt(
-    (await GitHubPage({ searchParams: searchParamsOf(error) })) as ReactElement,
-    {
-      pathname: '/github',
-    },
-  );
+  return htmlAt(await GitHubPage({ searchParams: searchParamsOf(error) }), {
+    pathname: '/github',
+  });
 }
 
 describe('GitHubPage', () => {

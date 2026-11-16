@@ -170,8 +170,9 @@ async function latestRunOf(
 }
 
 /** Stands in for the scanner where none is given: a site cannot be scanned. */
-const noScanner = (): Promise<SuiteRun> =>
-  Promise.reject(new Error('No scanner is available.'));
+const noScanner = async (): Promise<SuiteRun> => {
+  throw new Error('No scanner is available.');
+};
 
 /**
  * Check one site and store the run. The findings of a check the scanner could
@@ -196,7 +197,7 @@ export async function checkSite(
       : (last ?? undefined);
   const url = `https://${site.host}/`;
   // The previous run is only a basis for this one if the rules are the same.
-  const same = previous !== undefined && previous.rules === rules;
+  const same = previous?.rules === rules;
   const where = { host: site.host, repo: site.repo };
   const before = previous ? countsOf(previous.findings) : null;
   await deps.live?.started(userId, where, now().toISOString());
@@ -277,7 +278,7 @@ export async function checkDeployment(
   const domains = await listDomainsOfRepo(db, userId, deployed.repo);
   const sites = domains.slice(0, limits.maxSites);
   // The sites are checked together: most of a check is waiting for the site.
-  return await inBatches(
+  return inBatches(
     sites,
     limits.concurrency,
     async (site): Promise<SiteOutcome> => {

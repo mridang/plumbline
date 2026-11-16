@@ -49,7 +49,7 @@ beforeEach(() => {
 
 afterEach(() => restore());
 
-const list = (id = DOMAIN) =>
+const list = async (id = DOMAIN) =>
   collection.GET(new Request(`${ORIGIN}/api/domains/${id}/issues`), {
     params: Promise.resolve({ id }),
   });

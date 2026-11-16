@@ -79,8 +79,10 @@ describe('dispatchRun', () => {
     const bodies: { url: string; body: Record<string, unknown> }[] = [];
     const fetcher = (async (input: unknown, init?: RequestInit) => {
       bodies.push({
-        url: String(input),
-        body: JSON.parse(String(init?.body)) as Record<string, unknown>,
+        url: input instanceof Request ? input.url : String(input),
+        body: JSON.parse(
+          typeof init?.body === 'string' ? init.body : '',
+        ) as Record<string, unknown>,
       });
       return new Response(null, { status });
     }) as typeof fetch;

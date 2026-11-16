@@ -5,8 +5,8 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import { type Domain } from '@/domain/db/domains';
-import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
+import type { Domain } from '@/domain/db/domains';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
 import { reportResult } from '@/domain/mcp/tool-results';
 import { namedReport } from '@/domain/mcp/tools/domain-support';
 import { DomainTool } from '@/domain/mcp/tools/domain-tool';

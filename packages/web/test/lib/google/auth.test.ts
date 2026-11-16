@@ -88,9 +88,13 @@ describe('exchangeCode', () => {
       expect(result.value).toEqual(tokens);
     }
     const [url, init] = fetchSpy.mock.calls[0] ?? [];
-    expect(String(url)).toBe('https://oauth2.googleapis.com/token');
+    expect(url instanceof Request ? url.url : String(url)).toBe(
+      'https://oauth2.googleapis.com/token',
+    );
     expect(init?.method).toBe('POST');
-    const form = new URLSearchParams(String(init?.body));
+    const form = new URLSearchParams(
+      init?.body instanceof URLSearchParams ? init.body : '',
+    );
     expect(Object.fromEntries(form)).toEqual({
       code: 'the-code',
       client_id: 'client-id',
@@ -125,7 +129,9 @@ describe('refreshAccessToken', () => {
     if (result.ok) {
       expect(result.value).toEqual({ access_token: 'fresh', expires_in: 3600 });
     }
-    const form = new URLSearchParams(String(fetchSpy.mock.calls[0]?.[1]?.body));
+    const form = new URLSearchParams(
+      String(fetchSpy.mock.calls[0]?.[1]?.body as string | undefined),
+    );
     expect(Object.fromEntries(form)).toEqual({
       refresh_token: 'rt',
       client_id: 'client-id',
@@ -205,11 +211,15 @@ describe('revoke', () => {
     const result = await client.revoke({ token: 'the-token' });
     expect(result.ok).toBe(true);
     const [url, init] = fetchSpy.mock.calls[0] ?? [];
-    expect(String(url)).toBe('https://oauth2.googleapis.com/revoke');
-    expect(init?.method).toBe('POST');
-    expect(new URLSearchParams(String(init?.body)).get('token')).toBe(
-      'the-token',
+    expect(url instanceof Request ? url.url : String(url)).toBe(
+      'https://oauth2.googleapis.com/revoke',
     );
+    expect(init?.method).toBe('POST');
+    expect(
+      new URLSearchParams(
+        init?.body instanceof URLSearchParams ? init.body : '',
+      ).get('token'),
+    ).toBe('the-token');
   });
 
   it('reports the status when Google refuses', async () => {

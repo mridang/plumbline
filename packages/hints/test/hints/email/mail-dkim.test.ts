@@ -15,7 +15,7 @@ const KEY = publicKey
   .export({ type: 'spki', format: 'der' })
   .toString('base64');
 
-const run = (txt: Record<string, FakeAnswer>, selectors?: string[]) =>
+const run = async (txt: Record<string, FakeAnswer>, selectors?: string[]) =>
   runMailHint(
     hint,
     { dns: fakeDns({ 'example.test MX': ['10 mx.example.test.'], ...txt }) },

@@ -546,7 +546,7 @@ export function parseAllowedOrigins(setting?: string): readonly string[] {
 export function isAllowedOrigin(
   origin: string | null,
   selfOrigin: string,
-  extra: string | undefined = undefined,
+  extra?: string,
 ): boolean {
   if (origin === null || origin === selfOrigin) {
     return true;

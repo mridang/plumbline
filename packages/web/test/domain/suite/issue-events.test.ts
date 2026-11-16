@@ -32,7 +32,7 @@ const event = (action: string, sender = 'someone', number = 12) => ({
   sender: { login: sender },
 });
 
-const stored = (db: Awaited<ReturnType<typeof setup>>) =>
+const stored = async (db: Awaited<ReturnType<typeof setup>>) =>
   issueOf(db, 'acme/site', 'site.test', CHECK);
 
 describe('botLogin', () => {

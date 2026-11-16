@@ -70,7 +70,7 @@ export async function checkPoppy(env: AgentEnv): Promise<CheckResult> {
     const meta = parseJsonObject(
       await env.probe(`${base}/.well-known/oauth-authorization-server`),
     );
-    if (!meta || meta.issuer !== auth.issuer) {
+    if (meta?.issuer !== auth.issuer) {
       return fail('auth.issuer does not match the RFC 8414 metadata issuer.');
     }
     // personalagentprotocol.org: the issuer metadata must also list the

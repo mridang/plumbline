@@ -31,7 +31,7 @@ async function toNetworkData(
     headers['set-cookie'] = cookies as unknown as string;
   }
   const contentType = headers['content-type'] ?? '';
-  const [mediaType = '', ...parameters] = String(contentType)
+  const [mediaType = '', ...parameters] = contentType
     .split(';')
     .map((part) => part.trim());
   const charset =
@@ -42,7 +42,7 @@ async function toNetworkData(
       body: {
         content: rawContent.toString('utf8'),
         rawContent,
-        rawResponse: () => Promise.resolve(rawContent),
+        rawResponse: async () => rawContent,
       },
       charset,
       headers,
@@ -175,7 +175,7 @@ export default class TestConnector implements IConnector {
     return this.dom ? this.dom.querySelectorAll(query) : [];
   }
 
-  public close(): Promise<void> {
-    return Promise.resolve();
+  public async close(): Promise<void> {
+    return;
   }
 }

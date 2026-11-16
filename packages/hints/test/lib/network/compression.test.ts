@@ -11,7 +11,7 @@ const serve = async (
 ): Promise<{ url: URL; seen: () => string; close: () => Promise<void> }> => {
   let accept = '';
   const server = createServer((req, res) => {
-    accept = String(req.headers['accept-encoding'] ?? '');
+    accept = req.headers['accept-encoding'] ?? '';
     res.writeHead(200, headers);
     res.end('x');
   });
@@ -20,7 +20,7 @@ const serve = async (
   return {
     url: new URL(`http://127.0.0.1:${port}/`),
     seen: () => accept,
-    close: () => new Promise((resolve) => server.close(() => resolve())),
+    close: async () => new Promise((resolve) => server.close(() => resolve())),
   };
 };
 

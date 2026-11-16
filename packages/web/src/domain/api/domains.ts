@@ -75,7 +75,7 @@ function compare(a: CursorPosition, b: CursorPosition): number {
 }
 
 /** The entity tag of a domain's representation. */
-export function domainTag(resource: DomainResource): Promise<string> {
+export async function domainTag(resource: DomainResource): Promise<string> {
   return entityTag(JSON.stringify(resource));
 }
 

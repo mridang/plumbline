@@ -12,7 +12,9 @@ describe('the Puppeteer page shim', () => {
     const require = createRequire(import.meta.url);
     const { Page } = createRequire(
       require.resolve('@hint/connector-puppeteer'),
-    )('puppeteer-core');
+    )('puppeteer-core') as {
+      Page: { prototype: { removeListener?: unknown } };
+    };
     expect(typeof Page.prototype.removeListener).toBe('function');
   });
 });

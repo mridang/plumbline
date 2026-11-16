@@ -23,7 +23,7 @@ function validateStatement(
 
   // `relation` is a non-empty array of relation strings such as
   // "delegate_permission/common.handle_all_urls".
-  const relation = statement['relation'];
+  const relation = statement.relation;
   if (!isStringArray(relation) || relation.length === 0) {
     issues.push({
       severity: 'error',
@@ -31,7 +31,7 @@ function validateStatement(
     });
   }
 
-  const target = statement['target'];
+  const target = statement.target;
   if (!isObject(target)) {
     issues.push({
       severity: 'error',
@@ -40,18 +40,18 @@ function validateStatement(
     return;
   }
 
-  const namespace = target['namespace'];
+  const namespace = target.namespace;
   if (namespace === 'android_app') {
     if (
-      typeof target['package_name'] !== 'string' ||
-      target['package_name'].trim() === ''
+      typeof target.package_name !== 'string' ||
+      target.package_name.trim() === ''
     ) {
       issues.push({
         severity: 'error',
         message: `statement[${index}].target is an android_app but has no 'package_name'.`,
       });
     }
-    const fingerprints = target['sha256_cert_fingerprints'];
+    const fingerprints = target.sha256_cert_fingerprints;
     if (!isStringArray(fingerprints) || fingerprints.length === 0) {
       issues.push({
         severity: 'error',
@@ -59,7 +59,7 @@ function validateStatement(
       });
     }
   } else if (namespace === 'web') {
-    if (typeof target['site'] !== 'string' || target['site'].trim() === '') {
+    if (typeof target.site !== 'string' || target.site.trim() === '') {
       issues.push({
         severity: 'error',
         message: `statement[${index}].target is a web target but has no 'site'.`,

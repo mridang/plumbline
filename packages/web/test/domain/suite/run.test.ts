@@ -164,7 +164,7 @@ describe('countsOf', () => {
 });
 
 describe('restrictRun', () => {
-  const made = () =>
+  const made = async () =>
     suiteRunOf(
       scan(
         outcome('seo-links', 'warned', ['x']),

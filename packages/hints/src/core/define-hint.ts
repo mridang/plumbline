@@ -1,6 +1,6 @@
 import type { HintContext, HintMetadata, IHintConstructor } from 'hint';
 import { HintScope } from '#hint';
-import { Category } from '@hint/utils-types';
+import type { Category } from '@hint/utils-types';
 import type { Group } from './groups.js';
 import { ORIGINS, type Origin } from './origins.js';
 import {
@@ -67,8 +67,12 @@ function withReference(context: HintContext, spec: HintSpec): HintContext {
       if (property === 'report') {
         return report;
       }
-      const value = Reflect.get(target, property, target) as unknown;
-      return typeof value === 'function' ? value.bind(target) : value;
+      const value: unknown = Reflect.get(target, property, target);
+      if (typeof value === 'function') {
+        const bound: unknown = value.bind(target);
+        return bound;
+      }
+      return value;
     },
   });
 }

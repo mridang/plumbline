@@ -138,7 +138,7 @@ export function validateOpenSearch(text: string): Finding[] {
     // A ShortName within the limit needs no finding.
   }
   const urls = descendantsByName(root, 'url');
-  if (!urls.some((url) => (url.attrs['template'] ?? '').trim() !== '')) {
+  if (!urls.some((url) => (url.attrs.template ?? '').trim() !== '')) {
     findings.push(
       finding(
         'error',

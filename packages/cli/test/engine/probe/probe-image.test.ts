@@ -84,7 +84,7 @@ describe('the probe image', () => {
   });
 
   it('serves its trusted roots as one PEM bundle', async () => {
-    const roots = await new ProbeClient((route, body) =>
+    const roots = await new ProbeClient(async (route, body) =>
       post(route, body),
     ).roots();
     expect(roots.match(/BEGIN CERTIFICATE/g)?.length).toBeGreaterThan(100);
@@ -93,7 +93,7 @@ describe('the probe image', () => {
 
 describe('the probe refuses what it must refuse', () => {
   const client = (): ProbeClient =>
-    new ProbeClient((route, body) => post(route, body), { waitMs: 1 });
+    new ProbeClient(async (route, body) => post(route, body), { waitMs: 1 });
 
   it.each([
     ['loopback', '127.0.0.1'],
@@ -149,7 +149,7 @@ describe('the probe refuses what it must refuse', () => {
       expect((answer as PromiseRejectedResult).reason).toBeInstanceOf(
         ProbeError,
       );
-      expect((answer as PromiseRejectedResult).reason.message).toBe(
+      expect(((answer as PromiseRejectedResult).reason as Error).message).toBe(
         'not a public address',
       );
     }

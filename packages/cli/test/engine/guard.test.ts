@@ -208,7 +208,7 @@ describe('guardedFetch', () => {
     base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   });
 
-  afterAll(() => new Promise((resolve) => server.close(() => resolve())));
+  afterAll(async () => new Promise((resolve) => server.close(() => resolve())));
 
   const local = guardedFetch({ allowPrivate: true, timeoutMs: 500 });
 

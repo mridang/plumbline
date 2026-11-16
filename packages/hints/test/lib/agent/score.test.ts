@@ -86,7 +86,7 @@ describe('computeScore', () => {
         origin: 'https://chowdown.example',
       },
     );
-    const real = await Promise.all(CHECKS.map((c) => runCheck(c, env)));
+    const real = await Promise.all(CHECKS.map(async (c) => runCheck(c, env)));
     const r = computeScore(real, false);
     const by = Object.fromEntries(r.categories.map((c) => [c.category, c]));
     expect(by.discoverability).toMatchObject({ passed: 2, total: 4 });

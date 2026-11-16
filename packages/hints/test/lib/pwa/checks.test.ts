@@ -13,7 +13,7 @@ import {
 } from '../../../src/lib/pwa/checks.js';
 
 const parse = (html: string): DocumentLike =>
-  createHTMLDocument(html, 'https://example.com/') as DocumentLike;
+  createHTMLDocument(html, 'https://example.com/');
 
 /** A fully valid manifest; tests delete or override one member at a time. */
 const fullManifest = (): Record<string, unknown> => ({

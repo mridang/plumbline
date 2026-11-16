@@ -37,7 +37,7 @@ export async function checkFile(
 ): Promise<boolean> {
   const url = new URL(o.path, site.url).href;
   const data = await site.fetch(o.path);
-  if (!data || data.response.statusCode !== 200) {
+  if (data?.response.statusCode !== 200) {
     const status = data ? ` (HTTP ${data.response.statusCode})` : '';
     site.report(url, `${o.label} was not found${status}.`, {
       severity: SEVERITY[o.missing],

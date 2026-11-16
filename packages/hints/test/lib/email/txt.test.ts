@@ -39,7 +39,9 @@ describe('lookupTxt', () => {
     const servfail = fakeDns({ 'a.test TXT': { status: 2 } });
     expect(await lookupTxt(servfail, 'a.test')).toEqual({ status: 'error' });
     const broken: DnsClient = {
-      query: () => Promise.reject(new Error('network down')),
+      query: async () => {
+        throw new Error('network down');
+      },
     };
     expect(await lookupTxt(broken, 'a.test')).toEqual({ status: 'error' });
   });

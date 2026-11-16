@@ -7,16 +7,18 @@ import {
 /** Resolves from a table; a missing entry gives null, `Error` throws. */
 const resolver =
   (table: Record<string, string | Error>): SpfResolver =>
-  (domain) => {
+  async (domain) => {
     const entry = table[domain];
     if (entry instanceof Error) {
-      return Promise.reject(entry);
+      throw entry;
     }
-    return Promise.resolve(entry ?? null);
+    return entry ?? null;
   };
 
-const check = (record: string, table: Record<string, string | Error> = {}) =>
-  checkSpfPolicy('example.com', record, resolver(table));
+const check = async (
+  record: string,
+  table: Record<string, string | Error> = {},
+) => checkSpfPolicy('example.com', record, resolver(table));
 
 describe('checkSpfPolicy', () => {
   it.each(['v=spf1 -all', 'v=spf1 ~all', 'v=spf1 mx a ip4:192.0.2.1 -all'])(

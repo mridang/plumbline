@@ -148,15 +148,16 @@ function fake(
   table: Record<string, [number, string?] | Error | undefined>,
 ): RedirectionClient {
   return {
-    fetch: (url) => {
+    fetch: async (url) => {
       const entry = table[url];
       if (entry === undefined || entry instanceof Error) {
-        return Promise.reject(entry ?? new Error('unknown'));
+        throw entry ?? new Error('unknown');
       }
       const [status, location] = entry;
-      return Promise.resolve(
-        new Response(null, { status, headers: location ? { location } : {} }),
-      );
+      return new Response(null, {
+        status,
+        headers: location ? { location } : {},
+      });
     },
   };
 }

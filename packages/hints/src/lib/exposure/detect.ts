@@ -188,7 +188,7 @@ export function looksLikeSqlite(content: string): boolean {
 export function looksLikeDsStore(content: string): boolean {
   return (
     content.length >= 8 &&
-    content.slice(0, 4) === '\u0000\u0000\u0000\u0001' &&
+    content.startsWith('\u0000\u0000\u0000\u0001') &&
     content.slice(4, 8) === 'Bud1'
   );
 }

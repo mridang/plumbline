@@ -10,8 +10,7 @@ const COMMA_SEPARATOR = /,\s*/;
 /** Runs the check of the `cert-hostname` hint against one TLS endpoint. */
 export async function checkCertHostname(
   { target, report, couldNotTest, subject }: TlsSite,
-  severityOf: (host: string) => Promise<Severity> = () =>
-    Promise.resolve(Severity.error),
+  severityOf: (host: string) => Promise<Severity> = async () => Severity.error,
 ): Promise<void> {
   const result = await fetchCertificate(target);
   if (result === null) {
@@ -26,7 +25,7 @@ export async function checkCertHostname(
     ].filter(Boolean);
     report(
       `The domain name of your ${subject.owner} does *not* match the domain name on your ${subject.certificate} (${names.join(', ')}).`,
-      `Requested host: ${target.host}\nSubject: CN=${result.peerCertificate.subject?.CN ?? '-'}\nSubject Alternative Name: ${result.peerCertificate.subjectaltname ?? '-'}`,
+      `Requested host: ${target.host}\nSubject: CN=${String(result.peerCertificate.subject?.CN ?? '-')}\nSubject Alternative Name: ${result.peerCertificate.subjectaltname ?? '-'}`,
       await severityOf(target.host),
     );
   }

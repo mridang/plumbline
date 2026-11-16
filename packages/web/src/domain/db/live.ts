@@ -243,7 +243,7 @@ async function openIssuesOf(
       )
       .groupBy(suiteCheckIssues.repo);
     for (const row of rows) {
-      counts.set(row.repo, Number(row.total));
+      counts.set(row.repo, row.total);
     }
   }
   return counts;

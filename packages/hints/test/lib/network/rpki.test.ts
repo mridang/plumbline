@@ -105,7 +105,7 @@ describe('collectRpki', () => {
       'example.test': { A: { data: ['192.0.2.1', '192.0.2.2'] } },
     });
     rpki.client = {
-      check: (ip) =>
+      check: async (ip) =>
         ip === '192.0.2.1'
           ? Promise.reject(new Error('down'))
           : Promise.resolve({ asn: 1, prefix: 'p', status: 'valid' }),
@@ -116,7 +116,11 @@ describe('collectRpki', () => {
 
   it('skips addresses when the validator fails', async () => {
     restore = installDns({ 'example.test': { A: { data: ['192.0.2.1'] } } });
-    rpki.client = { check: () => Promise.reject(new Error('down')) };
+    rpki.client = {
+      check: async () => {
+        throw new Error('down');
+      },
+    };
     expect(await collectRpki(['example.test'])).toEqual([]);
   });
 });

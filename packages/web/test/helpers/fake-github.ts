@@ -19,35 +19,38 @@ export function github(
 ) {
   const requests: Request[] = [];
   let next = firstNumber;
-  const api = new GitHubApi('tok', (async (
-    input: unknown,
-    init?: RequestInit,
-  ) => {
-    const method = init?.method ?? 'GET';
-    const path = String(input).replace('https://api.github.com', '');
-    requests.push({
-      method,
-      path,
-      body: JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>,
-    });
-    const key = Object.keys(answers).find((k) =>
-      `${method} ${path}`.startsWith(k),
-    );
-    if (key) {
-      const answer = answers[key]!;
-      const [status, body] = typeof answer === 'number' ? [answer, {}] : answer;
-      return Response.json(body, { status });
-    }
-    if (method === 'GET') {
-      return Response.json([]);
-    }
-    if (method === 'POST' && path.endsWith('/issues')) {
-      const number = next;
-      next += 1;
-      return Response.json({ id: number, number, state: 'open' });
-    }
-    return Response.json({ id: 1, number: 21, state: 'open' });
-  }) as typeof fetch);
+  const api = new GitHubApi(
+    'tok',
+    async (input: unknown, init?: RequestInit) => {
+      const method = init?.method ?? 'GET';
+      const path = String(input).replace('https://api.github.com', '');
+      requests.push({
+        method,
+        path,
+        body: JSON.parse(
+          typeof init?.body === 'string' ? init.body : '{}',
+        ) as Record<string, unknown>,
+      });
+      const key = Object.keys(answers).find((k) =>
+        `${method} ${path}`.startsWith(k),
+      );
+      if (key) {
+        const answer = answers[key]!;
+        const [status, body] =
+          typeof answer === 'number' ? [answer, {}] : answer;
+        return Response.json(body, { status });
+      }
+      if (method === 'GET') {
+        return Response.json([]);
+      }
+      if (method === 'POST' && path.endsWith('/issues')) {
+        const number = next;
+        next += 1;
+        return Response.json({ id: number, number, state: 'open' });
+      }
+      return Response.json({ id: 1, number: 21, state: 'open' });
+    },
+  );
   return { api, requests };
 }
 

@@ -17,7 +17,7 @@ import { HTTP_SCHEME } from '../../helpers/data.js';
 
 /** Parses markup with the same DOM implementation webhint uses. */
 const parse = (html: string): DocumentLike =>
-  createHTMLDocument(html, `${HTTP_SCHEME}example.com/`) as DocumentLike;
+  createHTMLDocument(html, `${HTTP_SCHEME}example.com/`);
 
 describe('getTitle', () => {
   it('returns the collapsed title text', () => {
@@ -124,7 +124,7 @@ describe('sameUrl', () => {
     );
   });
   it('returns false for unparsable input', () => {
-    expect(sameUrl(`${HTTP_SCHEME}`, `${HTTP_SCHEME}e.com/a`)).toBe(false);
+    expect(sameUrl(HTTP_SCHEME, `${HTTP_SCHEME}e.com/a`)).toBe(false);
   });
 });
 

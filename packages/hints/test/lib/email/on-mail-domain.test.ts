@@ -22,9 +22,8 @@ const probe = defineHint({
     },
   ],
   setup(context) {
-    onMailDomain(context, (mail) => {
+    onMailDomain(context, async (mail) => {
       mail.report(`${mail.domain}: ${mail.hosts.join(',')}`);
-      return Promise.resolve();
     });
   },
 });
@@ -66,7 +65,11 @@ describe('onMailDomain', () => {
   it('does nothing for a site without a registrable domain', async () => {
     // The scanned host is 127.0.0.1; the fake would answer for any name.
     restore = installFakes({
-      dns: { query: () => Promise.reject(new Error('must not be queried')) },
+      dns: {
+        query: async () => {
+          throw new Error('must not be queried');
+        },
+      },
     });
     expect(await runHint(probe, {})).toEqual([]);
   });

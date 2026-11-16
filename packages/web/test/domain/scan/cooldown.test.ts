@@ -103,8 +103,10 @@ describe('claimScan', () => {
 
   it('lets the scan go ahead when the counters cannot be reached', async () => {
     const broken: RateLimitStore = {
-      hit: () => Promise.reject(new Error('down')),
-      purge: () => Promise.resolve(),
+      hit: async () => {
+        throw new Error('down');
+      },
+      purge: async () => {},
     };
     expect(await claimScan(PAGE, deps(broken))).toMatchObject({
       allowed: true,

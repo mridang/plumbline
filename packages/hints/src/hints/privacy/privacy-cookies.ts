@@ -32,6 +32,7 @@ export default defineHint({
   reference: 'https://github.com/andersju/webbkoll',
   setup(context) {
     const collected = collectRequests(context);
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises -- webhint's context.on types its listener as returning void, but the engine awaits it; dropping the async would stop the scan waiting for this handler
     context.on('scan::end', async () => {
       const pageHost = new URL(collected.pageUrl).hostname;
       const cookies: CookieRecord[] = cookiesFromHeaders(

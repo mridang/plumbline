@@ -38,7 +38,7 @@ describe('POST /api/scans', () => {
       post('/api/scans', { url: 'Example.com/a#top' }),
     );
     expect(response.status).toBe(201);
-    const body = (await response.json()) as Record<string, string>;
+    const body = await response.json<Record<string, string>>();
     expect(body['url']).toBe('https://example.com/a');
     expect(Number.isNaN(Date.parse(body['expires_at'] ?? ''))).toBe(false);
     expect(response.headers.get('location')).toBe(
@@ -83,9 +83,8 @@ describe('POST /api/scans', () => {
     const response = await fresh(
       post('/api/scans', { url: 'example.com.//a?utm_source=x&b=1' }),
     );
-    expect(((await response.json()) as { url: string }).url).toBe(
-      'https://example.com/a?b=1',
-    );
+    const body = await response.json<{ url: string }>();
+    expect(body.url).toBe('https://example.com/a?b=1');
   });
 
   it('refuses a second scan of a page within five minutes, with 429 and Retry-After', async () => {
@@ -177,7 +176,7 @@ describe('POST /api/scans/{id}/run', () => {
       cooldown(),
     ).handlers();
     const { id } = await issueScanId('https://example.com/', SECRET);
-    const run = () =>
+    const run = async () =>
       POST(
         new Request(`https://app.test/api/scans/${id}/run`, {
           method: 'POST',
@@ -211,7 +210,7 @@ describe('POST /api/scans/{id}/run', () => {
 
   it('answers 503 as a problem when there is no scanner, or it does not answer', async () => {
     const { id } = await issueScanId('https://example.com/', SECRET);
-    const call = (namespace?: ReturnType<typeof streaming>) =>
+    const call = async (namespace?: ReturnType<typeof streaming>) =>
       createScanRun(
         () => SECRET,
         () => namespace,

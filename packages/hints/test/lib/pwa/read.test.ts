@@ -9,7 +9,7 @@ import {
 
 /** Parses markup with the same DOM implementation webhint uses. */
 const parse = (html: string): DocumentLike =>
-  createHTMLDocument(html, 'https://example.com/') as DocumentLike;
+  createHTMLDocument(html, 'https://example.com/');
 
 describe('getManifestHref', () => {
   it('returns the trimmed href of the manifest link', () => {

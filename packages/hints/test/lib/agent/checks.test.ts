@@ -90,7 +90,9 @@ describe('runCheck', () => {
   it('turns a throwing check into a failed result', async () => {
     const check = {
       ...checkById('agent-sitemap'),
-      run: () => Promise.reject(new Error('boom')),
+      run: async () => {
+        throw new Error('boom');
+      },
     };
     const r = await runCheck(check, fakeEnv());
     expect(r.passed).toBe(false);

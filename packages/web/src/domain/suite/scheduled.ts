@@ -107,7 +107,7 @@ export const scheduled: ExportedHandlerScheduledHandler<CloudflareEnv> = async (
   const db = createDatabase(env.DB);
   const config = readGitHubConfig(env);
   if (config) {
-    await resyncStaleInstallation(db, (userId, installationId) =>
+    await resyncStaleInstallation(db, async (userId, installationId) =>
       syncAsApp(db, config, userId, installationId),
     );
   }

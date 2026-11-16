@@ -8,7 +8,7 @@ import {
 } from '../../../src/lib/feeds/checks.js';
 
 const parse = (html: string): DocumentLike =>
-  createHTMLDocument(html, 'https://x.test/') as DocumentLike;
+  createHTMLDocument(html, 'https://x.test/');
 
 describe('feedDiscovery', () => {
   it('reports no feed as an informational hint', () => {

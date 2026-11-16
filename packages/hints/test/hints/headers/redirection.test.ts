@@ -21,16 +21,17 @@ function fakeSite(
   plan: (url: URL, hop: number) => [number, string?] | Error,
 ): string[] {
   const asked: string[] = [];
-  redirectionClient.fetch = (url) => {
+  redirectionClient.fetch = async (url) => {
     const answer = plan(new URL(url), asked.length);
     asked.push(url);
     if (answer instanceof Error) {
-      return Promise.reject(answer);
+      throw answer;
     }
     const [status, location] = answer;
-    return Promise.resolve(
-      new Response(null, { status, headers: location ? { location } : {} }),
-    );
+    return new Response(null, {
+      status,
+      headers: location ? { location } : {},
+    });
   };
   return asked;
 }

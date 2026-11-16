@@ -69,7 +69,7 @@ function parseFrontMatter(block: string[]): Partial<Record<string, string>> {
 function frontMatterIssues(block: string[]): FileIssue[] {
   const issues: FileIssue[] = [];
   const meta = parseFrontMatter(block);
-  const updated = meta['updated'];
+  const updated = meta.updated;
   if (updated === undefined) {
     issues.push({
       severity: 'error',
@@ -85,7 +85,7 @@ function frontMatterIssues(block: string[]): FileIssue[] {
   } else {
     // A well-formed 'updated' date needs no finding.
   }
-  if (!meta['scope']) {
+  if (!meta.scope) {
     issues.push({
       severity: 'error',
       line: 1,

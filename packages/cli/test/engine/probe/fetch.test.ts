@@ -25,7 +25,7 @@ function site(routes: Record<string, string>): ReturnType<typeof fakeProbe> {
   return fakeProbe((_path, body) => {
     const line = linesOf(body);
     return ok(
-      routes[line['path'] ?? ''] ?? httpAnswer(404, [], 'nope', 'Not Found'),
+      routes[line.path ?? ''] ?? httpAnswer(404, [], 'nope', 'Not Found'),
     );
   });
 }
@@ -226,7 +226,7 @@ describe('probeFetch', () => {
   it('reads an IPv6 literal without its brackets', async () => {
     const { client, sent } = site({ '/': httpAnswer(200, [], 'x') });
     await probeFetch(client)('https://[2606:4700:4700::1111]/');
-    expect(linesOf(sent[0]?.body ?? '')['host']).toBe(
+    expect(linesOf(sent[0]?.body ?? '').host).toBe(
       vector('ip2606_4700_4700__1111'),
     );
   });

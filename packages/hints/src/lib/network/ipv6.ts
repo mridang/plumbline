@@ -48,7 +48,7 @@ export type WebGetFn = (
 ) => Promise<WebResponse | null>;
 
 /** Real TCP connect. */
-export const tcpConnect: ConnectFn = (ip, port, timeoutMs) =>
+export const tcpConnect: ConnectFn = async (ip, port, timeoutMs) =>
   new Promise((resolve) => {
     const socket = netConnect({ host: ip, port });
     const done = (ok: boolean) => {
@@ -61,7 +61,7 @@ export const tcpConnect: ConnectFn = (ip, port, timeoutMs) =>
   });
 
 /** Real HTTP(S) GET to a fixed IP with the host name as Host and SNI. */
-export const httpGetByIp: WebGetFn = (host, ip, port, https) =>
+export const httpGetByIp: WebGetFn = async (host, ip, port, https) =>
   new Promise((resolve) => {
     const make = https ? httpsRequest : httpRequest;
     const req = make(

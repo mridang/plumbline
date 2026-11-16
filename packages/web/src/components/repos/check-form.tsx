@@ -37,7 +37,7 @@ export function checksToSend(
 export async function saveChecks(
   domainId: string,
   checks: readonly string[] | null,
-  transport: typeof fetch = (url, init) => fetch(url, init),
+  transport: typeof fetch = async (url, init) => fetch(url, init),
 ): Promise<void> {
   const response = await transport(`/api/domains/${domainId}`, {
     method: 'PATCH',

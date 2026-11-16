@@ -6,7 +6,7 @@ import {
   type FakeAnswer,
 } from '../../lib/email/fakes.js';
 
-const run = (txt: Record<string, FakeAnswer>) =>
+const run = async (txt: Record<string, FakeAnswer>) =>
   runMailHint(hint, {
     dns: fakeDns({ 'example.test MX': ['10 mx.example.test.'], ...txt }),
   });

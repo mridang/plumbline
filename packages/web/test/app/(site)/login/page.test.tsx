@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
-import type { ReactElement } from 'react';
 
 import LoginPage, { metadata } from '@/app/(site)/login/page';
 import { html } from '../../../components/render';
@@ -37,9 +36,9 @@ afterEach(() => restore());
 /** The page for these query parameters. */
 async function page(searchParams: { error?: string } = {}): Promise<string> {
   return html(
-    (await LoginPage({
+    await LoginPage({
       searchParams: Promise.resolve(searchParams),
-    })) as ReactElement,
+    }),
   );
 }
 

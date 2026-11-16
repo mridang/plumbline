@@ -31,7 +31,7 @@ export async function serve(
   const { port } = server.address() as AddressInfo;
   return {
     url: `http://127.0.0.1:${port}/`,
-    close: () =>
+    close: async () =>
       new Promise((resolve) => {
         server.closeAllConnections();
         server.close(() => resolve());

@@ -16,7 +16,8 @@
  * the event, and that is logged, never raised.
  */
 
-import { GitHubApi, GitHubError } from '@/domain/github/api';
+import type { GitHubApi } from '@/domain/github/api';
+import { GitHubError } from '@/domain/github/api';
 import type { Environment } from '@/domain/suite/config';
 import type { StoredFinding } from '@/domain/suite/diff';
 import { conclusionOf, countsOf, safeText } from '@/domain/suite/report';

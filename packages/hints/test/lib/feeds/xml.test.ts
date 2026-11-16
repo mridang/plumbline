@@ -17,7 +17,7 @@ describe('parseXml', () => {
     const root = parseXml('<RSS version="2.0"></RSS>');
     expect(root?.name).toBe('RSS');
     expect(root?.localName).toBe('rss');
-    expect(root?.attrs['version']).toBe('2.0');
+    expect(root?.attrs.version).toBe('2.0');
   });
 
   it('strips a namespace prefix from the local name', () => {
@@ -41,7 +41,7 @@ describe('parseXml', () => {
   it('parses self-closing elements as children with no content', () => {
     const root = parseXml('<feed><link href="x"/><id>1</id></feed>');
     expect(root?.children).toHaveLength(2);
-    expect(childByName(root!, 'link')?.attrs['href']).toBe('x');
+    expect(childByName(root!, 'link')?.attrs.href).toBe('x');
     expect(childByName(root!, 'id')?.text).toBe('1');
   });
 
@@ -120,7 +120,7 @@ describe('parseXml tag scanning', () => {
   it('scans a 100k character tag', () => {
     const attributes = 'x="1" '.repeat(20_000);
     const root = parseXml(`<a ${attributes}/>`);
-    expect(root?.attrs['x']).toBe('1');
+    expect(root?.attrs.x).toBe('1');
   });
 });
 

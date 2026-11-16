@@ -10,7 +10,7 @@ import {
 import type { DocumentLike } from '../../../src/lib/seo/read.js';
 
 const parse = (html: string): DocumentLike =>
-  createHTMLDocument(html, 'https://example.com/') as DocumentLike;
+  createHTMLDocument(html, 'https://example.com/');
 
 describe('getIconLinks', () => {
   it('reads icon and shortcut icon but not apple-touch-icon', () => {

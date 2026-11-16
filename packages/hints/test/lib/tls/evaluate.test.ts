@@ -128,9 +128,9 @@ describe('evaluateCipherOrder', () => {
 
   it('is good when the server picks the better suite', async () => {
     const offers: string[][] = [];
-    const result = await evaluateCipherOrder(accepted, (offered) => {
+    const result = await evaluateCipherOrder(accepted, async (offered) => {
       offers.push(offered.map((c) => c.standardName));
-      return Promise.resolve(offered.at(-1) ?? null);
+      return offered.at(-1) ?? null;
     });
     expect(result).toEqual({ status: 'good', violation: null });
     expect(offers).toEqual([
@@ -140,8 +140,9 @@ describe('evaluateCipherOrder', () => {
   });
 
   it('is bad when the server follows the client order', async () => {
-    const result = await evaluateCipherOrder(accepted, (offered) =>
-      Promise.resolve(offered[0]),
+    const result = await evaluateCipherOrder(
+      accepted,
+      async (offered) => offered[0],
     );
     expect(result).toEqual({
       status: 'bad',
@@ -154,9 +155,9 @@ describe('evaluateCipherOrder', () => {
     let offered: readonly CipherInfo[] = [];
     await evaluateCipherOrder(
       [cipher(chacha), cipher(PHASE_OUT), cipher(GOOD)],
-      (list) => {
+      async (list) => {
         offered = list;
-        return Promise.resolve(list.at(-1) ?? null);
+        return list.at(-1) ?? null;
       },
     );
     expect(offered.map((c) => c.standardName)).toEqual([
@@ -169,7 +170,9 @@ describe('evaluateCipherOrder', () => {
   it('does not apply when only good and sufficient suites are accepted', async () => {
     const result = await evaluateCipherOrder(
       [cipher(SUFFICIENT), cipher(GOOD)],
-      () => Promise.reject(new Error('must not connect')),
+      async () => {
+        throw new Error('must not connect');
+      },
     );
     expect(result.status).toBe('na');
   });
@@ -177,7 +180,9 @@ describe('evaluateCipherOrder', () => {
   it('does not apply to TLS 1.3 only servers', async () => {
     const result = await evaluateCipherOrder(
       accepted,
-      () => Promise.reject(new Error('must not connect')),
+      async () => {
+        throw new Error('must not connect');
+      },
       true,
     );
     expect(result.status).toBe('na');
@@ -186,15 +191,15 @@ describe('evaluateCipherOrder', () => {
   it('has nothing to compare without a better suite', async () => {
     const result = await evaluateCipherOrder(
       [cipher(PHASE_OUT), cipher(BAD)],
-      () => Promise.reject(new Error('must not connect')),
+      async () => {
+        throw new Error('must not connect');
+      },
     );
     expect(result.status).toBe('good');
   });
 
   it('does not apply when the test connection fails', async () => {
-    const result = await evaluateCipherOrder(accepted, () =>
-      Promise.resolve(null),
-    );
+    const result = await evaluateCipherOrder(accepted, async () => null);
     expect(result.status).toBe('na');
   });
 });

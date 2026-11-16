@@ -30,18 +30,17 @@ const answers: Record<string, string[]> = {};
 
 beforeEach(() => {
   dns.client = {
-    query: (name, type) =>
-      Promise.resolve({
-        status: 0,
-        authenticated: false,
-        answers: (answers[`${type} ${name}`] ?? []).map((data) => ({
-          name,
-          type: 0,
-          ttl: 1,
-          data,
-        })),
-        authority: [],
-      }),
+    query: async (name, type) => ({
+      status: 0,
+      authenticated: false,
+      answers: (answers[`${type} ${name}`] ?? []).map((data) => ({
+        name,
+        type: 0,
+        ttl: 1,
+        data,
+      })),
+      authority: [],
+    }),
   };
 });
 

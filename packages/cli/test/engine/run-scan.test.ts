@@ -27,7 +27,7 @@ function failing(id: string, message: string): CatalogueEntry {
           context.report('r', message, { severity: Severity.error }),
         );
       }
-    } as unknown as CatalogueEntry['ctor'],
+    },
   };
 }
 
@@ -40,7 +40,7 @@ function passing(id: string): CatalogueEntry {
       public constructor(context: HintContext) {
         context.on('fetch::end::html', () => undefined);
       }
-    } as unknown as CatalogueEntry['ctor'],
+    },
   };
 }
 
@@ -74,7 +74,7 @@ describe('runScan', () => {
     base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   });
 
-  afterAll(() => new Promise((resolve) => server.close(() => resolve())));
+  afterAll(async () => new Promise((resolve) => server.close(() => resolve())));
 
   it('tells what is to run, then each result as it finishes, then ends', async () => {
     const events = await eventsOf(`${base}/`, {

@@ -73,7 +73,7 @@ export type OpensslExec = (
 ) => Promise<OpensslRun>;
 
 /** Runs the real `openssl` binary found on the PATH. */
-export const execOpenssl: OpensslExec = (args, options = {}) =>
+export const execOpenssl: OpensslExec = async (args, options = {}) =>
   new Promise<OpensslRun>((resolve, reject) => {
     const child = spawn(openssl.command, [...args], {
       stdio: ['pipe', 'pipe', 'pipe'],

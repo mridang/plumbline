@@ -40,6 +40,7 @@ export function validateLinkedDocuments(
     document = event.document;
     baseUrl = baseUrl || event.resource;
   });
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises -- webhint's context.on types its listener as returning void, but the engine awaits it; dropping the async would stop the scan waiting for this handler
   context.on('scan::end', async (event) => {
     if (!document) {
       return;

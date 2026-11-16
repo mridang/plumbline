@@ -91,8 +91,8 @@ describe('enqueueScan', () => {
     await enqueueScan(db, queue, deployment('b'), NOW);
     expect(sent.map((m) => m.seq)).toEqual([1, 2]);
     const ran: ScanJob[] = [];
-    const first = message(sent[0] as ScanMessage);
-    const second = message(sent[1] as ScanMessage);
+    const first = message(sent[0]!);
+    const second = message(sent[1]!);
     const run = async (_name: string, job: ScanJob) => {
       ran.push(job);
     };
@@ -129,7 +129,7 @@ describe('consumeScans', () => {
     const { db, sent, queue } = setup();
     await enqueueScan(db, queue, deployment('a'), NOW);
     const names: string[] = [];
-    const msg = message(sent[0] as ScanMessage);
+    const msg = message(sent[0]!);
     await consumeScans(
       { messages: [msg] as never },
       {
@@ -156,7 +156,7 @@ describe('consumeScans', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => undefined);
     await enqueueScan(db, queue, deployment('a'), NOW);
-    const failing = message(sent[0] as ScanMessage, 2);
+    const failing = message(sent[0]!, 2);
     await consumeScans(
       { messages: [failing] as never },
       {
@@ -174,7 +174,7 @@ describe('consumeScans', () => {
     );
     // The lease was given back, so the retry runs it at once.
     const ran: string[] = [];
-    const retry = message(sent[0] as ScanMessage, 3);
+    const retry = message(sent[0]!, 3);
     await consumeScans(
       { messages: [retry] as never },
       {
@@ -194,24 +194,24 @@ describe('consumeScans', () => {
     await enqueueScan(db, queue, deployment('a'), NOW);
     let release: () => void = () => undefined;
     const running = consumeScans(
-      { messages: [message(sent[0] as ScanMessage)] as never },
+      { messages: [message(sent[0]!)] as never },
       {
         db,
         now: () => NOW,
-        run: () =>
+        run: async () =>
           new Promise<void>((resolve) => {
             release = resolve;
           }),
       },
     );
     await new Promise((resolve) => setTimeout(resolve, 20));
-    const waiting = message(sent[0] as ScanMessage, 1);
+    const waiting = message(sent[0]!, 1);
     await consumeScans(
       { messages: [waiting] as never },
       { db, now: () => NOW, run: async () => undefined },
     );
     expect(waiting.calls).toEqual(['retry 30']);
-    const expired = message(sent[0] as ScanMessage, 2);
+    const expired = message(sent[0]!, 2);
     const names: string[] = [];
     await consumeScans(
       { messages: [expired] as never },

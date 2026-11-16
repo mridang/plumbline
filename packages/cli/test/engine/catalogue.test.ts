@@ -13,7 +13,7 @@ function hintWith(
     public static readonly meta = documentation
       ? { docs: documentation }
       : undefined;
-  } as unknown as HintClass;
+  };
 }
 
 describe('entryOf', () => {

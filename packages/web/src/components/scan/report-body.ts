@@ -40,7 +40,7 @@ export function reportBody(scan: Readonly<Scan>): {
 export async function saveReport(
   domainId: string,
   scan: Readonly<Scan>,
-  transport: typeof fetch = (url, init) => fetch(url, init),
+  transport: typeof fetch = async (url, init) => fetch(url, init),
 ): Promise<void> {
   const response = await transport(`/api/domains/${domainId}/reports`, {
     method: 'POST',

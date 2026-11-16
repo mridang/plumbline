@@ -201,8 +201,8 @@ function parseObject(body: string): Json {
 /** The object in the JSON `body`, or an error that names the probe's own complaint. */
 export function parseBody(body: string): Json {
   const value = parseObject(body);
-  if (typeof value['error'] === 'string') {
-    throw new ProbeError(value['error']);
+  if (typeof value.error === 'string') {
+    throw new ProbeError(value.error);
   }
   return value;
 }
@@ -220,26 +220,23 @@ function certificateOf(value: unknown): RemoteCertificate {
     );
   };
   return {
-    subject: names(value['subject'], 'certificate subject'),
-    issuer: names(value['issuer'], 'certificate issuer'),
-    subjectaltname: text(value['subjectaltname'], 'certificate names'),
-    valid_from: text(value['valid_from'], 'certificate start'),
-    valid_to: text(value['valid_to'], 'certificate end'),
-    serialNumber: text(value['serialNumber'], 'certificate serial'),
-    fingerprint256: text(value['fingerprint256'], 'certificate fingerprint'),
-    keyType: text(value['keyType'], 'certificate key type'),
-    ...(typeof value['bits'] === 'number' ? { bits: value['bits'] } : {}),
-    ...(typeof value['asn1Curve'] === 'string'
-      ? { asn1Curve: value['asn1Curve'] }
+    subject: names(value.subject, 'certificate subject'),
+    issuer: names(value.issuer, 'certificate issuer'),
+    subjectaltname: text(value.subjectaltname, 'certificate names'),
+    valid_from: text(value.valid_from, 'certificate start'),
+    valid_to: text(value.valid_to, 'certificate end'),
+    serialNumber: text(value.serialNumber, 'certificate serial'),
+    fingerprint256: text(value.fingerprint256, 'certificate fingerprint'),
+    keyType: text(value.keyType, 'certificate key type'),
+    ...(typeof value.bits === 'number' ? { bits: value.bits } : {}),
+    ...(typeof value.asn1Curve === 'string'
+      ? { asn1Curve: value.asn1Curve }
       : {}),
-    signatureAlgorithm: text(
-      value['signatureAlgorithm'],
-      'certificate signature',
-    ),
-    ...(isObject(value['infoAccess'])
+    signatureAlgorithm: text(value.signatureAlgorithm, 'certificate signature'),
+    ...(isObject(value.infoAccess)
       ? {
           infoAccess: Object.fromEntries(
-            Object.entries(value['infoAccess']).map(([k, v]) => [
+            Object.entries(value.infoAccess).map(([k, v]) => [
               k,
               listOfText(v, 'certificate access'),
             ]),
@@ -256,13 +253,13 @@ function ephemeralOf(value: unknown): RemoteEphemeral | null {
   if (!isObject(value)) {
     throw new ProbeError("the probe's key exchange is not an object");
   }
-  const size = whole(value['size'], 'key exchange size');
-  return value['type'] === 'DH'
+  const size = whole(value.size, 'key exchange size');
+  return value.type === 'DH'
     ? { type: 'DH', size }
     : {
         type: 'ECDH',
         size,
-        name: text(value['name'], 'key exchange curve'),
+        name: text(value.name, 'key exchange curve'),
       };
 }
 
@@ -271,40 +268,40 @@ export function parseHandshake(value: unknown): HandshakeAnswer {
   if (!isObject(value)) {
     throw new ProbeError('the probe answered something that is not an object');
   }
-  if (typeof value['error'] === 'string') {
-    throw new ProbeError(value['error']);
+  if (typeof value.error === 'string') {
+    throw new ProbeError(value.error);
   }
-  const cipher = value['cipher'];
+  const cipher = value.cipher;
   if (!isObject(cipher)) {
     throw new ProbeError("the probe's cipher is not an object");
   }
-  const certificates = value['certificates'];
+  const certificates = value.certificates;
   if (!Array.isArray(certificates)) {
     throw new ProbeError("the probe's certificates are not a list");
   }
   return {
-    protocol: text(value['protocol'], 'protocol'),
+    protocol: text(value.protocol, 'protocol'),
     cipher: {
-      name: text(cipher['name'], 'cipher name'),
-      standardName: text(cipher['standardName'], 'cipher standard name'),
+      name: text(cipher.name, 'cipher name'),
+      standardName: text(cipher.standardName, 'cipher standard name'),
     },
-    authorized: flag(value['authorized'], 'authorized'),
+    authorized: flag(value.authorized, 'authorized'),
     authorizationError: textOrNull(
-      value['authorizationError'],
+      value.authorizationError,
       'authorization error',
     ),
-    ephemeral: ephemeralOf(value['ephemeral']),
-    chain: listOfText(value['chain'], 'chain'),
+    ephemeral: ephemeralOf(value.ephemeral),
+    chain: listOfText(value.chain, 'chain'),
     certificates: certificates.map((entry) => certificateOf(entry)),
-    ocsp: textOrNull(value['ocsp'], 'OCSP response'),
-    compression: value['compression'] === true,
+    ocsp: textOrNull(value.ocsp, 'OCSP response'),
+    compression: value.compression === true,
   };
 }
 
 /** The entries of a batch answer: each is a handshake or the probe's complaint about it. */
 export function parseBatch(body: string): (HandshakeAnswer | ProbeError)[] {
   const value = parseBody(body);
-  const results = value['results'];
+  const results = value.results;
   if (!Array.isArray(results)) {
     throw new ProbeError("the probe's results are not a list");
   }
@@ -322,22 +319,22 @@ export function parseBatch(body: string): (HandshakeAnswer | ProbeError)[] {
 /** An HTTP answer, checked. */
 export function parseHttp(body: string): HttpAnswer {
   const value = parseBody(body);
-  const headers = value['headers'];
+  const headers = value.headers;
   if (!Array.isArray(headers)) {
     throw new ProbeError("the probe's headers are not a list");
   }
   return {
-    httpVersion: text(value['httpVersion'], 'HTTP version'),
-    status: whole(value['status'], 'status'),
-    statusText: text(value['statusText'], 'status text'),
+    httpVersion: text(value.httpVersion, 'HTTP version'),
+    status: whole(value.status, 'status'),
+    statusText: text(value.statusText, 'status text'),
     headers: headers.map((pair): HeaderPair => {
       if (!Array.isArray(pair) || pair.length !== 2) {
         throw new ProbeError("the probe's header is not a pair");
       }
       return [text(pair[0], 'header name'), text(pair[1], 'header value')];
     }),
-    body: fromBase64(text(value['body'], 'body')),
-    truncated: value['truncated'] === true,
+    body: fromBase64(text(value.body, 'body')),
+    truncated: value.truncated === true,
   };
 }
 
@@ -347,34 +344,30 @@ export function parseStarttls(body: string): StarttlsAnswer {
   // probe's complaint about the request.
   const value = parseObject(body);
   return {
-    reachable: flag(value['reachable'], 'reachable'),
-    starttls: flag(value['starttls'], 'STARTTLS'),
-    tlsVersion: textOrNull(value['tlsVersion'], 'TLS version'),
-    trusted: flag(value['trusted'], 'trusted'),
-    trustError: textOrNull(value['trustError'], 'trust error'),
-    hostnameMatches: flag(value['hostnameMatches'], 'host name match'),
-    certificates: listOfText(value['certificates'], 'certificates'),
-    error: textOrNull(value['error'], 'error'),
+    reachable: flag(value.reachable, 'reachable'),
+    starttls: flag(value.starttls, 'STARTTLS'),
+    tlsVersion: textOrNull(value.tlsVersion, 'TLS version'),
+    trusted: flag(value.trusted, 'trusted'),
+    trustError: textOrNull(value.trustError, 'trust error'),
+    hostnameMatches: flag(value.hostnameMatches, 'host name match'),
+    certificates: listOfText(value.certificates, 'certificates'),
+    error: textOrNull(value.error, 'error'),
   };
 }
 
 /** A connection test answer, checked. */
 export function parseReachable(body: string): boolean {
-  return flag(parseBody(body)['reachable'], 'reachable');
+  return flag(parseBody(body).reachable, 'reachable');
 }
 
 /** An `openssl` answer, checked. */
 export function parseOpenssl(body: string): OpensslAnswer {
   const value = parseBody(body);
-  const files = value['files'];
+  const files = value.files;
   return {
-    stdout: new TextDecoder().decode(
-      fromBase64(text(value['stdout'], 'stdout')),
-    ),
-    stderr: new TextDecoder().decode(
-      fromBase64(text(value['stderr'], 'stderr')),
-    ),
-    code: typeof value['code'] === 'number' ? value['code'] : null,
+    stdout: new TextDecoder().decode(fromBase64(text(value.stdout, 'stdout'))),
+    stderr: new TextDecoder().decode(fromBase64(text(value.stderr, 'stderr'))),
+    code: typeof value.code === 'number' ? value.code : null,
     files: isObject(files)
       ? Object.fromEntries(
           Object.entries(files).map(([k, v]) => [k, text(v, 'file')]),

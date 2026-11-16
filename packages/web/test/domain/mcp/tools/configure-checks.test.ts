@@ -6,7 +6,7 @@ import type { Database } from '@/domain/db/client';
 import { addDomain, getDomain, setDomainChecks } from '@/domain/db/domains';
 import type { User } from '@/domain/db/users';
 import { callTool } from '@/domain/mcp/tool-calls';
-import { type ToolResult } from '@/domain/mcp/tool-results';
+import type { ToolResult } from '@/domain/mcp/tool-results';
 
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../../lib/core/db/sqlite-db';
@@ -21,7 +21,7 @@ const TLS = checksInGroup('tls').length;
 /** A fresh database, and a way to call a tool against it. */
 function setup() {
   const { db, raw } = sqliteDatabase(...APP_MIGRATIONS);
-  const call = (
+  const call = async (
     name: string,
     args?: unknown,
     user: Readonly<User> = USER,

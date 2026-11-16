@@ -13,11 +13,11 @@ describe('signing out', () => {
 
   /** Sign out with a stand-in browser, and wait for it to finish. */
   async function run(fetchResult: Promise<Response>): Promise<jest.Mock> {
-    const fetchSpy = jest.fn(() => fetchResult);
+    const fetchSpy = jest.fn(async () => fetchResult);
     Object.assign(globalThis, {
       window: { location: { assign } },
     });
-    jest.spyOn(globalThis, 'fetch').mockImplementation(fetchSpy as never);
+    jest.spyOn(globalThis, 'fetch').mockImplementation(fetchSpy);
     await signOut();
     return fetchSpy;
   }

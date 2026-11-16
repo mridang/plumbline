@@ -48,7 +48,11 @@ describe('checkDnsAid', () => {
   });
   it('treats a failing resolver as no record', async () => {
     const env = fakeEnv();
-    env.dns = { query: () => Promise.reject(new Error('down')) };
+    env.dns = {
+      query: async () => {
+        throw new Error('down');
+      },
+    };
     const r = await checkDnsAid(env);
     expect(r.passed).toBe(false);
   });

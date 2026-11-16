@@ -31,7 +31,8 @@ beforeEach(() => {
   session.user = person;
 });
 
-const read = () => GET(new Request('https://plumbline.test/api/users/self'));
+const read = async () =>
+  GET(new Request('https://plumbline.test/api/users/self'));
 
 describe('userResource', () => {
   it('shows who the person is and nothing internal', () => {

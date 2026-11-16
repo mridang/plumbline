@@ -34,9 +34,12 @@ describe('fetchResource', () => {
   const answering =
     (table: Record<string, () => Response>): typeof fetch =>
     async (input) => {
-      const answer = table[String(input)];
+      const answer =
+        table[input instanceof Request ? input.url : String(input)];
       if (!answer) {
-        throw new Error(`unexpected ${String(input)}`);
+        throw new Error(
+          `unexpected ${input instanceof Request ? input.url : String(input)}`,
+        );
       }
       return answer();
     };

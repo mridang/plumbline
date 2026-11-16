@@ -19,7 +19,7 @@ export function headerValues(
     if (key.toLowerCase() !== wanted || value === undefined) {
       continue;
     }
-    found.push(...(Array.isArray(value) ? value : [String(value)]));
+    found.push(...(Array.isArray(value) ? value : [value]));
   }
   return found;
 }

@@ -36,11 +36,10 @@ const ETAG = etagOf(BODY);
 /** Whether the request's `If-None-Match` lists `etag` (or `*`). */
 function matches(header: string | null, etag: string): boolean {
   return (
-    header !== null &&
     header
-      .split(',')
+      ?.split(',')
       .map((part) => part.trim().replace(WEAK_ETAG_PREFIX, ''))
-      .some((part) => part === '*' || part === etag)
+      .some((part) => part === '*' || part === etag) ?? false
   );
 }
 

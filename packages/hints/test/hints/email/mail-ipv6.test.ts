@@ -10,8 +10,10 @@ const MX = {
 
 /** A net client whose reachable IPs are listed. */
 const net = (reachable: string[]): MailNetClient => ({
-  tcpReachable: (ip) => Promise.resolve(reachable.includes(ip)),
-  probeStarttls: () => Promise.reject(new Error('unused')),
+  tcpReachable: async (ip) => reachable.includes(ip),
+  probeStarttls: async () => {
+    throw new Error('unused');
+  },
 });
 
 describe('mail-ipv6', () => {
