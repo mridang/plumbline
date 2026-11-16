@@ -103,14 +103,15 @@ export function isRunning(state: ScanState): boolean {
 /** What is said while a scan starts, or why it could not. */
 export function ScanStatus({
   state,
-  className = 'mt-8',
+  className: cssClasses = 'mt-8',
 }: Readonly<{
   state: ScanState;
   /** The space around it, where it sits on the page. */
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
   className?: string;
 }>): ReactElement {
   return (
-    <div aria-live="polite" className={className}>
+    <div aria-live="polite" className={cssClasses}>
       {state.kind === 'starting' ? (
         <p className="text-muted">
           Fetching{' '}
@@ -131,9 +132,10 @@ export function ScanStatus({
 
 /** The box to type a domain into, and what the scan found. */
 export function Scanner({
-  className = 'mt-10',
+  className: cssClasses = 'mt-10',
 }: Readonly<{
   /** The space above it, where it sits on the page. */
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
   className?: string;
 }> = {}): ReactElement {
   const { state, run } = useScan();
@@ -170,7 +172,7 @@ export function Scanner({
 
   const running = isRunning(state);
   return (
-    <div className={className}>
+    <div className={cssClasses}>
       <form
         onSubmit={onSubmit}
         className="flex flex-col gap-3 sm:flex-row"

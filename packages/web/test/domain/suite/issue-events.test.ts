@@ -98,7 +98,9 @@ describe('handleIssueEvent', () => {
     const { api } = github();
     await handleIssueEvent(db, SLUG, event('closed'), async () => api);
     const history = await historyOf(db, 'acme/site', 'site.test');
-    expect(history.map((i) => [i.number, i.state])).toEqual([[12, 'open']]);
+    expect(history.map((index) => [index.number, index.state])).toEqual([
+      [12, 'open'],
+    ]);
   });
 
   it('asks GitHub for nothing when it has nothing to answer', async () => {

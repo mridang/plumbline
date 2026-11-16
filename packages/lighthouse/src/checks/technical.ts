@@ -57,7 +57,7 @@ import {
   metaDocument,
   redirectHops,
 } from '../adapt-technical.js';
-import { hintDocs } from '../meta.js';
+import { hintDocumentation } from '../meta.js';
 import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
@@ -82,15 +82,15 @@ function fromHint(
     requiredArtifacts: readonly string[];
   },
 ): AuditCheck {
-  const docs = hintDocs(definition);
+  const documentation = hintDocumentation(definition);
   return {
     id: definition.id,
     // Every technical hint is placed in the taxonomy; fall back to the seo
     // section defensively rather than emit an empty group.
-    section: docs.section ?? 'seo',
-    title: docs.name,
-    description: docs.description,
-    reference: docs.url,
+    section: documentation.section ?? 'seo',
+    title: documentation.name,
+    description: documentation.description,
+    reference: documentation.url,
     scoreMode: config.scoreMode,
     requiredArtifacts: config.requiredArtifacts,
     run: config.run,
@@ -116,8 +116,10 @@ export const technicalChecks: readonly AuditCheck[] = [
       if (!html) {
         return null;
       }
-      const doc = htmlDocument(html, pageUrl(artifacts));
-      return headingHierarchyFindings(firstSkippedLevel(headingLevels(doc)));
+      const parsedDocument = htmlDocument(html, pageUrl(artifacts));
+      return headingHierarchyFindings(
+        firstSkippedLevel(headingLevels(parsedDocument)),
+      );
     },
   }),
 
@@ -131,8 +133,8 @@ export const technicalChecks: readonly AuditCheck[] = [
       if (!html) {
         return null;
       }
-      const doc = htmlDocument(html, pageUrl(artifacts));
-      return imageAltCoverageFindings(altCoverage(doc));
+      const parsedDocument = htmlDocument(html, pageUrl(artifacts));
+      return imageAltCoverageFindings(altCoverage(parsedDocument));
     },
   }),
 

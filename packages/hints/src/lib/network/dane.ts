@@ -7,7 +7,13 @@
  */
 import { X509Certificate, createHash } from '#crypto';
 import { connect as tlsConnect } from '#tls';
-import { answersOfType, normalizeName, safeQuery, RR } from './dns-util.js';
+import { answersOfType, normalizeName, safeQuery, RR } from './dns-utility.js';
+
+/** Matches TLSA record data. */
+const TLSA_RECORD_DATA = /^(\d+)\s+(\d+)\s+(\d+)\s([\da-fA-F\s]+)$/;
+
+/** Matches generic `\#` record data. */
+const GENERIC_RDATA = /^\\#\s+\d+\s([\da-fA-F\s]+)$/;
 
 export interface Tlsa {
   usage: number;
@@ -68,7 +74,7 @@ export const tls: { fetchChain: ChainFetcher } = { fetchChain };
  * generic form some resolvers use (`\# 35 030101abcd...`).
  */
 export function parseTlsa(data: string): Tlsa | null {
-  const generic = /^\\#\s+\d+\s([\da-fA-F\s]+)$/.exec(data.trim());
+  const generic = GENERIC_RDATA.exec(data.trim());
   if (generic) {
     const hex = generic[1].replaceAll(/\s+/g, '').toLowerCase();
     if (hex.length < 6) {
@@ -81,7 +87,7 @@ export function parseTlsa(data: string): Tlsa | null {
       data: hex.slice(6),
     };
   }
-  const m = /^(\d+)\s+(\d+)\s+(\d+)\s([\da-fA-F\s]+)$/.exec(data.trim());
+  const m = TLSA_RECORD_DATA.exec(data.trim());
   if (!m) {
     return null;
   }

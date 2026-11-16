@@ -7,9 +7,12 @@
  * recompute the id from the subscription it holds.
  */
 
+/** The shape of a subscription id: 64 lowercase hex digits. */
+const SUBSCRIPTION_ID_SHAPE = /^[0-9a-f]{64}$/;
+
 /** Whether `id` has the shape of a {@link subscriptionId}: 64 lowercase hex digits. */
 export function isSubscriptionId(id: string): boolean {
-  return /^[0-9a-f]{64}$/.test(id);
+  return SUBSCRIPTION_ID_SHAPE.test(id);
 }
 
 /** The id for a subscription `endpoint`. */
@@ -18,9 +21,9 @@ export async function subscriptionId(endpoint: string): Promise<string> {
     'SHA-256',
     new TextEncoder().encode(endpoint),
   );
-  return [...new Uint8Array(digest)]
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
+  return Array.from(new Uint8Array(digest), (b) =>
+    b.toString(16).padStart(2, '0'),
+  ).join('');
 }
 
 /**

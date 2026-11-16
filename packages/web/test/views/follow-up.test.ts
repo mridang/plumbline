@@ -75,7 +75,7 @@ describe('sourceHost', () => {
 
   it('is undefined for anything that is not a web link', () => {
     expect(sourceHost('javascript:alert(1)')).toBeUndefined();
-    expect(sourceHost(undefined)).toBeUndefined();
+    expect(sourceHost()).toBeUndefined();
   });
 });
 
@@ -94,6 +94,6 @@ describe('safeHttpUrl', () => {
     expect(safeHttpUrl('data:text/html,hi')).toBeUndefined();
     expect(safeHttpUrl('/relative/path')).toBeUndefined();
     expect(safeHttpUrl('not a url')).toBeUndefined();
-    expect(safeHttpUrl(undefined)).toBeUndefined();
+    expect(safeHttpUrl()).toBeUndefined();
   });
 });

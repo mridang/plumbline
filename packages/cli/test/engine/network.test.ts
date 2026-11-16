@@ -25,7 +25,7 @@ describe('contentTypeOf', () => {
       mediaType: 'text/html',
       charset: new TextDecoder().encoding,
     });
-    expect(contentTypeOf(undefined)).toEqual({ mediaType: '', charset: '' });
+    expect(contentTypeOf()).toEqual({ mediaType: '', charset: '' });
   });
 });
 

@@ -19,6 +19,9 @@ import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 import { packageDirectorySync } from 'package-directory';
 
+/** Matches a 36 character lowercase hexadecimal identifier with dashes. */
+const UUID_LIKE_PATTERN = /^[0-9a-f-]{36}$/;
+
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 /** A database with every migration applied and nothing in it. */
@@ -91,7 +94,7 @@ describe('addDomain', () => {
   it('gives the domain a UUID', async () => {
     const { db } = empty();
     const { domain } = await addDomain(db, 1, 'example.com');
-    expect(domain.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(domain.id).toMatch(UUID_LIKE_PATTERN);
   });
 
   it('answers the domain the person already has for that host', async () => {

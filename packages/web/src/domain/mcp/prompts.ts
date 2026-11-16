@@ -135,7 +135,7 @@ export const PROMPT_DEFINITIONS: readonly PromptDefinition[] = PROMPTS.map(
  * @throws {RpcError} `-32602` if the prompt does not exist, if the arguments
  *   are not an object of strings, or if a required one is missing or blank.
  */
-export function getPrompt(name: unknown, rawArguments: unknown): PromptResult {
+export function getPrompt(name: unknown, rawArguments?: unknown): PromptResult {
   const prompt = PROMPTS.find((p) => p.definition.name === name);
   if (!prompt) {
     throw new RpcError(

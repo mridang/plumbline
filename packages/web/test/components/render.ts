@@ -51,6 +51,7 @@ export function htmlAt(
 }
 
 /** The class list of the first element whose tag is `tag`. */
+// eslint-disable-next-line unicorn/no-keyword-prefix -- classOf is a shared test helper imported by many specs
 export function classOf(markup: string, tag: string): string {
   return new RegExp(`<${tag}[^>]*class="([^"]*)"`).exec(markup)?.[1] ?? '';
 }

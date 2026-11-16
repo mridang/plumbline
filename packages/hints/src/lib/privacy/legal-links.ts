@@ -14,6 +14,12 @@
  */
 import { finding, type Finding } from '../headers/finding.js';
 
+/** Matches a non-navigable URL scheme. */
+const NON_NAVIGABLE_SCHEME = /^(javascript|mailto|tel|data):/i;
+
+/** Matches a run of whitespace. */
+const WHITESPACE_RUN = /\s+/;
+
 /** The two legal pages a site is expected to link. */
 export type LegalPage = 'privacy-policy' | 'terms-of-service';
 
@@ -94,7 +100,7 @@ const MAX_TEXT_LENGTH = 50;
 function relsOf(element: ElementLike): string[] {
   return (element.getAttribute('rel') ?? '')
     .toLowerCase()
-    .split(/\s+/)
+    .split(WHITESPACE_RUN)
     .filter(Boolean);
 }
 
@@ -119,7 +125,7 @@ function shortSegmentsOf(href: string): string[] {
 
 /** Whether an address is something other than a page (a script, mail, phone). */
 function isNotAPage(href: string): boolean {
-  return /^(javascript|mailto|tel|data):/i.test(href);
+  return NON_NAVIGABLE_SCHEME.test(href);
 }
 
 /**
@@ -128,16 +134,18 @@ function isNotAPage(href: string): boolean {
  * short text that, or whose address, names the page.
  */
 export function findLegalLink(
-  doc: DocumentLike,
+  parsedDocument: DocumentLike,
   page: LegalPage,
 ): string | undefined {
-  for (const element of doc.querySelectorAll('a[href], link[href]')) {
+  for (const element of parsedDocument.querySelectorAll(
+    'a[href], link[href]',
+  )) {
     const href = (element.getAttribute('href') ?? '').trim();
     if (href && relsOf(element).includes(page)) {
       return href;
     }
   }
-  for (const element of doc.querySelectorAll('a[href]')) {
+  for (const element of parsedDocument.querySelectorAll('a[href]')) {
     const href = (element.getAttribute('href') ?? '').trim();
     const text = (element.textContent ?? '').replaceAll(/\s+/g, ' ').trim();
     if (namesPage(href, text, page)) {
@@ -162,8 +170,10 @@ function namesPage(href: string, text: string, page: LegalPage): boolean {
 }
 
 /** Warning when the page links to no privacy policy. */
-export function privacyPolicyLinkMissing(doc: DocumentLike): Finding[] {
-  return findLegalLink(doc, 'privacy-policy') === undefined
+export function privacyPolicyLinkMissing(
+  parsedDocument: DocumentLike,
+): Finding[] {
+  return findLegalLink(parsedDocument, 'privacy-policy') === undefined
     ? [
         finding(
           'warning',
@@ -174,8 +184,10 @@ export function privacyPolicyLinkMissing(doc: DocumentLike): Finding[] {
 }
 
 /** Warning when the page links to no terms of service. */
-export function termsOfServiceLinkMissing(doc: DocumentLike): Finding[] {
-  return findLegalLink(doc, 'terms-of-service') === undefined
+export function termsOfServiceLinkMissing(
+  parsedDocument: DocumentLike,
+): Finding[] {
+  return findLegalLink(parsedDocument, 'terms-of-service') === undefined
     ? [
         finding(
           'warning',

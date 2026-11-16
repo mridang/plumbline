@@ -51,8 +51,8 @@ export const MDN_LINK_REL_REF =
  * relative or protocol-relative `href` silently breaks the return relationship.
  * One finding is returned per offending alternate, in document order.
  */
-export function hreflangReturn(doc: DocumentLike): Finding[] {
-  return getHreflangLinks(doc)
+export function hreflangReturn(parsedDocument: DocumentLike): Finding[] {
+  return getHreflangLinks(parsedDocument)
     .filter((link) => link.href !== '' && !isAbsoluteHttpUrl(link.href))
     .map((link) =>
       finding(
@@ -70,8 +70,8 @@ export function hreflangReturn(doc: DocumentLike): Finding[] {
  * users whose language does not match any listed version. Advisory: a set
  * without it still works, so this is information, not an error.
  */
-export function hreflangXDefault(doc: DocumentLike): Finding[] {
-  const links = getHreflangLinks(doc);
+export function hreflangXDefault(parsedDocument: DocumentLike): Finding[] {
+  const links = getHreflangLinks(parsedDocument);
   if (links.length === 0) {
     return [];
   }
@@ -97,8 +97,8 @@ export function hreflangXDefault(doc: DocumentLike): Finding[] {
  * code (for example `en_US` or `eng`) is ignored by search engines, so the
  * alternate is lost. One finding per offending value, in document order.
  */
-export function hreflangValidCodes(doc: DocumentLike): Finding[] {
-  return getHreflangLinks(doc)
+export function hreflangValidCodes(parsedDocument: DocumentLike): Finding[] {
+  return getHreflangLinks(parsedDocument)
     .filter((link) => !isValidHreflang(link.hreflang))
     .map((link) =>
       finding(
@@ -117,8 +117,11 @@ export function hreflangValidCodes(doc: DocumentLike): Finding[] {
  * incomplete and the return tags cannot be confirmed. Alternates whose `href`
  * is empty or unparsable cannot match and are ignored for this comparison.
  */
-export function hreflangSelf(doc: DocumentLike, pageUrl: string): Finding[] {
-  const links = getHreflangLinks(doc);
+export function hreflangSelf(
+  parsedDocument: DocumentLike,
+  pageUrl: string,
+): Finding[] {
+  const links = getHreflangLinks(parsedDocument);
   if (links.length === 0) {
     return [];
   }
@@ -145,10 +148,10 @@ export function hreflangSelf(doc: DocumentLike, pageUrl: string): Finding[] {
  * returned for each alternate after the first of a repeated value, in document
  * order, so each duplicate element can be pointed at.
  */
-export function hreflangDuplicate(doc: DocumentLike): Finding[] {
+export function hreflangDuplicate(parsedDocument: DocumentLike): Finding[] {
   const seen = new Set<string>();
   const findings: Finding[] = [];
-  for (const link of getHreflangLinks(doc)) {
+  for (const link of getHreflangLinks(parsedDocument)) {
     const key = link.hreflang.toLowerCase();
     if (key === '') {
       continue;
@@ -176,8 +179,8 @@ export function hreflangDuplicate(doc: DocumentLike): Finding[] {
  * media query and a fully-qualified target are present. One finding per
  * offending link, in document order.
  */
-export function alternateMedia(doc: DocumentLike): Finding[] {
-  return getAlternateMediaLinks(doc)
+export function alternateMedia(parsedDocument: DocumentLike): Finding[] {
+  return getAlternateMediaLinks(parsedDocument)
     .filter((link) => link.media === '' || !isAbsoluteHttpUrl(link.href))
     .map((link) =>
       finding(
@@ -196,8 +199,9 @@ export function alternateMedia(doc: DocumentLike): Finding[] {
  * a blank or relative value makes the relation useless. One finding per
  * offending link, in document order (all `prev` first, then `next`).
  */
-export function paginationRel(doc: DocumentLike): Finding[] {
-  return getPaginationLinks(doc)
+// eslint-disable-next-line unicorn/prevent-abbreviations -- exported name is imported by the lighthouse package
+export function paginationRel(parsedDocument: DocumentLike): Finding[] {
+  return getPaginationLinks(parsedDocument)
     .filter((link) => !isAbsoluteHttpUrl(link.href))
     .map((link) =>
       finding(

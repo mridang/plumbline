@@ -9,6 +9,9 @@
  */
 import { finding, type Finding } from './finding.js';
 
+/** Matches a run of whitespace. */
+const WHITESPACE_RUN = /\s+/;
+
 /** Features that must be `()`, in the order OSHP lists them. */
 export const DISABLED_FEATURES = [
   'accelerometer',
@@ -86,7 +89,7 @@ export function parsePermissionsPolicy(value: string): Map<string, string> {
       const close = allowlist.indexOf(')');
       const inner =
         close === -1 ? allowlist.slice(1) : allowlist.slice(1, close);
-      allowlist = `(${inner.trim().split(/\s+/).filter(Boolean).join(' ')})`;
+      allowlist = `(${inner.trim().split(WHITESPACE_RUN).filter(Boolean).join(' ')})`;
     }
     if (!policy.has(feature)) {
       policy.set(feature, allowlist);

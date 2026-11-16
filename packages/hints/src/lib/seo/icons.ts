@@ -3,6 +3,12 @@
  */
 import type { DocumentLike } from './read.js';
 
+/** Matches a run of whitespace. */
+const WHITESPACE_RUN = /\s+/;
+
+/** Matches the start of a query or fragment. */
+const QUERY_OR_FRAGMENT_START = /[?#]/;
+
 /** One declared icon. */
 export interface IconLink {
   href: string;
@@ -14,8 +20,8 @@ export interface IconLink {
  * Returns every `<link>` whose `rel` contains the `icon` token (so
  * `icon` and `shortcut icon`, but not `apple-touch-icon`).
  */
-export function getIconLinks(doc: DocumentLike): IconLink[] {
-  return doc
+export function getIconLinks(parsedDocument: DocumentLike): IconLink[] {
+  return parsedDocument
     .querySelectorAll('link[rel~="icon" i][href]')
     .map((element) => ({
       href: (element.getAttribute('href') ?? '').trim(),
@@ -27,7 +33,7 @@ export function getIconLinks(doc: DocumentLike): IconLink[] {
 
 /** The path of an icon URL without query string or fragment, lower-cased. */
 function pathOf(href: string): string {
-  return href.split(/[?#]/, 1)[0].toLowerCase();
+  return href.split(QUERY_OR_FRAGMENT_START, 1)[0].toLowerCase();
 }
 
 /** True for an SVG icon, by MIME type or file extension. */
@@ -51,5 +57,5 @@ export function isPngIcon(icon: IconLink): boolean {
 
 /** True for a PNG icon that declares a 32x32 size. */
 export function isPng32Icon(icon: IconLink): boolean {
-  return isPngIcon(icon) && icon.sizes.split(/\s+/).includes('32x32');
+  return isPngIcon(icon) && icon.sizes.split(WHITESPACE_RUN).includes('32x32');
 }

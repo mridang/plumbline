@@ -25,6 +25,9 @@ import type { Artifacts } from 'lighthouse/types/artifacts.js';
 import type { MetaElementArtifact } from './adapt.js';
 import type { TechDocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/technical/read.js';
 
+/** Matches a run of whitespace, used to split space-separated tokens. */
+const WHITESPACE_RUN = /\s+/;
+
 type NetworkRequest = Artifacts.NetworkRequest;
 type LinkElement = Artifacts.LinkElement;
 type ImageElement = Artifacts.ImageElement;
@@ -117,7 +120,10 @@ export function linkDocument(
 ): TechDocumentLike {
   const canonical = linkElements
     .filter((link) =>
-      (link.rel ?? '').toLowerCase().split(/\s+/).includes('canonical'),
+      (link.rel ?? '')
+        .toLowerCase()
+        .split(WHITESPACE_RUN)
+        .includes('canonical'),
     )
     .map((link) => ({
       nodeName: 'LINK',

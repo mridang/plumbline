@@ -12,6 +12,30 @@ function isConfidential(seller: Record<string, unknown>): boolean {
   return seller['is_confidential'] === 1 || seller['is_confidential'] === true;
 }
 
+/** Checks that `identifiers` is an array of `{name, value}` string pairs. */
+function checkIdentifiers(identifiers: unknown): FileIssue[] {
+  if (!Array.isArray(identifiers)) {
+    return [
+      {
+        severity: 'error',
+        message: "The 'identifiers' field must be an array.",
+      },
+    ];
+  }
+  return identifiers.flatMap((entry: unknown, index): FileIssue[] =>
+    !isObject(entry) ||
+    typeof entry['name'] !== 'string' ||
+    typeof entry['value'] !== 'string'
+      ? [
+          {
+            severity: 'error',
+            message: `identifiers[${index}] must have string 'name' and 'value' fields.`,
+          },
+        ]
+      : [],
+  );
+}
+
 /**
  * Validates the text of a sellers.json file against the IAB Tech Lab
  * "sellers.json" specification v1.0. The document is a JSON object with a
@@ -53,25 +77,7 @@ export function validateSellersJson(text: string): FileIssue[] {
   }
   // `identifiers` is optional; when present it is an array of {name, value}.
   if (root['identifiers'] !== undefined) {
-    if (Array.isArray(root['identifiers'])) {
-      root['identifiers'].forEach((entry, i) => {
-        if (
-          !isObject(entry) ||
-          typeof entry['name'] !== 'string' ||
-          typeof entry['value'] !== 'string'
-        ) {
-          issues.push({
-            severity: 'error',
-            message: `identifiers[${i}] must have string 'name' and 'value' fields.`,
-          });
-        }
-      });
-    } else {
-      issues.push({
-        severity: 'error',
-        message: "The 'identifiers' field must be an array.",
-      });
-    }
+    issues.push(...checkIdentifiers(root['identifiers']));
   }
 
   const sellers = root['sellers'];
@@ -84,25 +90,25 @@ export function validateSellersJson(text: string): FileIssue[] {
   }
 
   const seenIds = new Set<string>();
-  sellers.forEach((seller, i) => {
+  for (const [index, seller] of sellers.entries()) {
     if (!isObject(seller)) {
       issues.push({
         severity: 'error',
-        message: `sellers[${i}] must be an object.`,
+        message: `sellers[${index}] must be an object.`,
       });
-      return;
+      continue;
     }
     const id = seller['seller_id'];
     if (typeof id !== 'string' || id.trim() === '') {
       issues.push({
         severity: 'error',
-        message: `sellers[${i}] is missing a string 'seller_id'.`,
+        message: `sellers[${index}] is missing a string 'seller_id'.`,
       });
     } else if (seenIds.has(id)) {
       // Section 3.1: seller_id must be unique within the file.
       issues.push({
         severity: 'error',
-        message: `sellers[${i}] repeats the seller_id '${id}', which must be unique.`,
+        message: `sellers[${index}] repeats the seller_id '${id}', which must be unique.`,
       });
     } else {
       seenIds.add(id);
@@ -112,7 +118,7 @@ export function validateSellersJson(text: string): FileIssue[] {
     if (typeof type !== 'string' || !SELLER_TYPES.has(type.toLowerCase())) {
       issues.push({
         severity: 'error',
-        message: `sellers[${i}] has an invalid seller_type; expected PUBLISHER, INTERMEDIARY or BOTH.`,
+        message: `sellers[${index}] has an invalid seller_type; expected PUBLISHER, INTERMEDIARY or BOTH.`,
       });
     }
 
@@ -121,7 +127,7 @@ export function validateSellersJson(text: string): FileIssue[] {
       if (typeof seller['name'] !== 'string' || seller['name'].trim() === '') {
         issues.push({
           severity: 'error',
-          message: `sellers[${i}] must have a 'name' unless it is confidential.`,
+          message: `sellers[${index}] must have a 'name' unless it is confidential.`,
         });
       }
       if (
@@ -130,11 +136,11 @@ export function validateSellersJson(text: string): FileIssue[] {
       ) {
         issues.push({
           severity: 'error',
-          message: `sellers[${i}] must have a 'domain' unless it is confidential.`,
+          message: `sellers[${index}] must have a 'domain' unless it is confidential.`,
         });
       }
     }
-  });
+  }
 
   return issues;
 }

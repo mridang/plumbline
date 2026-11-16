@@ -1,5 +1,11 @@
 import { X509Certificate, createHash } from '#crypto';
 
+/** Matches the generic `\# length hex` record data form (RFC 3597). */
+const GENERIC_RDATA = /^\\#\s+(\d+)\s([0-9a-fA-F\s]*)$/u;
+
+/** Matches TLSA record data: usage, selector, matching type and hex data. */
+const TLSA_RECORD_DATA = /^(\d+)\s+(\d+)\s+(\d+)\s([0-9a-fA-F\s]+)$/u;
+
 /** DNS record type number of a TLSA record. */
 export const TLSA = 52;
 
@@ -20,7 +26,7 @@ export interface TlsaRecord {
  * resolvers use for types they do not know. Returns null when malformed.
  */
 export function parseTlsa(text: string): TlsaRecord | null {
-  const generic = /^\\#\s+(\d+)\s([0-9a-fA-F\s]*)$/u.exec(text.trim());
+  const generic = GENERIC_RDATA.exec(text.trim());
   if (generic) {
     const bytes = Buffer.from(generic[2].replaceAll(/\s+/gu, ''), 'hex');
     if (bytes.length !== Number(generic[1]) || bytes.length < 3) {
@@ -33,7 +39,7 @@ export function parseTlsa(text: string): TlsaRecord | null {
       data: bytes.subarray(3),
     };
   }
-  const match = /^(\d+)\s+(\d+)\s+(\d+)\s([0-9a-fA-F\s]+)$/u.exec(text.trim());
+  const match = TLSA_RECORD_DATA.exec(text.trim());
   if (!match) {
     return null;
   }

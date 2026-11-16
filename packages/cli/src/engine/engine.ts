@@ -4,6 +4,9 @@ import { Severity } from '@hint/utils-types';
 
 import type { CatalogueEntry, HintInfo } from './catalogue.js';
 
+/** Matches a link that starts with an http or https scheme. */
+const HTTP_URL_PREFIX = /^https?:\/\//;
+
 /**
  * A scan in Node: the real hint classes from the hints package, driven by a
  * stand-in for webhint's engine. The hints only use a narrow slice of webhint's
@@ -154,9 +157,16 @@ function linksOf(
   reference: string | undefined,
 ): FindingLink[] {
   return (documentation ?? [])
-    .filter((doc) => /^https?:\/\//.test(doc.link) && doc.link !== reference)
+    .filter(
+      (parsedDocument) =>
+        HTTP_URL_PREFIX.test(parsedDocument.link) &&
+        parsedDocument.link !== reference,
+    )
     .slice(0, MAX_LINKS)
-    .map((doc) => ({ url: doc.link, text: doc.text || doc.link }));
+    .map((parsedDocument) => ({
+      url: parsedDocument.link,
+      text: parsedDocument.text || parsedDocument.link,
+    }));
 }
 
 /**

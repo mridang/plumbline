@@ -4,6 +4,9 @@ import { Category, defineHint } from '../../core/define-hint.js';
 import { fetchCertificate } from '../../lib/tls/client.js';
 import { onTlsSite, type TlsSite } from './on-tls-site.js';
 
+/** Matches a comma and any whitespace after it. */
+const COMMA_SEPARATOR = /,\s*/;
+
 /** Runs the check of the `cert-hostname` hint against one TLS endpoint. */
 export async function checkCertHostname(
   { target, report, couldNotTest, subject }: TlsSite,
@@ -19,7 +22,7 @@ export async function checkCertHostname(
   if (mismatch) {
     const names = [
       result.peerCertificate.subject?.CN,
-      ...(result.peerCertificate.subjectaltname ?? '').split(/,\s*/),
+      ...(result.peerCertificate.subjectaltname ?? '').split(COMMA_SEPARATOR),
     ].filter(Boolean);
     report(
       `The domain name of your ${subject.owner} does *not* match the domain name on your ${subject.certificate} (${names.join(', ')}).`,

@@ -14,6 +14,9 @@ import {
 } from '@/domain/checks/browse';
 import { RULE_SET_DEFS } from '@/domain/checks/sets';
 
+/** The `plumbline:` prefix of a rule set id. */
+const PLUMBLINE_PREFIX = /^plumbline:/;
+
 /** The dynamic part of the address: `seo/advanced` for `plumbline:seo/advanced`. */
 interface Props {
   readonly params: Promise<{ readonly set: string[] }>;
@@ -23,7 +26,7 @@ interface Props {
 /** Every rule set has a page. */
 export function generateStaticParams(): { set: string[] }[] {
   return RULE_SET_DEFS.map((set) => ({
-    set: set.id.replace(/^plumbline:/, '').split('/'),
+    set: set.id.replace(PLUMBLINE_PREFIX, '').split('/'),
   }));
 }
 

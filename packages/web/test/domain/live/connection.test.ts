@@ -50,7 +50,7 @@ function fake(visible = true) {
     listeners: () => visibility.length + hide.length + show.length,
     setVisible(value: boolean) {
       state.visible = value;
-      [...visibility].forEach((handler) => handler());
+      for (const handler of visibility) handler();
     },
     advance(ms: number) {
       state.now += ms;
@@ -61,9 +61,12 @@ function fake(visible = true) {
         }
       }
     },
-    pagehide: () => [...hide].forEach((handler) => handler()),
-    pageshow: (persisted: boolean) =>
-      [...show].forEach((handler) => handler(persisted)),
+    pagehide: () => {
+      for (const handler of hide) handler();
+    },
+    pageshow: (persisted: boolean) => {
+      for (const handler of show) handler(persisted);
+    },
   };
 }
 

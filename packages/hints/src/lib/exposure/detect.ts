@@ -17,6 +17,74 @@
  * configuration-management tests.
  */
 
+/** Matches a line break, with or without a carriage return. */
+const LINE_BREAK = /\r?\n/;
+
+/** Matches a symbolic `ref: refs/...` line of a git HEAD file. */
+const GIT_HEAD_REF = /^ref:\s+refs\/\S+/;
+
+/** Matches a 40 character hexadecimal git commit id. */
+const GIT_COMMIT_ID = /^[0-9a-f]{40}$/i;
+
+/** Matches the `[core]` section header of a git config. */
+const GIT_CONFIG_CORE_SECTION = /\[core\]/i;
+
+/** Matches the `repositoryformatversion` setting of a git config. */
+const GIT_REPOSITORY_FORMAT_VERSION = /repositoryformatversion\s*=/i;
+
+/** Matches a dotenv `KEY=` assignment, with an optional `export`. */
+const ENV_ASSIGNMENT = /^(export\s+)?[A-Za-z_]\w*=/;
+
+/** Matches a short integer, as in the first line of `.svn/entries`. */
+const FORMAT_VERSION_LINE = /^\d{1,3}$/;
+
+/** Matches the `dir` token of a working-copy layout. */
+const SVN_DIR_TOKEN = /\bdir\b/;
+
+/** Matches an `Index of /` page title. */
+const TITLE_INDEX_OF = /<title>\s*Index of \//i;
+
+/** Matches an `Index of /` page heading. */
+const HEADING_INDEX_OF = /<h1>\s*Index of \//i;
+
+/** Matches a `Directory listing for /` heading. */
+const DIRECTORY_LISTING_FOR = /Directory listing for \//i;
+
+/** Matches the title of the Apache server status page. */
+const APACHE_SERVER_STATUS = /Apache Server Status/i;
+
+/** Matches the title of the Apache server information page. */
+const APACHE_SERVER_INFORMATION = /Apache Server Information/i;
+
+/** Matches the `Server Version:` line of a status page. */
+const SERVER_VERSION_LABEL = /Server Version:/i;
+
+/** Matches the `Server uptime:` line of a status page. */
+const SERVER_UPTIME_LABEL = /Server uptime:/i;
+
+/** Matches the `cross-domain-policy` root element. */
+const CROSS_DOMAIN_POLICY_ROOT = /<cross-domain-policy/i;
+
+/** Matches an `allow-access-from` element that allows every domain. */
+const ALLOW_ACCESS_FROM_ANY_DOMAIN =
+  /<allow-access-from\b[^>]*\bdomain\s*=\s*["']\*["']/i;
+
+/** Matches a path that ends in `.zip`. */
+const ZIP_EXTENSION = /\.zip$/i;
+
+/** Matches a path that ends in `.php.bak` or `.php~`. */
+const PHP_BACKUP_EXTENSION = /\.php(\.bak|~)$/i;
+
+/** Matches a PHP opening tag. */
+const PHP_OPEN_TAG = /<\?php\b/;
+
+/** Matches a path that ends in `.htaccess.bak`. */
+const HTACCESS_BACKUP_EXTENSION = /\.htaccess\.bak$/i;
+
+/** Matches a line that starts with a common Apache per-directory directive. */
+const APACHE_DIRECTIVE_LINE =
+  /^[ \t]*(RewriteEngine|RewriteRule|Options|AuthType|Require|Order|Deny|Allow|ErrorDocument|<Files|<Directory|AddHandler|DirectoryIndex)\b/im;
+
 /**
  * True when the body is, at a glance, an HTML document. Used to reject the
  * SPA/catch-all `index.html` that many servers return for unknown paths.
@@ -45,11 +113,11 @@ export function looksLikeHtml(content: string): boolean {
  * git HEAD.
  */
 export function looksLikeGitHead(content: string): boolean {
-  const first = content.split(/\r?\n/, 1)[0]?.trim() ?? '';
+  const first = content.split(LINE_BREAK, 1)[0]?.trim() ?? '';
   if (first.startsWith('ref:')) {
-    return /^ref:\s+refs\/\S+/.test(first);
+    return GIT_HEAD_REF.test(first);
   }
-  return /^[0-9a-f]{40}$/i.test(first);
+  return GIT_COMMIT_ID.test(first);
 }
 
 /**
@@ -59,7 +127,10 @@ export function looksLikeGitHead(content: string): boolean {
  */
 export function looksLikeGitConfig(content: string): boolean {
   const text = content.slice(0, 4096);
-  return /\[core\]/i.test(text) && /repositoryformatversion\s*=/i.test(text);
+  return (
+    GIT_CONFIG_CORE_SECTION.test(text) &&
+    GIT_REPOSITORY_FORMAT_VERSION.test(text)
+  );
 }
 
 /**
@@ -72,7 +143,7 @@ export function looksLikeEnvFile(content: string): boolean {
   if (looksLikeHtml(content)) {
     return false;
   }
-  const lines = content.split(/\r?\n/);
+  const lines = content.split(LINE_BREAK);
   return lines.some((line) => {
     const trimmed = line.trim();
     if (trimmed === '' || trimmed.startsWith('#')) {
@@ -80,7 +151,7 @@ export function looksLikeEnvFile(content: string): boolean {
     }
     // Keys are letters, digits and underscores, must start with a letter or
     // underscore, and are conventionally upper case in dotenv files.
-    return /^(export\s+)?[A-Za-z_]\w*=/.test(trimmed);
+    return ENV_ASSIGNMENT.test(trimmed);
   });
 }
 
@@ -91,14 +162,14 @@ export function looksLikeEnvFile(content: string): boolean {
  * exposed `.svn` directory.
  */
 export function looksLikeSvnEntries(content: string): boolean {
-  const first = content.split(/\r?\n/, 1)[0]?.trim() ?? '';
+  const first = content.split(LINE_BREAK, 1)[0]?.trim() ?? '';
   // A format-version line is a small integer; the body then mentions the
   // working-copy layout (`dir`) or an `svn:` property. An HTML page has
   // neither a numeric first line nor those tokens.
-  if (!/^\d{1,3}$/.test(first)) {
+  if (!FORMAT_VERSION_LINE.test(first)) {
     return false;
   }
-  return /\bdir\b/.test(content) || /svn:/.test(content);
+  return SVN_DIR_TOKEN.test(content) || content.includes('svn:');
 }
 
 /**
@@ -130,9 +201,9 @@ export function looksLikeDsStore(content: string): boolean {
 export function looksLikeDirectoryListing(content: string): boolean {
   const text = content.slice(0, 4096);
   return (
-    /<title>\s*Index of \//i.test(text) ||
-    /<h1>\s*Index of \//i.test(text) ||
-    /Directory listing for \//i.test(text)
+    TITLE_INDEX_OF.test(text) ||
+    HEADING_INDEX_OF.test(text) ||
+    DIRECTORY_LISTING_FOR.test(text)
   );
 }
 
@@ -176,10 +247,10 @@ export function isExposedSourceMap(content: string): boolean {
 export function looksLikeServerStatus(content: string): boolean {
   const text = content.slice(0, 8192);
   return (
-    /Apache Server Status/i.test(text) ||
-    /Apache Server Information/i.test(text) ||
+    APACHE_SERVER_STATUS.test(text) ||
+    APACHE_SERVER_INFORMATION.test(text) ||
     // The status page always prints the server build and current time.
-    (/Server Version:/i.test(text) && /Server uptime:/i.test(text))
+    (SERVER_VERSION_LABEL.test(text) && SERVER_UPTIME_LABEL.test(text))
   );
 }
 
@@ -191,10 +262,10 @@ export function looksLikeServerStatus(content: string): boolean {
  */
 export function isPermissiveCrossdomain(content: string): boolean {
   const text = content.slice(0, 8192);
-  if (!/<cross-domain-policy/i.test(text)) {
+  if (!CROSS_DOMAIN_POLICY_ROOT.test(text)) {
     return false;
   }
-  return /<allow-access-from\b[^>]*\bdomain\s*=\s*["']\*["']/i.test(text);
+  return ALLOW_ACCESS_FROM_ANY_DOMAIN.test(text);
 }
 
 /** The small, curated list of backup paths each hint probes. */
@@ -228,21 +299,19 @@ export function confirmsBackup(path: string, content: string): boolean {
   if (looksLikeHtml(content)) {
     return false;
   }
-  if (/\.zip$/i.test(path)) {
+  if (ZIP_EXTENSION.test(path)) {
     // ZIP local-file header (`PK\x03\x04`) or empty-archive marker.
     return (
       content.startsWith('PK\u0003\u0004') ||
       content.startsWith('PK\u0005\u0006')
     );
   }
-  if (/\.php(\.bak|~)$/i.test(path)) {
-    return /<\?php\b/.test(content) || content.includes('<?=');
+  if (PHP_BACKUP_EXTENSION.test(path)) {
+    return PHP_OPEN_TAG.test(content) || content.includes('<?=');
   }
-  if (/\.htaccess\.bak$/i.test(path)) {
+  if (HTACCESS_BACKUP_EXTENSION.test(path)) {
     // Any one of the common Apache per-directory directives.
-    return /^[ \t]*(RewriteEngine|RewriteRule|Options|AuthType|Require|Order|Deny|Allow|ErrorDocument|<Files|<Directory|AddHandler|DirectoryIndex)\b/im.test(
-      content,
-    );
+    return APACHE_DIRECTIVE_LINE.test(content);
   }
   return false;
 }

@@ -57,11 +57,11 @@ function nodesOfType(
 function missingRequired(
   label: string,
   property: string,
-  doc: string,
+  parsedDocument: string,
 ): Finding {
   return finding(
     'error',
-    `The ${label} structured data is missing the required property "${property}". Add "${property}" so this item is eligible for a rich result. Read more: ${doc}`,
+    `The ${label} structured data is missing the required property "${property}". Add "${property}" so this item is eligible for a rich result. Read more: ${parsedDocument}`,
   );
 }
 
@@ -69,11 +69,11 @@ function missingRequired(
 function missingRecommended(
   label: string,
   property: string,
-  doc: string,
+  parsedDocument: string,
 ): Finding {
   return finding(
     'warning',
-    `The ${label} structured data is missing the recommended property "${property}". Add "${property}" to improve the rich result. Read more: ${doc}`,
+    `The ${label} structured data is missing the recommended property "${property}". Add "${property}" to improve the rich result. Read more: ${parsedDocument}`,
   );
 }
 
@@ -88,19 +88,19 @@ function validateFlat(
   fallbackLabel: string,
   required: readonly string[],
   recommended: readonly string[],
-  doc: string,
+  parsedDocument: string,
 ): Finding[] {
   const findings: Finding[] = [];
   for (const node of nodesOfType(blocks, types)) {
     const label = typeLabel(node, fallbackLabel);
     for (const property of required) {
       if (!hasValue(node, property)) {
-        findings.push(missingRequired(label, property, doc));
+        findings.push(missingRequired(label, property, parsedDocument));
       }
     }
     for (const property of recommended) {
       if (!hasValue(node, property)) {
-        findings.push(missingRecommended(label, property, doc));
+        findings.push(missingRecommended(label, property, parsedDocument));
       }
     }
   }
@@ -190,7 +190,7 @@ export function articleFindings(blocks: JsonLdBlocks): Finding[] {
 function offerFindings(
   label: string,
   offer: Record<string, unknown>,
-  doc: string,
+  parsedDocument: string,
 ): Finding[] {
   const kind = nodeHasAnyType(offer, ['AggregateOffer'])
     ? `${label} AggregateOffer`
@@ -200,7 +200,7 @@ function offerFindings(
     : ['price', 'priceCurrency'];
   return required
     .filter((property) => !hasValue(offer, property))
-    .map((property) => missingRequired(kind, property, doc));
+    .map((property) => missingRequired(kind, property, parsedDocument));
 }
 
 /**
@@ -213,14 +213,14 @@ function offerFindings(
  */
 export function productFindings(blocks: JsonLdBlocks): Finding[] {
   const findings: Finding[] = [];
-  const doc = DOCS.product;
+  const parsedDocument = DOCS.product;
   for (const node of nodesOfType(blocks, ['Product'])) {
     const label = typeLabel(node, 'Product');
     if (!hasValue(node, 'name')) {
-      findings.push(missingRequired(label, 'name', doc));
+      findings.push(missingRequired(label, 'name', parsedDocument));
     }
     if (!hasValue(node, 'image')) {
-      findings.push(missingRecommended(label, 'image', doc));
+      findings.push(missingRecommended(label, 'image', parsedDocument));
     }
 
     const hasOffers = hasValue(node, 'offers');
@@ -230,7 +230,7 @@ export function productFindings(blocks: JsonLdBlocks): Finding[] {
       findings.push(
         finding(
           'warning',
-          `The ${label} structured data has no "offers", "review" or "aggregateRating". Add at least one so the product is eligible for a rich result. Read more: ${doc}`,
+          `The ${label} structured data has no "offers", "review" or "aggregateRating". Add at least one so the product is eligible for a rich result. Read more: ${parsedDocument}`,
         ),
       );
     }
@@ -238,7 +238,7 @@ export function productFindings(blocks: JsonLdBlocks): Finding[] {
     if (hasOffers) {
       const offer = firstObject(node, 'offers');
       if (offer) {
-        findings.push(...offerFindings(label, offer, doc));
+        findings.push(...offerFindings(label, offer, parsedDocument));
       }
     }
 
@@ -246,7 +246,11 @@ export function productFindings(blocks: JsonLdBlocks): Finding[] {
       const rating = firstObject(node, 'aggregateRating');
       if (rating && !hasValue(rating, 'ratingValue')) {
         findings.push(
-          missingRequired(`${label} AggregateRating`, 'ratingValue', doc),
+          missingRequired(
+            `${label} AggregateRating`,
+            'ratingValue',
+            parsedDocument,
+          ),
         );
       }
     }
@@ -256,7 +260,11 @@ export function productFindings(blocks: JsonLdBlocks): Finding[] {
       const reviewRating = review ? firstObject(review, 'reviewRating') : null;
       if (review && (!reviewRating || !hasValue(reviewRating, 'ratingValue'))) {
         findings.push(
-          missingRequired(`${label} Review`, 'reviewRating.ratingValue', doc),
+          missingRequired(
+            `${label} Review`,
+            'reviewRating.ratingValue',
+            parsedDocument,
+          ),
         );
       }
     }
@@ -272,7 +280,7 @@ export function productFindings(blocks: JsonLdBlocks): Finding[] {
  */
 export function breadcrumbFindings(blocks: JsonLdBlocks): Finding[] {
   const findings: Finding[] = [];
-  const doc = DOCS.breadcrumb;
+  const parsedDocument = DOCS.breadcrumb;
   for (const node of nodesOfType(blocks, ['BreadcrumbList'])) {
     const label = typeLabel(node, 'BreadcrumbList');
     const value = node['itemListElement'];
@@ -280,19 +288,19 @@ export function breadcrumbFindings(blocks: JsonLdBlocks): Finding[] {
       ? value
       : [value].filter((entry) => asObject(entry) !== null);
     if (items.length === 0) {
-      findings.push(missingRequired(label, 'itemListElement', doc));
+      findings.push(missingRequired(label, 'itemListElement', parsedDocument));
       continue;
     }
-    items.forEach((raw, index) => {
+    for (const [index, raw] of items.entries()) {
       const item = asObject(raw);
       if (!item) {
-        return;
+        continue;
       }
       if (!hasValue(item, 'position')) {
         findings.push(
           finding(
             'error',
-            `The ${label} has a listItem without a "position". Number every breadcrumb item with "position". Read more: ${doc}`,
+            `The ${label} has a listItem without a "position". Number every breadcrumb item with "position". Read more: ${parsedDocument}`,
           ),
         );
       }
@@ -300,7 +308,7 @@ export function breadcrumbFindings(blocks: JsonLdBlocks): Finding[] {
         findings.push(
           finding(
             'error',
-            `The ${label} has a listItem without a "name" or "item". Each breadcrumb needs a name (or an item carrying one). Read more: ${doc}`,
+            `The ${label} has a listItem without a "name" or "item". Each breadcrumb needs a name (or an item carrying one). Read more: ${parsedDocument}`,
           ),
         );
       }
@@ -310,11 +318,11 @@ export function breadcrumbFindings(blocks: JsonLdBlocks): Finding[] {
         findings.push(
           finding(
             'error',
-            `The ${label} has a non-final listItem without an "item" URL. Link every breadcrumb but the last with "item". Read more: ${doc}`,
+            `The ${label} has a non-final listItem without an "item" URL. Link every breadcrumb but the last with "item". Read more: ${parsedDocument}`,
           ),
         );
       }
-    });
+    }
   }
   return findings;
 }
@@ -329,7 +337,7 @@ export function breadcrumbFindings(blocks: JsonLdBlocks): Finding[] {
  */
 export function jobPostingFindings(blocks: JsonLdBlocks): Finding[] {
   const findings: Finding[] = [];
-  const doc = DOCS.jobposting;
+  const parsedDocument = DOCS.jobposting;
   for (const node of nodesOfType(blocks, ['JobPosting'])) {
     const label = typeLabel(node, 'JobPosting');
     for (const property of [
@@ -339,18 +347,18 @@ export function jobPostingFindings(blocks: JsonLdBlocks): Finding[] {
       'hiringOrganization',
     ]) {
       if (!hasValue(node, property)) {
-        findings.push(missingRequired(label, property, doc));
+        findings.push(missingRequired(label, property, parsedDocument));
       }
     }
     const remote =
       typeof node['jobLocationType'] === 'string' &&
       node['jobLocationType'].toUpperCase() === 'TELECOMMUTE';
     if (!remote && !hasValue(node, 'jobLocation')) {
-      findings.push(missingRequired(label, 'jobLocation', doc));
+      findings.push(missingRequired(label, 'jobLocation', parsedDocument));
     }
     for (const property of ['validThrough', 'baseSalary']) {
       if (!hasValue(node, property)) {
-        findings.push(missingRecommended(label, property, doc));
+        findings.push(missingRecommended(label, property, parsedDocument));
       }
     }
   }
@@ -365,27 +373,29 @@ export function jobPostingFindings(blocks: JsonLdBlocks): Finding[] {
  */
 export function reviewFindings(blocks: JsonLdBlocks): Finding[] {
   const findings: Finding[] = [];
-  const doc = DOCS.review;
+  const parsedDocument = DOCS.review;
   for (const node of nodesOfType(blocks, ['Review'])) {
     const label = typeLabel(node, 'Review');
     if (!hasValue(node, 'itemReviewed')) {
-      findings.push(missingRequired(label, 'itemReviewed', doc));
+      findings.push(missingRequired(label, 'itemReviewed', parsedDocument));
     }
     const reviewRating = firstObject(node, 'reviewRating');
     if (!reviewRating || !hasValue(reviewRating, 'ratingValue')) {
-      findings.push(missingRequired(label, 'reviewRating.ratingValue', doc));
+      findings.push(
+        missingRequired(label, 'reviewRating.ratingValue', parsedDocument),
+      );
     }
   }
   for (const node of nodesOfType(blocks, ['AggregateRating'])) {
     const label = typeLabel(node, 'AggregateRating');
     if (!hasValue(node, 'ratingValue')) {
-      findings.push(missingRequired(label, 'ratingValue', doc));
+      findings.push(missingRequired(label, 'ratingValue', parsedDocument));
     }
     if (!hasValue(node, 'ratingCount') && !hasValue(node, 'reviewCount')) {
       findings.push(
         finding(
           'error',
-          `The ${label} structured data is missing a "ratingCount" or "reviewCount". Add one so the rating is eligible for a rich result. Read more: ${doc}`,
+          `The ${label} structured data is missing a "ratingCount" or "reviewCount". Add one so the rating is eligible for a rich result. Read more: ${parsedDocument}`,
         ),
       );
     }
@@ -402,7 +412,7 @@ export function reviewFindings(blocks: JsonLdBlocks): Finding[] {
  */
 export function websiteSearchActionFindings(blocks: JsonLdBlocks): Finding[] {
   const findings: Finding[] = [];
-  const doc = DOCS.searchaction;
+  const parsedDocument = DOCS.searchaction;
   for (const node of nodesOfType(blocks, ['WebSite'])) {
     const label = typeLabel(node, 'WebSite');
     const raw = node['potentialAction'];
@@ -417,12 +427,14 @@ export function websiteSearchActionFindings(blocks: JsonLdBlocks): Finding[] {
       continue;
     }
     if (!hasValue(search, 'target')) {
-      findings.push(missingRequired(`${label} SearchAction`, 'target', doc));
+      findings.push(
+        missingRequired(`${label} SearchAction`, 'target', parsedDocument),
+      );
     }
     // The property is spelled `query-input` in schema.org's action syntax.
     if (!hasValue(search, 'query-input')) {
       findings.push(
-        missingRequired(`${label} SearchAction`, 'query-input', doc),
+        missingRequired(`${label} SearchAction`, 'query-input', parsedDocument),
       );
     }
   }

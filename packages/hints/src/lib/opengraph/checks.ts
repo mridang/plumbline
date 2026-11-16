@@ -32,6 +32,9 @@ import {
   startsWithUrl,
 } from './text.js';
 
+/** Matches an insecure `http://` prefix. */
+const HTTP_PREFIX = /^http:\/\//i;
+
 /** Reads the first non-empty value of an `og:*`/`twitter:*` tag, or null. */
 type MetaReader = (key: string) => string | null;
 
@@ -329,7 +332,7 @@ export const ogImageMissing: MetaCheck = ({ meta }) =>
  */
 export const ogImageNotHttps: MetaCheck = ({ meta }) => {
   const src = meta('og:image');
-  return src !== null && /^http:\/\//i.test(src)
+  return src !== null && HTTP_PREFIX.test(src)
     ? [
         finding(
           'warning',

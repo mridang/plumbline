@@ -9,6 +9,9 @@
  */
 import { finding, type Finding } from '../headers/finding.js';
 
+/** Matches the opening of an `XRD` root element. */
+const XRD_ROOT_ELEMENT = /<\s*XRD(\s|>)/i;
+
 /** The response observed when fetching the host-meta document. */
 export interface HostMetaResponse {
   statusCode: number;
@@ -18,7 +21,7 @@ export interface HostMetaResponse {
 
 /** True when the body is a well-formed-looking XRD document. */
 function looksLikeXrd(body: string): boolean {
-  return /<\s*XRD(\s|>)/i.test(body);
+  return XRD_ROOT_ELEMENT.test(body);
 }
 
 /** Evaluates a fetch of `/.well-known/host-meta` (or its `.json` form). */

@@ -12,6 +12,9 @@ import {
 import { gzipAsync } from '../helpers/zlib.js';
 import { HTTP_SCHEME, vector } from '../helpers/data.js';
 
+/** Matches the refusal message for an address that is not public. */
+const NOT_A_PUBLIC_ADDRESS = /not a public address/;
+
 describe('isPublicAddress', () => {
   it.each([
     vector('ip8_8_8_8'),
@@ -205,9 +208,7 @@ describe('guardedFetch', () => {
     base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   });
 
-  afterAll(
-    () => new Promise((resolve) => server.close(() => resolve(undefined))),
-  );
+  afterAll(() => new Promise((resolve) => server.close(() => resolve())));
 
   const local = guardedFetch({ allowPrivate: true, timeoutMs: 500 });
 
@@ -220,7 +221,7 @@ describe('guardedFetch', () => {
 
   it('refuses a name that resolves to a private address', async () => {
     await expect(guardedFetch()('http://localhost:8080/')).rejects.toThrow(
-      /not a public address/,
+      NOT_A_PUBLIC_ADDRESS,
     );
   });
 

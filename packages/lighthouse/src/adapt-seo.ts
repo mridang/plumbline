@@ -40,6 +40,12 @@ import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/seo/
 import type { HeaderBag } from '@mridang/webhint-hint-plumbline/dist/lib/headers/http-headers.js';
 import type { MetaElementArtifact } from './adapt.js';
 
+/** Matches a run of whitespace, used to split space-separated tokens. */
+const WHITESPACE_RUN = /\s+/;
+
+/** Matches a selector that starts with the `title` tag name. */
+const TITLE_SELECTOR = /^title\b/;
+
 /** Lighthouse's `LinkElement` artifact entry, narrowed to what we read. */
 export interface LinkElementArtifact {
   rel: string;
@@ -66,8 +72,12 @@ function makeElement(
 }
 
 /** True when a `rel` attribute's space-separated tokens include `token`. */
-function relHasToken(rel: string, token: string): boolean {
-  return rel.trim().toLowerCase().split(/\s+/).includes(token);
+function relationshipHasToken(relationship: string, token: string): boolean {
+  return relationship
+    .trim()
+    .toLowerCase()
+    .split(WHITESPACE_RUN)
+    .includes(token);
 }
 
 /**
@@ -136,13 +146,13 @@ export function seoDocument(artifacts: {
 
   // `<link rel="canonical">`, from the parsed artifact (rel + resolved href).
   const canonicalLinks = artifacts.LinkElements.filter((link) =>
-    relHasToken(link.rel, 'canonical'),
+    relationshipHasToken(link.rel, 'canonical'),
   ).map((link) => makeElement({ rel: link.rel, href: link.href ?? '' }));
 
   return {
     querySelector(selector: string): ElementLike | null {
       // `<title>`: `getTitle` passes `'title:not(svg title)'`.
-      if (/^title\b/.test(selector)) {
+      if (TITLE_SELECTOR.test(selector)) {
         return parsed.querySelector(selector);
       }
       // `<html>`: `getHtmlLang` passes `'html'`.

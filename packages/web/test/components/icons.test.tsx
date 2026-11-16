@@ -12,6 +12,7 @@ import {
   ProteinIcon,
   SparklesIcon,
 } from '@/components/icons';
+// eslint-disable-next-line unicorn/no-keyword-prefix -- classOf is the name exported by the shared render helper
 import { classOf, html } from './render';
 
 describe('icons', () => {

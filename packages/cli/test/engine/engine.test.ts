@@ -110,8 +110,8 @@ describe('findingOf', () => {
     const documentation = [
       { link: 'https://example.com/rule', text: 'the rule' },
       { link: 'javascript:alert(1)', text: 'bad' },
-      ...Array.from({ length: 7 }, (_, i) => ({
-        link: `https://example.com/${i}`,
+      ...Array.from({ length: 7 }, (_, index) => ({
+        link: `https://example.com/${index}`,
         text: '',
       })),
     ];

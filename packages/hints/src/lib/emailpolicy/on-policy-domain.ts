@@ -4,6 +4,9 @@ import { onSite, type Site } from '../../core/page.js';
 import { registrableDomain } from '../email/domain.js';
 import { lookupMailServers } from '../email/mx.js';
 
+/** Matches a single trailing dot. */
+const TRAILING_DOT = /\.$/u;
+
 /**
  * What an email-policy hint's check receives. It mirrors the `email` set's
  * `MailDomain` but also exposes the site's `fetch`, because MTA-STS needs to
@@ -46,7 +49,7 @@ export function onPolicyDomain(
     const options = (context.hintOptions ?? {}) as Record<string, unknown>;
     const configured =
       typeof options.domain === 'string' && options.domain !== ''
-        ? options.domain.toLowerCase().replace(/\.$/u, '')
+        ? options.domain.toLowerCase().replace(TRAILING_DOT, '')
         : null;
     const domain = configured ?? registrableDomain(site.url.hostname);
     if (!domain) {

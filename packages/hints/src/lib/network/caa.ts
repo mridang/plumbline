@@ -5,7 +5,22 @@
  * RFC 9495 and the CA/Browser Forum properties) and the set must contain at
  * least one `issue` property.
  */
-import { answersOfType, normalizeName, safeQuery, RR } from './dns-util.js';
+import { answersOfType, normalizeName, safeQuery, RR } from './dns-utility.js';
+
+/** Matches a DNS label. */
+const DNS_LABEL = /^[A-Za-z0-9-]+$/;
+
+/** Matches CAA record data of flags, tag and value. */
+const CAA_RECORD_DATA = /^(\d+)\s+([A-Za-z0-9]+)\s(.*)$/s;
+
+/** Matches a string of hex digits and whitespace. */
+const HEX_OR_WHITESPACE_ONLY = /^[\da-fA-F\s]*$/;
+
+/** Matches leading whitespace. */
+const LEADING_WHITESPACE = /^\s/;
+
+/** Matches the first non-digit character. */
+const NON_DIGIT = /\D/;
 
 /** At most this many records are evaluated, as in Internet.nl. */
 const CAA_MAX_RECORDS = 100;
@@ -43,16 +58,16 @@ function fromGeneric(data: string): Buffer | null {
   if (afterMarker.length === text.length - 2) {
     return null;
   }
-  const digits = afterMarker.search(/\D/);
+  const digits = afterMarker.search(NON_DIGIT);
   const length = digits === -1 ? afterMarker.length : digits;
   if (length === 0) {
     return null;
   }
   let hex = afterMarker.slice(length);
-  if (/^\s/.test(hex)) {
+  if (LEADING_WHITESPACE.test(hex)) {
     hex = hex.slice(1);
   }
-  return /^[\da-fA-F\s]*$/.test(hex)
+  return HEX_OR_WHITESPACE_ONLY.test(hex)
     ? Buffer.from(hex.replaceAll(/\s+/g, ''), 'hex')
     : null;
 }
@@ -72,7 +87,7 @@ export function parseCaa(data: string): CaaRecord | null {
       value: generic.subarray(2 + tagLength).toString('utf8'),
     };
   }
-  const m = /^(\d+)\s+([A-Za-z0-9]+)\s(.*)$/s.exec(data.trim());
+  const m = CAA_RECORD_DATA.exec(data.trim());
   if (!m) {
     return null;
   }
@@ -139,7 +154,7 @@ function checkIssueParameter(parameter: string): string | null {
   const labels = methods === '' ? [] : methods.split(',');
   for (const label of labels) {
     if (
-      !/^[A-Za-z0-9-]+$/.test(label) ||
+      !DNS_LABEL.test(label) ||
       (!ACME_METHODS.has(label) && !label.startsWith('ca-'))
     ) {
       return 'invalid-parameter-validation-methods';

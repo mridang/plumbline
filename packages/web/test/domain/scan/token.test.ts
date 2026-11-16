@@ -6,6 +6,9 @@ import {
   SCAN_LIFETIME_SECONDS,
 } from '@/domain/scan/token';
 
+/** Matches two url-safe segments joined by a dot. */
+const SIGNED_TOKEN_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+
 const SECRET = 'test-secret';
 const NOW = new Date('2026-10-31T12:00:00Z');
 
@@ -21,7 +24,7 @@ describe('issueScanId', () => {
 
   it('makes an id that is safe in a URL path', async () => {
     const { id } = await issueScanId('https://example.com/?a=b c', SECRET, NOW);
-    expect(id).toMatch(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
+    expect(id).toMatch(SIGNED_TOKEN_PATTERN);
   });
 });
 

@@ -24,6 +24,7 @@ export function InstallButton(): ReactElement {
           className={buttonClass({
             variant: 'ghost',
             size: 'sm',
+            // eslint-disable-next-line unicorn/no-keyword-prefix -- the Look prop is named className, as in React
             className: 'text-muted hover:text-ink',
           })}
           onClick={() => void install()}

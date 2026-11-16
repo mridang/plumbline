@@ -6,6 +6,12 @@ import { clearGap, listGaps, noteGap } from '@/domain/db/deploy-gaps';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 
+/** Matches the deploy gaps autoindex in a query plan. */
+const AUTOINDEX_PLAN =
+  /USING (COVERING )?INDEX sqlite_autoindex_deploy_url_gaps_1/;
+/** Matches a scan step in a query plan. */
+const SCAN_PLAN = /SCAN/;
+
 const made = () => {
   const { d1, raw } = sqliteD1(...APP_MIGRATIONS);
   return { db: createDatabase(d1), raw };
@@ -58,9 +64,7 @@ describe('the query plan', () => {
       .all('o/site')
       .map((row) => String(row['detail']))
       .join(' ');
-    expect(plan).toMatch(
-      /USING (COVERING )?INDEX sqlite_autoindex_deploy_url_gaps_1/,
-    );
-    expect(plan).not.toMatch(/SCAN/);
+    expect(plan).toMatch(AUTOINDEX_PLAN);
+    expect(plan).not.toMatch(SCAN_PLAN);
   });
 });

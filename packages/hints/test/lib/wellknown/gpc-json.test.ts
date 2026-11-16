@@ -5,7 +5,7 @@ import {
 } from '../../../src/lib/wellknown/gpc-json.js';
 
 const msgs = (v: unknown) =>
-  validateGpcJson(JSON.stringify(v)).map((i) => i.message);
+  validateGpcJson(JSON.stringify(v)).map((index) => index.message);
 
 describe('validateGpcJson', () => {
   it('accepts a valid date-only document', () => {
@@ -62,7 +62,7 @@ function generate(
   count: number,
 ): string {
   let text = '';
-  for (let i = 0; i < count; i += 1) {
+  for (let index = 0; index < count; index += 1) {
     text += pieces[Math.floor(random() * pieces.length)];
   }
   return text;
@@ -91,7 +91,7 @@ describe('ISO_DATE', () => {
   it('matches the old pattern on seeded random text', () => {
     const random = seeded(3);
     const pieces = ['2', '0', '-', 'T', 't', ':', '.', 'Z', '+', '1', ' '];
-    for (let i = 0; i < 20_000; i += 1) {
+    for (let index = 0; index < 20_000; index += 1) {
       const text = generate(random, pieces, 20);
       expect(ISO_DATE.test(text)).toBe(old.test(text));
     }

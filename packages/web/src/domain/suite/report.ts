@@ -12,6 +12,9 @@ import { comparisonConclusion, type Comparison } from '@/domain/suite/baseline';
 import type { IssueLevel } from '@/domain/suite/config';
 import type { StoredFinding } from '@/domain/suite/diff';
 
+/** Orders rule ids as `localeCompare` does, without a collator per call. */
+const collator = new Intl.Collator();
+
 /** The most findings written out in one summary; the rest are counted. */
 export const MAX_LISTED = 40;
 
@@ -120,7 +123,8 @@ export function breakdown(
   const worst = (list: readonly StoredFinding[]): number =>
     Math.min(...list.map((found) => RANK[found.severity]));
   const rules = [...byRule].toSorted(
-    ([a, left], [b, right]) => worst(left) - worst(right) || a.localeCompare(b),
+    ([a, left], [b, right]) =>
+      worst(left) - worst(right) || collator.compare(a, b),
   );
   const lines: string[] = [];
   let listed = 0;
@@ -250,9 +254,11 @@ const worrying = (list: readonly StoredFinding[]): StoredFinding[] =>
 /** The title of a check run that compared the preview with the live site. */
 function comparedTitle(comparison: Readonly<Comparison>, host: string): string {
   const added = worrying(comparison.added);
-  const newErrors = added.filter((found) => found.severity === 'error').length;
-  if (newErrors > 0) {
-    return `${amount(newErrors, 'new error')} on ${host}`;
+  const addedErrors = added.filter(
+    (found) => found.severity === 'error',
+  ).length;
+  if (addedErrors > 0) {
+    return `${amount(addedErrors, 'new error')} on ${host}`;
   }
   if (added.length > 0) {
     return `${amount(added.length, 'new warning')} on ${host}`;

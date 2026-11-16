@@ -29,8 +29,8 @@ const finding = (...messages: string[]): SuiteRun => ({
   url: 'https://x.test/',
   status: 200,
   hash: messages.join('|'),
-  checks: messages.map((message, i) => ({
-    id: RULES[i] ?? 'seo-viewport',
+  checks: messages.map((message, index) => ({
+    id: RULES[index] ?? 'seo-viewport',
     findings: [{ severity: 'warning', message }],
   })),
   skipped: [],
@@ -294,7 +294,10 @@ describe('checkDeployment', () => {
   });
 
   it('checks no more than the limit in one delivery', async () => {
-    const hosts = Array.from({ length: MAX_SITES + 2 }, (_, i) => `h${i}.test`);
+    const hosts = Array.from(
+      { length: MAX_SITES + 2 },
+      (_, index) => `h${index}.test`,
+    );
     const db = await setup(...hosts);
     const outcomes = await checkDeployment(db, 1, deployed, {
       run: async () => finding(),
@@ -303,7 +306,10 @@ describe('checkDeployment', () => {
   });
 
   it('checks more sites in one delivery on the Paid plan', async () => {
-    const hosts = Array.from({ length: MAX_SITES + 2 }, (_, i) => `h${i}.test`);
+    const hosts = Array.from(
+      { length: MAX_SITES + 2 },
+      (_, index) => `h${index}.test`,
+    );
     const db = await setup(...hosts);
     const outcomes = await checkDeployment(db, 1, deployed, {
       run: async () => finding(),

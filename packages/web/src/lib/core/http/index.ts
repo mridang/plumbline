@@ -42,6 +42,7 @@ export {
 } from './reporting';
 export type { CspSurface } from './csp';
 export {
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- re-export of the public name from csp.ts
   newNonce,
   buildCsp,
   cspSurfaceFor,

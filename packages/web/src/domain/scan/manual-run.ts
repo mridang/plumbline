@@ -19,7 +19,7 @@ export const MANUAL_RUN_INTERVAL_SECONDS = 300;
  * it last was (`lastRunAt`, an ISO time); 0 when it never was, or the time is
  * unreadable.
  */
-export function nextRunAt(lastRunAt: string | undefined): number {
+export function nextRunAt(lastRunAt?: string): number {
   if (lastRunAt === undefined) {
     return 0;
   }

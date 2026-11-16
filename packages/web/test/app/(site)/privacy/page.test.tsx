@@ -3,12 +3,20 @@ import { describe, expect, it } from '@jest/globals';
 import PrivacyPage, { metadata } from '@/app/(site)/privacy/page';
 import { html } from '../../../components/render';
 
+/** Matches the privacy policy heading. */
+const PRIVACY_POLICY_HEADING = /<h1[^>]*>Privacy Policy<\/h1>/;
+/** Matches the Google account permissions link. */
+const GOOGLE_PERMISSIONS_LINK =
+  /<a [^>]*href="https:\/\/myaccount\.google\.com\/permissions"[^>]*target="_blank"[^>]*rel="noopener noreferrer"[^>]*>your Google account permissions<\/a>/;
+/** Matches the back-to-home link. */
+const BACK_TO_HOME_LINK = /<a [^>]*href="\/"[^>]*>.*Back to Plumbline<\/a>/;
+
 describe('PrivacyPage', () => {
   const out = html(<PrivacyPage />);
 
   it('has one heading, the policy’s title', () => {
     expect(out.match(/<h1/g)).toHaveLength(1);
-    expect(out).toMatch(/<h1[^>]*>Privacy Policy<\/h1>/);
+    expect(out).toMatch(PRIVACY_POLICY_HEADING);
   });
 
   it('says when it last changed', () => {
@@ -68,9 +76,7 @@ describe('PrivacyPage', () => {
   });
 
   it('sends people to Google to remove access, in a new tab', () => {
-    expect(out).toMatch(
-      /<a [^>]*href="https:\/\/myaccount\.google\.com\/permissions"[^>]*target="_blank"[^>]*rel="noopener noreferrer"[^>]*>your Google account permissions<\/a>/,
-    );
+    expect(out).toMatch(GOOGLE_PERMISSIONS_LINK);
   });
 
   it('gives the contact address', () => {
@@ -78,7 +84,7 @@ describe('PrivacyPage', () => {
   });
 
   it('links back home', () => {
-    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>.*Back to Plumbline<\/a>/);
+    expect(out).toMatch(BACK_TO_HOME_LINK);
   });
 });
 

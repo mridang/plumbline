@@ -8,6 +8,12 @@ import zlib from 'node:zlib';
 
 import { ALLOWED_PORTS, ScanRefusedError } from './scannable.js';
 
+/** Matches an IPv4-mapped or NAT64 IPv6 address that spells the IPv4 in dots. */
+const MAPPED_DOTTED_V4 = /^(?:::ffff:|64:ff9b::)(\d+\.\d+\.\d+\.\d+)$/;
+
+/** Matches an IPv4-mapped or NAT64 IPv6 address that spells the IPv4 in two hex groups. */
+const MAPPED_HEX_V4 = /^(?:::ffff:|64:ff9b::)([0-9a-f]{1,4}):([0-9a-f]{1,4})$/;
+
 /**
  * The scan server fetches whatever address a visitor types, from inside the
  * container. This file keeps those fetches on the public internet: it refuses
@@ -73,13 +79,11 @@ for (const [address, prefix] of RESERVED_V6) {
 /** The IPv4 address inside an IPv4-mapped or NAT64 IPv6 address, if there is one. */
 function embeddedV4(ip: string): string | undefined {
   const lower = ip.toLowerCase();
-  const dotted = /^(?:::ffff:|64:ff9b::)(\d+\.\d+\.\d+\.\d+)$/.exec(lower);
+  const dotted = MAPPED_DOTTED_V4.exec(lower);
   if (dotted) {
     return dotted[1];
   }
-  const hex = /^(?:::ffff:|64:ff9b::)([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(
-    lower,
-  );
+  const hex = MAPPED_HEX_V4.exec(lower);
   if (hex) {
     const high = Number.parseInt(hex[1] ?? '0', 16);
     const low = Number.parseInt(hex[2] ?? '0', 16);
@@ -235,9 +239,9 @@ type BodyInit = NonNullable<ConstructorParameters<typeof Response>[0]>;
 /** The request headers as a plain object, from any of the forms `fetch` accepts. */
 function headersOf(init: HeadersInit | undefined): Record<string, string> {
   const out: Record<string, string> = {};
-  new Headers(init).forEach((value, name) => {
+  for (const [name, value] of new Headers(init).entries()) {
     out[name] = value;
-  });
+  }
   return out;
 }
 
@@ -317,11 +321,11 @@ async function readBody(
 /** The response headers, one entry per header line, as a `Headers`. */
 function responseHeaders(response: IncomingMessage): Headers {
   const headers = new Headers();
-  for (let i = 0; i + 1 < response.rawHeaders.length; i += 2) {
+  for (let index = 0; index + 1 < response.rawHeaders.length; index += 2) {
     try {
       headers.append(
-        response.rawHeaders[i] ?? '',
-        response.rawHeaders[i + 1] ?? '',
+        response.rawHeaders[index] ?? '',
+        response.rawHeaders[index + 1] ?? '',
       );
     } catch {
       // A header the Fetch API cannot hold is left out.

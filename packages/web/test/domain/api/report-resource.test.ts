@@ -237,9 +237,9 @@ describe('parseReportInput, the findings of a check', () => {
   it('keeps at most five links of a finding, and none when there are none', () => {
     const many = {
       ...finding,
-      links: Array.from({ length: 8 }, (_, i) => ({
-        url: `https://a.test/${i}`,
-        text: `${i}`,
+      links: Array.from({ length: 8 }, (_, index) => ({
+        url: `https://a.test/${index}`,
+        text: `${index}`,
       })),
     };
     const parsed = parseReportInput(

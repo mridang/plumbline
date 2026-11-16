@@ -74,7 +74,7 @@ async function readSome(response: Response, wanted: number): Promise<string> {
 }
 
 const idsOf = (text: string) =>
-  [...text.matchAll(/^id: (\d+)$/gm)].map((match) => Number(match[1]));
+  Array.from(text.matchAll(/^id: (\d+)$/gm), (match) => Number(match[1]));
 
 describe('UserHub', () => {
   it('opens an event stream with the right headers', async () => {

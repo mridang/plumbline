@@ -30,7 +30,7 @@ import {
   oembedDiscovery,
   opensearchDiscovery,
 } from '@mridang/webhint-hint-plumbline/dist/lib/feeds/checks.js';
-import { hintDocs } from '../meta.js';
+import { hintDocumentation } from '../meta.js';
 import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
@@ -67,13 +67,13 @@ function fromHint(
   definition: HintDefinition,
   run: AuditCheck['run'],
 ): AuditCheck {
-  const docs = hintDocs(definition);
+  const documentation = hintDocumentation(definition);
   return {
     id: definition.id,
-    section: docs.section ?? 'feeds',
-    title: docs.name,
-    description: docs.description,
-    reference: docs.url,
+    section: documentation.section ?? 'feeds',
+    title: documentation.name,
+    description: documentation.description,
+    reference: documentation.url,
     scoreMode: 'informative',
     requiredArtifacts: HTML_ONLY,
     run,

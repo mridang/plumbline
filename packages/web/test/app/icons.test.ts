@@ -6,6 +6,9 @@ import { BRAND_NAME } from '@/app/_brand';
 import { pngIsOpaque, pngSize } from '../png';
 import { packageDirectorySync } from 'package-directory';
 
+/** Matches an svg element that declares a viewBox. */
+const SVG_WITH_VIEWBOX_PATTERN = /^<svg [^>]*viewBox=/;
+
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 const app = (name: string) => path.join(PACKAGE, 'src/app', name);
@@ -16,8 +19,8 @@ describe('the icon and social images in src/app', () => {
   it('has a favicon.ico holding 16, 32 and 48 pixel images', async () => {
     const ico = await readFile(app('favicon.ico'));
     expect(ico.subarray(0, 6).toString('hex')).toBe('000001000300');
-    const entries = [0, 1, 2].map((i) => {
-      const at = 6 + i * 16;
+    const entries = [0, 1, 2].map((index) => {
+      const at = 6 + index * 16;
       const offset = ico.readUInt32LE(at + 12);
       return {
         width: ico.readUInt8(at),
@@ -27,12 +30,12 @@ describe('the icon and social images in src/app', () => {
         end: offset + ico.readUInt32LE(at + 8),
       };
     });
-    expect(entries.map((e) => [e.width, e.height])).toEqual([
+    expect(entries.map((entry) => [entry.width, entry.height])).toEqual([
       [16, 16],
       [32, 32],
       [48, 48],
     ]);
-    expect(entries.map((e) => e.isPng)).toEqual(
+    expect(entries.map((entry) => entry.isPng)).toEqual(
       Array.from({ length: 3 }, () => '89504e470d0a1a0a'),
     );
     expect(entries.at(-1)?.end).toBe(ico.length);
@@ -67,7 +70,7 @@ describe('the icon and social images in src/app', () => {
 
   it('has a scalable icon', async () => {
     expect(await readFile(app('icon.svg'), 'utf8')).toMatch(
-      /^<svg [^>]*viewBox=/,
+      SVG_WITH_VIEWBOX_PATTERN,
     );
   });
 });

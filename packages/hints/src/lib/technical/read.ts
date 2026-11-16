@@ -19,9 +19,11 @@ export interface TechDocumentLike {
 }
 
 /** Heading levels (1 to 6) in document order. */
-export function headingLevels(doc: TechDocumentLike): number[] {
+export function headingLevels(parsedDocument: TechDocumentLike): number[] {
   const levels: number[] = [];
-  for (const element of doc.querySelectorAll('h1, h2, h3, h4, h5, h6')) {
+  for (const element of parsedDocument.querySelectorAll(
+    'h1, h2, h3, h4, h5, h6',
+  )) {
     const level = Number.parseInt(
       (element.nodeName ?? element.tagName ?? '').slice(1),
       10,
@@ -37,9 +39,9 @@ export function headingLevels(doc: TechDocumentLike): number[] {
 export function firstSkippedLevel(
   levels: readonly number[],
 ): { from: number; to: number; index: number } | null {
-  for (let i = 1; i < levels.length; i++) {
-    if (levels[i] - levels[i - 1] > 1) {
-      return { from: levels[i - 1], to: levels[i], index: i };
+  for (let index = 1; index < levels.length; index++) {
+    if (levels[index] - levels[index - 1] > 1) {
+      return { from: levels[index - 1], to: levels[index], index: index };
     }
   }
   return null;
@@ -62,8 +64,10 @@ export interface AltCoverage {
  * valid (it marks a decorative image), only an absent attribute counts.
  * Returns null when there is nothing to report.
  */
-export function altCoverage(doc: TechDocumentLike): AltCoverage | null {
-  const images = doc.querySelectorAll('img');
+export function altCoverage(
+  parsedDocument: TechDocumentLike,
+): AltCoverage | null {
+  const images = parsedDocument.querySelectorAll('img');
   const total = images.length;
   const missing = images.filter(
     (img) => img.getAttribute('alt') === null,
@@ -95,9 +99,11 @@ export interface RobotsAdvanced {
 }
 
 /** Reads which advanced directives the first robots meta tag carries. */
-export function robotsAdvanced(doc: TechDocumentLike): RobotsAdvanced {
+export function robotsAdvanced(
+  parsedDocument: TechDocumentLike,
+): RobotsAdvanced {
   const content =
-    doc
+    parsedDocument
       .querySelector('meta[name="robots" i]')
       ?.getAttribute('content')
       ?.trim()
@@ -119,9 +125,12 @@ export function robotsAdvanced(doc: TechDocumentLike): RobotsAdvanced {
  * Resolves the distinct `<img src>` values against the page URL, dropping
  * unparseable ones and anything that is not http(s), such as data: URIs.
  */
-export function imageUrls(doc: TechDocumentLike, base: string): string[] {
+export function imageUrls(
+  parsedDocument: TechDocumentLike,
+  base: string,
+): string[] {
   const urls = new Set<string>();
-  for (const img of doc.querySelectorAll('img')) {
+  for (const img of parsedDocument.querySelectorAll('img')) {
     const src = img.getAttribute('src');
     if (!src) {
       continue;
@@ -166,12 +175,12 @@ export async function mapWithConcurrency<T, R>(
   let next = 0;
   const worker = async (): Promise<void> => {
     for (;;) {
-      const i = next;
+      const index = next;
       next += 1;
-      if (i >= items.length) {
+      if (index >= items.length) {
         return;
       }
-      results[i] = await fn(items[i]);
+      results[index] = await fn(items[index]);
     }
   };
   const count = Math.max(1, Math.min(limit, items.length));
@@ -217,8 +226,8 @@ export function redirectVerdict(
 }
 
 /** Reads the trimmed href of the first canonical link, or null. */
-export function canonicalHref(doc: TechDocumentLike): string | null {
-  const href = doc
+export function canonicalHref(parsedDocument: TechDocumentLike): string | null {
+  const href = parsedDocument
     .querySelector('link[rel~="canonical" i]')
     ?.getAttribute('href')
     ?.trim();
@@ -231,12 +240,7 @@ export function canonicalHref(doc: TechDocumentLike): string | null {
  * long as it resolves, as LLMScout does.
  */
 export function resolvesAsUrl(value: string, base: string): boolean {
-  try {
-    new URL(value, base);
-    return true;
-  } catch {
-    return false;
-  }
+  return URL.canParse(value, base);
 }
 
 /** The card types X/Twitter recognises. */
@@ -248,8 +252,10 @@ export const TWITTER_CARD_TYPES = [
 ] as const;
 
 /** Reads the trimmed `twitter:card` value, or null when absent or blank. */
-export function twitterCardType(doc: TechDocumentLike): string | null {
-  const value = doc
+export function twitterCardType(
+  parsedDocument: TechDocumentLike,
+): string | null {
+  const value = parsedDocument
     .querySelector('meta[name="twitter:card" i]')
     ?.getAttribute('content')
     ?.trim();

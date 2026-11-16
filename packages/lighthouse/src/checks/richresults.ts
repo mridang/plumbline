@@ -34,7 +34,7 @@ import {
   websiteSearchActionFindings,
 } from '@mridang/webhint-hint-plumbline/dist/lib/richresults/checks.js';
 import { geoDocument } from '../adapt-geo.js';
-import { hintDocs } from '../meta.js';
+import { hintDocumentation } from '../meta.js';
 import type { AuditCheck } from './types.js';
 import type { ScoreMode } from '../result.js';
 
@@ -70,13 +70,13 @@ function fromHint(
   scoreMode: ScoreMode,
   validate: (blocks: JsonLdBlocks) => readonly Finding[],
 ): AuditCheck {
-  const docs = hintDocs(definition);
+  const documentation = hintDocumentation(definition);
   return {
     id: definition.id,
-    section: docs.section ?? 'seo',
-    title: docs.name,
-    description: docs.description,
-    reference: docs.url,
+    section: documentation.section ?? 'seo',
+    title: documentation.name,
+    description: documentation.description,
+    reference: documentation.url,
     scoreMode,
     requiredArtifacts: ['MainDocumentContent', 'URL'],
     run: (artifacts) => {

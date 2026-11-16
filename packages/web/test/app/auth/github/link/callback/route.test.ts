@@ -22,6 +22,9 @@ import {
   fakeGitHub,
 } from '../../../../../domain/github/github-test-kit';
 
+/** Matches the GitHub state cookie being cleared. */
+const CLEARED_STATE_COOKIE_PATTERN = /plumbline_github_state=;/;
+
 const state: { user: { id: number } | null } = { user: { id: 7 } };
 jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
@@ -61,7 +64,7 @@ describe('GET /auth/github/link/callback', () => {
     fakeGitHub(DEPLOYED_APP);
     const res = await call('?code=c1&state=github.abc');
     expect(res.headers.get('location')).toBe('https://plumbline.test/github');
-    expect(res.headers.get('set-cookie')).toMatch(/plumbline_github_state=;/);
+    expect(res.headers.get('set-cookie')).toMatch(CLEARED_STATE_COOKIE_PATTERN);
     expect(
       made.raw.prepare('SELECT user_id, repo FROM user_repositories').all(),
     ).toEqual([{ user_id: 7, repo: 'acme/site' }]);
@@ -71,7 +74,7 @@ describe('GET /auth/github/link/callback', () => {
       login: 'mridang',
     });
     const installations = await listInstallations(db, 7);
-    expect(installations.map((i) => i.installation_id)).toEqual([5]);
+    expect(installations.map((index) => index.installation_id)).toEqual([5]);
     const repos = await listRepos(db, 7);
     expect(repos.map((r) => r.hosts)).toEqual([['site.example.com']]);
     const domains = await listDomains(db, 7);

@@ -2,6 +2,9 @@ import { describe, expect, it } from '@jest/globals';
 
 import { decryptSecret, encryptSecret, generateKeyBase64 } from '@/lib/crypto';
 
+/** Matches key bit length. */
+const KEY_BIT_LENGTH = /256-bit/;
+
 describe('crypto', () => {
   it('round-trips a secret through encrypt/decrypt', async () => {
     const key = generateKeyBase64();
@@ -27,7 +30,7 @@ describe('crypto', () => {
 
   it('rejects a key that is not 256-bit', async () => {
     await expect(encryptSecret('x', btoa('tooshort'))).rejects.toThrow(
-      /256-bit/,
+      KEY_BIT_LENGTH,
     );
   });
 

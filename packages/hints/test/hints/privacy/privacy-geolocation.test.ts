@@ -2,6 +2,9 @@ import { describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/privacy/privacy-geolocation.js';
 import { runHint } from '../../helpers/run-hint.js';
 
+/** Matches a resource URL that ends in /geo.js. */
+const GEO_SCRIPT_RESOURCE = /\/geo\.js$/;
+
 const html = (body: string) => ({
   headers: { 'content-type': 'text/html; charset=utf-8' },
   body: `<!doctype html><html lang="en"><head><title>t</title></head><body>${body}</body></html>`,
@@ -36,7 +39,7 @@ describe('privacy-geolocation', () => {
     });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('/geo.js');
-    expect(problems[0].resource).toMatch(/\/geo\.js$/);
+    expect(problems[0].resource).toMatch(GEO_SCRIPT_RESOURCE);
     expect(problems[0].sourceCode).toBe(
       'navigator.geolocation.watchPosition(f)',
     );

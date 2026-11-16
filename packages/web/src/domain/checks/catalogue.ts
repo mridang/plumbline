@@ -346,8 +346,8 @@ export function applyChoice(
   choice: Readonly<{ enable?: readonly string[]; disable?: readonly string[] }>,
 ): string[] | null {
   const on = new Set(enabledChecks(current));
-  (choice.enable ?? []).forEach((id) => on.add(id));
-  (choice.disable ?? []).forEach((id) => on.delete(id));
+  for (const id of choice.enable ?? []) on.add(id);
+  for (const id of choice.disable ?? []) on.delete(id);
   const ids = CHECKS.map((check) => check.id).filter((id) => on.has(id));
   return ids.length === CHECKS.length ? null : ids;
 }
@@ -372,7 +372,7 @@ export function expandSelection(names: readonly string[]): Selection {
     if (isCheckId(name)) {
       ids.add(name);
     } else if (isGroup(name)) {
-      checksInGroup(name).forEach((check) => ids.add(check.id));
+      for (const check of checksInGroup(name)) ids.add(check.id);
     } else {
       unknown.push(name);
     }

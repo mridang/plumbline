@@ -68,7 +68,7 @@ import {
   seoDocument,
   type LinkElementArtifact,
 } from '../adapt-seo.js';
-import { hintDocs } from '../meta.js';
+import { hintDocumentation } from '../meta.js';
 import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
@@ -139,15 +139,15 @@ function fromHint(
     run: AuditCheck['run'];
   },
 ): AuditCheck {
-  const docs = hintDocs(definition);
+  const documentation = hintDocumentation(definition);
   return {
     id: definition.id,
     // Every SEO/favicon hint is placed in the taxonomy, so `section` is always
     // set; fall back to the seo section defensively rather than emit none.
-    section: docs.section ?? 'seo',
-    title: docs.name,
-    description: docs.description,
-    reference: docs.url,
+    section: documentation.section ?? 'seo',
+    title: documentation.name,
+    description: documentation.description,
+    reference: documentation.url,
     scoreMode: config.scoreMode,
     requiredArtifacts: config.requiredArtifacts,
     run: config.run,

@@ -32,6 +32,24 @@ import {
 } from '@/domain/suite/report';
 import { HTTP_SCHEME } from '../../helpers/data.js';
 
+/** Matches an issue number reference. */
+const ISSUE_REFERENCE_PATTERN = /#\d/;
+
+/** Matches the closing code fence. */
+const JSON_FENCE_CLOSE_PATTERN = /\n```$/;
+
+/** Matches the opening json code fence. */
+const JSON_FENCE_OPEN_PATTERN = /^```json\n/;
+
+/** Matches characters that would be markdown or HTML markup. */
+const MARKDOWN_SPECIAL_PATTERN = /[<>[\]`]/;
+
+/** Matches an at-mention. */
+const MENTION_PATTERN = /@[a-z]/;
+
+/** Matches an http or https url scheme. */
+const URL_SCHEME_PATTERN = /https?:\/\//;
+
 const found = (
   severity: StoredFinding['severity'],
   message = 'm',
@@ -108,8 +126,8 @@ describe('breakdown', () => {
   });
 
   it('writes out no more than the limit and counts the rest', () => {
-    const many = Array.from({ length: MAX_LISTED + 5 }, (_, i) =>
-      found('warning', `problem ${i}`),
+    const many = Array.from({ length: MAX_LISTED + 5 }, (_, index) =>
+      found('warning', `problem ${index}`),
     );
     const text = breakdown(many);
     expect(text).toContain(`problem ${MAX_LISTED - 1}`);
@@ -168,8 +186,8 @@ describe('checkRunOutput, short for people and complete for tools', () => {
     reportUrl: 'https://plumbline.test/r/abc',
     dataUrl: 'https://plumbline.test/r/abc/json',
   };
-  const many = Array.from({ length: SUMMARY_LISTED + 4 }, (_, i) =>
-    found('warning', `problem ${i}`),
+  const many = Array.from({ length: SUMMARY_LISTED + 4 }, (_, index) =>
+    found('warning', `problem ${index}`),
   );
 
   it('links the report in the summary', () => {
@@ -210,7 +228,11 @@ describe('dataBlock', () => {
     dataUrl: 'https://plumbline.test/r/abc/json',
   };
   const parse = (block: string): Record<string, unknown> =>
-    JSON.parse(block.replace(/^```json\n/, '').replace(/\n```$/, ''));
+    JSON.parse(
+      block
+        .replace(JSON_FENCE_OPEN_PATTERN, '')
+        .replace(JSON_FENCE_CLOSE_PATTERN, ''),
+    );
 
   it('is JSON with the counts, the links and each finding with its rule name', () => {
     const data = parse(
@@ -318,8 +340,8 @@ describe('checkIssueText', () => {
   });
 
   it('lists the worst findings first, no more than the limit, and counts the rest', () => {
-    const many = Array.from({ length: MAX_ISSUE_FINDINGS + 3 }, (_, i) =>
-      found('error', `problem ${i}`),
+    const many = Array.from({ length: MAX_ISSUE_FINDINGS + 3 }, (_, index) =>
+      found('error', `problem ${index}`),
     );
     const { body } = checkIssueText({
       ...input,
@@ -412,16 +434,16 @@ describe('safeText', () => {
 
   it('cannot mention a user or a team, or refer to an issue', () => {
     const text = safeText('@acme/team and @someone, see #12');
-    expect(text).not.toMatch(/@[a-z]/);
-    expect(text).not.toMatch(/#\d/);
+    expect(text).not.toMatch(MENTION_PATTERN);
+    expect(text).not.toMatch(ISSUE_REFERENCE_PATTERN);
   });
 
   it('cannot make a link, an image, a tag or a code span', () => {
     const text = safeText(
       `[login](https://evil.test) <img src=x> \`code\` ${HTTP_SCHEME}x.test`,
     );
-    expect(text).not.toMatch(/[<>[\]`]/);
-    expect(text).not.toMatch(/https?:\/\//);
+    expect(text).not.toMatch(MARKDOWN_SPECIAL_PATTERN);
+    expect(text).not.toMatch(URL_SCHEME_PATTERN);
   });
 
   it('cannot start a new line or block', () => {
@@ -452,7 +474,7 @@ describe('what a hostile configuration can make the text hold', () => {
         'Unknown rule "@acme/team [x](https://evil.test)" in plumbline.yaml.',
       ],
     });
-    expect(summary).not.toMatch(/@[a-z]/);
+    expect(summary).not.toMatch(MENTION_PATTERN);
     expect(summary).not.toContain('](https://');
   });
 
@@ -461,7 +483,7 @@ describe('what a hostile configuration can make the text hold', () => {
       ...base,
       problems: Array.from(
         { length: MAX_PROBLEMS + 5 },
-        (_, i) => `problem ${i}`,
+        (_, index) => `problem ${index}`,
       ),
     });
     expect(summary).toContain(`problem ${MAX_PROBLEMS - 1}`);
@@ -470,8 +492,8 @@ describe('what a hostile configuration can make the text hold', () => {
   });
 
   it('never goes past what GitHub accepts in a summary', () => {
-    const findings = Array.from({ length: MAX_LISTED }, (_, i) =>
-      found('error', `${'x'.repeat(5000)}${i}`),
+    const findings = Array.from({ length: MAX_LISTED }, (_, index) =>
+      found('error', `${'x'.repeat(5000)}${index}`),
     );
     const out = checkRunOutput({ ...base, findings, problems: [] });
     expect(out.summary.length).toBeLessThanOrEqual(MAX_TEXT + 20);
@@ -574,8 +596,8 @@ describe('a report compared with the live site', () => {
   });
 
   it('cuts the list of new problems and counts the rest', () => {
-    const added = Array.from({ length: SUMMARY_LISTED + 2 }, (_, i) =>
-      found('error', `e${i}`),
+    const added = Array.from({ length: SUMMARY_LISTED + 2 }, (_, index) =>
+      found('error', `e${index}`),
     );
     const out = checkRunOutput(report(compared({ added }), added));
     expect(out.summary).toContain('...and 2 more new in the report.');

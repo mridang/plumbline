@@ -1,6 +1,15 @@
 import type { TxtLookup } from '../email/txt.js';
 import type { Finding } from './finding.js';
 
+/** Matches a valid MTA-STS policy id. */
+const POLICY_ID = /^[A-Za-z0-9]{1,32}$/u;
+
+/** Matches a line break, with or without a carriage return. */
+const LINE_BREAK = /\r\n|\n/u;
+
+/** Matches a string made only of digits. */
+const DIGITS_ONLY = /^\d+$/u;
+
 /**
  * MTA-STS (RFC 8461) lets a domain tell sending mail servers that mail to it
  * must go over authenticated TLS. It has two parts that must agree:
@@ -82,7 +91,7 @@ function checkTxtRecord(record: string): Finding[] {
   }
   const id = pairs.get('id') ?? '';
   // The id is 1*32 characters of ALPHA / DIGIT (RFC 8461 3.1).
-  if (!/^[A-Za-z0-9]{1,32}$/u.test(id)) {
+  if (!POLICY_ID.test(id)) {
     return [
       {
         message:
@@ -112,7 +121,7 @@ function parsePolicy(body: string): {
     maxAge?: string;
     mx: string[];
   } = { mx: [] };
-  for (const line of body.split(/\r\n|\n/u)) {
+  for (const line of body.split(LINE_BREAK)) {
     const colon = line.indexOf(':');
     if (colon === -1) {
       continue;
@@ -198,7 +207,7 @@ function checkPolicyFile(policy: PolicyFetch): Finding[] {
   const maxAge = Number(parsed.maxAge);
   if (
     parsed.maxAge === undefined ||
-    !/^\d+$/u.test(parsed.maxAge) ||
+    !DIGITS_ONLY.test(parsed.maxAge) ||
     maxAge <= 0 ||
     maxAge > MAX_AGE_LIMIT
   ) {

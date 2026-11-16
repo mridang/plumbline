@@ -7,13 +7,13 @@ import {
   readJsonLd,
 } from '../../../src/lib/geo/json-ld.js';
 
-const doc = (...texts: string[]) => ({
+const parsedDocument = (...texts: string[]) => ({
   querySelectorAll: () => texts.map((textContent) => ({ textContent })),
 });
 
 describe('readJsonLd', () => {
   it('parses valid blocks and counts invalid ones', () => {
-    const result = readJsonLd(doc('{"a":1}', '{oops', ''));
+    const result = readJsonLd(parsedDocument('{"a":1}', '{oops', ''));
     expect(result).toEqual({
       total: 3,
       invalid: 2,
@@ -24,7 +24,7 @@ describe('readJsonLd', () => {
   });
 
   it('handles no blocks', () => {
-    expect(readJsonLd(doc())).toEqual({
+    expect(readJsonLd(parsedDocument())).toEqual({
       total: 0,
       invalid: 0,
       parsed: [],

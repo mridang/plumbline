@@ -10,6 +10,17 @@ import {
   sqliteD1,
 } from '../../../lib/core/db/sqlite-d1';
 
+/** Matches the Google sign-in link. */
+const GOOGLE_SIGN_IN_LINK = /href="\/auth\/login"[^>]*>.*Sign in with Google</s;
+/** Matches the GitHub sign-in link. */
+const GITHUB_SIGN_IN_LINK =
+  /href="\/auth\/github"[^>]*>.*Sign in with GitHub</s;
+/** Matches the GitHub link styled as primary. */
+const GITHUB_PRIMARY_LINK = /href="\/auth\/github"[^>]*class="[^"]*bg-ink/;
+/** Matches the Google link styled as secondary. */
+const GOOGLE_SECONDARY_LINK =
+  /href="\/auth\/login"[^>]*class="[^"]*border-field/;
+
 let restore: () => void;
 
 /** Run the page in a Worker that has these settings. */
@@ -39,7 +50,7 @@ describe('LoginPage', () => {
 
   it('starts the Google sign-in, as the only button when GitHub is not set up', async () => {
     const markup = await page();
-    expect(markup).toMatch(/href="\/auth\/login"[^>]*>.*Sign in with Google</s);
+    expect(markup).toMatch(GOOGLE_SIGN_IN_LINK);
     expect(markup).toContain('bg-ink');
     expect(markup).not.toContain('Sign in with GitHub');
   });
@@ -61,9 +72,7 @@ describe('LoginPage', () => {
   it('offers the GitHub sign-in, and says what it shows, when the app has them', async () => {
     withSettings(GITHUB_ENV);
     const markup = await page();
-    expect(markup).toMatch(
-      /href="\/auth\/github"[^>]*>.*Sign in with GitHub</s,
-    );
+    expect(markup).toMatch(GITHUB_SIGN_IN_LINK);
     expect(markup).toContain('repositories you have access to');
   });
 
@@ -73,8 +82,8 @@ describe('LoginPage', () => {
     expect(markup.indexOf('Sign in with GitHub')).toBeLessThan(
       markup.indexOf('Sign in with Google'),
     );
-    expect(markup).toMatch(/href="\/auth\/github"[^>]*class="[^"]*bg-ink/);
-    expect(markup).toMatch(/href="\/auth\/login"[^>]*class="[^"]*border-field/);
+    expect(markup).toMatch(GITHUB_PRIMARY_LINK);
+    expect(markup).toMatch(GOOGLE_SECONDARY_LINK);
   });
 
   it.each([

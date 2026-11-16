@@ -5,6 +5,9 @@ import { privacyChecks } from '../../src/checks/privacy.js';
 import type { AuditCheck } from '../../src/checks/types.js';
 import { HTTP_SCHEME } from '../helpers/data.js';
 
+/** Locale-aware comparator used to sort check ids deterministically. */
+const collator = new Intl.Collator();
+
 /** One request to synthesise into the devtools log. */
 interface RequestSpec {
   url: string;
@@ -94,7 +97,7 @@ function check(id: string): AuditCheck {
 }
 
 /** The main document request, served over https with optional headers. */
-function doc(headers?: Record<string, string>): RequestSpec {
+function document_(headers?: Record<string, string>): RequestSpec {
   return { url: 'https://x.test/', type: 'Document', headers };
 }
 
@@ -123,7 +126,7 @@ describe('the privacy registry', () => {
     const informative = privacyChecks
       .filter((c) => c.scoreMode === 'informative')
       .map((c) => c.id)
-      .toSorted((a, b) => a.localeCompare(b));
+      .toSorted(collator.compare);
     expect(informative).toEqual([
       'privacy-cookies',
       'privacy-third-party-requests',
@@ -131,7 +134,7 @@ describe('the privacy registry', () => {
     const numeric = privacyChecks
       .filter((c) => c.scoreMode === 'numeric')
       .map((c) => c.id)
-      .toSorted((a, b) => a.localeCompare(b));
+      .toSorted(collator.compare);
     expect(numeric).toEqual([
       'privacy-insecure-first-party',
       'privacy-mixed-content',
@@ -155,7 +158,7 @@ describe('the privacy-cookies check run()', () => {
   it('warns and lists the domains when a third-party cookie is set', async () => {
     const findings = await cookies.run(
       artifacts([
-        doc({ 'set-cookie': 'id=1; Domain=x.test' }),
+        document_({ 'set-cookie': 'id=1; Domain=x.test' }),
         {
           url: 'https://cdn.other.test/a.js',
           type: 'Script',
@@ -174,7 +177,7 @@ describe('the privacy-cookies check run()', () => {
 
   it('is a hint when only first-party cookies are set', async () => {
     const findings = await cookies.run(
-      artifacts([doc({ 'set-cookie': 'id=1; Domain=x.test' })]),
+      artifacts([document_({ 'set-cookie': 'id=1; Domain=x.test' })]),
       context(),
     );
     expect(findings).toHaveLength(1);
@@ -182,7 +185,7 @@ describe('the privacy-cookies check run()', () => {
   });
 
   it('reports nothing when no cookies are set', async () => {
-    const findings = await cookies.run(artifacts([doc()]), context());
+    const findings = await cookies.run(artifacts([document_()]), context());
     expect(findings).toEqual([]);
   });
 });
@@ -193,7 +196,7 @@ describe('the privacy-third-party-requests check run()', () => {
   it('lists the third-party hosts and is a hint when all are secure', async () => {
     const findings = await thirdParty.run(
       artifacts([
-        doc(),
+        document_(),
         { url: 'https://cdn.other.test/a.js', type: 'Script' },
         { url: 'https://x.test/self.js', type: 'Script' },
       ]),
@@ -208,7 +211,7 @@ describe('the privacy-third-party-requests check run()', () => {
   it('warns when a third-party request is insecure', async () => {
     const findings = await thirdParty.run(
       artifacts([
-        doc(),
+        document_(),
         { url: `${HTTP_SCHEME}cdn.other.test/a.js`, type: 'Script' },
       ]),
       context(),
@@ -219,7 +222,10 @@ describe('the privacy-third-party-requests check run()', () => {
 
   it('reports nothing when every request is first party', async () => {
     const findings = await thirdParty.run(
-      artifacts([doc(), { url: 'https://x.test/self.js', type: 'Script' }]),
+      artifacts([
+        document_(),
+        { url: 'https://x.test/self.js', type: 'Script' },
+      ]),
       context(),
     );
     expect(findings).toEqual([]);
@@ -232,7 +238,7 @@ describe('the privacy-mixed-content check run()', () => {
   it('errors on active and warns on passive insecure subresources', async () => {
     const findings = await mixed.run(
       artifacts([
-        doc(),
+        document_(),
         { url: `${HTTP_SCHEME}x.test/a.js`, type: 'Script' },
         { url: `${HTTP_SCHEME}x.test/a.png`, type: 'Image' },
       ]),
@@ -262,7 +268,10 @@ describe('the privacy-insecure-first-party check run()', () => {
 
   it('errors on a plain-http request to the page’s own domain', async () => {
     const findings = await insecure.run(
-      artifacts([doc(), { url: `${HTTP_SCHEME}x.test/a.js`, type: 'Script' }]),
+      artifacts([
+        document_(),
+        { url: `${HTTP_SCHEME}x.test/a.js`, type: 'Script' },
+      ]),
       context(),
     );
     expect(findings).toHaveLength(1);
@@ -272,7 +281,7 @@ describe('the privacy-insecure-first-party check run()', () => {
 
   it('reports nothing when first-party requests use https', async () => {
     const findings = await insecure.run(
-      artifacts([doc(), { url: 'https://x.test/a.js', type: 'Script' }]),
+      artifacts([document_(), { url: 'https://x.test/a.js', type: 'Script' }]),
       context(),
     );
     expect(findings).toEqual([]);

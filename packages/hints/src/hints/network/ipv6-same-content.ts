@@ -5,7 +5,7 @@ import {
   ipv4Addresses,
   ipv6Addresses,
   siteHost,
-} from '../../lib/network/dns-util.js';
+} from '../../lib/network/dns-utility.js';
 import { compareIpFamilies } from '../../lib/network/ipv6.js';
 
 /**

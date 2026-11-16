@@ -12,6 +12,9 @@
 
 import { buildSchema } from '@/domain/suite/config-schema';
 
+/** The `W/` that marks a weak ETag. */
+const WEAK_ETAG_PREFIX = /^W\//;
+
 /** Built once per instance: it only changes with a new build. */
 const BODY = `${JSON.stringify(buildSchema(), null, 2)}\n`;
 
@@ -36,7 +39,7 @@ function matches(header: string | null, etag: string): boolean {
     header !== null &&
     header
       .split(',')
-      .map((part) => part.trim().replace(/^W\//, ''))
+      .map((part) => part.trim().replace(WEAK_ETAG_PREFIX, ''))
       .some((part) => part === '*' || part === etag)
   );
 }

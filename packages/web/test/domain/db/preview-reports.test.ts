@@ -10,6 +10,9 @@ import {
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 
+/** Matches uuid format. */
+const UUID_FORMAT = /^[0-9a-f-]{36}$/;
+
 const report = (message = 'm') => ({
   repo: 'acme/site',
   sha: 'abc1234',
@@ -24,7 +27,7 @@ describe('savePreviewReport and getPreviewReport', () => {
   it('keeps a report under a random id with its counts', async () => {
     const db = createDatabase(sqliteD1(...APP_MIGRATIONS).d1);
     const id = await savePreviewReport(db, report('boom'));
-    expect(id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(id).toMatch(UUID_FORMAT);
     expect(await getPreviewReport(db, id)).toMatchObject({
       id,
       repo: 'acme/site',

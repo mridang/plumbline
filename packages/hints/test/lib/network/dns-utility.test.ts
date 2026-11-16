@@ -7,7 +7,7 @@ import {
   safeQuery,
   siteHost,
   target,
-} from '../../../src/lib/network/dns-util.js';
+} from '../../../src/lib/network/dns-utility.js';
 import { dns } from '../../../src/core/dns.js';
 import { installDns } from './fake-dns.js';
 import { vector } from '../../helpers/data.js';

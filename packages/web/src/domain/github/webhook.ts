@@ -40,8 +40,9 @@ export async function verifySignature(
   }
   // Every character is compared, so the time taken says nothing about where they differ.
   let difference = 0;
-  for (let i = 0; i < expected.length; i += 1) {
-    difference |= (expected.codePointAt(i) ?? 0) ^ (given.codePointAt(i) ?? 0);
+  for (let index = 0; index < expected.length; index += 1) {
+    difference |=
+      (expected.codePointAt(index) ?? 0) ^ (given.codePointAt(index) ?? 0);
   }
   return difference === 0;
 }

@@ -2,11 +2,13 @@ import { describe, expect, it } from '@jest/globals';
 import { SOURCE_GROUPS } from '../../src/core/groups.js';
 import { SOURCES } from '../../src/core/sources.js';
 
+const collator = new Intl.Collator();
+
 describe('the sources', () => {
   it('has one entry for every source group', () => {
-    expect(
-      SOURCES.map((s) => s.id).toSorted((a, b) => a.localeCompare(b)),
-    ).toEqual([...SOURCE_GROUPS].toSorted((a, b) => a.localeCompare(b)));
+    expect(SOURCES.map((s) => s.id).toSorted(collator.compare)).toEqual(
+      [...SOURCE_GROUPS].toSorted(collator.compare),
+    );
   });
 
   it('names each source, links it and states its licence', () => {

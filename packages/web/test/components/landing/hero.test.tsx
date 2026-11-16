@@ -4,6 +4,9 @@ import { Hero } from '@/components/landing/hero';
 import { RULE_SOURCES } from '@/components/landing/sources';
 import { html } from '../render';
 
+/** Matches the hero heading. */
+const HERO_HEADING_PATTERN = /<h1[^>]*>Find what your website gets wrong/;
+
 describe('Hero', () => {
   const out = html(<Hero checks={267} />);
 
@@ -12,7 +15,7 @@ describe('Hero', () => {
   });
 
   it('heads the page', () => {
-    expect(out).toMatch(/<h1[^>]*>Find what your website gets wrong/);
+    expect(out).toMatch(HERO_HEADING_PATTERN);
   });
 
   it('offers the scanner first, on the card the header links to', () => {

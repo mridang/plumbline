@@ -14,8 +14,15 @@ import {
 } from '@/domain/mcp/ui-resources';
 import { SCOPE_READ, scopeForTool } from '@/lib/oauth';
 
+/** Matches the phrases that guide a model on when to call a tool. */
+const GUIDANCE_PHRASE_PATTERN =
+  /YOURSELF|do NOT|Call this when|Use this when|Use it|prefer /;
+
+/** Matches a valid tool name of up to 128 characters. */
+const TOOL_NAME_PATTERN = /^[A-Za-z0-9_.-]{1,128}$/;
+
 /** A JSON Schema 2020-12 validator that rejects schemas with unknown keywords. */
-function newAjv(): Ajv2020 {
+function createAjv(): Ajv2020 {
   return new Ajv2020({ strict: true, allowUnionTypes: true });
 }
 
@@ -50,6 +57,9 @@ function metaOf(name: string): Readonly<Record<string, unknown>> {
   return (toolNamed(name)?._meta ?? {}) as Readonly<Record<string, unknown>>;
 }
 
+/** Compares strings in the default locale order, built once. */
+const collator = new Intl.Collator();
+
 describe('the tool catalogue', () => {
   it('lists the tools in a fixed order', () => {
     expect(TOOLS.map((t) => t.name)).toEqual([
@@ -69,14 +79,14 @@ describe('the tool catalogue', () => {
     const names = TOOLS.map((t) => t.name);
     expect(new Set(names).size).toBe(names.length);
     for (const name of names) {
-      expect(name).toMatch(/^[A-Za-z0-9_.-]{1,128}$/);
+      expect(name).toMatch(TOOL_NAME_PATTERN);
     }
   });
 
   it('has a set of good arguments for every tool, and for no other', () => {
-    expect(
-      Object.keys(GOOD_ARGUMENTS).toSorted((a, b) => a.localeCompare(b)),
-    ).toEqual(TOOLS.map((t) => t.name).toSorted((a, b) => a.localeCompare(b)));
+    expect(Object.keys(GOOD_ARGUMENTS).toSorted(collator.compare)).toEqual(
+      TOOLS.map((t) => t.name).toSorted(collator.compare),
+    );
   });
 
   it('finds a tool by name', () => {
@@ -93,9 +103,7 @@ describe('the tool catalogue', () => {
   it('describes what each tool does without telling the model how to behave', () => {
     for (const tool of TOOLS) {
       expect(tool.description.length).toBeGreaterThan(20);
-      expect(tool.description).not.toMatch(
-        /YOURSELF|do NOT|Call this when|Use this when|Use it|prefer /,
-      );
+      expect(tool.description).not.toMatch(GUIDANCE_PHRASE_PATTERN);
     }
   });
 
@@ -118,7 +126,7 @@ describe('the input schemas', () => {
         type: 'object',
         additionalProperties: false,
       });
-      expect(() => newAjv().compile(tool.inputSchema)).not.toThrow();
+      expect(() => createAjv().compile(tool.inputSchema)).not.toThrow();
     },
   );
 
@@ -133,7 +141,7 @@ describe('the input schemas', () => {
     '%s accepts its good arguments, by the server’s checker and by Ajv',
     (name, args) => {
       expect(validateJson(inputOf(name), args)).toEqual([]);
-      expect(newAjv().validate(inputOf(name), args)).toBe(true);
+      expect(createAjv().validate(inputOf(name), args)).toBe(true);
     },
   );
 
@@ -239,7 +247,7 @@ describe('the Views', () => {
     TOOLS.filter((t) => 'outputSchema' in t).map((t) => [t.name, t] as const),
   )('%s has an output schema Ajv compiles in strict mode', (_name, tool) => {
     expect(() =>
-      newAjv().compile((tool as { outputSchema: object }).outputSchema),
+      createAjv().compile((tool as { outputSchema: object }).outputSchema),
     ).not.toThrow();
   });
 

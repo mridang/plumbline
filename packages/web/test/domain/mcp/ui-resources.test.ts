@@ -26,22 +26,56 @@ import {
 } from '@/domain/mcp/ui-resources';
 import { SITE_URL } from '@/utils/site';
 
+/** Matches module script block. */
+const MODULE_SCRIPT_BLOCK = /<script type="module">[\s\S]*<\/script>/;
+
+/** Matches report resource uri. */
+const REPORT_RESOURCE_URI_PATTERN =
+  /^ui:\/\/plumbline\/report-[0-9a-f]{12}\.html$/;
+
+/** Matches domain list resource uri. */
+const DOMAIN_LIST_RESOURCE_URI_PATTERN =
+  /^ui:\/\/plumbline\/domain-list-[0-9a-f]{12}\.html$/;
+
+/** Matches doctype prefix. */
+const DOCTYPE_PREFIX = /^<!doctype html>/;
+
+/** Matches title element. */
+const TITLE_ELEMENT = /<title>[^<]+<\/title>/;
+
+/** Matches link tag. */
+const LINK_TAG = /<link\b/;
+
+/** Matches img tag. */
+const IMG_TAG = /<img\b/;
+
+/** Matches iframe tag. */
+const IFRAME_TAG = /<iframe\b/;
+
+/** Matches src or href attribute. */
+const SRC_OR_HREF_ATTRIBUTE = /\b(src|href)=/;
+
+/** Matches fetch call. */
+const FETCH_CALL = /\bfetch\(/;
+
+/** Matches websocket constructor. */
+const WEBSOCKET_CONSTRUCTOR = /new WebSocket\b/;
+
+/** Matches event source constructor. */
+const EVENT_SOURCE_CONSTRUCTOR = /new EventSource\b/;
+
+/** Matches eval call. */
+const EVAL_CALL = /\beval\(/;
+
 /** The document with its inline script removed: what the host's CSP actually has to police. */
 function shellOf(html: string): string {
-  return html.replace(
-    /<script type="module">[\s\S]*<\/script>/,
-    '<script></script>',
-  );
+  return html.replace(MODULE_SCRIPT_BLOCK, '<script></script>');
 }
 
 describe('ui resource addresses', () => {
   it('puts a hash of the HTML in each address, so a changed view gets a new one', () => {
-    expect(CARD_RESOURCE_URI).toMatch(
-      /^ui:\/\/plumbline\/report-[0-9a-f]{12}\.html$/,
-    );
-    expect(LIST_RESOURCE_URI).toMatch(
-      /^ui:\/\/plumbline\/domain-list-[0-9a-f]{12}\.html$/,
-    );
+    expect(CARD_RESOURCE_URI).toMatch(REPORT_RESOURCE_URI_PATTERN);
+    expect(LIST_RESOURCE_URI).toMatch(DOMAIN_LIST_RESOURCE_URI_PATTERN);
     expect(CARD_RESOURCE_URI).toContain(cardHash.slice(0, 12));
     expect(LIST_RESOURCE_URI).toContain(listHash.slice(0, 12));
   });
@@ -131,12 +165,12 @@ describe('ui resources served', () => {
 
   it('ships a real HTML5 document for each view', () => {
     for (const resource of APP_RESOURCES) {
-      expect(resource.html).toMatch(/^<!doctype html>/);
+      expect(resource.html).toMatch(DOCTYPE_PREFIX);
       expect(resource.html).toContain('<meta charset="utf-8">');
       expect(resource.html).toContain(
         '<meta name="color-scheme" content="light dark">',
       );
-      expect(resource.html).toMatch(/<title>[^<]+<\/title>/);
+      expect(resource.html).toMatch(TITLE_ELEMENT);
       expect(resource.html).toContain('<div id="root">');
     }
   });
@@ -206,21 +240,21 @@ describe('Content-Security-Policy', () => {
   it('is true: the views load nothing from the network', () => {
     for (const { html } of [{ html: cardHtml }, { html: listHtml }]) {
       const shell = shellOf(html);
-      expect(shell).not.toMatch(/<link\b/);
-      expect(shell).not.toMatch(/<img\b/);
-      expect(shell).not.toMatch(/<iframe\b/);
-      expect(shell).not.toMatch(/\b(src|href)=/);
+      expect(shell).not.toMatch(LINK_TAG);
+      expect(shell).not.toMatch(IMG_TAG);
+      expect(shell).not.toMatch(IFRAME_TAG);
+      expect(shell).not.toMatch(SRC_OR_HREF_ATTRIBUTE);
       expect(shell).not.toContain('@import');
-      expect(html).not.toMatch(/\bfetch\(/);
+      expect(html).not.toMatch(FETCH_CALL);
       expect(html).not.toContain('XMLHttpRequest');
-      expect(html).not.toMatch(/new WebSocket\b/);
-      expect(html).not.toMatch(/new EventSource\b/);
+      expect(html).not.toMatch(WEBSOCKET_CONSTRUCTOR);
+      expect(html).not.toMatch(EVENT_SOURCE_CONSTRUCTOR);
     }
   });
 
   it('works under the default policy, which forbids eval', () => {
     for (const html of [cardHtml, listHtml]) {
-      expect(html).not.toMatch(/\beval\(/);
+      expect(html).not.toMatch(EVAL_CALL);
       expect(html).not.toContain('new Function(');
     }
   });

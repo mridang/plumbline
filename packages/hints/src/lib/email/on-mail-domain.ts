@@ -4,6 +4,9 @@ import { onSite } from '../../core/page.js';
 import { registrableDomain } from './domain.js';
 import { lookupMailServers } from './mx.js';
 
+/** Matches a single trailing dot. */
+const TRAILING_DOT = /\.$/u;
+
 /** What a mail hint's check receives. */
 export interface MailDomain {
   /** The registrable domain of the scanned site. */
@@ -39,7 +42,7 @@ export function onMailDomain(
     const options = (context.hintOptions ?? {}) as Record<string, unknown>;
     const configured =
       typeof options.domain === 'string' && options.domain !== ''
-        ? options.domain.toLowerCase().replace(/\.$/u, '')
+        ? options.domain.toLowerCase().replace(TRAILING_DOT, '')
         : null;
     const domain = configured ?? registrableDomain(site.url.hostname);
     if (!domain) {

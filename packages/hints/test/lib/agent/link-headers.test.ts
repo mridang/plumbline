@@ -32,8 +32,13 @@ describe('checkLinkHeaders', () => {
     expect(r.passed).toBe(true);
   });
   it('accepts the ard relation and the IANA service relations', async () => {
-    for (const rel of ['ard', 'service-meta', 'describedby', 'status']) {
-      const r = await checkLinkHeaders(home(`</x>; rel="${rel}"`));
+    for (const relationship of [
+      'ard',
+      'service-meta',
+      'describedby',
+      'status',
+    ]) {
+      const r = await checkLinkHeaders(home(`</x>; rel="${relationship}"`));
       expect(r.passed).toBe(true);
     }
   });

@@ -46,7 +46,10 @@ describe('collectRpki', () => {
       },
     };
     const entries = await webRpki('example.test');
-    expect(entries.map((e) => e.ip)).toEqual(['192.0.2.1', '2001:db8::1']);
+    expect(entries.map((entry) => entry.ip)).toEqual([
+      '192.0.2.1',
+      '2001:db8::1',
+    ]);
     expect(seen).toHaveLength(2);
   });
 
@@ -88,7 +91,7 @@ describe('collectRpki', () => {
       },
     };
     const found = await collectRpki(['example.test']);
-    expect(found.map((e) => e.ip)).toEqual([
+    expect(found.map((entry) => entry.ip)).toEqual([
       '192.0.2.1',
       '192.0.2.2',
       '2001:db8::1',
@@ -108,7 +111,7 @@ describe('collectRpki', () => {
           : Promise.resolve({ asn: 1, prefix: 'p', status: 'valid' }),
     };
     const entries = await collectRpki(['example.test']);
-    expect(entries.map((e) => e.ip)).toEqual(['192.0.2.2']);
+    expect(entries.map((entry) => entry.ip)).toEqual(['192.0.2.2']);
   });
 
   it('skips addresses when the validator fails', async () => {
@@ -132,13 +135,13 @@ describe('judgeValidity', () => {
     expect(judgeValidity([]).verdict).toBe('none');
   });
   it('is invalid when any route is invalid', () => {
-    const j = judgeValidity([
+    const index = judgeValidity([
       entry('valid'),
       entry('invalid'),
       entry('unknown'),
     ]);
-    expect(j.verdict).toBe('invalid');
-    expect(j.offenders).toHaveLength(1);
+    expect(index.verdict).toBe('invalid');
+    expect(index.offenders).toHaveLength(1);
   });
   it('is bad when a routed address has no ROA', () => {
     expect(judgeValidity([entry('valid'), entry('unknown')]).verdict).toBe(

@@ -75,7 +75,7 @@ export function sqliteD1(...migrations: readonly string[]): {
   readonly raw: DatabaseSync;
 } {
   const raw = new DatabaseSync(':memory:');
-  migrations.forEach((file) => raw.exec(migrationSql(file)));
+  for (const file of migrations) raw.exec(migrationSql(file));
   const d1 = {
     prepare: (sql: string) => new Statement(raw, sql),
     batch: async (statements: readonly Statement[]) => {

@@ -40,6 +40,9 @@ import {
   type ScanJob,
 } from '@/domain/suite/scanner';
 
+/** The first `=` of a line, splitting a key from its value. */
+const KEY_VALUE_SEPARATOR = /=(.*)/s;
+
 /** The port the probe listens on. */
 const PORT = 8080;
 
@@ -67,7 +70,7 @@ export function aboutRequest(path: string, body: string): string {
   const fields = Object.fromEntries(
     (body.split('--\n', 1)[0] ?? '')
       .split('\n')
-      .map((line) => line.split(/=(.*)/s).slice(0, 2))
+      .map((line) => line.split(KEY_VALUE_SEPARATOR).slice(0, 2))
       .filter(([key]) =>
         ['host', 'port', 'ip', 'path', 'starttls'].includes(key ?? ''),
       ),

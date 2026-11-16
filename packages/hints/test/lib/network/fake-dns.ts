@@ -9,7 +9,7 @@ import {
   type DnsResponse,
   type DnsType,
 } from '../../../src/core/dns.js';
-import { target } from '../../../src/lib/network/dns-util.js';
+import { target } from '../../../src/lib/network/dns-utility.js';
 
 const TYPE_NUMBER: Record<string, number> = {
   A: 1,

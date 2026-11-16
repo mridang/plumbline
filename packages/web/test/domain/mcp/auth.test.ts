@@ -1,9 +1,13 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import type { User } from '@/domain/db/users';
+// eslint-disable-next-line unicorn/no-keyword-prefix -- newSecret is a public export of @/lib/oauth
 import { ACCESS_PREFIX, REFRESH_PREFIX, newSecret } from '@/lib/oauth';
 import type { McpAuthDeps } from '@/domain/mcp/auth';
 import { installFakeTracing } from '../../lib/core/observability/fake-tracing';
+
+/** Matches access token format. */
+const ACCESS_TOKEN_FORMAT = /^cdn_at_[A-Za-z0-9_-]{43}$/;
 
 const tracing = installFakeTracing();
 const { authenticateMcpRequest } = await import('@/domain/mcp/auth');
@@ -112,6 +116,6 @@ describe('authenticateMcpRequest', () => {
   );
 
   it('accepts the shape of every access token we issue', () => {
-    expect(GOOD).toMatch(/^cdn_at_[A-Za-z0-9_-]{43}$/);
+    expect(GOOD).toMatch(ACCESS_TOKEN_FORMAT);
   });
 });

@@ -1,5 +1,8 @@
 import { isIP } from '#net';
 
+/** Matches a single trailing dot. */
+const TRAILING_DOT = /\.$/u;
+
 /**
  * Second level labels under which registrations happen one level deeper, for
  * example `co.uk`. This is a small built-in stand-in for the Public Suffix
@@ -88,7 +91,7 @@ const NON_PUBLIC_TLDS: ReadonlySet<string> = new Set([
  * null when the host is an IP address, a single label or a non-public name.
  */
 export function registrableDomain(hostname: string): string | null {
-  const host = hostname.trim().toLowerCase().replace(/\.$/u, '');
+  const host = hostname.trim().toLowerCase().replace(TRAILING_DOT, '');
   if (host === '' || isIP(host) !== 0 || host.startsWith('[')) {
     return null;
   }

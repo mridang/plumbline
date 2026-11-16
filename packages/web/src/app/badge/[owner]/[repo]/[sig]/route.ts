@@ -20,6 +20,9 @@ import { getEnv } from '@/lib/core/runtime';
 
 export const dynamic = 'force-dynamic';
 
+/** The `.svg` extension at the end of the signature segment. */
+const SVG_EXTENSION = /\.svg$/;
+
 /** The dynamic segments of the badge address. */
 interface Context {
   readonly params: Promise<{
@@ -33,7 +36,7 @@ interface Context {
 export async function GET(request: Request, { params }: Context) {
   const { owner, repo, sig } = await params;
   const repository = `${decodeURIComponent(owner)}/${decodeURIComponent(repo)}`;
-  const signature = sig.replace(/\.svg$/, '');
+  const signature = sig.replace(SVG_EXTENSION, '');
   if (!(await verifyRepo(getEnv().SESSION_SECRET, repository, signature))) {
     return new Response('Not found', { status: 404 });
   }

@@ -25,7 +25,7 @@ export function Badge({
   pulse = false,
   mono = false,
   detail,
-  className,
+  className: cssClasses,
   children,
 }: Readonly<{
   tone?: Tone;
@@ -38,6 +38,7 @@ export function Badge({
   mono?: boolean;
   /** Read out after the badge's text, when the text alone does not say enough. */
   detail?: string;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
   className?: string;
   children: ReactNode;
 }>): ReactElement {
@@ -48,7 +49,7 @@ export function Badge({
         SIZES[size],
         TONE_FILL[tone],
         mono && 'font-mono',
-        className,
+        cssClasses,
       )}
     >
       {dot ? <Dot tone={tone} pulse={pulse} size="xs" /> : null}

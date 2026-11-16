@@ -22,7 +22,7 @@ export interface SafeAreaInsets {
  * insets come from the host and are used inside CSS.
  */
 export function safeAreaVariables(
-  insets: SafeAreaInsets | undefined,
+  insets?: SafeAreaInsets,
 ): readonly (readonly [string, string])[] {
   const px = (value: number | undefined): string =>
     `${typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 0}px`;
@@ -39,7 +39,7 @@ export function safeAreaVariables(
  * filled; a flexible one is sized by the View (which reports its size).
  */
 export function hasFixedHeight(
-  dimensions: Readonly<Record<string, unknown>> | undefined,
+  dimensions?: Readonly<Record<string, unknown>>,
 ): boolean {
   return typeof dimensions?.['height'] === 'number';
 }
@@ -58,7 +58,7 @@ const LANGUAGE_TAG = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,4}$/;
  * English the page was written in. Underscores (`en_US`) are accepted because
  * some hosts send POSIX-style locales.
  */
-export function localeToLang(locale: unknown): string | undefined {
+export function localeToLang(locale?: unknown): string | undefined {
   if (typeof locale !== 'string') {
     return undefined;
   }

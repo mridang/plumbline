@@ -96,7 +96,7 @@ export function keepStreamWhileVisible(
   }
   return () => {
     cancelGrace();
-    stops.forEach((stop) => stop());
+    for (const stop of stops) stop();
     close();
   };
 }

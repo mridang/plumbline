@@ -3,7 +3,7 @@ import { checkPoppy } from '../../../src/lib/agent/poppy.js';
 import { fakeEnv, without } from './fake-env.js';
 import { HTTP_SCHEME } from '../../helpers/data.js';
 
-const doc = {
+const parsedDocument = {
   protocol_version: '0.1',
   organization: { name: 'Example', domain: 'example.com' },
   web: {},
@@ -12,13 +12,13 @@ const path = '/.well-known/poppy.json';
 
 describe('checkPoppy', () => {
   it('passes with a valid manifest', async () => {
-    const r = await checkPoppy(fakeEnv({ [path]: doc }));
+    const r = await checkPoppy(fakeEnv({ [path]: parsedDocument }));
     expect(r.passed).toBe(true);
   });
   it('matches the domain ignoring www', async () => {
     const env = fakeEnv({
       [path]: {
-        ...doc,
+        ...parsedDocument,
         organization: { name: 'E', domain: 'www.example.com' },
       },
     });
@@ -27,13 +27,18 @@ describe('checkPoppy', () => {
   });
   it('rejects plain http except on loopback hosts', async () => {
     const http = fakeEnv(
-      { [path]: doc },
+      { [path]: parsedDocument },
       { origin: `${HTTP_SCHEME}example.com` },
     );
     const httpResult = await checkPoppy(http);
     expect(httpResult.detail).toContain('HTTPS');
     const local = fakeEnv(
-      { [path]: { ...doc, organization: { name: 'E', domain: '127.0.0.1' } } },
+      {
+        [path]: {
+          ...parsedDocument,
+          organization: { name: 'E', domain: '127.0.0.1' },
+        },
+      },
       { origin: 'http://127.0.0.1:3000' },
     );
     const localResult = await checkPoppy(local);
@@ -41,29 +46,32 @@ describe('checkPoppy', () => {
   });
   it('rejects a wrong protocol version, organization, domain or surface', async () => {
     const version = await checkPoppy(
-      fakeEnv({ [path]: { ...doc, protocol_version: '1' } }),
+      fakeEnv({ [path]: { ...parsedDocument, protocol_version: '1' } }),
     );
     expect(version.detail).toContain('0.1');
     const noDomain = await checkPoppy(
-      fakeEnv({ [path]: { ...doc, organization: { name: 'E' } } }),
+      fakeEnv({ [path]: { ...parsedDocument, organization: { name: 'E' } } }),
     );
     expect(noDomain.detail).toContain('organization needs');
     const mismatch = await checkPoppy(
       fakeEnv({
         [path]: {
-          ...doc,
+          ...parsedDocument,
           organization: { name: 'E', domain: 'other.com' },
         },
       }),
     );
     expect(mismatch.detail).toContain('does not match');
     const noSurface = await checkPoppy(
-      fakeEnv({ [path]: without(doc, 'web') }),
+      fakeEnv({ [path]: without(parsedDocument, 'web') }),
     );
     expect(noSurface.detail).toContain('agent, apis or web');
   });
   it('requires auth.issuer to match the RFC 8414 metadata', async () => {
-    const withAuth = { ...doc, auth: { issuer: 'https://auth.example.com' } };
+    const withAuth = {
+      ...parsedDocument,
+      auth: { issuer: 'https://auth.example.com' },
+    };
     const meta =
       'https://auth.example.com/.well-known/oauth-authorization-server';
     const ok = fakeEnv({

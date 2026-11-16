@@ -4,7 +4,7 @@ import { SESSION_COOKIE } from '@/domain/auth/app';
 import { GENERIC_CLASSES } from '@/lib/core/http/edge-limits';
 import { EDGE_LIMITS } from '@/lib/core/http/extras';
 
-const classOf = (
+const limitClassOf = (
   pathname: string,
   method = 'GET',
   headers: Record<string, string> = {},
@@ -61,19 +61,21 @@ describe('EDGE_LIMITS', () => {
   });
 
   it('counts an MCP call that carries a token as a client', () => {
-    expect(classOf('/mcp', 'POST', { authorization: 'Bearer t' })).toBe('mcp');
+    expect(limitClassOf('/mcp', 'POST', { authorization: 'Bearer t' })).toBe(
+      'mcp',
+    );
   });
 
   it('counts an MCP call with no token in the tighter anonymous class', () => {
-    expect(classOf('/mcp', 'POST')).toBe('mcpAnonymous');
+    expect(limitClassOf('/mcp', 'POST')).toBe('mcpAnonymous');
   });
 
   it('puts the token endpoint in its own class', () => {
-    expect(classOf('/oauth/token', 'POST')).toBe('token');
+    expect(limitClassOf('/oauth/token', 'POST')).toBe('token');
   });
 
   it('puts client registration in its own class', () => {
-    expect(classOf('/oauth/register', 'POST')).toBe('register');
+    expect(limitClassOf('/oauth/register', 'POST')).toBe('register');
   });
 
   it.each([
@@ -83,24 +85,24 @@ describe('EDGE_LIMITS', () => {
     ['/auth/callback', 'GET'],
     ['/api/sessions/self', 'DELETE'],
   ])('puts %s (%s) in the sign-in class', (pathname, method) => {
-    expect(classOf(pathname, method)).toBe('auth');
+    expect(limitClassOf(pathname, method)).toBe('auth');
   });
 
   it('leaves a GET of a scan run path to the API class', () => {
-    expect(classOf('/api/scans/abc.def/run')).toBe('api');
+    expect(limitClassOf('/api/scans/abc.def/run')).toBe('api');
   });
 
   it('puts starting a scan in its own class', () => {
-    expect(classOf('/api/scans', 'POST')).toBe('scan');
+    expect(limitClassOf('/api/scans', 'POST')).toBe('scan');
   });
 
   it('counts a scan run with the scans', () => {
-    expect(classOf('/api/scans/abc.def/run', 'POST')).toBe('scan');
+    expect(limitClassOf('/api/scans/abc.def/run', 'POST')).toBe('scan');
   });
 
   it('leaves other scan paths to the API class', () => {
-    expect(classOf('/api/scans/abc.def', 'POST')).toBe('api');
-    expect(classOf('/api/scans/a/b/run', 'POST')).toBe('api');
+    expect(limitClassOf('/api/scans/abc.def', 'POST')).toBe('api');
+    expect(limitClassOf('/api/scans/a/b/run', 'POST')).toBe('api');
   });
 
   it.each([
@@ -109,10 +111,10 @@ describe('EDGE_LIMITS', () => {
     ['/csp/reports', 'reports'],
     ['/robots.txt', 'discovery'],
   ])('puts a GET of %s in %s', (pathname, expected) => {
-    expect(classOf(pathname)).toBe(expected);
+    expect(limitClassOf(pathname)).toBe(expected);
   });
 
   it('does not count the static files', () => {
-    expect(classOf('/_next/static/chunks/a.js')).toBeUndefined();
+    expect(limitClassOf('/_next/static/chunks/a.js')).toBeUndefined();
   });
 });

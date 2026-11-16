@@ -75,6 +75,7 @@ export interface IssueBudget {
 }
 
 /** A budget of {@link MAX_NEW_ISSUES} new issues, or `max`. */
+// eslint-disable-next-line unicorn/no-keyword-prefix -- exported name used across modules; renaming would change the module API
 export function newBudget(max = MAX_NEW_ISSUES): IssueBudget {
   return { remaining: max, deferred: 0 };
 }
@@ -143,9 +144,9 @@ export async function signatureOf(
     'SHA-256',
     new TextEncoder().encode(text),
   );
-  return [...new Uint8Array(digest).subarray(0, 8)]
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('');
+  return Array.from(new Uint8Array(digest).subarray(0, 8), (byte) =>
+    byte.toString(16).padStart(2, '0'),
+  ).join('');
 }
 
 /**

@@ -4,6 +4,12 @@ import { rpki, type RpkiResult } from '../../../src/core/rpki.js';
 import { installDns } from '../../lib/network/fake-dns.js';
 import { runHint } from '../../helpers/run-hint.js';
 
+/** Matches the source code reported for an invalid nameserver route. */
+const NAMESERVER_INVALID_SOURCE = /^ns\.example\.net \S+ p AS1 invalid$/;
+
+/** Matches the source code reported for an unknown nameserver route. */
+const NAMESERVER_UNKNOWN_SOURCE = /^ns\.example\.net \S+ p AS1 unknown$/;
+
 const realClient = rpki.client;
 let restore: () => void = () => undefined;
 afterEach(() => {
@@ -31,18 +37,14 @@ describe('rpki-ns-valid', () => {
     const problems = await run({ asn: 1, prefix: 'p', status: 'invalid' });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('Invalid validation state');
-    expect(problems[0].sourceCode).toMatch(
-      /^ns\.example\.net \S+ p AS1 invalid$/,
-    );
+    expect(problems[0].sourceCode).toMatch(NAMESERVER_INVALID_SOURCE);
   });
 
   it('reports a NotFound announcement', async () => {
     const problems = await run({ asn: 1, prefix: 'p', status: 'unknown' });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('NotFound validation state');
-    expect(problems[0].sourceCode).toMatch(
-      /^ns\.example\.net \S+ p AS1 unknown$/,
-    );
+    expect(problems[0].sourceCode).toMatch(NAMESERVER_UNKNOWN_SOURCE);
   });
 
   it('is not tested when nothing is routed', async () => {

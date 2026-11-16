@@ -13,12 +13,15 @@ import {
 } from '@mridang/webhint-hint-plumbline/dist/lib/i18n/checks.js';
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/i18n/read.js';
 
+/** Locale-aware comparator used to sort check ids deterministically. */
+const collator = new Intl.Collator();
+
 /** Parses markup with the same DOM implementation the webhint hints use. */
 const parse = (html: string): DocumentLike =>
   createHTMLDocument(html, 'https://x.test/') as DocumentLike;
 
 /** Wraps a head fragment into a full document. */
-function doc(head: string): string {
+function document_(head: string): string {
   return `<!doctype html><html lang="en"><head>${head}</head><body></body></html>`;
 }
 
@@ -70,7 +73,7 @@ describe('the i18n registry', () => {
     const numeric = i18nChecks
       .filter((c) => c.scoreMode === 'numeric')
       .map((c) => c.id)
-      .toSorted((a, b) => a.localeCompare(b));
+      .toSorted(collator.compare);
     expect(numeric).toEqual([
       'alternate-media',
       'hreflang-duplicate',
@@ -105,23 +108,25 @@ describe('the hreflang checks', () => {
     const head =
       '<link rel="alternate" hreflang="en" href="/en">' +
       '<link rel="alternate" hreflang="fr" href="https://x.test/fr">';
-    const findings = await run('hreflang-return', { html: doc(head) });
-    expect(findings).toEqual(hreflangReturn(parse(doc(head))));
+    const findings = await run('hreflang-return', { html: document_(head) });
+    expect(findings).toEqual(hreflangReturn(parse(document_(head))));
     expect(findings).toHaveLength(1);
   });
 
   it('flags invalid codes and matches the library exactly', async () => {
     const head =
       '<link rel="alternate" hreflang="en_US" href="https://x.test/">';
-    const findings = await run('hreflang-valid-codes', { html: doc(head) });
-    expect(findings).toEqual(hreflangValidCodes(parse(doc(head))));
+    const findings = await run('hreflang-valid-codes', {
+      html: document_(head),
+    });
+    expect(findings).toEqual(hreflangValidCodes(parse(document_(head))));
   });
 
   it('reports a missing self-reference against the page URL', async () => {
     const head =
       '<link rel="alternate" hreflang="fr" href="https://x.test/fr">';
     const findings = await run('hreflang-self', {
-      html: doc(head),
+      html: document_(head),
       url: 'https://x.test/',
     });
     expect(findings).toHaveLength(1);
@@ -130,7 +135,7 @@ describe('the hreflang checks', () => {
 
   it('surfaces a missing x-default as informative', async () => {
     const head = '<link rel="alternate" hreflang="en" href="https://x.test/">';
-    const findings = await run('hreflang-x-default', { html: doc(head) });
+    const findings = await run('hreflang-x-default', { html: document_(head) });
     expect(findings).toHaveLength(1);
     expect(findings[0].severity).toBe('hint');
   });
@@ -139,7 +144,7 @@ describe('the hreflang checks', () => {
     const head =
       '<link rel="alternate" hreflang="en" href="https://x.test/a">' +
       '<link rel="alternate" hreflang="en" href="https://x.test/b">';
-    const findings = await run('hreflang-duplicate', { html: doc(head) });
+    const findings = await run('hreflang-duplicate', { html: document_(head) });
     expect(findings).toHaveLength(1);
   });
 });
@@ -147,7 +152,7 @@ describe('the hreflang checks', () => {
 describe('the alternate and pagination checks', () => {
   it('flags a malformed media alternate', async () => {
     const head = '<link rel="alternate" media="print" href="/print">';
-    const findings = await run('alternate-media', { html: doc(head) });
+    const findings = await run('alternate-media', { html: document_(head) });
     expect(findings).toHaveLength(1);
   });
 
@@ -155,7 +160,7 @@ describe('the alternate and pagination checks', () => {
     const head =
       '<link rel="prev" href="https://x.test/1">' +
       '<link rel="next" href="/3">';
-    const findings = await run('pagination-rel', { html: doc(head) });
+    const findings = await run('pagination-rel', { html: document_(head) });
     expect(findings).toHaveLength(1);
   });
 });

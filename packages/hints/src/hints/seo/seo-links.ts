@@ -17,9 +17,12 @@ export default defineHint({
   reference: ROCTIFY_REF,
   setup(context) {
     onPage(context, (page) => {
-      const links = [...page.document.querySelectorAll('a[href]')].map((a) => ({
-        href: a.getAttribute('href') ?? '',
-      }));
+      const links = Array.from(
+        page.document.querySelectorAll('a[href]'),
+        (a) => ({
+          href: a.getAttribute('href') ?? '',
+        }),
+      );
       reportFindings(page, linkFindings(links, page.url), {
         element: page.document.querySelector('body'),
       });

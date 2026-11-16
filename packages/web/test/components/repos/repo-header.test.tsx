@@ -3,6 +3,21 @@ import { describe, expect, it } from '@jest/globals';
 import { RepoHeader } from '@/components/repos/repo-header';
 import { htmlAt } from '../render';
 
+/** Matches a disabled switch button. */
+const DISABLED_SWITCH_PATTERN =
+  /<button[^>]*role="switch"[^>]*\sdisabled[\s=>]/;
+
+/** Matches the external link to the repository on GitHub. */
+const GITHUB_LINK_PATTERN =
+  /<a[^>]*href="https:\/\/github.com\/acme\/site"[^>]*target="_blank"/;
+
+/** Matches the muted owner prefix of the repository name. */
+const OWNER_PREFIX_PATTERN = /text-muted">acme\/<\/span>/;
+
+/** Matches the repository heading with its icon and site label. */
+const REPO_HEADING_WITH_ICON_PATTERN =
+  /<h1[^>]*>.*viewBox="0 0 16 16".*site<\/span>/s;
+
 const out = htmlAt(
   <RepoHeader
     repo="acme/site"
@@ -18,8 +33,8 @@ const out = htmlAt(
 describe('RepoHeader', () => {
   it('names the repository with the Octocat, in the one h1', () => {
     expect(out.match(/<h1/g)).toHaveLength(1);
-    expect(out).toMatch(/<h1[^>]*>.*viewBox="0 0 16 16".*site<\/span>/s);
-    expect(out).toMatch(/text-muted">acme\/<\/span>/);
+    expect(out).toMatch(REPO_HEADING_WITH_ICON_PATTERN);
+    expect(out).toMatch(OWNER_PREFIX_PATTERN);
   });
 
   it('says how the worst site stands and how many sites there are', () => {
@@ -62,7 +77,7 @@ describe('RepoHeader', () => {
       />,
     );
     expect(file).toContain('Turned off in plumbline.yaml');
-    expect(file).toMatch(/<button[^>]*role="switch"[^>]*\sdisabled[\s=>]/);
+    expect(file).toMatch(DISABLED_SWITCH_PATTERN);
     expect(file).toContain('Set enabled: true in plumbline.yaml');
   });
 
@@ -78,16 +93,14 @@ describe('RepoHeader', () => {
         badgeMarkdown="[![Plumbline](x)](y)"
       />,
     );
-    expect(other).toMatch(/<button[^>]*role="switch"[^>]*\sdisabled[\s=>]/);
+    expect(other).toMatch(DISABLED_SWITCH_PATTERN);
     expect(other).toContain('Only the person who installed the app');
     expect(other).not.toContain('Turned off in plumbline.yaml');
   });
 
   it('has the Badge button and a View on GitHub link that opens a new tab', () => {
     expect(out).toContain('>Badge<');
-    expect(out).toMatch(
-      /<a[^>]*href="https:\/\/github.com\/acme\/site"[^>]*target="_blank"/,
-    );
+    expect(out).toMatch(GITHUB_LINK_PATTERN);
     expect(out).toContain('View on GitHub');
   });
 

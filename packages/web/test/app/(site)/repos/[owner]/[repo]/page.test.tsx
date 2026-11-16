@@ -19,6 +19,17 @@ import {
 } from '../../../../../lib/core/db/sqlite-d1';
 import { htmlAt } from '../../../../../components/render';
 
+/** Matches the repository heading with its icon and site label. */
+const REPO_HEADING_WITH_ICON_PATTERN =
+  /<h1[^>]*>.*viewBox="0 0 16 16".*site<\/span>/s;
+
+/** Matches the run checks button label with its count. */
+const RUN_CHECKS_BUTTON_PATTERN = /Run \d+ checks/;
+
+/** Matches the selected site tab linking to the repository site. */
+const SELECTED_SITE_TAB_PATTERN =
+  /aria-selected="true"[^>]*href="\/repos\/acme\/site\?site=www\.example\.com"/;
+
 /** What the page asked Next to redirect to; `redirect` throws, as the real one does. */
 class RedirectedError extends Error {
   override name = 'RedirectedError';
@@ -140,7 +151,7 @@ describe('RepoPage', () => {
 
   it('is headed with the Octocat and the repository, and links to it on GitHub', async () => {
     const out = await page();
-    expect(out).toMatch(/<h1[^>]*>.*viewBox="0 0 16 16".*site<\/span>/s);
+    expect(out).toMatch(REPO_HEADING_WITH_ICON_PATTERN);
     expect(out).toContain('href="https://github.com/acme/site"');
     expect(out).toContain('View on GitHub');
   });
@@ -161,7 +172,7 @@ describe('RepoPage', () => {
   it('lets the person run the checks for a site they keep, and choose its checks', async () => {
     const out = await page();
     expect(out).toContain('site.example.com');
-    expect(out).toMatch(/Run \d+ checks/);
+    expect(out).toMatch(RUN_CHECKS_BUTTON_PATTERN);
     expect(out).toContain('Choose checks (');
     expect(out).toContain('view=settings');
   });
@@ -183,9 +194,7 @@ describe('RepoPage', () => {
     const out = await page('acme', 'site', { site: 'www.example.com' });
     expect(out).toContain('role="tablist"');
     expect(out.match(/role="tab"/g)).toHaveLength(2);
-    expect(out).toMatch(
-      /aria-selected="true"[^>]*href="\/repos\/acme\/site\?site=www\.example\.com"/,
-    );
+    expect(out).toMatch(SELECTED_SITE_TAB_PATTERN);
     expect(out).toContain('aria-label="www.example.com"');
     expect(out).toContain('role="tabpanel"');
   });

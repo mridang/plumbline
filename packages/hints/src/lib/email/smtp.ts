@@ -7,6 +7,12 @@ import {
   type TLSSocket,
 } from '#tls';
 
+/** Matches an SMTP reply line: a three digit code, then optional text. */
+const SMTP_REPLY_LINE = /^\d{3}(?: .*)?$/u;
+
+/** Matches the `250 STARTTLS` line of an EHLO reply. */
+const STARTTLS_LINE = /^250[- ]STARTTLS$/iu;
+
 /** Opens a TCP connection; replaced in tests to reach a local server. */
 export type ConnectFn = (host: string, port: number, family?: 4 | 6) => Socket;
 
@@ -94,7 +100,7 @@ class ReplyReader {
       }
       complete.push(line);
       // `250 text` or `250` ends a reply; `250-text` continues it.
-      if (/^\d{3}(?: .*)?$/u.test(line)) {
+      if (SMTP_REPLY_LINE.test(line)) {
         this.buffer = lines.slice(index + 1).join('\r\n');
         const { resolve } = this.waiting;
         this.waiting = null;
@@ -213,8 +219,7 @@ export async function negotiateStarttls(
   socket.write(`EHLO ${options.ehloName ?? 'localhost'}\r\n`);
   const ehlo = await reader.reply(options.timeoutMs);
   const offered =
-    ehlo.code === 250 &&
-    ehlo.lines.some((line) => /^250[- ]STARTTLS$/iu.test(line));
+    ehlo.code === 250 && ehlo.lines.some((line) => STARTTLS_LINE.test(line));
   if (!offered) {
     socket.write('QUIT\r\n');
     return false;

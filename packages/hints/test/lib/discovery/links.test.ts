@@ -1,26 +1,28 @@
 import { describe, expect, it } from '@jest/globals';
 import {
-  domRelLinks,
-  headerRelLinks,
+  domRelationshipLinks,
+  headerRelationshipLinks,
   isAbsoluteUrl,
-  withRel,
+  withRelationship,
   type DocumentLike,
 } from '../../../src/lib/discovery/links.js';
 
 /** A fake document whose querySelectorAll returns the configured elements. */
-function doc(elements: ReadonlyArray<Record<string, string>>): DocumentLike {
+function fakeDocument(
+  elements: ReadonlyArray<Record<string, string>>,
+): DocumentLike {
   return {
     querySelectorAll: () =>
-      elements.map((attrs) => ({
-        getAttribute: (name: string) => attrs[name] ?? null,
+      elements.map((attributes) => ({
+        getAttribute: (name: string) => attributes[name] ?? null,
       })),
   };
 }
 
-describe('domRelLinks', () => {
+describe('domRelationshipLinks', () => {
   it('reads rel tokens and href, lower-casing rels', () => {
-    const links = domRelLinks(
-      doc([{ rel: 'Me Author', href: ' https://x.test/me ' }]),
+    const links = domRelationshipLinks(
+      fakeDocument([{ rel: 'Me Author', href: ' https://x.test/me ' }]),
     );
     expect(links).toEqual([
       { rels: ['me', 'author'], href: 'https://x.test/me', source: 'dom' },
@@ -28,34 +30,40 @@ describe('domRelLinks', () => {
   });
 
   it('skips elements with a blank rel', () => {
-    expect(domRelLinks(doc([{ rel: '  ', href: '/x' }]))).toEqual([]);
+    expect(
+      domRelationshipLinks(fakeDocument([{ rel: '  ', href: '/x' }])),
+    ).toEqual([]);
   });
 
   it('keeps an empty href as an empty string', () => {
-    expect(domRelLinks(doc([{ rel: 'me' }]))[0]?.href).toBe('');
+    expect(domRelationshipLinks(fakeDocument([{ rel: 'me' }]))[0]?.href).toBe(
+      '',
+    );
   });
 });
 
-describe('headerRelLinks', () => {
+describe('headerRelationshipLinks', () => {
   it('returns [] for a null header', () => {
-    expect(headerRelLinks(null)).toEqual([]);
+    expect(headerRelationshipLinks(null)).toEqual([]);
   });
 
   it('parses a Link header relation', () => {
-    const links = headerRelLinks('<https://x.test/wm>; rel="webmention"');
+    const links = headerRelationshipLinks(
+      '<https://x.test/wm>; rel="webmention"',
+    );
     expect(links).toEqual([
       { rels: ['webmention'], href: 'https://x.test/wm', source: 'header' },
     ]);
   });
 });
 
-describe('withRel', () => {
+describe('withRelationship', () => {
   it('filters by relation token', () => {
     const links = [
       { rels: ['me'], href: 'a', source: 'dom' as const },
       { rels: ['webmention'], href: 'b', source: 'dom' as const },
     ];
-    expect(withRel(links, 'me')).toHaveLength(1);
+    expect(withRelationship(links, 'me')).toHaveLength(1);
   });
 });
 

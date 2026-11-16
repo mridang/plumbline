@@ -4,19 +4,19 @@ import { runHint } from '../../helpers/run-hint.js';
 
 const OPENSEARCH = `<?xml version="1.0"?><OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"><ShortName>Search</ShortName><Url type="text/html" template="https://x.test/?q={searchTerms}"/></OpenSearchDescription>`;
 
-const site = (doc: { body?: string; status?: number } | null) => ({
+const site = (parsedDocument: { body?: string; status?: number } | null) => ({
   '/': {
     headers: { 'content-type': 'text/html; charset=utf-8' },
     body: '<!doctype html><html lang="en"><head><title>t</title><link rel="search" type="application/opensearchdescription+xml" href="/os.xml"></head><body></body></html>',
   },
-  ...(doc
+  ...(parsedDocument
     ? {
         '/os.xml': {
-          status: doc.status ?? 200,
+          status: parsedDocument.status ?? 200,
           headers: {
             'content-type': 'application/opensearchdescription+xml',
           },
-          body: doc.body ?? '',
+          body: parsedDocument.body ?? '',
         },
       }
     : {}),

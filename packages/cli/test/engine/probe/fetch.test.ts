@@ -69,9 +69,7 @@ describe('decode', () => {
     expect(Buffer.from(await decode(brotlied, 'br')).toString()).toBe(
       'hello world',
     );
-    expect(Buffer.from(await decode(text, undefined)).toString()).toBe(
-      'hello world',
-    );
+    expect(Buffer.from(await decode(text)).toString()).toBe('hello world');
     expect(Buffer.from(await decode(text, 'zstd')).toString()).toBe(
       'hello world',
     );

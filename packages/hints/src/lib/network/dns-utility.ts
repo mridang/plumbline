@@ -10,6 +10,12 @@ import {
   type DnsType,
 } from '../../core/dns.js';
 
+/** Matches an IPv4-mapped IPv6 prefix. */
+const IPV4_MAPPED_PREFIX = /^::ffff:/i;
+
+/** Matches a trailing dot. */
+const TRAILING_DOT = /\.$/;
+
 /** Numeric DNS record types used when filtering answers. */
 export const RR = {
   A: 1,
@@ -34,7 +40,7 @@ export const target: { hostOf(url: URL): string } = {
 
 /** Removes a trailing dot and lower-cases a DNS name. */
 export function normalizeName(name: string): string {
-  return name.replace(/\.$/, '').toLowerCase();
+  return name.replace(TRAILING_DOT, '').toLowerCase();
 }
 
 /**
@@ -81,7 +87,7 @@ export async function ipv6Addresses(host: string): Promise<string[]> {
   const r = await safeQuery(host, 'AAAA');
   return answersOfType(r, RR.AAAA)
     .map((a) => a.data.trim())
-    .filter((ip) => isIP(ip) === 6 && !/^::ffff:/i.test(ip));
+    .filter((ip) => isIP(ip) === 6 && !IPV4_MAPPED_PREFIX.test(ip));
 }
 
 export interface Zone {

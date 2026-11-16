@@ -15,6 +15,9 @@ import { recordRun } from '@/domain/db/suite';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 
+/** Matches a suite id. */
+const SUITE_ID = /^s\d+$/;
+
 const setup = async () => {
   const made = sqliteD1(...APP_MIGRATIONS);
   const db = createDatabase(made.d1);
@@ -113,7 +116,7 @@ describe('listRuns', () => {
       ...counts,
       openable: true,
     });
-    expect(runs[3]?.id).toMatch(/^s\d+$/);
+    expect(runs[3]?.id).toMatch(SUITE_ID);
     expect(runs[3]).toMatchObject({ sha: 'a'.repeat(40), ...counts });
   });
 

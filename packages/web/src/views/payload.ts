@@ -32,13 +32,13 @@ export type ToolOutcome<T> =
 
 /** Whether the value is a non-null object, so its keys can be read safely. */
 export function isRecord(
-  value: unknown,
+  value?: unknown,
 ): value is Readonly<Record<string, unknown>> {
   return typeof value === 'object' && value !== null;
 }
 
 /** The text of every text block in a result's `content`, joined by blank lines. */
-export function textOf(content: readonly unknown[] | undefined): string {
+export function textOf(content?: readonly unknown[]): string {
   return (content ?? [])
     .flatMap((block) =>
       isRecord(block) &&

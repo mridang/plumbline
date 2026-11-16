@@ -20,6 +20,8 @@ import {
 } from './local-server.js';
 import { HTTP_SCHEME } from '../../helpers/data.js';
 
+const collator = new Intl.Collator();
+
 afterEach(restoreProbe);
 
 const at = (port: number) => ({ host: '127.0.0.1', port });
@@ -153,12 +155,9 @@ describe('acceptedCiphers', () => {
     });
     const found = await acceptedCiphers(at(server.port), 'TLSv1.2');
     await server.close();
-    expect(
-      found.map((c) => c.standardName).toSorted((a, b) => a.localeCompare(b)),
-    ).toEqual([
-      'TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256',
-      'TLS_RSA_WITH_AES_128_CBC_SHA',
-    ]);
+    expect(found.map((c) => c.standardName).toSorted(collator.compare)).toEqual(
+      ['TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256', 'TLS_RSA_WITH_AES_128_CBC_SHA'],
+    );
     expect(found.every((c) => c.version === 'TLSv1.2')).toBe(true);
     expect(found.find((c) => c.name === 'AES128-SHA')?.ephemeral).toBeNull();
   });

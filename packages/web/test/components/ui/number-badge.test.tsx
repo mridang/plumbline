@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { NumberBadge } from '@/components/ui/number-badge';
+// eslint-disable-next-line unicorn/no-keyword-prefix -- classOf is the name exported by the shared render helper
 import { classOf, html } from '../render';
 
 describe('NumberBadge', () => {

@@ -139,7 +139,7 @@ describe('homepageHost', () => {
     expect(homepageHost('https://notnpmjs.com')).toBe('notnpmjs.com');
     expect(homepageHost('')).toBeUndefined();
     expect(homepageHost(null)).toBeUndefined();
-    expect(homepageHost(undefined)).toBeUndefined();
+    expect(homepageHost()).toBeUndefined();
     expect(homepageHost('http://localhost:3000')).toBeUndefined();
   });
 });
@@ -183,7 +183,10 @@ describe('deploymentHosts', () => {
   });
 
   it('reads at most eight Wrangler files', async () => {
-    const paths = Array.from({ length: 12 }, (_, i) => `p${i}/wrangler.json`);
+    const paths = Array.from(
+      { length: 12 },
+      (_, index) => `p${index}/wrangler.json`,
+    );
     const read: string[] = [];
     await deploymentHosts({
       paths,

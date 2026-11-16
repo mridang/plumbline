@@ -49,7 +49,7 @@ describe('waitMessage', () => {
 describe('nextRunAt and secondsLeft', () => {
   it('is five minutes after the last run, or nothing', () => {
     expect(nextRunAt(last)).toBe(at(300));
-    expect(nextRunAt(undefined)).toBe(0);
+    expect(nextRunAt()).toBe(0);
     expect(nextRunAt('not a time')).toBe(0);
   });
 

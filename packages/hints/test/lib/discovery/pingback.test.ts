@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { pingbackFindings } from '../../../src/lib/discovery/pingback.js';
-import type { RelLink } from '../../../src/lib/discovery/links.js';
+import type { RelationshipLink } from '../../../src/lib/discovery/links.js';
 
 describe('pingbackFindings', () => {
   it('is silent when no pingback is advertised', () => {
@@ -8,7 +8,7 @@ describe('pingbackFindings', () => {
   });
 
   it('warns when a rel=pingback link is present', () => {
-    const links: RelLink[] = [
+    const links: RelationshipLink[] = [
       { rels: ['pingback'], href: 'https://x.test/xmlrpc', source: 'dom' },
     ];
     const [f] = pingbackFindings(links, null);

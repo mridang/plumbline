@@ -72,7 +72,7 @@ export async function followRedirects(
 ): Promise<Route> {
   const route: Route = { hops: [], invalidCert: false, unreachable: false };
   let current = start;
-  for (let i = 0; i < maxHops; i++) {
+  for (let index = 0; index < maxHops; index++) {
     let response: Response;
     try {
       response = await client.fetch(current.href, { redirect: 'manual' });

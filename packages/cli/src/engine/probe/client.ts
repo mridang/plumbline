@@ -31,6 +31,9 @@ import {
   type StarttlsAnswer,
 } from './protocol.js';
 
+/** Matches the message of a refusal to reach a non-public or unresolvable host. */
+const PUBLIC_ADDRESS_OR_RESOLVE = /public address|resolve/;
+
 /** Sends `body` to `path` of the probe and gives back the status and the text of the answer. */
 export type ProbeTransport = (
   path: string,
@@ -262,7 +265,7 @@ export class ProbeClient {
           `the probe answered ${answers.length} handshakes for ${batch.length}`,
         );
       }
-      batch.forEach((entry, index) => {
+      for (const [index, entry] of batch.entries()) {
         const answer = answers[index];
         if (answer instanceof ProbeError) {
           entry.reject(answer);
@@ -271,7 +274,7 @@ export class ProbeClient {
         } else {
           // No answer came back for this entry, so there is nothing to settle.
         }
-      });
+      }
     } catch (error) {
       const failure =
         error instanceof ProbeError ? error : new ProbeError(String(error));
@@ -329,7 +332,7 @@ export class ProbeClient {
     } catch (error) {
       if (
         error instanceof ProbeError &&
-        /public address|resolve/.test(error.message)
+        PUBLIC_ADDRESS_OR_RESOLVE.test(error.message)
       ) {
         return false;
       }

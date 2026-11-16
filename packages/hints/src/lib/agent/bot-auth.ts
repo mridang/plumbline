@@ -7,7 +7,7 @@ import {
   pretty,
   result,
   urlOf,
-} from './util.js';
+} from './utility.js';
 
 const DIRECTORY = '/.well-known/http-message-signatures-directory';
 

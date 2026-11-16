@@ -15,6 +15,9 @@ import {
 } from '@/components/notifications/push-client';
 import { subscriptionId } from '@/lib/push/subscription-id';
 
+/** Matches the blocked notification message. */
+const BLOCKED_PATTERN = /blocked/;
+
 const IPHONE =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 
@@ -140,7 +143,7 @@ describe('enablePush', () => {
 
   it('does not ask again when permission was already denied', async () => {
     const { host } = browser({ permission: 'denied' });
-    await expect(enablePush(host)).rejects.toThrow(/blocked/);
+    await expect(enablePush(host)).rejects.toThrow(BLOCKED_PATTERN);
   });
 
   it('throws the server’s refusal', async () => {

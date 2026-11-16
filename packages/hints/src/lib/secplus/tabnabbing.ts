@@ -20,6 +20,9 @@
  */
 import { finding, type Finding } from '../headers/finding.js';
 
+/** Matches a run of whitespace. */
+const WHITESPACE_RUN = /\s+/;
+
 /** The three anchor attributes this check reads, as raw strings. */
 export interface AnchorLike {
   /** The `target` attribute value, or null when absent. */
@@ -31,12 +34,12 @@ export interface AnchorLike {
 }
 
 /** Splits a `rel` value into its lower-cased, space-separated tokens. */
-function relTokens(rel: string | null): Set<string> {
+function relationshipTokens(relationship: string | null): Set<string> {
   return new Set(
-    (rel ?? '')
+    (relationship ?? '')
       .trim()
       .toLowerCase()
-      .split(/\s+/)
+      .split(WHITESPACE_RUN)
       .filter((token) => token !== ''),
   );
 }
@@ -85,8 +88,8 @@ export function isUnsafeTabnabbing(
   if (!isCrossOrigin(anchor.href, pageUrl)) {
     return false;
   }
-  const rel = relTokens(anchor.rel);
-  return !(rel.has('noopener') || rel.has('noreferrer'));
+  const tokens = relationshipTokens(anchor.rel);
+  return !(tokens.has('noopener') || tokens.has('noreferrer'));
 }
 
 /** The finding for one anchor, or null when the anchor is safe. */

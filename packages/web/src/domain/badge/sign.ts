@@ -30,8 +30,9 @@ export async function signRepo(secret: string, repo: string): Promise<string> {
     await keyOf(secret),
     new TextEncoder().encode(`badge:${repo.toLowerCase()}`),
   );
-  return [...new Uint8Array(mac)]
-    .map((byte) => byte.toString(16).padStart(2, '0'))
+  return Array.from(new Uint8Array(mac), (byte) =>
+    byte.toString(16).padStart(2, '0'),
+  )
     .join('')
     .slice(0, LENGTH);
 }

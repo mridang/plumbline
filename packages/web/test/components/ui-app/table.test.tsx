@@ -10,6 +10,9 @@ import {
 } from '@/components/ui-app/table';
 import { html } from '../render';
 
+/** Matches right aligned cell. */
+const RIGHT_ALIGNED_CELL = /<td class="px-4 py-2\.5 text-right">/;
+
 const draw = (current = false) =>
   html(
     <Table caption="Runs of site, newest first">
@@ -52,7 +55,7 @@ describe('Table', () => {
   it('aligns a cell to the end and lets it wrap when asked', () => {
     const out = draw();
     expect(out).toContain('text-right');
-    expect(out).toMatch(/<td class="px-4 py-2\.5 text-right">/);
+    expect(out).toMatch(RIGHT_ALIGNED_CELL);
   });
 
   it('tints the row the page is showing', () => {

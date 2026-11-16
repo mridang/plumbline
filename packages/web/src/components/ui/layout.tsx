@@ -5,10 +5,11 @@ import { cn } from '@/components/ui/cn';
 /** The page column: one max width and one set of gutters, used everywhere. */
 export function Container({
   children,
-  className,
+  className: cssClasses,
   as: Tag = 'div',
 }: Readonly<{
   children: ReactNode;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
   className?: string;
   /** The tag to render, when a `div` is not the right element. */
   as?: ElementType;
@@ -17,7 +18,7 @@ export function Container({
     <Tag
       className={cn(
         'mx-auto w-full max-w-360 px-4 sm:px-6 lg:px-10',
-        className,
+        cssClasses,
       )}
     >
       {children}
@@ -45,11 +46,12 @@ export function Eyebrow({
   as: Tag = 'p',
   tone = 'accent',
   children,
-  className,
+  className: cssClasses,
 }: Readonly<{
   as?: ElementType;
   tone?: keyof typeof EYEBROW_TONES;
   children: ReactNode;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
   className?: string;
 }>): ReactElement {
   return (
@@ -57,7 +59,7 @@ export function Eyebrow({
       className={cn(
         'text-label font-semibold uppercase',
         EYEBROW_TONES[tone],
-        className,
+        cssClasses,
       )}
     >
       {children}
@@ -84,13 +86,14 @@ export function Heading({
   variant = 'h2',
   as: Tag = 'h2',
   children,
-  className,
+  className: cssClasses,
   ref,
   tabIndex,
 }: Readonly<{
   variant?: keyof typeof HEADINGS;
   as?: ElementType;
   children: ReactNode;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
   className?: string;
   ref?: Ref<HTMLHeadingElement>;
   tabIndex?: number;
@@ -102,7 +105,7 @@ export function Heading({
       className={cn(
         'font-display font-semibold tracking-tight',
         HEADINGS[variant],
-        className,
+        cssClasses,
       )}
     >
       {children}

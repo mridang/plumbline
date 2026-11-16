@@ -36,7 +36,7 @@ const DISPLAY_MODES: ReadonlySet<unknown> = new Set<unknown>([
 ]);
 
 /** Whether the value is one of the three modes the spec defines. */
-export function isDisplayMode(value: unknown): value is DisplayMode {
+export function isDisplayMode(value?: unknown): value is DisplayMode {
   return DISPLAY_MODES.has(value);
 }
 
@@ -68,9 +68,7 @@ export function hostOffersMode(
 export type ExpandPlan = 'request' | 'local';
 
 /** Decide how to expand, given what the host has said it offers. */
-export function planExpand(
-  context: DisplayModeHostContext | undefined,
-): ExpandPlan {
+export function planExpand(context?: DisplayModeHostContext): ExpandPlan {
   return hostOffersMode(context, 'fullscreen') ? 'request' : 'local';
 }
 

@@ -37,6 +37,9 @@ import { opengraphChecks } from '../../src/checks/opengraph.js';
 import type { AuditCheck } from '../../src/checks/types.js';
 import { HTTP_SCHEME } from '../helpers/data.js';
 
+/** Locale-aware comparator used to sort check ids deterministically. */
+const collator = new Intl.Collator();
+
 /**
  * One `<meta>` entry in the shape Lighthouse's `MetaElements` artifact uses.
  * Open Graph tags carry a `property`, Twitter tags a `name`; the reader accepts
@@ -134,10 +137,8 @@ describe('the opengraph registry', () => {
   it('registers all twenty-five Open Graph/Twitter checks', () => {
     expect(opengraphChecks).toHaveLength(25);
     expect(
-      [...opengraphChecks]
-        .map((c) => c.id)
-        .toSorted((a, b) => a.localeCompare(b)),
-    ).toEqual([...EXPECTED_IDS].toSorted((a, b) => a.localeCompare(b)));
+      Array.from(opengraphChecks, (c) => c.id).toSorted(collator.compare),
+    ).toEqual([...EXPECTED_IDS].toSorted(collator.compare));
   });
 
   it('places every check in a real taxonomy section', () => {
@@ -171,7 +172,7 @@ describe('the opengraph registry', () => {
     const informative = opengraphChecks
       .filter((c) => c.scoreMode === 'informative')
       .map((c) => c.id)
-      .toSorted((a, b) => a.localeCompare(b));
+      .toSorted(collator.compare);
     expect(informative).toEqual(
       [
         'opengraph-description-could-be-longer',
@@ -184,7 +185,7 @@ describe('the opengraph registry', () => {
         'opengraph-type-missing',
         'twitter-card-not-large',
         'twitter-site-missing',
-      ].toSorted((a, b) => a.localeCompare(b)),
+      ].toSorted(collator.compare),
     );
     // The remaining checks are all graded.
     for (const c of opengraphChecks) {
@@ -452,13 +453,13 @@ describe('the opengraph checks never drift from their library function', () => {
   it('yields exactly what the shared lib function yields, for every check', async () => {
     const meta = ogMetaReader(FLAWED_METAS);
     for (const c of opengraphChecks) {
-      const libFn = LIB_FN[c.id];
-      expect(libFn).toBeDefined();
+      const libraryFn = LIB_FN[c.id];
+      expect(libraryFn).toBeDefined();
       // Both sides read the same tags; the Lighthouse check is a pure
       // pass-through to the library function, so their findings must match.
       const viaCheck = await run(c.id, FLAWED_METAS);
-      const viaLib = [...libFn({ meta })];
-      expect(viaCheck).toEqual(viaLib);
+      const viaLibrary = [...libraryFn({ meta })];
+      expect(viaCheck).toEqual(viaLibrary);
     }
   });
 });

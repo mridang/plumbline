@@ -55,6 +55,7 @@ export default async function LoginPage({
             href="/auth/github"
             className={buttonClass({
               size: 'lg',
+              // eslint-disable-next-line unicorn/no-keyword-prefix -- buttonClass option name
               className: 'mt-6 w-full gap-2.5',
             })}
           >
@@ -66,6 +67,7 @@ export default async function LoginPage({
             className={buttonClass({
               size: 'lg',
               variant: 'outline',
+              // eslint-disable-next-line unicorn/no-keyword-prefix -- buttonClass option name
               className: 'mt-3 w-full gap-2.5',
             })}
           >
@@ -82,6 +84,7 @@ export default async function LoginPage({
           href="/auth/login"
           className={buttonClass({
             size: 'lg',
+            // eslint-disable-next-line unicorn/no-keyword-prefix -- buttonClass option name
             className: 'mt-6 w-full gap-2.5',
           })}
         >

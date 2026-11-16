@@ -4,6 +4,13 @@ import { BRAND_URL, COLOR_SCHEME, INDEX_BY_DEFAULT } from '@/app/_brand';
 import manifest from '@/app/manifest';
 import { html } from '../components/render';
 
+/** Matches title template format. */
+const TITLE_TEMPLATE_FORMAT = /^%s · .+/;
+
+/** Matches html element opening. */
+const HTML_ELEMENT_OPENING =
+  /<html lang="en" class="fonts-on-html" data-test="yes"/;
+
 // The stylesheet, the fonts (which only work inside the Next compiler) and the
 // two scripts are not what is under test: the frame around the page is.
 jest.unstable_mockModule('@/app/globals.css', () => ({}));
@@ -43,7 +50,7 @@ describe('RootLayout', () => {
 
   it('puts the app’s name after a page’s own title', () => {
     expect(metadata.title).toMatchObject({
-      template: expect.stringMatching(/^%s · .+/),
+      template: expect.stringMatching(TITLE_TEMPLATE_FORMAT),
     });
   });
 
@@ -67,9 +74,7 @@ describe('RootLayout', () => {
         <main>hello</main>
       </RootLayout>,
     );
-    expect(out).toMatch(
-      /<html lang="en" class="fonts-on-html" data-test="yes"/,
-    );
+    expect(out).toMatch(HTML_ELEMENT_OPENING);
     expect(out).toContain('<body class="classes-on-body">');
     expect(out.indexOf('theme-script')).toBeLessThan(out.indexOf('<main>'));
     expect(out).toContain('<main>hello</main>');

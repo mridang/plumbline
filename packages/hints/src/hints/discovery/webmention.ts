@@ -2,9 +2,9 @@ import { Category, defineHint } from '../../core/define-hint.js';
 import { headerValue } from '../../core/http.js';
 import { onPage } from '../../core/page.js';
 import {
-  domRelLinks,
-  headerRelLinks,
-  type RelLink,
+  domRelationshipLinks,
+  headerRelationshipLinks,
+  type RelationshipLink,
 } from '../../lib/discovery/links.js';
 import { webmentionFindings } from '../../lib/discovery/webmention.js';
 import { reportFindings } from '../headers/shared.js';
@@ -25,9 +25,9 @@ export default defineHint({
   reference: 'https://www.w3.org/TR/webmention/',
   setup(context) {
     onPage(context, (page) => {
-      const links: RelLink[] = [
-        ...domRelLinks(page.document),
-        ...headerRelLinks(headerValue(page.headers, 'link')),
+      const links: RelationshipLink[] = [
+        ...domRelationshipLinks(page.document),
+        ...headerRelationshipLinks(headerValue(page.headers, 'link')),
       ];
       reportFindings(page, webmentionFindings(links));
     });

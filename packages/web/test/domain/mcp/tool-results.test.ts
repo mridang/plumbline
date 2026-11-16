@@ -148,7 +148,9 @@ describe('reportData', () => {
         {
           id: 'csp',
           status: 'failed',
-          findings: Array.from({ length: 9 }, (_, i) => finding(`n${i}`)),
+          findings: Array.from({ length: 9 }, (_, index) =>
+            finding(`n${index}`),
+          ),
         },
       ],
     };

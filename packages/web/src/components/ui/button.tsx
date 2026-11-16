@@ -3,6 +3,9 @@ import type { ComponentProps, ReactElement, ReactNode } from 'react';
 
 import { cn } from '@/components/ui/cn';
 
+/** Matches an address that starts with an http or https scheme. */
+const HTTP_URL_PREFIX = /^https?:/;
+
 /** The colours of each kind of button. */
 const VARIANTS = {
   primary: 'bg-ink text-on-ink hover:bg-ink/85 active:bg-ink/75',
@@ -31,6 +34,7 @@ const SIZES = {
 type Look = Readonly<{
   variant?: keyof typeof VARIANTS;
   size?: keyof typeof SIZES;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
   className?: string;
 }>;
 
@@ -38,7 +42,7 @@ type Look = Readonly<{
 export function buttonClass({
   variant = 'primary',
   size = 'md',
-  className,
+  className: cssClasses,
 }: Look): string {
   return cn(
     'inline-flex shrink-0 items-center justify-center rounded-control font-semibold whitespace-nowrap transition',
@@ -46,7 +50,7 @@ export function buttonClass({
     'disabled:cursor-not-allowed disabled:opacity-50',
     VARIANTS[variant],
     SIZES[size],
-    className,
+    cssClasses,
   );
 }
 
@@ -58,14 +62,19 @@ export function buttonClass({
 export function Button({
   variant,
   size,
-  className,
+  className: cssClasses,
   children,
   ...props
 }: Look & Readonly<ComponentProps<'button'>>): ReactElement {
   return (
     <button
       type="button"
-      className={buttonClass({ variant, size, className })}
+      className={buttonClass({
+        variant,
+        size,
+        // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
+        className: cssClasses,
+      })}
       {...props}
     >
       {children}
@@ -87,7 +96,7 @@ export function isServerHref(href: string): boolean {
 export function ButtonLink({
   variant,
   size,
-  className,
+  className: cssClasses,
   href,
   children,
 }: Look & Readonly<{ href: string; children: ReactNode }>): ReactElement {
@@ -95,7 +104,12 @@ export function ButtonLink({
     <TextLink
       href={href}
       bare
-      className={buttonClass({ variant, size, className })}
+      className={buttonClass({
+        variant,
+        size,
+        // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
+        className: cssClasses,
+      })}
     >
       {children}
     </TextLink>
@@ -115,7 +129,7 @@ const ICON_SIZES = {
 export function IconButton({
   label,
   size = 'sm',
-  className,
+  className: cssClasses,
   children,
   ...props
 }: Readonly<
@@ -133,7 +147,7 @@ export function IconButton({
         'hover:bg-ink/5 hover:text-ink active:bg-ink/10',
         'disabled:cursor-not-allowed disabled:opacity-50 aria-pressed:text-accent',
         ICON_SIZES[size],
-        className,
+        cssClasses,
       )}
       {...props}
     >
@@ -162,7 +176,7 @@ export function TextLink({
   tone = 'ink',
   bare = false,
   external,
-  className,
+  className: cssClasses,
   children,
   ...props
 }: Readonly<
@@ -172,18 +186,19 @@ export function TextLink({
     bare?: boolean;
     /** Opens in a new tab; on by default for another site's address. */
     external?: boolean;
+    // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
     className?: string;
     children: ReactNode;
   } & Omit<ComponentProps<'a'>, 'href' | 'className' | 'children'>
 >): ReactElement {
   const classes = bare
-    ? className
+    ? cssClasses
     : cn(
         'focus-ring rounded-sm underline-offset-4 transition-colors',
         LINK_TONES[tone],
-        className,
+        cssClasses,
       );
-  const outside = external ?? /^https?:/.test(href);
+  const outside = external ?? HTTP_URL_PREFIX.test(href);
   if (outside) {
     return (
       <a

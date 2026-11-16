@@ -9,6 +9,13 @@ import type { Domain } from '@/domain/db/domains';
 import { enabledChecks, expandSelection } from '@/domain/checks/catalogue';
 import { readTarget } from '@/domain/scan/target';
 
+/** A single trailing dot, as in a fully qualified host name. */
+const TRAILING_DOT = /\.$/;
+
+/** A UUID, as the domain ids are. */
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
 /** A domain as the API shows it. */
 export interface DomainResource {
   readonly id: string;
@@ -44,7 +51,7 @@ export type Parsed<T> =
  * without a trailing dot, or why it is not a public domain. The same rules as
  * scanning, so a domain that can be added can be scanned.
  */
-export function parseHost(raw: unknown, field = 'host'): Parsed<string> {
+export function parseHost(raw?: unknown, field = 'host'): Parsed<string> {
   if (typeof raw !== 'string' || raw.trim() === '') {
     return { ok: false, errors: [`${field}: required.`] };
   }
@@ -52,7 +59,7 @@ export function parseHost(raw: unknown, field = 'host'): Parsed<string> {
   if (!target.ok) {
     return { ok: false, errors: [`${field}: ${target.reason}`] };
   }
-  return { ok: true, value: target.url.hostname.replace(/\.$/, '') };
+  return { ok: true, value: target.url.hostname.replace(TRAILING_DOT, '') };
 }
 
 /** Check the body of `POST /api/domains`: a `host`. */
@@ -139,7 +146,5 @@ export function parseDomainPatch(
 
 /** Whether a path segment can be a domain id (the ids are UUIDs). */
 export function isDomainId(raw: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
-    raw,
-  );
+  return UUID_PATTERN.test(raw);
 }

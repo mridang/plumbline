@@ -1,4 +1,4 @@
-/**
+/* eslint-disable-line unicorn/prevent-abbreviations -- file name is the permanent hint id that configs and docs reference */ /**
  * Lighthouse entry point for the `webhint-pagination-rel` audit. A Lighthouse plugin can
  * only reference audits by module path (its config is JSON-serialised, which
  * drops a class reference), so every check in the registry has this one-line

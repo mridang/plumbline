@@ -66,14 +66,14 @@ describe('a site answering every missing path with a JSON 404', () => {
       contentType: 'text/html',
       body: '{"issuer":"https://example.com"}',
     };
-    const e = fakeEnv({}, { fallback: html });
+    const environment = fakeEnv({}, { fallback: html });
     for (const id of [
       'agent-poppy',
       'agent-skills',
       'agent-oauth-discovery',
       'agent-web-bot-auth',
     ]) {
-      const r = await runCheck(checkById(id), e);
+      const r = await runCheck(checkById(id), environment);
       expect(r.passed).toBe(false);
     }
   });

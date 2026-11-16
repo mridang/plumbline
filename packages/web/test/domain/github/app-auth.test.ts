@@ -5,6 +5,9 @@ import { appJwt, installationToken } from '@/domain/github/app-auth';
 
 import { generateKeyPairAsync } from '../../helpers/crypto';
 
+/** Matches a bearer authorization header carrying a signed token. */
+const BEARER_JWT_PATTERN = /^Bearer ey/;
+
 const { privateKey } = await generateKeyPairAsync('rsa', {
   modulusLength: 2048,
 });
@@ -30,7 +33,7 @@ describe('installationToken', () => {
     const fetcher = jest.fn(async (_url: unknown, init?: RequestInit) => {
       expect(
         String((init?.headers as Record<string, string>)['Authorization']),
-      ).toMatch(/^Bearer ey/);
+      ).toMatch(BEARER_JWT_PATTERN);
       return Response.json({ token: 'ghs_abc' });
     });
     expect(

@@ -8,6 +8,9 @@
 import { finding, type Finding } from './finding.js';
 import { splitList } from './http-headers.js';
 
+/** Matches an optionally negative integer. */
+const SIGNED_INTEGER = /^-?\d+$/;
+
 /** Methods a cross-origin request may legitimately be granted. */
 const SAFE_METHODS = new Set([
   'GET',
@@ -161,7 +164,7 @@ export function corsMaxAgeFindings(value: string | null): Finding[] {
     return [];
   }
   const trimmed = value.trim();
-  if (!/^-?\d+$/.test(trimmed)) {
+  if (!SIGNED_INTEGER.test(trimmed)) {
     return [
       finding(
         'warning',

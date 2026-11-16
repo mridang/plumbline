@@ -5,6 +5,9 @@ import { BRAND_NAME } from '@/app/_brand';
 import { Eyebrow, Heading } from '@/components/ui/layout';
 import { formatDay } from '@/lib/intl';
 
+/** An address that starts with an http or https scheme, in any case. */
+const HTTP_URL = /^https?:\/\//i;
+
 /** How a link inside a legal page looks: underlined, in the accent colour. */
 const LINK =
   'focus-ring rounded-control text-accent underline underline-offset-4 hover:text-ink';
@@ -96,7 +99,7 @@ export function LegalLink({
   href,
   children,
 }: Readonly<{ href: string; children: ReactNode }>): ReactElement {
-  if (/^https?:\/\//i.test(href)) {
+  if (HTTP_URL.test(href)) {
     return (
       <a href={href} target="_blank" rel="noopener noreferrer" className={LINK}>
         {children}

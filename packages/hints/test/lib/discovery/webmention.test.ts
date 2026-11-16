@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 import { webmentionFindings } from '../../../src/lib/discovery/webmention.js';
-import type { RelLink } from '../../../src/lib/discovery/links.js';
+import type { RelationshipLink } from '../../../src/lib/discovery/links.js';
 
-const link = (href: string): RelLink => ({
+const link = (href: string): RelationshipLink => ({
   rels: ['webmention'],
   href,
   source: 'dom',

@@ -3,6 +3,9 @@ import { describe, expect, it } from '@jest/globals';
 import { BRAND_URL, CRAWLABLE_PATHS, PRIVATE_PATHS } from '@/app/_brand';
 import robots from '@/app/robots';
 
+/** Matches trailing dollar. */
+const TRAILING_DOLLAR = /\$$/;
+
 type Group = { userAgent: string; allow: string[]; disallow: string[] };
 
 describe('robots.txt', () => {
@@ -37,7 +40,7 @@ describe('robots.txt', () => {
 
   it('lets crawlers read each public page', () => {
     for (const path of CRAWLABLE_PATHS) {
-      expect(allowed(path.replace(/\$$/, ''))).toBe(true);
+      expect(allowed(path.replace(TRAILING_DOLLAR, ''))).toBe(true);
     }
   });
 

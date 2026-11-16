@@ -5,6 +5,12 @@
  * webhint category.
  */
 
+/** Locale-aware comparator used to order sections and hints by name. */
+const collator = new Intl.Collator();
+
+/** Matches a run of dashes, underscores or whitespace between words. */
+const SEPARATORS = /[-_\s]+/;
+
 /** Numeric severities, mirroring webhint's `Severity` enum. */
 export const SEVERITY = {
   information: 1,
@@ -139,7 +145,7 @@ export function sectionFor(info: HintInfo): { key: string; title: string } {
  */
 function titleCase(value: string): string {
   return value
-    .split(/[-_\s]+/)
+    .split(SEPARATORS)
     .filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
@@ -256,13 +262,13 @@ export function buildSections(
 
   const rank = (key: string): number => order.get(key) ?? order.size + 1;
   const result = [...sections.values()].toSorted(
-    (a, b) => rank(a.key) - rank(b.key) || a.title.localeCompare(b.title),
+    (a, b) => rank(a.key) - rank(b.key) || collator.compare(a.title, b.title),
   );
   for (const section of result) {
     section.hints.sort(
       (a, b) =>
         weight(b.counts) - weight(a.counts) ||
-        a.info.name.localeCompare(b.info.name),
+        collator.compare(a.info.name, b.info.name),
     );
   }
   return result;

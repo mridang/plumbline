@@ -11,6 +11,9 @@ import type { Finding, FindingLink, HintOutcome } from '@/domain/scan/outcome';
 
 import { ISSUE_STATE_LABELS, STATUS_LABELS, type Status } from './results';
 
+/** A plain `http:` or `https:` address at the start of the text. */
+const WEB_LINK_PATTERN = /^https?:\/\//i;
+
 /** The colour of each outcome's badge. */
 const BADGE_TONE: Readonly<Record<Status, Tone>> = {
   failed: 'bad',
@@ -34,7 +37,7 @@ const LABEL = 'text-label font-semibold text-subtle uppercase';
  * links; anything else (`javascript:`, `data:`) is shown as text.
  */
 export function isWebLink(value: string): boolean {
-  return /^https?:\/\//i.test(value);
+  return WEB_LINK_PATTERN.test(value);
 }
 
 /** Where a finding is: the resource, with the line and column when known. */

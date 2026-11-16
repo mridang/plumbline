@@ -8,6 +8,9 @@
 import { finding, type Finding } from '../headers/finding.js';
 import { dictionary } from './structured.js';
 
+/** Matches a double-quoted string and captures its content. */
+const QUOTED_STRING = /^"(.*)"$/;
+
 /** Keys the header defines; anything else is an unrecognised parameter. */
 const KNOWN = new Set(['match', 'match-dest', 'id', 'type']);
 
@@ -31,7 +34,7 @@ export function compressionDictionaryFindings(value: string | null): Finding[] {
     ];
   }
   const match = members.find((member) => member.key === 'match');
-  const pattern = match ? /^"(.*)"$/.exec(match.value)?.[1] : undefined;
+  const pattern = match ? QUOTED_STRING.exec(match.value)?.[1] : undefined;
   if (!match || pattern === undefined || pattern.trim() === '') {
     return [
       finding(

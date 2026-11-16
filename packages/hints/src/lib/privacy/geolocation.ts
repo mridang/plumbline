@@ -27,7 +27,7 @@ export function stripCommentsAndStrings(source: string): string {
     const char = source[index];
     const next = source[index + 1];
     if (char === '/' && next === '/') {
-      while (index < source.length && source[index] !== '\n') {
+      while (index < source.length && source.codePointAt(index) !== 10) {
         index++;
       }
     } else if (char === '/' && next === '*') {
@@ -38,7 +38,7 @@ export function stripCommentsAndStrings(source: string): string {
     } else if (['"', "'", '`'].includes(char)) {
       let end = index + 1;
       while (end < source.length && source[end] !== char) {
-        end += source[end] === '\\' ? 2 : 1;
+        end += source.codePointAt(end) === 92 ? 2 : 1;
       }
       const content = source.slice(index + 1, end);
       out += KEPT_STRINGS.has(content)

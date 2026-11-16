@@ -40,7 +40,7 @@ import {
   hreflangXDefault,
   paginationRel,
 } from '@mridang/webhint-hint-plumbline/dist/lib/i18n/checks.js';
-import { hintDocs } from '../meta.js';
+import { hintDocumentation } from '../meta.js';
 import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
@@ -90,15 +90,15 @@ function fromHint(
     run: AuditCheck['run'];
   },
 ): AuditCheck {
-  const docs = hintDocs(definition);
+  const documentation = hintDocumentation(definition);
   return {
     id: definition.id,
     // Every i18n hint is placed in the `seo` section; fall back to it
     // defensively rather than emit none.
-    section: docs.section ?? 'seo',
-    title: docs.name,
-    description: docs.description,
-    reference: docs.url,
+    section: documentation.section ?? 'seo',
+    title: documentation.name,
+    description: documentation.description,
+    reference: documentation.url,
     scoreMode: config.scoreMode,
     requiredArtifacts: HTML_AND_URL,
     run: config.run,

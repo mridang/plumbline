@@ -17,7 +17,7 @@ Some prose.
 
 - [Extra](https://a.com/x.md)
 `;
-const msgs = (t: string) => validateLlmsTxt(t).map((i) => i.message);
+const msgs = (t: string) => validateLlmsTxt(t).map((index) => index.message);
 
 describe('validateLlmsTxt', () => {
   it('accepts a valid file', () => {
@@ -33,8 +33,8 @@ describe('validateLlmsTxt', () => {
     expect(msgs('# A\n> s\n# B')[0]).toContain('only one H1');
   });
   it('rejects non-link list items', () => {
-    const i = validateLlmsTxt('# A\n> s\n## S\n- plain');
-    expect(i[0].line).toBe(4);
+    const index = validateLlmsTxt('# A\n> s\n## S\n- plain');
+    expect(index[0].line).toBe(4);
   });
   it('rejects relative links and warns on http', () => {
     expect(msgs('# A\n> s\n## S\n- [a](/x.md)')[0]).toContain('absolute');

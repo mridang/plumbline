@@ -24,20 +24,20 @@ type IconProps = SVGProps<SVGSVGElement> & {
 };
 
 /** The class list for an icon of the given size, joined with any of its own. */
-function iconClass(size?: IconSize, className?: string): string | undefined {
-  const joined = [size ? ICON_SIZES[size] : '', className ?? '']
+function iconClass(size?: IconSize, extraClasses?: string): string | undefined {
+  const joined = [size ? ICON_SIZES[size] : '', extraClasses ?? '']
     .filter(Boolean)
     .join(' ');
   return joined || undefined;
 }
 
-function Icon({ children, size, className, ...props }: IconProps) {
+function Icon({ children, size, className: cssClasses, ...props }: IconProps) {
   return (
     <svg
       viewBox="0 0 24 24"
       width="1em"
       height="1em"
-      className={iconClass(size, className)}
+      className={iconClass(size, cssClasses)}
       fill="none"
       stroke="currentColor"
       strokeWidth="1.75"
@@ -400,7 +400,7 @@ export const PlusCircleIcon = (p: IconProps) => (
  */
 export function DriveIcon({
   size,
-  className,
+  className: cssClasses,
   ...props
 }: IconProps): React.ReactElement {
   return (
@@ -409,7 +409,7 @@ export function DriveIcon({
       width="1em"
       height="1em"
       aria-hidden="true"
-      className={iconClass(size, className)}
+      className={iconClass(size, cssClasses)}
       {...props}
     >
       <path
@@ -452,14 +452,18 @@ export const SparklesIcon = (p: IconProps) => (
 );
 
 /** The multi-colour Google "G", for the sign-in button. */
-export function GoogleIcon({ size, className, ...props }: IconProps) {
+export function GoogleIcon({
+  size,
+  className: cssClasses,
+  ...props
+}: IconProps) {
   return (
     <svg
       viewBox="0 0 24 24"
       width="1em"
       height="1em"
       aria-hidden="true"
-      className={iconClass(size, className)}
+      className={iconClass(size, cssClasses)}
       {...props}
     >
       <path
@@ -489,7 +493,7 @@ export function GoogleIcon({ size, className, ...props }: IconProps) {
  */
 export function McpIcon({
   size,
-  className,
+  className: cssClasses,
   ...props
 }: IconProps): React.ReactElement {
   return (
@@ -502,7 +506,7 @@ export function McpIcon({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      className={iconClass(size, className)}
+      className={iconClass(size, cssClasses)}
       {...props}
     >
       <path
@@ -528,7 +532,7 @@ export function McpIcon({
  */
 export function Html5Icon({
   size,
-  className,
+  className: cssClasses,
   ...props
 }: IconProps): React.ReactElement {
   return (
@@ -538,7 +542,7 @@ export function Html5Icon({
       height="1em"
       fill="none"
       aria-hidden="true"
-      className={iconClass(size, className)}
+      className={iconClass(size, cssClasses)}
       {...props}
     >
       <path d="M6 28L4 3H28L26 28L16 31L6 28Z" fill="#e44d26" />
@@ -552,12 +556,16 @@ export function Html5Icon({
 }
 
 /** The GitHub mark (Octocat), for a repository or a link to GitHub. It is solid, in the text colour. */
-export const GithubIcon = ({ size, className, ...props }: IconProps) => (
+export const GithubIcon = ({
+  size,
+  className: cssClasses,
+  ...props
+}: IconProps) => (
   <svg
     viewBox="0 0 16 16"
     width="1em"
     height="1em"
-    className={iconClass(size, className)}
+    className={iconClass(size, cssClasses)}
     fill="currentColor"
     aria-hidden="true"
     {...props}

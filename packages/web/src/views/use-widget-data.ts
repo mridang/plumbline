@@ -143,7 +143,7 @@ export function useWidgetData<T>(
 
   // Never leave the View on a loading placeholder for good.
   const pending = isPending(state);
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     if (!pending) {
       return undefined;
     }

@@ -1,3 +1,5 @@
+/** Matches an `http://` or `https://` prefix. */
+const HTTP_OR_HTTPS_PREFIX = /^https?:\/\//i;
 /** Text helpers for the Open Graph title and description rules. */
 
 /** Counts characters the way a reader does (code points, not UTF-16 units). */
@@ -7,7 +9,7 @@ export function charLength(text: string): number {
 
 /** True when the text starts with an `http://` or `https://` URL. */
 export function startsWithUrl(text: string): boolean {
-  return /^https?:\/\//i.test(text.trim());
+  return HTTP_OR_HTTPS_PREFIX.test(text.trim());
 }
 
 /** Collapses case and whitespace so two texts can be compared. */

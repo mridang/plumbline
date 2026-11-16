@@ -2,6 +2,9 @@ import { describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/files/llms-full-txt.js';
 import { runHint } from '../../helpers/run-hint.js';
 
+/** Matches a message that mentions UTF-8. */
+const UTF8_MESSAGE = /UTF-8/;
+
 const serve = (
   body: string,
   type = 'text/markdown; charset=utf-8',
@@ -43,7 +46,7 @@ describe('llms-full-txt', () => {
       hint,
       serve(`# A\n\ntext\n`, 'text/markdown; charset=iso-8859-1'),
     );
-    expect(problems.map((p) => p.message).join(',')).toMatch(/UTF-8/);
+    expect(problems.map((p) => p.message).join(',')).toMatch(UTF8_MESSAGE);
   });
 
   it('reports an invalid file with a line number', async () => {

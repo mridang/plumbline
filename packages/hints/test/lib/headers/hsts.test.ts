@@ -124,7 +124,7 @@ describe('baseDomainHstsFindings', () => {
   it('does nothing for bare hosts, the base domain itself or a failed fetch', () => {
     expect(baseDomainHstsFindings('127.0.0.1', null)).toEqual([]);
     expect(baseDomainHstsFindings('example.com', null)).toEqual([]);
-    expect(baseDomainHstsFindings('www.example.com', undefined)).toEqual([]);
+    expect(baseDomainHstsFindings('www.example.com')).toEqual([]);
   });
 
   it('warns when the base domain sends no header', () => {

@@ -18,6 +18,13 @@ import {
 } from '../../../lib/core/db/sqlite-d1';
 import { htmlAt } from '../../../components/render';
 
+/** Matches dashboard current link. */
+const DASHBOARD_CURRENT_LINK = /aria-current="true"[^>]*href="\/dashboard"/;
+
+/** Matches cards view current link. */
+const CARDS_VIEW_CURRENT_LINK =
+  /aria-current="true"[^>]*href="\/dashboard\?view=cards"/;
+
 /** What the page asked Next to redirect to; `redirect` throws, as the real one does. */
 class RedirectedError extends Error {
   override name = 'RedirectedError';
@@ -126,7 +133,7 @@ describe('DashboardPage', () => {
     expect(out).toContain('type="search"');
     expect(out).toContain('aria-label="View"');
     expect(out).toContain('href="/dashboard?view=cards"');
-    expect(out).toMatch(/aria-current="true"[^>]*href="\/dashboard"/);
+    expect(out).toMatch(DASHBOARD_CURRENT_LINK);
   });
 
   it('shows the cards, with more of each site, for ?view=cards', async () => {
@@ -135,9 +142,7 @@ describe('DashboardPage', () => {
     expect(out).toContain('<article');
     expect(out).toContain('Deployed');
     expect(out).toContain('Checked');
-    expect(out).toMatch(
-      /aria-current="true"[^>]*href="\/dashboard\?view=cards"/,
-    );
+    expect(out).toMatch(CARDS_VIEW_CURRENT_LINK);
   });
 
   it('shows the table for a view it does not know', async () => {

@@ -6,6 +6,12 @@ import type {
   Probe,
 } from './types.js';
 
+/** Matches a content type that mentions HTML. */
+const HTML_CONTENT_TYPE = /html/i;
+
+/** Matches a leading `www.` host label. */
+const WWW_PREFIX = /^www\./;
+
 /** Builds a check result. */
 export function result(
   id: string,
@@ -60,7 +66,7 @@ export function isOk(probe: Probe | null): probe is Probe {
 
 /** True when the response claims to be an HTML page (a soft 404, usually). */
 export function isHtml(probe: Probe): boolean {
-  return /html/i.test(probe.contentType);
+  return HTML_CONTENT_TYPE.test(probe.contentType);
 }
 
 /** Parses the body as JSON; undefined when it is not valid JSON. */
@@ -101,7 +107,7 @@ export async function firstJson(
 
 /** Strips a leading `www.` and lower-cases a host name. */
 export function bareHost(host: string): string {
-  return host.toLowerCase().replace(/^www\./, '');
+  return host.toLowerCase().replace(WWW_PREFIX, '');
 }
 
 /** True for host names that are only reachable locally (dev servers). */

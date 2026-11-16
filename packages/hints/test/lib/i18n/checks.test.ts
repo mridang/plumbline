@@ -7,7 +7,7 @@ import {
   hreflangSelf,
   hreflangValidCodes,
   hreflangXDefault,
-  paginationRel,
+  paginationRel as paginationRelationship,
 } from '../../../src/lib/i18n/checks.js';
 import type { DocumentLike } from '../../../src/lib/i18n/read.js';
 
@@ -183,7 +183,7 @@ describe('alternateMedia', () => {
 describe('paginationRel', () => {
   it('passes well-formed prev/next links', () => {
     expect(
-      paginationRel(
+      paginationRelationship(
         parse(
           '<link rel="prev" href="https://x.test/1">' +
             '<link rel="next" href="https://x.test/3">',
@@ -193,7 +193,7 @@ describe('paginationRel', () => {
   });
 
   it('warns for a non-absolute next and a blank prev', () => {
-    const findings = paginationRel(
+    const findings = paginationRelationship(
       parse('<link rel="prev" href="">' + '<link rel="next" href="/3">'),
     );
     expect(findings).toHaveLength(2);

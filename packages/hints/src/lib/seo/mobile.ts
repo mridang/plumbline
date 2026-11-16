@@ -5,10 +5,19 @@
  */
 import { finding, type Finding } from '../headers/finding.js';
 
+/** Matches an `.svg` file extension. */
+const SVG_EXTENSION = /\.svg(?:[?#]|$)/i;
+
+/** Matches a `data:` URI prefix. */
+const DATA_URI_PREFIX = /^data:/i;
+
+/** Matches a comma or semicolon. */
+const COMMA_OR_SEMICOLON = /[,;]/;
+
 /** Parses a viewport `content` into lower-cased key/value pairs. */
 function viewportDirectives(content: string): Map<string, string> {
   const directives = new Map<string, string>();
-  for (const part of content.split(/[,;]/)) {
+  for (const part of content.split(COMMA_OR_SEMICOLON)) {
     const [key, value = ''] = part.split('=');
     if (key.trim() !== '') {
       directives.set(key.trim().toLowerCase(), value.trim().toLowerCase());
@@ -66,7 +75,7 @@ export interface ImageSource {
 
 /** True for images that do not scale in pixels (vector or inline). */
 function isFixedFormat(src: string): boolean {
-  return /^data:/i.test(src) || /\.svg(?:[?#]|$)/i.test(src);
+  return DATA_URI_PREFIX.test(src) || SVG_EXTENSION.test(src);
 }
 
 /** Warns when most raster images offer no `srcset` or `<picture>`. */

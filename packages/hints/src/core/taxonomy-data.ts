@@ -17,14 +17,14 @@ export type Target = 'web' | 'mail' | 'site';
 export type Control = 'deployer' | 'platform' | 'dns' | 'mail';
 
 /** A display group: sections shown together, never a selector. */
-export interface GroupDef {
+export interface GroupDefinition {
   id: string;
   title: string;
   sections: readonly string[];
 }
 
 /** A section: the one home of a check. */
-export interface SectionDef {
+export interface SectionDefinition {
   id: string;
   title: string;
   /** The display group the section is shown under. */
@@ -43,7 +43,7 @@ export interface SectionDef {
 export type SetKind = 'top' | 'section' | 'profile';
 
 /** A named set of checks, with the words the rules page uses for it. */
-export interface SetDef {
+export interface SetDefinition {
   id: string;
   kind: SetKind;
   title: string;
@@ -71,7 +71,7 @@ export interface Placement {
 }
 
 /** A named set of checks that is not derived from tiers and sections. */
-export interface ProfileDef extends SetDef {
+export interface ProfileDefinition extends SetDefinition {
   /** The sets the profile is the union of. */
   extends: readonly string[];
   /** Every check of the profile, sorted. */
@@ -87,7 +87,7 @@ export interface HowToFix {
 }
 
 /** The display groups, in order. */
-export const GROUP_DEFS: readonly GroupDef[] = [
+export const GROUP_DEFS: readonly GroupDefinition[] = [
   {
     id: 'security-privacy',
     title: 'Security and privacy',
@@ -105,7 +105,7 @@ export const GROUP_DEFS: readonly GroupDef[] = [
 ];
 
 /** The sections, in order. */
-export const SECTION_DEFS: readonly SectionDef[] = [
+export const SECTION_DEFS: readonly SectionDefinition[] = [
   {
     id: 'https',
     title: 'HTTPS and certificates',
@@ -329,7 +329,7 @@ export const TIERS: readonly Tier[] = [
 ];
 
 /** The sets of checks that are listed by hand. */
-export const PROFILES: readonly ProfileDef[] = [
+export const PROFILES: readonly ProfileDefinition[] = [
   {
     id: 'plumbline:profile/store',
     kind: 'profile',
@@ -744,7 +744,7 @@ export const PROFILES: readonly ProfileDef[] = [
 ];
 
 /** The top-level and per-section sets; their checks follow from tiers and sections. */
-export const SET_DEFS: readonly SetDef[] = [
+export const SET_DEFS: readonly SetDefinition[] = [
   {
     id: 'plumbline:recommended',
     kind: 'top',

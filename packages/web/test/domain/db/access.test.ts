@@ -52,7 +52,7 @@ describe('replaceAccess', () => {
     const { db, raw } = made();
     const many = Array.from(
       { length: MAX_REPOSITORIES + 5 },
-      (_, i) => `o/r${i}`,
+      (_, index) => `o/r${index}`,
     );
     await replaceAccess(db, 1, [...many, `o/it's "quoted"`]);
     expect(rows(raw, 1)).toHaveLength(MAX_REPOSITORIES);

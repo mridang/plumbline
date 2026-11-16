@@ -125,8 +125,8 @@ describe('issuesByCheck', () => {
       issue(3, ['csp', 'hsts']),
       issue(2, ['hsts']),
     ]);
-    expect(grouped['hsts']?.map((i) => i.number)).toEqual([3, 2]);
-    expect(grouped['csp']?.map((i) => i.number)).toEqual([3]);
+    expect(grouped['hsts']?.map((index) => index.number)).toEqual([3, 2]);
+    expect(grouped['csp']?.map((index) => index.number)).toEqual([3]);
     expect(grouped['other']).toBeUndefined();
   });
 

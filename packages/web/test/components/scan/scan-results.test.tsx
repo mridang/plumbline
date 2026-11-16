@@ -8,6 +8,19 @@ import {
 import type { HintOutcome } from '@/domain/scan/outcome';
 import { html } from '../render';
 
+/** Matches the pressed All filter button. */
+const ALL_FILTER_PRESSED_PATTERN = /aria-pressed="true"[^>]*>All/;
+
+/** Matches the Expand all button controlling the check list. */
+const EXPAND_ALL_BUTTON_PATTERN =
+  /<button[^>]*aria-controls="check-list"[^>]*>Expand all</;
+
+/** Matches the pressed Problems filter button. */
+const PROBLEMS_FILTER_PRESSED_PATTERN = /aria-pressed="true"[^>]*>Problems/;
+
+/** Matches the progress element showing one of three. */
+const PROGRESS_ELEMENT_PATTERN = /<progress[^>]*max="3" value="1"/;
+
 /** A check with the given outcome. */
 const hint = (
   id: string,
@@ -153,7 +166,7 @@ describe('ScanResults', () => {
           scan={running(scanOf([hint('a', 'passed')], { total: 3 }))}
         />,
       ),
-    ).toMatch(/<progress[^>]*max="3" value="1"/);
+    ).toMatch(PROGRESS_ELEMENT_PATTERN);
   });
 
   it('shows no progress bar once every check has run', () => {
@@ -164,7 +177,7 @@ describe('ScanResults', () => {
     const out = html(
       <ScanResults scan={scanOf([hint('a', 'failed'), hint('b', 'passed')])} />,
     );
-    expect(out).toMatch(/aria-pressed="true"[^>]*>Problems/);
+    expect(out).toMatch(PROBLEMS_FILTER_PRESSED_PATTERN);
   });
 
   it('lists only the problems at first', () => {
@@ -176,7 +189,7 @@ describe('ScanResults', () => {
 
   it('opens on every check when nothing is wrong', () => {
     const out = html(<ScanResults scan={scanOf([hint('b', 'passed')])} />);
-    expect(out).toMatch(/aria-pressed="true"[^>]*>All/);
+    expect(out).toMatch(ALL_FILTER_PRESSED_PATTERN);
   });
 
   it('says there is nothing to show for a scan with no checks', () => {
@@ -245,9 +258,7 @@ describe('ScanResults, opening and closing the checks', () => {
     const out = html(
       <ScanResults scan={scanOf([hint('a', 'failed'), hint('b', 'warned')])} />,
     );
-    expect(out).toMatch(
-      /<button[^>]*aria-controls="check-list"[^>]*>Expand all</,
-    );
+    expect(out).toMatch(EXPAND_ALL_BUTTON_PATTERN);
     expect(out).toContain('id="check-list"');
   });
 

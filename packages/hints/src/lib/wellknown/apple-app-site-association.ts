@@ -68,7 +68,8 @@ function validateApplinks(value: unknown, issues: FileIssue[]): void {
   const details = value['details'];
   if (details !== undefined) {
     if (Array.isArray(details)) {
-      details.forEach((detail, i) => validateDetail(detail, i, issues));
+      for (const [index, detail] of details.entries())
+        validateDetail(detail, index, issues);
     } else {
       issues.push({
         severity: 'error',

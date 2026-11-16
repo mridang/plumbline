@@ -141,7 +141,7 @@ function nextToken(source: string, start: number): Token {
   }
   const nameEnd = start + head[0].length;
   let at = nameEnd;
-  while (at < source.length && source[at] !== '>') {
+  while (at < source.length && source.codePointAt(at) !== 62) {
     const quote = source[at];
     if (quote === '"' || quote === "'") {
       const close = source.indexOf(quote, at + 1);

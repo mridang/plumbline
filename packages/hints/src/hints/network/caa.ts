@@ -1,7 +1,7 @@
 import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onSite } from '../../core/page.js';
-import { siteHost } from '../../lib/network/dns-util.js';
+import { siteHost } from '../../lib/network/dns-utility.js';
 import {
   formatCaa,
   retrieveCaa,
@@ -29,10 +29,12 @@ export async function checkCaa(
   const found = result.records
     .map((record) => formatCaa(record, result.foundOn ?? host))
     .join('\n');
-  const syntax = result.errors.filter((e) => e.id !== MISSING_ISSUE);
+  const syntax = result.errors.filter(
+    (caaError) => caaError.id !== MISSING_ISSUE,
+  );
   if (syntax.length > 0) {
     report(
-      `Your ${owner} has an invalid CAA (found on ${result.foundOn}): ${syntax.map((e) => e.message).join('; ')}.`,
+      `Your ${owner} has an invalid CAA (found on ${result.foundOn}): ${syntax.map((caaError) => caaError.message).join('; ')}.`,
       found,
     );
   } else if (result.errors.length > 0) {

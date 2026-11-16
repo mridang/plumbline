@@ -17,7 +17,7 @@ export function LinkButton({
   native = false,
   variant,
   size,
-  className,
+  className: cssClasses,
   children,
   ...rest
 }: Readonly<
@@ -29,7 +29,12 @@ export function LinkButton({
   } & Look &
     Omit<ComponentProps<'a'>, 'href' | 'children' | 'className'>
 >): ReactElement {
-  const classes = buttonClass({ variant, size, className });
+  const classes = buttonClass({
+    variant,
+    size,
+    // eslint-disable-next-line unicorn/no-keyword-prefix -- the Look prop is named className, as in React
+    className: cssClasses,
+  });
   if (external) {
     return (
       <a

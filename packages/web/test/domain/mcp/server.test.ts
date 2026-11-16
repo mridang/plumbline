@@ -33,18 +33,25 @@ import { addDomain } from '@/domain/db/domains';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
+/** Matches the invalid arguments message for get_domain. */
+const GET_DOMAIN_INVALID_ARGUMENTS_PATTERN =
+  /Invalid arguments for get_domain: .*`domain` is required.*`limit` is not an argument/;
+
 /** The address of a view the server serves. */
 const FIRST_VIEW = APP_RESOURCES.at(0)?.uri ?? '';
 
 /** The user every test acts as. */
 const someone = { id: 1 } as User;
 
+/** Compares strings in the default locale order, built once. */
+const collator = new Intl.Collator();
+
 describe('MCP tool scopes', () => {
   it('only lets read-only tools through with the read scope', () => {
     const readTools = TOOLS.filter(
       (t) => scopeForTool(t.name) === SCOPE_READ,
     ).map((t) => t.name);
-    expect(readTools.toSorted((a, b) => a.localeCompare(b))).toEqual([
+    expect(readTools.toSorted(collator.compare)).toEqual([
       'get_domain',
       'get_report',
       'list_checks',
@@ -59,7 +66,7 @@ describe('MCP tool scopes', () => {
     const writeTools = TOOLS.filter(
       (t) => scopeForTool(t.name) === SCOPE_WRITE,
     ).map((t) => t.name);
-    expect(writeTools.toSorted((a, b) => a.localeCompare(b))).toEqual([
+    expect(writeTools.toSorted(collator.compare)).toEqual([
       'configure_checks',
       'remove_domain',
     ]);
@@ -636,9 +643,7 @@ describe('handleMcpMessage — refusals', () => {
         content: [
           {
             type: 'text',
-            text: expect.stringMatching(
-              /Invalid arguments for get_domain: .*`domain` is required.*`limit` is not an argument/,
-            ),
+            text: expect.stringMatching(GET_DOMAIN_INVALID_ARGUMENTS_PATTERN),
           },
         ],
       },

@@ -6,6 +6,36 @@
  * valid. Only spaces (not tabs) may surround `;`, `=` and `,`.
  */
 
+/** Matches a space, comma or semicolon. */
+const URI_SEPARATOR_CHARACTER = /[ ,;]/u;
+
+/** Matches a single `y`, `n` or `u` in either case. */
+const YES_NO_UNKNOWN_VALUE = /^[ynuYNU]$/u;
+
+/** Matches a single `y` or `n` in either case. */
+const YES_NO_VALUE = /^[ynYN]$/u;
+
+/** Matches a single `r` or `s` in either case. */
+const ALIGNMENT_MODE_VALUE = /^[rsRS]$/u;
+
+/** Matches a string made only of digits. */
+const DIGITS_ONLY = /^\d+$/u;
+
+/** Matches a single failure-report option character. */
+const FAILURE_OPTION_VALUE = /^[01dsDS]$/u;
+
+/** Matches a one to three digit number. */
+const PERCENTAGE_VALUE = /^\d{1,3}$/u;
+
+/** Matches the `v=DMARC1` tag at the start of a record. */
+const VERSION_TAG = /^[vV] *= *DMARC1 *; */u;
+
+/** Matches a `tag=value` pair and captures both parts. */
+const TAG_VALUE_PAIR = /^([A-Za-z]+) *=(.*)$/u;
+
+/** Matches the spaces at the start of a string. */
+const LEADING_SPACES = /^ +/u;
+
 type DmarcPolicyValue = 'none' | 'quarantine' | 'reject';
 
 interface DmarcDirectives {
@@ -48,10 +78,10 @@ const KEYWORD = /^[A-Za-z0-9-]*[A-Za-z0-9]$/u;
 const trimSpaces = (text: string): string => {
   let start = 0;
   let end = text.length;
-  while (start < end && text[start] === ' ') {
+  while (start < end && text.codePointAt(start) === 32) {
     start += 1;
   }
-  while (end > start && text[end - 1] === ' ') {
+  while (end > start && text.codePointAt(end - 1) === 32) {
     end -= 1;
   }
   return text.slice(start, end);
@@ -59,7 +89,7 @@ const trimSpaces = (text: string): string => {
 
 /** Validates one `dmarc-uri`: a URI with an optional `!size` limit. */
 function isValidUri(uri: string): boolean {
-  if (uri === '' || /[ ,;]/u.test(uri)) {
+  if (uri === '' || URI_SEPARATOR_CHARACTER.test(uri)) {
     return false;
   }
   const bangs = uri.split('!').length - 1;
@@ -112,14 +142,14 @@ function setDirective(
       return true;
     }
     case 'psd': {
-      if (!/^[ynuYNU]$/u.test(value)) {
+      if (!YES_NO_UNKNOWN_VALUE.test(value)) {
         return false;
       }
       directives.psd = value.toLowerCase() as 'y' | 'n' | 'u';
       return true;
     }
     case 't': {
-      if (!/^[ynYN]$/u.test(value)) {
+      if (!YES_NO_VALUE.test(value)) {
         return false;
       }
       directives.testing = value.toLowerCase() as 'y' | 'n';
@@ -140,21 +170,23 @@ function setDirective(
     }
     case 'adkim':
     case 'aspf': {
-      if (!/^[rsRS]$/u.test(value)) {
+      if (!ALIGNMENT_MODE_VALUE.test(value)) {
         return false;
       }
       directives[tag] = value.toLowerCase() as 'r' | 's';
       return true;
     }
     case 'ri': {
-      if (!/^\d+$/u.test(value)) {
+      if (!DIGITS_ONLY.test(value)) {
         return false;
       }
       directives.ainterval = value;
       return true;
     }
     case 'fo': {
-      const options = parseColonList(value, (item) => /^[01dsDS]$/u.test(item));
+      const options = parseColonList(value, (item) =>
+        FAILURE_OPTION_VALUE.test(item),
+      );
       if (!options) {
         return false;
       }
@@ -170,7 +202,7 @@ function setDirective(
       return true;
     }
     case 'pct': {
-      if (!/^\d{1,3}$/u.test(value)) {
+      if (!PERCENTAGE_VALUE.test(value)) {
         return false;
       }
       directives.percent = value;
@@ -188,7 +220,7 @@ function setDirective(
  * directives; the policy test then reports the missing `p`.
  */
 export function parseDmarc(record: string): DmarcRecord | null {
-  const version = /^[vV] *= *DMARC1 *; */u.exec(record);
+  const version = VERSION_TAG.exec(record);
   if (!version) {
     return null;
   }
@@ -202,7 +234,7 @@ export function parseDmarc(record: string): DmarcRecord | null {
   }
   const seen = new Set<string>();
   for (const [index, piece] of pieces.entries()) {
-    const match = /^([A-Za-z]+) *=(.*)$/u.exec(piece);
+    const match = TAG_VALUE_PAIR.exec(piece);
     if (!match) {
       return null;
     }
@@ -212,7 +244,7 @@ export function parseDmarc(record: string): DmarcRecord | null {
       return null;
     }
     seen.add(tag);
-    if (!setDirective(directives, tag, match[2].replace(/^ +/u, ''))) {
+    if (!setDirective(directives, tag, match[2].replace(LEADING_SPACES, ''))) {
       return null;
     }
   }

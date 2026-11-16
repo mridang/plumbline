@@ -14,6 +14,14 @@ import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 import { packageDirectorySync } from 'package-directory';
 
+/** Shared collator for locale-aware ordering. */
+const collator = new Intl.Collator();
+
+/** Matches an index or primary key lookup in a query plan. */
+const INDEX_LOOKUP_PLAN = /USING (COVERING )?(INDEX|PRIMARY KEY)/;
+/** Matches a scan or temp b-tree step in a query plan. */
+const SCAN_OR_TEMP_BTREE_PLAN = /SCAN|TEMP B-TREE/;
+
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 const empty = () => sqliteDatabase(...APP_MIGRATIONS);
@@ -106,7 +114,7 @@ describe('recordIssue and issuesOf', () => {
     await recordIssue(db, 'a/b', 'y.test', 'csp', { number: 2, state: 'open' });
     await recordIssue(db, 'c/d', 'x.test', 'csp', { number: 3, state: 'open' });
     const issues = await issuesOf(db, 'a/b', 'x.test');
-    expect(issues.map((i) => i.number)).toEqual([1]);
+    expect(issues.map((index) => index.number)).toEqual([1]);
   });
 
   it('reads an issue of the old kind (no check of its own) from its list of checks, and a damaged list as none, and lists at most a page', async () => {
@@ -148,7 +156,9 @@ describe('the history through saveIssue and forgetIssue', () => {
     await saveIssue(db, 'a/b', 'x.test', 'csp', issue(1, 'dismissed'));
     await saveIssue(db, 'a/b', 'x.test', 'csp', issue(2, 'open'));
     const listed = await issuesOf(db, 'a/b', 'x.test');
-    expect(listed.map((i) => [i.number, i.state, i.checks])).toEqual(
+    expect(
+      listed.map((index) => [index.number, index.state, index.checks]),
+    ).toEqual(
       expect.arrayContaining([
         [1, 'dismissed', ['csp']],
         [2, 'open', ['csp']],
@@ -163,8 +173,8 @@ describe('the history through saveIssue and forgetIssue', () => {
     const issues = await issuesOf(db, 'a/b', 'x.test');
     expect(
       issues
-        .map((i) => [i.number, ...i.checks])
-        .toSorted((a, b) => a.join(',').localeCompare(b.join(','))),
+        .map((index) => [index.number, ...index.checks])
+        .toSorted((a, b) => collator.compare(a.join(','), b.join(','))),
     ).toEqual([
       [1, 'csp'],
       [2, 'hsts'],
@@ -273,7 +283,7 @@ describe('the plan of the issue queries', () => {
       .all()
       .map((row) => String(row['detail']))
       .join('\n');
-    expect(plan).toMatch(/USING (COVERING )?(INDEX|PRIMARY KEY)/);
-    expect(plan).not.toMatch(/SCAN|TEMP B-TREE/);
+    expect(plan).toMatch(INDEX_LOOKUP_PLAN);
+    expect(plan).not.toMatch(SCAN_OR_TEMP_BTREE_PLAN);
   });
 });

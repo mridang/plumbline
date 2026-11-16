@@ -31,6 +31,19 @@ import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 import { GITHUB_ENV } from '../github/github-test-kit';
 
+/** Shared collator for locale-aware ordering. */
+const collator = new Intl.Collator();
+
+/** Matches a contents API path with its ref query. */
+const CONTENTS_REQUEST_PATH = /\/contents\/([^?]+)\?ref=(.+)$/;
+/** Matches the unreadable plumbline.yaml message. */
+const YAML_UNREADABLE_MESSAGE =
+  /^plumbline\.yaml could not be read from GitHub/;
+/** Matches the issue title format. */
+const ISSUE_TITLE = /^\[Plumbline\] .+ on site\.test$/;
+/** Matches a run report link. */
+const RUN_REPORT_LINK = /^https:\/\/plumbline\.test\/r\/[0-9a-f-]{36}$/;
+
 const config = readGitHubConfig(GITHUB_ENV)!;
 
 /** A check of the advanced rules that the recommended rules (the live site's) leave out. */
@@ -70,7 +83,7 @@ function github(
     if (path.endsWith('/access_tokens')) {
       return Response.json({ token: 'ghs_1' });
     }
-    const file = /\/contents\/([^?]+)\?ref=(.+)$/.exec(path);
+    const file = CONTENTS_REQUEST_PATH.exec(path);
     if (file) {
       const content = files[decodeURIComponent(file[1]!)];
       return typeof content === 'string'
@@ -173,9 +186,7 @@ describe('loadConfig', () => {
       'abc',
     );
     expect(result.loaded).toBeNull();
-    expect(result.unreadable).toMatch(
-      /^plumbline\.yaml could not be read from GitHub/,
-    );
+    expect(result.unreadable).toMatch(YAML_UNREADABLE_MESSAGE);
   });
 });
 
@@ -207,7 +218,7 @@ describe('handleDeployment of the live site', () => {
       'GET /repos/acme/site/contents/plumbline.json?ref=abc1234',
       'POST /repos/acme/site/issues',
     ]);
-    expect(calls[4]?.body['title']).toMatch(/^\[Plumbline\] .+ on site\.test$/);
+    expect(calls[4]?.body['title']).toMatch(ISSUE_TITLE);
     expect(String(calls[4]?.body['body'])).toContain(
       '`plumbline:recommended` rules were used',
     );
@@ -716,7 +727,7 @@ describe('handleDeployment, the life of the issues', () => {
     expect(
       opened
         .map((c) => String(c.body['body']).split('\n', 1)[0])
-        .toSorted((a, b) => String(a).localeCompare(String(b))),
+        .toSorted((a, b) => collator.compare(String(a), String(b))),
     ).toEqual([
       '<!-- plumbline:other.test:seo-viewport -->',
       '<!-- plumbline:site.test:seo-viewport -->',
@@ -902,7 +913,7 @@ describe('handleDeployment of a preview', () => {
     });
     const check = calls.at(-1);
     const link = String(check?.body['details_url']);
-    expect(link).toMatch(/^https:\/\/plumbline\.test\/r\/[0-9a-f-]{36}$/);
+    expect(link).toMatch(RUN_REPORT_LINK);
     const id = link.split('/').pop()!;
     expect(check?.body['external_id']).toBe(id);
     expect(await getPreviewReport(db, id)).toMatchObject({
@@ -1092,7 +1103,7 @@ describe('handleDeployment, the sites a deployment names', () => {
     const domains = await listDomainsOfRepo(db, 7, 'acme/site');
     return domains
       .map((d) => [d.host, d.source, d.environment] as const)
-      .toSorted(([a], [b]) => a.localeCompare(b));
+      .toSorted(([a], [b]) => collator.compare(a, b));
   };
 
   it('adds the address a deployment reports as a site of its environment, and checks it', async () => {

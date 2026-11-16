@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { validateAdsTxt } from '../../../src/lib/wellknown/ads-txt.js';
 
-const msgs = (t: string) => validateAdsTxt(t).map((i) => i.message);
+const msgs = (t: string) => validateAdsTxt(t).map((index) => index.message);
 
 describe('validateAdsTxt', () => {
   it('accepts a valid record with a certification authority id', () => {

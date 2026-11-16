@@ -7,6 +7,9 @@
  */
 import { finding, type Finding } from '../headers/finding.js';
 
+/** Matches a file extension before a query or fragment. */
+const FILE_EXTENSION = /\.([a-z0-9]+)(?:[?#]|$)/i;
+
 /** Lighthouse's "reduce initial server response time" limit. */
 export const SLOW_RESPONSE_MS = 600;
 
@@ -112,7 +115,7 @@ export function assetFindings(counts: AssetCounts): Finding[] {
 
 /** How efficient an image URL's format is, from its file extension. */
 export function imageFormat(url: string): 'modern' | 'legacy' | 'other' {
-  const extension = /\.([a-z0-9]+)(?:[?#]|$)/i.exec(url)?.[1]?.toLowerCase();
+  const extension = FILE_EXTENSION.exec(url)?.[1]?.toLowerCase();
   if (['webp', 'avif', 'jxl'].includes(extension ?? '')) {
     return 'modern';
   }

@@ -2,6 +2,12 @@ import { describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/headers/csp.js';
 import { runHint } from '../../helpers/run-hint.js';
 
+/** Matches a source code that starts with a Content-Security-Policy default-src directive. */
+const CSP_DEFAULT_SRC_SOURCE = /^Content-Security-Policy: default-src/;
+
+/** Matches a Content-Security-Policy source code that contains unsafe-eval. */
+const CSP_UNSAFE_EVAL_SOURCE = /^Content-Security-Policy: .*unsafe-eval/;
+
 const page = (headers: Record<string, string | string[]> = {}, head = '') => ({
   '/': {
     headers: { 'content-type': 'text/html; charset=utf-8', ...headers },
@@ -24,9 +30,7 @@ describe('csp', () => {
   it('reports a missing policy', async () => {
     const problems = await runHint(hint, page());
     expect(problems).toHaveLength(1);
-    expect(problems[0]?.sourceCode).toMatch(
-      /^Content-Security-Policy: default-src/,
-    );
+    expect(problems[0]?.sourceCode).toMatch(CSP_DEFAULT_SRC_SOURCE);
     expect(problems[0]?.message).toContain('header not implemented');
   });
 
@@ -63,9 +67,7 @@ describe('csp', () => {
       hint,
       page({ 'content-security-policy': "default-src 'self' 'unsafe-eval'" }),
     );
-    expect(problems[0]?.sourceCode).toMatch(
-      /^Content-Security-Policy: .*unsafe-eval/,
-    );
+    expect(problems[0]?.sourceCode).toMatch(CSP_UNSAFE_EVAL_SOURCE);
     expect(problems[0]?.message).toContain("allows 'unsafe-eval'");
   });
 

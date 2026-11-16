@@ -13,11 +13,11 @@ const MAX_REDIRECTS = 10;
 /** The headers as a plain object, names in lower case. Repeated headers are joined; `Set-Cookie` lines are kept one per line, since a cookie may hold a comma. */
 export function headersOf(headers: Headers): HttpHeaders {
   const out: HttpHeaders = {};
-  headers.forEach((value, name) => {
+  for (const [name, value] of headers.entries()) {
     if (name !== 'set-cookie') {
       out[name] = value;
     }
-  });
+  }
   const cookies = headers.getSetCookie();
   if (cookies.length > 0) {
     out['set-cookie'] = cookies.join('\n');

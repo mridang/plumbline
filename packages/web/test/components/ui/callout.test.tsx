@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { Callout } from '@/components/ui/callout';
+// eslint-disable-next-line unicorn/no-keyword-prefix -- classOf is the exported helper name in components/render.ts
 import { classOf, html } from '../render';
 
 describe('Callout', () => {

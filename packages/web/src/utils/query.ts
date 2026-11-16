@@ -5,6 +5,9 @@
  * `URLSearchParams.set` would.
  */
 
+/** An address split into its base, its query and its fragment. */
+const URL_PARTS = /^([^?#]*)(\?[^#]*)?(#.*)?$/;
+
 /** One `name=value` pair of a query string. */
 type Entry = readonly [string, string];
 
@@ -57,7 +60,6 @@ export function withQueryParams(
   if (Object.keys(params).length === 0) {
     return url.toString();
   }
-  const [, base = '', query = '', hash = ''] =
-    /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(url.href) ?? [];
+  const [, base = '', query = '', hash = ''] = URL_PARTS.exec(url.href) ?? [];
   return `${base}${setSearchParams(query, params)}${hash}`;
 }

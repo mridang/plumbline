@@ -19,6 +19,18 @@ const WRANGLER_FILE = /(^|\/)wrangler\.(jsonc|json|toml)$/;
 const VENDORED =
   /(^|\/)(node_modules|vendor|\.git|\.next|\.open-next|dist|build)\//;
 
+/** A URL scheme at the start of a route pattern, such as `https://`. */
+const URL_SCHEME_PREFIX = /^[a-z]+:\/\//i;
+
+/** Where the host of a route pattern ends. */
+const HOST_END = /[/?#]/;
+
+/** A single whitespace character. */
+const WHITESPACE = /\s/;
+
+/** A GitHub host, such as `github.com` or `owner.github.io`. */
+const GITHUB_HOST = /(^|\.)github\.(com|io)$/;
+
 /** Whether a repository path is a Wrangler configuration worth reading. */
 export function isWranglerPath(path: string): boolean {
   return WRANGLER_FILE.test(path) && !VENDORED.test(path);
@@ -28,14 +40,14 @@ export function isWranglerPath(path: string): boolean {
 export function stripJsonComments(text: string): string {
   let out = '';
   let inString = false;
-  for (let i = 0; i < text.length; i += 1) {
-    const char = text.charAt(i);
-    const next = text.charAt(i + 1);
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text.charAt(index);
+    const next = text.charAt(index + 1);
     if (inString) {
       out += char;
       if (char === '\\') {
         out += next;
-        i += 1;
+        index += 1;
       } else if (char === '"') {
         inString = false;
       } else {
@@ -45,19 +57,19 @@ export function stripJsonComments(text: string): string {
       inString = true;
       out += char;
     } else if (char === '/' && next === '/') {
-      while (i < text.length && text.charAt(i) !== '\n') {
-        i += 1;
+      while (index < text.length && text.charAt(index) !== '\n') {
+        index += 1;
       }
       out += '\n';
     } else if (char === '/' && next === '*') {
-      i += 2;
+      index += 2;
       while (
-        i < text.length &&
-        !(text.charAt(i) === '*' && text.charAt(i + 1) === '/')
+        index < text.length &&
+        !(text.charAt(index) === '*' && text.charAt(index + 1) === '/')
       ) {
-        i += 1;
+        index += 1;
       }
-      i += 1;
+      index += 1;
     } else {
       out += char;
     }
@@ -69,8 +81,8 @@ export function stripJsonComments(text: string): string {
 export function hostOfPattern(pattern: string): string | undefined {
   const bare = pattern
     .trim()
-    .replace(/^[a-z]+:\/\//i, '')
-    .split(/[/?#]/, 1)[0];
+    .replace(URL_SCHEME_PREFIX, '')
+    .split(HOST_END, 1)[0];
   if (!bare || bare.includes('*') || bare.endsWith('.workers.dev')) {
     return undefined;
   }
@@ -115,7 +127,7 @@ function leadingLineStart(text: string, index: number): number {
   let at = index;
   while (
     at > 0 &&
-    /\s/.test(text.charAt(at - 1)) &&
+    WHITESPACE.test(text.charAt(at - 1)) &&
     !LINE_BREAKS.includes(text.charAt(at - 1))
   ) {
     at -= 1;
@@ -131,7 +143,7 @@ function beforeEnvTable(text: string): string {
     hit = text.indexOf('env.', hit + 1)
   ) {
     let open = hit;
-    while (open > 0 && text[open - 1] === '[') {
+    while (open > 0 && text.codePointAt(open - 1) === 91) {
       open -= 1;
     }
     const start = open === hit ? -1 : leadingLineStart(text, open);
@@ -221,16 +233,12 @@ export function isRegistryHost(host: string): boolean {
 }
 
 /** The host of a repository's website field, when it is a public site. */
-export function homepageHost(
-  homepage: string | null | undefined,
-): string | undefined {
+export function homepageHost(homepage?: string | null): string | undefined {
   if (!homepage) {
     return undefined;
   }
   const host = parseHost(homepage);
-  return host.ok &&
-    !/(^|\.)github\.(com|io)$/.test(host.value) &&
-    !isRegistryHost(host.value)
+  return host.ok && !GITHUB_HOST.test(host.value) && !isRegistryHost(host.value)
     ? host.value
     : undefined;
 }

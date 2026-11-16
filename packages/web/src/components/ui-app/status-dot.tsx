@@ -12,11 +12,12 @@ export function Dot({
   tone,
   pulse = false,
   size = 'md',
-  className,
+  className: cssClasses,
 }: Readonly<{
   tone: Tone;
   pulse?: boolean;
   size?: keyof typeof SIZES;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
   className?: string;
 }>): ReactElement {
   return (
@@ -27,7 +28,7 @@ export function Dot({
         SIZES[size],
         TONE_SOLID[tone],
         pulse && 'motion-safe:animate-pulse',
-        className,
+        cssClasses,
       )}
     />
   );

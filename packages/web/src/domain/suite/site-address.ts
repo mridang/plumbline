@@ -16,6 +16,9 @@ export type SiteAddress =
   | { readonly ok: true; readonly host: string }
   | { readonly ok: false; readonly reason: string };
 
+/** A leading `scheme://`, capturing the scheme. */
+const SCHEME_PREFIX = /^([a-z][a-z0-9+.-]*):\/\//i;
+
 /** GitHub's own addresses: an Actions job page is not the site that was deployed. */
 const GITHUB_HOST = /(^|\.)github\.(com|io)$/;
 
@@ -25,12 +28,12 @@ const GITHUB_HOST = /(^|\.)github\.(com|io)$/;
  * on a package registry or app store, and anything that is not a public domain
  * name are refused too.
  */
-export function siteAddress(value: unknown): SiteAddress {
+export function siteAddress(value?: unknown): SiteAddress {
   if (typeof value !== 'string' || value.trim() === '') {
     return { ok: false, reason: 'is not an address' };
   }
   const text = value.trim();
-  const scheme = /^([a-z][a-z0-9+.-]*):\/\//i.exec(text)?.[1];
+  const scheme = SCHEME_PREFIX.exec(text)?.[1];
   if (scheme !== undefined && scheme.toLowerCase() !== 'https') {
     return { ok: false, reason: 'is not an https address' };
   }

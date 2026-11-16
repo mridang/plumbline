@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { validateSellersJson } from '../../../src/lib/wellknown/sellers-json.js';
 
 const msgs = (v: unknown) =>
-  validateSellersJson(JSON.stringify(v)).map((i) => i.message);
+  validateSellersJson(JSON.stringify(v)).map((index) => index.message);
 
 const valid = {
   version: '1.0',

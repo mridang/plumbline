@@ -28,9 +28,12 @@ const make = (
 describe('defineHint', () => {
   it('exposes the reference and groups on the metadata', () => {
     const hint = make('https://example.com/rule');
-    const docs = hint.ctor.meta.docs as { url?: string; groups?: string[] };
-    expect(docs.url).toBe('https://example.com/rule');
-    expect(docs.groups).toEqual(['seo']);
+    const documentation = hint.ctor.meta.docs as {
+      url?: string;
+      groups?: string[];
+    };
+    expect(documentation.url).toBe('https://example.com/rule');
+    expect(documentation.groups).toEqual(['seo']);
   });
 
   it('adds the reference as further reading to every finding', async () => {

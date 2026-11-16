@@ -22,6 +22,9 @@ import {
   fakeGitHub,
 } from '../../../../domain/github/github-test-kit';
 
+/** Matches the session cookie value. */
+const SESSION_COOKIE_VALUE = /plumbline_session=([^;]+)/;
+
 let restore: () => void;
 let made: ReturnType<typeof sqliteD1>;
 
@@ -61,7 +64,7 @@ describe('GET /auth/github/callback', () => {
     expect(
       made.raw.prepare('SELECT repo FROM user_repositories').all(),
     ).toEqual([{ repo: 'acme/site' }]);
-    const token = /plumbline_session=([^;]+)/.exec(cookie)?.[1] ?? '';
+    const token = SESSION_COOKIE_VALUE.exec(cookie)?.[1] ?? '';
     const claims = await new SessionTokens(
       'a-session-secret-that-is-long-enough-to-sign-with',
     ).verify(token);

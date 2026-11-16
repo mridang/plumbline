@@ -6,6 +6,9 @@
  */
 import { parseLinkHeader } from '../agent/link-headers.js';
 
+/** Matches a run of whitespace between the tokens of a `rel` attribute. */
+const WHITESPACE_RUN = /\s+/;
+
 /** The slice of a DOM element these readers use. */
 interface ElementLike {
   getAttribute(name: string): string | null;
@@ -17,7 +20,7 @@ export interface DocumentLike {
 }
 
 /** One discovered relation link: its relation tokens and its target. */
-export interface RelLink {
+export interface RelationshipLink {
   /** The relation types, lower-cased (a `rel` may list several). */
   rels: string[];
   /** The link target, trimmed; empty string when the attribute was blank. */
@@ -27,11 +30,11 @@ export interface RelLink {
 }
 
 /** Splits a `rel` attribute into its lower-cased, non-empty tokens. */
-function relTokens(rel: string | null): string[] {
-  return (rel ?? '')
+function relationshipTokens(relationship: string | null): string[] {
+  return (relationship ?? '')
     .trim()
     .toLowerCase()
-    .split(/\s+/)
+    .split(WHITESPACE_RUN)
     .filter((token) => token !== '');
 }
 
@@ -40,10 +43,12 @@ function relTokens(rel: string | null): string[] {
  * (any element with a `rel`) and the relation matching is done here, so the
  * logic is exercised by unit tests rather than hidden in a CSS selector.
  */
-export function domRelLinks(doc: DocumentLike): RelLink[] {
-  const links: RelLink[] = [];
-  for (const element of doc.querySelectorAll('link[rel], a[rel]')) {
-    const rels = relTokens(element.getAttribute('rel'));
+export function domRelationshipLinks(
+  parsedDocument: DocumentLike,
+): RelationshipLink[] {
+  const links: RelationshipLink[] = [];
+  for (const element of parsedDocument.querySelectorAll('link[rel], a[rel]')) {
+    const rels = relationshipTokens(element.getAttribute('rel'));
     if (rels.length === 0) {
       continue;
     }
@@ -57,7 +62,9 @@ export function domRelLinks(doc: DocumentLike): RelLink[] {
 }
 
 /** Reads the relation links from a `Link` response header value, or []. */
-export function headerRelLinks(linkHeader: string | null): RelLink[] {
+export function headerRelationshipLinks(
+  linkHeader: string | null,
+): RelationshipLink[] {
   if (linkHeader === null) {
     return [];
   }
@@ -69,8 +76,11 @@ export function headerRelLinks(linkHeader: string | null): RelLink[] {
 }
 
 /** Returns the links that carry the given relation token. */
-export function withRel(links: readonly RelLink[], rel: string): RelLink[] {
-  const wanted = rel.toLowerCase();
+export function withRelationship(
+  links: readonly RelationshipLink[],
+  relationship: string,
+): RelationshipLink[] {
+  const wanted = relationship.toLowerCase();
   return links.filter((link) => link.rels.includes(wanted));
 }
 

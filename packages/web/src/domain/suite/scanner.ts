@@ -128,7 +128,7 @@ export async function collectScan(
     buffer += decoder.decode(value, { stream: !done });
     const lines = buffer.split('\n');
     buffer = lines.pop() ?? '';
-    lines.forEach((line) => take(line));
+    for (const line of lines) take(line);
     if (done) {
       break;
     }

@@ -74,7 +74,13 @@ export function CheckForm({
   const toggle = (ids: readonly string[], on: boolean): void =>
     setTicked((current) => {
       const next = new Set(current);
-      ids.forEach((id) => (on ? next.add(id) : next.delete(id)));
+      for (const id of ids) {
+        if (on) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
+      }
       return next;
     });
 

@@ -265,7 +265,7 @@ export async function acceptedCiphers(
     version === 'TLSv1.3'
       ? TLS_1_3_OFFER.join(':')
       : 'ALL:COMPLEMENTOFALL:aNULL:eNULL';
-  for (let i = 0; i < MAX_CIPHER_PROBES; i++) {
+  for (let index = 0; index < MAX_CIPHER_PROBES; index++) {
     const removed = found.map((c) =>
       version === 'TLSv1.3' ? c.name : `!${c.name}`,
     );

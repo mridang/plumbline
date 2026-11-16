@@ -4,7 +4,7 @@ import {
   validateContentSignal,
 } from '../../../src/lib/files/robots-txt.js';
 
-const msgs = (t: string) => validateRobotsTxt(t).map((i) => i.message);
+const msgs = (t: string) => validateRobotsTxt(t).map((index) => index.message);
 
 describe('validateRobotsTxt', () => {
   it('accepts a valid file', () => {
@@ -18,9 +18,9 @@ describe('validateRobotsTxt', () => {
     expect(msgs('  ')[0]).toContain('empty');
   });
   it('rejects lines without a colon', () => {
-    const i = validateRobotsTxt('User-agent: *\nbogus');
-    expect(i[0].line).toBe(2);
-    expect(i[0].message).toContain('Invalid line');
+    const index = validateRobotsTxt('User-agent: *\nbogus');
+    expect(index[0].line).toBe(2);
+    expect(index[0].message).toContain('Invalid line');
   });
   it('warns on unknown directives', () => {
     expect(msgs('User-agent: *\nFoo: bar')[0]).toContain(
@@ -70,12 +70,12 @@ describe('validateRobotsTxt', () => {
     );
   });
   it('requires Content-Signal in every group', () => {
-    const i = validateRobotsTxt(
+    const index = validateRobotsTxt(
       'User-agent: *\nContent-Signal: search=yes\nUser-agent: GPTBot\nDisallow: /x',
     );
-    expect(i).toHaveLength(1);
-    expect(i[0].message).toContain('gptbot');
-    expect(i[0].line).toBe(3);
+    expect(index).toHaveLength(1);
+    expect(index[0].message).toContain('gptbot');
+    expect(index[0].line).toBe(3);
   });
   it('accepts Content-Signal repeated in all groups', () => {
     expect(

@@ -8,7 +8,7 @@
  * Source: the Pingback 1.0 specification (https://www.hixie.ch/specs/pingback/pingback).
  */
 import { finding, type Finding } from '../headers/finding.js';
-import { withRel, type RelLink } from './links.js';
+import { withRelationship, type RelationshipLink } from './links.js';
 
 /**
  * Evaluates the Pingback advertisement of a page.
@@ -16,10 +16,11 @@ import { withRel, type RelLink } from './links.js';
  * @param xPingback - The `X-Pingback` response header value, or null.
  */
 export function pingbackFindings(
-  links: readonly RelLink[],
+  links: readonly RelationshipLink[],
   xPingback: string | null,
 ): Finding[] {
-  const present = withRel(links, 'pingback').length > 0 || xPingback !== null;
+  const present =
+    withRelationship(links, 'pingback').length > 0 || xPingback !== null;
   if (!present) {
     return [];
   }

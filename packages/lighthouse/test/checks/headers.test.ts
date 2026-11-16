@@ -5,6 +5,9 @@ import { headersChecks } from '../../src/checks/headers.js';
 import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 import type { AuditCheck } from '../../src/checks/types.js';
 
+/** Locale-aware comparator used to sort check ids deterministically. */
+const collator = new Intl.Collator();
+
 /**
  * Builds the minimal devtools log Lighthouse's `NetworkRecords` computed
  * artifact needs to reconstruct one main-document response with the given
@@ -97,7 +100,7 @@ describe('the headers registry', () => {
     const informative = headersChecks
       .filter((c) => c.scoreMode === 'informative')
       .map((c) => c.id)
-      .toSorted((a, b) => a.localeCompare(b));
+      .toSorted(collator.compare);
     expect(informative).toEqual([
       'accept-ch',
       'age',

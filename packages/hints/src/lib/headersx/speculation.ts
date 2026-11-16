@@ -8,6 +8,9 @@
 import { finding, type Finding } from '../headers/finding.js';
 import { tokenList, topLevelMembers } from './structured.js';
 
+/** Matches a double-quoted string and captures its content. */
+const QUOTED_STRING = /^"(.*)"$/;
+
 /**
  * `Speculation-Rules` is a structured list of strings, each the URL of a JSON
  * speculation-rules document the browser should fetch, for example
@@ -24,7 +27,7 @@ export function speculationRulesFindings(value: string | null): Finding[] {
     return [finding('warning', "The 'Speculation-Rules' header is empty.")];
   }
   for (const member of members) {
-    const url = /^"(.*)"$/.exec(member)?.[1];
+    const url = QUOTED_STRING.exec(member)?.[1];
     if (url === undefined || url.trim() === '') {
       return [
         finding(

@@ -9,6 +9,9 @@
  * per-representation variants) belongs to that resource's domain.
  */
 
+/** The weak-validator marker at the start of an entity tag. */
+const WEAK_MARKER = /^W\//;
+
 /** A strong entity tag for some text: the quoted first 16 hex digits of its SHA-256. */
 export async function entityTag(text: string): Promise<string> {
   const digest = await crypto.subtle.digest(
@@ -26,7 +29,7 @@ export async function entityTag(text: string): Promise<string> {
 function tagsIn(header: string): readonly string[] {
   return header
     .split(',')
-    .map((t) => t.trim().replace(/^W\//, ''))
+    .map((t) => t.trim().replace(WEAK_MARKER, ''))
     .filter(Boolean);
 }
 

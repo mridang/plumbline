@@ -47,6 +47,6 @@ describe('siteAddress', () => {
     expect(siteAddress('')).toMatchObject({ ok: false });
     expect(siteAddress(' '.repeat(3))).toMatchObject({ ok: false });
     expect(siteAddress(42)).toMatchObject({ ok: false });
-    expect(siteAddress(undefined)).toMatchObject({ ok: false });
+    expect(siteAddress()).toMatchObject({ ok: false });
   });
 });

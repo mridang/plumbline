@@ -9,7 +9,17 @@ import {
   pretty,
   result,
   urlOf,
-} from './util.js';
+} from './utility.js';
+
+/** Matches a `WWW-Authenticate` value that uses the `Payment` scheme. */
+const PAYMENT_SCHEME = /^payment\b/i;
+
+/** Matches a calendar date in `YYYY-MM-DD` form. */
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Matches markup that suggests an online store. */
+const COMMERCE_MARKERS =
+  /add to cart|add to basket|shopify|woocommerce|schema\.org\/Product|"@type"\s*:\s*"Product"/i;
 
 /**
  * X402: one of `/`, `/api` or `/api/v1` answers HTTP 402 Payment Required
@@ -64,7 +74,7 @@ export async function checkMpp(env: AgentEnv): Promise<CheckResult> {
   const home = await env.probe('/');
   if (
     home?.status === 402 &&
-    /^payment\b/i.test(home.headers['www-authenticate'] ?? '')
+    PAYMENT_SCHEME.test(home.headers['www-authenticate'] ?? '')
   ) {
     return result(
       id,
@@ -120,7 +130,7 @@ export async function checkUcp(env: AgentEnv): Promise<CheckResult> {
   // ucp.dev: version (YYYY-MM-DD), services and payment_handlers are
   // required, and the registries must exist even when empty.
   const missing: string[] = [];
-  if (!isText(ucp.version) || !/^\d{4}-\d{2}-\d{2}$/.test(ucp.version))
+  if (!isText(ucp.version) || !ISO_DATE.test(ucp.version))
     missing.push('version');
   if (!isRecord(ucp.services)) missing.push('services');
   if (!isRecord(ucp.payment_handlers)) missing.push('payment_handlers');
@@ -150,8 +160,8 @@ export async function checkUcp(env: AgentEnv): Promise<CheckResult> {
 export async function checkAcp(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-acp';
   const probe = await env.probe('/.well-known/acp.json');
-  const doc = parseJsonObject(probe);
-  if (!doc) {
+  const parsedDocument = parseJsonObject(probe);
+  if (!parsedDocument) {
     return result(
       id,
       'commerce',
@@ -171,7 +181,7 @@ export async function checkAcp(env: AgentEnv): Promise<CheckResult> {
   // ACP discovery RFC: protocol {name "acp", version}, api_base_url,
   // transports (including "rest") and capabilities are all required.
   const missing: string[] = [];
-  const protocol = doc.protocol;
+  const protocol = parsedDocument.protocol;
   if (
     !isRecord(protocol) ||
     protocol.name !== 'acp' ||
@@ -179,17 +189,20 @@ export async function checkAcp(env: AgentEnv): Promise<CheckResult> {
   ) {
     missing.push('protocol (name acp, version)');
   }
-  if (!isText(doc.api_base_url)) missing.push('api_base_url');
-  if (!Array.isArray(doc.transports) || !doc.transports.includes('rest')) {
+  if (!isText(parsedDocument.api_base_url)) missing.push('api_base_url');
+  if (
+    !Array.isArray(parsedDocument.transports) ||
+    !parsedDocument.transports.includes('rest')
+  ) {
     missing.push('transports including rest');
   }
-  if (!isRecord(doc.capabilities)) missing.push('capabilities');
+  if (!isRecord(parsedDocument.capabilities)) missing.push('capabilities');
   return missing.length === 0
     ? result(
         id,
         'commerce',
         true,
-        `/.well-known/acp.json points at ${String(doc.api_base_url)}.`,
+        `/.well-known/acp.json points at ${String(parsedDocument.api_base_url)}.`,
       )
     : result(
         id,
@@ -198,7 +211,7 @@ export async function checkAcp(env: AgentEnv): Promise<CheckResult> {
         `The ACP document needs ${missing.join(', ')}.`,
         {
           resource: probe?.url ?? urlOf(env, '/.well-known/acp.json'),
-          snippet: pretty(doc),
+          snippet: pretty(parsedDocument),
         },
       );
 }
@@ -216,7 +229,5 @@ export async function detectCommerceSignals(
     return true;
   }
   const home = await env.probe('/');
-  return /add to cart|add to basket|shopify|woocommerce|schema\.org\/Product|"@type"\s*:\s*"Product"/i.test(
-    home?.body ?? '',
-  );
+  return COMMERCE_MARKERS.test(home?.body ?? '');
 }

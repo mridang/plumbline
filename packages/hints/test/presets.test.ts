@@ -11,11 +11,13 @@ import {
 import { PLACEMENT, SECTION_DEFS } from '../src/core/taxonomy-data.js';
 import registry, { hintsByGroup } from '../src/index.js';
 
+const collator = new Intl.Collator();
+
 const CONFIGS = fileURLToPath(new URL('../configs', import.meta.url));
 
 /** Returns an alphabetically sorted copy of the strings. */
 const sorted = (values: readonly string[]): string[] =>
-  values.toSorted((a, b) => a.localeCompare(b));
+  values.toSorted(collator.compare);
 
 describe('buildPresets', () => {
   const presets = buildPresets(hintsByGroup);

@@ -9,13 +9,16 @@ import {
 } from '@/components/landing/ways-in';
 import { html } from '../render';
 
+/** Matches the npx scan command prefix. */
+const NPX_SCAN_COMMAND = /^npx @mridang\/plumbline scan /;
+
 describe('WAYS_IN', () => {
   it('installs the skill from this repository', () => {
     expect(SKILL_INSTALL).toBe('npx skills add mridang/plumbline');
   });
 
   it('runs the CLI from npm', () => {
-    expect(CLI_SCAN).toMatch(/^npx @mridang\/plumbline scan /);
+    expect(CLI_SCAN).toMatch(NPX_SCAN_COMMAND);
   });
 
   it('connects assistants to the MCP endpoint of this site', () => {

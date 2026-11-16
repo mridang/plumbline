@@ -4,6 +4,8 @@ import { matches, resolve } from '../../src/core/selectors.js';
 import { PLACEMENT } from '../../src/core/taxonomy.js';
 import hints from '../../src/index.js';
 
+const collator = new Intl.Collator();
+
 const groupsOf = (id: string): readonly string[] =>
   (hints[id].meta.docs as { groups?: string[] }).groups ?? [];
 const known = new Set(Object.keys(hints).flatMap((id) => groupsOf(id)));
@@ -73,7 +75,7 @@ describe('resolve', () => {
     const owasp = Object.keys(hints).filter((id) =>
       groupsOf(id).includes('owasp'),
     );
-    expect(pick('owasp')).toEqual(owasp.toSorted((a, b) => a.localeCompare(b)));
+    expect(pick('owasp')).toEqual(owasp.toSorted(collator.compare));
   });
 
   it('lets tag:seo reach at least everything in section:seo', () => {
@@ -90,7 +92,7 @@ describe('resolve', () => {
         ...pick('section:hardening'),
         ...pick('section:exposure'),
         ...pick('section:protocol'),
-      ].toSorted((a, b) => a.localeCompare(b)),
+      ].toSorted(collator.compare),
     );
   });
 

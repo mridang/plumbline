@@ -12,6 +12,9 @@ import type { HintMeta, ScanOptions, ScanResult } from '../../src/scan.js';
 import { runCommand } from '../helpers/command.js';
 import { serve } from '../helpers/serve.js';
 
+/** Locale-aware comparator used to sort strings deterministically. */
+const collator = new Intl.Collator();
+
 const CATALOGUE: HintMeta[] = [
   {
     id: 'csp',
@@ -185,7 +188,7 @@ describe('plumbline scan', () => {
     );
     expect(result.code).toBe(EXIT.findings);
     const files = await readdir(dir);
-    expect(files.toSorted((a, b) => a.localeCompare(b))).toEqual([
+    expect(files.toSorted(collator.compare)).toEqual([
       'https-example-com.html',
       'https-example-com.json',
     ]);

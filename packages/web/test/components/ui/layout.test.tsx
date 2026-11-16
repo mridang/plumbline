@@ -4,8 +4,15 @@ import path from 'node:path';
 import { describe, expect, it } from '@jest/globals';
 
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
+// eslint-disable-next-line unicorn/no-keyword-prefix -- classOf is the shared test helper exported by render.ts and used by many specs
 import { classOf, html } from '../render';
 import { packageDirectorySync } from 'package-directory';
+
+/** Matches text colour class. */
+const TEXT_COLOUR_CLASS = /\btext-(ink|accent|subtle|muted|on-ink)\b/;
+
+/** Matches focusable h1. */
+const FOCUSABLE_H1 = /<h1 tabindex="-1" class=/;
 
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
@@ -13,7 +20,7 @@ const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 function colourOffenders(file: string, source: string): string[] {
   const found: string[] = [];
   for (const match of source.matchAll(/<Eyebrow\b[^>]*className="([^"]*)"/g)) {
-    if (/\btext-(ink|accent|subtle|muted|on-ink)\b/.test(match[1]!)) {
+    if (TEXT_COLOUR_CLASS.test(match[1]!)) {
       found.push(`${file}: ${match[1]}`);
     }
   }
@@ -83,7 +90,7 @@ describe('Heading', () => {
         Title
       </Heading>,
     );
-    expect(out).toMatch(/<h1 tabindex="-1" class=/);
+    expect(out).toMatch(FOCUSABLE_H1);
     expect(html(<Heading>Title</Heading>)).not.toContain('tabindex');
   });
 

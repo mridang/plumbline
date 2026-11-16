@@ -13,6 +13,9 @@ import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 import { GITHUB_ENV } from '../github/github-test-kit';
 
+/** Matches check run or issue call. */
+const CHECK_RUN_OR_ISSUE_CALL = /(?:check-runs|issues$)/;
+
 const config = readGitHubConfig(GITHUB_ENV)!;
 
 /** A GitHub that answers every request and remembers them. */
@@ -88,9 +91,9 @@ describe('pauseRepo', () => {
       fetcher,
       pause: async () => undefined,
     });
-    expect(calls.filter((c) => /(?:check-runs|issues$)/.test(c))).toEqual([]);
+    expect(calls.filter((c) => CHECK_RUN_OR_ISSUE_CALL.test(c))).toEqual([]);
     const issues = await issuesOfHost(db, 'acme/site', 'site.test');
-    expect([...issues.values()].map((issue) => issue.state)).toEqual([
+    expect(Array.from(issues.values(), (issue) => issue.state)).toEqual([
       'fixed',
       'fixed',
     ]);

@@ -27,6 +27,12 @@ import { globMatches } from '@/domain/suite/glob';
 
 import type { StoredFinding } from '@/domain/suite/diff';
 
+/** A run of characters that are not lower-case letters or digits. */
+const NON_ALPHANUMERIC_RUN = /[^a-z0-9]+/;
+
+/** A word made only of digits. */
+const DIGITS_ONLY = /^\d+$/;
+
 /** The words of an environment name that only say it is a copy, not which service it is. */
 const COPY_WORDS = new Set([
   'preview',
@@ -47,9 +53,9 @@ const COPY_WORDS = new Set([
 export function environmentKey(name: string): string {
   return name
     .toLowerCase()
-    .split(/[^a-z0-9]+/)
+    .split(NON_ALPHANUMERIC_RUN)
     .filter(
-      (word) => word !== '' && !COPY_WORDS.has(word) && !/^\d+$/.test(word),
+      (word) => word !== '' && !COPY_WORDS.has(word) && !DIGITS_ONLY.test(word),
     )
     .join('_');
 }

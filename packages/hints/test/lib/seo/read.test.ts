@@ -167,10 +167,10 @@ describe('audit fixes', () => {
 
 describe('findRobotsSource', () => {
   it('finds the meta tag that carries the directive', () => {
-    const doc = parse(
+    const parsedDocument = parse(
       '<meta name="robots" content="index"><meta name="googlebot" content="noindex">',
     );
-    const found = findRobotsSource(doc as never, {}, 'noindex');
+    const found = findRobotsSource(parsedDocument as never, {}, 'noindex');
     expect(found).toHaveProperty('element');
   });
   it('falls back to the X-Robots-Tag header', () => {

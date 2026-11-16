@@ -3,6 +3,12 @@ import { describe, expect, it } from '@jest/globals';
 import { RepoLabel, splitRepo } from '@/components/repos/repo-label';
 import { html } from '../render';
 
+/** Matches owner span. */
+const OWNER_SPAN = /text-muted">acme\/<\/span>/;
+
+/** Matches name span. */
+const NAME_SPAN = /font-semibold">site<\/span>/;
+
 describe('splitRepo', () => {
   it('splits owner and name, and copes with a name alone', () => {
     expect(splitRepo('acme/site')).toEqual({ owner: 'acme', name: 'site' });
@@ -15,8 +21,8 @@ describe('RepoLabel', () => {
   it('shows the Octocat, the owner quietly and the name strongly, linked to the repository page', () => {
     const out = html(<RepoLabel repo="acme/site" />);
     expect(out).toContain('viewBox="0 0 16 16"');
-    expect(out).toMatch(/text-muted">acme\/<\/span>/);
-    expect(out).toMatch(/font-semibold">site<\/span>/);
+    expect(out).toMatch(OWNER_SPAN);
+    expect(out).toMatch(NAME_SPAN);
     expect(out).toContain('href="/repos/acme/site"');
     expect(out).toContain('title="acme/site"');
   });

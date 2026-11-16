@@ -38,7 +38,7 @@ import {
 } from '@mridang/webhint-hint-plumbline/dist/lib/secplus/form-action.js';
 import { mainResponse } from '../network.js';
 import { cspMetaContents } from '../adapt.js';
-import { hintDocs } from '../meta.js';
+import { hintDocumentation } from '../meta.js';
 import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
@@ -87,15 +87,15 @@ function fromHint(
     run: AuditCheck['run'];
   },
 ): AuditCheck {
-  const docs = hintDocs(definition);
+  const documentation = hintDocumentation(definition);
   return {
     id: definition.id,
     // Every secplus hint is placed in the taxonomy; fall back to site
     // protection defensively rather than emit an empty group.
-    section: docs.section ?? 'hardening',
-    title: docs.name,
-    description: docs.description,
-    reference: docs.url,
+    section: documentation.section ?? 'hardening',
+    title: documentation.name,
+    description: documentation.description,
+    reference: documentation.url,
     scoreMode: config.scoreMode,
     requiredArtifacts: config.requiredArtifacts,
     run: config.run,
@@ -112,13 +112,14 @@ export const secplusChecks: readonly AuditCheck[] = [
       if (!artifacts.MainDocumentContent) {
         return null;
       }
-      const anchors: AnchorLike[] = [
-        ...parsePage(artifacts).querySelectorAll('a[target]'),
-      ].map((element) => ({
-        target: element.getAttribute('target'),
-        rel: element.getAttribute('rel'),
-        href: element.getAttribute('href'),
-      }));
+      const anchors: AnchorLike[] = Array.from(
+        parsePage(artifacts).querySelectorAll('a[target]'),
+        (element) => ({
+          target: element.getAttribute('target'),
+          rel: element.getAttribute('rel'),
+          href: element.getAttribute('href'),
+        }),
+      );
       return tabnabbingFindings(anchors, pageUrl(artifacts));
     },
   }),
@@ -160,9 +161,10 @@ export const secplusChecks: readonly AuditCheck[] = [
       if (!artifacts.MainDocumentContent) {
         return null;
       }
-      const forms: FormLike[] = [
-        ...parsePage(artifacts).querySelectorAll('form[action]'),
-      ].map((element) => ({ action: element.getAttribute('action') }));
+      const forms: FormLike[] = Array.from(
+        parsePage(artifacts).querySelectorAll('form[action]'),
+        (element) => ({ action: element.getAttribute('action') }),
+      );
       return formActionFindings(forms, pageUrl(artifacts));
     },
   }),

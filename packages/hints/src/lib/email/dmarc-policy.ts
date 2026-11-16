@@ -2,6 +2,12 @@ import { parseDmarc, type DmarcRecord } from './dmarc.js';
 import { registrableDomain } from './domain.js';
 import type { TxtLookup } from './txt.js';
 
+/** Matches a URI scheme and its colon at the start of a string. */
+const URI_SCHEME_PREFIX = /^[A-Za-z][A-Za-z0-9+.-]*:/u;
+
+/** Matches a single trailing dot. */
+const TRAILING_DOT = /\.$/u;
+
 /**
  * The DMARC policy test of Internet.nl (`dmarc_check_policy` in `mail.py`):
  * the record must be syntactically valid, its effective policy must be
@@ -49,7 +55,7 @@ export function reportHosts(parsed: DmarcRecord): string[] {
   for (const uri of uris) {
     // `mailto:user@host!10m`: everything after the scheme is the path. URIs
     // with an authority (`https://...`) name no mail host.
-    const path = uri.replace(/^[A-Za-z][A-Za-z0-9+.-]*:/u, '');
+    const path = uri.replace(URI_SCHEME_PREFIX, '');
     if (path === '' || path.startsWith('//')) {
       continue;
     }
@@ -57,7 +63,7 @@ export function reportHosts(parsed: DmarcRecord): string[] {
     if (host.includes('@')) {
       host = host.split('@').slice(1).join('@').split('!', 1)[0];
     }
-    host = host.trim().toLowerCase().replace(/\.$/u, '');
+    host = host.trim().toLowerCase().replace(TRAILING_DOT, '');
     if (host !== '') {
       hosts.push(host);
     }
@@ -102,7 +108,7 @@ export async function checkDmarcPolicy(
   isOrgDomain: boolean,
   lookupTxt: (name: string) => Promise<TxtLookup>,
 ): Promise<DmarcPolicyStatus> {
-  const normalized = domain.toLowerCase().replace(/\.$/u, '');
+  const normalized = domain.toLowerCase().replace(TRAILING_DOT, '');
   const parsed = parseDmarc(record);
   const status = verifySufficientPolicy(parsed, isOrgDomain);
   if (status === 'valid' && parsed) {

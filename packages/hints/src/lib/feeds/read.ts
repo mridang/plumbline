@@ -56,8 +56,8 @@ function toLink(element: ElementLike): DiscoveredLink {
  * type. The `rel~=` match accepts a multi-valued `rel` such as
  * `rel="alternate home"`, which is valid HTML.
  */
-export function getFeedLinks(doc: DocumentLike): DiscoveredLink[] {
-  return doc
+export function getFeedLinks(parsedDocument: DocumentLike): DiscoveredLink[] {
+  return parsedDocument
     .querySelectorAll('link[rel~="alternate" i][type]')
     .map((element) => toLink(element))
     .filter((link) => (FEED_TYPES as readonly string[]).includes(link.type));
@@ -67,8 +67,8 @@ export function getFeedLinks(doc: DocumentLike): DiscoveredLink[] {
  * Returns every `<link rel="alternate">` whose `type` is an oEmbed type
  * (`application/json+oembed` or `text/xml+oembed`).
  */
-export function getOembedLinks(doc: DocumentLike): DiscoveredLink[] {
-  return doc
+export function getOembedLinks(parsedDocument: DocumentLike): DiscoveredLink[] {
+  return parsedDocument
     .querySelectorAll('link[rel~="alternate" i][type]')
     .map((element) => toLink(element))
     .filter((link) => (OEMBED_TYPES as readonly string[]).includes(link.type));
@@ -78,8 +78,10 @@ export function getOembedLinks(doc: DocumentLike): DiscoveredLink[] {
  * Returns every `<link rel="search">` whose `type` is the OpenSearch
  * description type.
  */
-export function getOpenSearchLinks(doc: DocumentLike): DiscoveredLink[] {
-  return doc
+export function getOpenSearchLinks(
+  parsedDocument: DocumentLike,
+): DiscoveredLink[] {
+  return parsedDocument
     .querySelectorAll('link[rel~="search" i][type]')
     .map((element) => toLink(element))
     .filter((link) => link.type === OPENSEARCH_TYPE);

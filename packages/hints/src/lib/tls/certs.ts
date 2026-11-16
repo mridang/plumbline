@@ -8,6 +8,9 @@ import { X509Certificate } from '#crypto';
 import { signatureAlgorithmOid } from './der.js';
 import type { CertKey } from './evaluate.js';
 
+/** Matches the common name of a certificate subject. */
+const COMMON_NAME = /^CN=(.*)$/m;
+
 /** One certificate of the chain, ready to be rated. */
 export interface ChainCertificate {
   /** The subject common name, or `-` as Internet.nl prints it. */
@@ -33,7 +36,7 @@ function knownRoots(): Set<string> {
 
 /** The common name from an X.509 subject string, or `-`. */
 export function commonName(subject: string): string {
-  return /^CN=(.*)$/m.exec(subject)?.[1] ?? '-';
+  return COMMON_NAME.exec(subject)?.[1] ?? '-';
 }
 
 /** The public key type and parameters of a certificate. */

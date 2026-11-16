@@ -12,6 +12,8 @@ import {
 } from '../../../src/lib/headers/csp.js';
 import { HTTP_SCHEME } from '../../helpers/data.js';
 
+const collator = new Intl.Collator();
+
 const run = (
   policy: string,
   extra: Partial<Parameters<typeof analyzeCsp>[0]> = {},
@@ -28,9 +30,7 @@ describe('parseCsp', () => {
   it('maps directives to sources, lower-cased', () => {
     const csp = parseCsp(["Default-Src 'SELF' https://A.example"]);
     expect(
-      [...(csp.get('default-src') ?? [])].toSorted((a, b) =>
-        a.localeCompare(b),
-      ),
+      [...(csp.get('default-src') ?? [])].toSorted(collator.compare),
     ).toEqual(["'self'", 'https://a.example']);
   });
 

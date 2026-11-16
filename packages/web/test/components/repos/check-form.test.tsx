@@ -9,6 +9,16 @@ import {
 import { ProblemError } from '@/components/api/problem-message';
 import { htmlAt } from '../render';
 
+/** Matches the checked CSP checkbox. */
+const CSP_CHECKED_INPUT = /id="check-csp"[^>]* checked="" value="csp"/;
+/** Matches the ETag checkbox. */
+const ETAG_INPUT = /id="check-etag"[^>]* name="checks" value="etag"/;
+/** Matches the DNSSEC label. */
+const DNSSEC_LABEL =
+  /<label for="check-dnssec"><span[^>]*>DNSSEC<\/span><span[^>]*>Signed\.<\/span><\/label>/;
+/** Matches the save button. */
+const SAVE_CHECKS_BUTTON = /<button type="submit"[^>]*>Save checks<\/button>/;
+
 const SECTIONS: readonly CheckSection[] = [
   {
     id: 'hardening',
@@ -90,17 +100,15 @@ describe('CheckForm', () => {
   });
 
   it('ticks the enabled checks', () => {
-    expect(out).toMatch(/id="check-csp"[^>]* checked="" value="csp"/);
+    expect(out).toMatch(CSP_CHECKED_INPUT);
   });
 
   it('leaves the others unticked', () => {
-    expect(out).toMatch(/id="check-etag"[^>]* name="checks" value="etag"/);
+    expect(out).toMatch(ETAG_INPUT);
   });
 
   it('labels each check with its name and description', () => {
-    expect(out).toMatch(
-      /<label for="check-dnssec"><span[^>]*>DNSSEC<\/span><span[^>]*>Signed\.<\/span><\/label>/,
-    );
+    expect(out).toMatch(DNSSEC_LABEL);
   });
 
   it('ticks a section’s switch only when every check in it is on', () => {
@@ -113,6 +121,6 @@ describe('CheckForm', () => {
   });
 
   it('has a button that saves', () => {
-    expect(out).toMatch(/<button type="submit"[^>]*>Save checks<\/button>/);
+    expect(out).toMatch(SAVE_CHECKS_BUTTON);
   });
 });

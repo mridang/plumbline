@@ -4,6 +4,12 @@ import { rpki, type RpkiResult } from '../../../src/core/rpki.js';
 import { installDns } from '../../lib/network/fake-dns.js';
 import { runHint } from '../../helpers/run-hint.js';
 
+/** Matches the source code reported for an invalid web server route. */
+const WEB_INVALID_SOURCE = /^example\.test \S+ p AS1 invalid$/;
+
+/** Matches the source code reported for an unknown web server route. */
+const WEB_UNKNOWN_SOURCE = /^example\.test \S+ p AS1 unknown$/;
+
 const realClient = rpki.client;
 let restore: () => void = () => undefined;
 afterEach(() => {
@@ -30,14 +36,14 @@ describe('rpki-web-valid', () => {
     const problems = await run({ asn: 1, prefix: 'p', status: 'invalid' });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('Invalid validation state');
-    expect(problems[0].sourceCode).toMatch(/^example\.test \S+ p AS1 invalid$/);
+    expect(problems[0].sourceCode).toMatch(WEB_INVALID_SOURCE);
   });
 
   it('reports a NotFound announcement', async () => {
     const problems = await run({ asn: 1, prefix: 'p', status: 'unknown' });
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('NotFound validation state');
-    expect(problems[0].sourceCode).toMatch(/^example\.test \S+ p AS1 unknown$/);
+    expect(problems[0].sourceCode).toMatch(WEB_UNKNOWN_SOURCE);
   });
 
   it('is not tested when nothing is routed', async () => {

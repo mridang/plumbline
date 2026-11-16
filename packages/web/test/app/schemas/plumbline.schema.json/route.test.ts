@@ -4,6 +4,9 @@ import { GET } from '@/app/schemas/plumbline.schema.json/route';
 import { SCHEMA_PATH, SCHEMA_URL } from '@/domain/suite/config-schema';
 import { applyResponseHeaders } from '@/lib/core/http/headers';
 
+/** Matches a quoted 32-character hex ETag. */
+const QUOTED_ETAG = /^"[0-9a-f]{32}"$/;
+
 const URL_OF = `https://plumbline.test${SCHEMA_PATH}`;
 
 const get = (headers: Record<string, string> = {}) =>
@@ -36,7 +39,7 @@ describe('GET /schemas/plumbline.schema.json', () => {
   it('carries an ETag that is the same every time', async () => {
     const firstResponse = await get();
     const first = firstResponse.headers.get('etag');
-    expect(first).toMatch(/^"[0-9a-f]{32}"$/);
+    expect(first).toMatch(QUOTED_ETAG);
     const secondResponse = await get();
     expect(secondResponse.headers.get('etag')).toBe(first);
   });

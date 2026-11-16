@@ -18,6 +18,21 @@ import {
   type Section,
 } from './sections.js';
 
+/** Matches the first character that is not a decimal digit. */
+const NON_DIGIT = /\D/;
+
+/** Matches a leading `(<n>/<n>)` fraction. */
+const FRACTION_IN_PARENTHESES = /^\(\d+\/\d+\)/;
+
+/** Matches a line terminator character. */
+const LINE_TERMINATOR = /[\n\r\u2028\u2029]/;
+
+/** Matches a single whitespace character. */
+const WHITESPACE = /\s/;
+
+/** Captures the score and the level at the start of the agent-score message. */
+const AGENT_SCORE_LEAD = /^Agent readiness score (\d+)\/100, level (\d+)/;
+
 /** Everything the renderer needs. */
 export interface ReportData {
   /** The scanned URL. */
@@ -46,13 +61,13 @@ interface AgentScore {
 
 /** True when `text` is `<digits>`, an optional `(<n>/<n>)` and an optional dot. */
 function isScoreTail(text: string): string | null {
-  const digits = text.search(/\D/);
+  const digits = text.search(NON_DIGIT);
   const length = digits === -1 ? text.length : digits;
   if (length === 0) {
     return null;
   }
   let rest = text.slice(length).trimStart();
-  const paren = /^\(\d+\/\d+\)/.exec(rest);
+  const paren = FRACTION_IN_PARENTHESES.exec(rest);
   if (paren) {
     rest = rest.slice(paren[0].length).trimStart();
   }
@@ -68,10 +83,10 @@ function isScoreTail(text: string): string | null {
  */
 function splitCategory(text: string): { name: string; score: string } | null {
   for (let at = 1; at < text.length; at += 1) {
-    if (/[\n\r\u2028\u2029]/.test(text[at - 1])) {
+    if (LINE_TERMINATOR.test(text[at - 1])) {
       return null;
     }
-    if (!/\s/.test(text[at]) || /\s/.test(text[at - 1])) {
+    if (!WHITESPACE.test(text[at]) || WHITESPACE.test(text[at - 1])) {
       continue;
     }
     const score = isScoreTail(text.slice(at).trimStart());
@@ -89,7 +104,7 @@ function splitCategory(text: string): { name: string; score: string } | null {
  * @returns The score, or `undefined` when the message has another shape.
  */
 function parseAgentScore(message: string): AgentScore | undefined {
-  const lead = /^Agent readiness score (\d+)\/100, level (\d+)/.exec(message);
+  const lead = AGENT_SCORE_LEAD.exec(message);
   if (!lead) {
     return undefined;
   }
@@ -173,13 +188,13 @@ function renderFinding(finding: Finding): string {
   const code = finding.sourceCode
     ? `<pre><code>${escapeHtml(finding.sourceCode)}</code>${language}</pre>`
     : '';
-  const docs =
+  const documentation =
     (finding.documentation ?? []).length > 0
       ? `<p class="docs">Further reading: ${(finding.documentation ?? [])
           .map((d) => link(d.link, d.text))
           .join(', ')}</p>`
       : '';
-  return `<li class="finding"><span class="sev ${label}">${label}</span> <span class="msg">${escapeHtml(finding.message)}</span><div class="res">${link(finding.resource)}${where}</div>${code}${docs}</li>`;
+  return `<li class="finding"><span class="sev ${label}">${label}</span> <span class="msg">${escapeHtml(finding.message)}</span><div class="res">${link(finding.resource)}${where}</div>${code}${documentation}</li>`;
 }
 
 /** Renders the two stock webhint buttons, for hints that are not ours. */
@@ -198,8 +213,10 @@ function renderOrigins(origins: readonly Origin[] | undefined): string {
   }
   const items = origins
     .map((o) => {
-      const docs = safeUrl(o.docsUrl) ? ` (${link(o.docsUrl, 'docs')})` : '';
-      return `<li><span class="badge">${escapeHtml(o.source)}</span> ${link(o.url, o.title || o.upstreamId)}${docs} <span class="muted">${escapeHtml(o.licence)}</span><br>${escapeHtml(o.summary)}</li>`;
+      const documentation = safeUrl(o.docsUrl)
+        ? ` (${link(o.docsUrl, 'docs')})`
+        : '';
+      return `<li><span class="badge">${escapeHtml(o.source)}</span> ${link(o.url, o.title || o.upstreamId)}${documentation} <span class="muted">${escapeHtml(o.licence)}</span><br>${escapeHtml(o.summary)}</li>`;
     })
     .join('');
   return `<details class="origins"><summary>Origin (${origins.length})</summary><ul>${items}</ul></details>`;

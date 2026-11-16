@@ -3,6 +3,9 @@ import { Severity } from '@hint/utils-types';
 import hint from '../../../src/hints/technical/technical-image-weight.js';
 import { runHint } from '../../helpers/run-hint.js';
 
+/** Matches a resource URL that ends in /mid.png. */
+const MID_IMAGE_RESOURCE = /\/mid\.png$/;
+
 /** Routes for a valid page whose head and body are filled in by the test. */
 const page = (body: string, head = '') => ({
   '/': {
@@ -46,7 +49,7 @@ describe('technical-image-weight', () => {
       '/mid.png': big(250),
     });
     expect(problems).toHaveLength(1);
-    expect(problems[0].resource).toMatch(/\/mid\.png$/);
+    expect(problems[0].resource).toMatch(MID_IMAGE_RESOURCE);
     expect(problems[0].sourceCode).toBe('250.0 KB (256000 bytes)');
   });
 });

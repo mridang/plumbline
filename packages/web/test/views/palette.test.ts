@@ -7,6 +7,9 @@ import {
   type ThemePalette,
 } from '@/views/palette';
 
+/** Matches a six digit hexadecimal colour. */
+const HEX_COLOUR_PATTERN = /^#[0-9a-f]{6}$/;
+
 /** Relative luminance of a `#rrggbb` colour, as WCAG defines it. */
 function luminance(hex: string): number {
   const [r = 0, g = 0, b = 0] = [1, 3, 5].map((start) => {
@@ -87,7 +90,7 @@ describe('the palettes', () => {
       ...Object.values(LIGHT_PALETTE),
       ...Object.values(DARK_PALETTE),
     ]) {
-      expect(colour).toMatch(/^#[0-9a-f]{6}$/);
+      expect(colour).toMatch(HEX_COLOUR_PATTERN);
     }
   });
 

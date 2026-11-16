@@ -88,27 +88,27 @@ describe('validateCaaRecord', () => {
 
 describe('evaluateCaa', () => {
   it('is clean for a valid set with an issue property', () => {
-    const e = evaluateCaa([rec('issue', 'ca.test')], 'example.test');
-    expect(e).toMatchObject({
+    const evaluation = evaluateCaa([rec('issue', 'ca.test')], 'example.test');
+    expect(evaluation).toMatchObject({
       found: true,
       foundOn: 'example.test',
       errors: [],
     });
   });
   it('requires an issue property', () => {
-    const e = evaluateCaa([rec('iodef', 'mailto:a@example.org')], 'x');
-    expect(e.errors.map((x) => x.id)).toEqual([MISSING_ISSUE]);
-    expect(e.errors[0].message).toBe(
+    const evaluation = evaluateCaa([rec('iodef', 'mailto:a@example.org')], 'x');
+    expect(evaluation.errors.map((x) => x.id)).toEqual([MISSING_ISSUE]);
+    expect(evaluation.errors[0].message).toBe(
       "Error: Required 'issue' property missing",
     );
   });
   it('reports syntax errors with readable messages', () => {
-    const e = evaluateCaa(
+    const evaluation = evaluateCaa(
       [rec('issue', 'ca.test'), rec('iodef', `${FTP_SCHEME}x`)],
       'x',
     );
-    expect(e.errors).toHaveLength(1);
-    expect(e.errors[0].message).toContain('Invalid iodef value');
+    expect(evaluation.errors).toHaveLength(1);
+    expect(evaluation.errors[0].message).toContain('Invalid iodef value');
   });
   it('evaluates at most 100 records', () => {
     const many = Array.from({ length: 150 }, () => rec('issue', 'ca.test'));

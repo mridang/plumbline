@@ -1,7 +1,7 @@
 import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onSite } from '../../core/page.js';
-import { ipv6Addresses, siteHost } from '../../lib/network/dns-util.js';
+import { ipv6Addresses, siteHost } from '../../lib/network/dns-utility.js';
 import { unreachableWebAddresses } from '../../lib/network/ipv6.js';
 
 /**

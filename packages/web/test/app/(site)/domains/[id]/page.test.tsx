@@ -19,6 +19,14 @@ import {
 } from '../../../../lib/core/db/sqlite-d1';
 import { htmlAt } from '../../../../components/render';
 
+/** Matches the CSP check checkbox rendered as checked. */
+const CSP_CHECKBOX_CHECKED_PATTERN =
+  /id="check-csp"[^>]* checked="" value="csp"/;
+
+/** Matches the ETag check checkbox carrying the checks name. */
+const ETAG_CHECKBOX_NAMED_PATTERN =
+  /id="check-etag"[^>]* name="checks" value="etag"/;
+
 /** What the page asked Next to redirect to; `redirect` throws, as the real one does. */
 class RedirectedError extends Error {
   override name = 'RedirectedError';
@@ -191,14 +199,14 @@ describe('DomainPage', () => {
   it('lists every check in the form, ticked as chosen', async () => {
     await setDomainChecks(db, 1, domain.id, ['csp']);
     expect(await page(domain.id, undefined, 'settings')).toMatch(
-      /id="check-csp"[^>]* checked="" value="csp"/,
+      CSP_CHECKBOX_CHECKED_PATTERN,
     );
   });
 
   it('leaves the checks that were not chosen unticked', async () => {
     await setDomainChecks(db, 1, domain.id, ['csp']);
     expect(await page(domain.id, undefined, 'settings')).toMatch(
-      /id="check-etag"[^>]* name="checks" value="etag"/,
+      ETAG_CHECKBOX_NAMED_PATTERN,
     );
   });
 

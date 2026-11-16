@@ -19,6 +19,15 @@ import { DISCOVERY_PATHS, EDGE_LIMITS, STATIC_PREFIXES } from '@/lib/core/http';
 import { vector } from '../../../helpers/data.js';
 import { packageDirectorySync } from 'package-directory';
 
+/** Matches a path key with a 32 character hash. */
+const PATH_KEY_PATTERN = /^p:[0-9a-f]{32}$/;
+
+/** Matches the path key prefix. */
+const PATH_KEY_PREFIX_PATTERN = /^p:/;
+
+/** Matches a token key with a 32 character hash. */
+const TOKEN_KEY_PATTERN = /^t:[0-9a-f]{32}$/;
+
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 /** A static file under the app's own first static prefix. */
@@ -82,7 +91,7 @@ describe('counterKey', () => {
       new Headers({ cookie: 'a=1; app_session=SECRET.value; b=2' }),
       'app_session',
     );
-    expect(key).toMatch(/^p:[0-9a-f]{32}$/);
+    expect(key).toMatch(PATH_KEY_PATTERN);
     expect(key).not.toContain('SECRET');
   });
 
@@ -112,14 +121,12 @@ describe('counterKey', () => {
       await counterKey(
         'token',
         new Headers({ authorization: 'Bearer abc123' }),
-        undefined,
       ),
-    ).toMatch(/^t:[0-9a-f]{32}$/);
+    ).toMatch(TOKEN_KEY_PATTERN);
     expect(
       await counterKey(
         'token',
         new Headers({ 'cf-connecting-ip': '2001:db8:1:2::9' }),
-        undefined,
       ),
     ).toBe(vector('ipa_2001_db8_1_2___64'));
   });
@@ -187,15 +194,15 @@ describe('edgeLimitRefusal', () => {
       { RL_API: api, [OVERALL_BINDING]: overall },
       limits,
     );
-    expect(api.keys[0]).toMatch(/^p:/);
+    expect(api.keys[0]).toMatch(PATH_KEY_PREFIX_PATTERN);
     expect(overall.keys).toEqual(['a:203.0.113.7']);
   });
 
   it('stops a caller who makes up cookies at the overall bucket', async () => {
     const env = { RL_API: binding(100), [OVERALL_BINDING]: binding(1) };
-    const forged = (i: number) =>
+    const forged = (index: number) =>
       get('/api/recipes', {
-        cookie: `app_session=forged${i}`,
+        cookie: `app_session=forged${index}`,
         'cf-connecting-ip': '203.0.113.7',
       });
     expect(await edgeLimitRefusal(forged(1), env, limits)).toBeNull();

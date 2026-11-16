@@ -112,11 +112,15 @@ export function PartTitle({
 /** A small tracked label. */
 export function Label({
   children,
-  className,
-}: Readonly<{ children: ReactNode; className?: string }>): ReactElement {
+  className: cssClasses,
+}: Readonly<{
+  children: ReactNode;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
+  className?: string;
+}>): ReactElement {
   return (
     <p
-      className={`text-label font-semibold tracking-[0.16em] text-subtle uppercase ${className ?? ''}`}
+      className={`text-label font-semibold tracking-[0.16em] text-subtle uppercase ${cssClasses ?? ''}`}
     >
       {children}
     </p>
@@ -137,12 +141,15 @@ export function Arrow(): ReactElement {
 
 /** A small chevron; `className` turns it when its fold is open. */
 export function Chevron({
-  className,
-}: Readonly<{ className?: string }>): ReactElement {
+  className: cssClasses,
+}: Readonly<{
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
+  className?: string;
+}>): ReactElement {
   return (
     <svg
       aria-hidden="true"
-      className={`size-3.5 shrink-0 text-subtle motion-safe:transition ${className ?? ''}`}
+      className={`size-3.5 shrink-0 text-subtle motion-safe:transition ${cssClasses ?? ''}`}
       viewBox="0 0 16 16"
       fill="none"
       stroke="currentColor"

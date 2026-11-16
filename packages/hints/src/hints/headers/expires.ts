@@ -4,6 +4,9 @@ import { onPage } from '../../core/page.js';
 import { expiresFindings } from '../../lib/headers/caching.js';
 import { reportFindings } from './shared.js';
 
+/** Matches a `max-age` directive in a `Cache-Control` value. */
+const MAX_AGE_DIRECTIVE = /(^|,)\s*max-age\s*=/i;
+
 /**
  * MDN: `Expires` must be a valid HTTP-date, and it is superseded by
  * `Cache-Control: max-age` when both are present. The hint reports a malformed
@@ -22,7 +25,7 @@ export default defineHint({
     onPage(context, (page) => {
       const value = headerValue(page.headers, 'expires');
       const cacheControl = headerValue(page.headers, 'cache-control') ?? '';
-      const hasMaxAge = /(^|,)\s*max-age\s*=/i.test(cacheControl);
+      const hasMaxAge = MAX_AGE_DIRECTIVE.test(cacheControl);
       reportFindings(page, expiresFindings(value, hasMaxAge), {
         name: 'Expires',
         value,

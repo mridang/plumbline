@@ -21,6 +21,11 @@ import { quietSecurityLogs } from './quiet-logs';
 import { SCOPE_READ } from '@/domain/mcp/app';
 import { SITE_NAME } from '@/utils/site';
 
+/** Matches printable ASCII without quotes or backslashes. */
+const PRINTABLE_ASCII_NO_QUOTES = /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/;
+/** Matches the "already used" message. */
+const ALREADY_USED = /already used/;
+
 const ORIGIN = 'https://site.example';
 const RESOURCE = `${ORIGIN}/mcp`;
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
@@ -37,7 +42,7 @@ quietSecurityLogs();
 let store: MemoryStore;
 
 /** A code issued to client-1 for the user 7. */
-async function newCode() {
+async function freshCode() {
   return issueAuthorizationCode(
     store,
     {
@@ -169,7 +174,7 @@ describe('handleTokenRequest', () => {
       form({
         client_id: 'client-1',
         grant_type: 'authorization_code',
-        code: await newCode(),
+        code: await freshCode(),
         redirect_uri: 'https://app.example/cb',
         code_verifier: VERIFIER,
         resource: RESOURCE,
@@ -191,7 +196,7 @@ describe('handleTokenRequest', () => {
           form({
             client_id: 'client-1',
             grant_type: 'authorization_code',
-            code: await newCode(),
+            code: await freshCode(),
             redirect_uri: 'https://app.example/cb',
             code_verifier: 'x'.repeat(43),
           }),
@@ -210,7 +215,7 @@ describe('handleTokenRequest', () => {
           form({
             client_id: 'client-1',
             grant_type: 'authorization_code',
-            code: await newCode(),
+            code: await freshCode(),
             redirect_uri: 'https://app.example/cb',
             code_verifier: VERIFIER,
             resource: 'https://elsewhere.example/mcp',
@@ -228,7 +233,7 @@ describe('handleTokenRequest', () => {
       form({
         client_id: 'client-1',
         grant_type: 'authorization_code',
-        code: await newCode(),
+        code: await freshCode(),
         redirect_uri: 'https://app.example/cb',
         code_verifier: VERIFIER,
       }),
@@ -260,7 +265,7 @@ describe('handleTokenRequest', () => {
       form({
         client_id: 'client-1',
         grant_type: 'authorization_code',
-        code: await newCode(),
+        code: await freshCode(),
         redirect_uri: 'https://app.example/cb',
         code_verifier: VERIFIER,
       }),
@@ -303,9 +308,7 @@ describe('error_description is printable ASCII without quotes or backslashes (RF
     const result = refusal(
       await handleTokenRequest(form(fields), store, ORIGIN, NOW),
     );
-    expect(result.description).toMatch(
-      /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/,
-    );
+    expect(result.description).toMatch(PRINTABLE_ASCII_NO_QUOTES);
   });
 });
 
@@ -436,7 +439,7 @@ describe('handleTokenRequest for a client that signs its requests', () => {
   it('refuses a replayed assertion', async () => {
     const fields = await signedFields();
     expect(await exchange(fields)).toMatchObject({ ok: true });
-    expect(refusal(await exchange(fields)).description).toMatch(/already used/);
+    expect(refusal(await exchange(fields)).description).toMatch(ALREADY_USED);
   });
 
   it('asks a refresh to be signed too', async () => {

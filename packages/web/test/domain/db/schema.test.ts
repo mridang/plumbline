@@ -33,6 +33,12 @@ import {
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 
+/** Matches index usage plan. */
+const INDEX_USAGE_PLAN = /USING (COVERING )?(INDEX|PRIMARY KEY)/;
+
+/** Matches full scan plan. */
+const FULL_SCAN_PLAN = /SCAN|TEMP B-TREE/;
+
 /** Every table the schema file declares. */
 const schema = {
   configDisabledRepos,
@@ -141,9 +147,8 @@ describe('the schema file and the migrations', () => {
       // Every index the schema names exists (the database also carries the
       // automatic ones SQLite makes for primary keys and unique constraints).
       const present = indexesOf(raw, name);
-      config.indexes.forEach((index) =>
-        expect(present).toContain(index.config.name),
-      );
+      for (const index of config.indexes)
+        expect(present).toContain(index.config.name);
     },
   );
 
@@ -211,7 +216,7 @@ describe('the schema file and the migrations', () => {
       .prepare(`EXPLAIN QUERY PLAN ${sql}`)
       .all()
       .map((row) => String(row['detail']));
-    expect(plan.join('\n')).toMatch(/USING (COVERING )?(INDEX|PRIMARY KEY)/);
-    expect(plan.join('\n')).not.toMatch(/SCAN|TEMP B-TREE/);
+    expect(plan.join('\n')).toMatch(INDEX_USAGE_PLAN);
+    expect(plan.join('\n')).not.toMatch(FULL_SCAN_PLAN);
   });
 });

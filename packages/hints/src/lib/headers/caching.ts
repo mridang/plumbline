@@ -9,6 +9,21 @@
 import { finding, type Finding } from './finding.js';
 import { splitList } from './http-headers.js';
 
+/** Matches an equals sign or semicolon. */
+const EQUALS_OR_SEMICOLON = /[=;]/;
+
+/** Matches a string made only of digits. */
+const DIGITS_ONLY = /^\d+$/;
+
+/** Matches an ETag made of three hex groups. */
+const HEX_TRIPLE_ETAG = /^[0-9a-f]+-[0-9a-f]+-[0-9a-f]+$/i;
+
+/** Matches a double-quoted string and captures its content. */
+const QUOTED_STRING = /^"(.*)"$/;
+
+/** Matches a weak ETag prefix. */
+const WEAK_ETAG_PREFIX = /^W\//;
+
 /** The preferred IMF-fixdate HTTP-date, plus the two obsolete formats. */
 const IMF_FIXDATE =
   /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d\d (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d\d\d\d \d\d:\d\d:\d\d GMT$/;
@@ -33,9 +48,9 @@ export function etagFindings(value: string | null): Finding[] {
     return [];
   }
   const tag = value.trim();
-  const opaque = /^W\//.test(tag) ? tag.slice(2) : tag;
-  const inner = /^"(.*)"$/.exec(opaque)?.[1];
-  if (inner !== undefined && /^[0-9a-f]+-[0-9a-f]+-[0-9a-f]+$/i.test(inner)) {
+  const opaque = WEAK_ETAG_PREFIX.test(tag) ? tag.slice(2) : tag;
+  const inner = QUOTED_STRING.exec(opaque)?.[1];
+  if (inner !== undefined && HEX_TRIPLE_ETAG.test(inner)) {
     return [
       finding(
         'warning',
@@ -93,7 +108,7 @@ export function expiresFindings(
 
 /** `Age` is a non-negative number of seconds. */
 export function ageFindings(value: string | null): Finding[] {
-  if (value === null || /^\d+$/.test(value.trim())) {
+  if (value === null || DIGITS_ONLY.test(value.trim())) {
     return [];
   }
   return [
@@ -154,7 +169,7 @@ export function noVarySearchFindings(value: string | null): Finding[] {
     return [finding('warning', "The 'No-Vary-Search' header is empty.")];
   }
   for (const member of members) {
-    const key = member.split(/[=;]/, 1)[0]?.trim() ?? '';
+    const key = member.split(EQUALS_OR_SEMICOLON, 1)[0]?.trim() ?? '';
     if (!NO_VARY_SEARCH_KEYS.has(key)) {
       return [
         finding(

@@ -4,6 +4,22 @@ import { SiteHeader } from '@/components/site/site-header';
 import type { User } from '@/domain/db/users';
 import { htmlAt } from '../render';
 
+/** Matches a home link around the brand name. */
+const BRAND_HOME_LINK = /<a[^>]*href="\/"[^>]*>[^]*?Plumbline<\/a>/;
+/** Matches the scan anchor link. */
+const SCAN_ANCHOR_LINK = /href="\/#scan"[^>]*>Scan a site<\/a>/;
+/** Matches links and text shown only to signed-in users. */
+const SIGNED_IN_ONLY_CONTENT = /href="\/dashboard"|href="\/connect"|Sign out/;
+/** Matches a dashboard link around the brand name. */
+const BRAND_DASHBOARD_LINK =
+  /<a[^>]*href="\/dashboard"[^>]*>[^]*?Plumbline<\/a>/;
+/** Matches the connect or GitHub links. */
+const CONNECT_OR_GITHUB_LINK = /href="\/connect"|href="\/github"/;
+/** Matches the current-page checks link. */
+const CHECKS_CURRENT_LINK = /aria-current="page"[^>]*>Checks</;
+/** Matches the current-page dashboard link. */
+const DASHBOARD_CURRENT_LINK = /aria-current="page"[^>]*>Dashboard</;
+
 const ADA: User = {
   id: 1,
   google_sub: 'g1',
@@ -42,7 +58,7 @@ describe('SiteHeader signed out', () => {
   const out = draw(null);
 
   it('leads home from the logo', () => {
-    expect(out).toMatch(/<a[^>]*href="\/"[^>]*>[^]*?Plumbline<\/a>/);
+    expect(out).toMatch(BRAND_HOME_LINK);
   });
 
   it('points to the checks and the docs pages', () => {
@@ -55,7 +71,7 @@ describe('SiteHeader signed out', () => {
   });
 
   it('offers a scan, as the main action', () => {
-    expect(out).toMatch(/href="\/#scan"[^>]*>Scan a site<\/a>/);
+    expect(out).toMatch(SCAN_ANCHOR_LINK);
   });
 
   it('has a menu for phones, where the links would not fit', () => {
@@ -63,7 +79,7 @@ describe('SiteHeader signed out', () => {
   });
 
   it('shows no account links and no dashboard', () => {
-    expect(out).not.toMatch(/href="\/dashboard"|href="\/connect"|Sign out/);
+    expect(out).not.toMatch(SIGNED_IN_ONLY_CONTENT);
   });
 });
 
@@ -71,8 +87,8 @@ describe('SiteHeader signed in', () => {
   const out = draw(ADA);
 
   it('leads to the dashboard from the logo, not the front page', () => {
-    expect(out).toMatch(/<a[^>]*href="\/dashboard"[^>]*>[^]*?Plumbline<\/a>/);
-    expect(out).not.toMatch(/<a[^>]*href="\/"[^>]*>[^]*?Plumbline<\/a>/);
+    expect(out).toMatch(BRAND_DASHBOARD_LINK);
+    expect(out).not.toMatch(BRAND_HOME_LINK);
   });
 
   it('lists the dashboard, the checks and the docs, in that order', () => {
@@ -88,7 +104,7 @@ describe('SiteHeader signed in', () => {
   });
 
   it('holds the account links in the menu, not in the bar', () => {
-    expect(out).not.toMatch(/href="\/connect"|href="\/github"/);
+    expect(out).not.toMatch(CONNECT_OR_GITHUB_LINK);
     expect(out).not.toContain('>Sign out<');
   });
 
@@ -99,15 +115,11 @@ describe('SiteHeader signed in', () => {
 
   it('marks the page it is on', () => {
     const marked = draw(ADA, '/checks');
-    expect(marked).toMatch(/aria-current="page"[^>]*>Checks</);
-    expect(draw(ADA, '/dashboard')).toMatch(
-      /aria-current="page"[^>]*>Dashboard</,
-    );
+    expect(marked).toMatch(CHECKS_CURRENT_LINK);
+    expect(draw(ADA, '/dashboard')).toMatch(DASHBOARD_CURRENT_LINK);
   });
 
   it('keeps the dashboard marked on a repository page', () => {
-    expect(draw(ADA, '/repos/acme/site')).toMatch(
-      /aria-current="page"[^>]*>Dashboard</,
-    );
+    expect(draw(ADA, '/repos/acme/site')).toMatch(DASHBOARD_CURRENT_LINK);
   });
 });

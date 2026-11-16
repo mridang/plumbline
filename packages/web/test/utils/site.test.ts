@@ -11,9 +11,14 @@ import {
   TERMS_LAST_UPDATED,
 } from '@/utils/site';
 
+/** Matches an https origin without a path. */
+const HTTPS_ORIGIN = /^https:\/\/[^/]+$/;
+/** Matches an ISO calendar date. */
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
 describe('site identity', () => {
   it('gives the site an https address with no trailing slash', () => {
-    expect(SITE_URL).toMatch(/^https:\/\/[^/]+$/);
+    expect(SITE_URL).toMatch(HTTPS_ORIGIN);
   });
 
   it('names the site in its address', () => {
@@ -38,7 +43,7 @@ describe('site identity', () => {
   it.each([PRIVACY_LAST_UPDATED, TERMS_LAST_UPDATED])(
     'dates the legal pages as ISO days (%s)',
     (day) => {
-      expect(day).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(day).toMatch(ISO_DATE);
     },
   );
 });

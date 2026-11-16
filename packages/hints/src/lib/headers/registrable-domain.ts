@@ -1,3 +1,5 @@
+/** Matches a trailing dot. */
+const TRAILING_DOT = /\.$/;
 /**
  * An approximation of "registrable domain" (public suffix plus one label),
  * used to tell first-party hosts from third-party ones the way Webbkoll
@@ -26,7 +28,7 @@ const IPV4 = /^\d{1,3}(?:\.\d{1,3}){3}$/;
 
 /** Returns the registrable domain of a host name, lower-cased. */
 export function registrableDomain(host: string): string {
-  const name = host.trim().toLowerCase().replace(/\.$/, '');
+  const name = host.trim().toLowerCase().replace(TRAILING_DOT, '');
   if (IPV4.test(name) || name.includes(':') || !name.includes('.')) {
     return name;
   }

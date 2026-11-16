@@ -3,6 +3,9 @@ import { onPage, onSite, type Page, type Site } from '../../core/page.js';
 import { isExposedSourceMap } from '../../lib/exposure/detect.js';
 import { fetchIfReachable, reportExposure } from './shared.js';
 
+/** Matches a path that ends in a `.js` extension. */
+const JAVASCRIPT_EXTENSION = /\.js$/i;
+
 const WSTG =
   'https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/04-Review_Old_Backup_and_Unreferenced_Files_for_Sensitive_Information';
 
@@ -17,7 +20,10 @@ function sourceMapPath(src: string, site: Site): string | undefined {
   } catch {
     return undefined;
   }
-  if (scriptUrl.origin !== site.origin || !/\.js$/i.test(scriptUrl.pathname)) {
+  if (
+    scriptUrl.origin !== site.origin ||
+    !JAVASCRIPT_EXTENSION.test(scriptUrl.pathname)
+  ) {
     return undefined;
   }
   return `${scriptUrl.pathname}.map`;
@@ -45,8 +51,8 @@ export default defineHint({
     // fetching after the scan, when onSite can reach other URLs.
     const scripts: string[] = [];
     onPage(context, (page: Page) => {
-      for (const el of page.document.querySelectorAll('script[src]')) {
-        const src = el.getAttribute('src');
+      for (const element of page.document.querySelectorAll('script[src]')) {
+        const src = element.getAttribute('src');
         if (src) {
           scripts.push(src);
         }

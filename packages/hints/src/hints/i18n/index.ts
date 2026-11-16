@@ -5,7 +5,7 @@ import hreflangValidCodes from './hreflang-valid-codes.js';
 import hreflangSelf from './hreflang-self.js';
 import hreflangDuplicate from './hreflang-duplicate.js';
 import alternateMedia from './alternate-media.js';
-import paginationRel from './pagination-rel.js';
+import paginationRelationship from './pagination-rel.js';
 
 /** Hints of the `i18n` set: hreflang, alternates and pagination link relations. */
 export const i18nHints: readonly HintDefinition[] = [
@@ -15,5 +15,5 @@ export const i18nHints: readonly HintDefinition[] = [
   hreflangSelf,
   hreflangDuplicate,
   alternateMedia,
-  paginationRel,
+  paginationRelationship,
 ];

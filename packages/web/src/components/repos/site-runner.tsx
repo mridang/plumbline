@@ -68,7 +68,7 @@ export function SiteRunner({
   const until = Math.max(savedUntil, nextRunAt(lastRunAt));
   const [now, setNow] = useState(() => Date.now());
   const wait = secondsLeft(until, now);
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     if (until <= Date.now()) {
       return undefined;
     }

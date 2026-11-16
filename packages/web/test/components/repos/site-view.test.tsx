@@ -7,6 +7,13 @@ import type { Report } from '@/domain/db/reports';
 import type { RunSummary } from '@/domain/db/runs';
 import { htmlAt } from '../render';
 
+/** Matches the opening of a check group details element. */
+const CHECK_GROUP_DETAILS_PATTERN =
+  /<details class="group rounded-card border border-line bg-surface"><summary/;
+
+/** Matches the run checks button label with its count. */
+const RUN_CHECKS_BUTTON_PATTERN = /Run \d+ checks/;
+
 const NOW = Date.parse('2026-01-02T00:00:00.000Z');
 
 const DOMAIN = {
@@ -109,7 +116,7 @@ describe('SiteView', () => {
 
   it('puts Run checks on the right, with the choice of checks beside it', () => {
     const out = draw();
-    expect(out).toMatch(/Run \d+ checks/);
+    expect(out).toMatch(RUN_CHECKS_BUTTON_PATTERN);
     expect(out).toContain('Choose checks (');
     expect(out).toContain('href="/r?site=site.example.com&amp;view=settings"');
     expect(out.indexOf('Choose checks')).toBeLessThan(out.indexOf('Run '));
@@ -132,9 +139,7 @@ describe('SiteView', () => {
     const out = draw();
     expect(out).toContain('Full history');
     // The history's disclosure has no `open`; only the failed check below it does.
-    expect(out).toMatch(
-      /<details class="group rounded-card border border-line bg-surface"><summary/,
-    );
+    expect(out).toMatch(CHECK_GROUP_DETAILS_PATTERN);
   });
 
   it('shows the choice of checks in place of the results for the settings view', () => {
@@ -149,7 +154,7 @@ describe('SiteView', () => {
   it('says there is no report yet, and still offers to run', () => {
     const out = draw({ noReport: true, runs: [] });
     expect(out).toContain('No report yet');
-    expect(out).toMatch(/Run \d+ checks/);
+    expect(out).toMatch(RUN_CHECKS_BUTTON_PATTERN);
   });
 
   it('explains the rules under the results of a repository', () => {

@@ -29,7 +29,8 @@ User-Agent: GPTBot
 Allow: images
 Sitemap: https://a.com/s.xml
 `;
-const msgs = (t: string) => validateAiTxt(t).issues.map((i) => i.message);
+const msgs = (t: string) =>
+  validateAiTxt(t).issues.map((index) => index.message);
 
 describe('ai-txt', () => {
   it('detects formats', () => {
@@ -59,9 +60,9 @@ describe('ai-txt', () => {
     );
   });
   it('rejects malformed spawning keys', () => {
-    const i = validateAiTxt('user agent: *\nDisallow: images').issues;
-    expect(i[0].message).toContain("use 'User-Agent'");
-    expect(i[0].line).toBe(1);
+    const index = validateAiTxt('user agent: *\nDisallow: images').issues;
+    expect(index[0].message).toContain("use 'User-Agent'");
+    expect(index[0].line).toBe(1);
   });
   it('rejects an orphan Allow', () => {
     expect(msgs('Allow: images\nUser-Agent: *')[0]).toContain(

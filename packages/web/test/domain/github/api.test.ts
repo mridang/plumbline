@@ -72,7 +72,7 @@ describe('GitHubApi', () => {
   });
 
   it('reads every page of a list until a short one, and no more than the page limit', async () => {
-    const full = Array.from({ length: 100 }, (_, i) => i);
+    const full = Array.from({ length: 100 }, (_, index) => index);
     const pages: string[] = [];
     const api = new GitHubApi(
       't',

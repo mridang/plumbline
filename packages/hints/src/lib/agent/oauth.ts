@@ -10,7 +10,10 @@ import {
   pretty,
   result,
   urlOf,
-} from './util.js';
+} from './utility.js';
+
+/** Matches the `resource_metadata` parameter of a `WWW-Authenticate` challenge. */
+const RESOURCE_METADATA_PARAMETER = /resource_metadata="([^"]+)"/i;
 
 /**
  * True for an identifier URL as RFC 8414 (issuer) and RFC 9728 (resource)
@@ -100,7 +103,7 @@ export async function checkOauthProtectedResource(
     // RFC 9728 section 5: a 401 challenge names the metadata URL in the
     // `resource_metadata` parameter of WWW-Authenticate.
     const home = await env.probe('/');
-    const url = /resource_metadata="([^"]+)"/i.exec(
+    const url = RESOURCE_METADATA_PARAMETER.exec(
       home?.headers['www-authenticate'] ?? '',
     );
     if (url) {
@@ -175,8 +178,12 @@ export async function checkOauthProtectedResource(
  */
 export async function checkAuthMd(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-auth-md';
-  const doc = await env.probe('/auth.md');
-  if (isOk(doc) && !isHtml(doc) && doc.body.trim().length > 0) {
+  const parsedDocument = await env.probe('/auth.md');
+  if (
+    isOk(parsedDocument) &&
+    !isHtml(parsedDocument) &&
+    parsedDocument.body.trim().length > 0
+  ) {
     return result(id, 'discovery', true, '/auth.md exists.');
   }
   const meta = parseJsonObject(
@@ -190,8 +197,14 @@ export async function checkAuthMd(env: AgentEnv): Promise<CheckResult> {
       'The authorization server metadata has an agent_auth block.',
     );
   }
-  return result(id, 'discovery', false, `${missingReason('/auth.md', doc)}.`, {
-    resource: doc?.url ?? urlOf(env, '/auth.md'),
-    snippet: `# Authentication\n\nAgents register at ${env.origin}/register and receive credentials for ${env.origin}/api.`,
-  });
+  return result(
+    id,
+    'discovery',
+    false,
+    `${missingReason('/auth.md', parsedDocument)}.`,
+    {
+      resource: parsedDocument?.url ?? urlOf(env, '/auth.md'),
+      snippet: `# Authentication\n\nAgents register at ${env.origin}/register and receive credentials for ${env.origin}/api.`,
+    },
+  );
 }

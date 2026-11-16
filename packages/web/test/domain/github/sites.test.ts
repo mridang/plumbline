@@ -11,6 +11,9 @@ import { reconcileSites } from '@/domain/github/sites';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
+/** Compares strings in the default locale order, built once. */
+const collator = new Intl.Collator();
+
 const empty = () => sqliteDatabase(...APP_MIGRATIONS);
 
 type Db = ReturnType<typeof empty>['db'];
@@ -20,7 +23,7 @@ async function sitesOf(db: Db, user = 1) {
   const domains = await listDomains(db, user);
   return domains
     .map((d) => [d.host, d.repo, d.source, d.environment] as const)
-    .toSorted(([a], [b]) => a.localeCompare(b));
+    .toSorted(([a], [b]) => collator.compare(a, b));
 }
 
 /** The hosts of a person's sites, in host order. */
@@ -227,8 +230,8 @@ describe('reconcileSites, whose sites it touches', () => {
 
   it('stops adding at the number of domains a person may keep', async () => {
     const { db } = empty();
-    for (let i = 0; i < MAX_DOMAINS - 1; i += 1) {
-      await addDomain(db, 1, `d${i}.example.com`);
+    for (let index = 0; index < MAX_DOMAINS - 1; index += 1) {
+      await addDomain(db, 1, `d${index}.example.com`);
     }
     const changes = await reconcileSites(db, 1, 'o/site', {
       declared: ['a.example.com', 'b.example.com'],
@@ -239,8 +242,8 @@ describe('reconcileSites, whose sites it touches', () => {
 
   it('still tags a site the person has when the limit is reached', async () => {
     const { db } = empty();
-    for (let i = 0; i < MAX_DOMAINS - 1; i += 1) {
-      await addDomain(db, 1, `d${i}.example.com`);
+    for (let index = 0; index < MAX_DOMAINS - 1; index += 1) {
+      await addDomain(db, 1, `d${index}.example.com`);
     }
     await addDomain(db, 1, 'full.example.com');
     await reconcileSites(db, 1, 'o/site', { declared: ['full.example.com'] });

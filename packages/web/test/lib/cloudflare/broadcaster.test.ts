@@ -3,9 +3,7 @@ import { Broadcaster, type HubNamespace } from '@/lib/cloudflare/broadcaster';
 
 describe('Broadcaster', () => {
   test('wakes the hub named after the repository', async () => {
-    const notify = jest
-      .fn<(id: string) => Promise<void>>()
-      .mockResolvedValue(undefined);
+    const notify = jest.fn<(id: string) => Promise<void>>().mockResolvedValue();
     const names: string[] = [];
     const hubs = {
       idFromName: (name: string) => {

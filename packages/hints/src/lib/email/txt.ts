@@ -1,5 +1,8 @@
 import type { DnsClient } from '../../core/dns.js';
 
+/** Matches a three digit decimal escape. */
+const DECIMAL_ESCAPE = /^\d{3}/u;
+
 /** DNS record type number of a TXT record. */
 const TXT = 16;
 
@@ -11,7 +14,7 @@ function decodeChar(text: string, index: number): [string, number] {
   if (text[index] !== '\\' || index + 1 >= text.length) {
     return [text[index], 1];
   }
-  const decimal = /^\d{3}/u.exec(text.slice(index + 1));
+  const decimal = DECIMAL_ESCAPE.exec(text.slice(index + 1));
   if (decimal) {
     return [String.fromCodePoint(Number(decimal[0])), 4];
   }
@@ -31,13 +34,13 @@ export function decodeTxt(data: string): string {
   let result = '';
   let index = 0;
   while (index < trimmed.length) {
-    if (trimmed[index] !== '"') {
+    if (trimmed.codePointAt(index) !== 34) {
       // Whitespace between the quoted strings.
       index += 1;
       continue;
     }
     index += 1;
-    while (index < trimmed.length && trimmed[index] !== '"') {
+    while (index < trimmed.length && trimmed.codePointAt(index) !== 34) {
       const [char, width] = decodeChar(trimmed, index);
       result += char;
       index += width;

@@ -16,6 +16,9 @@ import { ProbeError } from './protocol.js';
 import type { HttpRequest, ProbeClient } from './client.js';
 import { ScanRefusedError, assertScannable } from '../scannable.js';
 
+/** Matches a `chunked` transfer encoding. */
+const CHUNKED_ENCODING = /chunked/i;
+
 /** The user agent sent with every request, so site owners can tell what called. */
 export const USER_AGENT =
   'Mozilla/5.0 (compatible; plumbline/1.0; +https://plumbline.apps.mrida.ng)';
@@ -131,7 +134,8 @@ function requestHeaders(
     ['accept-encoding', 'gzip, deflate, br'],
     ['user-agent', USER_AGENT],
   ]);
-  new Headers(init).forEach((value, name) => merged.set(name, value));
+  for (const [name, value] of new Headers(init).entries())
+    merged.set(name, value);
   return [...merged];
 }
 
@@ -165,7 +169,7 @@ async function once(
   }
   let body: Uint8Array | null = null;
   if (method !== 'HEAD' && !bodyless(answer.status)) {
-    const chunked = /chunked/i.test(lines.get('transfer-encoding') ?? '');
+    const chunked = CHUNKED_ENCODING.test(lines.get('transfer-encoding') ?? '');
     const raw = chunked ? unchunk(answer.body) : answer.body;
     body = await decode(raw, lines.get('content-encoding') ?? undefined);
     if (body.byteLength > MAX_BYTES) {

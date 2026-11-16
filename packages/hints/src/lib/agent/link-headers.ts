@@ -1,5 +1,11 @@
 import type { AgentEnv, CheckResult } from './types.js';
-import { evidenceFor, result } from './util.js';
+import { evidenceFor, result } from './utility.js';
+
+/** Matches one `Link` header entry: the target in angle brackets and its parameters. */
+const LINK_ENTRY = /^<([^>]*)>(.*)$/;
+
+/** Matches a run of whitespace. */
+const WHITESPACE_RUN = /\s+/;
 
 /** One link of a `Link` header (RFC 8288). */
 export interface WebLink {
@@ -36,15 +42,17 @@ function splitLinks(header: string): string[] {
 export function parseLinkHeader(header: string): WebLink[] {
   const links: WebLink[] = [];
   for (const part of splitLinks(header)) {
-    const match = /^<([^>]*)>(.*)$/.exec(part);
+    const match = LINK_ENTRY.exec(part);
     if (!match) {
       continue;
     }
     const rels: string[] = [];
     // `rel` may be quoted and hold several space separated relations.
-    const relPattern = /;\s*rel\s*=\s*(?:"([^"]*)"|([^\s;,]+))/gi;
-    for (const rel of match[2].matchAll(relPattern)) {
-      rels.push(...(rel[1] ?? rel[2]).toLowerCase().split(/\s+/));
+    const relationshipPattern = /;\s*rel\s*=\s*(?:"([^"]*)"|([^\s;,]+))/gi;
+    for (const parameter of match[2].matchAll(relationshipPattern)) {
+      rels.push(
+        ...(parameter[1] ?? parameter[2]).toLowerCase().split(WHITESPACE_RUN),
+      );
     }
     links.push({ target: match[1], rels: rels.filter(Boolean) });
   }
@@ -95,7 +103,7 @@ export async function checkLinkHeaders(env: AgentEnv): Promise<CheckResult> {
     );
   }
   const useful = parseLinkHeader(header).flatMap((link) =>
-    link.rels.filter((rel) => AGENT_RELS.has(rel)),
+    link.rels.filter((relationship) => AGENT_RELS.has(relationship)),
   );
   return useful.length > 0
     ? result(

@@ -67,7 +67,7 @@ describe('parseHost', () => {
   });
 
   it('requires a value', () => {
-    expect(parseHost(undefined)).toEqual({
+    expect(parseHost()).toEqual({
       ok: false,
       errors: ['host: required.'],
     });

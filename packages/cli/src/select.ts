@@ -11,6 +11,9 @@ import {
 import { UsageError } from './options.js';
 import type { HintMeta } from './scan.js';
 
+/** Matches the `extra/` prefix webhint puts on a hint id. */
+const EXTRA_PREFIX = /^extra\//;
+
 /** Which hints a scan should run, as given on the command line. */
 export interface Selection {
   only: readonly string[];
@@ -37,7 +40,7 @@ function placementOf(id: string): (typeof PLACEMENT)[string] | undefined {
  * paste that form back into `--only`; it means the same bare id.
  */
 function bare(id: string): string {
-  return id.replace(/^extra\//, '');
+  return id.replace(EXTRA_PREFIX, '');
 }
 
 /** Every group at least one hint in the catalogue lists. */

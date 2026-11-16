@@ -134,8 +134,8 @@ describe('fixPrompt', () => {
   });
 
   it('shortens a long snippet and counts the findings it leaves out', () => {
-    const findings = Array.from({ length: MAX_FINDINGS + 2 }, (_, i) =>
-      finding(`Problem ${i}`),
+    const findings = Array.from({ length: MAX_FINDINGS + 2 }, (_, index) =>
+      finding(`Problem ${index}`),
     );
     const prompt = fixPrompt(
       scan(

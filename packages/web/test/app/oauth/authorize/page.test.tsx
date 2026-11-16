@@ -19,6 +19,11 @@ import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 import { htmlAt } from '../../../components/render';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 
+/** Matches the login redirect with a returnTo. */
+const LOGIN_RETURN_TO_PATH = /^\/auth\/login\?returnTo=/;
+/** Matches the return-to-app link. */
+const RETURN_TO_APP_LINK = /href="([^"]*)"[^>]*>Return to the app/;
+
 /** What the page asked Next to redirect to; `redirect` throws, as the real one does. */
 class RedirectedError extends Error {
   constructor(readonly to: string) {
@@ -152,7 +157,7 @@ describe('the authorize page', () => {
     const result = await visit();
     expect(result).toHaveProperty('redirectedTo');
     const to = (result as { redirectedTo: string }).redirectedTo;
-    expect(to).toMatch(/^\/auth\/login\?returnTo=/);
+    expect(to).toMatch(LOGIN_RETURN_TO_PATH);
     const back = new URL(
       decodeURIComponent(to.split('returnTo=', 2)[1] ?? ''),
       'https://app.test',
@@ -203,7 +208,7 @@ describe('the authorize page', () => {
       expect(markup).toContain('unsupported_response_type');
       expect(markup).toContain('Return to the app');
       expect(markup).toContain('https://app.example/cb');
-      const href = /href="([^"]*)"[^>]*>Return to the app/.exec(markup)?.[1];
+      const href = RETURN_TO_APP_LINK.exec(markup)?.[1];
       const link = new URL((href ?? '').replaceAll('&amp;', '&'));
       expect(link.origin + link.pathname).toBe('https://app.example/cb');
       expect(link.searchParams.get('error')).toBe('unsupported_response_type');

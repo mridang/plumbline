@@ -10,14 +10,15 @@ import { formatCompact, formatCount } from '@/lib/intl';
 export function Count({
   value,
   compact = false,
-  className,
+  className: cssClasses,
 }: Readonly<{
   value: number;
   compact?: boolean;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
   className?: string;
 }>): ReactElement {
   return (
-    <span className={cn('tabular-nums', className)}>
+    <span className={cn('tabular-nums', cssClasses)}>
       {compact ? (
         <>
           <span aria-hidden="true">{formatCompact(value)}</span>

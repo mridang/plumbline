@@ -34,19 +34,21 @@ const ENTITY_TYPES = ['Organization', 'Corporation', 'LocalBusiness', 'Person'];
 export const ENTITY_TYPE_LABEL = ENTITY_TYPES.join('/');
 
 /** Reads and parses every JSON-LD block of the document. */
-export function readJsonLd(doc: JsonLdDocument): JsonLdBlocks {
-  const elements = doc.querySelectorAll('script[type="application/ld+json" i]');
+export function readJsonLd(parsedDocument: JsonLdDocument): JsonLdBlocks {
+  const elements = parsedDocument.querySelectorAll(
+    'script[type="application/ld+json" i]',
+  );
   const parsed: unknown[] = [];
   const parsedAt: number[] = [];
   const invalidAt: number[] = [];
-  elements.forEach((element, index) => {
+  for (const [index, element] of elements.entries()) {
     try {
       parsed.push(JSON.parse(element.textContent));
       parsedAt.push(index);
     } catch {
       invalidAt.push(index);
     }
-  });
+  }
   return {
     total: elements.length,
     invalid: invalidAt.length,

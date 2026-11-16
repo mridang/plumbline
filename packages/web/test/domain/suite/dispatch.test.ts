@@ -11,6 +11,9 @@ import {
 } from '@/domain/suite/dispatch';
 import type { StoredFinding } from '@/domain/suite/diff';
 
+/** Matches an at-mention or markdown https link. */
+const MENTION_OR_MARKDOWN_LINK = /@[a-z]|\]\(https:\/\//;
+
 const found = (
   severity: StoredFinding['severity'],
   message = 'm',
@@ -53,7 +56,7 @@ describe('payloadOf', () => {
       findings: { message: string }[];
     };
     expect(findings).toHaveLength(MAX_DISPATCHED);
-    expect(findings[0]?.message).not.toMatch(/@[a-z]|\]\(https:\/\//);
+    expect(findings[0]?.message).not.toMatch(MENTION_OR_MARKDOWN_LINK);
   });
 });
 

@@ -36,7 +36,7 @@ describe('lookupMailServers', () => {
   it('tests at most ten servers', async () => {
     const data = Array.from(
       { length: 12 },
-      (_, i) => `10 mx${String(i).padStart(2, '0')}.a.test.`,
+      (_, index) => `10 mx${String(index).padStart(2, '0')}.a.test.`,
     );
     const hosts = await lookupMailServers(
       fakeDns({ 'a.test MX': data }),

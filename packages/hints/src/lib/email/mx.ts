@@ -1,5 +1,14 @@
 import type { DnsClient } from '../../core/dns.js';
 
+/** Matches a run of whitespace. */
+const WHITESPACE_RUN = /\s+/u;
+
+/** Compares host names in the default locale order. */
+const collator = new Intl.Collator();
+
+/** Matches a single trailing dot. */
+const TRAILING_DOT = /\.$/u;
+
 /** DNS record type number of an MX record. */
 const MX = 15;
 
@@ -34,18 +43,16 @@ export async function lookupMailServers(
 
   const hosts = new Set<string>();
   for (const record of records) {
-    const [priority, ...rest] = record.data.trim().split(/\s+/u);
+    const [priority, ...rest] = record.data.trim().split(WHITESPACE_RUN);
     const target = rest.join(' ').toLowerCase();
     if (Number(priority) === 0 && target === '.') {
       return [];
     }
-    const host = target.replace(/\.$/u, '');
+    const host = target.replace(TRAILING_DOT, '');
     if (host === '' || host === 'localhost') {
       continue;
     }
     hosts.add(host);
   }
-  return [...hosts]
-    .toSorted((a, b) => a.localeCompare(b))
-    .slice(0, MAX_MAIL_SERVERS);
+  return [...hosts].toSorted(collator.compare).slice(0, MAX_MAIL_SERVERS);
 }

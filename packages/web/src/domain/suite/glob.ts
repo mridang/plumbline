@@ -18,10 +18,13 @@ export function globMatches(pattern: string, text: string): boolean {
   let star = -1;
   let taken = 0;
   while (t < have.length) {
-    if (p < want.length && (want[p] === '?' || want[p] === have[t])) {
+    if (
+      p < want.length &&
+      (want.codePointAt(p) === 63 || want[p] === have[t])
+    ) {
       p += 1;
       t += 1;
-    } else if (p < want.length && want[p] === '*') {
+    } else if (p < want.length && want.codePointAt(p) === 42) {
       star = p;
       taken = t;
       p += 1;
@@ -33,7 +36,7 @@ export function globMatches(pattern: string, text: string): boolean {
       t = taken;
     }
   }
-  while (p < want.length && want[p] === '*') {
+  while (p < want.length && want.codePointAt(p) === 42) {
     p += 1;
   }
   return p === want.length;

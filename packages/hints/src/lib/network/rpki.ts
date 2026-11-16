@@ -4,7 +4,11 @@
  * Origin Authorisation published (existence) and is the announcement valid.
  */
 import { rpki, type RpkiResult } from '../../core/rpki.js';
-import { findNameservers, ipv4Addresses, ipv6Addresses } from './dns-util.js';
+import {
+  findNameservers,
+  ipv4Addresses,
+  ipv6Addresses,
+} from './dns-utility.js';
 
 export interface IpRpki {
   host: string;
@@ -101,4 +105,4 @@ export const rpkiLines = (entries: IpRpki[]): string =>
 
 /** Renders `host (ip)` pairs for messages. */
 export const describe = (entries: IpRpki[]): string =>
-  entries.map((e) => `${e.host} (${e.ip})`).join(', ');
+  entries.map((entry) => `${entry.host} (${entry.ip})`).join(', ');
