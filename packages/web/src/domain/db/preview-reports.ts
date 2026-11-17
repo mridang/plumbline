@@ -12,8 +12,8 @@ import { and, eq, lt } from 'drizzle-orm';
 
 import { previewReports } from '@/domain/db/schema';
 import { countsOf } from '@/domain/suite/report';
-import type { Database } from '@/domain/db/client';
 import { isStoredFinding } from '@/domain/suite/diff';
+import type { Database } from '@/domain/db/client';
 import type { StoredFinding } from '@/domain/suite/diff';
 
 /** How long a report is kept, in days. */

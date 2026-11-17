@@ -3,9 +3,9 @@ import { DatabaseSync } from 'node:sqlite';
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
 
 import { migrationSql } from './migrations';
+import { double } from '../../../helpers/double';
 import type { SQLInputValue } from 'node:sqlite';
 import type { Database } from '@/domain/db/client';
-import { double } from '../../../helpers/double';
 
 const schema = await import('@/domain/db/schema');
 

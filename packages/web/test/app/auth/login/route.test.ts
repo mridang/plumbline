@@ -14,8 +14,8 @@ import {
   appRequest,
   installEnv,
 } from '../../../domain/auth/auth-test-kit';
-import type { NextRequest, NextResponse } from 'next/server';
 import { double } from '../../../helpers/double';
+import type { NextRequest, NextResponse } from 'next/server';
 
 /** Matches the sign-in state prefix. */
 const SIGNIN_STATE_PREFIX = /^signin\./u;

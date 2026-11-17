@@ -27,9 +27,11 @@ export type ScanLine =
   | { readonly type: 'end' };
 
 /** Whether a parsed line is of a kind this page knows. */
-function isScanLine(value: object): value is ScanLine {
+function isScanLine(value: unknown): value is ScanLine {
+  if (typeof value !== 'object' || value === null || !('type' in value)) {
+    return false;
+  }
   return (
-    'type' in value &&
     typeof value.type === 'string' &&
     ['ready', 'done', 'unreachable', 'end'].includes(value.type)
   );

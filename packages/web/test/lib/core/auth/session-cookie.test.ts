@@ -4,8 +4,8 @@ import { NextResponse } from 'next/server';
 import { SESSION_COOKIE, sessionClaims } from '@/domain/auth/app';
 import { SessionTokens } from '@/lib/session';
 import { setSessionCookie } from '@/lib/core/auth';
-import type { User } from '@/domain/auth/store';
 import { double } from '../../../helpers/double';
+import type { User } from '@/domain/auth/store';
 
 const SECRET = 'test-session-secret-value';
 const user = (overrides: Record<string, unknown> = {}) =>

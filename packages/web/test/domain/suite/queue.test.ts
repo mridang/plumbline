@@ -16,9 +16,9 @@ import {
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
+import { double } from '../../helpers/double';
 import type { ScanMessage } from '@/domain/suite/queue';
 import type { ScanJob } from '@/domain/suite/scanner';
-import { double } from '../../helpers/double';
 
 const NOW = new Date('2026-01-01T12:00:00.000Z');
 

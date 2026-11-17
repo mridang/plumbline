@@ -5,8 +5,8 @@ import { installFakeTracing } from '../observability/fake-tracing';
 const tracing = installFakeTracing();
 const { nonceOf, genericLimits, serve, serverTiming } =
   await import('@/lib/core/http');
-import type { ServeApp } from '@/lib/core/http';
 import { double } from '../../../helpers/double';
+import type { ServeApp } from '@/lib/core/http';
 
 /** Matches uuid format. */
 const UUID_FORMAT = /^[0-9a-f-]{36}$/u;

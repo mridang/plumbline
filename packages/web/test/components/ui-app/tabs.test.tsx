@@ -2,8 +2,8 @@ import { describe, expect, it } from '@jest/globals';
 
 import { TabList, TabPanel, moveFocus, tabId } from '@/components/ui-app/tabs';
 import { html } from '../render';
-import type { KeyboardEvent } from 'react';
 import { double } from '../../helpers/double';
+import type { KeyboardEvent } from 'react';
 
 /** Matches the first tab link. */
 const FIRST_TAB_LINK = /<a[^>]*role="tab"[^>]*href="\/r\?site=a\.test"/u;

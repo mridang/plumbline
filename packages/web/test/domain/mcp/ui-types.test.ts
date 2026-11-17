@@ -6,7 +6,7 @@ import { domainListResult, reportData } from '@/domain/mcp/tool-results';
 import { isDomainListData, isReportData } from '@/views/guards';
 import type { Domain } from '@/domain/db/domains';
 import type { Report } from '@/domain/db/reports';
-import type { DomainListData, ReportData } from '@/domain/mcp/ui-types';
+import type { ReportData } from '@/domain/mcp/ui-types';
 
 const DOMAIN: Domain = {
   id: '00000000-0000-4000-8000-000000000001',

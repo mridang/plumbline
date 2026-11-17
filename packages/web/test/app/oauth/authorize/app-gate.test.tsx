@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { approvalGate } from '@/app/oauth/authorize/app-gate';
-import type { User } from '@/domain/auth/store';
 import { double } from '../../../helpers/double';
+import type { User } from '@/domain/auth/store';
 
 const person = double<User>({ id: 7, email: 'someone@example.com' });
 

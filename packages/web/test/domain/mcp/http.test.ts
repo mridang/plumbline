@@ -10,12 +10,12 @@ import {
 import { MAX_BODY_BYTES } from '@/domain/mcp/request-limits';
 import { SERVER_INFO } from '@/domain/mcp/server-info';
 import { REPORT_RESOURCE_URI } from '@/domain/mcp/ui-resources';
+import { double } from '../../helpers/double';
 import type { RateLimitDeps } from '@/domain/mcp/request-limits';
 import type { Authenticate } from '@/domain/mcp/http';
 import type { McpAuth } from '@/domain/mcp/auth';
 import type { User } from '@/domain/db/users';
 import type { RateLimitStore } from '@/lib/rate-limit';
-import { double } from '../../helpers/double';
 
 /** Shared collator for locale-aware ordering. */
 const collator = new Intl.Collator();
@@ -108,6 +108,7 @@ async function send(
   return {
     status: res.status,
     headers: res.headers,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- JSON.parse returns any, and the route under test wrote the reply, which the tests read as Reply
     json: text ? double<Reply>(JSON.parse(text)) : undefined,
   };
 }

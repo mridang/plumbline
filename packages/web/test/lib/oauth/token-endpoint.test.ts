@@ -731,14 +731,15 @@ describe('refresh scope and resource', () => {
 });
 
 describe('security events', () => {
-  const lines = (spy: LogSpy): unknown[] =>
-    spy.mock.calls.map(([line]): unknown => JSON.parse(String(line)));
+  const lines = (spy: LogSpy): Record<string, unknown>[] =>
+    spy.mock.calls.map(([line]) => {
+      const parsed: unknown = JSON.parse(String(line));
+      return typeof parsed === 'object' && parsed !== null
+        ? Object.fromEntries(Object.entries(parsed))
+        : {};
+    });
   const events = (spy: LogSpy): unknown[] =>
-    lines(spy).map((entry) =>
-      typeof entry === 'object' && entry !== null && 'event' in entry
-        ? entry.event
-        : undefined,
-    );
+    lines(spy).map((entry) => entry['event']);
 
   it('logs the grant when a code is redeemed, with identifiers and no secret', async () => {
     const tokens = await tokensOf(redeem(code));

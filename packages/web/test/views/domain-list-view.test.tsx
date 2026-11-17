@@ -7,6 +7,7 @@ import {
   openReport,
 } from '@/views/domain-list-view';
 import { html } from '../components/render';
+import { stub } from '../helpers/double';
 import type {
   DomainListData,
   DomainListItem,
@@ -15,7 +16,6 @@ import type {
 import type { ToolOutcome } from '@/views/payload';
 import type { WidgetBridge } from '@/views/use-widget-data';
 import type { ViewState } from '@/views/view-state';
-import { stub } from '../helpers/double';
 
 const SCANNED: DomainListItem = {
   id: 'd1',

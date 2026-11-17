@@ -15,8 +15,8 @@ import {
   tokenFor,
 } from '../../../domain/auth/auth-test-kit';
 import { installFakeTracing } from '../observability/fake-tracing';
-import type { User } from '@/domain/auth/store';
 import { double } from '../../../helpers/double';
+import type { User } from '@/domain/auth/store';
 
 const tracing = installFakeTracing();
 

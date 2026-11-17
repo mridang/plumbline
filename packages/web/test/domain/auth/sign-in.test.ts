@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { LANDING_PATH, SESSION_COOKIE, sessionClaims } from '@/domain/auth/app';
 import { installFakeTracing } from '../../lib/core/observability/fake-tracing';
 import { SESSION_SECRET, appRequest } from './auth-test-kit';
-import type { User } from '@/domain/auth/store';
 import { double } from '../../helpers/double';
+import type { User } from '@/domain/auth/store';
 
 /** Matches the word email. */
 const EMAIL = /email/u;

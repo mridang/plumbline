@@ -35,6 +35,7 @@ interface Wrangler {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- the parsed wrangler.jsonc is any, and the tests read it as the Wrangler shape they list
 const config = double<Wrangler>(
   ts.parseConfigFileTextToJson(
     'wrangler.jsonc',

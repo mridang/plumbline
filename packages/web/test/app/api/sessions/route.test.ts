@@ -15,8 +15,8 @@ import {
   jar,
   tokenFor,
 } from '../../../domain/auth/auth-test-kit';
-import type { User } from '@/domain/auth/store';
 import { double } from '../../../helpers/double';
+import type { User } from '@/domain/auth/store';
 
 // eslint-disable-next-line tslop/no-module-mocking -- next/headers is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));

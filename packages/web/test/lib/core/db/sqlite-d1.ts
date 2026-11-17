@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { migrationSql } from './migrations';
-import type { SQLInputValue, StatementSync } from 'node:sqlite';
 import { double } from '../../../helpers/double';
+import type { SQLInputValue, StatementSync } from 'node:sqlite';
 
 /** What a prepared statement answers, shaped like D1's `D1Result`. */
 interface Result {

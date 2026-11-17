@@ -32,16 +32,14 @@ export type LiveEvent = StartedEvent | FinishedEvent;
 
 /** Whether a parsed frame is an event: of a known type, with the site and the time. */
 function isLiveEvent(value: unknown): value is LiveEvent {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'type' in value &&
-    (value.type === 'started' || value.type === 'finished') &&
-    'host' in value &&
-    typeof value.host === 'string' &&
-    'at' in value &&
-    typeof value.at === 'string'
-  );
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const knownType =
+    'type' in value && (value.type === 'started' || value.type === 'finished');
+  const hasHost = 'host' in value && typeof value.host === 'string';
+  const hasTime = 'at' in value && typeof value.at === 'string';
+  return knownType && hasHost && hasTime;
 }
 
 /** The event in a frame's data, or null for anything that is not one. */

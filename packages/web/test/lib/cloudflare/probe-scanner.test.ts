@@ -17,8 +17,8 @@ import { GITHUB_ENV, fakeGitHub } from '../../domain/github/github-test-kit';
 import { cloudflareWorkersStub } from '../../helpers/cloudflare-workers-stub';
 import { APP_MIGRATIONS } from '../core/db/migrations';
 import { sqliteD1 } from '../core/db/sqlite-d1';
-import type { SuiteJob } from '@/domain/suite/scanner';
 import { stub } from '../../helpers/double';
+import type { SuiteJob } from '@/domain/suite/scanner';
 
 /** Compares strings in the default locale order, built once. */
 const collator = new Intl.Collator();

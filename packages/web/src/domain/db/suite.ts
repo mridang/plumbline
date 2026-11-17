@@ -30,9 +30,9 @@ import {
   suiteRuns,
   webhookDeliveries,
 } from '@/domain/db/schema';
+import { isStoredFinding } from '@/domain/suite/diff';
 import type { Database } from '@/domain/db/client';
 import type { ReportCounts } from '@/domain/db/reports';
-import { isStoredFinding } from '@/domain/suite/diff';
 import type { StoredFinding } from '@/domain/suite/diff';
 
 /** How a server run started. */

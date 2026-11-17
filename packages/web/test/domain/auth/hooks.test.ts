@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { OTHER_FLOWS, afterSignIn } from '@/domain/auth/hooks';
-import type { User } from '@/domain/db/users';
 import { double } from '../../helpers/double';
+import type { User } from '@/domain/db/users';
 
 describe('afterSignIn', () => {
   it('has nothing more to do once the person is recorded', async () => {

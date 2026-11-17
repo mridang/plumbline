@@ -8,13 +8,13 @@ import {
 } from '@/lib/mcp';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import { double } from '../../helpers/double';
 import type { ToolServices } from '@/domain/mcp/tool-services';
 import type { ToolContent } from '@/domain/mcp/tool-context';
 
 import type { Database } from '@/domain/db/client';
 import type { User } from '@/domain/db/users';
 import type { ToolResult } from '@/domain/mcp/tool-results';
-import { double } from '../../helpers/double';
 
 /** Matches invalid get domain arguments. */
 const INVALID_GET_DOMAIN_ARGUMENTS =

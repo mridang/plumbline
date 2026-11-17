@@ -8,10 +8,10 @@ import { domainLink } from '@/domain/mcp/tool-results';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../../lib/core/db/sqlite-db';
 import { vector } from '../../../helpers/data.js';
+import { double } from '../../../helpers/double';
 import type { ToolResult } from '@/domain/mcp/tool-results';
 import type { User } from '@/domain/db/users';
 import type { ToolContent } from '@/domain/mcp/tool-context';
-import { double } from '../../../helpers/double';
 
 const USER = double<User>({ id: 1 });
 const STRANGER = double<User>({ id: 2 });

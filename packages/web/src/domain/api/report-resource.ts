@@ -125,8 +125,11 @@ function findingOf(raw: unknown): StoredFinding | undefined {
   const record = raw;
   const message = textOf(record['message']);
   const resource = textOf(record['resource']);
+  if (message === undefined || resource === undefined) {
+    return undefined;
+  }
   const level = LEVELS.find((name) => name === record['level']);
-  if (message === undefined || resource === undefined || level === undefined) {
+  if (level === undefined) {
     return undefined;
   }
   const snippet = textOf(record['snippet']);

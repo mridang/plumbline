@@ -1,5 +1,5 @@
-import type { Database } from '@/domain/db/client';
 import { double } from '../../../helpers/double';
+import type { Database } from '@/domain/db/client';
 
 /** One call made on a fake query builder. */
 export interface Call {

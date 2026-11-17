@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { PushNotifier } from '@/lib/push';
+import { double } from '../../helpers/double';
 import type {
   DeliveryResult,
   PushPayload,
@@ -8,7 +9,6 @@ import type {
   PushSubscriptionStore,
   WebPushSender,
 } from '@/lib/push';
-import { double } from '../../helpers/double';
 
 const PAYLOAD: PushPayload = { title: 't', body: 'b' };
 

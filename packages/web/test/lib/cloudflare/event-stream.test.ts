@@ -1,7 +1,7 @@
 import { describe, expect, test } from '@jest/globals';
 import { openEventStream } from '@/lib/cloudflare/event-stream';
-import type { HubNamespace } from '@/lib/cloudflare/broadcaster';
 import { double } from '../../helpers/double';
+import type { HubNamespace } from '@/lib/cloudflare/broadcaster';
 
 describe('openEventStream', () => {
   test('forwards to the hub of the person with the resume position and returns its stream', async () => {

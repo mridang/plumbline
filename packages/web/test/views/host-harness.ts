@@ -4,8 +4,8 @@ import {
   PostMessageTransport as HostTransport,
 } from '@modelcontextprotocol/ext-apps/app-bridge';
 
-import type { DocumentRoot } from '@/views/host-wiring';
 import { stub } from '../helpers/double';
+import type { DocumentRoot } from '@/views/host-wiring';
 
 /** A window the harness can post a message to. */
 interface MessageTarget {

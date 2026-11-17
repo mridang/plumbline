@@ -9,8 +9,8 @@ import {
   STATE_COOKIE,
   sessionClaims,
 } from '@/domain/auth/app';
-import type { User } from '@/domain/db/users';
 import { double } from '../../helpers/double';
+import type { User } from '@/domain/db/users';
 
 describe('the app’s sign-in settings', () => {
   it('names its three cookies after the app, so another app on the same domain never reads them', () => {

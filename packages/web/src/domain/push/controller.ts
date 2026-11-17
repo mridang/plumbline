@@ -63,12 +63,11 @@ function checkSubscription(
       : []),
     ...(typeof auth !== 'string' || !auth ? ['keys.auth: required.'] : []),
   ];
-  return errors.length > 0 ||
-    typeof endpoint !== 'string' ||
-    typeof p256dh !== 'string' ||
-    typeof auth !== 'string'
-    ? errors
-    : { endpoint, p256dh, auth };
+  const complete =
+    typeof endpoint === 'string' &&
+    typeof p256dh === 'string' &&
+    typeof auth === 'string';
+  return errors.length > 0 || !complete ? errors : { endpoint, p256dh, auth };
 }
 
 /**

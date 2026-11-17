@@ -17,7 +17,7 @@ export function double<T>(value: NoInfer<DeepPartial<T>>): T {
  * A test double of a host object, such as a window, a container or a mock,
  * that has members the type does not describe.
  */
-export function stub<T>(value: object): T {
+export function stub<T>(value: unknown): T {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- a stand-in for a host object carries the members the code under test uses, whatever the type says
   return value as T;
 }

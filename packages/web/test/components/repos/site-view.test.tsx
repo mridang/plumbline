@@ -3,10 +3,10 @@ import { describe, expect, it } from '@jest/globals';
 import { SiteView, sections } from '@/components/repos/site-view';
 import { CHECKS } from '@/domain/checks/catalogue';
 import { htmlAt } from '../render';
+import { double } from '../../helpers/double';
 import type { Domain } from '@/domain/db/domains';
 import type { Report } from '@/domain/db/reports';
 import type { RunSummary } from '@/domain/db/runs';
-import { double } from '../../helpers/double';
 
 /** Matches the opening of a check group details element. */
 const CHECK_GROUP_DETAILS_PATTERN =

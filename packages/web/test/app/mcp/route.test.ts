@@ -22,8 +22,8 @@ import {
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
-import type { DatabaseSync } from 'node:sqlite';
 import { double } from '../../helpers/double';
+import type { DatabaseSync } from 'node:sqlite';
 
 const ORIGIN = 'https://app.test';
 const URL = `${ORIGIN}/mcp`;
