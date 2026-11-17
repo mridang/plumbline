@@ -1,7 +1,6 @@
-import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 import dns from 'node:dns';
-import { createServer, type Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
+import { createServer } from 'node:http';
+import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 import {
   GuardError,
   assertAllowed,
@@ -11,9 +10,11 @@ import {
 } from '../../src/engine/guard.js';
 import { gzipAsync } from '../helpers/zlib.js';
 import { HTTP_SCHEME, vector } from '../helpers/data.js';
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 
 /** Matches the refusal message for an address that is not public. */
-const NOT_A_PUBLIC_ADDRESS = /not a public address/;
+const NOT_A_PUBLIC_ADDRESS = /not a public address/u;
 
 describe('isPublicAddress', () => {
   it.each([
@@ -202,13 +203,18 @@ describe('guardedFetch', () => {
         }
       }
     });
-    await new Promise<void>((resolve) =>
-      server.listen(0, '127.0.0.1', () => resolve()),
-    );
+    await new Promise<void>((resolve) => {
+      server.listen(0, '127.0.0.1', () => resolve());
+    });
     base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   });
 
-  afterAll(async () => new Promise((resolve) => server.close(() => resolve())));
+  afterAll(
+    async () =>
+      new Promise((resolve) => {
+        server.close(() => resolve());
+      }),
+  );
 
   const local = guardedFetch({ allowPrivate: true, timeoutMs: 500 });
 

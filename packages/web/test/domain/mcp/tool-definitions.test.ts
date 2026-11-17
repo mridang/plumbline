@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import Ajv2020 from 'ajv/dist/2020.js';
 
-import { unsupportedKeywords, validateJson, type JsonSchema } from '@/lib/mcp';
+import { unsupportedKeywords, validateJson } from '@/lib/mcp';
 import { TOOLS, toolNamed } from '@/domain/mcp/tool-definitions';
 import {
   CHECKS_PAGE_DEFAULT,
@@ -13,13 +13,14 @@ import {
   REPORT_RESOURCE_URI,
 } from '@/domain/mcp/ui-resources';
 import { SCOPE_READ, scopeForTool } from '@/lib/oauth';
+import type { JsonSchema } from '@/lib/mcp';
 
 /** Matches the phrases that guide a model on when to call a tool. */
 const GUIDANCE_PHRASE_PATTERN =
-  /YOURSELF|do NOT|Call this when|Use this when|Use it|prefer /;
+  /YOURSELF|do NOT|Call this when|Use this when|Use it|prefer /u;
 
 /** Matches a valid tool name of up to 128 characters. */
-const TOOL_NAME_PATTERN = /^[A-Za-z0-9_.-]{1,128}$/;
+const TOOL_NAME_PATTERN = /^[A-Za-z0-9_.-]{1,128}$/u;
 
 /** A JSON Schema 2020-12 validator that rejects schemas with unknown keywords. */
 function createAjv(): Ajv2020 {
@@ -27,7 +28,7 @@ function createAjv(): Ajv2020 {
 }
 
 /** Arguments that every tool accepts, one set per tool. */
-const GOOD_ARGUMENTS: Readonly<Record<string, Record<string, unknown>>> = {
+const GOOD_ARGUMENTS = {
   list_checks: { group: 'tls', query: 'hsts', limit: 20, offset: 10 },
   list_domains: {},
   list_repositories: {},
@@ -45,7 +46,7 @@ const GOOD_ARGUMENTS: Readonly<Record<string, Record<string, unknown>>> = {
     enable: ['tls'],
     disable: ['csp'],
   },
-};
+} satisfies Readonly<Record<string, Record<string, unknown>>>;
 
 /** The input schema of a tool, as the checker types it. */
 function inputOf(name: string): JsonSchema {

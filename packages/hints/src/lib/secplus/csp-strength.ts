@@ -25,8 +25,10 @@
  * unparsable policy yields no findings here — presence and syntax are the
  * `csp` hint's job, not this deeper evaluation's.
  */
-import { finding, type Finding } from '../headers/finding.js';
-import { CspParseError, parseCsp, type CspMap } from '../headers/csp.js';
+import { finding } from '../headers/finding.js';
+import { CspParseError, parseCsp } from '../headers/csp.js';
+import type { Finding } from '../headers/finding.js';
+import type { CspMap } from '../headers/csp.js';
 
 /** The cleartext scheme, kept apart so the wildcard sources below read as patterns. */
 const HTTP = 'http:';
@@ -52,12 +54,9 @@ const NONCE_HASH_PREFIXES = ["'nonce-", "'sha256-", "'sha384-", "'sha512-"];
 
 /** True when any source is a nonce or a hash. */
 function hasNonceOrHash(sources: Iterable<string>): boolean {
-  for (const source of sources) {
-    if (NONCE_HASH_PREFIXES.some((prefix) => source.startsWith(prefix))) {
-      return true;
-    }
-  }
-  return false;
+  return [...sources].some((source) =>
+    NONCE_HASH_PREFIXES.some((prefix) => source.startsWith(prefix)),
+  );
 }
 
 /**
@@ -71,13 +70,8 @@ function effective(csp: CspMap, directive: string): Set<string> | null {
 
 /** True when a source set leans on a host or scheme allowlist (not keywords). */
 function hasHostOrSchemeAllowlist(sources: Iterable<string>): boolean {
-  for (const source of sources) {
-    // Keyword sources are wrapped in quotes; a bare token is a host or scheme.
-    if (!source.startsWith("'")) {
-      return true;
-    }
-  }
-  return false;
+  // Keyword sources are wrapped in quotes; a bare token is a host or scheme.
+  return [...sources].some((source) => !source.startsWith("'"));
 }
 
 /**
@@ -89,13 +83,13 @@ function hasHostOrSchemeAllowlist(sources: Iterable<string>): boolean {
 export function evaluateCspStrength(cspList: readonly string[]): Finding[] {
   const policies = cspList
     .flatMap((value) => value.split(','))
-    .map((policy) => policy.trim())
-    .filter((policy) => policy !== '');
+    .flatMap((policy) => (policy.trim() === '' ? [] : [policy.trim()]));
   if (policies.length === 0) {
     // No policy to evaluate; the `csp` hint reports a missing CSP.
     return [];
   }
 
+  // eslint-disable-next-line functional/no-let -- assigned inside try so an unparsable policy can be caught
   let csp: CspMap;
   try {
     csp = parseCsp(policies);
@@ -107,85 +101,93 @@ export function evaluateCspStrength(cspList: readonly string[]): Finding[] {
     throw error;
   }
 
-  const findings: Finding[] = [];
-
   const scriptSrc = effective(csp, 'script-src');
-  if (scriptSrc === null) {
-    findings.push(
-      finding(
-        'error',
-        "No 'script-src' or 'default-src' directive; scripts may be loaded from any origin. Add script-src 'self' (with nonces or hashes).",
-      ),
-    );
-  } else {
-    // 'unsafe-inline' is ignored by the browser when a nonce or hash is also
-    // present, so it is only a problem on its own.
-    if (scriptSrc.has("'unsafe-inline'") && !hasNonceOrHash(scriptSrc)) {
-      findings.push(
-        finding(
-          'error',
-          "'script-src' allows 'unsafe-inline' with no nonce or hash to disable it; this defeats CSP's XSS protection. Use nonces or hashes with 'strict-dynamic'.",
-        ),
-      );
-    }
-    const broad = [...scriptSrc].filter((source) => BROAD_SOURCES.has(source));
-    if (broad.length > 0) {
-      findings.push(
-        finding(
-          'error',
-          `'script-src' allows a broad source (${broad.join(', ')}); an attacker can host script there. Restrict script-src to 'self', nonces or hashes.`,
-        ),
-      );
-    }
-    // A host/scheme allowlist without 'strict-dynamic' is the fragile pattern
-    // web.dev and the CSP Evaluator steer policies away from.
-    if (
-      !scriptSrc.has("'strict-dynamic'") &&
-      hasHostOrSchemeAllowlist(scriptSrc)
-    ) {
-      findings.push(
-        finding(
-          'hint',
-          "'script-src' relies on a host or scheme allowlist without 'strict-dynamic'; allowlists are easy to bypass. Prefer a nonce-based policy with 'strict-dynamic'.",
-        ),
-      );
-    }
-  }
+  const broad =
+    scriptSrc === null
+      ? []
+      : [...scriptSrc].filter((source) => BROAD_SOURCES.has(source));
+  // 'unsafe-inline' is ignored by the browser when a nonce or hash is also
+  // present, so it is only a problem on its own.
+  const inlineFindings =
+    scriptSrc?.has("'unsafe-inline'") && !hasNonceOrHash(scriptSrc)
+      ? [
+          finding(
+            'error',
+            "'script-src' allows 'unsafe-inline' with no nonce or hash to disable it; this defeats CSP's XSS protection. Use nonces or hashes with 'strict-dynamic'.",
+          ),
+        ]
+      : [];
+  const broadFindings =
+    broad.length > 0
+      ? [
+          finding(
+            'error',
+            `'script-src' allows a broad source (${broad.join(', ')}); an attacker can host script there. Restrict script-src to 'self', nonces or hashes.`,
+          ),
+        ]
+      : [];
+  // A host/scheme allowlist without 'strict-dynamic' is the fragile pattern
+  // web.dev and the CSP Evaluator steer policies away from.
+  const allowlistFindings =
+    scriptSrc &&
+    !scriptSrc.has("'strict-dynamic'") &&
+    hasHostOrSchemeAllowlist(scriptSrc)
+      ? [
+          finding(
+            'hint',
+            "'script-src' relies on a host or scheme allowlist without 'strict-dynamic'; allowlists are easy to bypass. Prefer a nonce-based policy with 'strict-dynamic'.",
+          ),
+        ]
+      : [];
+  const scriptFindings =
+    scriptSrc === null
+      ? [
+          finding(
+            'error',
+            "No 'script-src' or 'default-src' directive; scripts may be loaded from any origin. Add script-src 'self' (with nonces or hashes).",
+          ),
+        ]
+      : [...inlineFindings, ...broadFindings, ...allowlistFindings];
 
   // 'unsafe-eval' in any of the script-bearing directives allows eval().
   const scriptLike = scriptSrc ?? new Set<string>();
   const styleSrc = effective(csp, 'style-src') ?? new Set<string>();
-  if (scriptLike.has("'unsafe-eval'") || styleSrc.has("'unsafe-eval'")) {
-    findings.push(
-      finding(
-        'error',
-        "A directive allows 'unsafe-eval', which permits eval() and similar string-to-code APIs. Remove 'unsafe-eval'.",
-      ),
-    );
-  }
 
   // object-src should be 'none': plugins (Flash, Java) are a classic bypass.
   const objectSrc = effective(csp, 'object-src');
   const objectLocked =
     objectSrc !== null && objectSrc.size === 1 && objectSrc.has("'none'");
-  if (!objectLocked) {
-    findings.push(
-      finding(
-        'warning',
-        "'object-src' is not locked to 'none'; plugin content can be a CSP bypass. Add object-src 'none'.",
-      ),
-    );
-  }
 
+  const evalFindings =
+    scriptLike.has("'unsafe-eval'") || styleSrc.has("'unsafe-eval'")
+      ? [
+          finding(
+            'error',
+            "A directive allows 'unsafe-eval', which permits eval() and similar string-to-code APIs. Remove 'unsafe-eval'.",
+          ),
+        ]
+      : [];
+  const objectFindings = objectLocked
+    ? []
+    : [
+        finding(
+          'warning',
+          "'object-src' is not locked to 'none'; plugin content can be a CSP bypass. Add object-src 'none'.",
+        ),
+      ];
   // base-uri restricts <base>, which can otherwise rewrite relative script URLs.
-  if (!csp.has('base-uri')) {
-    findings.push(
-      finding(
-        'warning',
-        "No 'base-uri' directive; an injected <base> tag can change where relative URLs (including scripts) resolve. Add base-uri 'none' or 'self'.",
-      ),
-    );
-  }
-
-  return findings;
+  const baseFindings = csp.has('base-uri')
+    ? []
+    : [
+        finding(
+          'warning',
+          "No 'base-uri' directive; an injected <base> tag can change where relative URLs (including scripts) resolve. Add base-uri 'none' or 'self'.",
+        ),
+      ];
+  return [
+    ...scriptFindings,
+    ...evalFindings,
+    ...objectFindings,
+    ...baseFindings,
+  ];
 }

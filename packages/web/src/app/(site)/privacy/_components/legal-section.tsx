@@ -1,12 +1,12 @@
 import Link from 'next/link';
-import type { ReactElement, ReactNode } from 'react';
 
 import { BRAND_NAME } from '@/app/_brand';
 import { Eyebrow, Heading } from '@/components/ui/layout';
 import { formatDay } from '@/lib/intl';
+import type { ReactElement, ReactNode } from 'react';
 
 /** An address that starts with an http or https scheme, in any case. */
-const HTTP_URL = /^https?:\/\//i;
+const HTTP_URL = /^https?:\/\//iu;
 
 /** How a link inside a legal page looks: underlined, in the accent colour. */
 const LINK =

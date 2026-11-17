@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
 
+import { packageDirectorySync } from 'package-directory';
 import { SITE_URL } from '@/utils/site';
 import {
   CAPABILITIES,
@@ -13,19 +14,18 @@ import {
   UI_EXTENSION_ID,
 } from '@/domain/mcp/server-info';
 import { TOOLS } from '@/domain/mcp/tool-definitions';
-import { packageDirectorySync } from 'package-directory';
 
 /** Matches the statement that domains come from the user GitHub account. */
-const DOMAINS_FROM_GITHUB_PATTERN = /Domains come from the user's GitHub/;
+const DOMAINS_FROM_GITHUB_PATTERN = /Domains come from the user's GitHub/u;
 
 /** Matches the instruction that a host name or any URL on it is accepted. */
-const HOST_OR_URL_PATTERN = /host name \(example\.com\) or any URL on it/;
+const HOST_OR_URL_PATTERN = /host name \(example\.com\) or any URL on it/u;
 
 /** Matches the instruction that something never happens on this server. */
-const NEVER_ON_THIS_SERVER_PATTERN = /never on this server/;
+const NEVER_ON_THIS_SERVER_PATTERN = /never on this server/u;
 
 /** Matches the instruction to remove a domain only on request. */
-const REMOVE_DOMAIN_ONLY_PATTERN = /remove_domain only when the user asks/;
+const REMOVE_DOMAIN_ONLY_PATTERN = /remove_domain only when the user asks/u;
 
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
@@ -104,7 +104,7 @@ describe('INSTRUCTIONS', () => {
   it('only name tools that exist', () => {
     const names = TOOLS.map((t) => t.name) as readonly string[];
     const mentioned = Array.from(
-      INSTRUCTIONS.matchAll(/\b[a-z]+(?:_[a-z]+)+\b/g),
+      INSTRUCTIONS.matchAll(/\b[a-z]+(?:_[a-z]+)+\b/gu),
       (m) => m[0],
     );
     expect(mentioned.length).toBeGreaterThan(5);

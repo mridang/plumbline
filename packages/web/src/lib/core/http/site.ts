@@ -41,7 +41,7 @@ export const EDGE_TTL_SECONDS = 1800;
  * `plumbline.yaml`), which any site may load and which are not marked noindex.
  */
 export const OPEN_FILES =
-  /^\/(icon\.svg|favicon\.ico|robots\.txt|sitemap\.xml|\.well-known\/.*|badge\/[^/]+\/[^/]+\/[0-9a-f]+\.svg|schemas\/plumbline\.schema\.json)$/;
+  /^\/(icon\.svg|favicon\.ico|robots\.txt|sitemap\.xml|\.well-known\/.*|badge\/[^/]+\/[^/]+\/[0-9a-f]+\.svg|schemas\/plumbline\.schema\.json)$/u;
 
 /** The small files that rarely change, and for which a stale copy is harmless. */
 export const RARELY_CHANGING: ReadonlySet<string> = new Set([

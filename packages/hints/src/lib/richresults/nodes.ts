@@ -44,27 +44,22 @@ export function findNodesOfType(
   value: unknown,
   types: readonly string[],
 ): Record<string, unknown>[] {
-  const found: Record<string, unknown>[] = [];
-  const visit = (current: unknown): void => {
+  const visit = (current: unknown): Record<string, unknown>[] => {
     if (Array.isArray(current)) {
-      for (const item of current) visit(item);
-      return;
+      return current.flatMap((item) => visit(item));
     }
     const node = asObject(current);
     if (node === null) {
-      return;
+      return [];
     }
-    if (nodeHasAnyType(node, types)) {
-      found.push(node);
-    }
-    // Descend into every property value (including `@graph`) so nested
-    // entities are reached.
-    for (const key of Object.keys(node)) {
-      visit(node[key]);
-    }
+    return [
+      ...(nodeHasAnyType(node, types) ? [node] : []),
+      // Descend into every property value (including `@graph`) so nested
+      // entities are reached.
+      ...Object.keys(node).flatMap((key) => visit(node[key])),
+    ];
   };
-  visit(value);
-  return found;
+  return visit(value);
 }
 
 /**
@@ -102,13 +97,10 @@ export function firstObject(
 ): Record<string, unknown> | null {
   const value = node[key];
   if (Array.isArray(value)) {
-    for (const item of value) {
-      const object = asObject(item);
-      if (object) {
-        return object;
-      }
-    }
-    return null;
+    return (
+      value.map((item) => asObject(item)).find((object) => object !== null) ??
+      null
+    );
   }
   return asObject(value);
 }

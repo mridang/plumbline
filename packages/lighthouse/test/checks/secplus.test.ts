@@ -1,10 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
+import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
+import { secplusChecks } from '../../src/checks/secplus.js';
+import { HTTP_SCHEME } from '../helpers/data.js';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
-import { secplusChecks } from '../../src/checks/secplus.js';
-import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 import type { AuditCheck } from '../../src/checks/types.js';
-import { HTTP_SCHEME } from '../helpers/data.js';
 
 /**
  * Builds the minimal devtools log Lighthouse's `NetworkRecords` computed
@@ -83,7 +83,9 @@ function domArtifacts(url: string, html: string): Artifacts {
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */
 function context(): AuditNS.Context {
-  return { computedCache: new Map() } as unknown as AuditNS.Context;
+  return {
+    computedCache: new Map<string, unknown>(),
+  } as unknown as AuditNS.Context;
 }
 
 /** Looks a check up by id, failing loudly if the registry drops it. */

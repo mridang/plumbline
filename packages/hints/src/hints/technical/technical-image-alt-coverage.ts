@@ -18,6 +18,7 @@ export default defineHint({
   setup(context) {
     onPage(context, (page) => {
       const coverage = altCoverage(page.document);
+      // eslint-disable-next-line functional/no-loop-statements -- reports each finding
       for (const { message, severity } of imageAltCoverageFindings(coverage)) {
         page.report(message, {
           severity: severity === 'error' ? Severity.error : Severity.warning,

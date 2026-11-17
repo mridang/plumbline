@@ -8,7 +8,6 @@
  */
 
 import path from 'node:path';
-import type { ChecksCommand, ScanCommand } from './options.js';
 import { findBrowser } from './browser.js';
 import { EXIT, exitCodeFor } from './exit-code.js';
 import {
@@ -19,16 +18,12 @@ import {
   toJsonFindings,
 } from './render.js';
 import { buildReport, saveReport } from './report.js';
-import {
-  hintCatalogue,
-  scan as realScan,
-  type HintMeta,
-  type ScanOptions,
-  type ScanResult,
-} from './scan.js';
+import { hintCatalogue, scan } from './scan.js';
 import { filterByGroups, selectHints } from './select.js';
 import { normalizeTarget } from './target.js';
 import { packageVersion } from './version.js';
+import type { HintMeta, ScanOptions, ScanResult } from './scan.js';
+import type { ChecksCommand, ScanCommand } from './options.js';
 
 /** Where the CLI writes: stdout for results, stderr for progress and errors. */
 export interface Io {
@@ -80,19 +75,24 @@ export async function runScan(
     `Scanning ${url} with ${ids.length} check${ids.length === 1 ? '' : 's'}…\n`,
   );
 
-  let result: ScanResult;
-  try {
-    result = await deps.scan(url, {
-      hints: ids,
-      executablePath: command.browser ?? deps.findBrowser(),
-      // Keep Chromium's sandbox unless asked: the CLI runs on a developer's
-      // own machine, where the sandbox works and guards against the page.
-      browserArgs: command.sandbox
-        ? []
-        : ['--no-sandbox', '--disable-dev-shm-usage'],
-    });
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
+  const outcome = await Promise.resolve()
+    .then(async () =>
+      deps.scan(url, {
+        hints: ids,
+        executablePath: command.browser ?? deps.findBrowser(),
+        // Keep Chromium's sandbox unless asked: the CLI runs on a developer's
+        // own machine, where the sandbox works and guards against the page.
+        browserArgs: command.sandbox
+          ? []
+          : ['--no-sandbox', '--disable-dev-shm-usage'],
+      }),
+    )
+    .then((scanned) => ({ scanned }))
+    .catch((error: unknown) => ({
+      detail: error instanceof Error ? error.message : String(error),
+    }));
+  if ('detail' in outcome) {
+    const { detail } = outcome;
     io.stderr(
       `plumbline: the scan of ${url} failed: ${detail}\n` +
         'A Chrome or Chromium install is needed; point --browser at one if it ' +
@@ -101,6 +101,7 @@ export async function runScan(
     return EXIT.failed;
   }
 
+  const result = outcome.scanned;
   const report = buildReport(url, result, deps.version);
   if (command.format === 'json') {
     io.stdout(`${JSON.stringify(toJsonFindings(report), null, 2)}\n`);
@@ -122,7 +123,7 @@ export async function resolveDependencies(
   dependencies: Dependencies = {},
 ): Promise<Required<Dependencies>> {
   return {
-    scan: dependencies.scan ?? realScan,
+    scan: dependencies.scan ?? scan,
     catalogue: dependencies.catalogue ?? hintCatalogue,
     version: dependencies.version ?? (await packageVersion()),
     findBrowser: dependencies.findBrowser ?? (() => findBrowser()),

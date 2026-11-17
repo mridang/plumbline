@@ -5,14 +5,15 @@
  * `sha-256=:4REjxQ4yrqk=:`. The check validates the dictionary shape when the
  * header is present and warns when only an insecure algorithm is offered.
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
 import { dictionary } from './structured.js';
+import type { Finding } from '../headers/finding.js';
 
 /** Algorithms the registry marks insecure; a digest in one of these is weak. */
 const INSECURE = new Set(['md5', 'sha', 'unixsum', 'unixcksum']);
 
 /** A byte-sequence value: base64 (or `*` padding) wrapped in colons. */
-const BYTE_SEQUENCE = /^:[A-Za-z0-9+/=]*:(?:;.*)?$/;
+const BYTE_SEQUENCE = /^:[A-Za-z0-9+/=]*:(?:;.*)?$/u;
 
 /**
  * Validates a `Content-Digest` / `Repr-Digest` header value.
@@ -32,15 +33,14 @@ export function digestFindings(name: string, value: string | null): Finding[] {
       ),
     ];
   }
-  for (const member of members) {
-    if (!BYTE_SEQUENCE.test(member.value)) {
-      return [
-        finding(
-          'warning',
-          `The '${member.key}' digest in '${name}' must be a byte sequence wrapped in colons, not '${member.value}'.`,
-        ),
-      ];
-    }
+  const invalid = members.find((member) => !BYTE_SEQUENCE.test(member.value));
+  if (invalid) {
+    return [
+      finding(
+        'warning',
+        `The '${invalid.key}' digest in '${name}' must be a byte sequence wrapped in colons, not '${invalid.value}'.`,
+      ),
+    ];
   }
   // A response offering only an insecure algorithm gives attackers room to
   // forge a matching digest, so flag it when no modern algorithm is present.

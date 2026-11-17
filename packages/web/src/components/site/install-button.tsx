@@ -1,11 +1,10 @@
 'use client';
 
-import type { ReactElement } from 'react';
-
 import { buttonClass } from '@/components/ui/button';
 
 import { InstallIosHint } from '@/components/site/install-ios-hint';
 import { useInstallPrompt } from '@/components/site/use-install-prompt';
+import type { ReactElement } from 'react';
 
 /**
  * Offers to put the site on the desktop where the browser can (Chromium's
@@ -27,7 +26,9 @@ export function InstallButton(): ReactElement {
             // eslint-disable-next-line unicorn/no-keyword-prefix -- the Look prop is named className, as in React
             className: 'text-muted hover:text-ink',
           })}
-          onClick={() => void install()}
+          onClick={() => {
+            void install();
+          }}
         >
           <span className="sm:hidden">Add to home screen</span>
           <span className="hidden sm:inline">Add to desktop</span>

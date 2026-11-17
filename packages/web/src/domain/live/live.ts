@@ -9,20 +9,21 @@
  * reached is logged and never fails the check it reports on.
  */
 
-import type { Database } from '@/domain/db/client';
 import { peopleWithAccess } from '@/domain/db/access';
 import {
   appendEvent,
   markCheckFailed,
   markChecked,
   markChecking,
-  type Counts,
 } from '@/domain/db/live';
 import { describeChange } from '@/domain/live/changes';
 import { PushSubscriptionRepository } from '@/domain/push/repository';
-import { Broadcaster, type HubNamespace } from '@/lib/cloudflare/broadcaster';
+import { Broadcaster } from '@/lib/cloudflare/broadcaster';
 import { PushNotifier, WebPushSender } from '@/lib/push';
 import { errorMessage, logWarn } from '@/utils/logging';
+import type { HubNamespace } from '@/lib/cloudflare/broadcaster';
+import type { Counts } from '@/domain/db/live';
+import type { Database } from '@/domain/db/client';
 
 /** A site as the dashboard names it. */
 export interface LiveSite {
@@ -111,6 +112,7 @@ export function createLive(db: Database, env: Readonly<LiveEnv>): Live {
     event: unknown,
     at: string,
   ) => {
+    // eslint-disable-next-line functional/no-loop-statements -- each person's event is stored and their hub woken in turn, so the order is kept
     for (const person of people) {
       await appendEvent(db, person, event, at);
       await broadcaster?.notify(String(person));
@@ -134,6 +136,7 @@ export function createLive(db: Database, env: Readonly<LiveEnv>): Live {
         // it as running, keep what was known, and send no push.
         await quietly('live.failed', async () => {
           await markCheckFailed(db, userId, site.host);
+          // eslint-disable-next-line functional/no-loop-statements -- hubs are woken one after another
           for (const person of await audience(userId, site)) {
             await broadcaster?.notify(String(person));
           }
@@ -157,7 +160,9 @@ export function createLive(db: Database, env: Readonly<LiveEnv>): Live {
       const message = describeChange(site.host, before, after);
       if (message && notifier) {
         await quietly('live.push', async () => {
+          // eslint-disable-next-line functional/no-loop-statements -- pushes go out one person at a time, in order
           for (const person of await audience(userId, site)) {
+            // eslint-disable-next-line functional/no-loop-statements -- pushes go out one subscription at a time, in order
             for (const subscription of await subscriptions.listForUser(
               person,
             )) {

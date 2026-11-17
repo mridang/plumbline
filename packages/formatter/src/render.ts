@@ -10,28 +10,30 @@ import {
   SOURCE_GROUPS,
   buildSections,
   countFindings,
-  type Counts,
-  type Finding,
-  type HintBlock,
-  type HintInfo,
-  type Origin,
-  type Section,
+} from './sections.js';
+import type {
+  Counts,
+  Finding,
+  HintBlock,
+  HintInfo,
+  Origin,
+  Section,
 } from './sections.js';
 
 /** Matches the first character that is not a decimal digit. */
-const NON_DIGIT = /\D/;
+const NON_DIGIT = /\D/u;
 
 /** Matches a leading `(<n>/<n>)` fraction. */
-const FRACTION_IN_PARENTHESES = /^\(\d+\/\d+\)/;
+const FRACTION_IN_PARENTHESES = /^\(\d+\/\d+\)/u;
 
 /** Matches a line terminator character. */
-const LINE_TERMINATOR = /[\n\r\u2028\u2029]/;
+const LINE_TERMINATOR = /[\n\r\u2028\u2029]/u;
 
 /** Matches a single whitespace character. */
-const WHITESPACE = /\s/;
+const WHITESPACE = /\s/u;
 
 /** Captures the score and the level at the start of the agent-score message. */
-const AGENT_SCORE_LEAD = /^Agent readiness score (\d+)\/100, level (\d+)/;
+const AGENT_SCORE_LEAD = /^Agent readiness score (\d+)\/100, level (\d+)/u;
 
 /** Everything the renderer needs. */
 export interface ReportData {
@@ -66,14 +68,12 @@ function isScoreTail(text: string): string | null {
   if (length === 0) {
     return null;
   }
-  let rest = text.slice(length).trimStart();
-  const paren = FRACTION_IN_PARENTHESES.exec(rest);
-  if (paren) {
-    rest = rest.slice(paren[0].length).trimStart();
-  }
-  if (rest.startsWith('.')) {
-    rest = rest.slice(1);
-  }
+  const afterDigits = text.slice(length).trimStart();
+  const paren = FRACTION_IN_PARENTHESES.exec(afterDigits);
+  const afterParen = paren
+    ? afterDigits.slice(paren[0].length).trimStart()
+    : afterDigits;
+  const rest = afterParen.startsWith('.') ? afterParen.slice(1) : afterParen;
   return rest === '' ? text.slice(0, length) : null;
 }
 
@@ -82,19 +82,24 @@ function isScoreTail(text: string): string | null {
  * is a score; the name is one line.
  */
 function splitCategory(text: string): { name: string; score: string } | null {
-  for (let at = 1; at < text.length; at += 1) {
-    if (LINE_TERMINATOR.test(text[at - 1])) {
-      return null;
-    }
-    if (!WHITESPACE.test(text[at]) || WHITESPACE.test(text[at - 1])) {
-      continue;
-    }
-    const score = isScoreTail(text.slice(at).trimStart());
-    if (score !== null) {
-      return { name: text.slice(0, at), score };
-    }
-  }
-  return null;
+  // The name is one line, so the search stops at the first line terminator.
+  const terminator = text.search(LINE_TERMINATOR);
+  const end =
+    terminator === -1 ? text.length : Math.min(text.length, terminator + 1);
+  const at = Array.from(
+    { length: Math.max(0, end - 1) },
+    (_, index) => index + 1,
+  ).find(
+    (candidate) =>
+      WHITESPACE.test(text[candidate]) &&
+      !WHITESPACE.test(text[candidate - 1]) &&
+      isScoreTail(text.slice(candidate).trimStart()) !== null,
+  );
+  const score =
+    at === undefined ? null : isScoreTail(text.slice(at).trimStart());
+  return at === undefined || score === null
+    ? null
+    : { name: text.slice(0, at), score };
 }
 
 /**
@@ -108,27 +113,18 @@ function parseAgentScore(message: string): AgentScore | undefined {
   if (!lead) {
     return undefined;
   }
-  let rest = message.slice(lead[0].length);
-  let quoted = '';
-  const close = rest.startsWith(' "') ? rest.indexOf('"', 2) : -1;
-  if (close !== -1) {
-    quoted = rest.slice(2, close);
-    rest = rest.slice(close + 1);
-  }
-  if (rest.startsWith('.')) {
-    rest = rest.slice(1);
-  }
+  const afterLead = message.slice(lead[0].length);
+  const close = afterLead.startsWith(' "') ? afterLead.indexOf('"', 2) : -1;
+  const quoted = close === -1 ? '' : afterLead.slice(2, close);
+  const afterQuote = close === -1 ? afterLead : afterLead.slice(close + 1);
+  const rest = afterQuote.startsWith('.') ? afterQuote.slice(1) : afterQuote;
   const head = [lead[0], lead[1], lead[2], quoted, rest];
-  const categories: ScoreCategory[] = [];
-  for (const part of (head[4] ?? '').split(';')) {
+  const categories = (head[4] ?? '').split(';').flatMap((part) => {
     const match = splitCategory(part.trim());
-    if (match) {
-      categories.push({
-        name: match.name,
-        value: Math.min(100, Number(match.score)),
-      });
-    }
-  }
+    return match
+      ? [{ name: match.name, value: Math.min(100, Number(match.score)) }]
+      : [];
+  });
   const title = head[3] ? ` "${head[3]}"` : '';
   return {
     score: Number(head[1]),
@@ -269,7 +265,7 @@ function renderPassed(blocks: readonly HintBlock[]): string {
 
 /** Makes a section key safe to use inside an id attribute. */
 function anchor(key: string): string {
-  return `sec-${key.replaceAll(/[^a-z0-9-]/gi, '-')}`;
+  return `sec-${key.replaceAll(/[^a-z0-9-]/giu, '-')}`;
 }
 
 /** Renders one section of the report. */
@@ -287,14 +283,12 @@ function renderSection(section: Section): string {
 
 /** Renders the sidebar navigation. */
 function renderNav(sections: readonly Section[]): string {
-  let group: string | undefined;
   return sections
-    .map((s) => {
+    .map((s, index) => {
       const heading =
-        s.groupTitle && s.group !== group
+        s.groupTitle && s.group !== sections[index - 1]?.group
           ? `<li class="group">${escapeHtml(s.groupTitle)}</li>`
           : '';
-      group = s.group;
       return `${heading}<li><a href="#${anchor(s.key)}">${escapeHtml(s.title)}</a>${
         s.passed
           ? '<span class="ok">&#10003;</span>'

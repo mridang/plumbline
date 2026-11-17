@@ -38,22 +38,26 @@ export function readJsonLd(parsedDocument: JsonLdDocument): JsonLdBlocks {
   const elements = parsedDocument.querySelectorAll(
     'script[type="application/ld+json" i]',
   );
-  const parsed: unknown[] = [];
-  const parsedAt: number[] = [];
-  const invalidAt: number[] = [];
-  for (const [index, element] of elements.entries()) {
+  const results = elements.map((element, index) => {
     try {
-      parsed.push(JSON.parse(element.textContent));
-      parsedAt.push(index);
+      return {
+        index,
+        valid: true,
+        data: JSON.parse(element.textContent) as unknown,
+      };
     } catch {
-      invalidAt.push(index);
+      return { index, valid: false, data: null };
     }
-  }
+  });
+  const good = results.filter((result) => result.valid);
+  const invalidAt = results
+    .filter((result) => !result.valid)
+    .map((result) => result.index);
   return {
     total: elements.length,
     invalid: invalidAt.length,
-    parsed,
-    parsedAt,
+    parsed: good.map((result) => result.data),
+    parsedAt: good.map((result) => result.index),
     invalidAt,
   };
 }
@@ -121,13 +125,11 @@ function hasEntityType(typeValue: unknown): boolean {
 /** Finds the first Organization/Person node, looking inside arrays and `@graph`. */
 export function findEntityNode(value: unknown): Record<string, unknown> | null {
   if (Array.isArray(value)) {
-    for (const item of value) {
-      const found = findEntityNode(item);
-      if (found) {
-        return found;
-      }
-    }
-    return null;
+    return (
+      value
+        .map((item) => findEntityNode(item))
+        .find((found) => found !== null) ?? null
+    );
   }
   const node = asObject(value);
   if (node === null) {

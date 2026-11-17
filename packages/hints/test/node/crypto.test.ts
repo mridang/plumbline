@@ -1,9 +1,9 @@
-import { describe, expect, it } from '@jest/globals';
 import {
   X509Certificate as nodeX509Certificate,
   createHash as nodeCreateHash,
   createPublicKey as nodeCreatePublicKey,
 } from 'node:crypto';
+import { describe, expect, it } from '@jest/globals';
 
 import {
   X509Certificate,

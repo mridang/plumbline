@@ -1,8 +1,8 @@
-import type { ReactElement } from 'react';
-
 import { cn } from '@/components/ui/cn';
 
-import { TONE_SOLID, type Tone } from './tone';
+import { TONE_SOLID } from './tone';
+import type { Tone } from './tone';
+import type { ReactElement } from 'react';
 
 /** The sizes of a dot: beside a badge's text, beside a line, and the default. */
 const SIZES = { xs: 'size-1.5', sm: 'size-2', md: 'size-2.5' } as const;

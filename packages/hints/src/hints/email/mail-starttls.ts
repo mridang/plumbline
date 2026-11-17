@@ -40,30 +40,32 @@ export default defineHint({
   ],
   setup(context) {
     onMailDomain(context, async (mail) => {
-      const noStarttls: string[] = [];
-      const badVersion: string[] = [];
-      const untrusted: string[] = [];
-      const mismatched: string[] = [];
-      const unreachable: string[] = [];
-
-      for (const host of mail.hosts) {
-        const probe = await mailNet.client.probeStarttls(host);
-        if (!probe.reachable) {
-          unreachable.push(`${host}: ${probe.error ?? 'no connection'}`);
-        } else if (probe.starttls) {
-          if (tlsVersionLevel(probe.tlsVersion) === 'insufficient') {
-            badVersion.push(`${host}: ${probe.tlsVersion ?? 'unknown'}`);
-          }
-          if (!probe.trusted) {
-            untrusted.push(`${host}: ${probe.trustError ?? 'untrusted'}`);
-          }
-          if (!probe.hostnameMatches) {
-            mismatched.push(host);
-          }
-        } else {
-          noStarttls.push(host);
-        }
-      }
+      const probes = await Array.fromAsync(mail.hosts, async (host) => ({
+        host,
+        probe: await mailNet.client.probeStarttls(host),
+      }));
+      const unreachable = probes
+        .filter(({ probe }) => !probe.reachable)
+        .map(({ host, probe }) => `${host}: ${probe.error ?? 'no connection'}`);
+      const noStarttls = probes
+        .filter(({ probe }) => probe.reachable && !probe.starttls)
+        .map(({ host }) => host);
+      const secured = probes.filter(
+        ({ probe }) => probe.reachable && probe.starttls,
+      );
+      const badVersion = secured
+        .filter(
+          ({ probe }) => tlsVersionLevel(probe.tlsVersion) === 'insufficient',
+        )
+        .map(({ host, probe }) => `${host}: ${probe.tlsVersion ?? 'unknown'}`);
+      const untrusted = secured
+        .filter(({ probe }) => !probe.trusted)
+        .map(
+          ({ host, probe }) => `${host}: ${probe.trustError ?? 'untrusted'}`,
+        );
+      const mismatched = secured
+        .filter(({ probe }) => !probe.hostnameMatches)
+        .map(({ host }) => host);
 
       if (noStarttls.length > 0) {
         mail.report(

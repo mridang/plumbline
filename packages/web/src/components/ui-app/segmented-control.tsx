@@ -1,9 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import type { ReactElement } from 'react';
-
 import { cn } from '@/components/ui/cn';
+import type { ReactElement } from 'react';
 
 /** One choice of a segmented control. */
 export interface Segment {
@@ -56,7 +55,10 @@ export function SegmentedControl({
   onChange: (value: string) => void;
 }>): ReactElement {
   return (
-    <div role="group" aria-label={label} className={TRACK}>
+    <fieldset
+      aria-label={label}
+      className={`m-0 min-w-0 border-0 p-0 ${TRACK}`}
+    >
       {options.map((option) => (
         <button
           key={option.value}
@@ -69,7 +71,7 @@ export function SegmentedControl({
           <Figure count={option.count} />
         </button>
       ))}
-    </div>
+    </fieldset>
   );
 }
 

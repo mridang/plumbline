@@ -7,16 +7,15 @@ import {
   jest,
 } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
 import { SESSION_COOKIE } from '@/domain/auth/app';
-import type { User } from '@/domain/db/users';
 import { SessionTokens } from '@/lib/session';
 import { APP_MIGRATIONS } from '../../../../lib/core/db/migrations';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../../../lib/core/db/sqlite-d1';
+import type { User } from '@/domain/db/users';
+import type { DatabaseSync } from 'node:sqlite';
 
 const SESSION_SECRET = 'test-session-secret-value-0123456789';
 const URL = 'https://app.test/api/users/self';
@@ -36,6 +35,7 @@ const left = (table: string, column = 'id') =>
 /** Each time the app tidied up after a deleted account: whose, and which users were left then. */
 const tidied: { id: number; users: string[] }[] = [];
 
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/account/app is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/domain/account/app', () => ({
   afterAccountDeleted: (user: Readonly<User>) => {
     tidied.push({ id: user.id, users: left('users') });

@@ -1,8 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { reportBody, saveReport } from '@/components/scan/report-body';
-import type { Scan } from '@/components/scan/scan-results';
 import { ProblemError } from '@/components/api/problem-message';
+import type { Scan } from '@/components/scan/scan-results';
 import type { HintOutcome } from '@/domain/scan/outcome';
 
 /** A finished check with the given outcome. */

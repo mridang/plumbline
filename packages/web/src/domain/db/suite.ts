@@ -16,7 +16,6 @@ import {
   notInArray,
 } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import {
   markIssueDeleted,
   markIssueReplaced,
@@ -31,6 +30,7 @@ import {
   suiteRuns,
   webhookDeliveries,
 } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 import type { ReportCounts } from '@/domain/db/reports';
 import type { StoredFinding } from '@/domain/suite/diff';
 

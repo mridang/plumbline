@@ -1,10 +1,10 @@
-import type { HintDefinition } from '../../core/define-hint.js';
 import hostMeta from './host-meta.js';
 import nodeinfo from './nodeinfo.js';
 import pingback from './pingback.js';
 import relationshipMe from './rel-me.js';
 import webfinger from './webfinger.js';
 import webmention from './webmention.js';
+import type { HintDefinition } from '../../core/define-hint.js';
 
 /**
  * The `discovery` set: IndieWeb and Fediverse discovery mechanisms. Three read

@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/network/rpki-ns-exists.js';
-import { rpki, type RpkiResult } from '../../../src/core/rpki.js';
+import { rpki } from '../../../src/core/rpki.js';
 import { installDns } from '../../lib/network/fake-dns.js';
 import { runHint } from '../../helpers/run-hint.js';
+import type { RpkiResult } from '../../../src/core/rpki.js';
 
 const realClient = rpki.client;
 let restore: () => void = () => undefined;

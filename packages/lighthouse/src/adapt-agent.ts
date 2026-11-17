@@ -11,13 +11,13 @@
  * with the main document and its `dns` client throws. Nothing here calls those.
  */
 import { NetworkRecords } from 'lighthouse';
+import { findMainDocument, headerBagFromRecord } from './adapt.js';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type {
   AgentEnv,
   Probe,
 } from '@mridang/webhint-hint-plumbline/dist/lib/agent/types.js';
-import { findMainDocument, headerBagFromRecord } from './adapt.js';
 
 /** The artifacts an agent check reads: the devtools log and the URL set. */
 export interface AgentArtifacts {
@@ -43,24 +43,21 @@ export async function agentEnv(
   }
 
   const url = document.url || mainDocumentUrl || '';
-  let origin = '';
-  let host = '';
-  try {
-    const parsed = new URL(url);
-    origin = parsed.origin;
-    host = parsed.hostname;
-  } catch {
+  if (!URL.canParse(url)) {
     return null;
   }
+  const { origin, hostname: host } = new URL(url);
 
   // Collapse the header bag (which keeps repeated headers as an array) into the
   // single-value `Record<string, string>` a `Probe` carries; a `Link` sent
   // twice is joined with a comma, which `parseLinkHeader` splits again.
   const bag = headerBagFromRecord(document);
-  const headers: Record<string, string> = {};
-  for (const [name, value] of Object.entries(bag)) {
-    headers[name] = Array.isArray(value) ? value.join(', ') : (value ?? '');
-  }
+  const headers: Record<string, string> = Object.fromEntries(
+    Object.entries(bag).map(([name, value]) => [
+      name,
+      Array.isArray(value) ? value.join(', ') : (value ?? ''),
+    ]),
+  );
 
   const probe: Probe = {
     url,

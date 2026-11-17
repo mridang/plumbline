@@ -1,11 +1,11 @@
 /** Matches a trailing colon. */
-const TRAILING_COLON = /:$/;
+const TRAILING_COLON = /:$/u;
 
 /** Matches any line break sequence. */
-const LINE_BREAK = /\r\n|\r|\n/;
+const LINE_BREAK = /\r\n|\r|\n/u;
 
 /** Matches a leading byte order mark. */
-const LEADING_BOM = /^\uFEFF/;
+const LEADING_BOM = /^\uFEFF/u;
 /** One finding produced by a file validator. */
 export interface FileIssue {
   /** `error` is a violated rule, `warning` is advice, `hint` is information. */

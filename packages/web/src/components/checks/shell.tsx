@@ -1,8 +1,8 @@
-import type { ReactElement, ReactNode } from 'react';
-
 import { Container } from '@/components/ui/layout';
 
-import { SideNav, type Here } from './side-nav';
+import { SideNav } from './side-nav';
+import type { Here } from './side-nav';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * The frame of every rules page: the sidebar to the left (a folded menu on a

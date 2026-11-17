@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, type ReactElement } from 'react';
+import { useState } from 'react';
 
 import { CheckIcon, CopyIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 
-import { fixPrompt, hasProblems, type PromptScan } from './fix-prompt';
+import { fixPrompt, hasProblems } from './fix-prompt';
+import type { ReactElement } from 'react';
+import type { PromptScan } from './fix-prompt';
 
 /** How long "Copied" stays on the button before it goes back to "Copy". */
 const CONFIRMATION_MS = 1600;

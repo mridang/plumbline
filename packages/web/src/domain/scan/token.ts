@@ -94,14 +94,20 @@ export async function readScanId(
   if (!payloadText || !signatureText || extra !== undefined) {
     return null;
   }
-  let payload: Uint8Array;
-  let signature: Uint8Array;
-  try {
-    payload = base64UrlToBytes(payloadText);
-    signature = base64UrlToBytes(signatureText);
-  } catch {
+  const decoded = (() => {
+    try {
+      return [
+        base64UrlToBytes(payloadText),
+        base64UrlToBytes(signatureText),
+      ] as const;
+    } catch {
+      return null;
+    }
+  })();
+  if (!decoded) {
     return null;
   }
+  const [payload, signature] = decoded;
   const genuine = await crypto.subtle.verify(
     'HMAC',
     await keyFor(secret),

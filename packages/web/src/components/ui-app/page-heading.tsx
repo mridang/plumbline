@@ -1,6 +1,5 @@
-import type { ReactElement, ReactNode } from 'react';
-
 import { Container, Eyebrow } from '@/components/ui/layout';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * The top of a working page: a small eyebrow, the page's one `h1`, a line that

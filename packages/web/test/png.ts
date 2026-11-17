@@ -1,5 +1,5 @@
-import { expect } from '@jest/globals';
 import { readFile } from 'node:fs/promises';
+import { expect } from '@jest/globals';
 import { inflateAsync } from './helpers/zlib';
 
 /** The width and height a PNG file declares in its IHDR header chunk. */
@@ -10,7 +10,7 @@ export async function pngSize(
 }
 
 /** The width and height a PNG declares in the header of its bytes. */
-function sizeOf(bytes: Buffer): { width: number; height: number } {
+function sizeOf(bytes: Buffer) {
   // 8-byte signature, then the IHDR chunk: 4 length, 4 type, 4 width, 4 height.
   expect(bytes.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
   return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
@@ -54,7 +54,7 @@ function predict(
     return up;
   }
   if (filter === 3) {
-    return (left + up) >> 1;
+    return Math.floor((left + up) / 2);
   }
   if (filter === 4) {
     return paeth(left, up, upLeft);
@@ -92,7 +92,7 @@ export async function pngIsOpaque(file: string): Promise<boolean> {
       const up = above[index] ?? 0;
       const upLeft = index >= 4 ? (above[index - 4] ?? 0) : 0;
       const predicted = predict(filter, left, up, upLeft);
-      row[index] = ((row[index] ?? 0) + predicted) & 255;
+      row[index] = ((row[index] ?? 0) + predicted) % 256;
       if (index % 4 === 3 && row[index] !== 255) {
         return false;
       }

@@ -1,7 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 import { Severity } from '@hint/utils-types';
 import hint from '../../../src/hints/agent/agent-robots-txt.js';
-import { runHint, type Routes } from '../../helpers/run-hint.js';
+import { runHint } from '../../helpers/run-hint.js';
+import type { Routes } from '../../helpers/run-hint.js';
 
 const routes: Routes = {
   '/robots.txt': {

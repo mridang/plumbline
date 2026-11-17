@@ -25,7 +25,7 @@ import {
 } from '@/lib/intl';
 
 /** Matches the truncated family emoji text. */
-const TRUNCATED_FAMILY_EMOJI = /^ab( 👨‍👩‍👧)?…$/;
+const TRUNCATED_FAMILY_EMOJI = /^ab( 👨‍👩‍👧)?…$/u;
 
 describe('compareText', () => {
   it('alphabetises accented letters with their base letter', () => {

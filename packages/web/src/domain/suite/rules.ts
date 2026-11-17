@@ -60,6 +60,9 @@ function severityUnder(
     case 'on': {
       return own;
     }
+    default: {
+      return level satisfies never;
+    }
   }
 }
 

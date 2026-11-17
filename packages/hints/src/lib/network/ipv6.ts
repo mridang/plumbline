@@ -3,21 +3,15 @@
  * and web server addresses, reachability and whether the site looks the same
  * over IPv6 and IPv4.
  */
-import { connect as netConnect } from '#net';
-import { request as httpRequest } from '#http';
+import { connect } from '#net';
+import { request } from '#http';
 import { request as httpsRequest } from '#https';
 import {
   findNameservers,
   ipv4Addresses,
   ipv6Addresses,
-  type Zone,
 } from './dns-utility.js';
-
-/** Matches a single whitespace character. */
-const WHITESPACE_CHAR = /\s/;
-
-/** Matches whitespace or the end of a tag. */
-const WHITESPACE_OR_TAG_END = /[\s>]/;
+import type { Zone } from './dns-utility.js';
 
 /** Seconds Internet.nl waits for a connection; we use the same 4 seconds. */
 const CONNECT_TIMEOUT_MS = 4000;
@@ -50,7 +44,7 @@ export type WebGetFn = (
 /** Real TCP connect. */
 export const tcpConnect: ConnectFn = async (ip, port, timeoutMs) =>
   new Promise((resolve) => {
-    const socket = netConnect({ host: ip, port });
+    const socket = connect({ host: ip, port });
     const done = (ok: boolean) => {
       socket.destroy();
       resolve(ok);
@@ -63,7 +57,7 @@ export const tcpConnect: ConnectFn = async (ip, port, timeoutMs) =>
 /** Real HTTP(S) GET to a fixed IP with the host name as Host and SNI. */
 export const httpGetByIp: WebGetFn = async (host, ip, port, https) =>
   new Promise((resolve) => {
-    const make = https ? httpsRequest : httpRequest;
+    const make = https ? httpsRequest : request;
     const req = make(
       {
         host: ip,
@@ -76,9 +70,11 @@ export const httpGetByIp: WebGetFn = async (host, ip, port, https) =>
       },
       (res) => {
         const chunks: Buffer[] = [];
+        // eslint-disable-next-line functional/no-let -- running byte count of the streamed response
         let size = 0;
         res.on('data', (c: Buffer) => {
           size += c.length;
+          // eslint-disable-next-line functional/immutable-data -- accumulates the streamed response chunks
           chunks.push(c);
           if (size >= MAX_BODY) {
             res.destroy();
@@ -102,7 +98,7 @@ export const httpGetByIp: WebGetFn = async (host, ip, port, https) =>
   });
 
 /** The network clients the hints use; tests assign fakes. */
-export const network: { connect: ConnectFn; get: WebGetFn } = {
+export const network = {
   connect: tcpConnect,
   get: httpGetByIp,
 };
@@ -117,15 +113,17 @@ export interface NsAddresses {
 export async function nameserverAddresses(
   names: string[],
 ): Promise<NsAddresses[]> {
-  const out: NsAddresses[] = [];
-  for (const name of names) {
-    out.push({
-      name,
-      v4: await ipv4Addresses(name),
-      v6: await ipv6Addresses(name),
-    });
-  }
-  return out;
+  return names.reduce<Promise<NsAddresses[]>>(
+    async (done, name) => [
+      ...(await done),
+      {
+        name,
+        v4: await ipv4Addresses(name),
+        v6: await ipv6Addresses(name),
+      },
+    ],
+    Promise.resolve([]),
+  );
 }
 
 /** The zone's name servers with their addresses. */
@@ -162,21 +160,26 @@ export function judgeNsAaaa(servers: NsAddresses[]): NsAaaaVerdict {
 export async function unreachableNameservers(
   servers: NsAddresses[],
 ): Promise<{ name: string; ips: string[] }[]> {
-  const bad: { name: string; ips: string[] }[] = [];
-  for (const server of servers) {
-    const failed: string[] = [];
-    for (const ip of server.v6) {
+  return servers.reduce<Promise<{ name: string; ips: string[] }[]>>(
+    async (done, server) => {
+      const bad = await done;
       // Internet.nl sends a DNS query; DNS servers must also answer on TCP
       // (RFC 7766), so a TCP connect to port 53 tells the same story.
-      if (!(await network.connect(ip, 53, CONNECT_TIMEOUT_MS))) {
-        failed.push(ip);
-      }
-    }
-    if (failed.length > 0) {
-      bad.push({ name: server.name, ips: failed });
-    }
-  }
-  return bad;
+      const failed = await server.v6.reduce<Promise<string[]>>(
+        async (doneIps, ip) => {
+          const failedIps = await doneIps;
+          return (await network.connect(ip, 53, CONNECT_TIMEOUT_MS))
+            ? failedIps
+            : [...failedIps, ip];
+        },
+        Promise.resolve([]),
+      );
+      return failed.length > 0
+        ? [...bad, { name: server.name, ips: failed }]
+        : bad;
+    },
+    Promise.resolve([]),
+  );
 }
 
 /**
@@ -184,106 +187,38 @@ export async function unreachableNameservers(
  * 443 (Internet.nl `web_reach`).
  */
 export async function unreachableWebAddresses(v6: string[]): Promise<string[]> {
-  const bad: string[] = [];
-  for (const ip of v6) {
-    let ok = false;
-    for (const port of [80, 443]) {
-      if (await network.connect(ip, port, CONNECT_TIMEOUT_MS)) {
-        ok = true;
-        break;
-      }
-    }
-    if (!ok) {
-      bad.push(ip);
-    }
-  }
-  return bad;
+  return v6.reduce<Promise<string[]>>(async (done, ip) => {
+    const bad = await done;
+    const ok =
+      (await network.connect(ip, 80, CONNECT_TIMEOUT_MS)) ||
+      (await network.connect(ip, 443, CONNECT_TIMEOUT_MS));
+    return ok ? bad : [...bad, ip];
+  }, Promise.resolve([]));
 }
 
 /** Removes the parts of a page that legitimately differ between requests. */
 export function stripIrrelevantHtml(html: string): string {
   return stripNonceAttributes(html).replaceAll(
-    /<input\b[^>]*name\s*=\s*["']?__VIEWSTATE["']?[^>]*>/gi,
+    /<input\b[^>]*name\s*=\s*["']?__VIEWSTATE["']?[^>]*>/giu,
     '',
   );
 }
 
-const SCRIPT_OR_STYLE = /<(?:script|style)\b/gi;
+/** The value of an HTML attribute: quoted, or a run up to whitespace or `>`. */
+const ATTRIBUTE_VALUE = String.raw`(?:"[^"]*"|'[^']*'|[^\s>]+)`;
 
-function skipSpace(html: string, index: number): number {
-  let next = index;
-  while (next < html.length && WHITESPACE_CHAR.test(html[next])) {
-    next += 1;
-  }
-  return next;
-}
+/** A `nonce` attribute with its leading whitespace, in any open tag. */
+const NONCE_ATTRIBUTE = String.raw`\s+nonce\s*=\s*${ATTRIBUTE_VALUE}`;
 
-/** The end of `nonce\s*=\s*<value>` starting at `at`, or null if it is not one. */
-function nonceEnd(html: string, at: number): number | null {
-  if (html.slice(at, at + 5).toLowerCase() !== 'nonce') {
-    return null;
-  }
-  const equals = skipSpace(html, at + 5);
-  if (html[equals] !== '=') {
-    return null;
-  }
-  const value = skipSpace(html, equals + 1);
-  const quote = html[value];
-  const close =
-    quote === '"' || quote === "'" ? html.indexOf(quote, value + 1) : -1;
-  if (close !== -1) {
-    return close + 1;
-  }
-  let end = value;
-  while (end < html.length && !WHITESPACE_OR_TAG_END.test(html[end])) {
-    end += 1;
-  }
-  return end > value ? end : null;
-}
-
-/**
- * Where a `nonce=` attribute (with its leading whitespace and value) starts
- * and ends in the open tag whose body begins at `from`, or null when it has
- * none. `limit` is the first `>` of the tag.
- */
-function findNonce(
-  html: string,
-  from: number,
-  limit: number,
-): { start: number; end: number } | null {
-  let at = from;
-  while (at < limit) {
-    if (WHITESPACE_CHAR.test(html[at])) {
-      const start = at;
-      at = skipSpace(html, at);
-      const end = nonceEnd(html, at);
-      if (end !== null) {
-        return { start, end };
-      }
-    } else {
-      at += 1;
-    }
-  }
-  return null;
-}
+/** The open tag of a script or style up to where its `nonce` attribute starts. */
+const TAG_BEFORE_NONCE = new RegExp(
+  String.raw`(<(?:script|style)\b(?:[^\s>]|\s(?!\s*nonce\s*=))*)${NONCE_ATTRIBUTE}`,
+  'giu',
+);
 
 /** Removes the `nonce` attribute from `<script>` and `<style>` tags. */
 function stripNonceAttributes(html: string): string {
-  let out = '';
-  let kept = 0;
-  SCRIPT_OR_STYLE.lastIndex = 0;
-  let open: RegExpExecArray | null;
-  while ((open = SCRIPT_OR_STYLE.exec(html)) !== null) {
-    const from = open.index + open[0].length;
-    const gt = html.indexOf('>', from);
-    const found = findNonce(html, from, gt === -1 ? html.length : gt);
-    if (found) {
-      out += html.slice(kept, found.start);
-      kept = found.end;
-      SCRIPT_OR_STYLE.lastIndex = found.end;
-    }
-  }
-  return out + html.slice(kept);
+  return html.replaceAll(TAG_BEFORE_NONCE, '$1');
 }
 
 /**
@@ -294,18 +229,12 @@ export function quickRatio(a: string, b: string): number {
   if (a.length + b.length === 0) {
     return 1;
   }
-  const available = new Map<string, number>();
-  for (const ch of b) {
-    available.set(ch, (available.get(ch) ?? 0) + 1);
-  }
-  let matches = 0;
-  for (const ch of a) {
-    const left = available.get(ch) ?? 0;
-    if (left > 0) {
-      matches++;
-      available.set(ch, left - 1);
-    }
-  }
+  const available = Map.groupBy(b, (ch) => ch);
+  const matches = [...Map.groupBy(a, (ch) => ch)].reduce(
+    (sum, [ch, list]) =>
+      sum + Math.min(list.length, available.get(ch)?.length ?? 0),
+    0,
+  );
   return (2 * matches) / (a.length + b.length);
 }
 
@@ -318,19 +247,25 @@ async function fetchFamily(
   host: string,
   ips: string[],
 ): Promise<{ ports: Set<number>; response: WebResponse | null }> {
-  const ports = new Set<number>();
-  let response: WebResponse | null = null;
-  for (const port of [80, 443]) {
-    for (const ip of ips) {
-      const r = await network.get(host, ip, port, port === 443);
-      if (r) {
-        ports.add(port);
-        response = r;
-        break;
-      }
+  const firstResponse = async (
+    https: boolean,
+    rest: string[],
+  ): Promise<WebResponse | null> => {
+    const ip = rest.at(0);
+    if (ip === undefined) {
+      return null;
     }
-  }
-  return { ports, response };
+    return (
+      (await network.get(host, ip, https ? 443 : 80, https)) ??
+      firstResponse(https, rest.slice(1))
+    );
+  };
+  const on80 = await firstResponse(false, ips);
+  const on443 = await firstResponse(true, ips);
+  return {
+    ports: new Set([80, 443].filter((port) => (port === 443 ? on443 : on80))),
+    response: on443 ?? on80,
+  };
 }
 
 /**

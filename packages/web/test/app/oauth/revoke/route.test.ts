@@ -1,18 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
 import { OPTIONS, POST } from '@/app/oauth/revoke/route';
+import { SCOPE_READ } from '@/domain/mcp/app';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../../lib/core/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
-import { SCOPE_READ } from '@/domain/mcp/app';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
+import type { DatabaseSync } from 'node:sqlite';
 
 /** Matches a value made only of digits. */
-const DIGITS_ONLY_PATTERN = /^\d+$/;
+const DIGITS_ONLY_PATTERN = /^\d+$/u;
 
 quietSecurityLogs();
 

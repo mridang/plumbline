@@ -3,12 +3,9 @@
  * that returns canned `s_client` output, and a check for the real binary.
  */
 import { it } from '@jest/globals';
-import {
-  execOpenssl,
-  openssl,
-  type OpensslExec,
-} from '../../../src/lib/tls/openssl.js';
+import { execOpenssl, openssl } from '../../../src/lib/tls/openssl.js';
 import { execFileAsync } from '../../helpers/exec.js';
+import type { OpensslExec } from '../../../src/lib/tls/openssl.js';
 
 /** Whether the real `openssl` binary is on the PATH. */
 const hasOpenssl = await execFileAsync(openssl.command, ['version'])

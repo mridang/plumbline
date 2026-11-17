@@ -20,14 +20,8 @@ import {
   PROFILES,
   SECTIONS,
   SET_INFOS,
-  type Check,
-  type SetInfo,
-  type SetKind,
-  type Tier,
 } from '@/domain/checks/catalogue';
-
-/** The kinds of rule set. */
-export type RuleSetKind = SetKind;
+import type { Check, SetInfo, SetKind, Tier } from '@/domain/checks/catalogue';
 
 /** One rule set and the checks it holds. */
 // eslint-disable-next-line unicorn/prevent-abbreviations -- exported type name that other modules import
@@ -39,7 +33,7 @@ export interface RuleSetDef {
   /** One sentence for a newcomer, and when to use the set. */
   readonly summary: string;
   readonly whenToUse: string;
-  readonly kind: RuleSetKind;
+  readonly kind: SetKind;
   /** The section of a per-section set. */
   readonly section?: string;
   /** The sets a profile is the union of. */

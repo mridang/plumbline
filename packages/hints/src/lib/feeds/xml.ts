@@ -48,17 +48,17 @@ export const ATTRIBUTE_PATTERN = [
 ].join('');
 
 /** Parses the attribute list of a start tag into a name→value map. */
-function parseAttributes(source: string): Record<string, string> {
-  const attributes: Record<string, string> = {};
+function parseAttributes(source: string) {
   // name = "value" | name = 'value' | name (valueless, rare in XML)
-  const pattern = new RegExp(ATTRIBUTE_PATTERN, 'g');
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(source)) !== null) {
-    const name = match[1];
-    const value = match[3] ?? match[4] ?? match[5] ?? '';
-    attributes[name] = decodeEntities(value);
-  }
-  return attributes;
+  return Object.fromEntries(
+    Array.from(
+      source.matchAll(new RegExp(ATTRIBUTE_PATTERN, 'gu')),
+      (match) => [
+        match[1],
+        decodeEntities(match[3] ?? match[4] ?? match[5] ?? ''),
+      ],
+    ),
+  );
 }
 
 /** Decodes the five predefined XML entities plus numeric character references. */
@@ -68,10 +68,10 @@ function decodeEntities(text: string): string {
     .replaceAll('&gt;', '>')
     .replaceAll('&quot;', '"')
     .replaceAll('&apos;', "'")
-    .replaceAll(/&#x([0-9a-fA-F]+);/g, (_, hex: string) =>
+    .replaceAll(/&#x([0-9a-fA-F]+);/gu, (_, hex: string) =>
       String.fromCodePoint(Number.parseInt(hex, 16)),
     )
-    .replaceAll(/&#(\d+);/g, (_, dec: string) =>
+    .replaceAll(/&#(\d+);/gu, (_, dec: string) =>
       String.fromCodePoint(Number.parseInt(dec, 10)),
     )
     .replaceAll('&amp;', '&');
@@ -85,88 +85,36 @@ function decodeEntities(text: string): string {
  */
 function stripNonElements(source: string): string {
   return source
-    .replaceAll(/<!--[\s\S]*?-->/g, '')
-    .replaceAll(/<!DOCTYPE[\s\S]*?>/gi, '')
-    .replaceAll(/<\?[\s\S]*?\?>/g, '')
-    .replaceAll(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (_, inner: string) => inner);
+    .replaceAll(/<!--[\s\S]*?-->/gu, '')
+    .replaceAll(/<!DOCTYPE[\s\S]*?>/giu, '')
+    .replaceAll(/<\?[\s\S]*?\?>/gu, '')
+    .replaceAll(/<!\[CDATA\[([\s\S]*?)\]\]>/gu, (_, inner: string) => inner);
 }
 
 /** Close tag: pops the stack up to the nearest open ancestor with this name, if any. */
 function closeElement(stack: XmlElement[], name: string): void {
-  for (let depth = stack.length - 1; depth >= 1; depth -= 1) {
-    if (stack[depth].name === name) {
-      stack.length = depth;
-      return;
-    }
+  const depth = stack.findLastIndex(
+    (element, index) => index >= 1 && element.name === name,
+  );
+  if (depth !== -1) {
+    // eslint-disable-next-line functional/immutable-data -- the open-element stack is edited in place by the tree builder
+    stack.length = depth;
   }
 }
-
-type Token =
-  | { kind: 'skip'; next: number }
-  | {
-      kind: 'token';
-      next: number;
-      closing: string;
-      rawName: string;
-      rawAttrs: string;
-      selfClose: string;
-      textRun: string;
-    };
-
-const TAG_NAME = /<(\/?)([a-zA-Z][\w:.-]*)/y;
 
 /**
- * Reads the next token at `start`: a tag (its inner source up to the first
- * `>` outside quotes) or a run of text between tags. A `<` that does not open
- * a complete tag is skipped on its own.
+ * One token of a document: a run of text between tags, or a tag (its name,
+ * and its attributes up to the first `>` outside quotes), or a lone `<` that
+ * does not open a complete tag and is skipped on its own.
  */
-function nextToken(source: string, start: number): Token {
-  if (source[start] !== '<') {
-    const stop = source.indexOf('<', start);
-    const end = stop === -1 ? source.length : stop;
-    return {
-      kind: 'token',
-      next: end,
-      closing: '',
-      rawName: '',
-      rawAttrs: '',
-      selfClose: '',
-      textRun: source.slice(start, end),
-    };
-  }
-  TAG_NAME.lastIndex = start;
-  const head = TAG_NAME.exec(source);
-  if (!head) {
-    return { kind: 'skip', next: start + 1 };
-  }
-  const nameEnd = start + head[0].length;
-  let at = nameEnd;
-  while (at < source.length && source.codePointAt(at) !== 62) {
-    const quote = source[at];
-    if (quote === '"' || quote === "'") {
-      const close = source.indexOf(quote, at + 1);
-      if (close === -1) {
-        return { kind: 'skip', next: start + 1 };
-      }
-      at = close + 1;
-    } else {
-      at += 1;
-    }
-  }
-  if (at >= source.length) {
-    return { kind: 'skip', next: start + 1 };
-  }
-  const selfClose = at > nameEnd && source[at - 1] === '/' ? '/' : '';
-  return {
-    kind: 'token',
-    next: at + 1,
-    closing: head[1],
-    rawName: head[2],
-    rawAttrs: source.slice(nameEnd, selfClose ? at - 1 : at),
-    selfClose,
-    textRun: '',
-  };
-}
+const TOKEN = new RegExp(
+  [
+    '(?<text>[^<]+)',
+    String.raw`<(?<closing>/?)(?<name>[a-zA-Z][\w:.-]*)(?<attrs>(?:[^>"']|"[^"]*"|'[^']*')*)>`,
+    '<',
+  ].join('|'),
+  'gu',
+);
 
 /**
  * Parses `source` into a tree and returns its root element, or `null` when the
@@ -185,33 +133,34 @@ export function parseXml(source: string): XmlElement | null {
     text: '',
   };
   const stack: XmlElement[] = [root];
-  let position = 0;
-  while (position < cleaned.length) {
-    const token = nextToken(cleaned, position);
-    position = token.next;
-    if (token.kind === 'skip') {
-      continue;
-    }
-    const { closing, rawName, rawAttrs, selfClose, textRun } = token;
+  // eslint-disable-next-line functional/no-loop-statements -- a sequential scan that builds the tree in document order; recursion would overflow the call stack on deeply nested documents
+  for (const token of cleaned.matchAll(TOKEN)) {
+    const { text: textRun, closing, name: rawName, attrs } = token.groups ?? {};
     const current = stack.at(-1) ?? root;
     if (textRun) {
       // Text belongs to whichever element is currently open.
       const value = decodeEntities(textRun).trim();
       if (value !== '') {
+        // eslint-disable-next-line functional/immutable-data -- the tree builder fills the elements it created
         current.text = current.text === '' ? value : `${current.text} ${value}`;
       }
+    } else if (!rawName) {
+      // A lone `<` opens nothing.
     } else if (closing === '/') {
       closeElement(stack, rawName);
     } else {
+      const selfClose = attrs.endsWith('/');
       const element: XmlElement = {
         name: rawName,
         localName: localName(rawName),
-        attrs: parseAttributes(rawAttrs),
+        attrs: parseAttributes(selfClose ? attrs.slice(0, -1) : attrs),
         children: [],
         text: '',
       };
+      // eslint-disable-next-line functional/immutable-data -- the tree builder fills the elements it created
       current.children.push(element);
-      if (selfClose !== '/') {
+      if (!selfClose) {
+        // eslint-disable-next-line functional/immutable-data -- the open-element stack is edited in place by the tree builder
         stack.push(element);
       }
     }
@@ -234,15 +183,10 @@ export function descendantsByName(
   name: string,
 ): XmlElement[] {
   const want = name.toLowerCase();
-  const found: XmlElement[] = [];
-  const walk = (node: XmlElement): void => {
-    for (const child of node.children) {
-      if (child.localName === want) {
-        found.push(child);
-      }
-      walk(child);
-    }
-  };
-  walk(element);
-  return found;
+  const walk = (node: XmlElement): XmlElement[] =>
+    node.children.flatMap((child) => [
+      ...(child.localName === want ? [child] : []),
+      ...walk(child),
+    ]);
+  return walk(element);
 }

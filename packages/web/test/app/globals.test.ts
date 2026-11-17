@@ -6,9 +6,9 @@ import { packageDirectorySync } from 'package-directory';
 
 /** Matches the button pointer cursor rule. */
 const BUTTON_POINTER_RULE =
-  /(button:not\(:disabled\),[^{]*)\{\s*cursor: pointer;/;
+  /(button:not\(:disabled\),[^{]*)\{\s*cursor: pointer;/u;
 /** Matches a bare button selector. */
-const BARE_BUTTON_SELECTOR = /(^|,)\s*button,/;
+const BARE_BUTTON_SELECTOR = /(^|,)\s*button,/u;
 
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
@@ -26,8 +26,9 @@ describe('globals.css', () => {
         'button:not(:disabled)',
         'summary',
         'select:not(:disabled)',
-      ])
+      ]) {
         expect(rule).toContain(selector);
+      }
       expect(rule).toContain("[role='button']");
     });
 

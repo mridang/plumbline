@@ -12,12 +12,12 @@ import {
   logDeadLetters,
   sweepPending,
   SCAN_DEAD_LETTER_NAME,
-  type ScanMessage,
 } from '@/domain/suite/queue';
-import type { ScanJob } from '@/domain/suite/scanner';
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
+import type { ScanMessage } from '@/domain/suite/queue';
+import type { ScanJob } from '@/domain/suite/scanner';
 
 const NOW = new Date('2026-01-01T12:00:00.000Z');
 
@@ -104,8 +104,10 @@ describe('enqueueScan', () => {
 
   it('sends a re-check once while one is waiting', async () => {
     const { db, sent, queue } = setup();
-    expect(await enqueueScan(db, queue, recheck, NOW)).toBe(true);
-    expect(await enqueueScan(db, queue, recheck, NOW)).toBe(false);
+    expect([
+      await enqueueScan(db, queue, recheck, NOW),
+      await enqueueScan(db, queue, recheck, NOW),
+    ]).toEqual([true, false]);
     expect(sent).toHaveLength(1);
   });
 
@@ -204,7 +206,9 @@ describe('consumeScans', () => {
           }),
       },
     );
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 20);
+    });
     const waiting = message(sent[0]!, 1);
     await consumeScans(
       { messages: [waiting] as never },

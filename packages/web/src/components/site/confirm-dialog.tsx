@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, type ReactElement } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -9,6 +9,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog';
+import type { ReactElement } from 'react';
 
 /**
  * A question that must be answered before something is done: a small centred

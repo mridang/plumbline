@@ -15,6 +15,4 @@ class DurableObject {
 }
 
 /** The module factory for `jest.unstable_mockModule`. */
-export const cloudflareWorkersStub = (): {
-  DurableObject: typeof DurableObject;
-} => ({ DurableObject });
+export const cloudflareWorkersStub = () => ({ DurableObject });

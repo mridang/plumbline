@@ -5,23 +5,27 @@ import manifest from '@/app/manifest';
 import { html } from '../components/render';
 
 /** Matches title template format. */
-const TITLE_TEMPLATE_FORMAT = /^%s · .+/;
+const TITLE_TEMPLATE_FORMAT = /^%s · .+/u;
 
 /** Matches html element opening. */
 const HTML_ELEMENT_OPENING =
-  /<html lang="en" class="fonts-on-html" data-test="yes"/;
+  /<html lang="en" class="fonts-on-html" data-test="yes"/u;
 
 // The stylesheet, the fonts (which only work inside the Next compiler) and the
 // two scripts are not what is under test: the frame around the page is.
+// eslint-disable-next-line tslop/no-module-mocking -- @/app/globals.css is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/app/globals.css', () => ({}));
+// eslint-disable-next-line tslop/no-module-mocking -- @/app/_fonts is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/app/_fonts', () => ({
   HTML_CLASS: 'fonts-on-html',
   BODY_CLASS: 'classes-on-body',
   HTML_ATTRIBUTES: { 'data-test': 'yes' },
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- @/components/site/service-worker is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/components/site/service-worker', () => ({
   ServiceWorker: () => <i id="service-worker" />,
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- @/components/site/theme-script is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/components/site/theme-script', () => ({
   ThemeScript: () => <i id="theme-script" />,
 }));

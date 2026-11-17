@@ -7,9 +7,6 @@ import {
   jest,
 } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
-import type { CurrentUserResolver } from '@/domain/api/auth';
 import {
   createPushConfiguration,
   createSubscriptionItem,
@@ -24,8 +21,10 @@ import {
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
 import { HTTP_SCHEME } from '../../helpers/data.js';
+import type { CurrentUserResolver } from '@/domain/api/auth';
+import type { DatabaseSync } from 'node:sqlite';
 
-const session: { uid: number | null } = { uid: 7 };
+const session = { uid: 7 as number | null };
 const resolver: CurrentUserResolver = {
   currentUid: async () => session.uid,
   currentLiveUid: async () => session.uid,

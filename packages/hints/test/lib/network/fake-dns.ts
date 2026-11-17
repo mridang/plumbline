@@ -3,25 +3,21 @@
  * internet. A zone maps `name` to `type` to an entry; names that are not in
  * the zone answer NOERROR with no records.
  */
-import {
-  dns,
-  type DnsClient,
-  type DnsResponse,
-  type DnsType,
-} from '../../../src/core/dns.js';
+import { dns } from '../../../src/core/dns.js';
 import { target } from '../../../src/lib/network/dns-utility.js';
+import type { DnsClient, DnsResponse, DnsType } from '../../../src/core/dns.js';
 
-const TYPE_NUMBER: Record<string, number> = {
-  A: 1,
-  NS: 2,
-  CNAME: 5,
-  SOA: 6,
-  AAAA: 28,
-  DS: 43,
-  DNSKEY: 48,
-  TLSA: 52,
-  CAA: 257,
-};
+const TYPE_NUMBER = new Map([
+  ['A', 1],
+  ['NS', 2],
+  ['CNAME', 5],
+  ['SOA', 6],
+  ['AAAA', 28],
+  ['DS', 43],
+  ['DNSKEY', 48],
+  ['TLSA', 52],
+  ['CAA', 257],
+]);
 
 interface Entry {
   data?: string[];
@@ -43,7 +39,7 @@ function fakeClient(zone: Zone): DnsClient {
         authenticated: entry?.ad === true,
         answers: (entry?.data ?? []).map((data) => ({
           name,
-          type: TYPE_NUMBER[type] ?? 0,
+          type: TYPE_NUMBER.get(type) ?? 0,
           ttl: 60,
           data,
         })),

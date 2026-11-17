@@ -1,15 +1,15 @@
 import { afterEach, describe, expect, it } from '@jest/globals';
+import { Severity } from '@hint/utils-types';
 import hint from '../../../src/hints/headers/redirection.js';
 import { redirectionClient } from '../../../src/lib/headers/redirection.js';
-import { Severity } from '@hint/utils-types';
 import { runHint } from '../../helpers/run-hint.js';
 import { HTTP_SCHEME } from '../../helpers/data.js';
 
 /** Matches the root URL of the local test server. */
-const LOCAL_ROOT_URL = /^http:\/\/127\.0\.0\.1:\d+\/$/;
+const LOCAL_ROOT_URL = /^http:\/\/127\.0\.0\.1:\d+\/$/u;
 
 /** Matches a 200 response line for the root URL of the local test server. */
-const LOCAL_ROOT_RESPONSE = /^200 http:\/\/127\.0\.0\.1:\d+\/$/;
+const LOCAL_ROOT_RESPONSE = /^200 http:\/\/127\.0\.0\.1:\d+\/$/u;
 
 const original = redirectionClient.fetch;
 

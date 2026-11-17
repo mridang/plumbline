@@ -8,7 +8,8 @@
  * used. The levels are Mozilla Observatory's (`tests/referrer-policy.js`);
  * the OWASP profile requires exactly `no-referrer`.
  */
-import { finding, type Finding, type Profile } from './finding.js';
+import { finding } from './finding.js';
+import type { Finding, Profile } from './finding.js';
 
 const PRIVATE = new Set([
   'no-referrer',

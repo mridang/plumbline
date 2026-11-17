@@ -1,4 +1,3 @@
-import type { HintDefinition } from '../../core/define-hint.js';
 import seoTitleMissing from './seo-title-missing.js';
 import seoTitleTooLong from './seo-title-too-long.js';
 import seoTitleTooShort from './seo-title-too-short.js';
@@ -28,6 +27,7 @@ import seoHttpStatus from './seo-http-status.js';
 import seoViewport from './seo-viewport.js';
 import seoResponsiveImages from './seo-responsive-images.js';
 import iconsAppleTouchIconMissing from './icons-apple-touch-icon-missing.js';
+import type { HintDefinition } from '../../core/define-hint.js';
 
 /** Hints of the `seo` set. */
 export const seoHints: readonly HintDefinition[] = [

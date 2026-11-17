@@ -30,23 +30,29 @@ export const NAMES = {
   notifications: 'notifications',
 } as const;
 
+const STATUS_OF = new Map<boolean | undefined, AccountLink['status']>([
+  [true, 'Connected'],
+  [false, 'Not connected'],
+]);
+
 const entry = ({
   label,
   connected,
-}: Readonly<{ label: string; connected?: boolean }>): AccountLink => {
-  let status: AccountLink['status'];
-  if (connected !== undefined) {
-    status = connected ? 'Connected' : 'Not connected';
-  }
-  return { label, connected, status };
-};
+}: Readonly<{ label: string; connected?: boolean }>): AccountLink => ({
+  label,
+  connected,
+  status: STATUS_OF.get(connected),
+});
 
-/** The three connection entries for the state. Notifications are per device, so never known here. */
-export function accountLinks(state: AccountState): {
+/** The three connection entries of the account menu. */
+export interface AccountLinks {
   github: AccountLink;
   assistants: AccountLink;
   notifications: AccountLink;
-} {
+}
+
+/** The three connection entries for the state. Notifications are per device, so never known here. */
+export function accountLinks(state: AccountState): AccountLinks {
   return {
     github: entry({
       label: state.github

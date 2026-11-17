@@ -1,19 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
 import { makeConnectionsCollection } from '@/domain/api/connections';
-import type { CurrentUserResolver } from '@/domain/api/auth';
+import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../../../../lib/core/db/sqlite-d1';
-import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import { APP_MIGRATIONS } from '../../../../../lib/core/db/migrations';
+import type { CurrentUserResolver } from '@/domain/api/auth';
+import type { DatabaseSync } from 'node:sqlite';
+
+interface SessionState {
+  uid: number | null;
+  ended: boolean;
+}
 
 /** Who is signed in; null means nobody. */
 /** `ended`: the person signed out everywhere, though the cookie itself still verifies. */
-const session: { uid: number | null; ended: boolean } = {
+const session: SessionState = {
   uid: 7,
   ended: false,
 };

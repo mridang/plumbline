@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+import { Severity } from '@hint/utils-types';
+import { createScanServer } from '../src/server.js';
+import type { Problem } from '@hint/utils-types';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { Severity, type Problem } from '@hint/utils-types';
-import { createScanServer, type RunFn, type ScanFn } from '../src/server.js';
+import type { RunFn, ScanFn } from '../src/server.js';
 import type { HintMeta } from '@mridang/plumbline';
 
 const HINT: HintMeta = {
@@ -33,16 +35,21 @@ let base: string;
 
 async function listen(scan: ScanFn, run?: RunFn): Promise<void> {
   server = createScanServer({ scan, run });
-  return new Promise((resolve) =>
+  return new Promise((resolve) => {
     server.listen(0, '127.0.0.1', () => {
       const { port } = server.address() as AddressInfo;
       base = `http://127.0.0.1:${port}`;
       resolve();
-    }),
-  );
+    });
+  });
 }
 
-afterEach(async () => new Promise((resolve) => server.close(() => resolve())));
+afterEach(
+  async () =>
+    new Promise<void>((resolve) => {
+      server.close(() => resolve());
+    }),
+);
 
 describe('the scan server', () => {
   beforeEach(async () => listen(fakeScan));

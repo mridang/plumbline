@@ -8,6 +8,7 @@ class RedirectedError extends Error {
   }
 }
 
+// eslint-disable-next-line tslop/no-module-mocking -- next/navigation is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('next/navigation', () => ({
   redirect: (to: string) => {
     throw new RedirectedError(to);

@@ -5,9 +5,9 @@ import { RpcError } from '@/lib/mcp';
 import { TOOLS } from '@/domain/mcp/tool-definitions';
 
 /** Matches a kebab-case name. */
-const KEBAB_CASE_NAME = /^[a-z]+(?:-[a-z]+)*$/;
+const KEBAB_CASE_NAME = /^[a-z]+(?:-[a-z]+)*$/u;
 /** Matches text of at most 400 characters. */
-const AT_MOST_400_CHARS = /^.{0,400}$/s;
+const AT_MOST_400_CHARS = /^.{0,400}$/su;
 
 /** The opening message's text. */
 function textOf(name: string, args?: unknown): string {
@@ -60,7 +60,7 @@ describe('PROMPT_DEFINITIONS', () => {
       textOf('choose-checks', { domain: 'example.com' }),
     ];
     const mentioned = texts.flatMap((text) =>
-      Array.from(text.matchAll(/\b[a-z]+(?:_[a-z]+)+\b/g), (m) => m[0]),
+      Array.from(text.matchAll(/\b[a-z]+(?:_[a-z]+)+\b/gu), (m) => m[0]),
     );
     expect(mentioned.length).toBeGreaterThan(0);
     for (const name of mentioned) {

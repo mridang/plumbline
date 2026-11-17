@@ -36,28 +36,24 @@ export default defineHint({
   ],
   setup(context) {
     onMailDomain(context, async (mail) => {
-      const notFound: string[] = [];
-      const invalid: string[] = [];
-
       // Every mail server is looked up at once, and so is every one of its
       // addresses: each lookup is two round trips to a web service. The lines
       // keep the order of the servers and addresses.
       const lines = await Promise.all(
         mail.hosts.map(async (host) => {
-          const addresses = new Set<string>();
-          for (const type of ['A', 'AAAA'] as const) {
-            try {
-              const response = await dns.client.query(host, type);
-              const records = response.answers.filter((r) =>
-                ADDRESS_TYPES.has(r.type),
-              );
-              for (const record of records) {
-                addresses.add(record.data);
-              }
-            } catch {
+          const families = await Array.fromAsync(
+            ['A', 'AAAA'] as const,
+            async (type) => {
               // A failed lookup leaves that family unchecked.
-            }
-          }
+              const response = await dns.client
+                .query(host, type)
+                .catch(() => null);
+              return (response?.answers ?? [])
+                .filter((r) => ADDRESS_TYPES.has(r.type))
+                .map((record) => record.data);
+            },
+          );
+          const addresses = new Set(families.flat());
           return Promise.all(
             Array.from(addresses, async (ip) => {
               try {
@@ -80,15 +76,12 @@ export default defineHint({
           );
         }),
       );
-      for (const found of lines.flat()) {
-        if (found?.status === 'invalid') {
-          invalid.push(found.line);
-        } else if (found?.status === 'unknown') {
-          notFound.push(found.line);
-        } else {
-          // Any other status needs no report.
-        }
-      }
+      const notFound = lines
+        .flat()
+        .flatMap((found) => (found?.status === 'unknown' ? [found.line] : []));
+      const invalid = lines
+        .flat()
+        .flatMap((found) => (found?.status === 'invalid' ? [found.line] : []));
 
       if (notFound.length > 0) {
         mail.report(

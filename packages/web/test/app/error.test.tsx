@@ -5,11 +5,11 @@ import ErrorPage from '@/app/error';
 import { html } from '../components/render';
 
 /** Matches the error heading. */
-const ERROR_HEADING = /<h1[^>]*>That didn&#x27;t work<\/h1>/;
+const ERROR_HEADING = /<h1[^>]*>That didn&#x27;t work<\/h1>/u;
 /** Matches the retry button. */
-const TRY_AGAIN_BUTTON = /<button[^>]*type="button"[^>]*>Try again<\/button>/;
+const TRY_AGAIN_BUTTON = /<button[^>]*type="button"[^>]*>Try again<\/button>/u;
 /** Matches the home page link. */
-const HOME_PAGE_LINK = /<a [^>]*href="\/"[^>]*>Back to the home page<\/a>/;
+const HOME_PAGE_LINK = /<a [^>]*href="\/"[^>]*>Back to the home page<\/a>/u;
 
 describe('ErrorPage', () => {
   const retry = () => undefined;

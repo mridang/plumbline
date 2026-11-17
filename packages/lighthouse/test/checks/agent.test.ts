@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
+import { agentChecks } from '../../src/checks/agent.js';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
-import { agentChecks } from '../../src/checks/agent.js';
 import type { AuditCheck } from '../../src/checks/types.js';
 
 /**
@@ -70,7 +70,9 @@ function artifacts(url: string, headers: Record<string, string>): Artifacts {
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */
 function context(): AuditNS.Context {
-  return { computedCache: new Map() } as unknown as AuditNS.Context;
+  return {
+    computedCache: new Map<string, unknown>(),
+  } as unknown as AuditNS.Context;
 }
 
 /** Looks a check up by id, failing loudly if the registry drops it. */

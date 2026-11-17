@@ -1,5 +1,5 @@
-import { describe, expect, it } from '@jest/globals';
 import { spawn as nodeSpawn } from 'node:child_process';
+import { describe, expect, it } from '@jest/globals';
 
 import { spawn } from '../../src/node/child-process.js';
 

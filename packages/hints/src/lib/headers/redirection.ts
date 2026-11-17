@@ -10,7 +10,8 @@
  *
  * Requests go through `redirectionClient`, so tests replace it with a fake.
  */
-import { finding, type Finding } from './finding.js';
+import { finding } from './finding.js';
+import type { Finding } from './finding.js';
 
 export interface RedirectionClient {
   fetch: (url: string, init: { redirect: 'manual' }) => Promise<Response>;
@@ -70,34 +71,35 @@ export async function followRedirects(
   client: RedirectionClient = redirectionClient,
   maxHops = 10,
 ): Promise<Route> {
-  const route: Route = { hops: [], invalidCert: false, unreachable: false };
-  let current = start;
-  for (let index = 0; index < maxHops; index++) {
-    let response: Response;
-    try {
-      response = await client.fetch(current.href, { redirect: 'manual' });
-    } catch (error) {
-      if (route.hops.length === 0) {
-        route.unreachable = true;
-      } else if (isCertificateError(error)) {
-        route.invalidCert = true;
-      } else {
-        // Any other failure after a redirect leaves the route as it is.
-      }
-      return route;
+  const follow = async (current: URL, hops: Hop[]): Promise<Route> => {
+    if (hops.length >= maxHops) {
+      return { hops, invalidCert: false, unreachable: false };
     }
-    route.hops.push({ url: current, status: response.status });
+    const attempt = await client
+      .fetch(current.href, { redirect: 'manual' })
+      .then((response) => ({ response }))
+      .catch((error: unknown) => ({ error }));
+    if ('error' in attempt) {
+      // Any other failure after a redirect leaves the route as it is.
+      return {
+        hops,
+        invalidCert: hops.length > 0 && isCertificateError(attempt.error),
+        unreachable: hops.length === 0,
+      };
+    }
+    const { response } = attempt;
+    const route = [...hops, { url: current, status: response.status }];
     const location = response.headers.get('location');
-    if (!REDIRECT_STATUSES.has(response.status) || !location) {
-      return route;
+    if (
+      !REDIRECT_STATUSES.has(response.status) ||
+      !location ||
+      !URL.canParse(location, current.href)
+    ) {
+      return { hops: route, invalidCert: false, unreachable: false };
     }
-    try {
-      current = new URL(location, current);
-    } catch {
-      return route;
-    }
-  }
-  return route;
+    return follow(new URL(location, current), route);
+  };
+  return follow(start, []);
 }
 
 /** Judges a route; `isPreloaded` says whether a host is HSTS preloaded. */

@@ -9,14 +9,11 @@ import {
 } from '@modelcontextprotocol/core';
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { User } from '@/domain/db/users';
 import {
   CACHE_HINTS,
   handleMcpMessage,
   readCache,
   isAdvertisedTool,
-  type JsonRpcResponse,
-  type ToolRunner,
 } from '@/domain/mcp/server';
 import { callTool, callToolOrExplain } from '@/domain/mcp/tool-calls';
 import { InvalidToolArgumentsError, UnknownToolError } from '@/lib/mcp';
@@ -32,10 +29,12 @@ import { SCOPE_READ, SCOPE_WRITE, scopeForTool } from '@/lib/oauth';
 import { addDomain } from '@/domain/db/domains';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import type { JsonRpcResponse, ToolRunner } from '@/domain/mcp/server';
+import type { User } from '@/domain/db/users';
 
 /** Matches the invalid arguments message for get_domain. */
 const GET_DOMAIN_INVALID_ARGUMENTS_PATTERN =
-  /Invalid arguments for get_domain: .*`domain` is required.*`limit` is not an argument/;
+  /Invalid arguments for get_domain: .*`domain` is required.*`limit` is not an argument/u;
 
 /** The address of a view the server serves. */
 const FIRST_VIEW = APP_RESOURCES.at(0)?.uri ?? '';
@@ -777,7 +776,7 @@ describe('every reply parses with the SDK’s own schema for its method', () => 
   const resultOf = async (
     method: string,
     params: Record<string, unknown> | undefined,
-  ): Promise<unknown> => {
+  ) => {
     const reply = await handleMcpMessage(someone, {
       jsonrpc: '2.0',
       id: 1,

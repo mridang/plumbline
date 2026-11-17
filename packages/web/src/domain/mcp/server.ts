@@ -14,7 +14,6 @@
  * `server-info.ts`.
  */
 
-import type { User } from '@/domain/db/users';
 import {
   ERROR_INVALID_PARAMS,
   InvalidToolArgumentsError,
@@ -24,8 +23,6 @@ import {
   UnknownToolError,
   isPlainObject,
   negotiateLegacyVersion,
-  type CacheHint,
-  type JsonRpcResponse,
 } from '@/lib/mcp';
 import {
   CAPABILITIES,
@@ -41,6 +38,8 @@ import {
   RESOURCE_MIME_TYPE,
   findAppResource,
 } from '@/domain/mcp/ui-resources';
+import type { CacheHint, JsonRpcResponse } from '@/lib/mcp';
+import type { User } from '@/domain/db/users';
 
 export type { JsonRpcMessage, JsonRpcResponse } from '@/lib/mcp';
 
@@ -89,7 +88,7 @@ function refuseCursor(params: Params): void {
 }
 
 /** The answer to the older revisions' `initialize` handshake. */
-function initializeResult(params: Params): object {
+function initializeResult(params: Params) {
   return {
     protocolVersion: negotiateLegacyVersion(params?.['protocolVersion']),
     capabilities: CAPABILITIES,
@@ -99,7 +98,7 @@ function initializeResult(params: Params): object {
 }
 
 /** The newest revision's way to learn what a server is, with no handshake. */
-function discoverResult(): object {
+function discoverResult() {
   return {
     supportedVersions: SUPPORTED_VERSIONS,
     capabilities: CAPABILITIES,
@@ -108,7 +107,7 @@ function discoverResult(): object {
 }
 
 /** The answer to `resources/list`: the app's views. */
-function resourceListResult(params: Params): object {
+function resourceListResult(params: Params) {
   refuseCursor(params);
   return {
     resources: APP_RESOURCES.map((r) => ({
@@ -122,7 +121,7 @@ function resourceListResult(params: Params): object {
 }
 
 /** The answer to `resources/templates/list`: there are no templated resources. */
-function resourceTemplateListResult(params: Params): object {
+function resourceTemplateListResult(params: Params) {
   refuseCursor(params);
   return { resourceTemplates: [] };
 }
@@ -132,6 +131,7 @@ function resourceTemplateListResult(params: Params): object {
  * read at the content-hashed address it will always have, and for the shorter
  * time when it is read at a stale hashed address that gets the current view.
  */
+// eslint-disable-next-line tslop/no-object-parameters -- registered as the engine's `cache` callback, which is typed `(result: object) => CacheHint`
 export function readCache(result: object): CacheHint {
   const contents = 'contents' in result ? result.contents : undefined;
   const first: unknown = Array.isArray(contents) ? contents[0] : undefined;
@@ -145,7 +145,7 @@ export function readCache(result: object): CacheHint {
 }
 
 /** The reply to `resources/read`: a view's HTML, or an error for an address the server does not have. */
-function readResource(params: Params): object {
+function readResource(params: Params) {
   const uri = params?.['uri'];
   if (typeof uri !== 'string') {
     throw new RpcError(

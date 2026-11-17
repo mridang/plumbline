@@ -28,17 +28,17 @@ export default defineHint({
     onSite(context, async (site) => {
       // Prefer the well-known path; only fall back to the legacy root path
       // when the preferred one is absent.
-      let path = EXPECTED;
       const preferred = await site.fetch(EXPECTED);
-      if (preferred?.response.statusCode !== 200) {
-        const legacy = await site.fetch(LEGACY);
-        if (legacy?.response.statusCode === 200) {
-          path = LEGACY;
-          site.report(
-            new URL(LEGACY, site.url).href,
-            `The association file was found only at the legacy location ${LEGACY}; it should be at ${EXPECTED}.`,
-          );
-        }
+      const legacy =
+        preferred?.response.statusCode === 200
+          ? null
+          : await site.fetch(LEGACY);
+      const path = legacy?.response.statusCode === 200 ? LEGACY : EXPECTED;
+      if (path === LEGACY) {
+        site.report(
+          new URL(LEGACY, site.url).href,
+          `The association file was found only at the legacy location ${LEGACY}; it should be at ${EXPECTED}.`,
+        );
       }
       await checkFile(site, {
         path,

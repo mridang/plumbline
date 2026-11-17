@@ -8,9 +8,9 @@
 
 import { eq } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import { stateOf } from '@/domain/db/live';
 import { domains } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 import type { ScoredSite } from '@/domain/badge/score';
 
 /** The sites of a repository, with how each stands. */

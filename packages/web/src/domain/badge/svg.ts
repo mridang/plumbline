@@ -10,7 +10,7 @@
 /** Text made safe to place inside SVG. */
 function escapeText(text: string): string {
   return text.replaceAll(
-    /[&<>"']/g,
+    /[&<>"']/gu,
     (char) =>
       ({
         '&': '&amp;',

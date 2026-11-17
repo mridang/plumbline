@@ -33,14 +33,14 @@ export default defineHint({
   ],
   setup(context) {
     onMailDomain(context, async (mail) => {
-      for (const host of mail.hosts) {
-        await checkCaa(host, 'mail server', (message, codeSnippet) =>
+      await Array.fromAsync(mail.hosts, async (host) =>
+        checkCaa(host, 'mail server', (message, codeSnippet) =>
           mail.report(`${host}: ${message}`, {
             severity: Severity.warning,
             codeSnippet,
           }),
-        );
-      }
+        ),
+      );
     });
   },
 });

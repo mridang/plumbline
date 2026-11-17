@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { RULE_SOURCES } from '@/components/landing/sources';
 
 /** Matches https url prefix. */
-const HTTPS_URL_PREFIX = /^https:\/\//;
+const HTTPS_URL_PREFIX = /^https:\/\//u;
 
 describe('RULE_SOURCES', () => {
   it('names each reference once, with an https address', () => {

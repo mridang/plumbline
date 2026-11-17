@@ -4,10 +4,10 @@
 import type { DocumentLike } from './read.js';
 
 /** Matches a run of whitespace. */
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /** Matches the start of a query or fragment. */
-const QUERY_OR_FRAGMENT_START = /[?#]/;
+const QUERY_OR_FRAGMENT_START = /[?#]/u;
 
 /** One declared icon. */
 export interface IconLink {

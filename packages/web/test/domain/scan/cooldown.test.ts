@@ -7,8 +7,8 @@ import {
   PURGE_IDLE_SECONDS,
   SCAN_COOLDOWN,
   SCAN_RUN,
-  type CooldownDeps,
 } from '@/domain/scan/cooldown';
+import type { CooldownDeps } from '@/domain/scan/cooldown';
 import type { RateLimitStore } from '@/lib/rate-limit';
 
 /** A fake set of counters: fixed windows held in a map. */
@@ -130,15 +130,16 @@ describe('claimRun', () => {
   it('runs the checks of a scan once, and refuses another run of the same scan', async () => {
     const { store } = memoryStore();
     expect(SCAN_RUN).toMatchObject({ limit: 1, windowSeconds: 600 });
-    expect(await claimRun('abc.def', deps(store))).toMatchObject({
-      allowed: true,
-    });
-    expect(await claimRun('abc.def', deps(store))).toMatchObject({
-      allowed: false,
-    });
-    expect(await claimRun('other.id', deps(store))).toMatchObject({
-      allowed: true,
-    });
+    const runs = [
+      await claimRun('abc.def', deps(store)),
+      await claimRun('abc.def', deps(store)),
+      await claimRun('other.id', deps(store)),
+    ];
+    expect(runs).toMatchObject([
+      { allowed: true },
+      { allowed: false },
+      { allowed: true },
+    ]);
   });
 
   it('lets the run through when the counters cannot be reached', async () => {

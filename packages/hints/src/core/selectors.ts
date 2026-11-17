@@ -66,6 +66,7 @@ export function matches(selector: Selector, subject: Subject): boolean {
     case 'group': {
       return subject.groups.includes(selector.value);
     }
+    // no default
   }
 }
 
@@ -80,12 +81,11 @@ function prefixed(name: string): Selector | undefined {
   }
   const kind = name.slice(0, colon);
   const value = name.slice(colon + 1);
-  for (const [known, values] of Object.entries(KINDS)) {
-    if (known === kind && values.includes(value)) {
-      return { kind: known as SelectorKind, value };
-    }
-  }
-  return undefined;
+  return Object.entries(KINDS).some(
+    ([known, values]) => known === kind && values.includes(value),
+  )
+    ? { kind: kind as SelectorKind, value }
+    : undefined;
 }
 
 /**
@@ -104,17 +104,11 @@ export function resolve(
   if (given) {
     return [given];
   }
-  for (const kind of [
-    'tag',
-    'section',
-    'target',
-    'tier',
-    'control',
-    'source',
-  ] as const) {
-    if (KINDS[kind].includes(name)) {
-      return [{ kind, value: name }];
-    }
+  const kind = (
+    ['tag', 'section', 'target', 'tier', 'control', 'source'] as const
+  ).find((candidate) => KINDS[candidate].includes(name));
+  if (kind) {
+    return [{ kind, value: name }];
   }
   const alias = ALIASES[name];
   if (alias) {

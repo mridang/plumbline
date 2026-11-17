@@ -6,16 +6,11 @@
  * Pure, so the page in the browser and the tests use the same rules.
  */
 
-import {
-  controlOf,
-  type ChecksControl,
-} from '@/components/repos/checks-control';
-import {
-  NO_FILTER,
-  queryOf,
-  type Filter,
-} from '@/components/repos/site-filter';
+import { controlOf } from '@/components/repos/checks-control';
+import { NO_FILTER, queryOf } from '@/components/repos/site-filter';
 import { WORST_FIRST } from '@/components/repos/site-state';
+import type { ChecksControl } from '@/components/repos/checks-control';
+import type { Filter } from '@/components/repos/site-filter';
 import type { RepoStatus, SiteStatus } from '@/domain/db/live';
 
 /** Orders names the way the viewer's locale does. */
@@ -136,7 +131,7 @@ export function sortRows(
       case 'checked': {
         return timeOf(b.site.checked_at) - timeOf(a.site.checked_at);
       }
-      case 'issues': {
+      default: {
         return b.openIssues - a.openIssues;
       }
     }
@@ -170,25 +165,14 @@ export function issuesUrl(repo: string): string {
 
 /** The rows put back together as repositories, in the order their first row comes. */
 export function groupRows(rows: readonly SiteRow[]): RepoStatus[] {
-  const groups = new Map<
-    string,
-    { repo: string | null; sites: SiteStatus[]; openIssues: number }
-  >();
-  for (const row of rows) {
-    const key = row.repo ?? '';
-    const group = groups.get(key) ?? {
-      repo: row.repo,
-      sites: [],
-      openIssues: row.openIssues,
-    };
-    group.sites.push(row.site);
-    groups.set(key, group);
-  }
-  return Array.from(groups.values(), (group) => ({
-    repo: group.repo,
-    sites: group.sites,
-    open_issues: group.openIssues,
-  }));
+  return Array.from(
+    Map.groupBy(rows, (row) => row.repo ?? '').values(),
+    (members) => ({
+      repo: members[0]?.repo ?? null,
+      sites: members.map((row) => row.site),
+      open_issues: members[0]?.openIssues ?? 0,
+    }),
+  );
 }
 
 /**
@@ -197,17 +181,13 @@ export function groupRows(rows: readonly SiteRow[]): RepoStatus[] {
  * scattered by the sort. A site added by hand stays where it is.
  */
 export function clusterRows(rows: readonly SiteRow[]): SiteRow[] {
-  const placed = new Set<string>();
-  const out: SiteRow[] = [];
-  for (const row of rows) {
+  return rows.flatMap((row, index) => {
     if (row.repo === null) {
-      out.push(row);
-    } else if (placed.has(row.repo)) {
-      // The repository's rows were placed with its first row.
-    } else {
-      placed.add(row.repo);
-      out.push(...rows.filter((other) => other.repo === row.repo));
+      return [row];
     }
-  }
-  return out;
+    // The repository's rows are placed with its first row.
+    return rows.findIndex((other) => other.repo === row.repo) === index
+      ? rows.filter((other) => other.repo === row.repo)
+      : [];
+  });
 }

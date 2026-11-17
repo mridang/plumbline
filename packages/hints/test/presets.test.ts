@@ -1,7 +1,7 @@
-import { describe, expect, it } from '@jest/globals';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from '@jest/globals';
 import { GROUPS } from '../src/core/groups.js';
 import {
   buildPresets,

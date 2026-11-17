@@ -32,7 +32,7 @@ export default defineHint({
   ],
   setup(context) {
     onMailDomain(context, async (mail) => {
-      for (const host of mail.hosts) {
+      await Array.fromAsync(mail.hosts, async (host) => {
         const { verdict, offenders } = judgeValidity(await nsRpki(host));
         if (verdict === 'invalid') {
           mail.report(
@@ -47,7 +47,7 @@ export default defineHint({
         } else {
           // Any other verdict needs no report.
         }
-      }
+      });
     });
   },
 });

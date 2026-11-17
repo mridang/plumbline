@@ -1,12 +1,12 @@
-import { describe, expect, it } from '@jest/globals';
 import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { describe, expect, it } from '@jest/globals';
 
 import { pathExists } from './helpers/fs.js';
 
 /** Captures the body of a leading `---` delimited front matter block. */
-const FRONT_MATTER_BLOCK = /^---\n([\s\S]*?)\n---\n/;
+const FRONT_MATTER_BLOCK = /^---\n([\s\S]*?)\n---\n/u;
 
 /** The skills package, and the repository it lives in. */
 const PACKAGE = fileURLToPath(new URL('..', import.meta.url));

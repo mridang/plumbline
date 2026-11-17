@@ -3,9 +3,9 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { GoogleOAuthClient, SIGN_IN_SCOPES } from '@/lib/google';
 
 /** Matches the invalid_grant error. */
-const INVALID_GRANT = /invalid_grant/;
+const INVALID_GRANT = /invalid_grant/u;
 /** Matches the missing client secret message. */
-const CLIENT_SECRET_REQUIRED = /clientSecret is required/;
+const CLIENT_SECRET_REQUIRED = /clientSecret is required/u;
 
 const client = new GoogleOAuthClient({
   clientId: 'client-id',

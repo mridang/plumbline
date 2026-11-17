@@ -23,7 +23,7 @@ import {
 } from '../../../../domain/github/github-test-kit';
 
 /** Matches the session cookie value. */
-const SESSION_COOKIE_VALUE = /plumbline_session=([^;]+)/;
+const SESSION_COOKIE_VALUE = /plumbline_session=([^;]+)/u;
 
 let restore: () => void;
 let made: ReturnType<typeof sqliteD1>;

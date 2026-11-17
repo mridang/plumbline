@@ -8,7 +8,6 @@ import {
 } from '@jest/globals';
 
 import { SESSION_COOKIE } from '@/domain/auth/app';
-import type { User } from '@/domain/auth/store';
 import {
   appRequest,
   fakeCookies,
@@ -16,7 +15,9 @@ import {
   jar,
   tokenFor,
 } from '../../../domain/auth/auth-test-kit';
+import type { User } from '@/domain/auth/store';
 
+// eslint-disable-next-line tslop/no-module-mocking -- next/headers needs a request scope that only the Next runtime provides; the source reads it by import
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 const getUserById = jest.fn(async (id: number) =>
@@ -25,6 +26,7 @@ const getUserById = jest.fn(async (id: number) =>
     : undefined,
 );
 
+// eslint-disable-next-line tslop/no-module-mocking -- the guard imports the store directly and has no injection point
 jest.unstable_mockModule('@/domain/auth/store', () => ({
   getUserById,
   getSessionEpoch: async () => 0,

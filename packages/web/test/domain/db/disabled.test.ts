@@ -37,10 +37,14 @@ describe('turning checks off', () => {
 
   it('says whether it changed anything, so a second request does no more', async () => {
     const db = empty();
-    expect(await disableRepo(db, 1, 'o/a')).toBe(true);
-    expect(await disableRepo(db, 2, 'o/a')).toBe(false);
-    expect(await enableRepo(db, 'o/a')).toBe(true);
-    expect(await enableRepo(db, 'o/a')).toBe(false);
+    expect([
+      await disableRepo(db, 1, 'o/a'),
+      await disableRepo(db, 2, 'o/a'),
+    ]).toEqual([true, false]);
+    expect([await enableRepo(db, 'o/a'), await enableRepo(db, 'o/a')]).toEqual([
+      true,
+      false,
+    ]);
     expect(await isRepoDisabled(db, 'o/a')).toBe(false);
   });
 
@@ -176,10 +180,14 @@ describe('turning checks off in plumbline.yaml', () => {
 
   it('says whether it changed anything', async () => {
     const db = empty();
-    expect(await disableRepoByFile(db, 'o/a')).toBe(true);
-    expect(await disableRepoByFile(db, 'o/a')).toBe(false);
-    expect(await enableRepoByFile(db, 'o/a')).toBe(true);
-    expect(await enableRepoByFile(db, 'o/a')).toBe(false);
+    expect([
+      await disableRepoByFile(db, 'o/a'),
+      await disableRepoByFile(db, 'o/a'),
+    ]).toEqual([true, false]);
+    expect([
+      await enableRepoByFile(db, 'o/a'),
+      await enableRepoByFile(db, 'o/a'),
+    ]).toEqual([true, false]);
   });
 
   it('keeps the switch: the repository is off while either is', async () => {

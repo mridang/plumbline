@@ -1,12 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import {
-  neutralWhenUntested,
-  runScanWith,
-  type ScanEnvironment,
-  type ScanEvent,
-} from '../../src/engine/core.js';
+import { neutralWhenUntested, runScanWith } from '../../src/engine/core.js';
 import { ScanRefusedError } from '../../src/engine/scannable.js';
+import type { ScanEnvironment, ScanEvent } from '../../src/engine/core.js';
 
 /** Locale-aware comparator used to sort strings deterministically. */
 const collator = new Intl.Collator();
@@ -17,10 +13,13 @@ const page = (): Response =>
     headers: { 'content-type': 'text/html; charset=utf-8', 'x-test': '1' },
   });
 
-function environment(over: Partial<ScanEnvironment> = {}): {
+/** A scan environment that records when it is installed and removed. */
+interface RecordedEnvironment {
   env: ScanEnvironment;
   installed: string[];
-} {
+}
+
+function environment(over: Partial<ScanEnvironment> = {}): RecordedEnvironment {
   const installed: string[] = [];
   return {
     installed,

@@ -51,7 +51,9 @@ describe('validateGpcJson', () => {
 function seeded(seed: number): () => number {
   let state = seed;
   return () => {
-    state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+    state =
+      (((Math.imul(state, 1_664_525) + 1_013_904_223) % 2 ** 32) + 2 ** 32) %
+      2 ** 32;
     return state / 2 ** 32;
   };
 }
@@ -74,6 +76,7 @@ describe('ISO_DATE', () => {
       String.raw`^\d{4}-\d{2}-\d{2}`,
       String.raw`([Tt]\d{2}:\d{2}:\d{2}(\.\d+)?([Zz]|[+-]\d{2}:\d{2})?)?$`,
     ].join(''),
+    'u',
   );
 
   it.each([

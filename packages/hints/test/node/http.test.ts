@@ -1,5 +1,5 @@
-import { describe, expect, it } from '@jest/globals';
 import { request as nodeRequest } from 'node:http';
+import { describe, expect, it } from '@jest/globals';
 
 import { request } from '../../src/node/http.js';
 

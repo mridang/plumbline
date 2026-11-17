@@ -21,7 +21,7 @@ interface Context {
 }
 
 /** The ids reports are given: a random UUID. */
-const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 
 /** The report. */
 export async function GET(_request: Request, { params }: Context) {

@@ -10,8 +10,8 @@
 
 import { eq } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import { pushSubscriptions } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 import type {
   PushSubscriptionRecord,
   PushSubscriptionStore,

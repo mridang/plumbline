@@ -24,7 +24,6 @@ import {
   created,
 } from '@/lib/core/api';
 import { getEnv } from '@/lib/core/runtime';
-import type { RouteContext } from '@/lib/core/api/route-context';
 
 import { readTarget } from '@/domain/scan/target';
 import {
@@ -32,14 +31,13 @@ import {
   claimScan,
   cooldownMessage,
   liveCooldownDeps,
-  type CooldownDeps,
 } from '@/domain/scan/cooldown';
-import {
-  runOnServer,
-  ScannerError,
-  type ScannerNamespace,
-} from '@/domain/scan/run';
-import { issueScanId, readScanId, type ScanClaim } from '@/domain/scan/token';
+import { runOnServer, ScannerError } from '@/domain/scan/run';
+import { issueScanId, readScanId } from '@/domain/scan/token';
+import type { CooldownDeps } from '@/domain/scan/cooldown';
+import type { ScannerNamespace } from '@/domain/scan/run';
+import type { ScanClaim } from '@/domain/scan/token';
+import type { RouteContext } from '@/lib/core/api/route-context';
 
 /** The largest request body taken; an address and a few headers fit easily. */
 const MAX_BODY_BYTES = 4096;

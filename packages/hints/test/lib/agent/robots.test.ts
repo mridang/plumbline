@@ -12,7 +12,7 @@ import {
 import { fakeEnv } from './fake-env.js';
 
 /** Matches a robots.txt directive and captures its field name and value. */
-const ROBOTS_DIRECTIVE = /^([A-Za-z-]+)\s*:(.*)$/;
+const ROBOTS_DIRECTIVE = /^([A-Za-z-]+)\s*:(.*)$/u;
 
 const SITEMAP =
   '<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>';
@@ -225,8 +225,8 @@ describe('parseRobots comment stripping against the former regex', () => {
     'Sitemap: a # b # c',
     'Sitemap: a\r# b',
     'Sitemap: a # b\rc',
-    'Sitemap: a # b c',
-    'Sitemap: a # b # c d',
+    'Sitemap: a # b\u2028c',
+    'Sitemap: a\u2029# b # c\u2028d',
     'Sitemap: a#b\r#c',
     'Sitemap:#',
   ])('agrees on %j', (line) => {

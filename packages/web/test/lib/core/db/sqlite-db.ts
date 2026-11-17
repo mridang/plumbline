@@ -1,10 +1,10 @@
-import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
+import { DatabaseSync } from 'node:sqlite';
 
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
 
-import type { Database } from '@/domain/db/client';
-
 import { migrationSql } from './migrations';
+import type { SQLInputValue } from 'node:sqlite';
+import type { Database } from '@/domain/db/client';
 
 const schema = await import('@/domain/db/schema');
 
@@ -30,7 +30,9 @@ export function sqliteDatabase(
   ...migrations: readonly string[]
 ): SqliteDatabase {
   const raw = new DatabaseSync(':memory:');
-  for (const file of migrations) raw.exec(migrationSql(file));
+  for (const file of migrations) {
+    raw.exec(migrationSql(file));
+  }
   const exec = (sql: string, params: readonly unknown[], method: Method) => {
     const statement = raw.prepare(sql);
     const values = params as SQLInputValue[];

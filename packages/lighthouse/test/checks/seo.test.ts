@@ -1,19 +1,19 @@
 import { createHTMLDocument } from '@hint/utils-dom';
 import { describe, expect, it } from '@jest/globals';
-import type { Artifacts } from 'lighthouse';
-import type AuditNS from 'lighthouse/types/audit.js';
-import { seoChecks } from '../../src/checks/seo.js';
 import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
-import type { AuditCheck } from '../../src/checks/types.js';
-// The single-source rules the webhint hints call. The equivalence test runs the
-// Lighthouse check through its `adapt-seo` parser and asserts the findings match
-// these exactly, proving the check and the hint cannot diverge.
 import {
   faviconSvgMissing,
   h1Multiple,
   structuredDataMissing,
   titleMissing,
 } from '@mridang/webhint-hint-plumbline/dist/lib/seo/checks.js';
+import { seoChecks } from '../../src/checks/seo.js';
+import type { Artifacts } from 'lighthouse';
+import type AuditNS from 'lighthouse/types/audit.js';
+import type { AuditCheck } from '../../src/checks/types.js';
+// The single-source rules the webhint hints call. The equivalence test runs the
+// Lighthouse check through its `adapt-seo` parser and asserts the findings match
+// these exactly, proving the check and the hint cannot diverge.
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/seo/read.js';
 
 /** Locale-aware comparator used to sort check ids deterministically. */
@@ -123,7 +123,9 @@ function devtoolsLog(
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */
 function context(): AuditNS.Context {
-  return { computedCache: new Map() } as unknown as AuditNS.Context;
+  return {
+    computedCache: new Map<string, unknown>(),
+  } as unknown as AuditNS.Context;
 }
 
 /** Looks a check up by id, failing loudly if the registry drops it. */
@@ -474,12 +476,12 @@ describe('the adapt-seo parser on a large, script-heavy page', () => {
   // past the generous time bound.
   const inlineScript = `<script>${'var x=1;'.repeat(200)}</script>`;
   const bigPage =
-    '<html lang="en"><head><title>A properly sized page title</title>' +
+    `<html lang="en"><head><title>A properly sized page title</title>` +
     // One valid JSON-LD block the reader must still find among the noise.
-    '<script type="application/ld+json">{"@type":"WebPage"}</script>' +
-    // Hundreds of ordinary inline scripts with large bodies.
-    inlineScript.repeat(300) +
-    '</head><body><h1>Heading</h1></body></html>';
+    `<script type="application/ld+json">{"@type":"WebPage"}</script>${
+      // Hundreds of ordinary inline scripts with large bodies.
+      inlineScript.repeat(300)
+    }</head><body><h1>Heading</h1></body></html>`;
 
   it('parses and runs the HTML-backed checks quickly and correctly', async () => {
     const started = Date.now();

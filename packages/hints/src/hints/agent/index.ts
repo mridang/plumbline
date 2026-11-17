@@ -1,4 +1,3 @@
-import type { HintDefinition } from '../../core/define-hint.js';
 import agentA2aAgentCard from './agent-a2a-agent-card.js';
 import agentAcp from './agent-acp.js';
 import agentAiBotRules from './agent-ai-bot-rules.js';
@@ -22,6 +21,7 @@ import agentUcp from './agent-ucp.js';
 import agentWebBotAuth from './agent-web-bot-auth.js';
 import agentWebmcp from './agent-webmcp.js';
 import agentX402 from './agent-x402.js';
+import type { HintDefinition } from '../../core/define-hint.js';
 
 /** Hints of the `agent` set. */
 export const agentHints: readonly HintDefinition[] = [

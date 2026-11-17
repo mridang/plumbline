@@ -30,9 +30,9 @@ import {
   twitterImageMissing,
   twitterSiteMissing,
   twitterTitleMissing,
-  type OgImage,
 } from '../../../src/lib/opengraph/checks.js';
 import { HTTP_SCHEME } from '../../helpers/data.js';
+import type { OgImage } from '../../../src/lib/opengraph/checks.js';
 
 /** Builds a `meta(key)` reader over a plain map of tag values. */
 function meta(

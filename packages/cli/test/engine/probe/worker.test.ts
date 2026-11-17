@@ -1,9 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { ProbeClient } from '../../../src/engine/probe/client.js';
 import { runWorkerScan } from '../../../src/engine/probe/worker.js';
-import type { ScanEvent } from '../../../src/engine/core.js';
 import { fakeProbe, httpAnswer, linesOf, ok } from '../../helpers/probe.js';
+import type { ProbeClient } from '../../../src/engine/probe/client.js';
+import type { ScanEvent } from '../../../src/engine/core.js';
 
 const PAGE =
   '<!doctype html><html lang="en"><head><title>Hi</title></head><body>hi</body></html>';

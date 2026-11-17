@@ -4,14 +4,15 @@ import {
   highestLegacyVersion,
   supportedVersions,
   tryConnect,
-  type TlsTarget,
 } from '../../lib/tls/client.js';
-import type { TlsVersion } from '../../lib/tls/constants.js';
 import {
   SIGNATURE_ALGORITHMS_BAD_HASH,
   SIGNATURE_ALGORITHMS_PHASE_OUT_HASH,
 } from '../../lib/tls/constants.js';
-import { onTlsSite, type TlsSite } from './on-tls-site.js';
+import { onTlsSite } from './on-tls-site.js';
+import type { TlsSite } from './on-tls-site.js';
+import type { TlsTarget } from '../../lib/tls/client.js';
+import type { TlsVersion } from '../../lib/tls/constants.js';
 
 /**
  * Whether the server completes a handshake when the client offers only the

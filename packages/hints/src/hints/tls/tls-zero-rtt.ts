@@ -1,7 +1,8 @@
 import { Category, defineHint } from '../../core/define-hint.js';
 import { tryConnect } from '../../lib/tls/client.js';
 import { testZeroRtt } from '../../lib/tls/openssl.js';
-import { onTlsSite, type TlsSite } from './on-tls-site.js';
+import { onTlsSite } from './on-tls-site.js';
+import type { TlsSite } from './on-tls-site.js';
 
 /** Runs the check of the `tls-zero-rtt` hint against one TLS endpoint. */
 export async function checkTlsZeroRtt({

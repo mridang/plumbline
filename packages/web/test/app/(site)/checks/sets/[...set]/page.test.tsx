@@ -9,10 +9,10 @@ import { htmlAt } from '../../../../../components/render';
 
 /** Matches open group details with class. */
 const OPEN_GROUP_DETAILS_WITH_CLASS =
-  /<details[^>]*open=""[^>]*class="group\/s/;
+  /<details[^>]*open=""[^>]*class="group\/s/u;
 
 /** Matches open group details. */
-const OPEN_GROUP_DETAILS = /<details[^>]*open=""[^>]*group\/s/;
+const OPEN_GROUP_DETAILS = /<details[^>]*open=""[^>]*group\/s/u;
 
 const pageHtml = async (
   set: string[],
@@ -28,9 +28,10 @@ const pageHtml = async (
 
 describe('a rule set page', () => {
   it('has a page for every rule set', () => {
-    expect(generateStaticParams()).toHaveLength(RULE_SET_DEFS.length);
-    expect(generateStaticParams()).toContainEqual({ set: ['recommended'] });
-    expect(generateStaticParams()).toContainEqual({ set: ['seo', 'advanced'] });
+    const params = generateStaticParams();
+    expect(params).toHaveLength(RULE_SET_DEFS.length);
+    expect(params).toContainEqual({ set: ['recommended'] });
+    expect(params).toContainEqual({ set: ['seo', 'advanced'] });
   });
 
   it('shows the size, the tiers, how to use it and the areas of the default set', async () => {

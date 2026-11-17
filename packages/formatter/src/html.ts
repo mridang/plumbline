@@ -5,15 +5,16 @@
  */
 
 /** Matches a URL that starts with an http or https scheme, in any case. */
-const HTTP_URL_PREFIX = /^https?:\/\//i;
+const HTTP_URL_PREFIX = /^https?:\/\//iu;
 
-const ESCAPES: Readonly<Record<string, string>> = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#39;',
-};
+/** The entity for each character that is escaped. */
+const ESCAPES: ReadonlyMap<string, string> = new Map([
+  ['&', '&amp;'],
+  ['<', '&lt;'],
+  ['>', '&gt;'],
+  ['"', '&quot;'],
+  ["'", '&#39;'],
+]);
 
 /**
  * Escapes text for use in HTML content and in quoted attribute values.
@@ -21,7 +22,10 @@ const ESCAPES: Readonly<Record<string, string>> = {
  * @returns The text with `& < > " '` replaced by entities.
  */
 export function escapeHtml(value: string | undefined): string {
-  return (value ?? '').replaceAll(/[&<>"']/g, (char) => ESCAPES[char] ?? char);
+  return (value ?? '').replaceAll(
+    /[&<>"']/gu,
+    (char) => ESCAPES.get(char) ?? char,
+  );
 }
 
 /**

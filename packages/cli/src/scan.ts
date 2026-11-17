@@ -1,9 +1,9 @@
 import { createRequire } from 'node:module';
 import { Analyzer, Configuration } from 'hint';
-import type { Problem } from '@hint/utils-types';
 import connectorPuppeteer from '@hint/connector-puppeteer';
 import parserHtml from '@hint/parser-html';
 import extraHints from '@mridang/webhint-hint-plumbline';
+import type { Problem } from '@hint/utils-types';
 
 // The connector and the parser are CommonJS packages with a default export.
 const { default: PuppeteerConnector } = connectorPuppeteer;
@@ -24,6 +24,7 @@ const { Page } = connectorRequire('puppeteer-core') as {
 };
 const pagePrototype = Page.prototype;
 if (typeof pagePrototype.removeListener !== 'function') {
+  // eslint-disable-next-line functional/immutable-data -- fills in a method that newer Puppeteer renamed, on its prototype
   pagePrototype.removeListener = pagePrototype.off;
 }
 
@@ -49,9 +50,7 @@ export const allHintIds: readonly string[] = Object.freeze(
 
 /** The hint constructors for a list of ids, for the formatter's `resources`. */
 export function hintCtors(ids: readonly string[]): HintCtor[] {
-  return ids
-    .map((id) => hintMap[id])
-    .filter((ctor): ctor is HintCtor => !!ctor);
+  return ids.flatMap((id) => hintMap[id] ?? []);
 }
 
 /**

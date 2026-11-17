@@ -7,14 +7,17 @@
  * which tests replace or point at a local `node:tls` server through
  * `tlsProbe.port` and `tlsProbe.ca`, so tests never touch the internet.
  */
-import tls, {
-  type ConnectionOptions,
-  type DetailedPeerCertificate,
-  type PeerCertificate,
-} from '#tls';
-import { connect as netConnect, isIP, type Socket } from '#net';
+import tls from '#tls';
+import { connect, isIP } from '#net';
 import { negotiateStarttls } from '../email/smtp.js';
-import { TLS_VERSIONS, type TlsVersion } from './constants.js';
+import { TLS_VERSIONS } from './constants.js';
+import type { Socket } from '#net';
+import type { TlsVersion } from './constants.js';
+import type {
+  ConnectionOptions,
+  DetailedPeerCertificate,
+  PeerCertificate,
+} from '#tls';
 import type { CipherInfo, EphemeralKey } from './evaluate.js';
 
 /** Where to connect: the scanned host on the HTTPS port, or a mail server. */
@@ -77,15 +80,15 @@ function cipherString(ciphers: string | undefined): string {
 
 /** The chain of a connection as DER buffers, leaf first. */
 function collectChain(socket: tls.TLSSocket): Buffer[] {
-  const chain: Buffer[] = [];
-  let cert: DetailedPeerCertificate | undefined =
-    socket.getPeerCertificate(true);
   // For a self-signed certificate `issuerCertificate` points at itself.
-  while (cert?.raw && !chain.some((der) => der.equals(cert?.raw as Buffer))) {
-    chain.push(cert.raw);
-    cert = cert.issuerCertificate;
-  }
-  return chain;
+  const walk = (
+    cert: DetailedPeerCertificate | undefined,
+    chain: Buffer[],
+  ): Buffer[] =>
+    cert?.raw && !chain.some((der) => der.equals(cert.raw))
+      ? walk(cert.issuerCertificate, [...chain, cert.raw])
+      : chain;
+  return walk(socket.getPeerCertificate(true), []);
 }
 
 /**
@@ -98,7 +101,7 @@ async function upgradedSocket(target: TlsTarget): Promise<Socket | undefined> {
   if (target.starttls === undefined) {
     return undefined;
   }
-  const socket = netConnect({ host: target.host, port: target.port });
+  const socket = connect({ host: target.host, port: target.port });
   try {
     const ready = await negotiateStarttls(socket, {
       timeoutMs: PROBE_TIMEOUT_MS,
@@ -121,6 +124,7 @@ async function upgradedSocket(target: TlsTarget): Promise<Socket | undefined> {
 export const connectWithNode: TlsConnect = async (target, options) => {
   const plain = await upgradedSocket(target);
   return new Promise<ProbeResult>((resolve, reject) => {
+    // eslint-disable-next-line functional/no-let -- set by the OCSPResponse event, which fires before secureConnect reads it
     let ocspResponse: Buffer | null = null;
     // `requestOCSP` is a documented TLSSocket option missing from the typings.
     const connectOptions: ConnectionOptions & { requestOCSP?: boolean } = {
@@ -173,11 +177,8 @@ export const connectWithNode: TlsConnect = async (target, options) => {
   });
 };
 
-/**
- * The probing settings hints use. Tests assign `connect`, `port` and `ca`;
- * production leaves the defaults.
- */
-export const tlsProbe: {
+/** The settings of {@link tlsProbe}. */
+export interface TlsProbeSettings {
   connect: TlsConnect;
   /** The HTTPS port of the scanned host. */
   port: number;
@@ -185,13 +186,23 @@ export const tlsProbe: {
   mailPort: number;
   /** Trusted roots; when absent Node's bundled Mozilla roots are used. */
   ca?: string | Buffer;
-} = { connect: connectWithNode, port: 443, mailPort: 25 };
+}
+
+/**
+ * The probing settings hints use. Tests assign `connect`, `port` and `ca`;
+ * production leaves the defaults.
+ */
+export const tlsProbe: TlsProbeSettings = {
+  connect: connectWithNode,
+  port: 443,
+  mailPort: 25,
+};
 
 /** The target for a scanned site: its host on the HTTPS port. */
 export function targetFor(url: URL): TlsTarget {
   // `hostname` of an IPv6 URL still carries the brackets.
   return {
-    host: url.hostname.replaceAll(/^\[|\]$/g, ''),
+    host: url.hostname.replaceAll(/^\[|\]$/gu, ''),
     port: tlsProbe.port,
   };
 }
@@ -217,17 +228,14 @@ export async function tryConnect(
 export async function supportedVersions(
   target: TlsTarget,
 ): Promise<TlsVersion[]> {
-  const accepted: TlsVersion[] = [];
-  for (const version of TLS_VERSIONS) {
+  return TLS_VERSIONS.reduce(async (previous, version) => {
+    const accepted = await previous;
     const result = await tryConnect(target, {
       minVersion: version,
       maxVersion: version,
     });
-    if (result?.protocol === version) {
-      accepted.push(version);
-    }
-  }
-  return accepted;
+    return result?.protocol === version ? [...accepted, version] : accepted;
+  }, Promise.resolve<TlsVersion[]>([]));
 }
 
 /** What enumerating ciphers found for one version. */
@@ -258,14 +266,18 @@ export async function acceptedCiphers(
   target: TlsTarget,
   version: TlsVersion,
 ): Promise<AcceptedCipher[]> {
-  const found: AcceptedCipher[] = [];
   // Everything OpenSSL can offer below TLS 1.3, including NULL and anonymous
   // suites; for TLS 1.3 the fixed list of its suites.
   const all =
     version === 'TLSv1.3'
       ? TLS_1_3_OFFER.join(':')
       : 'ALL:COMPLEMENTOFALL:aNULL:eNULL';
-  for (let index = 0; index < MAX_CIPHER_PROBES; index++) {
+  const probe = async (
+    found: readonly AcceptedCipher[],
+  ): Promise<AcceptedCipher[]> => {
+    if (found.length >= MAX_CIPHER_PROBES) {
+      return [...found];
+    }
     const removed = found.map((c) =>
       version === 'TLSv1.3' ? c.name : `!${c.name}`,
     );
@@ -283,11 +295,14 @@ export async function acceptedCiphers(
           ciphers: offer,
         });
     if (result === null || found.some((c) => c.name === result.cipher.name)) {
-      break;
+      return [...found];
     }
-    found.push({ ...result.cipher, version, ephemeral: result.ephemeral });
-  }
-  return found;
+    return probe([
+      ...found,
+      { ...result.cipher, version, ephemeral: result.ephemeral },
+    ]);
+  };
+  return probe([]);
 }
 
 /** The highest accepted version below TLS 1.3, if any. */

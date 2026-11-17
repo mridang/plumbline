@@ -1,21 +1,17 @@
-import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import type { ReactElement } from 'react';
 
 import { pageMetadata } from '@/app/_metadata';
 import { setTitle } from '@/components/checks/side-nav';
 import { SetView } from '@/components/checks/set-view';
 import { ChecksShell } from '@/components/checks/shell';
-import {
-  parseView,
-  setOfSegments,
-  setPath,
-  type SearchParams,
-} from '@/domain/checks/browse';
+import { parseView, setOfSegments, setPath } from '@/domain/checks/browse';
 import { RULE_SET_DEFS } from '@/domain/checks/sets';
+import type { SearchParams } from '@/domain/checks/browse';
+import type { ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 /** The `plumbline:` prefix of a rule set id. */
-const PLUMBLINE_PREFIX = /^plumbline:/;
+const PLUMBLINE_PREFIX = /^plumbline:/u;
 
 /** The dynamic part of the address: `seo/advanced` for `plumbline:seo/advanced`. */
 interface Props {

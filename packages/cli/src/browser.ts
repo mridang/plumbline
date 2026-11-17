@@ -84,13 +84,11 @@ function systemLookup(): BrowserLookup {
 export function findBrowser(
   lookup: BrowserLookup = systemLookup(),
 ): string | undefined {
-  for (const name of ENV_NAMES) {
-    const value = lookup.env[name];
-    if (value) {
-      // An explicit setting is used even when it does not exist, so a wrong
-      // path fails with the connector's clear "path is not accessible".
-      return value;
-    }
+  const explicit = ENV_NAMES.map((name) => lookup.env[name]).find(Boolean);
+  if (explicit) {
+    // An explicit setting is used even when it does not exist, so a wrong
+    // path fails with the connector's clear "path is not accessible".
+    return explicit;
   }
   return candidates(lookup.platform, lookup.env).find((file) =>
     lookup.exists(file),

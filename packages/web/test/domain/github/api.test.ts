@@ -38,8 +38,9 @@ describe('GitHubApi', () => {
       't',
       fetchOf(() => new Response('no', { status: 403 })),
     );
-    await expect(api.text('/y')).rejects.toBeInstanceOf(GitHubError);
-    await expect(api.text('/y')).rejects.toMatchObject({ status: 403 });
+    const refused = api.text('/y');
+    await expect(refused).rejects.toBeInstanceOf(GitHubError);
+    await expect(refused).rejects.toMatchObject({ status: 403 });
   });
 
   it('reads a file as text from the encoded path and branch', async () => {

@@ -32,6 +32,7 @@ export interface Environment {
   onPageHide(handler: () => void): () => void;
   /** Call `handler` when the page is shown again, `persisted` if it came back from the back-forward cache. */
   onPageShow(handler: (persisted: boolean) => void): () => void;
+  // eslint-disable-next-line tslop/no-unknown-returns -- the timer handle is opaque: the environment chooses it and only gives it back to `clearTimeout`
   setTimeout(handler: () => void, ms: number): unknown;
   clearTimeout(timer: unknown): void;
 }
@@ -46,8 +47,10 @@ export function keepStreamWhileVisible(
   environment: Environment,
   graceMs: number = HIDDEN_GRACE_MS,
 ): () => void {
+  // eslint-disable-next-line functional/no-let -- the stream's open state changes with every visibility event
   let isOpen = false;
-  let timer: unknown = null;
+  // eslint-disable-next-line functional/no-let -- the pending grace timer is replaced and cleared by the visibility events
+  let timer: ReturnType<Environment['setTimeout']> = null;
   const open = (): void => {
     if (!isOpen) {
       isOpen = true;
@@ -96,7 +99,10 @@ export function keepStreamWhileVisible(
   }
   return () => {
     cancelGrace();
-    for (const stop of stops) stop();
+    // eslint-disable-next-line functional/no-loop-statements -- calls each stop function for its effect, in order
+    for (const stop of stops) {
+      stop();
+    }
     close();
   };
 }

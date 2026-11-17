@@ -1,5 +1,4 @@
 import { describe, expect, it } from '@jest/globals';
-import type { JsonLdBlocks } from '../../../src/lib/geo/json-ld.js';
 import {
   articleFindings,
   breadcrumbFindings,
@@ -12,6 +11,7 @@ import {
   videoFindings,
   websiteSearchActionFindings,
 } from '../../../src/lib/richresults/checks.js';
+import type { JsonLdBlocks } from '../../../src/lib/geo/json-ld.js';
 
 /** Wraps already-parsed JSON-LD values as the blocks a check reads. */
 function blocks(...parsed: unknown[]): JsonLdBlocks {

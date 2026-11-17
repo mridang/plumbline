@@ -47,12 +47,11 @@ export async function verifyRepo(
   if (signature.length !== expected.length) {
     return false;
   }
-  let difference = 0;
-  for (let at = 0; at < expected.length; at += 1) {
-    difference |=
-      (expected.codePointAt(at) ?? 0) ^ (signature.codePointAt(at) ?? 0);
-  }
-  return difference === 0;
+  return Array.from(
+    { length: expected.length },
+    (_, at) =>
+      (expected.codePointAt(at) ?? 0) === (signature.codePointAt(at) ?? 0),
+  ).every(Boolean);
 }
 
 /** The address of a repository's badge, relative to the app's origin. */

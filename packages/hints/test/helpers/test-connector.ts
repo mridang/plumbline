@@ -2,6 +2,10 @@ import { traverse, createHTMLDocument } from '@hint/utils-dom';
 import type { Engine, IConnector, NetworkData } from 'hint';
 import type { HTMLDocument } from '@hint/utils-dom';
 import type { HttpHeaders } from '@hint/utils-types';
+import type { JsonValue } from '../../src/lib/wellknown/json.js';
+
+/** What `context.evaluate(code)` yields: anything the page could serialise. */
+type EvaluateResult = JsonValue | undefined;
 
 interface ParserEvents {
   on(
@@ -54,17 +58,17 @@ async function toNetworkData(
   };
 }
 
-const notConfigured: (code: string) => unknown = () => {
+const notConfigured: (code: string) => EvaluateResult = () => {
   throw new Error('evaluate is not configured for this test');
 };
 
-let evaluateImpl: (code: string) => unknown = notConfigured;
+let evaluateImpl: (code: string) => EvaluateResult = notConfigured;
 
 /**
  * Sets what `context.evaluate(code)` returns for the next scans, so tests
  * can stand in for the browser a real connector would provide.
  */
-export function setEvaluate(fn: (code: string) => unknown): void {
+export function setEvaluate(fn: (code: string) => EvaluateResult): void {
   evaluateImpl = fn;
 }
 
@@ -156,10 +160,10 @@ export default class TestConnector implements IConnector {
 
   public async fetchContent(
     target: URL | string,
-    customHeaders: object = {},
+    customHeaders: Readonly<Record<string, string>> = {},
   ): Promise<NetworkData> {
     const url = target.toString();
-    const requestHeaders = customHeaders as Record<string, string>;
+    const requestHeaders = { ...customHeaders };
     const response = await fetch(url, {
       headers: requestHeaders,
       redirect: 'follow',
@@ -167,7 +171,7 @@ export default class TestConnector implements IConnector {
     return toNetworkData(response, url, requestHeaders);
   }
 
-  public async evaluate(code: string): Promise<unknown> {
+  public async evaluate(code: string): Promise<EvaluateResult> {
     return evaluateImpl(code);
   }
 
@@ -175,7 +179,5 @@ export default class TestConnector implements IConnector {
     return this.dom ? this.dom.querySelectorAll(query) : [];
   }
 
-  public async close(): Promise<void> {
-    return;
-  }
+  public async close(): Promise<void> {}
 }

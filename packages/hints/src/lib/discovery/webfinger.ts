@@ -8,10 +8,11 @@
  *
  * Source: RFC 7033 (https://www.rfc-editor.org/rfc/rfc7033).
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
+import type { Finding } from '../headers/finding.js';
 
 /** Matches a JRD or JSON media type. */
-const JRD_CONTENT_TYPE = /application\/jrd\+json|application\/json/i;
+const JRD_CONTENT_TYPE = /application\/jrd\+json|application\/json/iu;
 
 /** The response observed when probing the endpoint without a `resource`. */
 export interface WebfingerResponse {
@@ -54,6 +55,7 @@ export function webfingerFindings(
       ),
     ];
   }
+  // eslint-disable-next-line functional/no-let -- assigned inside try/catch so a JSON parse error can return a finding
   let parsed: unknown;
   try {
     parsed = JSON.parse(response.body);

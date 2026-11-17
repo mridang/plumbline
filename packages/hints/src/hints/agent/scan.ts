@@ -1,8 +1,8 @@
-import type { HintContext } from 'hint';
 import { dns } from '../../core/dns.js';
-import type { Site } from '../../core/page.js';
 import { CHECKS, checkById, runCheck } from '../../lib/agent/checks.js';
 import { detectCommerceSignals } from '../../lib/agent/commerce.js';
+import type { Site } from '../../core/page.js';
+import type { HintContext } from 'hint';
 import type { AgentEnv, CheckResult, Probe } from '../../lib/agent/types.js';
 
 /** What is shared by every agent hint during one scan. */
@@ -22,13 +22,15 @@ function toProbe(
   data: Awaited<ReturnType<Site['fetch']>>,
   url: string,
 ): Probe | null {
-  if (!data) return null;
-  const headers: Record<string, string> = {};
-  for (const [name, value] of Object.entries(data.response.headers)) {
-    headers[name.toLowerCase()] = Array.isArray(value)
-      ? value.join(', ')
-      : String(value);
+  if (!data) {
+    return null;
   }
+  const headers: Record<string, string> = Object.fromEntries(
+    Object.entries(data.response.headers).map(([name, value]) => [
+      name.toLowerCase(),
+      Array.isArray(value) ? value.join(', ') : String(value),
+    ]),
+  );
   return {
     url,
     status: data.response.statusCode,
@@ -45,13 +47,15 @@ function createState(context: HintContext, site: Site): ScanState {
     host: site.url.hostname,
     async probe(path, headers = {}) {
       const key = `${path}\n${JSON.stringify(headers)}`;
-      let pending = cache.get(key);
-      if (!pending) {
-        pending = site
-          .fetch(path, headers)
-          .then((data) => toProbe(data, new URL(path, site.url).href));
-        cache.set(key, pending);
+      const cached = cache.get(key);
+      if (cached) {
+        return cached;
       }
+      const pending = site
+        .fetch(path, headers)
+        .then((data) => toProbe(data, new URL(path, site.url).href));
+      // eslint-disable-next-line functional/immutable-data -- the cache exists to remember each probe once per scan
+      cache.set(key, pending);
       return pending;
     },
     // Read `dns.client` at call time so a test can swap in a fake.
@@ -61,15 +65,16 @@ function createState(context: HintContext, site: Site): ScanState {
       return result;
     },
   };
-  return { env, results: new Map() };
+  return { env, results: new Map<string, Promise<CheckResult>>() };
 }
 
 function stateFor(context: HintContext, site: Site): ScanState {
-  let state = scans.get(context.engineKey);
-  if (!state) {
-    state = createState(context, site);
-    scans.set(context.engineKey, state);
+  const existing = scans.get(context.engineKey);
+  if (existing) {
+    return existing;
   }
+  const state = createState(context, site);
+  scans.set(context.engineKey, state);
   return state;
 }
 
@@ -80,11 +85,13 @@ export async function resultFor(
   id: string,
 ): Promise<CheckResult> {
   const state = stateFor(context, site);
-  let pending = state.results.get(id);
-  if (!pending) {
-    pending = runCheck(checkById(id), state.env);
-    state.results.set(id, pending);
+  const cached = state.results.get(id);
+  if (cached) {
+    return cached;
   }
+  const pending = runCheck(checkById(id), state.env);
+  // eslint-disable-next-line functional/immutable-data -- the results map exists to run each check once per scan
+  state.results.set(id, pending);
   return pending;
 }
 

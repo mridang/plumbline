@@ -59,9 +59,11 @@ export function formatCountdown(seconds: number): string {
 
 /** The sentence a refused run answers with, and the button shows. */
 export function waitMessage(seconds: number): string {
+  // eslint-disable-next-line intl/prefer-intl -- the wording "4 min 59 s" is fixed and shown to people, which Intl would phrase differently
   const minutes = Math.floor(seconds / 60);
   const rest = seconds % 60;
   const restPart = rest === 0 ? '' : ` ${rest} s`;
   const wait = minutes === 0 ? `${rest} s` : `${minutes} min${restPart}`;
+  // eslint-disable-next-line intl/prefer-intl -- the wording "try again in 4 min 59 s" is fixed and shown to people, which Intl would phrase differently
   return `The checks were run by hand less than ${MANUAL_RUN_INTERVAL_SECONDS / 60} minutes ago. A site can be run once every ${MANUAL_RUN_INTERVAL_SECONDS / 60} minutes; try again in ${wait}.`;
 }

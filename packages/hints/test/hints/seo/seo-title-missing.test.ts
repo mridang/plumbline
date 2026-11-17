@@ -1,7 +1,7 @@
-import type { IncomingMessage } from 'node:http';
 import { describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/seo/seo-title-missing.js';
 import { runHint } from '../../helpers/run-hint.js';
+import type { IncomingMessage } from 'node:http';
 
 /**
  * Builds the routes for a page. `head` is inserted into <head>, `body` into

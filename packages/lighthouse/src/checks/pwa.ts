@@ -21,23 +21,23 @@
  * `informative` — surfaced but never scored.
  */
 import { createHTMLDocument } from '@hint/utils-dom';
+import {
+  manifestLinked,
+  themeColorMeta,
+} from '@mridang/webhint-hint-plumbline/dist/lib/pwa/checks.js';
+import manifestLinkedHint from '@mridang/webhint-hint-plumbline/dist/hints/pwa/manifest-linked.js';
+import themeColorMetaHint from '@mridang/webhint-hint-plumbline/dist/hints/pwa/theme-color-meta.js';
+import { hintDocumentation } from '../meta.js';
 import type { Artifacts } from 'lighthouse';
 import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/pwa/read.js';
 // The single-source PWA rules: predicate + message + severity. Both this check
 // and the webhint hints call these, so neither restates the wording.
-import {
-  manifestLinked,
-  themeColorMeta,
-} from '@mridang/webhint-hint-plumbline/dist/lib/pwa/checks.js';
-import { hintDocumentation } from '../meta.js';
 import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); their check logic is reused through the
 // `src/lib/pwa/**` rule functions above, not through these modules.
-import manifestLinkedHint from '@mridang/webhint-hint-plumbline/dist/hints/pwa/manifest-linked.js';
-import themeColorMetaHint from '@mridang/webhint-hint-plumbline/dist/hints/pwa/theme-color-meta.js';
 
 /** The artifacts both PWA checks read: the raw HTML and the page URL. */
 const HTML_ONLY = ['MainDocumentContent', 'URL'] as const;

@@ -1,6 +1,5 @@
-import type { ReactElement } from 'react';
-
 import { cn } from '@/components/ui/cn';
+import type { ReactElement } from 'react';
 
 /**
  * A few lines of code or configuration. It scrolls sideways inside its own box
@@ -18,15 +17,15 @@ export function CodeBlock({
   className?: string;
 }>): ReactElement {
   return (
-    <pre
-      role="region"
-      aria-label={label}
-      className={cn(
-        'rounded-control border border-line bg-night px-4 py-3 font-mono text-[0.8125rem] leading-relaxed wrap-break-word whitespace-pre-wrap text-on-night',
-        cssClasses,
-      )}
-    >
-      <code>{children}</code>
-    </pre>
+    <section aria-label={label}>
+      <pre
+        className={cn(
+          'rounded-control border border-line bg-night px-4 py-3 font-mono text-[0.8125rem] leading-relaxed wrap-break-word whitespace-pre-wrap text-on-night',
+          cssClasses,
+        )}
+      >
+        <code>{children}</code>
+      </pre>
+    </section>
   );
 }

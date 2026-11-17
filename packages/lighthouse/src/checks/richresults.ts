@@ -16,11 +16,7 @@
  * in the `seo` section. A check that validates required fields is graded
  * (`numeric`); the recommended-only Article check is `informative`.
  */
-import type { Artifacts } from 'lighthouse';
-import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import { readJsonLd } from '@mridang/webhint-hint-plumbline/dist/lib/geo/json-ld.js';
-import type { JsonLdBlocks } from '@mridang/webhint-hint-plumbline/dist/lib/geo/json-ld.js';
-import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import {
   articleFindings,
   breadcrumbFindings,
@@ -33,10 +29,6 @@ import {
   videoFindings,
   websiteSearchActionFindings,
 } from '@mridang/webhint-hint-plumbline/dist/lib/richresults/checks.js';
-import { geoDocument } from '../adapt-geo.js';
-import { hintDocumentation } from '../meta.js';
-import type { AuditCheck } from './types.js';
-import type { ScoreMode } from '../result.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference); their check logic is reused through the shared
@@ -51,6 +43,14 @@ import jobpostingHint from '@mridang/webhint-hint-plumbline/dist/hints/richresul
 import localbusinessHint from '@mridang/webhint-hint-plumbline/dist/hints/richresults/richresults-localbusiness.js';
 import reviewHint from '@mridang/webhint-hint-plumbline/dist/hints/richresults/richresults-review.js';
 import websiteSearchactionHint from '@mridang/webhint-hint-plumbline/dist/hints/richresults/richresults-website-searchaction.js';
+import { hintDocumentation } from '../meta.js';
+import { geoDocument } from '../adapt-geo.js';
+import type { ScoreMode } from '../result.js';
+import type { AuditCheck } from './types.js';
+import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
+import type { JsonLdBlocks } from '@mridang/webhint-hint-plumbline/dist/lib/geo/json-ld.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import type { Artifacts } from 'lighthouse';
 
 /** The page URL the document is parsed against (unused by these checks). */
 function pageUrl(artifacts: Artifacts): string {

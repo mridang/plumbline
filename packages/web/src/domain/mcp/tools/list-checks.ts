@@ -5,13 +5,13 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
+import { z } from 'zod';
 import {
   CHECKS,
   checksInGroup,
   GROUPS,
   isGroup,
 } from '@/domain/checks/catalogue';
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
 import {
   CHECKS_PAGE_DEFAULT,
   CHECKS_PAGE_MAX,
@@ -26,11 +26,9 @@ import {
   READS,
   stringArg,
   textResult,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
 } from '@/lib/mcp';
-import { z } from 'zod';
+import type { ToolAnnotations, ToolArgs, ToolResult } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
 
 export class ListChecksTool extends McpTool<
   'list_checks',
@@ -109,10 +107,10 @@ export class ListChecksTool extends McpTool<
         (check) =>
           `- ${check.id}: ${check.name} [${check.groups.join(', ')}] ${check.description}`,
       ),
+      ...(offset + page.length < pool.length
+        ? [`More: call again with offset ${offset + page.length}.`]
+        : []),
     ];
-    if (offset + page.length < pool.length) {
-      lines.push(`More: call again with offset ${offset + page.length}.`);
-    }
     return textResult(lines.join('\n'));
   }
 }

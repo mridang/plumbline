@@ -21,6 +21,7 @@ export function interactiveName(random: () => number = Math.random): string {
 
 /** The part of the container's Durable Object namespace the Worker uses. */
 export interface ScannerNamespace {
+  // eslint-disable-next-line tslop/no-unknown-returns -- the object id is Cloudflare's opaque handle, only passed back to `get`
   idFromName(name: string): unknown;
   get(id: unknown): { fetch(request: Request): Promise<Response> };
 }

@@ -2,8 +2,8 @@
  * Helpers shared by the header hints: the `profile` option, and the glue that
  * turns the findings of `src/lib/headers` into webhint reports.
  */
-import type { HintMetadata, ReportOptions } from 'hint';
 import { Severity } from '@hint/utils-types';
+import type { HintMetadata, ReportOptions } from 'hint';
 import type {
   Finding,
   FindingSeverity,
@@ -61,16 +61,15 @@ function options(
   snippet?: Snippet,
 ): Partial<ReportOptions> {
   const values = [snippet?.value ?? []].flat().filter((v) => v !== '');
-  let lines: string[];
-  if (snippet?.lines) {
-    lines = snippet.lines;
-  } else if (values.length > 0) {
-    lines = values.map((value) => `${snippet?.name}: ${value}`);
-  } else if (snippet?.suggest === undefined) {
-    lines = [];
-  } else {
-    lines = [`${snippet.name}: ${snippet.suggest}`];
-  }
+  const suggested =
+    snippet?.suggest === undefined
+      ? []
+      : [`${snippet.name}: ${snippet.suggest}`];
+  const lines =
+    snippet?.lines ??
+    (values.length > 0
+      ? values.map((value) => `${snippet?.name}: ${value}`)
+      : suggested);
   if (snippet?.element) {
     return { severity: SEVERITIES[severity], element: snippet.element };
   }
@@ -88,6 +87,7 @@ export function reportFindings(
   findings: Finding[],
   snippet?: Snippet,
 ): void {
+  // eslint-disable-next-line functional/no-loop-statements -- reports each finding
   for (const { message, severity } of findings) {
     page.report(message, options(severity, snippet));
   }
@@ -100,6 +100,7 @@ export function reportSiteFindings(
   findings: Finding[],
   snippet?: Snippet,
 ): void {
+  // eslint-disable-next-line functional/no-loop-statements -- reports each finding
   for (const { message, severity } of findings) {
     site.report(resource, message, options(severity, snippet));
   }

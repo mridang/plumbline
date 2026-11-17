@@ -28,10 +28,10 @@ import { globMatches } from '@/domain/suite/glob';
 import type { StoredFinding } from '@/domain/suite/diff';
 
 /** A run of characters that are not lower-case letters or digits. */
-const NON_ALPHANUMERIC_RUN = /[^a-z0-9]+/;
+const NON_ALPHANUMERIC_RUN = /[^a-z0-9]+/u;
 
 /** A word made only of digits. */
-const DIGITS_ONLY = /^\d+$/;
+const DIGITS_ONLY = /^\d+$/u;
 
 /** The words of an environment name that only say it is a copy, not which service it is. */
 const COPY_WORDS = new Set([
@@ -133,22 +133,19 @@ export function compareWithBaseline(
   const was = new Set(baseline.findings.map((found) => found.id));
   const is = new Set(findings.map((found) => found.id));
   const comparable = findings.filter((found) => baseline.levels.has(found.id));
-  const fixed = new Map<string, StoredFinding>();
-  for (const found of baseline.findings) {
-    if (
+  const gone = baseline.findings.filter(
+    (found) =>
       found.severity !== 'hint' &&
       previewChecks.has(found.id) &&
-      !is.has(found.id) &&
-      !fixed.has(found.id)
-    ) {
-      fixed.set(found.id, found);
-    }
-  }
+      !is.has(found.id),
+  );
   return {
     host: baseline.host,
     added: comparable.filter((found) => !was.has(found.id)),
     existing: comparable.filter((found) => was.has(found.id)),
-    fixed: [...fixed.values()],
+    fixed: gone.filter(
+      (found, at) => gone.findIndex((other) => other.id === found.id) === at,
+    ),
     uncompared: findings.filter((found) => !baseline.levels.has(found.id)),
   };
 }

@@ -12,9 +12,9 @@ import {
 } from '@/utils/site';
 
 /** Matches an https origin without a path. */
-const HTTPS_ORIGIN = /^https:\/\/[^/]+$/;
+const HTTPS_ORIGIN = /^https:\/\/[^/]+$/u;
 /** Matches an ISO calendar date. */
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/u;
 
 describe('site identity', () => {
   it('gives the site an https address with no trailing slash', () => {

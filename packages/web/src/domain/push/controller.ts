@@ -9,17 +9,10 @@
  * else can see, test or remove it), and send a test notification to one.
  */
 
-import {
-  liveUid,
-  requestCookieResolver,
-  type CurrentUserResolver,
-} from '@/domain/api/auth';
+import { liveUid, requestCookieResolver } from '@/domain/api/auth';
 import { unknownFields } from '@/domain/api/domain-resource';
 import { getDatabase } from '@/domain/db/client';
-import {
-  PushSubscriptionRepository,
-  type OwnedSubscription,
-} from '@/domain/push/repository';
+import { PushSubscriptionRepository } from '@/domain/push/repository';
 import {
   ApiController,
   created,
@@ -29,7 +22,6 @@ import {
   problems,
   readJsonObject,
 } from '@/lib/core/api';
-import type { RouteContext } from '@/lib/core/api/route-context';
 import { getEnv } from '@/lib/core/runtime';
 import { PushNotifier, WebPushSender } from '@/lib/push';
 import {
@@ -37,6 +29,9 @@ import {
   isSubscriptionId,
   subscriptionId,
 } from '@/lib/push/subscription-id';
+import type { OwnedSubscription } from '@/domain/push/repository';
+import type { CurrentUserResolver } from '@/domain/api/auth';
+import type { RouteContext } from '@/lib/core/api/route-context';
 
 /** The signed-in caller and the subscription the path names, if it names one. */
 interface PushContext {
@@ -57,16 +52,16 @@ function checkSubscription(
 ): CheckedSubscription | readonly string[] {
   const { endpoint, keys } = body;
   const { p256dh, auth } = (keys ?? {}) as Readonly<Record<string, unknown>>;
-  const errors: string[] = unknownFields(body, ['endpoint', 'keys']);
-  if (typeof endpoint !== 'string' || !endpoint.startsWith('https://')) {
-    errors.push('endpoint: must be an https URL.');
-  }
-  if (typeof p256dh !== 'string' || !p256dh) {
-    errors.push('keys.p256dh: required.');
-  }
-  if (typeof auth !== 'string' || !auth) {
-    errors.push('keys.auth: required.');
-  }
+  const errors = [
+    ...unknownFields(body, ['endpoint', 'keys']),
+    ...(typeof endpoint !== 'string' || !endpoint.startsWith('https://')
+      ? ['endpoint: must be an https URL.']
+      : []),
+    ...(typeof p256dh !== 'string' || !p256dh
+      ? ['keys.p256dh: required.']
+      : []),
+    ...(typeof auth !== 'string' || !auth ? ['keys.auth: required.'] : []),
+  ];
   return errors.length > 0
     ? errors
     : {

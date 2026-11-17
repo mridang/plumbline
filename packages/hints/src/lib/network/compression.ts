@@ -5,7 +5,7 @@
  * when it carries a non-empty `Content-Encoding` header. Compressed
  * responses make HTTPS vulnerable to BREACH-style attacks.
  */
-import { request as httpRequest } from '#http';
+import { request } from '#http';
 import { request as httpsRequest } from '#https';
 
 /** The encodings Internet.nl offers, so any server preference shows up. */
@@ -18,7 +18,7 @@ export type EncodingProbe = (url: URL) => Promise<string | null>;
 /** Real probe: reads only the response headers, never the body. */
 export const probeContentEncoding: EncodingProbe = async (url) =>
   new Promise((resolve) => {
-    const make = url.protocol === 'https:' ? httpsRequest : httpRequest;
+    const make = url.protocol === 'https:' ? httpsRequest : request;
     const req = make(
       url,
       {
@@ -44,6 +44,6 @@ export const probeContentEncoding: EncodingProbe = async (url) =>
   });
 
 /** The probe the hint uses; tests may assign a fake. */
-export const compression: { probe: EncodingProbe } = {
+export const compression = {
   probe: probeContentEncoding,
 };

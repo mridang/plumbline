@@ -1,5 +1,6 @@
-import { parseDmarc, type DmarcRecord } from './dmarc.js';
+import { parseDmarc } from './dmarc.js';
 import { registrableDomain } from './domain.js';
+import type { DmarcRecord } from './dmarc.js';
 import type { TxtLookup } from './txt.js';
 
 /** Matches a URI scheme and its colon at the start of a string. */
@@ -47,28 +48,23 @@ export function verifySufficientPolicy(
 
 /** The hosts that `rua=` and `ruf=` send reports to, lower-cased. */
 export function reportHosts(parsed: DmarcRecord): string[] {
-  const hosts: string[] = [];
   const uris = [
     ...(parsed.directives.auri ?? []),
     ...(parsed.directives.furi ?? []),
   ];
-  for (const uri of uris) {
+  return uris.flatMap((uri) => {
     // `mailto:user@host!10m`: everything after the scheme is the path. URIs
     // with an authority (`https://...`) name no mail host.
     const path = uri.replace(URI_SCHEME_PREFIX, '');
     if (path === '' || path.startsWith('//')) {
-      continue;
+      return [];
     }
-    let host = path;
-    if (host.includes('@')) {
-      host = host.split('@').slice(1).join('@').split('!', 1)[0];
-    }
-    host = host.trim().toLowerCase().replace(TRAILING_DOT, '');
-    if (host !== '') {
-      hosts.push(host);
-    }
-  }
-  return hosts;
+    const mailHost = path.includes('@')
+      ? path.split('@').slice(1).join('@').split('!', 1)[0]
+      : path;
+    const host = mailHost.trim().toLowerCase().replace(TRAILING_DOT, '');
+    return host === '' ? [] : [host];
+  });
 }
 
 const orgDomainOf = (host: string): string => registrableDomain(host) ?? host;
@@ -84,6 +80,7 @@ async function verifyExternalDestinations(
   lookupTxt: (name: string) => Promise<TxtLookup>,
 ): Promise<DmarcPolicyStatus> {
   const domainOrg = orgDomainOf(domain);
+  // eslint-disable-next-line functional/no-loop-statements -- looks the destinations up one at a time and stops at the first invalid one
   for (const host of reportHosts(parsed)) {
     if (orgDomainOf(host) === domainOrg) {
       continue;

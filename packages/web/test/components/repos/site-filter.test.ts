@@ -13,9 +13,9 @@ import {
   toggleStatus,
   togglePaused,
   worstResult,
-  type Filter,
 } from '@/components/repos/site-filter';
 import { clusterRows, rowsOf, sortRows } from '@/components/repos/site-rows';
+import type { Filter } from '@/components/repos/site-filter';
 import type { RepoStatus, SiteState } from '@/domain/db/live';
 
 const site = (host: string, state: SiteState) => ({

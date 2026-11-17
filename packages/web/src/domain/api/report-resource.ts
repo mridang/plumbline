@@ -7,15 +7,16 @@
  * sure the report is well formed, names real checks and is of a sane size.
  */
 
-import type { Report, ReportCounts, ReportSummary } from '@/domain/db/reports';
 import { findCheck, isCheckId } from '@/domain/checks/catalogue';
-import { unknownFields, type Parsed } from '@/domain/api/domain-resource';
+import { unknownFields } from '@/domain/api/domain-resource';
+import type { Parsed } from '@/domain/api/domain-resource';
+import type { Report, ReportCounts, ReportSummary } from '@/domain/db/reports';
 
 /** An http or https address. */
-const HTTP_URL = /^https?:\/\//;
+const HTTP_URL = /^https?:\/\//u;
 
 /** A UUID in its lower-case text form. */
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 
 /** How one check ended. */
 export type OutcomeStatus = 'failed' | 'warned' | 'passed' | 'skipped';
@@ -67,9 +68,6 @@ export interface StoredOutcome {
 export interface OutcomeResource extends StoredOutcome {
   readonly name: string;
 }
-
-/** A report as a list shows it. */
-export type ReportSummaryResource = ReportSummary;
 
 /** A report with every outcome. */
 export interface ReportResource extends ReportSummary {
@@ -203,48 +201,52 @@ export function parseReportInput(
   body: Readonly<Record<string, unknown>>,
   host: string,
 ): Parsed<ReportInput> {
-  const errors: string[] = unknownFields(body, ['url', 'outcomes']);
   const rawUrl = body['url'];
-  let url: string | undefined;
-  if (typeof rawUrl === 'string') {
-    try {
-      const parsed = new URL(rawUrl);
-      const sameSite =
-        parsed.hostname === host || parsed.hostname.endsWith(`.${host}`);
-      if (
-        (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') ||
-        !sameSite
-      ) {
-        errors.push(`url: must be an http or https address on ${host}.`);
-      } else {
-        url = parsed.href;
-      }
-    } catch {
-      errors.push('url: not a valid address.');
+  const parsed =
+    typeof rawUrl === 'string' && URL.canParse(rawUrl) ? new URL(rawUrl) : null;
+  const sameSite =
+    parsed !== null &&
+    (parsed.hostname === host || parsed.hostname.endsWith(`.${host}`));
+  const urlErrors = ((): string[] => {
+    if (typeof rawUrl !== 'string') {
+      return ['url: required.'];
     }
-  } else {
-    errors.push('url: required.');
-  }
+    if (parsed === null) {
+      return ['url: not a valid address.'];
+    }
+    return (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') ||
+      !sameSite
+      ? [`url: must be an http or https address on ${host}.`]
+      : [];
+  })();
+  const url = urlErrors.length === 0 ? parsed?.href : undefined;
   const rawOutcomes = body['outcomes'];
-  const outcomes: StoredOutcome[] = [];
-  if (!Array.isArray(rawOutcomes) || rawOutcomes.length === 0) {
-    errors.push('outcomes: must be a list of at least one outcome.');
-  } else {
-    const seen = new Set<string>();
-    for (const [index, raw] of rawOutcomes.entries()) {
-      const outcome = outcomeOf(raw, index);
-      if (!outcome.ok) {
-        errors.push(...outcome.errors);
-      } else if (seen.has(outcome.value.id)) {
-        errors.push(
-          `outcomes[${index}].id: ${outcome.value.id} is listed twice.`,
-        );
-      } else {
-        seen.add(outcome.value.id);
-        outcomes.push(outcome.value);
-      }
-    }
-  }
+  const results = Array.isArray(rawOutcomes)
+    ? rawOutcomes.map((raw, index) => outcomeOf(raw, index))
+    : [];
+  const firstIndexOf = (id: string): number =>
+    results.findIndex((other) => other.ok && other.value.id === id);
+  const outcomeErrors =
+    Array.isArray(rawOutcomes) && rawOutcomes.length > 0
+      ? results.flatMap((outcome, index) => {
+          if (!outcome.ok) {
+            return outcome.errors;
+          }
+          return firstIndexOf(outcome.value.id) < index
+            ? [`outcomes[${index}].id: ${outcome.value.id} is listed twice.`]
+            : [];
+        })
+      : ['outcomes: must be a list of at least one outcome.'];
+  const outcomes = results.flatMap((outcome, index) =>
+    outcome.ok && firstIndexOf(outcome.value.id) === index
+      ? [outcome.value]
+      : [],
+  );
+  const errors = [
+    ...unknownFields(body, ['url', 'outcomes']),
+    ...urlErrors,
+    ...outcomeErrors,
+  ];
   if (errors.length > 0 || url === undefined) {
     return { ok: false, errors: errors.slice(0, 20) };
   }
@@ -273,10 +275,12 @@ function storedOutcomeOf(raw: unknown): StoredOutcome | undefined {
 export function outcomeResources(
   outcomes: readonly unknown[],
 ): OutcomeResource[] {
-  return outcomes
-    .map((outcome) => storedOutcomeOf(outcome))
-    .filter((o): o is StoredOutcome => o !== undefined)
-    .map((o) => ({ ...o, name: findCheck(o.id)?.name ?? o.id }));
+  return outcomes.flatMap((outcome) => {
+    const o = storedOutcomeOf(outcome);
+    return o === undefined
+      ? []
+      : [{ ...o, name: findCheck(o.id)?.name ?? o.id }];
+  });
 }
 
 /** The API's view of a stored report: each outcome with its check's name. */

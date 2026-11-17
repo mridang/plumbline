@@ -1,11 +1,8 @@
-import {
-  createServer,
-  type AddressInfo,
-  type Server,
-  type Socket,
-} from 'node:net';
-import { TLSSocket, type SecureVersion } from 'node:tls';
+import { createServer } from 'node:net';
+import { TLSSocket } from 'node:tls';
 import { TEST_CERT, TEST_KEY } from './test-cert.js';
+import type { AddressInfo, Server, Socket } from 'node:net';
+import type { SecureVersion } from 'node:tls';
 
 export interface SmtpOptions {
   /** Whether EHLO lists STARTTLS. Defaults to true. */
@@ -66,9 +63,11 @@ export async function startSmtp(options: SmtpOptions = {}): Promise<FakeSmtp> {
     };
     socket.on('data', onData);
   });
-  await new Promise<void>((resolve) =>
-    server.listen(0, '127.0.0.1', () => resolve()),
-  );
+  await new Promise<void>((resolve) => {
+    server.listen(0, '127.0.0.1', () => {
+      resolve();
+    });
+  });
   return {
     port: (server.address() as AddressInfo).port,
     close: async () =>

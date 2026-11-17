@@ -5,7 +5,7 @@ import { SCHEMA_PATH, SCHEMA_URL } from '@/domain/suite/config-schema';
 import { applyResponseHeaders } from '@/lib/core/http/headers';
 
 /** Matches a quoted 32-character hex ETag. */
-const QUOTED_ETAG = /^"[0-9a-f]{32}"$/;
+const QUOTED_ETAG = /^"[0-9a-f]{32}"$/u;
 
 const URL_OF = `https://plumbline.test${SCHEMA_PATH}`;
 

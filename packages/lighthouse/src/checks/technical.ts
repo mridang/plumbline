@@ -25,8 +25,6 @@
  * Lighthouse loads, so none is informative.
  */
 import { NetworkRecords } from 'lighthouse';
-import type { Artifacts } from 'lighthouse';
-import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import { finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import {
   altCoverage,
@@ -48,17 +46,6 @@ import {
   robotsMetaAdvancedFindings,
   twitterCardTypeFindings,
 } from '@mridang/webhint-hint-plumbline/dist/lib/technical/checks.js';
-import { findMainDocument } from '../adapt.js';
-import {
-  htmlDocument,
-  imageSizesByUrl,
-  imageSourceDocument,
-  linkDocument,
-  metaDocument,
-  redirectHops,
-} from '../adapt-technical.js';
-import { hintDocumentation } from '../meta.js';
-import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); their check logic is reused through the
@@ -70,6 +57,19 @@ import imageWeightHint from '@mridang/webhint-hint-plumbline/dist/hints/technica
 import redirectChainHint from '@mridang/webhint-hint-plumbline/dist/hints/technical/technical-redirect-chain.js';
 import robotsMetaAdvancedHint from '@mridang/webhint-hint-plumbline/dist/hints/technical/technical-robots-meta-advanced.js';
 import twitterCardTypeHint from '@mridang/webhint-hint-plumbline/dist/hints/technical/technical-twitter-card-type.js';
+import { hintDocumentation } from '../meta.js';
+import {
+  htmlDocument,
+  imageSizesByUrl,
+  imageSourceDocument,
+  linkDocument,
+  metaDocument,
+  redirectHops,
+} from '../adapt-technical.js';
+import { findMainDocument } from '../adapt.js';
+import type { AuditCheck } from './types.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import type { Artifacts } from 'lighthouse';
 
 /**
  * Builds a check that borrows its metadata from a compiled webhint hint. The
@@ -212,22 +212,18 @@ export const technicalChecks: readonly AuditCheck[] = [
         pageUrl(artifacts),
       );
       const sizes = imageSizesByUrl(records);
-      const findings = [];
-      for (const url of urls) {
+      return urls.flatMap((url) => {
         const bytes = sizes.get(url);
         if (bytes === undefined) {
           // An image with no measurable response is not reported, matching the
           // webhint hint's treatment of an unreachable image.
-          continue;
+          return [];
         }
         // The shared check turns a measured size into its finding (or null when
         // the image is light enough), so the wording matches the webhint hint.
         const found = imageWeightFinding(url, bytes);
-        if (found !== null) {
-          findings.push(found);
-        }
-      }
-      return findings;
+        return found === null ? [] : [found];
+      });
     },
   }),
 ];

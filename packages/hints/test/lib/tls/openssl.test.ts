@@ -13,10 +13,10 @@ import {
   testExtendedMasterSecret,
   testSecureRenegotiation,
   testZeroRtt,
-  type OpensslExec,
 } from '../../../src/lib/tls/openssl.js';
 import { execFileAsync } from '../../helpers/exec.js';
 import { startServer } from './local-server.js';
+import type { OpensslExec } from '../../../src/lib/tls/openssl.js';
 
 afterEach(() => {
   openssl.exec = execOpenssl;

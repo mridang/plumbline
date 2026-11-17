@@ -1,11 +1,12 @@
-import { checkServerIdentity } from '#tls';
 import { Severity } from '@hint/utils-types';
+import { checkServerIdentity } from '#tls';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { fetchCertificate } from '../../lib/tls/client.js';
-import { onTlsSite, type TlsSite } from './on-tls-site.js';
+import { onTlsSite } from './on-tls-site.js';
+import type { TlsSite } from './on-tls-site.js';
 
 /** Matches a comma and any whitespace after it. */
-const COMMA_SEPARATOR = /,\s*/;
+const COMMA_SEPARATOR = /,\s*/u;
 
 /** Runs the check of the `cert-hostname` hint against one TLS endpoint. */
 export async function checkCertHostname(

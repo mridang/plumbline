@@ -18,7 +18,7 @@ import { base64ToBytes } from '@/utils/base64';
 import { parseUrl } from '@/utils/url';
 
 /** A header value encoded as `=?base64?...?=`, capturing the base64. */
-const BASE64_ENCODED_WORD = /^=\?base64\?(.*)\?=$/;
+const BASE64_ENCODED_WORD = /^=\?base64\?(.*)\?=$/u;
 
 /** The newest revision, which has no handshake and no sessions. */
 export const MODERN_VERSION = '2026-07-28';

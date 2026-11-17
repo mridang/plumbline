@@ -1,13 +1,12 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   applyFilter,
   countsOf,
   summaryOf,
-  type Filter,
 } from '@/components/repos/site-filter';
 import {
   DEFAULT_SORT,
@@ -17,26 +16,25 @@ import {
   nextSort,
   rowsOf,
   sortRows,
-  type Sort,
-  type View,
 } from '@/components/repos/site-rows';
 import { SiteCards } from '@/components/repos/site-cards';
 import { SitesTable } from '@/components/repos/sites-table';
 import { StatusFilterBar } from '@/components/repos/status-filter-bar';
-import {
-  ConnectionIndicator,
-  type Connection,
-} from '@/components/ui-app/connection-indicator';
+import { ConnectionIndicator } from '@/components/ui-app/connection-indicator';
 import { EmptyState } from '@/components/ui-app/empty-state';
 import { LinkButton } from '@/components/ui-app/link-button';
 import { SearchField } from '@/components/ui-app/search-field';
 import { SegmentedLinks } from '@/components/ui-app/segmented-control';
-import type { RepoStatus } from '@/domain/db/live';
 import {
   browserEnvironment,
   keepStreamWhileVisible,
 } from '@/domain/live/connection';
 import { applyEvent, parseEvent } from '@/domain/live/events';
+import type { Connection } from '@/components/ui-app/connection-indicator';
+import type { Sort, View } from '@/components/repos/site-rows';
+import type { Filter } from '@/components/repos/site-filter';
+import type { ReactElement } from 'react';
+import type { RepoStatus } from '@/domain/db/live';
 
 /** How long the page waits for a burst of events before it shows them, in milliseconds. */
 const READ_AGAIN_MS = 250;
@@ -83,7 +81,9 @@ export function LiveOverview({
       return undefined;
     }
 
+    // eslint-disable-next-line functional/no-let -- the open stream and the pending timer are reassigned by the callbacks of this effect
     let source: EventSource | null = null;
+    // eslint-disable-next-line functional/no-let -- the open stream and the pending timer are reassigned by the callbacks of this effect
     let timer: ReturnType<typeof setTimeout> | undefined;
     // What the page was drawn with is read again by the server, not by a call
     // of ours: the page is the one place that knows how to read it.

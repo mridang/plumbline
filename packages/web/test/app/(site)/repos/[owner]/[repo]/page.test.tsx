@@ -6,9 +6,8 @@ import {
   it,
   jest,
 } from '@jest/globals';
-import type { ReactElement } from 'react';
 
-import { createDatabase, type Database } from '@/domain/db/client';
+import { createDatabase } from '@/domain/db/client';
 import { clearGap, noteGap } from '@/domain/db/deploy-gaps';
 import { addDomain } from '@/domain/db/domains';
 import { replaceAccess } from '@/domain/db/access';
@@ -18,17 +17,19 @@ import {
   sqliteD1,
 } from '../../../../../lib/core/db/sqlite-d1';
 import { htmlAt } from '../../../../../components/render';
+import type { Database } from '@/domain/db/client';
+import type { ReactElement } from 'react';
 
 /** Matches the repository heading with its icon and site label. */
 const REPO_HEADING_WITH_ICON_PATTERN =
-  /<h1[^>]*>.*viewBox="0 0 16 16".*site<\/span>/s;
+  /<h1[^>]*>.*viewBox="0 0 16 16".*site<\/span>/su;
 
 /** Matches the run checks button label with its count. */
-const RUN_CHECKS_BUTTON_PATTERN = /Run \d+ checks/;
+const RUN_CHECKS_BUTTON_PATTERN = /Run \d+ checks/u;
 
 /** Matches the selected site tab linking to the repository site. */
 const SELECTED_SITE_TAB_PATTERN =
-  /aria-selected="true"[^>]*href="\/repos\/acme\/site\?site=www\.example\.com"/;
+  /aria-selected="true"[^>]*href="\/repos\/acme\/site\?site=www\.example\.com"/u;
 
 /** What the page asked Next to redirect to; `redirect` throws, as the real one does. */
 class RedirectedError extends Error {
@@ -44,8 +45,14 @@ class NotFoundError extends Error {
 }
 
 /** The signed-in user, or null for nobody. */
-const state: { user: { id: number } | null } = { user: null };
+interface UserState {
+  user: { id: number } | null;
+}
 
+/** The signed-in user, or null for nobody. */
+const state: UserState = { user: null };
+
+// eslint-disable-next-line tslop/no-module-mocking -- next/navigation is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('next/navigation', () => ({
   redirect: (to: string) => {
     throw new RedirectedError(to);
@@ -56,6 +63,7 @@ jest.unstable_mockModule('next/navigation', () => ({
   useRouter: () => ({ push: () => undefined, refresh: () => undefined }),
   usePathname: () => '/repos/acme/site',
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- @/lib/core/auth/current-user is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
 }));
@@ -193,7 +201,7 @@ describe('RepoPage', () => {
     await addDomain(db, 1, 'www.example.com', 'acme/site');
     const out = await page('acme', 'site', { site: 'www.example.com' });
     expect(out).toContain('role="tablist"');
-    expect(out.match(/role="tab"/g)).toHaveLength(2);
+    expect(out.match(/role="tab"/gu)).toHaveLength(2);
     expect(out).toMatch(SELECTED_SITE_TAB_PATTERN);
     expect(out).toContain('aria-label="www.example.com"');
     expect(out).toContain('role="tabpanel"');
@@ -202,7 +210,7 @@ describe('RepoPage', () => {
   it('shows the first site when the address asks for one that is not there', async () => {
     await addDomain(db, 1, 'www.example.com', 'acme/site');
     const out = await page('acme', 'site', { site: 'nothing.example.com' });
-    expect(out.match(/aria-selected="true"/g)).toHaveLength(1);
+    expect(out.match(/aria-selected="true"/gu)).toHaveLength(1);
   });
 
   it('shows how a site someone else keeps stands, without controls', async () => {

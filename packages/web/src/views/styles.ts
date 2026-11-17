@@ -11,13 +11,9 @@
  * theme at all.
  */
 
-import {
-  DARK_PALETTE,
-  LIGHT_PALETTE,
-  ON_ACCENT,
-  type ThemePalette,
-} from '@/views/palette';
+import { DARK_PALETTE, LIGHT_PALETTE, ON_ACCENT } from '@/views/palette';
 import { APP_STYLES } from '@/views/app';
+import type { ThemePalette } from '@/views/palette';
 
 /** The custom properties that differ between the light and dark themes. */
 function themeVariables(palette: ThemePalette): string {

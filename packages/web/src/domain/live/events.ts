@@ -90,18 +90,15 @@ export function applyEvent(
 
 /** How many sites are in each state, for the summary line. */
 export function tally(repos: readonly RepoStatus[]): Record<SiteState, number> {
-  const counts: Record<SiteState, number> = {
-    running: 0,
-    unchecked: 0,
-    unreachable: 0,
-    failing: 0,
-    warning: 0,
-    ok: 0,
+  const states = repos.flatMap((repo) => repo.sites.map((site) => site.state));
+  const inState = (state: SiteState): number =>
+    states.filter((found) => found === state).length;
+  return {
+    running: inState('running'),
+    unchecked: inState('unchecked'),
+    unreachable: inState('unreachable'),
+    failing: inState('failing'),
+    warning: inState('warning'),
+    ok: inState('ok'),
   };
-  for (const repo of repos) {
-    for (const site of repo.sites) {
-      counts[site.state] += 1;
-    }
-  }
-  return counts;
 }

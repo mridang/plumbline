@@ -12,15 +12,13 @@
  * inputs, exactly as `adapt.ts` does for the header analysers.
  */
 import { NetworkRecords } from 'lighthouse';
+import { cookiesFromHeaders } from '@mridang/webhint-hint-plumbline/dist/lib/privacy/cookies.js';
+import { findMainDocument, headerBagFromRecord } from './adapt.js';
 import type { Artifacts as LhArtifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type { Artifacts } from 'lighthouse/types/artifacts.js';
 import type { RequestRecord } from '@mridang/webhint-hint-plumbline/dist/lib/privacy/requests.js';
 import type { CookieRecord } from '@mridang/webhint-hint-plumbline/dist/lib/privacy/cookies.js';
-import { cookiesFromHeaders } from '@mridang/webhint-hint-plumbline/dist/lib/privacy/cookies.js';
-import { findMainDocument, headerBagFromRecord } from './adapt.js';
-
-type NetworkRequest = Artifacts.NetworkRequest;
 
 /** The artifacts a privacy check reads: the devtools log and the URL set. */
 export interface PrivacyArtifacts {
@@ -37,22 +35,22 @@ export interface PrivacyArtifacts {
  * else is lower-cased as-is and treated as passive, which is the safe default
  * for an advisory hint.
  */
-const TYPE_MAP: Readonly<Record<string, string>> = {
-  Document: 'html',
-  Script: 'script',
-  Stylesheet: 'css',
-  Image: 'image',
-  Font: 'font',
-  Media: 'media',
-  Manifest: 'manifest',
-  Fetch: 'fetch',
-  XHR: 'xhr',
-};
+const TYPE_MAP = new Map([
+  ['Document', 'html'],
+  ['Script', 'script'],
+  ['Stylesheet', 'css'],
+  ['Image', 'image'],
+  ['Font', 'font'],
+  ['Media', 'media'],
+  ['Manifest', 'manifest'],
+  ['Fetch', 'fetch'],
+  ['XHR', 'xhr'],
+]);
 
 /** The webhint resource type for one network record. */
-function requestType(record: NetworkRequest): string {
+function requestType(record: Artifacts.NetworkRequest): string {
   const type = record.resourceType ?? '';
-  return TYPE_MAP[type] ?? (type.toLowerCase() || 'unknown');
+  return TYPE_MAP.get(type) ?? (type.toLowerCase() || 'unknown');
 }
 
 /**
@@ -86,27 +84,20 @@ export async function privacyNetwork(
     return null;
   }
 
-  const requests: RequestRecord[] = [];
-  const cookies: CookieRecord[] = [];
-  for (const record of records) {
-    // Cookies are read from every response (the page and its subresources),
-    // each keyed by the host that sent it, as `summarizeCookies` expects.
-    let host = '';
-    try {
-      host = new URL(record.url).hostname;
-    } catch {
-      host = '';
-    }
-    if (host) {
-      const bag = headerBagFromRecord(record);
-      cookies.push(...cookiesFromHeaders(bag['set-cookie'], host));
-    }
-    // Subresource requests only: the navigation document(s) are not requests
-    // the page made, and `classifyRequests` requires the document be absent.
-    if (record.resourceType === 'Document') {
-      continue;
-    }
-    requests.push({ url: record.url, type: requestType(record) });
-  }
+  // Cookies are read from every response (the page and its subresources),
+  // each keyed by the host that sent it, as `summarizeCookies` expects.
+  const cookies: CookieRecord[] = records.flatMap((record) => {
+    const host = URL.canParse(record.url) ? new URL(record.url).hostname : '';
+    return host
+      ? cookiesFromHeaders(headerBagFromRecord(record)['set-cookie'], host)
+      : [];
+  });
+  // Subresource requests only: the navigation document(s) are not requests
+  // the page made, and `classifyRequests` requires the document be absent.
+  const requests: RequestRecord[] = records.flatMap((record) =>
+    record.resourceType === 'Document'
+      ? []
+      : [{ url: record.url, type: requestType(record) }],
+  );
   return { pageUrl, requests, cookies };
 }

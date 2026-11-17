@@ -1,7 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { Coverage, type CoverageArea } from '@/components/landing/coverage';
+import { Coverage } from '@/components/landing/coverage';
 import { html } from '../render';
+import type { CoverageArea } from '@/components/landing/coverage';
 
 const AREA: CoverageArea = {
   id: 'tls',

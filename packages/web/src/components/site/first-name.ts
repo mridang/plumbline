@@ -1,5 +1,5 @@
 /** A run of whitespace. */
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /**
  * The first name to greet a person with: the first word of their name, or the

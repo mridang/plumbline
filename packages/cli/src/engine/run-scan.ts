@@ -1,14 +1,15 @@
 import dns from 'node:dns/promises';
 
-import { type CoreOptions, runScanWith } from './core.js';
+import { runScanWith } from './core.js';
 import {
   GuardError,
   assertAllowed,
   guardedFetch,
   installGuard,
   isPublicAddress,
-  type GuardOptions,
 } from './guard.js';
+import type { CoreOptions } from './core.js';
+import type { GuardOptions } from './guard.js';
 
 export type { ScanEvent } from './core.js';
 
@@ -24,7 +25,7 @@ async function assertPublicHost(
   if (options.allowPrivate) {
     return;
   }
-  const host = url.hostname.replaceAll(/^\[|\]$/g, '');
+  const host = url.hostname.replaceAll(/^\[|\]$/gu, '');
   const addresses = await dns.lookup(host, { all: true });
   const refused = addresses.find((entry) => !isPublicAddress(entry.address));
   if (refused) {

@@ -1,10 +1,11 @@
-import { isAbsoluteUrl, splitLines, type FileIssue } from './issue.js';
+import { isAbsoluteUrl, splitLines } from './issue.js';
+import type { FileIssue } from './issue.js';
 
 /** Matches a leading slash or asterisk. */
-const SLASH_OR_STAR_PREFIX = /^[/*]/;
+const SLASH_OR_STAR_PREFIX = /^[/*]/u;
 
 /** Matches a `key=value` pair of letters. */
-const KEY_EQUALS_VALUE_PAIR = /^([a-z-]+)=([a-z]+)$/i;
+const KEY_EQUALS_VALUE_PAIR = /^([a-z-]+)=([a-z]+)$/iu;
 
 /** RFC 9309 section 2.5: parsers must handle at least 500 KiB. */
 const ROBOTS_MAX_BYTES = 500 * 1024;
@@ -28,11 +29,11 @@ export function validateContentSignal(value: string): string | null {
   if (value.trim() === '') {
     return 'The Content-Signal value is empty.';
   }
-  const seen = new Set<string>();
-  for (const part of value.split(',')) {
-    const pair = KEY_EQUALS_VALUE_PAIR.exec(part.trim());
+  const parts = value.split(',').map((part) => part.trim());
+  const errors = parts.map((part, index) => {
+    const pair = KEY_EQUALS_VALUE_PAIR.exec(part);
     if (!pair) {
-      return `Invalid Content-Signal entry '${part.trim()}', expected name=yes or name=no.`;
+      return `Invalid Content-Signal entry '${part}', expected name=yes or name=no.`;
     }
     const name = pair[1].toLowerCase();
     if (!SIGNALS.has(name)) {
@@ -41,28 +42,41 @@ export function validateContentSignal(value: string): string | null {
     if (!['yes', 'no'].includes(pair[2].toLowerCase())) {
       return `Content-Signal '${name}' must be yes or no, not '${pair[2]}'.`;
     }
-    if (seen.has(name)) {
-      return `Content-Signal '${name}' is given more than once.`;
-    }
-    seen.add(name);
-  }
-  return null;
+    const repeated = parts
+      .slice(0, index)
+      .some(
+        (earlier) =>
+          KEY_EQUALS_VALUE_PAIR.exec(earlier)?.[1].toLowerCase() === name,
+      );
+    return repeated
+      ? `Content-Signal '${name}' is given more than once.`
+      : null;
+  });
+  return errors.find((error) => error !== null) ?? null;
 }
 
 interface Group {
-  agents: string[];
+  agents: readonly string[];
   line: number;
   hasSignal: boolean;
-  rules: { kind: string; value: string }[];
+  rules: readonly { kind: string; value: string }[];
 }
 
-/** The running state of the line scan of a robots.txt file. */
+/**
+ * The running state of the line scan of a robots.txt file. The group being
+ * read is always the last of `groups`.
+ */
 interface ParseState {
-  groups: Group[];
-  current: Group | null;
+  groups: readonly Group[];
   /** True while the current group has only seen User-agent lines so far. */
   collectingAgents: boolean;
   anySignal: boolean;
+}
+
+/** The scan state after a line and the findings that line caused. */
+interface ScanStep {
+  state: ParseState;
+  issues: FileIssue[];
 }
 
 /** Applies one directive of a robots.txt file to the scan state. */
@@ -71,145 +85,197 @@ function applyDirective(
   key: string,
   value: string,
   line: number,
-  at: (severity: FileIssue['severity'], message: string) => number,
-): void {
+  at: (severity: FileIssue['severity'], message: string) => FileIssue,
+): ScanStep {
+  const current = state.groups.at(-1);
   switch (key) {
     case 'user-agent': {
-      if (value === '') {
-        at('error', 'User-agent needs a product token or *.');
-      }
+      const issues = [
+        ...(value === ''
+          ? [at('error', 'User-agent needs a product token or *.')]
+          : []),
+      ];
       // A User-agent after a rule starts a new group.
-      if (!state.current || !state.collectingAgents) {
-        state.current = { agents: [], line, hasSignal: false, rules: [] };
-        state.groups.push(state.current);
-      }
-      state.current.agents.push(value.toLowerCase());
-      state.collectingAgents = true;
-      break;
+      const groups =
+        current && state.collectingAgents
+          ? state.groups.with(-1, {
+              ...current,
+              agents: [...current.agents, value.toLowerCase()],
+            })
+          : [
+              ...state.groups,
+              {
+                agents: [value.toLowerCase()],
+                line,
+                hasSignal: false,
+                rules: [],
+              },
+            ];
+      return { state: { ...state, groups, collectingAgents: true }, issues };
     }
     case 'allow':
     case 'disallow': {
-      if (!state.current) {
-        at('error', `'${key}' appears before any User-agent line.`);
-        break;
+      if (!current) {
+        return {
+          state,
+          issues: [at('error', `'${key}' appears before any User-agent line.`)],
+        };
       }
-      state.collectingAgents = false;
-      if (value !== '' && !SLASH_OR_STAR_PREFIX.test(value)) {
-        at('error', `The ${key} path '${value}' must start with '/'.`);
-      }
-      state.current.rules.push({ kind: key, value });
-      break;
+      return {
+        state: {
+          ...state,
+          collectingAgents: false,
+          groups: state.groups.with(-1, {
+            ...current,
+            rules: [...current.rules, { kind: key, value }],
+          }),
+        },
+        issues:
+          value !== '' && !SLASH_OR_STAR_PREFIX.test(value)
+            ? [at('error', `The ${key} path '${value}' must start with '/'.`)]
+            : [],
+      };
     }
     case 'sitemap': {
-      if (!isAbsoluteUrl(value)) {
-        at('error', `The Sitemap '${value}' is not an absolute http(s) URL.`);
-      }
-      break;
+      return {
+        state,
+        issues: isAbsoluteUrl(value)
+          ? []
+          : [
+              at(
+                'error',
+                `The Sitemap '${value}' is not an absolute http(s) URL.`,
+              ),
+            ],
+      };
     }
     case 'content-signal': {
-      state.anySignal = true;
       const problem = validateContentSignal(value);
-      if (problem) {
-        at('error', problem);
-      }
-      if (state.current) {
-        state.current.hasSignal = true;
-        state.collectingAgents = false;
-      } else {
-        at(
-          'warning',
-          'Content-Signal appears before any User-agent line, so no group carries it.',
-        );
-      }
-      break;
+      const issues = [
+        ...(problem ? [at('error', problem)] : []),
+        ...(current
+          ? []
+          : [
+              at(
+                'warning',
+                'Content-Signal appears before any User-agent line, so no group carries it.',
+              ),
+            ]),
+      ];
+      return {
+        state: {
+          anySignal: true,
+          collectingAgents: current ? false : state.collectingAgents,
+          groups: current
+            ? state.groups.with(-1, { ...current, hasSignal: true })
+            : state.groups,
+        },
+        issues,
+      };
     }
     default: {
-      if (state.current) {
-        state.collectingAgents = false;
-      }
+      return {
+        state: current ? { ...state, collectingAgents: false } : state,
+        issues: [],
+      };
     }
   }
 }
 
 /** Scans one line of a robots.txt file, ignoring blanks and comments. */
-function processLine(
-  state: ParseState,
-  raw: string,
-  line: number,
-  issues: FileIssue[],
-): void {
+function processLine(state: ParseState, raw: string, line: number): ScanStep {
   const content = raw.split('#', 1)[0].trim();
   if (content === '') {
-    return;
+    return { state, issues: [] };
   }
-  const at = (severity: FileIssue['severity'], message: string) =>
-    issues.push({ severity, message, line, snippet: raw.trim() });
+  const at = (severity: FileIssue['severity'], message: string): FileIssue => ({
+    severity,
+    message,
+    line,
+    snippet: raw.trim(),
+  });
   const colon = content.indexOf(':');
   if (colon < 1) {
-    at('error', "Invalid line, expected 'directive: value'.");
-    return;
+    return {
+      state,
+      issues: [at('error', "Invalid line, expected 'directive: value'.")],
+    };
   }
   const key = content.slice(0, colon).trim().toLowerCase();
   const value = content.slice(colon + 1).trim();
-  if (KNOWN.has(key)) {
-    applyDirective(state, key, value, line, at);
-  } else {
-    at('warning', `Unknown directive '${key}'.`);
-  }
+  return KNOWN.has(key)
+    ? applyDirective(state, key, value, line, at)
+    : { state, issues: [at('warning', `Unknown directive '${key}'.`)] };
 }
 
 /** Validates the text of a robots.txt file against RFC 9309. */
 export function validateRobotsTxt(text: string): FileIssue[] {
-  const issues: FileIssue[] = [];
-  if (Buffer.byteLength(text, 'utf8') > ROBOTS_MAX_BYTES) {
-    issues.push({
-      severity: 'warning',
-      message: `The file is larger than 500 KiB; crawlers may ignore the rest.`,
-    });
-  }
+  const oversized: FileIssue[] =
+    Buffer.byteLength(text, 'utf8') > ROBOTS_MAX_BYTES
+      ? [
+          {
+            severity: 'warning',
+            message: `The file is larger than 500 KiB; crawlers may ignore the rest.`,
+          },
+        ]
+      : [];
   if (text.trim() === '') {
-    issues.push({
-      severity: 'warning',
-      message: 'The file is empty, which allows all crawling.',
-    });
-    return issues;
-  }
-  const state: ParseState = {
-    groups: [],
-    current: null,
-    collectingAgents: false,
-    anySignal: false,
-  };
-  for (const [index, raw] of splitLines(text).entries()) {
-    processLine(state, raw, index + 1, issues);
-  }
-  const { groups, anySignal } = state;
-  if (groups.length === 0) {
-    issues.push({
-      severity: 'warning',
-      message: 'The file has no User-agent group, so its rules do nothing.',
-    });
-  }
-  for (const group of groups) {
-    // A crawler reads only its most specific group, so each must repeat it.
-    if (anySignal && !group.hasSignal) {
-      issues.push({
+    return [
+      ...oversized,
+      {
         severity: 'warning',
-        line: group.line,
-        message: `The group for '${group.agents.join(', ')}' has no Content-Signal; crawlers read only their most specific group, so repeat it in every group.`,
-      });
-    }
-    if (
-      group.agents.includes('*') &&
+        message: 'The file is empty, which allows all crawling.',
+      },
+    ];
+  }
+  const scan = splitLines(text).reduce<ScanStep>(
+    (previous, raw, index) => {
+      const step = processLine(previous.state, raw, index + 1);
+      return {
+        state: step.state,
+        issues: [...previous.issues, ...step.issues],
+      };
+    },
+    {
+      state: { groups: [], collectingAgents: false, anySignal: false },
+      issues: [],
+    },
+  );
+  const { groups, anySignal } = scan.state;
+  return [
+    ...oversized,
+    ...scan.issues,
+    ...(groups.length === 0
+      ? [
+          {
+            severity: 'warning' as const,
+            message:
+              'The file has no User-agent group, so its rules do nothing.',
+          },
+        ]
+      : []),
+    ...groups.flatMap((group): FileIssue[] => [
+      // A crawler reads only its most specific group, so each must repeat it.
+      ...(anySignal && !group.hasSignal
+        ? [
+            {
+              severity: 'warning' as const,
+              line: group.line,
+              message: `The group for '${group.agents.join(', ')}' has no Content-Signal; crawlers read only their most specific group, so repeat it in every group.`,
+            },
+          ]
+        : []),
+      ...(group.agents.includes('*') &&
       group.rules.some((r) => r.kind === 'disallow' && r.value === '/')
-    ) {
-      issues.push({
-        severity: 'warning',
-        line: group.line,
-        message:
-          "'Disallow: /' for all user agents blocks the whole site from crawlers; make sure this is intended.",
-      });
-    }
-  }
-  return issues;
+        ? [
+            {
+              severity: 'warning' as const,
+              line: group.line,
+              message:
+                "'Disallow: /' for all user agents blocks the whole site from crawlers; make sure this is intended.",
+            },
+          ]
+        : []),
+    ]),
+  ];
 }

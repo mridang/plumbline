@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 
-import type { CurrentUserResolver } from '@/domain/api/auth';
 import { createUserSelf, userResource } from '@/domain/api/users';
+import type { CurrentUserResolver } from '@/domain/api/auth';
 import type { User } from '@/domain/db/users';
 
 const person: User = {
@@ -16,7 +16,7 @@ const person: User = {
 };
 
 /** Who is signed in; null means nobody. */
-const session: { user: User | null } = { user: person };
+const session = { user: person as User | null };
 
 /** Identity injected in place of the session cookie. */
 const resolver: CurrentUserResolver = {

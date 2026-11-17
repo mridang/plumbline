@@ -26,9 +26,6 @@
  * but never scored.
  */
 import { createHTMLDocument } from '@hint/utils-dom';
-import type { Artifacts } from 'lighthouse';
-import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
-import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/i18n/read.js';
 // The single-source i18n rules: predicate + message + severity. Both this check
 // and the webhint hints call these, so neither restates the wording.
 import {
@@ -40,8 +37,6 @@ import {
   hreflangXDefault,
   paginationRel,
 } from '@mridang/webhint-hint-plumbline/dist/lib/i18n/checks.js';
-import { hintDocumentation } from '../meta.js';
-import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); their check logic is reused through the
@@ -53,6 +48,11 @@ import hreflangSelfHint from '@mridang/webhint-hint-plumbline/dist/hints/i18n/hr
 import hreflangDuplicateHint from '@mridang/webhint-hint-plumbline/dist/hints/i18n/hreflang-duplicate.js';
 import alternateMediaHint from '@mridang/webhint-hint-plumbline/dist/hints/i18n/alternate-media.js';
 import paginationRelHint from '@mridang/webhint-hint-plumbline/dist/hints/i18n/pagination-rel.js';
+import { hintDocumentation } from '../meta.js';
+import type { AuditCheck } from './types.js';
+import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/i18n/read.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import type { Artifacts } from 'lighthouse';
 
 /** The only artifacts the i18n checks read. */
 const HTML_AND_URL = ['MainDocumentContent', 'URL'] as const;

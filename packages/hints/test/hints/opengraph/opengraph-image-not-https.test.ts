@@ -2,8 +2,8 @@ import { describe, expect, it } from '@jest/globals';
 import { Severity } from '@hint/utils-types';
 import hint from '../../../src/hints/opengraph/opengraph-image-not-https.js';
 import { runHint } from '../../helpers/run-hint.js';
-import { page } from './page.js';
 import { HTTP_SCHEME } from '../../helpers/data.js';
+import { page } from './page.js';
 
 describe('opengraph-image-not-https', () => {
   it('passes with https', async () => {

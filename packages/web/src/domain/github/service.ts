@@ -6,14 +6,16 @@
  * an installation as the app.
  */
 
-import type { Database } from '@/domain/db/client';
 import { listInstallations, touchInstallation } from '@/domain/db/github';
 import { getEnv } from '@/lib/core/runtime';
 
 import { GitHubApi } from './api';
 import { installationToken } from './app-auth';
-import { readGitHubConfig, type GitHubConfig } from './config';
-import { syncInstallation, type SyncResult } from './sync';
+import { readGitHubConfig } from './config';
+import { syncInstallation } from './sync';
+import type { GitHubConfig } from './config';
+import type { SyncResult } from './sync';
+import type { Database } from '@/domain/db/client';
 
 /** The short-lived cookie holding the one-time `state` of a round trip to GitHub. */
 export const GITHUB_STATE_COOKIE = 'plumbline_github_state';
@@ -58,26 +60,45 @@ export async function syncAllOf(
   userId: number,
   fetcher: typeof fetch = fetch,
 ): Promise<SyncAllResult> {
-  const total = { repositories: 0, deployed: 0, domainsAdded: 0 };
-  const failures: string[] = [];
-  for (const installation of await listInstallations(db, userId)) {
-    try {
-      const result = await syncAsApp(
-        db,
-        config,
-        userId,
-        installation.installation_id,
-        fetcher,
-      );
-      total.repositories += result.repositories;
-      total.deployed += result.deployed;
-      total.domainsAdded += result.domainsAdded;
-    } catch (error) {
-      console.error('github sync failed', installation.installation_id, error);
-      failures.push(
-        `${installation.account_login}: ${error instanceof Error ? error.message : 'unknown error'}`,
-      );
-    }
-  }
+  const installations = await listInstallations(db, userId);
+  const { total, failures } = await installations.reduce(
+    async (previous, installation) => {
+      const state = await previous;
+      try {
+        const result = await syncAsApp(
+          db,
+          config,
+          userId,
+          installation.installation_id,
+          fetcher,
+        );
+        return {
+          total: {
+            repositories: state.total.repositories + result.repositories,
+            deployed: state.total.deployed + result.deployed,
+            domainsAdded: state.total.domainsAdded + result.domainsAdded,
+          },
+          failures: state.failures,
+        };
+      } catch (error) {
+        console.error(
+          'github sync failed',
+          installation.installation_id,
+          error,
+        );
+        return {
+          total: state.total,
+          failures: [
+            ...state.failures,
+            `${installation.account_login}: ${error instanceof Error ? error.message : 'unknown error'}`,
+          ],
+        };
+      }
+    },
+    Promise.resolve({
+      total: { repositories: 0, deployed: 0, domainsAdded: 0 },
+      failures: [] as string[],
+    }),
+  );
   return { ...total, failures };
 }

@@ -1,9 +1,9 @@
 import { Severity } from '@hint/utils-types';
-import type { ReportOptions } from 'hint';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage } from '../../core/page.js';
 import { robotsAdvanced } from '../../lib/technical/read.js';
 import { robotsMetaAdvancedFindings } from '../../lib/technical/checks.js';
+import type { ReportOptions } from 'hint';
 
 /**
  * Warns when the robots meta tag is missing or lacks the advanced snippet and preview directives. A noindex page is skipped (seo-robots-noindex covers it). Source: LLMScout "robots-meta-directives" (warn).
@@ -35,6 +35,7 @@ export default defineHint({
               codeLanguage: 'html',
             }
           : { element: meta };
+      // eslint-disable-next-line functional/no-loop-statements -- reports each finding
       for (const { message, severity } of robotsMetaAdvancedFindings(robots)) {
         page.report(message, {
           severity: severity === 'error' ? Severity.error : Severity.warning,

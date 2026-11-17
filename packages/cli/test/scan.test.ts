@@ -1,5 +1,5 @@
-import { describe, expect, it } from '@jest/globals';
 import { createRequire } from 'node:module';
+import { describe, expect, it } from '@jest/globals';
 import { findBrowser } from '../src/browser.js';
 import { allHintIds, hintCatalogue, hintConfig, scan } from '../src/scan.js';
 import { serve } from './helpers/serve.js';

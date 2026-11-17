@@ -5,17 +5,11 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import { overviewOf } from '@/domain/db/live';
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
-import {
-  McpTool,
-  READS,
-  textResult,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
-} from '@/lib/mcp';
 import { z } from 'zod';
+import { overviewOf } from '@/domain/db/live';
+import { McpTool, READS, textResult } from '@/lib/mcp';
+import type { ToolAnnotations, ToolArgs, ToolResult } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
 
 export class ListRepositoriesTool extends McpTool<
   'list_repositories',

@@ -86,10 +86,9 @@ describe('fixPrompt', () => {
 
   it('puts failed checks before warnings inside a section and numbers them in order', () => {
     const prompt = fixPrompt(scan(hint('w', 'warned'), hint('f', 'failed')));
-    expect(prompt.indexOf('1. Check f (failed)')).toBeGreaterThan(-1);
-    expect(prompt.indexOf('1. Check f (failed)')).toBeLessThan(
-      prompt.indexOf('2. Check w (warning)'),
-    );
+    const failed = prompt.indexOf('1. Check f (failed)');
+    expect(failed).toBeGreaterThan(-1);
+    expect(failed).toBeLessThan(prompt.indexOf('2. Check w (warning)'));
   });
 
   it('groups by section in the report order', () => {

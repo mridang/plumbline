@@ -11,7 +11,7 @@ import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 
 /** Matches uuid format. */
-const UUID_FORMAT = /^[0-9a-f-]{36}$/;
+const UUID_FORMAT = /^[0-9a-f-]{36}$/u;
 
 const report = (message = 'm') => ({
   repo: 'acme/site',

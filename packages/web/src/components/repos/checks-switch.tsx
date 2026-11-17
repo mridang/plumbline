@@ -1,21 +1,28 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useId, useState, type ReactElement } from 'react';
+import { useId, useState } from 'react';
 
 import { problemText } from '@/components/api/problem-message';
-import {
-  lockedReason,
-  type ChecksControl,
-} from '@/components/repos/checks-control';
+import { lockedReason } from '@/components/repos/checks-control';
 import { setRepoChecks } from '@/components/repos/repo-checks';
 import { cn } from '@/components/ui/cn';
 import { POPOVER_ITEM } from '@/components/ui/popover';
 import { ConfirmDialog } from '@/components/site/confirm-dialog';
+import type { ChecksControl } from '@/components/repos/checks-control';
+import type { ReactElement } from 'react';
 
 /** What turning checks off means, said plainly before it is done. */
 export const PAUSE_WARNING =
   'Webhooks and scheduled checks for this repository stop, and its open Plumbline issues are closed with a note saying why. Turning checks back on resumes them with the next deployment or schedule.';
+
+/** What a repository's checks switch hands to the row that shows it. */
+interface RepoChecks {
+  request: () => void;
+  dialog: ReactElement | null;
+  problem: string | null;
+  locked: string | null;
+}
 
 /**
  * Turning checks on or off for a repository: `request` turns them on at once
@@ -29,12 +36,7 @@ export function useRepoChecks(
   repo: string | null,
   paused: boolean,
   control: Readonly<ChecksControl>,
-): {
-  request: () => void;
-  dialog: ReactElement | null;
-  problem: string | null;
-  locked: string | null;
-} {
+): RepoChecks {
   const locked = lockedReason(control);
   const router = useRouter();
   const [asking, setAsking] = useState(false);
@@ -73,7 +75,9 @@ export function useRepoChecks(
           title={`Turn off checks for ${repo}?`}
           description={PAUSE_WARNING}
           confirmLabel="Turn off checks"
-          onConfirm={() => void apply(false)}
+          onConfirm={() => {
+            void apply(false);
+          }}
         />
       ),
   };

@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { GET } from '@/app/.well-known/security.txt/route';
 
 /** Matches expires line. */
-const EXPIRES_LINE = /^Expires: (.+)$/m;
+const EXPIRES_LINE = /^Expires: (.+)$/mu;
 
 describe('GET /.well-known/security.txt', () => {
   const res = GET();

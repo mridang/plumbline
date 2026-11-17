@@ -1,8 +1,7 @@
-import type { ReactElement } from 'react';
-
 import { cn } from '@/components/ui/cn';
 import { Count } from '@/components/ui-app/count';
 import { Dot } from '@/components/ui-app/status-dot';
+import type { ReactElement } from 'react';
 import type { Tone } from '@/components/ui-app/tone';
 
 /** The colour of a chip's count: lighter when pressed, muted at zero. */

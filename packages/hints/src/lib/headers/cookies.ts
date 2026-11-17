@@ -15,7 +15,8 @@
  * A "session" cookie is one whose name contains `login` or `sess`; an
  * anti-CSRF cookie has `csrf` in its name.
  */
-import { finding, type Finding } from './finding.js';
+import { finding } from './finding.js';
+import type { Finding } from './finding.js';
 
 export interface Cookie {
   name: string;
@@ -38,48 +39,35 @@ export function parseSetCookie(raw: string): Cookie | null {
   if (name === '') {
     return null;
   }
-  const cookie: Cookie = {
-    name,
-    secure: false,
-    httpOnly: false,
-    sameSiteInvalid: false,
-  };
-  for (const attribute of attributes) {
+  const parsed = attributes.map((attribute) => {
     const at = attribute.indexOf('=');
-    const key = (at === -1 ? attribute : attribute.slice(0, at))
-      .trim()
-      .toLowerCase();
-    const value =
-      at === -1
-        ? ''
-        : attribute
-            .slice(at + 1)
-            .trim()
-            .toLowerCase();
-    switch (key) {
-      case 'secure': {
-        cookie.secure = true;
-
-        break;
-      }
-      case 'httponly': {
-        cookie.httpOnly = true;
-
-        break;
-      }
-      case 'samesite': {
-        if (['lax', 'strict', 'none'].includes(value)) {
-          cookie.sameSite = value;
-        } else {
-          cookie.sameSiteInvalid = true;
-        }
-
-        break;
-      }
-      // No default
-    }
-  }
-  return cookie;
+    return {
+      key: (at === -1 ? attribute : attribute.slice(0, at))
+        .trim()
+        .toLowerCase(),
+      value:
+        at === -1
+          ? ''
+          : attribute
+              .slice(at + 1)
+              .trim()
+              .toLowerCase(),
+    };
+  });
+  const sameSites = parsed
+    .filter(({ key }) => key === 'samesite')
+    .map(({ value }) => value);
+  const valid = (value: string): boolean =>
+    ['lax', 'strict', 'none'].includes(value);
+  // The last valid SameSite value wins; any invalid one is remembered.
+  const sameSite = sameSites.findLast((value) => valid(value));
+  return {
+    name,
+    secure: parsed.some(({ key }) => key === 'secure'),
+    httpOnly: parsed.some(({ key }) => key === 'httponly'),
+    ...(sameSite === undefined ? {} : { sameSite }),
+    sameSiteInvalid: sameSites.some((value) => !valid(value)),
+  };
 }
 
 export type CookiesResult =
@@ -110,61 +98,49 @@ export function analyzeCookies(
   setCookieValues: string[],
   hstsProtected: boolean,
 ): CookiesResult {
-  const cookies = setCookieValues
-    .map((raw) => parseSetCookie(raw))
-    .filter((c): c is Cookie => c !== null && !IGNORED_COOKIES.has(c.name));
+  const cookies = setCookieValues.flatMap((raw) => {
+    const cookie = parseSetCookie(raw);
+    return cookie !== null && !IGNORED_COOKIES.has(cookie.name) ? [cookie] : [];
+  });
   if (cookies.length === 0) {
     return 'cookies-not-found';
   }
 
-  let worst: CookiesResult | null = null;
-  const note = (result: CookiesResult): void => {
-    if (worst === null || BADNESS.indexOf(result) > BADNESS.indexOf(worst)) {
-      worst = result;
-    }
-  };
-
-  let missingSameSite = false;
-  for (const cookie of cookies) {
+  const notes = cookies.flatMap((cookie) => {
     const lowered = cookie.name.toLowerCase();
     const session = ['login', 'sess'].some((part) => lowered.includes(part));
     const antiCsrf = lowered.includes('csrf');
-
-    if (cookie.sameSiteInvalid) {
-      note('cookies-samesite-flag-invalid');
-    }
-    // Browsers reject SameSite=None cookies that are not Secure.
-    if (!cookie.secure && cookie.sameSite === 'none') {
-      note('cookies-samesite-flag-invalid');
-    }
-    if (!cookie.secure) {
-      note(
-        hstsProtected
+    const found: (CookiesResult | false)[] = [
+      cookie.sameSiteInvalid && 'cookies-samesite-flag-invalid',
+      // Browsers reject SameSite=None cookies that are not Secure.
+      !cookie.secure &&
+        cookie.sameSite === 'none' &&
+        'cookies-samesite-flag-invalid',
+      !cookie.secure &&
+        (hstsProtected
           ? 'cookies-without-secure-flag-but-protected-by-hsts'
-          : 'cookies-without-secure-flag',
-      );
-    }
-    if (antiCsrf && !cookie.sameSite) {
-      note('cookies-anticsrf-without-samesite-flag');
-    }
-    if (session && !cookie.secure) {
-      note(
-        hstsProtected
+          : 'cookies-without-secure-flag'),
+      antiCsrf && !cookie.sameSite && 'cookies-anticsrf-without-samesite-flag',
+      session &&
+        !cookie.secure &&
+        (hstsProtected
           ? 'cookies-session-without-secure-flag-but-protected-by-hsts'
-          : 'cookies-session-without-secure-flag',
-      );
-    }
-    if (session && !cookie.httpOnly) {
-      note('cookies-session-without-httponly-flag');
-    }
-    if (!cookie.sameSite) {
-      missingSameSite = true;
-    }
-  }
+          : 'cookies-session-without-secure-flag'),
+      session && !cookie.httpOnly && 'cookies-session-without-httponly-flag',
+    ];
+    return found.filter((result) => result !== false);
+  });
+  const worst = notes.reduce<CookiesResult | null>(
+    (current, result) =>
+      current === null || BADNESS.indexOf(result) > BADNESS.indexOf(current)
+        ? result
+        : current,
+    null,
+  );
   if (worst !== null) {
     return worst;
   }
-  return missingSameSite
+  return cookies.some((cookie) => !cookie.sameSite)
     ? 'cookies-secure-with-httponly-sessions'
     : 'cookies-secure-with-httponly-sessions-and-samesite';
 }

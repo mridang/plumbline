@@ -4,23 +4,24 @@ import TermsPage, { metadata } from '@/app/(site)/terms/page';
 import { html } from '../../../components/render';
 
 /** Matches terms heading. */
-const TERMS_HEADING = /<h1[^>]*>Terms of Service<\/h1>/;
+const TERMS_HEADING = /<h1[^>]*>Terms of Service<\/h1>/u;
 
 /** Matches github link. */
 const GITHUB_LINK =
-  /<a [^>]*href="https:\/\/github\.com\/mridang\/plumbline"[^>]*target="_blank"[^>]*>GitHub<\/a>/;
+  /<a [^>]*href="https:\/\/github\.com\/mridang\/plumbline"[^>]*target="_blank"[^>]*>GitHub<\/a>/u;
 
 /** Matches privacy policy link. */
-const PRIVACY_POLICY_LINK = /<a [^>]*href="\/privacy"[^>]*>privacy policy<\/a>/;
+const PRIVACY_POLICY_LINK =
+  /<a [^>]*href="\/privacy"[^>]*>privacy policy<\/a>/u;
 
 /** Matches back to home link. */
-const BACK_TO_HOME_LINK = /<a [^>]*href="\/"[^>]*>.*Back to Plumbline<\/a>/;
+const BACK_TO_HOME_LINK = /<a [^>]*href="\/"[^>]*>.*Back to Plumbline<\/a>/u;
 
 describe('TermsPage', () => {
   const out = html(<TermsPage />);
 
   it('has one heading, the terms’ title', () => {
-    expect(out.match(/<h1/g)).toHaveLength(1);
+    expect(out.match(/<h1/gu)).toHaveLength(1);
     expect(out).toMatch(TERMS_HEADING);
   });
 
@@ -37,7 +38,7 @@ describe('TermsPage', () => {
       'Your data',
       'Contact',
     ]) {
-      expect(out).toMatch(new RegExp(`<h2[^>]*>${heading}</h2>`));
+      expect(out).toMatch(new RegExp(`<h2[^>]*>${heading}</h2>`, 'u'));
     }
   });
 

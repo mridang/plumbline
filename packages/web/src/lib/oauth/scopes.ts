@@ -12,7 +12,7 @@ import { TOOL_SCOPES } from '@/domain/mcp/tool-context';
 import { TOOL_REGISTRY } from '@/domain/mcp/tools';
 
 /** A run of whitespace, which separates the scopes of a request. */
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /**
  * The OpenID Connect scope that asks for a refresh token. Every grant here gets

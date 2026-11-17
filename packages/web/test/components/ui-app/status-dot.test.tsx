@@ -20,7 +20,8 @@ describe('Dot', () => {
   it('comes in three sizes, the middle one by default', () => {
     expect(html(<Dot tone="good" />)).toContain('size-2.5');
     expect(html(<Dot tone="good" size="sm" />)).toContain('size-2');
-    expect(html(<Dot tone="good" size="xs" />)).toContain('size-1.5');
-    expect(html(<Dot tone="good" size="xs" />)).not.toContain('size-2.5');
+    const tiny = html(<Dot tone="good" size="xs" />);
+    expect(tiny).toContain('size-1.5');
+    expect(tiny).not.toContain('size-2.5');
   });
 });

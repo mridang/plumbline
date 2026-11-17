@@ -25,7 +25,9 @@ beforeEach(() => {
 
 afterEach(() => {
   dns.client = original;
-  for (const key of Object.keys(answers)) delete answers[key];
+  for (const key of Object.keys(answers)) {
+    delete answers[key];
+  }
 });
 
 describe('agent-dns-aid', () => {

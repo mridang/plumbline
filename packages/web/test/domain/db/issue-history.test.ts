@@ -1,7 +1,8 @@
-import { describe, expect, it } from '@jest/globals';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { describe, expect, it } from '@jest/globals';
 
+import { packageDirectorySync } from 'package-directory';
 import {
   ISSUES_LISTED,
   issuesOf,
@@ -10,17 +11,17 @@ import {
   recordIssue,
 } from '@/domain/db/issue-history';
 import { forgetIssue, saveIssue } from '@/domain/db/suite';
+import { compareText } from '@/lib/intl';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
-import { packageDirectorySync } from 'package-directory';
 
 /** Shared collator for locale-aware ordering. */
 const collator = new Intl.Collator();
 
 /** Matches an index or primary key lookup in a query plan. */
-const INDEX_LOOKUP_PLAN = /USING (COVERING )?(INDEX|PRIMARY KEY)/;
+const INDEX_LOOKUP_PLAN = /USING (COVERING )?(INDEX|PRIMARY KEY)/u;
 /** Matches a scan or temp b-tree step in a query plan. */
-const SCAN_OR_TEMP_BTREE_PLAN = /SCAN|TEMP B-TREE/;
+const SCAN_OR_TEMP_BTREE_PLAN = /SCAN|TEMP B-TREE/u;
 
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
@@ -210,7 +211,7 @@ describe('the history through saveIssue and forgetIssue', () => {
 describe('migration 0017_issue_per_check', () => {
   it('gives an issue that reported one check that check, leaves the others for the old kind, and drops claims', async () => {
     const before = APP_MIGRATIONS.filter(
-      (file) => file.localeCompare('0017_issue_per_check.sql') < 0,
+      (file) => compareText(file, '0017_issue_per_check.sql') < 0,
     );
     const { raw } = sqliteDatabase(...before);
     raw.exec(`

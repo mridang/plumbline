@@ -1,5 +1,5 @@
 /** Matches a simple language or language-region tag. */
-const SIMPLE_LANGUAGE_TAG = /^[a-z]{2}(-[a-z]{2})?$/i;
+const SIMPLE_LANGUAGE_TAG = /^[a-z]{2}(-[a-z]{2})?$/iu;
 /**
  * Readers and validators that pull internationalisation link relations out of
  * a parsed HTML document: the `hreflang` alternates, the `rel="alternate"`
@@ -150,9 +150,7 @@ export function sameUrl(candidate: string, base: string): boolean {
   try {
     const a = new URL(candidate, base);
     const b = new URL(base);
-    a.hash = '';
-    b.hash = '';
-    return a.href === b.href;
+    return a.href.split('#', 1)[0] === b.href.split('#', 1)[0];
   } catch {
     return false;
   }

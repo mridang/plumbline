@@ -4,8 +4,8 @@ import {
   headerRelationshipLinks,
   isAbsoluteUrl,
   withRelationship,
-  type DocumentLike,
 } from '../../../src/lib/discovery/links.js';
+import type { DocumentLike } from '../../../src/lib/discovery/links.js';
 
 /** A fake document whose querySelectorAll returns the configured elements. */
 function fakeDocument(

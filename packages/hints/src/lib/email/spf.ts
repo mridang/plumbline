@@ -94,7 +94,7 @@ export function isValidDomainSpec(spec: string): boolean {
     return false;
   }
   const withoutDot = spec.endsWith('.') ? spec.slice(0, -1) : spec;
-  const label = withoutDot.split('.').pop() ?? '';
+  const label = withoutDot.split('.').at(-1) ?? '';
   return isToplabel(label) || MACRO_EXPAND.test(label);
 }
 
@@ -205,16 +205,9 @@ export function parseSpf(record: string): SpfRecord | null {
   if (rest !== '' && !rest.startsWith(' ')) {
     return null;
   }
-  const terms: SpfTerm[] = [];
-  for (const raw of rest.split(' ')) {
-    if (raw === '') {
-      continue;
-    }
-    const term = parseTerm(raw);
-    if (!term) {
-      return null;
-    }
-    terms.push(term);
-  }
-  return { terms };
+  const terms = rest
+    .split(' ')
+    .filter((raw) => raw !== '')
+    .map((raw) => parseTerm(raw));
+  return terms.every((term) => term !== null) ? { terms } : null;
 }

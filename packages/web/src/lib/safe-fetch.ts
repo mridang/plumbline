@@ -31,14 +31,14 @@ const DEFAULT_USER_AGENT = 'safe-fetch';
 const MAX_URL_LENGTH = 2048;
 
 /** A single trailing dot, as in a fully qualified host name. */
-const TRAILING_DOT = /\.$/;
+const TRAILING_DOT = /\.$/u;
 
 /** A host made only of digits and dots, such as an IPv4 address. */
-const NUMERIC_HOST = /^[\d.]+$/;
+const NUMERIC_HOST = /^[\d.]+$/u;
 
 /** Name endings that are not on the public web (private networks, reserved names). */
 const NOT_PUBLIC =
-  /\.(local|localhost|localdomain|internal|intranet|private|lan|home|corp|test|invalid|example|arpa)$/;
+  /\.(local|localhost|localdomain|internal|intranet|private|lan|home|corp|test|invalid|example|arpa)$/u;
 
 /**
  * Whether an address is a public web address we are willing to fetch: http or

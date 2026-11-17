@@ -6,15 +6,16 @@
  * {@link Finding}s; this module builds that function's input from the scanned
  * webhint page, runs it and turns each finding into a webhint report.
  */
-import type { HintContext } from 'hint';
-import type { HTMLElement } from '@hint/utils-dom';
 import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
-import type { HintDefinition } from '../../core/define-hint.js';
-import type { Group } from '../../core/groups.js';
 import { onPage } from '../../core/page.js';
-import { metaElement, metaValue, type MetaDocument } from './meta.js';
+import { metaElement, metaValue } from './meta.js';
 import { sniffImage } from './image-size.js';
+import type { MetaDocument } from './meta.js';
+import type { Group } from '../../core/groups.js';
+import type { HintDefinition } from '../../core/define-hint.js';
+import type { HTMLElement } from '@hint/utils-dom';
+import type { HintContext } from 'hint';
 import type { Finding, FindingSeverity } from '../headers/finding.js';
 import type { OgImage, OgInput } from './checks.js';
 
@@ -110,6 +111,7 @@ async function resolveImage(
   if (src === null) {
     return null;
   }
+  // eslint-disable-next-line functional/no-let -- assigned inside try so an unparsable src can be caught
   let url: string;
   try {
     url = new URL(src, pageUrl).href;
@@ -154,6 +156,7 @@ export function defineOgHint(rule: OgRule): HintDefinition {
           page.document.documentElement) as unknown as HTMLElement;
         const src = rule.image ? metaValue(parsedDocument, 'og:image') : null;
         const resource = src === null ? page.url : resolveUrl(src, page.url);
+        // eslint-disable-next-line functional/no-loop-statements -- reports each finding as a side effect
         for (const { message, severity } of findings) {
           context.report(resource, `${message} See ${articleUrl(rule.slug)}`, {
             severity: SEVERITIES[severity],

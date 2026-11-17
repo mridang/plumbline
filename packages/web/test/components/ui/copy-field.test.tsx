@@ -5,10 +5,10 @@ import { html } from '../render';
 
 /** Matches mcp address code. */
 const MCP_ADDRESS_CODE =
-  /<code[^>]*aria-label="MCP server address"[^>]*>https:\/\/app\.test\/mcp<\/code>/;
+  /<fieldset[^>]*aria-label="MCP server address"[^>]*><code[^>]*>https:\/\/app\.test\/mcp<\/code><\/fieldset>/u;
 
 /** Matches copy button. */
-const COPY_BUTTON = /<button type="button"[^>]*>.*Copy<\/button>/;
+const COPY_BUTTON = /<button type="button"[^>]*>.*Copy<\/button>/u;
 
 describe('CopyField', () => {
   const out = html(

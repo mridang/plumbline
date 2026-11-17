@@ -2,11 +2,8 @@ import { describe, expect, it } from '@jest/globals';
 import { Severity } from '@hint/utils-types';
 import hint from '../../../src/hints/email/mail-dkim.js';
 import { generateKeyPairAsync } from '../../helpers/crypto.js';
-import {
-  fakeDns,
-  runMailHint,
-  type FakeAnswer,
-} from '../../lib/email/fakes.js';
+import { fakeDns, runMailHint } from '../../lib/email/fakes.js';
+import type { FakeAnswer } from '../../lib/email/fakes.js';
 
 const { publicKey } = await generateKeyPairAsync('rsa', {
   modulusLength: 2048,

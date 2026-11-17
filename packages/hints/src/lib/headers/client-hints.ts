@@ -5,21 +5,22 @@
  * exposure leaks cross-origin load data — while `Alt-Svc` and `Retry-After`
  * are operational. Each check follows the header's MDN reference page.
  */
-import { finding, type Finding } from './finding.js';
+import { finding } from './finding.js';
 import { splitList } from './http-headers.js';
+import type { Finding } from './finding.js';
 
 /** Matches a string made only of digits. */
-const DIGITS_ONLY = /^\d+$/;
+const DIGITS_ONLY = /^\d+$/u;
 
 /** Matches a non-empty `key=value` pair. */
-const KEY_EQUALS_VALUE = /^[^=]+=.+$/;
+const KEY_EQUALS_VALUE = /^[^=]+=.+$/u;
 
 /** A structured-field token, the shape a client-hint name takes. */
-const TOKEN = /^[A-Za-z*][A-Za-z0-9:/!#$%&'*+.^_`|~-]*$/;
+const TOKEN = /^[A-Za-z*][A-Za-z0-9:/!#$%&'*+.^_`|~-]*$/u;
 
 /** The HTTP-date shape `Retry-After` may use, as a quick well-formedness gate. */
 const IMF_FIXDATE =
-  /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d\d (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d\d\d\d \d\d:\d\d:\d\d GMT$/;
+  /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d\d (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d\d\d\d \d\d:\d\d:\d\d GMT$/u;
 
 /**
  * Reads the hint names from an `Accept-CH` / `Critical-CH` token list,

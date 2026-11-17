@@ -68,9 +68,15 @@ describe('childByName / descendantsByName', () => {
 });
 
 describe('parseXml tag scanning', () => {
-  const shape = (xml: string): unknown => {
+  interface Dumped {
+    name: string;
+    attrs: Record<string, string>;
+    text: string;
+    children: Dumped[];
+  }
+  const parsed = (xml: string): Dumped | null => {
     const root = parseXml(xml);
-    const dump = (node: NonNullable<typeof root>): unknown => ({
+    const dump = (node: NonNullable<typeof root>): Dumped => ({
       name: node.name,
       attrs: node.attrs,
       text: node.text,
@@ -80,7 +86,7 @@ describe('parseXml tag scanning', () => {
   };
 
   it('ends a tag at the first `>` outside quotes', () => {
-    expect(shape(`<a b="x>y" c='1>2'>t</a>`)).toEqual({
+    expect(parsed(`<a b="x>y" c='1>2'>t</a>`)).toEqual({
       name: 'a',
       attrs: { b: 'x>y', c: '1>2' },
       text: 't',
@@ -89,7 +95,7 @@ describe('parseXml tag scanning', () => {
   });
 
   it('treats a `/` right before `>` as self-closing', () => {
-    expect(shape('<a><b c="/"/><d/></a>')).toEqual({
+    expect(parsed('<a><b c="/"/><d/></a>')).toEqual({
       name: 'a',
       attrs: {},
       text: '',
@@ -101,20 +107,20 @@ describe('parseXml tag scanning', () => {
   });
 
   it('skips a `<` that does not open a complete tag', () => {
-    expect(shape('<a>1 < 2</a>')).toEqual({
+    expect(parsed('<a>1 < 2</a>')).toEqual({
       name: 'a',
       attrs: {},
       text: '1 2',
       children: [],
     });
-    expect(shape('<a>x <b c="d></a>')).toEqual({
+    expect(parsed('<a>x <b c="d></a>')).toEqual({
       name: 'a',
       attrs: {},
       text: 'x b c="d>',
       children: [],
     });
-    expect(shape('<a b="x></a>')).toBeNull();
-    expect(shape('<>x</>')).toBeNull();
+    expect(parsed('<a b="x></a>')).toBeNull();
+    expect(parsed('<>x</>')).toBeNull();
   });
 
   it('scans a 100k character tag', () => {
@@ -128,7 +134,9 @@ describe('parseXml tag scanning', () => {
 function seeded(seed: number): () => number {
   let state = seed;
   return () => {
-    state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+    state =
+      (((Math.imul(state, 1_664_525) + 1_013_904_223) % 2 ** 32) + 2 ** 32) %
+      2 ** 32;
     return state / 2 ** 32;
   };
 }
@@ -151,7 +159,10 @@ describe('ATTRIBUTE_PATTERN', () => {
     String.raw`(?:\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+)))?`,
   ].join('');
   const all = (text: string, pattern: string): unknown[] =>
-    Array.from(text.matchAll(new RegExp(pattern, 'g')), (m) => [m.index, ...m]);
+    Array.from(text.matchAll(new RegExp(pattern, 'gu')), (m) => [
+      m.index,
+      ...m,
+    ]);
 
   it.each([
     `a="1" b='2' c=3 d`,

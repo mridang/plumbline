@@ -1,5 +1,4 @@
 import { loadRobots } from './robots.js';
-import type { AgentEnv, CheckResult } from './types.js';
 import {
   isRecord,
   isText,
@@ -9,18 +8,19 @@ import {
   result,
   urlOf,
 } from './utility.js';
+import type { AgentEnv, CheckResult } from './types.js';
 
 /** Matches a well-formed `urn:air:` identifier. */
-const URN_AIR_IDENTIFIER = /^urn:air:(?=[^:]+\.[^:])[^:]+:[^:]+(:[^:]+)*$/;
+const URN_AIR_IDENTIFIER = /^urn:air:(?=[^:]+\.[^:])[^:]+:[^:]+(:[^:]+)*$/u;
 
 /** Matches a `<link>` tag whose `rel` is `ard` or `ai-catalog`. */
-const ARD_LINK_TAG = /<link\b[^>]*\brel=["']?(?:ard|ai-catalog)["']?[^>]*>/i;
+const ARD_LINK_TAG = /<link\b[^>]*\brel=["']?(?:ard|ai-catalog)["']?[^>]*>/iu;
 
 /** Matches an `href` attribute and captures its value. */
-const HREF_ATTRIBUTE = /\bhref=["']?([^"'\s>]+)/i;
+const HREF_ATTRIBUTE = /\bhref=["']?([^"'\s>]+)/iu;
 
 /** Matches an HTTP or HTTPS URL inside text. */
-const HTTP_URL = /https?:\/\/[^\s"';]+/;
+const HTTP_URL = /https?:\/\/[^\s"';]+/u;
 
 /**
  * Where a catalog lives: `/.well-known/ard.json` (agenticresourcediscovery.org
@@ -30,7 +30,7 @@ const HTTP_URL = /https?:\/\/[^\s"';]+/;
 const CATALOG_PATHS = ['/.well-known/ard.json', '/.well-known/ai-catalog.json'];
 
 /** Media type: `type/subtype` (the spec says an IANA media type). */
-const MEDIA_TYPE = /^[\w.+-]+\/[\w.+-]+(;.*)?$/;
+const MEDIA_TYPE = /^[\w.+-]+\/[\w.+-]+(;.*)?$/u;
 
 /**
  * Returns the problems of one catalog entry; empty when it is valid. An
@@ -40,22 +40,22 @@ const MEDIA_TYPE = /^[\w.+-]+\/[\w.+-]+(;.*)?$/;
  * spec only warns about that, so it is not a failure.
  */
 export function entryProblems(entry: unknown): string[] {
-  if (!isRecord(entry)) return ['entry is not an object'];
-  const problems: string[] = [];
+  if (!isRecord(entry)) {
+    return ['entry is not an object'];
+  }
   const identifier = entry.identifier ?? entry.id;
-  if (!isText(identifier) || !URN_AIR_IDENTIFIER.test(identifier)) {
-    problems.push(
-      'identifier must be urn:air:<publisher domain>:[<ns>:]<name>',
-    );
-  }
-  if (!isText(entry.displayName)) problems.push('displayName is missing');
-  if (!isText(entry.type) || !MEDIA_TYPE.test(entry.type)) {
-    problems.push('type must be a media type');
-  }
-  if ('url' in entry === 'data' in entry) {
-    problems.push('exactly one of url and data is required');
-  }
-  return problems;
+  return [
+    ...(!isText(identifier) || !URN_AIR_IDENTIFIER.test(identifier)
+      ? ['identifier must be urn:air:<publisher domain>:[<ns>:]<name>']
+      : []),
+    ...(isText(entry.displayName) ? [] : ['displayName is missing']),
+    ...(!isText(entry.type) || !MEDIA_TYPE.test(entry.type)
+      ? ['type must be a media type']
+      : []),
+    ...('url' in entry === 'data' in entry
+      ? ['exactly one of url and data is required']
+      : []),
+  ];
 }
 
 /**
@@ -67,43 +67,48 @@ export function catalogProblems(
   catalog: Record<string, unknown>,
   legacy = false,
 ): string[] {
-  const problems: string[] = [];
-  if (legacy) {
-    if (!isText(catalog.specVersion)) problems.push('specVersion is missing');
-    if (!isRecord(catalog.host)) problems.push('host is missing');
-  }
+  const legacyProblems = legacy
+    ? [
+        ...(isText(catalog.specVersion) ? [] : ['specVersion is missing']),
+        ...(isRecord(catalog.host) ? [] : ['host is missing']),
+      ]
+    : [];
   const entries = catalog.entries;
-  if (!Array.isArray(entries) || entries.length === 0) {
-    problems.push('entries is empty');
-  } else {
-    for (const [index, entry] of entries.entries()) {
-      for (const problem of entryProblems(entry)) {
-        problems.push(`entry ${index}: ${problem}`);
-      }
-    }
-  }
-  return problems;
+  const entryProblemList =
+    !Array.isArray(entries) || entries.length === 0
+      ? ['entries is empty']
+      : entries.flatMap((entry, index) =>
+          entryProblems(entry).map((problem) => `entry ${index}: ${problem}`),
+        );
+  return [...legacyProblems, ...entryProblemList];
 }
 
 /** Collects the places a catalog may be advertised, best first. */
 async function candidates(env: AgentEnv): Promise<string[]> {
-  const urls = [...CATALOG_PATHS];
   const robots = await loadRobots(env);
-  urls.push(...(robots?.agentmaps ?? []));
   const home = await env.probe('/');
   const link = ARD_LINK_TAG.exec(home?.body ?? '');
   const href = link && HREF_ATTRIBUTE.exec(link[0]);
-  if (href) urls.push(href[1]);
-  try {
-    const txt = await env.dns.query(`_catalog._agents.${env.host}`, 'TXT');
-    for (const answer of txt.answers) {
-      const url = HTTP_URL.exec(answer.data);
-      if (url) urls.push(url[0]);
-    }
-  } catch {
-    // No DNS answer: nothing to add.
-  }
-  return [...new Set(urls)];
+  // No DNS answer: nothing to add.
+  const fromDns = await env.dns
+    .query(`_catalog._agents.${env.host}`, 'TXT')
+    .then((txt) =>
+      txt.answers.flatMap((answer) => {
+        const url = HTTP_URL.exec(answer.data);
+        return url ? [url[0]] : [];
+      }),
+    )
+    .catch(() => []);
+  return [
+    ...new Set(
+      [
+        CATALOG_PATHS,
+        robots?.agentmaps ?? [],
+        href ? [href[1]] : [],
+        fromDns,
+      ].flat(),
+    ),
+  ];
 }
 
 /**
@@ -115,12 +120,17 @@ async function candidates(env: AgentEnv): Promise<string[]> {
  */
 export async function checkArd(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-ard';
+  // eslint-disable-next-line functional/no-let -- remembers the problems of the last catalog that parsed, for the failure message
   let lastProblems: string[] = [];
+  // eslint-disable-next-line functional/no-let -- remembers the last catalog that parsed, for the failure evidence
   let invalid: { url: string; catalog: Record<string, unknown> } | undefined;
   const urls = await candidates(env);
+  // eslint-disable-next-line functional/no-loop-statements -- probes the candidates in order and stops at the first valid catalog
   for (const url of urls) {
     const catalog = parseJsonObject(await env.probe(url));
-    if (!catalog) continue;
+    if (!catalog) {
+      continue;
+    }
     lastProblems = catalogProblems(catalog, url.endsWith('ai-catalog.json'));
     invalid = { url: urlOf(env, url), catalog };
     if (lastProblems.length === 0) {

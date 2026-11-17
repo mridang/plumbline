@@ -1,6 +1,4 @@
-import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import type { ReactElement } from 'react';
 
 import { filterOf } from '@/components/repos/site-filter';
 import { viewOf } from '@/components/repos/site-rows';
@@ -17,6 +15,8 @@ import { serverNow } from '@/lib/clock';
 import { getCurrentUser } from '@/lib/core/auth/current-user';
 
 import { LiveOverview } from './_components/live-overview';
+import type { ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 

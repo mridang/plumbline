@@ -6,17 +6,17 @@ import { htmlAt } from '../render';
 
 /** Matches the pressed failing filter button. */
 const PRESSED_FAILING_BUTTON =
-  /aria-pressed="true"[^>]*>(?:<[^>]+>)*[^<]*Failing/;
+  /aria-pressed="true"[^>]*>(?:<[^>]+>)*[^<]*Failing/u;
 
 const labels = (html: string): string[] =>
-  Array.from(html.matchAll(/<button[^>]*>(.*?)<\/button>/g), (m) =>
+  Array.from(html.matchAll(/<button[^>]*>(.*?)<\/button>/gu), (m) =>
     m[1]!
       .split('<')
       .map((piece, index) =>
         index === 0 ? piece : piece.slice(piece.indexOf('>') + 1),
       )
       .join(' ')
-      .replaceAll(/\s+/g, ' ')
+      .replaceAll(/\s+/gu, ' ')
       .trim(),
   );
 
@@ -51,7 +51,7 @@ describe('StatusFilterBar', () => {
         onChange={() => {}}
       />,
     );
-    expect(none.match(/aria-pressed="true"/g)).toHaveLength(1);
+    expect(none.match(/aria-pressed="true"/gu)).toHaveLength(1);
     const failing = htmlAt(
       <StatusFilterBar
         counts={countsOf([])}
@@ -59,7 +59,7 @@ describe('StatusFilterBar', () => {
         onChange={() => {}}
       />,
     );
-    expect(failing.match(/aria-pressed="true"/g)).toHaveLength(2);
+    expect(failing.match(/aria-pressed="true"/gu)).toHaveLength(2);
     expect(failing).toMatch(PRESSED_FAILING_BUTTON);
   });
 
@@ -71,7 +71,7 @@ describe('StatusFilterBar', () => {
         onChange={() => {}}
       />,
     );
-    expect(out).toContain('role="group"');
+    expect(out).toContain('<fieldset');
     expect(out).toContain('type="button"');
   });
 });

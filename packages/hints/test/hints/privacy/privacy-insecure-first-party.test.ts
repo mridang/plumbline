@@ -3,7 +3,7 @@ import hint from '../../../src/hints/privacy/privacy-insecure-first-party.js';
 import { runHint } from '../../helpers/run-hint.js';
 
 /** Matches a resource URL that ends in /a.png. */
-const IMAGE_RESOURCE = /\/a\.png$/;
+const IMAGE_RESOURCE = /\/a\.png$/u;
 
 // The test server only speaks http, so every first-party subresource is a
 // plain http request; Webbkoll lists those whatever the page's scheme.

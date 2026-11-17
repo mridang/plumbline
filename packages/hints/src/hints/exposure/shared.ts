@@ -2,7 +2,7 @@ import { Severity } from '@hint/utils-types';
 import type { Site } from '../../core/page.js';
 
 /** Matches a line break, with or without a carriage return. */
-const LINE_BREAK = /\r?\n/;
+const LINE_BREAK = /\r?\n/u;
 
 /**
  * Fetches a path and returns its body only when the server answered `200`.

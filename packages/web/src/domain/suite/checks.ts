@@ -33,20 +33,24 @@ function severityOf(
 
 /** The checks that ran, with their findings; skipped checks are left out. */
 export function checksOf(outcomes: readonly ScanOutcome[]): CheckResult[] {
-  return outcomes
-    .filter((outcome) => outcome.status !== 'skipped')
-    .map((outcome) => ({
-      id: outcome.id,
-      findings: outcome.findings.map((found) => ({
-        severity: severityOf(found.level),
-        message: found.message,
-      })),
-    }));
+  return outcomes.flatMap((outcome) =>
+    outcome.status === 'skipped'
+      ? []
+      : [
+          {
+            id: outcome.id,
+            findings: outcome.findings.map((found) => ({
+              severity: severityOf(found.level),
+              message: found.message,
+            })),
+          },
+        ],
+  );
 }
 
 /** The ids of the checks that could not run. */
 export function skippedOf(outcomes: readonly ScanOutcome[]): string[] {
-  return outcomes
-    .filter((outcome) => outcome.status === 'skipped')
-    .map((outcome) => outcome.id);
+  return outcomes.flatMap((outcome) =>
+    outcome.status === 'skipped' ? [outcome.id] : [],
+  );
 }

@@ -218,6 +218,7 @@ describe('parseReportInput, the findings of a check', () => {
       links: [
         { url: 'https://fix.test/', text: 'How to fix it' },
         { url: 'https://bare.test/' },
+        // eslint-disable-next-line no-script-url -- the test feeds a script URL to prove it is dropped
         { url: 'javascript:alert(1)', text: 'x' },
         'not a link',
       ],

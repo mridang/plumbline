@@ -1,10 +1,8 @@
 import { Category, defineHint } from '../../core/define-hint.js'; // eslint-disable-line unicorn/prevent-abbreviations -- file name is the permanent hint id that configs and docs reference
 import { onPage } from '../../core/page.js';
 import { getPaginationLinks, isAbsoluteHttpUrl } from '../../lib/i18n/read.js';
-import {
-  paginationRel as paginationRelationship,
-  MDN_LINK_REL_REF,
-} from '../../lib/i18n/checks.js';
+// eslint-disable-next-line unicorn/prevent-abbreviations -- the check is named after the `rel` attribute of the pagination links, in the library that exports it
+import { paginationRel, MDN_LINK_REL_REF } from '../../lib/i18n/checks.js';
 import { toSeverity } from './to-severity.js';
 
 const REF = MDN_LINK_REL_REF;
@@ -29,10 +27,11 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      const findings = paginationRelationship(page.document);
+      const findings = paginationRel(page.document);
       const elements = getPaginationLinks(page.document)
         .filter((link) => !isAbsoluteHttpUrl(link.href))
         .map((link) => link.element);
+      // eslint-disable-next-line functional/no-loop-statements -- reports each finding against its element
       for (const [index, found] of findings.entries()) {
         page.report(found.message, {
           severity: toSeverity(found.severity),

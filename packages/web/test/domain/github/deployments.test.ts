@@ -146,10 +146,10 @@ describe('homepageHost', () => {
 
 describe('deploymentHosts', () => {
   it('collects the hosts of every Wrangler file, and ignores a website field that disagrees', async () => {
-    const files: Record<string, string> = {
-      'wrangler.jsonc': '{"route": "a.example.com/*"}',
-      'apps/api/wrangler.toml': 'route = "api.example.com/*"',
-    };
+    const files = new Map([
+      ['wrangler.jsonc', '{"route": "a.example.com/*"}'],
+      ['apps/api/wrangler.toml', 'route = "api.example.com/*"'],
+    ]);
     const hosts = await deploymentHosts({
       paths: [
         'README.md',
@@ -157,7 +157,7 @@ describe('deploymentHosts', () => {
         'apps/api/wrangler.toml',
         'node_modules/x/wrangler.toml',
       ],
-      read: async (path) => files[path] ?? '',
+      read: async (path) => files.get(path) ?? '',
       homepage: 'https://www.example.com',
     });
     expect(hosts).toEqual(['a.example.com', 'api.example.com']);
@@ -293,7 +293,7 @@ describe('wranglerHosts toml scanning against the former regexes', () => {
     for (const array of top.matchAll(
       old('gm', String.raw`^\s*routes`, String.raw`\s*=\s*\[([^\]]*)\]`),
     )) {
-      for (const item of (array[1] ?? '').matchAll(/"([^"]+)"/g)) {
+      for (const item of (array[1] ?? '').matchAll(/"([^"]+)"/gu)) {
         out.push(item[1] ?? '');
       }
     }
@@ -312,7 +312,7 @@ describe('wranglerHosts toml scanning against the former regexes', () => {
     'routes = [\n  "a.example.com/*",\n  "b.example.com/*",\n]',
     'a route = "no.example.com/*"\n  route = "yes.example.com/*"',
     '[[env.a]]\nroute = "a.example.com/*"',
-    'route = "a.example.com/*"   pattern = "b.example.com/*"',
+    'route = "a.example.com/*"\u2028  pattern = "b.example.com/*"',
     '',
   ])('agrees on %j', (text) => {
     expect(wranglerHosts('wrangler.toml', text)).toEqual(former(text));

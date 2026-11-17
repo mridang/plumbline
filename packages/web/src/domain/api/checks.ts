@@ -14,15 +14,15 @@ import {
   parseLimit,
   problems,
   sliceAfter,
-  type CursorPosition,
 } from '@/lib/core/api';
 import {
   CHECKS,
   GROUPS,
   isGroup,
   checksInGroup,
-  type Check,
 } from '@/domain/checks/catalogue';
+import type { CursorPosition } from '@/lib/core/api';
+import type { Check } from '@/domain/checks/catalogue';
 
 /** The list only changes with a deploy, and is the same for everyone. */
 const CACHEABLE = { 'Cache-Control': 'public, max-age=300' } as const;
@@ -34,6 +34,7 @@ function positionOf(check: Readonly<Check>): CursorPosition {
 
 /** Order two positions as the list is sorted. */
 function compare(a: CursorPosition, b: CursorPosition): number {
+  // eslint-disable-next-line no-restricted-properties -- check ids are keys: the cursor order must not depend on a collator
   return a.key.localeCompare(b.key);
 }
 

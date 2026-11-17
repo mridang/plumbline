@@ -8,12 +8,13 @@
 
 import './shims.js';
 
-import { runScanWith, type CoreOptions, type ScanEvent } from '../core.js';
+import { runScanWith } from '../core.js';
 import { assertScannable } from '../scannable.js';
-import type { ProbeClient } from './client.js';
 import { probeFetch } from './fetch.js';
 import { ensureRoots, withProbe } from './install.js';
 import { ProbeUnavailableError } from './protocol.js';
+import type { CoreOptions, ScanEvent } from '../core.js';
+import type { ProbeClient } from './client.js';
 
 /** Scan `address` with the checks running here and `client` doing the network work. */
 export async function runWorkerScan(
@@ -37,9 +38,11 @@ export async function runWorkerScan(
           const original = globalThis.fetch;
           // The checks that fetch the site's own files with the global `fetch` get the probe's
           // view of it; the scan's other calls (DNS-over-HTTPS) keep the real one.
+          // eslint-disable-next-line functional/immutable-data -- the checks read the global fetch, so it is swapped for the scan
           globalThis.fetch = async (input, init) =>
             isSiteRequest(input) ? fetcher(input, init) : original(input, init);
           return () => {
+            // eslint-disable-next-line functional/immutable-data -- restores the global fetch swapped above
             globalThis.fetch = original;
           };
         },

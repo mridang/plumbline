@@ -7,14 +7,11 @@
  */
 
 import { ApiController, page, problems } from '@/lib/core/api';
-import {
-  liveUid,
-  requestCookieResolver,
-  type CurrentUserResolver,
-} from '@/domain/api/auth';
+import { liveUid, requestCookieResolver } from '@/domain/api/auth';
 import { connectedAppResource } from '@/domain/connected-apps';
 import { listConnectedApps, revokeConnectedApp } from '@/domain/db/oauth';
 import { getDatabase } from '@/domain/db/client';
+import type { CurrentUserResolver } from '@/domain/api/auth';
 
 /** The signed-in person's id. */
 interface UidContext {

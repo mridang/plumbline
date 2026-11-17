@@ -5,8 +5,7 @@
  * file and naming it here; nothing else holds a list to keep in step.
  */
 
-import { ToolRegistry, type NameOf } from '@/lib/mcp';
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import { ToolRegistry } from '@/lib/mcp';
 import { ListChecksTool } from '@/domain/mcp/tools/list-checks';
 import { ListDomainsTool } from '@/domain/mcp/tools/list-domains';
 import { ListRepositoriesTool } from '@/domain/mcp/tools/list-repositories';
@@ -16,6 +15,8 @@ import { ListReportsTool } from '@/domain/mcp/tools/list-reports';
 import { ScanDomainTool } from '@/domain/mcp/tools/scan-domain';
 import { RemoveDomainTool } from '@/domain/mcp/tools/remove-domain';
 import { ConfigureChecksTool } from '@/domain/mcp/tools/configure-checks';
+import type { NameOf } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
 
 export { ListChecksTool } from '@/domain/mcp/tools/list-checks';
 export { ListDomainsTool } from '@/domain/mcp/tools/list-domains';

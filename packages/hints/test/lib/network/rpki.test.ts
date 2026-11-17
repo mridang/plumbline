@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from '@jest/globals';
-import { rpki, type RpkiResult } from '../../../src/core/rpki.js';
+import { rpki } from '../../../src/core/rpki.js';
 import {
   collectRpki,
   describe as describeEntries,
@@ -8,9 +8,10 @@ import {
   nsRpki,
   rpkiLines,
   webRpki,
-  type IpRpki,
 } from '../../../src/lib/network/rpki.js';
 import { installDns } from './fake-dns.js';
+import type { RpkiResult } from '../../../src/core/rpki.js';
+import type { IpRpki } from '../../../src/lib/network/rpki.js';
 
 const realClient = rpki.client;
 let restore: () => void = () => undefined;
@@ -82,9 +83,9 @@ describe('collectRpki', () => {
         running += 1;
         most = Math.max(most, running);
         // The first address is the slowest, so a lookup that waited its turn would come out in another order.
-        await new Promise((resolve) =>
-          setTimeout(resolve, ip === '192.0.2.1' ? 30 : 1),
-        );
+        await new Promise((resolve) => {
+          setTimeout(resolve, ip === '192.0.2.1' ? 30 : 1);
+        });
         running -= 1;
         finished.push(ip);
         return { asn: 1, prefix: 'p', status: 'valid' };

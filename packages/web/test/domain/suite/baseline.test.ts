@@ -5,8 +5,8 @@ import {
   compareWithBaseline,
   comparisonConclusion,
   environmentKey,
-  type Baseline,
 } from '@/domain/suite/baseline';
+import type { Baseline } from '@/domain/suite/baseline';
 import type { StoredFinding } from '@/domain/suite/diff';
 
 const found = (

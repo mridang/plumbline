@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 import { Severity } from '@hint/utils-types';
 import { dns } from '../../../src/core/dns.js';
 import hint from '../../../src/hints/agent/agent-ard.js';
-import { runHint, type Routes } from '../../helpers/run-hint.js';
+import { runHint } from '../../helpers/run-hint.js';
+import type { Routes } from '../../helpers/run-hint.js';
 
 const json = (value: unknown) => ({
   headers: { 'content-type': 'application/json' },
@@ -46,7 +47,9 @@ beforeEach(() => {
 
 afterEach(() => {
   dns.client = original;
-  for (const key of Object.keys(answers)) delete answers[key];
+  for (const key of Object.keys(answers)) {
+    delete answers[key];
+  }
 });
 
 describe('agent-ard', () => {

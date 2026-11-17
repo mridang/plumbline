@@ -1,6 +1,6 @@
-import type { HintContext } from 'hint';
 import extraHints from '@mridang/webhint-hint-plumbline';
 import { SECTIONS } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
+import type { HintContext } from 'hint';
 
 /** Locale-aware comparator used to sort hint ids deterministically. */
 const collator = new Intl.Collator();
@@ -14,7 +14,7 @@ const collator = new Intl.Collator();
 
 /** A hint class as the hints package exports it. */
 export interface HintClass {
-  new (context: HintContext): unknown;
+  new (context: HintContext): void;
   readonly meta?: { readonly docs?: Readonly<Record<string, unknown>> };
 }
 

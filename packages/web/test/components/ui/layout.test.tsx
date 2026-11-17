@@ -3,23 +3,23 @@ import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
 
+import { packageDirectorySync } from 'package-directory';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 // eslint-disable-next-line unicorn/no-keyword-prefix -- classOf is the shared test helper exported by render.ts and used by many specs
 import { classOf, html } from '../render';
-import { packageDirectorySync } from 'package-directory';
 
 /** Matches text colour class. */
-const TEXT_COLOUR_CLASS = /\btext-(ink|accent|subtle|muted|on-ink)\b/;
+const TEXT_COLOUR_CLASS = /\btext-(ink|accent|subtle|muted|on-ink)\b/u;
 
 /** Matches focusable h1. */
-const FOCUSABLE_H1 = /<h1 tabindex="-1" class=/;
+const FOCUSABLE_H1 = /<h1 tabindex="-1" class=/u;
 
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
 /** The Eyebrow tags in a file that set a colour class through className. */
 function colourOffenders(file: string, source: string): string[] {
   const found: string[] = [];
-  for (const match of source.matchAll(/<Eyebrow\b[^>]*className="([^"]*)"/g)) {
+  for (const match of source.matchAll(/<Eyebrow\b[^>]*className="([^"]*)"/gu)) {
     if (TEXT_COLOUR_CLASS.test(match[1]!)) {
       found.push(`${file}: ${match[1]}`);
     }
@@ -31,17 +31,15 @@ describe('Eyebrow', () => {
   it('is a tracked-caps paragraph in the accent colour by default', () => {
     const out = html(<Eyebrow>Your collection</Eyebrow>);
     expect(out.startsWith('<p')).toBe(true);
-    expect(classOf(out, 'p')).toContain('uppercase');
-    expect(classOf(out, 'p')).toContain('text-accent');
+    const classes = classOf(out, 'p');
+    expect(classes).toContain('uppercase');
+    expect(classes).toContain('text-accent');
   });
 
   it('takes its colour from the tone, one at a time', () => {
-    expect(classOf(html(<Eyebrow tone="ink">x</Eyebrow>), 'p')).toContain(
-      'text-ink',
-    );
-    expect(classOf(html(<Eyebrow tone="ink">x</Eyebrow>), 'p')).not.toContain(
-      'text-accent',
-    );
+    const ink = classOf(html(<Eyebrow tone="ink">x</Eyebrow>), 'p');
+    expect(ink).toContain('text-ink');
+    expect(ink).not.toContain('text-accent');
     expect(classOf(html(<Eyebrow tone="subtle">x</Eyebrow>), 'p')).toContain(
       'text-subtle',
     );

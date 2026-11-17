@@ -1,13 +1,9 @@
 import { Args, Flags } from '@oclif/core';
 
-import {
-  DEFAULT_OUT,
-  FAIL_ON,
-  SCAN_FORMATS,
-  type ScanCommand,
-} from '../options.js';
+import { DEFAULT_OUT, FAIL_ON, SCAN_FORMATS } from '../options.js';
 import { resolveDependencies, runScan } from '../run.js';
 import { PlumblineCommand } from './base.js';
+import type { ScanCommand } from '../options.js';
 
 /** The flags `plumbline scan` takes. */
 export const SCAN_FLAGS = {

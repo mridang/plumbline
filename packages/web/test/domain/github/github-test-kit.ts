@@ -50,7 +50,7 @@ export function fakeGitHub(
 }
 
 /** The answers of a GitHub where installation 5 of `acme` has one deployed repository. */
-export const DEPLOYED_APP: Readonly<Record<string, () => Response>> = {
+export const DEPLOYED_APP = {
   'https://github.com/login/oauth/access_token': () =>
     Response.json({ access_token: 'gho_1' }),
   'https://api.github.com/user/installations/5/repositories': () =>
@@ -74,4 +74,4 @@ export const DEPLOYED_APP: Readonly<Record<string, () => Response>> = {
     Response.json({ tree: [{ path: 'wrangler.jsonc', type: 'blob' }] }),
   'https://api.github.com/repos/acme/site/contents': () =>
     new Response('{"route": "site.example.com/*"}'),
-};
+} satisfies Readonly<Record<string, () => Response>>;

@@ -28,6 +28,7 @@ export function truncate(value: string, maximum: number = TRUNCATE_AT): string {
  * an unreadable value, means storage is not used.
  */
 export function parseStorage(raw: unknown): StorageEntry[] {
+  // eslint-disable-next-line functional/no-let -- reassigned from the parsed JSON, which can throw
   let data: unknown = raw;
   if (typeof raw === 'string') {
     try {

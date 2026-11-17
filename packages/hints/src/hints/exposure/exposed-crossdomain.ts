@@ -31,7 +31,7 @@ export default defineHint({
           site,
           '/crossdomain.xml',
           'The /crossdomain.xml policy allows access from any origin (domain="*").',
-          body.replaceAll(/\s+/g, ' ').trim(),
+          body.replaceAll(/\s+/gu, ' ').trim(),
         );
       }
     });

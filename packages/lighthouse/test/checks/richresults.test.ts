@@ -1,15 +1,15 @@
 import { createHTMLDocument } from '@hint/utils-dom';
 import { describe, expect, it } from '@jest/globals';
-import type { Artifacts } from 'lighthouse';
-import type AuditNS from 'lighthouse/types/audit.js';
-import { richresultsChecks } from '../../src/checks/richresults.js';
 import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
-import type { AuditCheck } from '../../src/checks/types.js';
 import { readJsonLd } from '@mridang/webhint-hint-plumbline/dist/lib/geo/json-ld.js';
 import { recipeFindings } from '@mridang/webhint-hint-plumbline/dist/lib/richresults/checks.js';
+import { richresultsChecks } from '../../src/checks/richresults.js';
+import type { Artifacts } from 'lighthouse';
+import type AuditNS from 'lighthouse/types/audit.js';
+import type { AuditCheck } from '../../src/checks/types.js';
 
 /** Matches a check id that belongs to the rich results section. */
-const RICHRESULTS_ID_PREFIX = /^richresults-/;
+const RICHRESULTS_ID_PREFIX = /^richresults-/u;
 
 // The same DOM parser webhint feeds its hints: the equivalence test builds the "webhint side" of the check with it, exactly as the hint does.
 
@@ -26,7 +26,9 @@ function artifacts(html: string): Artifacts {
 
 /** A richresults check reads no computed artifact, but run() takes a context. */
 function context(): AuditNS.Context {
-  return { computedCache: new Map() } as unknown as AuditNS.Context;
+  return {
+    computedCache: new Map<string, unknown>(),
+  } as unknown as AuditNS.Context;
 }
 
 /** Wraps a parsed object as one JSON-LD block of HTML. */
@@ -98,10 +100,10 @@ describe('a richresults check run()', () => {
 describe('the richresults check matches the webhint hint for a fixture', () => {
   // The two surfaces call the same shared validator on the same parsed
   // document, so the Lighthouse findings must equal the webhint-side findings.
-  const fixture =
-    '<!doctype html><html><head>' +
-    jsonLd({ '@type': 'Recipe', name: 'Pie' }) +
-    '</head><body></body></html>';
+  const fixture = `<!doctype html><html><head>${jsonLd({
+    '@type': 'Recipe',
+    name: 'Pie',
+  })}</head><body></body></html>`;
 
   it('recipe yields the hint findings', async () => {
     const parsedDocument = createHTMLDocument(fixture, 'https://x.test/');

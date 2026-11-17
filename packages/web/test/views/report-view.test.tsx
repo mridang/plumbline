@@ -1,9 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { ReportData } from '@/domain/mcp/ui-types';
 import { ReportApp, ReportCard, ReportScreen } from '@/views/report-view';
-import type { ViewState } from '@/views/view-state';
 import { html } from '../components/render';
+import type { ReportData } from '@/domain/mcp/ui-types';
+import type { ViewState } from '@/views/view-state';
 
 const REPORT: ReportData = {
   host: 'example.com',
@@ -86,7 +86,7 @@ describe('ReportCard', () => {
   });
 
   it('folds each problem so the list stays short', () => {
-    expect(card().match(/<details>/g)).toHaveLength(2);
+    expect(card().match(/<details>/gu)).toHaveLength(2);
   });
 
   it('shows what a check found and where', () => {
@@ -130,6 +130,7 @@ describe('ReportCard', () => {
     expect(
       card({
         ...REPORT,
+        // eslint-disable-next-line no-script-url -- the test feeds a hostile script URL to prove it is refused
         problems: [{ ...FIRST, reference: 'javascript:alert(1)' }],
       }),
     ).not.toContain('Read the rule');
@@ -140,7 +141,7 @@ describe('ReportCard', () => {
   });
 
   it('draws no evidence block for a finding without any', () => {
-    expect(card().match(/<pre>/g)).toHaveLength(1);
+    expect(card().match(/<pre>/gu)).toHaveLength(1);
   });
 
   it('draws text from the scanned site as text, never as markup', () => {
@@ -173,6 +174,7 @@ describe('ReportCard', () => {
   });
 
   it('offers no link that is not a web address', () => {
+    // eslint-disable-next-line no-script-url -- the test feeds a hostile script URL to prove it is refused
     expect(card({ ...REPORT, link: 'javascript:alert(1)' })).not.toContain(
       'Open in Plumbline',
     );

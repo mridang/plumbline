@@ -11,7 +11,6 @@
  * commit it was built from, which GitHub shows on the pull request.
  */
 
-import type { Database } from '@/domain/db/client';
 import {
   CLAIM_MS,
   claimNewIssue,
@@ -23,12 +22,9 @@ import {
   releaseIssueClaim,
   retireLegacyIssue,
   saveIssue,
-  type StoredIssue,
 } from '@/domain/db/suite';
 import { isCheckId } from '@/domain/checks/catalogue';
-import { GitHubError, type GitHubApi } from '@/domain/github/api';
-import type { IssueLevel } from '@/domain/suite/config';
-import type { StoredFinding } from '@/domain/suite/diff';
+import { GitHubError } from '@/domain/github/api';
 import {
   backComment,
   changedComment,
@@ -41,9 +37,13 @@ import {
   reopenedComment,
   replacedComment,
   reportedFindings,
-  type CloseReason,
-  type RunReport,
 } from '@/domain/suite/report';
+import type { CloseReason, RunReport } from '@/domain/suite/report';
+import type { GitHubApi } from '@/domain/github/api';
+import type { StoredIssue } from '@/domain/db/suite';
+import type { IssueLevel } from '@/domain/suite/config';
+import type { StoredFinding } from '@/domain/suite/diff';
+import type { Database } from '@/domain/db/client';
 import type { Level } from '@/domain/suite/rules';
 
 /** The label put on the issues the app opens. */
@@ -82,7 +82,9 @@ export function newBudget(max = MAX_NEW_ISSUES): IssueBudget {
 
 /** Waits {@link WRITE_PAUSE_MS}. */
 export async function pauseBetweenWrites(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, WRITE_PAUSE_MS));
+  return new Promise((resolve) => {
+    setTimeout(resolve, WRITE_PAUSE_MS);
+  });
 }
 
 /** A run of a live site, with what is needed to report it. */
@@ -136,7 +138,7 @@ export async function signatureOf(
   const text = findings
     .map(
       (found) =>
-        `${found.id}\n${found.message.replaceAll(/\d+(\.\d+)?/g, '#')}`,
+        `${found.id}\n${found.message.replaceAll(/\d+(\.\d+)?/gu, '#')}`,
     )
     .toSorted((a, b) => (a < b ? -1 : Number(a > b)))
     .join('\n\n');
@@ -160,6 +162,7 @@ export function originOf(
   repo: string,
   sha: string | null,
 ): () => Promise<string> {
+  // eslint-disable-next-line functional/no-let -- remembers the lookup, so it is made once however many sites ask
   let answer: Promise<string> | undefined;
   return async () => {
     answer ??= (async () => {
@@ -215,19 +218,19 @@ async function closeIssue(
   reason: CloseReason,
 ): Promise<void> {
   const { api, db, repo, host, source, sha } = context;
-  let closed = true;
   await context.pause();
-  try {
-    await api.editIssue(repo, stored.number, {
+  const closed = await api
+    .editIssue(repo, stored.number, {
       state: 'closed',
       state_reason: reason === 'fixed' ? 'completed' : 'not_planned',
+    })
+    .then(() => true)
+    .catch((error: unknown) => {
+      if (!isGone(error)) {
+        throw error;
+      }
+      return false;
     });
-  } catch (error) {
-    if (!isGone(error)) {
-      throw error;
-    }
-    closed = false;
-  }
   await saveIssue(db, repo, host, check, {
     number: stored.number,
     state: 'fixed',
@@ -300,11 +303,7 @@ function reasonToClose(
 function byCheck(
   findings: readonly StoredFinding[],
 ): Map<string, StoredFinding[]> {
-  const groups = new Map<string, StoredFinding[]>();
-  for (const found of findings) {
-    groups.set(found.id, [...(groups.get(found.id) ?? []), found]);
-  }
-  return groups;
+  return Map.groupBy(findings, (found) => found.id);
 }
 
 /**
@@ -351,8 +350,10 @@ export async function syncIssues(
   const stored = await issuesOfHost(db, repo, host);
   const notRunChecks = new Set(notRun);
 
+  // eslint-disable-next-line functional/no-loop-statements -- checks are synced one after another, and a throttled GitHub stops the rest
   for (const [check, found] of reported) {
     try {
+      // eslint-disable-next-line functional/immutable-data -- the result map is filled as each check settles
       actions.set(
         check,
         await syncCheck(
@@ -373,6 +374,7 @@ export async function syncIssues(
     }
   }
 
+  // eslint-disable-next-line functional/no-loop-statements -- issues are closed one after another, and a throttled GitHub stops the rest
   for (const [check, issue] of stored) {
     if (
       issue.state !== 'open' ||
@@ -388,6 +390,7 @@ export async function syncIssues(
         issue,
         reasonToClose(check, report, all.has(check)),
       );
+      // eslint-disable-next-line functional/immutable-data -- the result map is filled as each issue is closed
       actions.set(check, 'closed');
     } catch (error) {
       if (isThrottled(error)) {
@@ -476,6 +479,7 @@ async function syncCheck(
   }
 
   if (budget.remaining <= 0) {
+    // eslint-disable-next-line functional/immutable-data -- the budget is one counter shared by every check of the run
     budget.deferred += 1;
     return 'none';
   }
@@ -494,7 +498,9 @@ async function syncCheck(
       signature,
       reopens: 0,
     });
+    // eslint-disable-next-line functional/immutable-data -- the budget is one counter shared by every check of the run
     budget.remaining -= 1;
+    // eslint-disable-next-line functional/immutable-data -- the budget is one counter shared by every check of the run
     budget.last = created.number;
   } catch (error) {
     await releaseIssueClaim(db, repo, host, check);
@@ -540,6 +546,7 @@ export async function closeUndeployed(
   const reason = input.reason ?? 'undeployed';
   const pause = input.pause ?? (async () => {});
   const origin = originOf(api, repo, sha);
+  // eslint-disable-next-line functional/no-loop-statements -- issues are closed one after another, and a throttled GitHub stops the rest
   for (const issue of await openIssuesOf(db, repo)) {
     if (hosts.has(issue.host)) {
       continue;
@@ -567,6 +574,7 @@ export async function closeUndeployed(
       console.error('issue close failed', repo, issue.host, issue.check, error);
     }
   }
+  // eslint-disable-next-line functional/no-loop-statements -- old issues are retired one after another, and a throttled GitHub stops the rest
   for (const legacy of await legacyIssuesOf(db, repo)) {
     if (hosts.has(legacy.host)) {
       continue;

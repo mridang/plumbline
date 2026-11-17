@@ -4,7 +4,8 @@
  * signed in, so a relying party's FedCM call can skip providers with no active
  * session. Follows the MDN reference page.
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
+import type { Finding } from '../headers/finding.js';
 
 /** The two values the FedCM login-status API defines. */
 const VALUES = new Set(['logged-in', 'logged-out']);

@@ -4,9 +4,9 @@ import {
   anchorFindings,
   anchorProblem,
   ROCTIFY_REF,
-  type AnchorProblem,
 } from '../../lib/seo/content.js';
 import { reportFindings } from './report-findings.js';
+import type { AnchorProblem } from '../../lib/seo/content.js';
 
 /**
  * Warns about links with no text and links with generic text such as "click
@@ -26,18 +26,15 @@ export default defineHint({
       const found: {
         element: (typeof anchors)[number];
         problem: AnchorProblem;
-      }[] = [];
-      for (const element of anchors) {
+      }[] = anchors.flatMap((element) => {
         const problem = anchorProblem({
           text: element.textContent ?? '',
           label: element.getAttribute('aria-label') ?? '',
           imageAlt: element.querySelector('img')?.getAttribute('alt') ?? '',
           title: element.getAttribute('title') ?? '',
         });
-        if (problem) {
-          found.push({ element, problem });
-        }
-      }
+        return problem ? [{ element, problem }] : [];
+      });
       reportFindings(page, anchorFindings(found.map((f) => f.problem)), {
         element: found[0]?.element ?? null,
       });

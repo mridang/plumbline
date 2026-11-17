@@ -1,10 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, type ReactElement, type SubmitEvent } from 'react';
+import { useState } from 'react';
 
 import { ensureOk, problemText } from '@/components/api/problem-message';
 import { Button } from '@/components/ui/button';
+import type { ReactElement, SubmitEvent } from 'react';
 
 /** One check as the form lists it. */
 export interface CheckChoice {
@@ -72,17 +73,11 @@ export function CheckForm({
   >();
 
   const toggle = (ids: readonly string[], on: boolean): void =>
-    setTicked((current) => {
-      const next = new Set(current);
-      for (const id of ids) {
-        if (on) {
-          next.add(id);
-        } else {
-          next.delete(id);
-        }
-      }
-      return next;
-    });
+    setTicked((current) =>
+      on
+        ? new Set(current).union(new Set(ids))
+        : new Set(current).difference(new Set(ids)),
+    );
 
   const onSubmit = async (
     event: SubmitEvent<HTMLFormElement>,
@@ -105,7 +100,11 @@ export function CheckForm({
   };
 
   return (
-    <form onSubmit={(event) => void onSubmit(event)}>
+    <form
+      onSubmit={(event) => {
+        void onSubmit(event);
+      }}
+    >
       <div className="flex flex-wrap items-center gap-3">
         <p className="text-sm text-muted">
           {ticked.size} of {total} checks on
@@ -154,6 +153,7 @@ export function CheckForm({
                 <label className="flex items-center gap-3 text-sm font-semibold">
                   <input
                     type="checkbox"
+                    aria-label="Every check in this section"
                     className="focus-ring"
                     checked={on === ids.length}
                     onChange={(event) => toggle(ids, event.target.checked)}
@@ -166,6 +166,7 @@ export function CheckForm({
                       <input
                         id={`check-${check.id}`}
                         type="checkbox"
+                        aria-label={check.name}
                         className="focus-ring mt-1"
                         name="checks"
                         value={check.id}
@@ -192,11 +193,11 @@ export function CheckForm({
         <Button type="submit" disabled={busy}>
           {busy ? 'Saving…' : 'Save checks'}
         </Button>
-        {message ? (
-          <p
-            role={message.ok ? 'status' : 'alert'}
-            className={message.ok ? 'text-sm text-muted' : 'text-failed'}
-          >
+        {message?.ok ? (
+          <output className="text-sm text-muted">{message.text}</output>
+        ) : null}
+        {message && !message.ok ? (
+          <p role="alert" className="text-failed">
             {message.text}
           </p>
         ) : null}

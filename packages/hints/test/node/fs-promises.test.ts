@@ -1,9 +1,9 @@
-import { describe, expect, it } from '@jest/globals';
 import {
   mkdtemp as nodeMkdtemp,
   rm as nodeRm,
   writeFile as nodeWriteFile,
 } from 'node:fs/promises';
+import { describe, expect, it } from '@jest/globals';
 
 import { mkdtemp, rm, writeFile } from '../../src/node/fs-promises.js';
 

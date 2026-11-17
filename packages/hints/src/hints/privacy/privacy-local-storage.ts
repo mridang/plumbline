@@ -17,23 +17,18 @@ export default defineHint({
   groups: ['webbkoll', 'privacy'],
   reference: 'https://html.spec.whatwg.org/multipage/webstorage.html',
   setup(context) {
+    // eslint-disable-next-line functional/no-let -- captured by the scan::start handler and read by the later handlers
     let url = '';
     context.on('scan::start', (event) => {
       url = event.resource;
     });
     // eslint-disable-next-line @typescript-eslint/no-misused-promises -- webhint's context.on types its listener as returning void, but the engine awaits it; dropping the async would stop the scan waiting for this handler
     context.on('scan::end', async () => {
-      let entries;
-      try {
-        entries = parseStorage(
-          await context.evaluate(
-            'JSON.stringify(Object.assign({}, localStorage))',
-          ),
-        );
-      } catch {
-        return;
-      }
-      if (entries.length === 0) {
+      const entries = await context
+        .evaluate('JSON.stringify(Object.assign({}, localStorage))')
+        .then((stored: unknown) => parseStorage(stored))
+        .catch(() => null);
+      if (!entries || entries.length === 0) {
         return;
       }
       const list = entries

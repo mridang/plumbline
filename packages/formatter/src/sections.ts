@@ -9,7 +9,7 @@
 const collator = new Intl.Collator();
 
 /** Matches a run of dashes, underscores or whitespace between words. */
-const SEPARATORS = /[-_\s]+/;
+const SEPARATORS = /[-_\s]+/u;
 
 /** Numeric severities, mirroring webhint's `Severity` enum. */
 export const SEVERITY = {
@@ -127,7 +127,7 @@ export interface Section {
  * @param info - The hint's metadata.
  * @returns The section key and title.
  */
-export function sectionFor(info: HintInfo): { key: string; title: string } {
+export function sectionFor(info: HintInfo): Pick<Section, 'key' | 'title'> {
   if (info.section) {
     return {
       key: info.section,
@@ -157,17 +157,11 @@ function titleCase(value: string): string {
  * @returns Totals; information is folded into `hint`.
  */
 export function countFindings(findings: readonly Finding[]): Counts {
-  const counts: Counts = { error: 0, warning: 0, hint: 0 };
-  for (const finding of findings) {
-    if (finding.severity >= SEVERITY.error) {
-      counts.error++;
-    } else if (finding.severity === SEVERITY.warning) {
-      counts.warning++;
-    } else {
-      counts.hint++;
-    }
-  }
-  return counts;
+  const error = findings.filter((f) => f.severity >= SEVERITY.error).length;
+  const warning = findings.filter(
+    (f) => f.severity < SEVERITY.error && f.severity === SEVERITY.warning,
+  ).length;
+  return { error, warning, hint: findings.length - error - warning };
 }
 
 /** Sums two count sets. */
@@ -200,33 +194,39 @@ export function buildSections(
   hints: readonly HintInfo[],
   findings: readonly Finding[],
 ): Section[] {
-  const infos = new Map<string, HintInfo>();
-  for (const hint of hints) {
-    infos.set(hint.id, hint);
-  }
-  for (const finding of findings) {
-    if (!infos.has(finding.hintId)) {
-      infos.set(finding.hintId, {
-        id: finding.hintId,
-        name: finding.hintId,
-        description: '',
-        category: 'other',
-        groups: [],
-      });
-    }
-  }
+  const known = new Set(hints.map((hint) => hint.id));
+  const infos = new Map<string, HintInfo>(
+    [
+      hints.map((hint): [string, HintInfo] => [hint.id, hint]),
+      findings.flatMap((finding): [string, HintInfo][] =>
+        known.has(finding.hintId)
+          ? []
+          : [
+              [
+                finding.hintId,
+                {
+                  id: finding.hintId,
+                  name: finding.hintId,
+                  description: '',
+                  category: 'other',
+                  groups: [],
+                },
+              ],
+            ],
+      ),
+    ].flat(),
+  );
 
   // Titles of stamped sections, so a tag that is also a section id shows its title.
-  const titles = new Map<string, string>();
-  for (const info of infos.values()) {
-    if (info.section && info.sectionTitle) {
-      titles.set(info.section, info.sectionTitle);
-    }
-  }
+  const titles = new Map(
+    [...infos.values()].flatMap((info) =>
+      info.section && info.sectionTitle
+        ? [[info.section, info.sectionTitle] as const]
+        : [],
+    ),
+  );
 
-  const sections = new Map<string, Section>();
-  const order = new Map<string, number>();
-  for (const info of infos.values()) {
+  const entries = Array.from(infos.values(), (info) => {
     const { key, title } = sectionFor(info);
     const own = findings.filter((f) => f.hintId === info.id);
     const block: HintBlock = {
@@ -241,35 +241,44 @@ export function buildSections(
         ...(info.tags ?? []).map((tag) => titles.get(tag) ?? tag),
       ],
     };
-    const section = sections.get(key) ?? {
+    return { info, key, title, own, block };
+  });
+  const sections = Array.from(
+    Map.groupBy(entries, (entry) => entry.key),
+    ([key, group]): Section => ({
       key,
-      title,
-      description: info.sectionDescription,
-      group: info.group,
-      groupTitle: info.groupTitle,
-      hints: [],
-      counts: { error: 0, warning: 0, hint: 0 },
-      passed: true,
-    };
-    section.hints.push(block);
-    section.counts = add(section.counts, block.counts);
-    section.passed = section.passed && own.length === 0;
-    sections.set(key, section);
-    if (info.sectionOrder !== undefined) {
-      order.set(key, info.sectionOrder);
-    }
-  }
+      title: group[0]?.title ?? key,
+      description: group[0]?.info.sectionDescription,
+      group: group[0]?.info.group,
+      groupTitle: group[0]?.info.groupTitle,
+      hints: group.map((entry) => entry.block),
+      counts: group.reduce((sum, entry) => add(sum, entry.block.counts), {
+        error: 0,
+        warning: 0,
+        hint: 0,
+      }),
+      passed: group.every((entry) => entry.own.length === 0),
+    }),
+  );
+  const order = new Map(
+    entries.flatMap(({ info, key }) =>
+      info.sectionOrder === undefined
+        ? []
+        : [[key, info.sectionOrder] as const],
+    ),
+  );
 
   const rank = (key: string): number => order.get(key) ?? order.size + 1;
-  const result = [...sections.values()].toSorted(
-    (a, b) => rank(a.key) - rank(b.key) || collator.compare(a.title, b.title),
-  );
-  for (const section of result) {
-    section.hints.sort(
-      (a, b) =>
-        weight(b.counts) - weight(a.counts) ||
-        collator.compare(a.info.name, b.info.name),
-    );
-  }
-  return result;
+  return sections
+    .toSorted(
+      (a, b) => rank(a.key) - rank(b.key) || collator.compare(a.title, b.title),
+    )
+    .map((section) => ({
+      ...section,
+      hints: section.hints.toSorted(
+        (a, b) =>
+          weight(b.counts) - weight(a.counts) ||
+          collator.compare(a.info.name, b.info.name),
+      ),
+    }));
 }

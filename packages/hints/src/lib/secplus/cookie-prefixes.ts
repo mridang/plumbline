@@ -17,7 +17,8 @@
  * This is deliberately narrow: it checks only the prefix contract, not the
  * general `Secure`/`HttpOnly`/`SameSite` hygiene the `cookies` hint covers.
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
+import type { Finding } from '../headers/finding.js';
 
 /** The parts of a `Set-Cookie` the prefix rules depend on. */
 export interface PrefixCookie {
@@ -43,85 +44,60 @@ export function parsePrefixCookie(raw: string): PrefixCookie | null {
   if (name === '') {
     return null;
   }
-  const cookie: PrefixCookie = {
-    name,
-    secure: false,
-    path: null,
-    domain: null,
-  };
-  for (const attribute of attributes) {
+  const attributePairs = attributes.map((attribute) => {
     const at = attribute.indexOf('=');
-    const key = (at === -1 ? attribute : attribute.slice(0, at))
-      .trim()
-      .toLowerCase();
-    const value = at === -1 ? '' : attribute.slice(at + 1).trim();
-    switch (key) {
-      case 'secure': {
-        cookie.secure = true;
-
-        break;
-      }
-      case 'path': {
-        cookie.path = value;
-
-        break;
-      }
-      case 'domain': {
-        cookie.domain = value;
-
-        break;
-      }
-      // No default
-    }
-  }
-  return cookie;
+    return {
+      key: (at === -1 ? attribute : attribute.slice(0, at))
+        .trim()
+        .toLowerCase(),
+      value: at === -1 ? '' : attribute.slice(at + 1).trim(),
+    };
+  });
+  return {
+    name,
+    secure: attributePairs.some(({ key }) => key === 'secure'),
+    path: attributePairs.findLast(({ key }) => key === 'path')?.value ?? null,
+    domain:
+      attributePairs.findLast(({ key }) => key === 'domain')?.value ?? null,
+  };
 }
 
 /** Findings for one parsed cookie, checking only its prefix contract. */
 function cookiePrefixFinding(cookie: PrefixCookie): Finding[] {
   const lower = cookie.name.toLowerCase();
-  const findings: Finding[] = [];
 
   if (lower.startsWith('__host-')) {
-    const problems: string[] = [];
-    if (!cookie.secure) {
-      problems.push('it is not Secure');
-    }
-    if (cookie.path !== '/') {
-      problems.push("its Path is not '/'");
-    }
-    if (cookie.domain !== null) {
-      problems.push('it sets a Domain attribute');
-    }
-    if (problems.length > 0) {
-      findings.push(
+    const problems = [
+      ...(cookie.secure ? [] : ['it is not Secure']),
+      ...(cookie.path === '/' ? [] : ["its Path is not '/'"]),
+      ...(cookie.domain === null ? [] : ['it sets a Domain attribute']),
+    ];
+    return problems.length > 0
+      ? [
+          finding(
+            'error',
+            `Cookie '${cookie.name}' uses the __Host- prefix but ${problems.join(', ')}; the browser will reject it. A __Host- cookie must be Secure, have Path=/ and set no Domain.`,
+          ),
+        ]
+      : [];
+  }
+
+  return lower.startsWith('__secure-') && !cookie.secure
+    ? [
         finding(
           'error',
-          `Cookie '${cookie.name}' uses the __Host- prefix but ${problems.join(', ')}; the browser will reject it. A __Host- cookie must be Secure, have Path=/ and set no Domain.`,
+          `Cookie '${cookie.name}' uses the __Secure- prefix but is not Secure; the browser will reject it. Add the Secure attribute.`,
         ),
-      );
-    }
-    return findings;
-  }
-
-  if (lower.startsWith('__secure-') && !cookie.secure) {
-    findings.push(
-      finding(
-        'error',
-        `Cookie '${cookie.name}' uses the __Secure- prefix but is not Secure; the browser will reject it. Add the Secure attribute.`,
-      ),
-    );
-  }
-
-  return findings;
+      ]
+    : [];
 }
 
 /** Findings for every `Set-Cookie` value of a response. */
 export function cookiePrefixFindings(
   setCookieValues: readonly string[],
 ): Finding[] {
-  return setCookieValues
-    .map((value) => parsePrefixCookie(value))
-    .filter((cookie): cookie is PrefixCookie => cookie !== null)
-    .flatMap((cookie) => cookiePrefixFinding(cookie));
+  return setCookieValues.flatMap((value) => {
+    const cookie = parsePrefixCookie(value);
+    return cookie === null ? [] : cookiePrefixFinding(cookie);
+  });
 }

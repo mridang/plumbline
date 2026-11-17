@@ -47,7 +47,7 @@ describe('readTextCapped', () => {
     const response = inPieces('abcdef', 'ghi', 'jkl');
     const cancel = jest.spyOn(ReadableStreamDefaultReader.prototype, 'cancel');
     await readTextCapped(response, 3);
-    expect(cancel).toHaveBeenCalled();
+    expect(cancel.mock.calls.length).toBeGreaterThan(0);
     cancel.mockRestore();
   });
 

@@ -1,9 +1,9 @@
-import type { HintContext } from 'hint';
-import type { HTMLDocument } from '@hint/utils-dom';
 import { Severity } from '@hint/utils-types';
-import type { Finding } from '../../lib/headers/finding.js';
 import { isAbsoluteUrl } from '../../lib/files/issue.js';
 import { toSeverity } from './to-severity.js';
+import type { HintContext } from 'hint';
+import type { HTMLDocument } from '@hint/utils-dom';
+import type { Finding } from '../../lib/headers/finding.js';
 
 /**
  * Shared plumbing for the webhint-only `*-valid` hints. Unlike the DOM-only
@@ -31,14 +31,16 @@ export function validateLinkedDocuments(
   context: HintContext,
   options: ValidateLinkedOptions,
 ): void {
+  // eslint-disable-next-line functional/no-let -- captured by the traverse::end handler and read by the later scan::end handler
   let document: HTMLDocument | null = null;
+  // eslint-disable-next-line functional/no-let -- captured by the scan::start handler and read by the later scan::end handler
   let baseUrl = '';
   context.on('scan::start', (event) => {
     baseUrl = event.resource;
   });
   context.on('traverse::end', (event) => {
     document = event.document;
-    baseUrl = baseUrl || event.resource;
+    baseUrl ||= event.resource;
   });
   // eslint-disable-next-line @typescript-eslint/no-misused-promises -- webhint's context.on types its listener as returning void, but the engine awaits it; dropping the async would stop the scan waiting for this handler
   context.on('scan::end', async (event) => {
@@ -51,18 +53,18 @@ export function validateLinkedDocuments(
     const targets = [...new Set(options.select(document, base))].filter((url) =>
       isAbsoluteUrl(url),
     );
-    for (const target of targets) {
-      let body: string | null = null;
-      let statusCode = 0;
-      try {
-        const data = await context.fetchContent(new URL(target));
-        statusCode = data.response.statusCode;
-        body = data.response.body.content;
-      } catch {
-        body = null;
-      }
-      if (body === null || statusCode !== 200) {
-        const status = statusCode ? ` (HTTP ${statusCode})` : '';
+    await Array.fromAsync(targets, async (target) => {
+      const fetched = await context
+        .fetchContent(new URL(target))
+        .then((data) => ({
+          statusCode: data.response.statusCode,
+          body: data.response.body.content,
+        }))
+        .catch(() => ({ statusCode: 0, body: null }));
+      if (fetched.body === null || fetched.statusCode !== 200) {
+        const status = fetched.statusCode
+          ? ` (HTTP ${fetched.statusCode})`
+          : '';
         context.report(
           target,
           `The ${options.label} could not be fetched${status}.`,
@@ -70,13 +72,14 @@ export function validateLinkedDocuments(
             severity: Severity.error,
           },
         );
-        continue;
+        return;
       }
-      for (const finding of options.validate(body)) {
+      // eslint-disable-next-line functional/no-loop-statements -- reports each finding
+      for (const finding of options.validate(fetched.body)) {
         context.report(target, finding.message, {
           severity: toSeverity(finding.severity),
         });
       }
-    }
+    });
   });
 }

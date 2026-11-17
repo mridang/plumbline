@@ -6,10 +6,10 @@ import {
   parseCaa,
   retrieveCaa,
   validateCaaRecord,
-  type CaaRecord,
 } from '../../../src/lib/network/caa.js';
-import { installDns } from './fake-dns.js';
 import { FTP_SCHEME, HTTP_SCHEME } from '../../helpers/data.js';
+import { installDns } from './fake-dns.js';
+import type { CaaRecord } from '../../../src/lib/network/caa.js';
 
 let restore: () => void = () => undefined;
 afterEach(() => restore());
@@ -31,7 +31,7 @@ describe('parseCaa', () => {
   });
   it('parses the generic format', () => {
     // flags 0, tag "issue", value "ca.test"
-    const hex = '00056973737565' + Buffer.from('ca.test').toString('hex');
+    const hex = `00056973737565${Buffer.from('ca.test').toString('hex')}`;
     expect(parseCaa(String.raw`\# 14 ${hex}`)).toEqual(rec('issue', 'ca.test'));
   });
   it('rejects garbage and truncated generic data', () => {
@@ -155,13 +155,13 @@ describe('parseCaa generic form against the former regex', () => {
       String.raw`^\\#\s+\d+`,
       String.raw`\s?([\da-fA-F\s]*)$`,
     ).exec(data.trim());
-    return match ? match[1].replaceAll(/\s+/g, '') : null;
+    return match ? match[1].replaceAll(/\s+/gu, '') : null;
   };
 
   it.each([
     String.raw`\# 8 00 05 69 73 73 75 65`,
     String.raw`\#   8   0005697373756500`,
-    String.raw`\# 8` + '\n0005697373756500',
+    [String.raw`\# 8`, '0005697373756500'].join('\n'),
     String.raw`\#8 00`,
     String.raw`\# 3`,
     String.raw`\# 12`,

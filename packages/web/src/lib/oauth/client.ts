@@ -21,10 +21,10 @@ import { SITE_NAME, SITE_URL } from '@/utils/site';
 import { parseUrl } from '@/utils/url';
 
 /** A host made only of digits and dots, such as an IPv4 address. */
-const NUMERIC_HOST_PATTERN = /^[\d.]+$/;
+const NUMERIC_HOST_PATTERN = /^[\d.]+$/u;
 
 /** A `max-age=<seconds>` cache directive, capturing the seconds. */
-const MAX_AGE_DIRECTIVE = /^max-age=(\d+)$/;
+const MAX_AGE_DIRECTIVE = /^max-age=(\d+)$/u;
 
 /** A client as the authorization server uses it. */
 export interface OAuthClient {
@@ -533,7 +533,7 @@ export function parseRegistrationText(text: string): Registration {
 export function registrationResponse(
   client: Readonly<OAuthClient>,
   issuedAt: number,
-): Readonly<Record<string, unknown>> {
+) {
   return {
     client_id: client.clientId,
     client_name: client.name,

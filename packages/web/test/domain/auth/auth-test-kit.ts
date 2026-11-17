@@ -22,11 +22,11 @@ export const fakeCookies = async () => ({
 });
 
 /** The Worker environment the sign-in tests run with unless told otherwise. */
-const DEFAULT_ENV: Readonly<Record<string, unknown>> = {
+const DEFAULT_ENV = {
   SESSION_SECRET,
   GOOGLE_OAUTH_CLIENT_ID: 'client-id',
   GOOGLE_OAUTH_CLIENT_SECRET: 'client-secret',
-};
+} satisfies Readonly<Record<string, unknown>>;
 
 /**
  * Make `env` the Worker environment the code under test finds (there is no

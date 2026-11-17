@@ -1,25 +1,16 @@
 import type { DnsClient } from '../../core/dns.js';
 
-/** Matches a three digit decimal escape. */
-const DECIMAL_ESCAPE = /^\d{3}/u;
+/**
+ * Matches one quoted character string: its body (a backslash escape `\X` or
+ * `\DDD`, or any other character) up to an unescaped quote, and the quote.
+ */
+const QUOTED_STRING = /"((?:\\\d{3}|\\[\s\S]|[^"\\]|\\)*)"?/gu;
+
+/** Matches the backslash escapes of a quoted string: `\DDD` or `\X`. */
+const ESCAPE = /\\(\d{3}|[\s\S])/gu;
 
 /** DNS record type number of a TXT record. */
 const TXT = 16;
-
-/**
- * Decodes the character at `index` of a quoted string, which is a backslash
- * escape (`\X` or `\DDD`) or a plain character. Returns the text and its width.
- */
-function decodeChar(text: string, index: number): [string, number] {
-  if (text[index] !== '\\' || index + 1 >= text.length) {
-    return [text[index], 1];
-  }
-  const decimal = DECIMAL_ESCAPE.exec(text.slice(index + 1));
-  if (decimal) {
-    return [String.fromCodePoint(Number(decimal[0])), 4];
-  }
-  return [text[index + 1], 2];
-}
 
 /**
  * Turns the presentation form of a TXT record into its text. A record is one
@@ -31,24 +22,11 @@ export function decodeTxt(data: string): string {
   if (!trimmed.startsWith('"')) {
     return trimmed;
   }
-  let result = '';
-  let index = 0;
-  while (index < trimmed.length) {
-    if (trimmed.codePointAt(index) !== 34) {
-      // Whitespace between the quoted strings.
-      index += 1;
-      continue;
-    }
-    index += 1;
-    while (index < trimmed.length && trimmed.codePointAt(index) !== 34) {
-      const [char, width] = decodeChar(trimmed, index);
-      result += char;
-      index += width;
-    }
-    // Skip the closing quote.
-    index += 1;
-  }
-  return result;
+  return Array.from(trimmed.matchAll(QUOTED_STRING), (match) =>
+    match[1].replaceAll(ESCAPE, (_, escaped: string) =>
+      escaped.length === 3 ? String.fromCodePoint(Number(escaped)) : escaped,
+    ),
+  ).join('');
 }
 
 /** The outcome of a TXT lookup, which the policy checks treat differently. */

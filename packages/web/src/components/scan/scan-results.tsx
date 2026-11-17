@@ -1,13 +1,9 @@
 'use client';
 
-import { useState, type ReactElement, type ReactNode } from 'react';
-
+import { useState } from 'react';
 import { SegmentedControl } from '@/components/ui-app/segmented-control';
 import { Stat } from '@/components/ui-app/stat';
-import type { Tone } from '@/components/ui-app/tone';
-import type { IssueRef } from '@/domain/db/issue-history';
-import type { HintOutcome } from '@/domain/scan/outcome';
-
+import { countOf, formatElapsed, formatTimestamp } from '@/lib/intl';
 import { FixPromptBox } from './fix-prompt-box';
 import { HintRow } from './hint-row';
 import {
@@ -18,11 +14,14 @@ import {
   setAll,
   STATUS_LABELS,
   STATUS_ORDER,
-  type Filter,
-  type OpenOverrides,
-  type Status,
 } from './results';
-import { countOf, formatElapsed, formatTimestamp } from '@/lib/intl';
+import type { ReactElement, ReactNode } from 'react';
+
+import type { Tone } from '@/components/ui-app/tone';
+import type { IssueRef } from '@/domain/db/issue-history';
+import type { HintOutcome } from '@/domain/scan/outcome';
+
+import type { Filter, OpenOverrides, Status } from './results';
 
 /** A scan under way or done, or a saved one: where the page ended up, and what has run. */
 export interface Scan {
@@ -59,11 +58,14 @@ export function progressLine(scan: Readonly<Scan>): string {
     : `${status}${countOf(scan.total, 'check')} in ${formatElapsed(scan.finishedAt - scan.startedAt)}`;
 }
 
+/** The issues of a scan with none, one object so the default is stable between renders. */
+const NO_ISSUES_BY_CHECK: Readonly<Record<string, readonly IssueRef[]>> = {};
+
 /** The summary, the filter and the list of checks. */
 export function ScanResults({
   scan,
   repository,
-  issuesByCheck = {},
+  issuesByCheck = NO_ISSUES_BY_CHECK,
   now,
   between,
 }: Readonly<{

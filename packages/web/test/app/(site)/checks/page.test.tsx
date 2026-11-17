@@ -46,7 +46,8 @@ describe('the rules overview', () => {
     expect(out).toContain('Rules by area');
     expect(out).toContain('Add-ons and audiences');
     expect(out).toContain('aria-current="page"');
-    expect(out.toLowerCase()).not.toContain('profile/vercel');
-    expect(out.toLowerCase()).not.toContain('profile/cloudflare');
+    const lower = out.toLowerCase();
+    expect(lower).not.toContain('profile/vercel');
+    expect(lower).not.toContain('profile/cloudflare');
   });
 });

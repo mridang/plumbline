@@ -1,16 +1,17 @@
-import { afterEach, describe, expect, it } from '@jest/globals';
 import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { Severity, type Problem } from '@hint/utils-types';
+import { afterEach, describe, expect, it } from '@jest/globals';
+import { Severity } from '@hint/utils-types';
 import { findBrowser } from '../../src/browser.js';
 import Checks from '../../src/commands/checks.js';
 import Scan, { scanCommandOf } from '../../src/commands/scan.js';
 import { EXIT } from '../../src/exit-code.js';
-import type { Dependencies } from '../../src/run.js';
-import type { HintMeta, ScanOptions, ScanResult } from '../../src/scan.js';
 import { runCommand } from '../helpers/command.js';
 import { serve } from '../helpers/serve.js';
+import type { HintMeta, ScanOptions, ScanResult } from '../../src/scan.js';
+import type { Problem } from '@hint/utils-types';
+import type { Dependencies } from '../../src/run.js';
 
 /** Locale-aware comparator used to sort strings deterministically. */
 const collator = new Intl.Collator();
@@ -76,9 +77,10 @@ describe('plumbline scan', () => {
   let dir = '';
 
   afterEach(async () => {
-    if (dir) {
-      await rm(dir, { recursive: true, force: true });
-      dir = '';
+    const target = dir;
+    dir = '';
+    if (target) {
+      await rm(target, { recursive: true, force: true });
     }
   });
 

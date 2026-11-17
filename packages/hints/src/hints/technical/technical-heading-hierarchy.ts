@@ -21,6 +21,7 @@ export default defineHint({
       // the finding (message and severity), and its `index` locates the
       // offending heading element for the report.
       const skipped = firstSkippedLevel(headingLevels(page.document));
+      // eslint-disable-next-line functional/no-loop-statements -- reports each finding
       for (const { message, severity } of headingHierarchyFindings(skipped)) {
         page.report(message, {
           severity: severity === 'error' ? Severity.error : Severity.warning,

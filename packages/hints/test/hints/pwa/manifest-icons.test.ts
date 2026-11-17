@@ -1,12 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/pwa/manifest-icons.js';
 import { runHint } from '../../helpers/run-hint.js';
+import type { Routes } from '../../helpers/run-hint.js';
 
 const MANIFEST_PATH = '/m.webmanifest';
 
-function routes(
-  icons: unknown[],
-): Record<string, { headers: Record<string, string>; body: string }> {
+function routes(icons: unknown[]): Routes {
   return {
     '/': {
       headers: { 'content-type': 'text/html; charset=utf-8' },
@@ -35,8 +34,9 @@ describe('manifest-icons', () => {
   it('errors for both missing sizes', async () => {
     const problems = await runHint(hint, routes([]));
     expect(problems).toHaveLength(2);
-    expect(problems.map((p) => p.message).join('\n')).toContain('192x192');
-    expect(problems.map((p) => p.message).join('\n')).toContain('512x512');
+    const messages = problems.map((p) => p.message).join('\n');
+    expect(messages).toContain('192x192');
+    expect(messages).toContain('512x512');
   });
 
   it('does nothing when the page links no manifest', async () => {

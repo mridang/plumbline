@@ -1,6 +1,5 @@
-import type { ReactElement } from 'react';
-
 import { Container } from '@/components/ui/layout';
+import type { ReactElement } from 'react';
 
 /** The look of the call's two links. */
 const PRIMARY =

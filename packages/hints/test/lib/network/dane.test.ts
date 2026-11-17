@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it } from '@jest/globals';
 import { X509Certificate, createHash } from 'node:crypto';
+import { afterEach, describe, expect, it } from '@jest/globals';
 import {
   daneExistence,
   daneValidity,
@@ -8,9 +8,9 @@ import {
   parseTlsa,
   tls,
   tlsaMatches,
-  type PresentedChain,
 } from '../../../src/lib/network/dane.js';
 import { installDns } from './fake-dns.js';
+import type { PresentedChain } from '../../../src/lib/network/dane.js';
 
 /** Throw-away self-signed P-256 certificates, valid for 100 years. */
 const LEAF_PEM = `-----BEGIN CERTIFICATE-----

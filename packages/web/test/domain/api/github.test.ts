@@ -7,7 +7,6 @@ import {
   jest,
 } from '@jest/globals';
 
-import type { CurrentUserResolver } from '@/domain/api/auth';
 import { createGithubLink, createGithubSyncs } from '@/domain/api/github';
 import { linkAccount } from '@/domain/db/github';
 import { createDatabase } from '@/domain/db/client';
@@ -22,8 +21,9 @@ import {
   GITHUB_ENV,
   fakeGitHub,
 } from '../github/github-test-kit';
+import type { CurrentUserResolver } from '@/domain/api/auth';
 
-const session: { uid: number | null } = { uid: 7 };
+const session = { uid: 7 as number | null };
 const resolver: CurrentUserResolver = {
   currentUid: async () => session.uid,
   currentLiveUid: async () => session.uid,

@@ -18,18 +18,17 @@ function readTlv(buffer: Buffer, offset: number): Tlv {
     throw new Error('Truncated DER data');
   }
   const tag = buffer[offset];
-  let length = buffer[offset + 1];
-  let start = offset + 2;
-  if (length & 0x80) {
-    // Long form: the low bits say how many length bytes follow.
-
-    const count = length & 0x7f;
-    length = 0;
-    for (let index = 0; index < count; index++) {
-      length = length * 256 + (buffer[start + index] ?? 0);
-    }
-    start += count;
-  }
+  const first = buffer[offset + 1];
+  // Long form (high bit set): the low bits say how many length bytes follow.
+  const count = first >= 0x80 ? first % 0x80 : 0;
+  const start = offset + 2 + count;
+  const length =
+    first >= 0x80
+      ? Array.from(
+          { length: count },
+          (_, index) => buffer[offset + 2 + index] ?? 0,
+        ).reduce((total, byte) => total * 256 + byte, 0)
+      : first;
   const end = start + length;
   if (end > buffer.length) {
     throw new Error('Truncated DER data');
@@ -39,21 +38,21 @@ function readTlv(buffer: Buffer, offset: number): Tlv {
 
 /** Decodes the value of an OBJECT IDENTIFIER to its dotted form. */
 function decodeOid(bytes: Buffer): string {
-  const parts: number[] = [];
-  let value = 0;
-  for (const byte of bytes) {
-    value = value * 128 + (byte & 0x7f);
-    if (!(byte & 0x80)) {
-      if (parts.length === 0) {
+  const { parts } = [...bytes].reduce<{ parts: number[]; value: number }>(
+    (state, byte) => {
+      const value = state.value * 128 + (byte % 128);
+      if (byte >= 128) {
+        return { parts: state.parts, value };
+      }
+      if (state.parts.length === 0) {
         // The first number holds the first two arcs: 40 * first + second.
         const first = Math.min(Math.floor(value / 40), 2);
-        parts.push(first, value - first * 40);
-      } else {
-        parts.push(value);
+        return { parts: [first, value - first * 40], value: 0 };
       }
-      value = 0;
-    }
-  }
+      return { parts: [...state.parts, value], value: 0 };
+    },
+    { parts: [], value: 0 },
+  );
   return parts.join('.');
 }
 

@@ -77,6 +77,7 @@ describe('sourceHost', () => {
   });
 
   it('is undefined for anything that is not a web link', () => {
+    // eslint-disable-next-line no-script-url -- the test feeds a hostile script URL to prove it is refused
     expect(sourceHost('javascript:alert(1)')).toBeUndefined();
     expect(sourceHost()).toBeUndefined();
   });
@@ -93,6 +94,7 @@ describe('safeHttpUrl', () => {
   });
 
   it('refuses everything that is not http or https', () => {
+    // eslint-disable-next-line no-script-url -- the test feeds a hostile script URL to prove it is refused
     expect(safeHttpUrl('javascript:alert(1)')).toBeUndefined();
     expect(safeHttpUrl('data:text/html,hi')).toBeUndefined();
     expect(safeHttpUrl('/relative/path')).toBeUndefined();

@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { checkPoppy } from '../../../src/lib/agent/poppy.js';
-import { fakeEnv, without } from './fake-env.js';
 import { HTTP_SCHEME } from '../../helpers/data.js';
+import { fakeEnv, without } from './fake-env.js';
 
 const parsedDocument = {
   protocol_version: '0.1',

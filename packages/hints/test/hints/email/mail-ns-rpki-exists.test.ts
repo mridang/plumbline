@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 import { Severity } from '@hint/utils-types';
-import type { RpkiClient, RpkiResult } from '../../../src/core/rpki.js';
 import hint from '../../../src/hints/email/mail-ns-rpki-exists.js';
 import { fakeDns, runMailHint } from '../../lib/email/fakes.js';
+import type { RpkiClient, RpkiResult } from '../../../src/core/rpki.js';
 
 const dns = fakeDns({
   'example.test MX': ['10 mx.example.test.'],

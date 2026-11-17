@@ -2,13 +2,21 @@ import { describe, expect, it } from '@jest/globals';
 import { sniffImage } from '../../../src/lib/opengraph/image-size.js';
 
 const bytes = (...n: number[]) => new Uint8Array(n);
-const be32 = (n: number) => [
-  n >>> 24,
-  (n >> 16) & 255,
-  (n >> 8) & 255,
-  n & 255,
-];
-const le16 = (n: number) => [n & 255, n >> 8];
+const be32 = (n: number): number[] => {
+  const out = new Uint8Array(4);
+  new DataView(out.buffer).setUint32(0, n);
+  return [...out];
+};
+const le16 = (n: number): number[] => {
+  const out = new Uint8Array(2);
+  new DataView(out.buffer).setUint16(0, n, true);
+  return [...out];
+};
+const le32 = (n: number): number[] => {
+  const out = new Uint8Array(4);
+  new DataView(out.buffer).setUint32(0, n, true);
+  return [...out];
+};
 const ascii = (s: string) => Array.from(s, (c) => c.codePointAt(0) ?? 0);
 
 describe('sniffImage', () => {
@@ -126,18 +134,7 @@ describe('sniffImage', () => {
 
   it('reads an extended WebP (VP8X)', () => {
     // Flags (4 bytes), then 24 bit width-1 and height-1 at offsets 24 and 27.
-    const webp = riff('VP8X', [
-      0,
-      0,
-      0,
-      0,
-      1199 & 255,
-      1199 >> 8,
-      0,
-      629 & 255,
-      629 >> 8,
-      0,
-    ]);
+    const webp = riff('VP8X', [0, 0, 0, 0, ...le16(1199), 0, ...le16(629), 0]);
     expect(sniffImage(webp)).toEqual({
       format: 'webp',
       width: 1200,
@@ -147,14 +144,8 @@ describe('sniffImage', () => {
 
   it('reads a lossless WebP (VP8L)', () => {
     // Signature 0x2f at offset 20, then 14 bit width-1 and height-1.
-    const bits = 1199 | (629 << 14);
-    const webp = riff('VP8L', [
-      0x2f,
-      bits & 255,
-      (bits >> 8) & 255,
-      (bits >> 16) & 255,
-      (bits >>> 24) & 255,
-    ]);
+    const bits = 1199 + 629 * 2 ** 14;
+    const webp = riff('VP8L', [0x2f, ...le32(bits)]);
     expect(sniffImage(webp)).toEqual({
       format: 'webp',
       width: 1200,

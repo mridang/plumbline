@@ -11,16 +11,13 @@
 
 import { isDomainId, parseHost } from '@/domain/api/domain-resource';
 import { isReportId } from '@/domain/api/report-resource';
-import type { Database } from '@/domain/db/client';
-import { type Domain, findDomainByHost, getDomain } from '@/domain/db/domains';
+import { findDomainByHost, getDomain } from '@/domain/db/domains';
 import { getReport, latestReport } from '@/domain/db/reports';
+import { errorResult, stringArg } from '@/lib/mcp';
+import type { ToolArgs, ToolResult } from '@/lib/mcp';
+import type { Domain } from '@/domain/db/domains';
 import type { User } from '@/domain/db/users';
-import {
-  errorResult,
-  stringArg,
-  type ToolArgs,
-  type ToolResult,
-} from '@/lib/mcp';
+import type { Database } from '@/domain/db/client';
 
 /** A domain argument read as a host, or the answer to give when it is not one. */
 export type HostOrRefusal =

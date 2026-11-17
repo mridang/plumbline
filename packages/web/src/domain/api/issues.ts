@@ -8,15 +8,13 @@
  */
 
 import { ApiController, page, problems } from '@/lib/core/api';
-import {
-  liveUid,
-  requestCookieResolver,
-  type CurrentUserResolver,
-} from '@/domain/api/auth';
+import { liveUid, requestCookieResolver } from '@/domain/api/auth';
 import { isDomainId } from '@/domain/api/domain-resource';
 import { getDatabase } from '@/domain/db/client';
 import { getDomain } from '@/domain/db/domains';
-import { issuesOf, type IssueRef } from '@/domain/db/issue-history';
+import { issuesOf } from '@/domain/db/issue-history';
+import type { CurrentUserResolver } from '@/domain/api/auth';
+import type { IssueRef } from '@/domain/db/issue-history';
 
 /** The signed-in caller's id and the domain the path names. */
 interface DomainContext {

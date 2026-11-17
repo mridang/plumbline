@@ -6,8 +6,9 @@
  */
 
 import { parseReportInput } from '@/domain/api/report-resource';
+import { checksOf, skippedOf } from '@/domain/suite/checks';
+import type { CheckResult } from '@/domain/suite/checks';
 import type { ReportCounts } from '@/domain/db/reports';
-import { checksOf, skippedOf, type CheckResult } from '@/domain/suite/checks';
 import type { ScanResult } from '@/domain/suite/scanner';
 
 /** The largest outcomes JSON kept with a run; a bigger one is left out. */

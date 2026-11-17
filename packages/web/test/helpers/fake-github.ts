@@ -60,6 +60,6 @@ export const lines = (requests: Request[]): string[] =>
 
 /** The text of the comments made. */
 export const said = (requests: Request[]): string[] =>
-  requests
-    .filter((r) => r.path.endsWith('/comments'))
-    .map((r) => String(r.body['body']));
+  requests.flatMap((r) =>
+    r.path.endsWith('/comments') ? [String(r.body['body'])] : [],
+  );

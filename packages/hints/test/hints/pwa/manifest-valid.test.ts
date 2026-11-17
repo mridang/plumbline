@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/pwa/manifest-valid.js';
 import { runHint } from '../../helpers/run-hint.js';
+import type { Routes } from '../../helpers/run-hint.js';
 
 const MANIFEST_PATH = '/m.webmanifest';
 
@@ -23,7 +24,7 @@ const VALID = JSON.stringify({
 function routes(
   body: string,
   contentType = 'application/manifest+json',
-): Record<string, { headers: Record<string, string>; body: string }> {
+): Routes {
   return {
     '/': {
       headers: { 'content-type': 'text/html; charset=utf-8' },

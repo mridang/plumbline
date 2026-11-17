@@ -1,12 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { RepoStatus } from '@/domain/db/live';
 import {
   applyEvent,
   parseEvent,
   stateAfter,
   tally,
 } from '@/domain/live/events';
+import type { RepoStatus } from '@/domain/db/live';
 
 const site = (host: string, state: RepoStatus['sites'][number]['state']) => ({
   id: host,

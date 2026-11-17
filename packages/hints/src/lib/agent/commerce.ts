@@ -1,4 +1,3 @@
-import type { AgentEnv, CheckResult } from './types.js';
 import {
   isHtml,
   isOk,
@@ -10,16 +9,17 @@ import {
   result,
   urlOf,
 } from './utility.js';
+import type { AgentEnv, CheckResult } from './types.js';
 
 /** Matches a `WWW-Authenticate` value that uses the `Payment` scheme. */
-const PAYMENT_SCHEME = /^payment\b/i;
+const PAYMENT_SCHEME = /^payment\b/iu;
 
 /** Matches a calendar date in `YYYY-MM-DD` form. */
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/u;
 
 /** Matches markup that suggests an online store. */
 const COMMERCE_MARKERS =
-  /add to cart|add to basket|shopify|woocommerce|schema\.org\/Product|"@type"\s*:\s*"Product"/i;
+  /add to cart|add to basket|shopify|woocommerce|schema\.org\/Product|"@type"\s*:\s*"Product"/iu;
 
 /**
  * X402: one of `/`, `/api` or `/api/v1` answers HTTP 402 Payment Required
@@ -27,6 +27,7 @@ const COMMERCE_MARKERS =
  */
 export async function checkX402(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-x402';
+  // eslint-disable-next-line functional/no-loop-statements -- probes the paths in order and stops at the first 402
   for (const path of ['/', '/api', '/api/v1']) {
     const probe = await env.probe(path);
     if (probe?.status === 402) {
@@ -129,11 +130,11 @@ export async function checkUcp(env: AgentEnv): Promise<CheckResult> {
   }
   // ucp.dev: version (YYYY-MM-DD), services and payment_handlers are
   // required, and the registries must exist even when empty.
-  const missing: string[] = [];
-  if (!isText(ucp.version) || !ISO_DATE.test(ucp.version))
-    missing.push('version');
-  if (!isRecord(ucp.services)) missing.push('services');
-  if (!isRecord(ucp.payment_handlers)) missing.push('payment_handlers');
+  const missing = [
+    ...(!isText(ucp.version) || !ISO_DATE.test(ucp.version) ? ['version'] : []),
+    ...(isRecord(ucp.services) ? [] : ['services']),
+    ...(isRecord(ucp.payment_handlers) ? [] : ['payment_handlers']),
+  ];
   return missing.length === 0
     ? result(
         id,
@@ -180,23 +181,20 @@ export async function checkAcp(env: AgentEnv): Promise<CheckResult> {
   }
   // ACP discovery RFC: protocol {name "acp", version}, api_base_url,
   // transports (including "rest") and capabilities are all required.
-  const missing: string[] = [];
   const protocol = parsedDocument.protocol;
-  if (
-    !isRecord(protocol) ||
+  const missing = [
+    ...(!isRecord(protocol) ||
     protocol.name !== 'acp' ||
     !isText(protocol.version)
-  ) {
-    missing.push('protocol (name acp, version)');
-  }
-  if (!isText(parsedDocument.api_base_url)) missing.push('api_base_url');
-  if (
-    !Array.isArray(parsedDocument.transports) ||
+      ? ['protocol (name acp, version)']
+      : []),
+    ...(isText(parsedDocument.api_base_url) ? [] : ['api_base_url']),
+    ...(!Array.isArray(parsedDocument.transports) ||
     !parsedDocument.transports.includes('rest')
-  ) {
-    missing.push('transports including rest');
-  }
-  if (!isRecord(parsedDocument.capabilities)) missing.push('capabilities');
+      ? ['transports including rest']
+      : []),
+    ...(isRecord(parsedDocument.capabilities) ? [] : ['capabilities']),
+  ];
   return missing.length === 0
     ? result(
         id,

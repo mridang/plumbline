@@ -24,29 +24,29 @@ export async function readTextCapped(
   if (!reader) {
     return { text: '', truncated: false };
   }
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  let truncated = false;
-  let finished = false;
-  while (!finished) {
+  /** Reads the body piece by piece until it ends or passes `maxBytes`. */
+  const collect = async (
+    chunks: readonly Uint8Array[],
+    size: number,
+  ): Promise<{ chunks: readonly Uint8Array[]; truncated: boolean }> => {
     const { done, value } = await reader.read();
     if (done) {
-      finished = true;
-    } else if (size + value.byteLength > maxBytes) {
-      chunks.push(value.subarray(0, maxBytes - size));
-      truncated = true;
-      await reader.cancel().catch(() => undefined);
-      finished = true;
-    } else {
-      chunks.push(value);
-      size += value.byteLength;
+      return { chunks, truncated: false };
     }
-  }
+    if (size + value.byteLength > maxBytes) {
+      await reader.cancel().catch(() => undefined);
+      return {
+        chunks: [...chunks, value.subarray(0, maxBytes - size)],
+        truncated: true,
+      };
+    }
+    return collect([...chunks, value], size + value.byteLength);
+  };
+  const { chunks, truncated } = await collect([], 0);
   const whole = new Uint8Array(chunks.reduce((n, c) => n + c.byteLength, 0));
-  let at = 0;
-  for (const chunk of chunks) {
+  chunks.reduce((at, chunk) => {
     whole.set(chunk, at);
-    at += chunk.byteLength;
-  }
+    return at + chunk.byteLength;
+  }, 0);
   return { text: new TextDecoder().decode(whole), truncated };
 }

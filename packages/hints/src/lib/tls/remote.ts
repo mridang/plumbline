@@ -11,8 +11,9 @@
  * just not offered, which a server that insisted on them would show as a
  * failed handshake.
  */
+import { TLS_VERSIONS } from './constants.js';
+import type { TlsVersion } from './constants.js';
 import type { PeerCertificate } from '#tls';
-import { TLS_VERSIONS, type TlsVersion } from './constants.js';
 import type { EphemeralKey } from './evaluate.js';
 import type { ProbeResult, TlsConnect } from './client.js';
 

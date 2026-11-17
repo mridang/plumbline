@@ -5,13 +5,13 @@ import { imageFormatFindings } from '../../lib/technical/speed.js';
 import { reportFindings } from '../seo/report-findings.js';
 
 /** Matches a run of whitespace. */
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /** Matches a modern image MIME type (WebP, AVIF or JPEG XL). */
-const MODERN_IMAGE_TYPE = /image\/(webp|avif|jxl)/i;
+const MODERN_IMAGE_TYPE = /image\/(webp|avif|jxl)/iu;
 
 /** Matches a legacy raster image file extension at the end of a URL path. */
-const LEGACY_IMAGE_EXTENSION = /\.(jpe?g|png|gif|bmp)(?:[?#]|$)/i;
+const LEGACY_IMAGE_EXTENSION = /\.(jpe?g|png|gif|bmp)(?:[?#]|$)/iu;
 
 /** Every URL an <img> can load: its src and the srcset candidates. */
 function urlsOf(src: string, srcset: string): string[] {

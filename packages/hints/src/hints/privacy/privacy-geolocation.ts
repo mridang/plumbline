@@ -1,10 +1,8 @@
 import { Severity } from '@hint/utils-types';
-import type { HTMLElement } from '@hint/utils-dom';
 import { Category, defineHint } from '../../core/define-hint.js';
-import {
-  findGeolocationCall,
-  type GeolocationCall,
-} from '../../lib/privacy/geolocation.js';
+import { findGeolocationCall } from '../../lib/privacy/geolocation.js';
+import type { GeolocationCall } from '../../lib/privacy/geolocation.js';
+import type { HTMLElement } from '@hint/utils-dom';
 
 /** One script that uses the API and where. */
 interface Finding {
@@ -34,6 +32,7 @@ export default defineHint({
   groups: ['original', 'privacy'],
   reference: 'https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API',
   setup(context) {
+    // eslint-disable-next-line functional/no-let -- captured by the scan::start handler and read by the later handlers
     let url = '';
     const found = new Map<string, Finding>();
     context.on('scan::start', (event) => {
@@ -41,12 +40,14 @@ export default defineHint({
     });
     // Inline scripts live in the DOM.
     context.on('traverse::end', (event) => {
+      // eslint-disable-next-line functional/no-loop-statements -- adds each inline script to the findings the scan end reports
       for (const script of event.document.querySelectorAll(
         'script:not([src])',
       )) {
         const call = findGeolocationCall(script.textContent ?? '');
         if (call) {
           const source = `${url} (inline script)`;
+          // eslint-disable-next-line functional/immutable-data -- collects what the scan's events report, to be reported when the scan ends
           found.set(source, { resource: url, source, call, element: script });
         }
       }
@@ -55,6 +56,7 @@ export default defineHint({
     context.on('fetch::end::script', (event) => {
       const call = findGeolocationCall(event.response.body.content);
       if (call) {
+        // eslint-disable-next-line functional/immutable-data -- collects what the scan's events report, to be reported when the scan ends
         found.set(event.resource, {
           resource: event.resource,
           source: event.resource,
@@ -63,6 +65,7 @@ export default defineHint({
       }
     });
     context.on('scan::end', () => {
+      // eslint-disable-next-line functional/no-loop-statements -- reports each script that uses the Geolocation API
       for (const { resource, source, call, element } of found.values()) {
         context.report(
           resource,

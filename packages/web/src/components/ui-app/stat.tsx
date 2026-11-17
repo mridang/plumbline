@@ -1,10 +1,10 @@
-import type { ReactElement } from 'react';
-
 import { cn } from '@/components/ui/cn';
 
 import { Count } from './count';
 import { Dot } from './status-dot';
-import { TONE_TEXT, type Tone } from './tone';
+import { TONE_TEXT } from './tone';
+import type { Tone } from './tone';
+import type { ReactElement } from 'react';
 
 /**
  * A figure with its label, for a row of totals: a tile with the tone's dot and

@@ -1,9 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { runHint } from '../../helpers/run-hint.js';
-import {
-  httpMethodsHint,
-  type OptionsRequester,
-} from '../../../src/hints/secplus/http-methods.js';
+import { httpMethodsHint } from '../../../src/hints/secplus/http-methods.js';
+import type { OptionsRequester } from '../../../src/hints/secplus/http-methods.js';
 
 /** A fake OPTIONS requester that always returns the given Allow header. */
 function fakeRequester(allow: string | null): OptionsRequester {

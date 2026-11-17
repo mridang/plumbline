@@ -21,6 +21,7 @@ describe('safeUrl', () => {
   });
 
   it.each([
+    // eslint-disable-next-line no-script-url -- the value under test is a script URL that must be refused or shown as text
     'javascript:alert(1)',
     'data:text/html,x',
     '/relative',
@@ -39,7 +40,9 @@ describe('link', () => {
   });
 
   it('renders plain escaped text for unsafe urls', () => {
+    // eslint-disable-next-line no-script-url -- the value under test is a script URL that must be refused or shown as text
     expect(link('javascript:alert("x")')).toBe(
+      // eslint-disable-next-line no-script-url -- the value under test is a script URL shown as text
       'javascript:alert(&quot;x&quot;)',
     );
   });

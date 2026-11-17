@@ -9,8 +9,8 @@ import {
   modeFromResult,
   planExpand,
   reduceLayout,
-  type LayoutState,
 } from '@/views/display-mode';
+import type { LayoutState } from '@/views/display-mode';
 
 describe('display modes a View declares', () => {
   it('declares inline and fullscreen, the two layouts the Views implement', () => {

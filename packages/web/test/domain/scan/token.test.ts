@@ -7,7 +7,7 @@ import {
 } from '@/domain/scan/token';
 
 /** Matches two url-safe segments joined by a dot. */
-const SIGNED_TOKEN_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+const SIGNED_TOKEN_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/u;
 
 const SECRET = 'test-secret';
 const NOW = new Date('2026-10-31T12:00:00Z');

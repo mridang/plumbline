@@ -11,19 +11,20 @@
 import { parseUrl } from '@/utils/url';
 
 /** A dotted IPv4 address, with each of its four numbers captured. */
-const IPV4_ADDRESS = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+const IPV4_ADDRESS = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/u;
 
 /** An IPv4-mapped IPv6 host as `URL` writes it, with the two groups captured. */
-const MAPPED_IPV4_HOST = /^\[::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})\]$/;
+const MAPPED_IPV4_HOST = /^\[::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})\]$/u;
 
 /** The start of an IPv6 unique-local or link-local host, in brackets. */
-const PRIVATE_IPV6_HOST = /^\[(f[cd][0-9a-f]{2}|fe[89ab][0-9a-f]):/;
+const PRIVATE_IPV6_HOST = /^\[(f[cd][0-9a-f]{2}|fe[89ab][0-9a-f]):/u;
 
 /** A string of printable ASCII characters only. */
-const PRINTABLE_ASCII = /^[\u0021-\u007E]+$/;
+const PRINTABLE_ASCII = /^[\u0021-\u007E]+$/u;
 
 /** Schemes that can run script or read files; never a valid redirect target, dotted or not. */
 const FORBIDDEN_SCHEMES: ReadonlySet<string> = new Set([
+  // eslint-disable-next-line no-script-url -- the scheme is on the list of refused redirect schemes
   'javascript:',
   'data:',
   'file:',
@@ -88,7 +89,12 @@ function mappedIpv4(host: string): string | undefined {
     return undefined;
   }
   const [high = 0, low = 0] = match.slice(1).map((g) => Number.parseInt(g, 16));
-  return [high >> 8, high & 255, low >> 8, low & 255].join('.');
+  return [
+    Math.floor(high / 256),
+    high % 256,
+    Math.floor(low / 256),
+    low % 256,
+  ].join('.');
 }
 
 /**

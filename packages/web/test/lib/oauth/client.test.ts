@@ -24,11 +24,11 @@ import { SITE_NAME } from '@/utils/site';
 import { FTP_SCHEME, HTTP_SCHEME } from '../../helpers/data.js';
 
 /** Matches dcr client id prefix. */
-const DCR_CLIENT_ID_PREFIX = /^dcr_/;
+const DCR_CLIENT_ID_PREFIX = /^dcr_/u;
 
 /** Matches printable ascii without quote or backslash. */
 const PRINTABLE_ASCII_WITHOUT_QUOTE_OR_BACKSLASH =
-  /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/;
+  /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/u;
 
 const URL_ID = 'https://chatgpt.com/oauth/client.json';
 const goodDocument = {
@@ -54,7 +54,7 @@ const CHATGPT_DOCUMENT = {
 };
 
 // A field the document leaves out: its key stays present, so an override can drop it.
-let notProvided: undefined;
+const notProvided = [].at(0);
 
 const respond = (body: string, status = 200) =>
   jest.fn<typeof fetch>(async () => new Response(body, { status }));
@@ -116,6 +116,7 @@ describe('parseClientMetadataDocument', () => {
     ).toBe(false);
     expect(
       parseClientMetadataDocument(
+        // eslint-disable-next-line no-script-url -- the test feeds a hostile script URL to prove it is refused
         { ...goodDocument, redirect_uris: ['javascript:alert(1)'] },
         URL_ID,
       ).ok,
@@ -446,7 +447,10 @@ describe('fetchClientMetadata details', () => {
       RequestInit | undefined;
     expect(init?.headers).toMatchObject({ 'User-Agent': FETCH_USER_AGENT });
     expect(FETCH_USER_AGENT).toMatch(
-      new RegExp(String.raw`^${SITE_NAME.toLowerCase()}-oauth/1 \(\+https://`),
+      new RegExp(
+        String.raw`^${SITE_NAME.toLowerCase()}-oauth/1 \(\+https://`,
+        'u',
+      ),
     );
   });
 
@@ -553,8 +557,9 @@ describe('readCappedText', () => {
     new Response(
       new ReadableStream<Uint8Array>({
         start(controller) {
-          for (const part of parts)
+          for (const part of parts) {
             controller.enqueue(new TextEncoder().encode(part));
+          }
           controller.close();
         },
       }),

@@ -2,8 +2,6 @@ import { is } from 'drizzle-orm';
 import { SQLiteTable, getTableConfig } from 'drizzle-orm/sqlite-core';
 import { describe, expect, it } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
 import {
   configDisabledRepos,
   deployUrlGaps,
@@ -32,12 +30,13 @@ import {
 } from '@/domain/db/schema';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
+import type { DatabaseSync } from 'node:sqlite';
 
 /** Matches index usage plan. */
-const INDEX_USAGE_PLAN = /USING (COVERING )?(INDEX|PRIMARY KEY)/;
+const INDEX_USAGE_PLAN = /USING (COVERING )?(INDEX|PRIMARY KEY)/u;
 
 /** Matches full scan plan. */
-const FULL_SCAN_PLAN = /SCAN|TEMP B-TREE/;
+const FULL_SCAN_PLAN = /SCAN|TEMP B-TREE/u;
 
 /** Every table the schema file declares. */
 const schema = {
@@ -147,8 +146,9 @@ describe('the schema file and the migrations', () => {
       // Every index the schema names exists (the database also carries the
       // automatic ones SQLite makes for primary keys and unique constraints).
       const present = indexesOf(raw, name);
-      for (const index of config.indexes)
+      for (const index of config.indexes) {
         expect(present).toContain(index.config.name);
+      }
     },
   );
 
@@ -216,7 +216,8 @@ describe('the schema file and the migrations', () => {
       .prepare(`EXPLAIN QUERY PLAN ${sql}`)
       .all()
       .map((row) => String(row['detail']));
-    expect(plan.join('\n')).toMatch(INDEX_USAGE_PLAN);
-    expect(plan.join('\n')).not.toMatch(FULL_SCAN_PLAN);
+    const joined = plan.join('\n');
+    expect(joined).toMatch(INDEX_USAGE_PLAN);
+    expect(joined).not.toMatch(FULL_SCAN_PLAN);
   });
 });

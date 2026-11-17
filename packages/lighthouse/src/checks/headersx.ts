@@ -14,7 +14,6 @@
  * presence signal even when valid, so they are `informative`: their findings
  * are listed but never scored.
  */
-import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import { firstHeader } from '@mridang/webhint-hint-plumbline/dist/lib/headers/http-headers.js';
 import {
   attributionReportingFindings,
@@ -32,9 +31,6 @@ import {
   acceptPatchFindings,
   acceptPostFindings,
 } from '@mridang/webhint-hint-plumbline/dist/lib/headersx/accept-method.js';
-import { mainResponse } from '../network.js';
-import { hintDocumentation } from '../meta.js';
-import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata.
 import attributionReportingHint from '@mridang/webhint-hint-plumbline/dist/hints/headersx/attribution-reporting.js';
@@ -48,6 +44,10 @@ import useAsDictionaryHint from '@mridang/webhint-hint-plumbline/dist/hints/head
 import serviceWorkerAllowedHint from '@mridang/webhint-hint-plumbline/dist/hints/headersx/service-worker-allowed.js';
 import acceptPostHint from '@mridang/webhint-hint-plumbline/dist/hints/headersx/accept-post.js';
 import acceptPatchHint from '@mridang/webhint-hint-plumbline/dist/hints/headersx/accept-patch.js';
+import { hintDocumentation } from '../meta.js';
+import { mainResponse } from '../network.js';
+import type { AuditCheck } from './types.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 
 /** The artifact set these checks read: the devtools log and the URL set. */
 const HEADER_ARTIFACTS = ['DevtoolsLog', 'URL'] as const;

@@ -29,25 +29,20 @@ export default defineHint({
       // The shared check decides the message; the hint re-derives which entity
       // (and which block) it is about to point the report at the right element.
       // The first entity node found, across all blocks, is the one judged.
-      let entity: Record<string, unknown> | null = null;
-      let block = -1;
-      for (const [index, data] of blocks.parsed.entries()) {
-        entity = findEntityNode(data);
-        if (entity) {
-          block = blocks.parsedAt[index];
-          break;
-        }
-      }
+      const entityIndex = blocks.parsed.findIndex(
+        (data) => findEntityNode(data) !== null,
+      );
       const [{ message, severity }] = findings;
       const reportSeverity =
         severity === 'error' ? Severity.error : Severity.warning;
-      if (entity) {
+      const hasEntity = entityIndex !== -1;
+      if (hasEntity) {
         page.report(message, {
           severity: reportSeverity,
           // The block that holds the entity lacking sameAs.
           element: page.document.querySelectorAll(
             'script[type="application/ld+json" i]',
-          )[block],
+          )[blocks.parsedAt[entityIndex]],
         });
       } else {
         page.report(message, {

@@ -34,6 +34,7 @@ export default defineHint({
       // block finding, which the two `stats` branches tell apart.
       const noStructure =
         stats.headingCount === 0 && stats.paragraphCount === 0;
+      // eslint-disable-next-line functional/no-loop-statements -- reports each finding
       for (const { message, severity } of contentExtractionFindings(stats)) {
         page.report(message, {
           severity: severity === 'error' ? Severity.error : Severity.warning,

@@ -9,8 +9,8 @@
 
 import { eq, sql } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import { users } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 
 /** A full user row. */
 export type User = typeof users.$inferSelect;

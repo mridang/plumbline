@@ -10,8 +10,6 @@
  * names in every app, and holds values only: no components, no side effects.
  */
 
-import type { MetadataRoute } from 'next';
-
 import { SECTIONS, TAGS } from '@/domain/checks/catalogue';
 
 import {
@@ -21,6 +19,7 @@ import {
   SITE_URL,
   TERMS_LAST_UPDATED,
 } from '@/utils/site';
+import type { MetadataRoute } from 'next';
 
 /** The name shown in titles, the header and the installed app. */
 export const BRAND_NAME = SITE_NAME;

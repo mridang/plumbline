@@ -20,31 +20,24 @@ export interface TechDocumentLike {
 
 /** Heading levels (1 to 6) in document order. */
 export function headingLevels(parsedDocument: TechDocumentLike): number[] {
-  const levels: number[] = [];
-  for (const element of parsedDocument.querySelectorAll(
-    'h1, h2, h3, h4, h5, h6',
-  )) {
-    const level = Number.parseInt(
-      (element.nodeName ?? element.tagName ?? '').slice(1),
-      10,
-    );
-    if (Number.isFinite(level)) {
-      levels.push(level);
-    }
-  }
-  return levels;
+  return parsedDocument
+    .querySelectorAll('h1, h2, h3, h4, h5, h6')
+    .map((element) =>
+      Number.parseInt((element.nodeName ?? element.tagName ?? '').slice(1), 10),
+    )
+    .filter((level) => Number.isFinite(level));
 }
 
 /** Finds the first heading that jumps down by more than one level; `index` is that heading's position. */
 export function firstSkippedLevel(
   levels: readonly number[],
 ): { from: number; to: number; index: number } | null {
-  for (let index = 1; index < levels.length; index++) {
-    if (levels[index] - levels[index - 1] > 1) {
-      return { from: levels[index - 1], to: levels[index], index: index };
-    }
-  }
-  return null;
+  const index = levels.findIndex(
+    (level, position) => position > 0 && level - levels[position - 1] > 1,
+  );
+  return index === -1
+    ? null
+    : { from: levels[index - 1], to: levels[index], index };
 }
 
 /** Share of images at which missing alt text is only advice, not a failure. */
@@ -129,22 +122,22 @@ export function imageUrls(
   parsedDocument: TechDocumentLike,
   base: string,
 ): string[] {
-  const urls = new Set<string>();
-  for (const img of parsedDocument.querySelectorAll('img')) {
+  const urls = parsedDocument.querySelectorAll('img').flatMap((img) => {
     const src = img.getAttribute('src');
     if (!src) {
-      continue;
+      return [];
     }
     try {
       const url = new URL(src, base);
-      if (url.protocol === 'http:' || url.protocol === 'https:') {
-        urls.add(url.href);
-      }
+      return url.protocol === 'http:' || url.protocol === 'https:'
+        ? [url.href]
+        : [];
     } catch {
       // A malformed src is a markup problem, not a weight problem.
+      return [];
     }
-  }
-  return [...urls];
+  });
+  return [...new Set(urls)];
 }
 
 /** Per-image size above which a warning is raised. */
@@ -160,9 +153,15 @@ export function imageWeightLevel(bytes: number): 'ok' | 'warn' | 'fail' {
   return bytes > WEIGHT_WARN_BYTES ? 'warn' : 'ok';
 }
 
+const KB_FORMAT = new Intl.NumberFormat('en', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+  useGrouping: false,
+});
+
 /** Formats a byte count as kilobytes with one decimal. */
 export function formatKb(bytes: number): string {
-  return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${KB_FORMAT.format(bytes / 1024)} KB`;
 }
 
 /** Runs `fn` over `items` with at most `limit` calls in flight at once. */
@@ -171,21 +170,23 @@ export async function mapWithConcurrency<T, R>(
   limit: number,
   fn: (item: T) => Promise<R>,
 ): Promise<R[]> {
-  const results: R[] = Array.from({ length: items.length });
+  // eslint-disable-next-line functional/no-let -- the shared cursor the concurrent workers claim items from
   let next = 0;
-  const worker = async (): Promise<void> => {
-    for (;;) {
-      const index = next;
-      next += 1;
-      if (index >= items.length) {
-        return;
-      }
-      results[index] = await fn(items[index]);
+  const worker = async (): Promise<[number, R][]> => {
+    const index = next;
+    next += 1;
+    if (index >= items.length) {
+      return [];
     }
+    const result = await fn(items[index]);
+    return [[index, result], ...(await worker())];
   };
   const count = Math.max(1, Math.min(limit, items.length));
-  await Promise.all(Array.from({ length: count }, async () => worker()));
-  return results;
+  const done = await Promise.all(
+    Array.from({ length: count }, async () => worker()),
+  );
+  const byIndex = new Map(done.flat());
+  return items.map((_item, index) => byIndex.get(index) as R);
 }
 
 /** More redirect hops than this cost crawl budget and latency. */

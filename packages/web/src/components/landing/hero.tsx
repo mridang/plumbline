@@ -1,9 +1,8 @@
-import type { ReactElement } from 'react';
-
 import { Scanner } from '@/components/scan/scanner';
 import { Container } from '@/components/ui/layout';
 
 import { RULE_SOURCES } from './sources';
+import type { ReactElement } from 'react';
 
 /**
  * The top of the home page: a deep band with what plumbline does, and the

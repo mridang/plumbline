@@ -1,13 +1,14 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { User } from '@/domain/db/users';
-// eslint-disable-next-line unicorn/no-keyword-prefix -- newSecret is a public export of @/lib/oauth
+// eslint-disable-next-line unicorn/no-keyword-prefix -- `newSecret` is the exported name of the module under test
 import { ACCESS_PREFIX, REFRESH_PREFIX, newSecret } from '@/lib/oauth';
-import type { McpAuthDeps } from '@/domain/mcp/auth';
 import { installFakeTracing } from '../../lib/core/observability/fake-tracing';
+import type { User } from '@/domain/db/users';
+
+import type { McpAuthDeps } from '@/domain/mcp/auth';
 
 /** Matches access token format. */
-const ACCESS_TOKEN_FORMAT = /^cdn_at_[A-Za-z0-9_-]{43}$/;
+const ACCESS_TOKEN_FORMAT = /^cdn_at_[A-Za-z0-9_-]{43}$/u;
 
 const tracing = installFakeTracing();
 const { authenticateMcpRequest } = await import('@/domain/mcp/auth');

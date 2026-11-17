@@ -1,4 +1,3 @@
-import type { AgentEnv, CheckResult, Evidence } from './types.js';
 import {
   bareHost,
   isHtml,
@@ -11,9 +10,10 @@ import {
   result,
   urlOf,
 } from './utility.js';
+import type { AgentEnv, CheckResult, Evidence } from './types.js';
 
 /** Matches the `resource_metadata` parameter of a `WWW-Authenticate` challenge. */
-const RESOURCE_METADATA_PARAMETER = /resource_metadata="([^"]+)"/i;
+const RESOURCE_METADATA_PARAMETER = /resource_metadata="([^"]+)"/iu;
 
 /**
  * True for an identifier URL as RFC 8414 (issuer) and RFC 9728 (resource)
@@ -47,8 +47,10 @@ export async function checkOauthDiscovery(env: AgentEnv): Promise<CheckResult> {
     '/.well-known/oauth-authorization-server',
   ];
   const reasons: string[] = [];
+  // eslint-disable-next-line functional/no-let -- remembers the first document that exists but is wrong, across the loop
   let evidence: Evidence | undefined;
   // Either document is enough: report only when both fail.
+  // eslint-disable-next-line functional/no-loop-statements -- probes the paths in order and stops at the first valid issuer
   for (const path of paths) {
     const probe = await env.probe(path);
     const json = parseJsonObject(probe);
@@ -60,6 +62,7 @@ export async function checkOauthDiscovery(env: AgentEnv): Promise<CheckResult> {
         `${path} names issuer ${json.issuer}.`,
       );
     }
+    // eslint-disable-next-line functional/immutable-data -- collects one reason per failed path across the loop
     reasons.push(
       json ? `${path} has no valid issuer URL` : missingReason(path, probe),
     );
@@ -97,20 +100,18 @@ export async function checkOauthProtectedResource(
 ): Promise<CheckResult> {
   const id = 'agent-oauth-protected-resource';
   const rootProbe = await env.probe('/.well-known/oauth-protected-resource');
-  let json = parseJsonObject(rootProbe);
-  let source = rootProbe?.url ?? urlOf(env, RESOURCE_PATH);
-  if (!json) {
-    // RFC 9728 section 5: a 401 challenge names the metadata URL in the
-    // `resource_metadata` parameter of WWW-Authenticate.
-    const home = await env.probe('/');
-    const url = RESOURCE_METADATA_PARAMETER.exec(
-      home?.headers['www-authenticate'] ?? '',
-    );
-    if (url) {
-      json = parseJsonObject(await env.probe(url[1]));
-      source = new URL(url[1], env.origin).href;
-    }
-  }
+  const rootJson = parseJsonObject(rootProbe);
+  // RFC 9728 section 5: a 401 challenge names the metadata URL in the
+  // `resource_metadata` parameter of WWW-Authenticate.
+  const home = rootJson ? undefined : await env.probe('/');
+  const url = rootJson
+    ? null
+    : RESOURCE_METADATA_PARAMETER.exec(home?.headers['www-authenticate'] ?? '');
+  const json =
+    rootJson ?? (url ? parseJsonObject(await env.probe(url[1])) : null);
+  const source = url
+    ? new URL(url[1], env.origin).href
+    : (rootProbe?.url ?? urlOf(env, RESOURCE_PATH));
   if (!json) {
     return result(
       id,

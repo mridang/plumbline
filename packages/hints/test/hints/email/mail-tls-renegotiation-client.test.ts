@@ -11,7 +11,7 @@ import {
 
 /** Matches the openssl s_client command line reported as the source code of a problem. */
 const OPENSSL_STARTTLS_COMMAND =
-  /^\$ openssl s_client -connect 127\.0\.0\.1:\d+ -starttls smtp /;
+  /^\$ openssl s_client -connect 127\.0\.0\.1:\d+ -starttls smtp /u;
 
 afterEach(() => {
   restoreProbe();

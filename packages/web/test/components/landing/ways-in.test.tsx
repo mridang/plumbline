@@ -10,7 +10,7 @@ import {
 import { html } from '../render';
 
 /** Matches the npx scan command prefix. */
-const NPX_SCAN_COMMAND = /^npx @mridang\/plumbline scan /;
+const NPX_SCAN_COMMAND = /^npx @mridang\/plumbline scan /u;
 
 describe('WAYS_IN', () => {
   it('installs the skill from this repository', () => {

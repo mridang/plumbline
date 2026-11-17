@@ -12,9 +12,9 @@ import {
   rateOcsp,
   rateProtocol,
   rateSignatureAlgorithm,
-  type CipherInfo,
 } from '../../../src/lib/tls/evaluate.js';
 import { vector } from '../../helpers/data.js';
+import type { CipherInfo } from '../../../src/lib/tls/evaluate.js';
 
 const GOOD = 'TLS_AES_256_GCM_SHA384';
 const SUFFICIENT = 'TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256';

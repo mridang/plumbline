@@ -19,27 +19,15 @@ import {
   stopChecking,
 } from '@/domain/db/disabled';
 import { parseHost } from '@/domain/api/domain-resource';
-import type { Database } from '@/domain/db/client';
 import { clearGap, noteGap } from '@/domain/db/deploy-gaps';
 import { listDomainsOfRepo } from '@/domain/db/domains';
 import { latestRuns } from '@/domain/db/suite';
 import { GitHubApi, GitHubError, TooLargeError } from '@/domain/github/api';
 import { reportOfCommit, savePreviewReport } from '@/domain/db/preview-reports';
 import { installationToken } from '@/domain/github/app-auth';
-import type { GitHubConfig } from '@/domain/github/config';
-import {
-  CONFIG_FILES,
-  parseConfig,
-  resolveRules,
-  type LoadedConfig,
-  type ResolvedRules,
-} from '@/domain/suite/config';
-import {
-  checkDeployment,
-  type Deployment,
-  type Deps,
-} from '@/domain/suite/deploy';
-import { findingsOf, type StoredFinding } from '@/domain/suite/diff';
+import { CONFIG_FILES, parseConfig, resolveRules } from '@/domain/suite/config';
+import { checkDeployment } from '@/domain/suite/deploy';
+import { findingsOf } from '@/domain/suite/diff';
 import {
   closeUndeployed,
   // eslint-disable-next-line unicorn/no-keyword-prefix -- exported name used across modules; renaming would change the module API
@@ -53,14 +41,15 @@ import {
 } from '@/domain/suite/publish';
 import { dispatchRun } from '@/domain/suite/dispatch';
 import { applyLevels } from '@/domain/suite/rules';
-import {
-  baselineHost,
-  compareWithBaseline,
-  type Comparison,
-} from '@/domain/suite/baseline';
+import { baselineHost, compareWithBaseline } from '@/domain/suite/baseline';
 import { matchesAny } from '@/domain/suite/glob';
 import { siteAddress } from '@/domain/suite/site-address';
 import { reconcileSites } from '@/domain/github/sites';
+import type { StoredFinding } from '@/domain/suite/diff';
+import type { Deployment, Deps } from '@/domain/suite/deploy';
+import type { LoadedConfig, ResolvedRules } from '@/domain/suite/config';
+import type { GitHubConfig } from '@/domain/github/config';
+import type { Database } from '@/domain/db/client';
 
 /** What the work can be given in place of the real thing, for tests. */
 export interface RunDeps extends Deps {
@@ -84,6 +73,7 @@ export async function loadConfig(
   repo: string,
   ref: string,
 ): Promise<{ loaded: LoadedConfig | null; unreadable: string | null }> {
+  // eslint-disable-next-line functional/no-loop-statements -- the file names are tried in order, and the first that exists wins
   for (const name of CONFIG_FILES) {
     try {
       return {
@@ -288,6 +278,7 @@ async function checkLive(
   // as a single site's.
   const budget = newBudget();
   const pause = deps.pause ?? pauseBetweenWrites;
+  // eslint-disable-next-line functional/no-loop-statements -- sites are reported one after another so GitHub writes keep their order and pace
   for (const outcome of outcomes) {
     // Nothing to say about a site that was not looked at. A site that looks as
     // it did is still synced, because an issue may not match what it found
@@ -396,44 +387,49 @@ async function checkPreview(
   if (!deps.force && (await reportOfCommit(db, repo, sha, url))) {
     return;
   }
-  let checks;
-  try {
-    if (!deps.run) {
-      throw new Error('No scanner is available.');
+  const checks = await (async () => {
+    try {
+      if (!deps.run) {
+        throw new Error('No scanner is available.');
+      }
+      const outcome = await deps.run(url);
+      return outcome.checks;
+    } catch (error) {
+      console.error('preview run failed', repo, url, error);
+      await publishUnreachable(api, repo, sha, url).catch((error: unknown) =>
+        console.error('check run failed', error),
+      );
+      return null;
     }
-    const outcome = await deps.run(url);
-    checks = outcome.checks;
-  } catch (error) {
-    console.error('preview run failed', repo, url, error);
-    await publishUnreachable(api, repo, sha, url).catch((error: unknown) =>
-      console.error('check run failed', error),
-    );
+  })();
+  if (!checks) {
     return;
   }
   const findings = findingsOf(applyLevels(checks, rules.levels));
-  let comparison: Comparison | undefined;
-  try {
-    const baseline = await baselineOf(db, userId, deployed, rules);
-    comparison = baseline
-      ? compareWithBaseline(
-          findings,
-          { ...baseline, levels: rules.liveChecks },
-          new Set(rules.levels.keys()),
-        )
-      : undefined;
-  } catch (error) {
-    // Without a baseline the preview is judged on its own, as it was before.
-    console.error('baseline not read', repo, error);
-  }
+  const comparison = await baselineOf(db, userId, deployed, rules)
+    .then((baseline) =>
+      baseline
+        ? compareWithBaseline(
+            findings,
+            { ...baseline, levels: rules.liveChecks },
+            new Set(rules.levels.keys()),
+          )
+        : undefined,
+    )
+    .catch((error: unknown) => {
+      // Without a baseline the preview is judged on its own, as it was before.
+      console.error('baseline not read', repo, error);
+      return null;
+    });
   const stored = await keepReport(db, deps.appUrl, {
-    repo: repo,
+    repo,
     sha,
     url,
     findings,
   });
   try {
     await publishCheckRun(api, {
-      repo: repo,
+      repo,
       sha,
       url,
       findings,
@@ -447,7 +443,7 @@ async function checkPreview(
   }
   if (rules.dispatch) {
     await dispatchRun(api, {
-      repo: repo,
+      repo,
       environment: 'preview',
       url,
       sha,
@@ -484,15 +480,12 @@ export async function handleDeployment(
     return;
   }
   const fetcher = deps.fetcher ?? fetch;
-  let api: GitHubApi | null = null;
-  try {
-    api = new GitHubApi(
-      await installationToken(config, installationId, fetcher),
-      fetcher,
-    );
-  } catch (error) {
-    console.error('github token failed', installationId, error);
-  }
+  const api = await installationToken(config, installationId, fetcher)
+    .then((token) => new GitHubApi(token, fetcher))
+    .catch((error: unknown) => {
+      console.error('github token failed', installationId, error);
+      return null;
+    });
   const rules = await rulesFor(api, deployed);
   if (deployed.environment === 'production') {
     if (await applyEnabledFlag(db, api, deployed, rules, fileOff, deps)) {
@@ -506,7 +499,6 @@ export async function handleDeployment(
     await checkLive(db, api, userId, deployed, rules, deps);
   } else if (rules.read && !rules.enabled) {
     // A branch whose file turns checks off is not checked; nothing is remembered.
-    return;
   } else {
     await checkPreview(db, api, userId, deployed, rules, deps);
   }

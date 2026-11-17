@@ -1,9 +1,9 @@
-import { describe, expect, it } from '@jest/globals';
 import {
   checkServerIdentity as nodeCheckServerIdentity,
   connect as nodeConnect,
   rootCertificates as nodeRootCertificates,
 } from 'node:tls';
+import { describe, expect, it } from '@jest/globals';
 
 import {
   checkServerIdentity,

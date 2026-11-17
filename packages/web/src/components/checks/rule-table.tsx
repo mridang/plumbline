@@ -1,15 +1,9 @@
 import Link from 'next/link';
-import type { ReactElement, ReactNode } from 'react';
 
 import { Badge } from '@/components/ui-app/badge';
 import { Chevron, Chip, Label, TierBadge } from '@/components/checks/parts';
 import { cn } from '@/components/ui/cn';
-import {
-  CONTROL_INFO,
-  SECTIONS,
-  type Check,
-  type Section,
-} from '@/domain/checks/catalogue';
+import { CONTROL_INFO, SECTIONS } from '@/domain/checks/catalogue';
 import {
   areaPath,
   formatMonth,
@@ -17,8 +11,10 @@ import {
   selectorsFor,
   tagPath,
   topicTags,
-  type View,
 } from '@/domain/checks/browse';
+import type { Check, Section } from '@/domain/checks/catalogue';
+import type { View } from '@/domain/checks/browse';
+import type { ReactElement, ReactNode } from 'react';
 
 /** Where a table's links stay, and how it is shown. */
 interface Context {
@@ -85,6 +81,7 @@ function Detail({
   const tags = topicTags(check);
   return (
     <tr className="bg-ink/3">
+      {/* eslint-disable-next-line jsx-a11y/control-has-associated-label -- a table cell is named by its content */}
       <td colSpan={columns} className="px-4 pt-1 pb-6">
         <div className="grid gap-x-12 gap-y-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
           <div className="space-y-4 text-sm">
@@ -201,6 +198,7 @@ function RuleRow({
           open ? 'bg-ink/3' : 'hover:bg-ink/3',
         )}
       >
+        {/* eslint-disable-next-line jsx-a11y/control-has-associated-label -- a table cell is named by its content */}
         <td className="px-4 py-3">
           <Link
             href={href}

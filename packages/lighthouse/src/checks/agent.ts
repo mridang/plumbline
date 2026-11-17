@@ -23,14 +23,14 @@
  */
 import { finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import { checkLinkHeaders } from '@mridang/webhint-hint-plumbline/dist/lib/agent/link-headers.js';
-import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import agentLinkHeadersHint from '@mridang/webhint-hint-plumbline/dist/hints/agent/agent-link-headers.js';
 import { agentEnv } from '../adapt-agent.js';
 import { hintDocumentation } from '../meta.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import type { AuditCheck } from './types.js';
 
 // The compiled webhint hint, imported only for its metadata (name, description,
 // reference, section); the check logic is reused through `checkLinkHeaders`.
-import agentLinkHeadersHint from '@mridang/webhint-hint-plumbline/dist/hints/agent/agent-link-headers.js';
 
 /** The artifact set the agent check reads. */
 const AGENT_ARTIFACTS = ['DevtoolsLog', 'URL'] as const;

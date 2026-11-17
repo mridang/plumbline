@@ -1,8 +1,9 @@
-import type { HintContext, ReportOptions } from 'hint';
 import { dns } from '../../core/dns.js';
-import { onSite, type Site } from '../../core/page.js';
+import { onSite } from '../../core/page.js';
 import { registrableDomain } from '../email/domain.js';
 import { lookupMailServers } from '../email/mx.js';
+import type { Site } from '../../core/page.js';
+import type { HintContext, ReportOptions } from 'hint';
 
 /** Matches a single trailing dot. */
 const TRAILING_DOT = /\.$/u;

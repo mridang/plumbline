@@ -12,9 +12,9 @@
  * `checks/index.ts` (`auditById`).
  */
 import { Audit } from 'lighthouse';
+import { notApplicable, productFromFindings } from './result.js';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
-import { notApplicable, productFromFindings } from './result.js';
 import type { AuditCheck } from './checks/types.js';
 
 /**

@@ -63,6 +63,7 @@ export async function runCommand(
       err.push(error.message);
     }
   } finally {
+    // eslint-disable-next-line require-atomic-updates -- puts back the value read before the run; nothing else sets it meanwhile
     process.exitCode = exitCode;
   }
   return { code, stdout: out.join(''), stderr: err.join('') };

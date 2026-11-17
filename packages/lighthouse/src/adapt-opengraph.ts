@@ -18,11 +18,9 @@
  * set, importing only the read-only `MetaElementArtifact` type from it and the
  * library reader from the compiled parent build.
  */
+import { metaValue } from '@mridang/webhint-hint-plumbline/dist/lib/opengraph/meta.js';
+import type { MetaDocument } from '@mridang/webhint-hint-plumbline/dist/lib/opengraph/meta.js';
 import type { MetaElementArtifact } from './adapt.js';
-import {
-  metaValue,
-  type MetaDocument,
-} from '@mridang/webhint-hint-plumbline/dist/lib/opengraph/meta.js';
 
 /**
  * Wraps the `MetaElements` artifact in the {@link MetaDocument} the Open Graph

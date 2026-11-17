@@ -1,9 +1,8 @@
 'use client';
 
-import type { ReactElement, ReactNode } from 'react';
-
 import { ChevronIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
+import type { ReactElement, ReactNode } from 'react';
 
 /** Which way a column is sorted, or null when the table is sorted by another. */
 export type SortDirection = 'ascending' | 'descending' | null;

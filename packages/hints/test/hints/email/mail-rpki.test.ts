@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
-import type { RpkiClient, RpkiResult } from '../../../src/core/rpki.js';
 import hint from '../../../src/hints/email/mail-rpki.js';
 import { fakeDns, runMailHint } from '../../lib/email/fakes.js';
+import type { RpkiClient, RpkiResult } from '../../../src/core/rpki.js';
 
 const dns = fakeDns({
   'example.test MX': ['10 mx.example.test.'],

@@ -6,11 +6,10 @@ import {
   it,
   jest,
 } from '@jest/globals';
-import type { ReactElement } from 'react';
 
 import { CHECKS } from '@/domain/checks/catalogue';
-import { createDatabase, type Database } from '@/domain/db/client';
-import { addDomain, setDomainChecks, type Domain } from '@/domain/db/domains';
+import { createDatabase } from '@/domain/db/client';
+import { addDomain, setDomainChecks } from '@/domain/db/domains';
 import { saveReport } from '@/domain/db/reports';
 import { APP_MIGRATIONS } from '../../../../lib/core/db/migrations';
 import {
@@ -18,14 +17,17 @@ import {
   sqliteD1,
 } from '../../../../lib/core/db/sqlite-d1';
 import { htmlAt } from '../../../../components/render';
+import type { Domain } from '@/domain/db/domains';
+import type { Database } from '@/domain/db/client';
+import type { ReactElement } from 'react';
 
 /** Matches the CSP check checkbox rendered as checked. */
 const CSP_CHECKBOX_CHECKED_PATTERN =
-  /id="check-csp"[^>]* checked="" value="csp"/;
+  /id="check-csp"[^>]* checked="" value="csp"/u;
 
 /** Matches the ETag check checkbox carrying the checks name. */
 const ETAG_CHECKBOX_NAMED_PATTERN =
-  /id="check-etag"[^>]* name="checks" value="etag"/;
+  /id="check-etag"[^>]* name="checks" value="etag"/u;
 
 /** What the page asked Next to redirect to; `redirect` throws, as the real one does. */
 class RedirectedError extends Error {
@@ -41,8 +43,14 @@ class NotFoundError extends Error {
 }
 
 /** The signed-in user, or null for nobody. */
-const state: { user: { id: number } | null } = { user: null };
+interface UserState {
+  user: { id: number } | null;
+}
 
+/** The signed-in user, or null for nobody. */
+const state: UserState = { user: null };
+
+// eslint-disable-next-line tslop/no-module-mocking -- next/navigation is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('next/navigation', () => ({
   redirect: (to: string) => {
     throw new RedirectedError(to);
@@ -53,6 +61,7 @@ jest.unstable_mockModule('next/navigation', () => ({
   useRouter: () => ({ push: () => undefined, refresh: () => undefined }),
   usePathname: () => '/',
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- @/lib/core/auth/current-user is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
 }));
@@ -161,7 +170,9 @@ describe('DomainPage', () => {
 
   it('draws the newest report in full', async () => {
     await report(1, 'older');
-    await new Promise((resolve) => setTimeout(resolve, 5));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 5);
+    });
     await report(1, 'newest');
     const out = await page();
     expect(out).toContain('newest');
@@ -170,7 +181,9 @@ describe('DomainPage', () => {
 
   it('draws the report that was picked', async () => {
     const older = await report(1, 'older');
-    await new Promise((resolve) => setTimeout(resolve, 5));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 5);
+    });
     await report(1, 'newest');
     expect(await page(domain.id, older.id)).toContain('older');
   });
@@ -180,6 +193,7 @@ describe('DomainPage', () => {
     expect(await page()).toMatch(
       new RegExp(
         String.raw`aria-current="true"[^>]*href="/domains/${domain.id}\?report=${saved.id}"|href="/domains/${domain.id}\?report=${saved.id}"[^>]*aria-current="true"`,
+        'u',
       ),
     );
   });

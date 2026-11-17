@@ -5,11 +5,12 @@
  * pattern string saying which requests the dictionary applies to. The check
  * validates the dictionary when the header is present, following the MDN page.
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
 import { dictionary } from './structured.js';
+import type { Finding } from '../headers/finding.js';
 
 /** Matches a double-quoted string and captures its content. */
-const QUOTED_STRING = /^"(.*)"$/;
+const QUOTED_STRING = /^"(.*)"$/u;
 
 /** Keys the header defines; anything else is an unrecognised parameter. */
 const KNOWN = new Set(['match', 'match-dest', 'id', 'type']);

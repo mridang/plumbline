@@ -17,39 +17,29 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { readFile } from 'node:fs/promises';
 import nodeTls from 'node:tls';
 
-import {
-  dns,
-  type DnsResponse,
-} from '@mridang/webhint-hint-plumbline/dist/core/dns.js';
-import {
-  rpki,
-  type RpkiResult,
-} from '@mridang/webhint-hint-plumbline/dist/core/rpki.js';
+import { dns } from '@mridang/webhint-hint-plumbline/dist/core/dns.js';
+import { rpki } from '@mridang/webhint-hint-plumbline/dist/core/rpki.js';
 import { compression } from '@mridang/webhint-hint-plumbline/dist/lib/network/compression.js';
-import { tls as dane } from '@mridang/webhint-hint-plumbline/dist/lib/network/dane.js';
+import { tls } from '@mridang/webhint-hint-plumbline/dist/lib/network/dane.js';
 import { network } from '@mridang/webhint-hint-plumbline/dist/lib/network/ipv6.js';
 import { mailNet } from '@mridang/webhint-hint-plumbline/dist/lib/email/net.js';
-import {
-  tlsProbe,
-  type ProbeResult,
-} from '@mridang/webhint-hint-plumbline/dist/lib/tls/client.js';
+import { tlsProbe } from '@mridang/webhint-hint-plumbline/dist/lib/tls/client.js';
 import { openssl } from '@mridang/webhint-hint-plumbline/dist/lib/tls/openssl.js';
 import { remoteConnect } from '@mridang/webhint-hint-plumbline/dist/lib/tls/remote.js';
 
-import type { ProbeClient } from './client.js';
 import { unchunk } from './fetch.js';
-import {
-  fromBase64,
-  ProbeError,
-  ProbeUnavailableError,
-  type RemoteCertificate,
-} from './protocol.js';
+import { fromBase64, ProbeError, ProbeUnavailableError } from './protocol.js';
+import type { RemoteCertificate } from './protocol.js';
+import type { ProbeResult } from '@mridang/webhint-hint-plumbline/dist/lib/tls/client.js';
+import type { ProbeClient } from './client.js';
+import type { RpkiResult } from '@mridang/webhint-hint-plumbline/dist/core/rpki.js';
+import type { DnsResponse } from '@mridang/webhint-hint-plumbline/dist/core/dns.js';
 
 /** Captures the host (optionally in brackets) and the port of a `host:port` pair. */
-const HOST_AND_PORT = /^\[?([^\]]+?)\]?:(\d+)$/;
+const HOST_AND_PORT = /^\[?([^\]]+?)\]?:(\d+)$/u;
 
 /** Matches a `chunked` transfer encoding. */
-const CHUNKED_ENCODING = /chunked/i;
+const CHUNKED_ENCODING = /chunked/iu;
 
 /** What the scan that is running here uses: its probe, and the DNS answers it has already had. */
 interface ScanScope {
@@ -66,12 +56,18 @@ const scope = new AsyncLocalStorage<ScanScope>();
 export function withProbe<T>(client: ProbeClient, work: () => T): T {
   install();
   return scope.run(
-    { client, answers: new Map(), routes: new Map(), handshakes: new Map() },
+    {
+      client,
+      answers: new Map<string, Promise<DnsResponse>>(),
+      routes: new Map<string, Promise<RpkiResult>>(),
+      handshakes: new Map<string, Promise<ProbeResult>>(),
+    },
     work,
   );
 }
 
 /** The newest `fetch` before the first scan replaced it, for calls outside a scan. */
+// eslint-disable-next-line functional/no-let -- set once, when the network clients are replaced
 let installed = false;
 
 /** The bytes as a Buffer. */
@@ -79,8 +75,8 @@ function bufferOf(base64: string): Buffer {
   return Buffer.from(fromBase64(base64));
 }
 
-/** The text of the lines of an `openssl` argument list, parsed into what the probe takes. */
-function parseSClient(args: readonly string[]): {
+/** An `openssl s_client` argument list, parsed into what the probe takes. */
+interface SClientArgs {
   host: string;
   port: number;
   servername?: string;
@@ -89,59 +85,61 @@ function parseSClient(args: readonly string[]): {
   sessionOut?: string;
   sessionIn?: string;
   earlyDataFile?: string;
-} {
-  let host = '';
-  let port = 0;
-  let servername: string | undefined;
-  let starttls: 'smtp' | undefined;
-  const flags: string[] = [];
-  let sessionOut: string | undefined;
-  let sessionIn: string | undefined;
-  let earlyDataFile: string | undefined;
-  for (let index = 0; index < args.length; index += 1) {
+}
+
+/** The text of the lines of an `openssl` argument list, parsed into what the probe takes. */
+function parseSClient(args: readonly string[]): SClientArgs {
+  const walk = (index: number, found: SClientArgs): SClientArgs => {
+    if (index >= args.length) {
+      return found;
+    }
     const arg = args[index] ?? '';
     const next = args[index + 1] ?? '';
     switch (arg) {
       case 's_client': {
-        break;
+        return walk(index + 1, found);
       }
       case '-connect': {
         const match = HOST_AND_PORT.exec(next);
-        host = match?.[1] ?? '';
-        port = Number(match?.[2] ?? 0);
-        index += 1;
-        break;
+        return walk(index + 2, {
+          ...found,
+          host: match?.[1] ?? '',
+          port: Number(match?.[2] ?? 0),
+        });
       }
       case '-servername': {
-        servername = next;
-        index += 1;
-        break;
+        return walk(index + 2, { ...found, servername: next });
       }
       case '-starttls': {
-        starttls = next === 'smtp' ? 'smtp' : undefined;
-        index += 1;
-        break;
+        return walk(index + 2, {
+          ...found,
+          starttls: next === 'smtp' ? 'smtp' : undefined,
+        });
       }
       case '-sess_out': {
-        sessionOut = next;
-        index += 1;
-        break;
+        return walk(index + 2, { ...found, sessionOut: next });
       }
       case '-sess_in': {
-        sessionIn = next;
-        index += 1;
-        break;
+        return walk(index + 2, { ...found, sessionIn: next });
       }
       case '-early_data': {
-        earlyDataFile = next;
-        index += 1;
-        break;
+        return walk(index + 2, { ...found, earlyDataFile: next });
       }
       default: {
-        flags.push(arg);
+        return walk(index + 1, { ...found, flags: [...found.flags, arg] });
       }
     }
-  }
+  };
+  const {
+    host,
+    port,
+    flags,
+    servername,
+    starttls,
+    sessionOut,
+    sessionIn,
+    earlyDataFile,
+  } = walk(0, { host: '', port: 0, flags: [] });
   return {
     host,
     port,
@@ -156,7 +154,7 @@ function parseSClient(args: readonly string[]): {
 
 /** A name for a session file the probe keeps: the path with what is not a letter or digit made safe. */
 function sessionName(path: string): string {
-  return path.replaceAll(/[^A-Za-z0-9]/g, '_').slice(-80);
+  return path.replaceAll(/[^A-Za-z0-9]/gu, '_').slice(-80);
 }
 
 /** A copy of a certificate, with its own names and access URLs, so a cached answer is never shared. */
@@ -197,6 +195,7 @@ function installDnsCache(): void {
   // within one scan an answer already had is reused; a Worker may have only a few requests
   // open at once, and each query is one.
   const resolver = dns.client;
+  // eslint-disable-next-line functional/immutable-data -- the hints package keeps its DNS client as a replaceable property by design
   dns.client = {
     query: async (name, type) => {
       const answers = scope.getStore()?.answers;
@@ -204,12 +203,15 @@ function installDnsCache(): void {
         return resolver.query(name, type);
       }
       const key = `${type} ${name.toLowerCase()}`;
-      let answer = answers.get(key);
-      if (!answer) {
-        answer = resolver.query(name, type);
-        answers.set(key, answer);
-        answer.catch(() => answers.delete(key));
+      const cached = answers.get(key);
+      if (cached) {
+        return cached;
       }
+      const answer = resolver.query(name, type);
+      // eslint-disable-next-line functional/immutable-data -- the scan's answers are a cache that is filled as they come
+      answers.set(key, answer);
+      // eslint-disable-next-line functional/immutable-data -- a failed answer is dropped from the cache
+      answer.catch(() => answers.delete(key));
       return answer;
     },
   };
@@ -220,18 +222,22 @@ function installRpkiCache(): void {
   // The four routing checks ask about the same addresses (a web server is also a name server),
   // and each answer is two round trips to a web service: within one scan, one lookup per address.
   const validator = rpki.client;
+  // eslint-disable-next-line functional/immutable-data -- the hints package keeps its routing client as a replaceable property by design
   rpki.client = {
     check: async (ip) => {
       const routes = scope.getStore()?.routes;
       if (!routes) {
         return validator.check(ip);
       }
-      let answer = routes.get(ip);
-      if (!answer) {
-        answer = validator.check(ip);
-        routes.set(ip, answer);
-        answer.catch(() => routes.delete(ip));
+      const cached = routes.get(ip);
+      if (cached) {
+        return cached;
       }
+      const answer = validator.check(ip);
+      // eslint-disable-next-line functional/immutable-data -- the scan's routes are a cache that is filled as they come
+      routes.set(ip, answer);
+      // eslint-disable-next-line functional/immutable-data -- a failed lookup is dropped from the cache
+      answer.catch(() => routes.delete(ip));
       return answer;
     },
   };
@@ -245,47 +251,51 @@ function installTlsHandshakeCache(): void {
   // handshake is made once. A handshake the server would not complete is an answer and is
   // kept; one the probe could not make (it was not there) is not.
   const connectWithNode = tlsProbe.connect;
+  // eslint-disable-next-line functional/immutable-data -- the hints package keeps its handshake as a replaceable property by design
   tlsProbe.connect = async (target, options) => {
     const scanned = scope.getStore();
     if (!scanned) {
       return connectWithNode(target, options);
     }
     const key = JSON.stringify([target, options]);
-    let handshake = scanned.handshakes.get(key);
-    if (!handshake) {
-      const { client, handshakes } = scanned;
-      handshake = remoteConnect(async (request) =>
-        client
-          .handshake({
-            host: request.host,
-            port: request.port,
-            ...(request.starttls ? { starttls: request.starttls } : {}),
-            ...(request.minVersion ? { min: request.minVersion } : {}),
-            ...(request.maxVersion ? { max: request.maxVersion } : {}),
-            ...(request.ciphers ? { ciphers: request.ciphers } : {}),
-            ...(request.sigalgs ? { sigalgs: request.sigalgs } : {}),
-            ...(request.ecdhCurve ? { curves: request.ecdhCurve } : {}),
-            ...(request.requestOCSP ? { ocsp: true } : {}),
-          })
-          .then((answer) => ({
-            ...answer,
-            chain: [...answer.chain],
-            certificates: answer.certificates.map((certificate) =>
-              copyCertificate(certificate),
-            ),
-          })),
-      )(target, options);
-      handshakes.set(key, handshake);
-      void (async () => {
-        try {
-          await handshake;
-        } catch (error) {
-          if (error instanceof ProbeUnavailableError) {
-            handshakes.delete(key);
-          }
-        }
-      })();
+    const cached = scanned.handshakes.get(key);
+    if (cached) {
+      return cached;
     }
+    const { client, handshakes } = scanned;
+    const handshake = remoteConnect(async (request) =>
+      client
+        .handshake({
+          host: request.host,
+          port: request.port,
+          ...(request.starttls ? { starttls: request.starttls } : {}),
+          ...(request.minVersion ? { min: request.minVersion } : {}),
+          ...(request.maxVersion ? { max: request.maxVersion } : {}),
+          ...(request.ciphers ? { ciphers: request.ciphers } : {}),
+          ...(request.sigalgs ? { sigalgs: request.sigalgs } : {}),
+          ...(request.ecdhCurve ? { curves: request.ecdhCurve } : {}),
+          ...(request.requestOCSP ? { ocsp: true } : {}),
+        })
+        .then((answer) => ({
+          ...answer,
+          chain: [...answer.chain],
+          certificates: answer.certificates.map((certificate) =>
+            copyCertificate(certificate),
+          ),
+        })),
+    )(target, options);
+    // eslint-disable-next-line functional/immutable-data -- the scan's handshakes are a cache that is filled as they come
+    handshakes.set(key, handshake);
+    void (async () => {
+      try {
+        await handshake;
+      } catch (error) {
+        if (error instanceof ProbeUnavailableError) {
+          // eslint-disable-next-line functional/immutable-data -- a handshake the probe could not make is dropped from the cache
+          handshakes.delete(key);
+        }
+      }
+    })();
     return handshake;
   };
 }
@@ -293,6 +303,7 @@ function installTlsHandshakeCache(): void {
 /** Sends the mail checks through the probe. */
 function installMailClient(): void {
   const nodeMail = mailNet.client;
+  // eslint-disable-next-line functional/immutable-data -- the hints package keeps its mail client as a replaceable property by design
   mailNet.client = {
     tcpReachable: async (ip, port) => {
       const client = scope.getStore()?.client;
@@ -338,6 +349,7 @@ function installMailClient(): void {
 /** Sends the raw connect and GET calls through the probe. */
 function installNetworkClient(): void {
   const nodeConnect = network.connect;
+  // eslint-disable-next-line functional/immutable-data -- the hints package keeps its connect as a replaceable property by design
   network.connect = async (ip, port, timeoutMs) => {
     const client = scope.getStore()?.client;
     if (!client) {
@@ -350,6 +362,7 @@ function installNetworkClient(): void {
     }
   };
   const nodeGet = network.get;
+  // eslint-disable-next-line functional/immutable-data -- the hints package keeps its GET as a replaceable property by design
   network.get = async (host, ip, port, https) => {
     const client = scope.getStore()?.client;
     if (!client) {
@@ -388,6 +401,7 @@ function installNetworkClient(): void {
 /** Sends the compression probe through the probe. */
 function installCompressionClient(): void {
   const nodeProbe = compression.probe;
+  // eslint-disable-next-line functional/immutable-data -- the hints package keeps its compression probe as a replaceable property by design
   compression.probe = async (url) => {
     const client = scope.getStore()?.client;
     if (!client) {
@@ -424,8 +438,9 @@ function installCompressionClient(): void {
 
 /** Fetches the DANE certificate chain through the probe. */
 function installDaneClient(): void {
-  const nodeChain = dane.fetchChain;
-  dane.fetchChain = async (host, port) => {
+  const nodeChain = tls.fetchChain;
+  // eslint-disable-next-line functional/immutable-data -- the hints package keeps its chain fetch as a replaceable property by design
+  tls.fetchChain = async (host, port) => {
     const client = scope.getStore()?.client;
     if (!client) {
       return nodeChain(host, port);
@@ -447,6 +462,7 @@ function installDaneClient(): void {
 /** Runs the `openssl s_client` calls through the probe. */
 function installOpensslClient(): void {
   const nodeExec = openssl.exec;
+  // eslint-disable-next-line functional/immutable-data -- the hints package keeps its openssl runner as a replaceable property by design
   openssl.exec = async (args, options = {}) => {
     const client = scope.getStore()?.client;
     if (!client) {
@@ -487,10 +503,11 @@ export async function ensureRoots(client: ProbeClient): Promise<void> {
   }
   const bundle = await client.roots();
   const pems = bundle.match(
-    /-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----/g,
+    /-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----/gu,
   );
   if (!pems || pems.length === 0) {
     throw new ProbeError('the probe has no trusted roots');
   }
+  // eslint-disable-next-line functional/immutable-data -- the Node list of trusted roots is empty in a Worker and is filled from the probe's bundle
   roots.push(...pems);
 }

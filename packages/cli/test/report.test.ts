@@ -1,9 +1,10 @@
-import { describe, expect, it } from '@jest/globals';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { Severity, type Problem } from '@hint/utils-types';
+import { describe, expect, it } from '@jest/globals';
+import { Severity } from '@hint/utils-types';
 import { buildReport, saveReport } from '../src/report.js';
+import type { Problem } from '@hint/utils-types';
 import type { HintMeta, ScanResult } from '../src/scan.js';
 
 const HINT: HintMeta = {
@@ -132,7 +133,7 @@ describe('saveReport', () => {
       );
       expect(path.dirname(saved.json)).toBe(dir);
       expect(path.basename(saved.json)).toBe(
-        path.basename(saved.html, '.html') + '.json',
+        `${path.basename(saved.html, '.html')}.json`,
       );
       const written = JSON.parse(await readFile(saved.json, 'utf8')) as {
         summary: { total: number };

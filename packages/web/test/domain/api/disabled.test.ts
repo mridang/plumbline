@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
-import type { CurrentUserResolver } from '@/domain/api/auth';
 import { createDisabledRepository } from '@/domain/api/disabled';
 import { createDatabase } from '@/domain/db/client';
 import { disableRepo, isRepoDisabled } from '@/domain/db/disabled';
@@ -11,9 +10,10 @@ import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
+import type { CurrentUserResolver } from '@/domain/api/auth';
 
 /** Who is signed in; null means nobody. */
-const session: { uid: number | null } = { uid: 7 };
+const session = { uid: 7 as number | null };
 
 const resolver: CurrentUserResolver = {
   currentUid: async () => session.uid,

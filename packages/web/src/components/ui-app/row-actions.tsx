@@ -1,8 +1,7 @@
 'use client';
 
-import type { ReactElement, ReactNode } from 'react';
-
 import { Popover } from '@/components/ui/popover';
+import type { ReactElement, ReactNode } from 'react';
 
 /** Three dots in a column, the usual mark for "more". */
 function MoreMark(): ReactElement {

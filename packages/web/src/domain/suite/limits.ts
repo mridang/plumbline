@@ -61,13 +61,14 @@ export async function inBatches<T, R>(
   size: number,
   task: (item: T) => Promise<R>,
 ): Promise<R[]> {
-  const results: R[] = [];
-  for (let at = 0; at < items.length; at += Math.max(1, size)) {
-    results.push(
-      ...(await Promise.all(
-        items.slice(at, at + Math.max(1, size)).map(async (item) => task(item)),
-      )),
-    );
+  if (items.length === 0) {
+    return [];
   }
-  return results;
+  const step = Math.max(1, size);
+  return [
+    ...(await Promise.all(
+      items.slice(0, step).map(async (item) => task(item)),
+    )),
+    ...(await inBatches(items.slice(step), size, task)),
+  ];
 }

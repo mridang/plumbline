@@ -1,16 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import type { ReactElement } from 'react';
 
 import { LinkIcon } from '@/components/icons';
 import {
   clusterRows,
   commitUrl,
   issuesUrl,
-  type Sort,
-  type SiteRow,
-  type SortKey,
 } from '@/components/repos/site-rows';
 import { RepoLabel } from '@/components/repos/repo-label';
 import { SiteActions, sitePageOf } from '@/components/repos/site-actions';
@@ -19,11 +15,11 @@ import { cn } from '@/components/ui/cn';
 import { Badge } from '@/components/ui-app/badge';
 import { RelativeTime } from '@/components/ui-app/relative-time';
 import { CountCell } from '@/components/ui-app/stat';
-import {
-  SortHeadCell,
-  type SortDirection,
-} from '@/components/ui-app/sort-head-cell';
+import { SortHeadCell } from '@/components/ui-app/sort-head-cell';
 import { HeadCell, Cell } from '@/components/ui-app/table';
+import type { SortDirection } from '@/components/ui-app/sort-head-cell';
+import type { Sort, SiteRow, SortKey } from '@/components/repos/site-rows';
+import type { ReactElement } from 'react';
 
 /** A time as words, or a dash when there is none. */
 function When({

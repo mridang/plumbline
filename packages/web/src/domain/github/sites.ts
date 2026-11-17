@@ -19,7 +19,6 @@
  * exists. This is the only place that adds or drops a repository's sites.
  */
 
-import type { Database } from '@/domain/db/client';
 import {
   addDomain,
   countDomains,
@@ -27,8 +26,9 @@ import {
   findDomainByHost,
   listDomainsOfRepo,
   MAX_DOMAINS,
-  type Domain,
 } from '@/domain/db/domains';
+import type { Domain } from '@/domain/db/domains';
+import type { Database } from '@/domain/db/client';
 
 /** What is known about a repository's sites right now. */
 export interface KnownSites {
@@ -73,6 +73,7 @@ export async function reconcileSites(
 ): Promise<SiteChanges> {
   const added: string[] = [];
   const removed: string[] = [];
+  // eslint-disable-next-line functional/no-let -- the room left is counted down as sites are added, in order
   let room = MAX_DOMAINS - (await countDomains(db, userId));
 
   const add = async (
@@ -85,6 +86,7 @@ export async function reconcileSites(
     }
     const { created } = await addDomain(db, userId, host, repo, origin);
     if (created) {
+      // eslint-disable-next-line functional/immutable-data -- collects the hosts added, in the order they were added
       added.push(host);
       room -= 1;
     }
@@ -95,12 +97,14 @@ export async function reconcileSites(
       userId,
       sites.map((site) => site.id),
     );
+    // eslint-disable-next-line functional/immutable-data -- collects the hosts removed, in the order they were removed
     removed.push(...sites.map((site) => site.host));
   };
 
   const before = await listDomainsOfRepo(db, userId, repo);
   const declared = known.declared ?? null;
   if (declared !== null) {
+    // eslint-disable-next-line functional/no-loop-statements -- each site is added after the last, because the room left depends on the ones before
     for (const host of declared) {
       await add(host, { source: 'config' });
     }
@@ -129,6 +133,7 @@ export async function reconcileSites(
   if (now.some((site) => isReal(site))) {
     await drop(now.filter((site) => site.source === 'fallback'));
   } else if (known.fallback) {
+    // eslint-disable-next-line functional/no-loop-statements -- each site is added after the last, because the room left depends on the ones before
     for (const host of known.fallback) {
       await add(host, { source: 'fallback' });
     }

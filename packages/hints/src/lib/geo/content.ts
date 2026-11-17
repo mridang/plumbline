@@ -53,23 +53,22 @@ export function measureContent(
     (element) => element.textContent.trim().length > PARAGRAPH_MIN_LENGTH,
   ).length;
 
-  let maxUnstructuredLength = 0;
-  let unstructuredIndex = -1;
   const divs = Array.from(root.querySelectorAll('div'), (div) => div);
-  for (const [index, div] of divs.entries()) {
+  const longest = divs
     // A div with headings or paragraphs inside is already structured.
-    if (div.querySelectorAll(`${HEADINGS}, p, li`).length === 0) {
-      const length = div.textContent.trim().length;
-      if (length > maxUnstructuredLength) {
-        maxUnstructuredLength = length;
-        unstructuredIndex = index;
-      }
-    }
-  }
+    .flatMap((div, index) =>
+      div.querySelectorAll(`${HEADINGS}, p, li`).length === 0
+        ? [{ index, length: div.textContent.trim().length }]
+        : [],
+    )
+    .reduce((top, current) => (current.length > top.length ? current : top), {
+      index: -1,
+      length: 0,
+    });
   return {
     headingCount,
     paragraphCount,
-    maxUnstructuredLength,
-    unstructuredIndex,
+    maxUnstructuredLength: longest.length,
+    unstructuredIndex: longest.index,
   };
 }

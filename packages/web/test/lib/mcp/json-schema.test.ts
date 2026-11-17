@@ -7,8 +7,8 @@ import {
   isJsonObject,
   unsupportedKeywords,
   validateJson,
-  type JsonSchema,
 } from '@/lib/mcp';
+import type { JsonSchema } from '@/lib/mcp';
 
 /** The problems found, with the subject spelled out as "It". */
 const problems = (schema: JsonSchema, value: unknown) =>
@@ -166,7 +166,7 @@ describe('objects', () => {
 
   it('names a missing required property, also when it is undefined', () => {
     // A property the object leaves out: its key stays present, with no value.
-    let notProvided: undefined;
+    const notProvided = [].at(0);
     expect(problems(schema, {})).toEqual(['`a` is required.']);
     expect(problems(schema, { a: notProvided })).toEqual(['`a` is required.']);
   });

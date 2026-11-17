@@ -1,11 +1,12 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, type ReactElement } from 'react';
+import { useState } from 'react';
 
 import { ensureOk, problemText } from '@/components/api/problem-message';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/site/confirm-dialog';
+import type { ReactElement } from 'react';
 
 /** Call a GitHub endpoint of this site. */
 export async function callOn(
@@ -54,7 +55,13 @@ function ActionButton({
       <Button
         variant="outline"
         disabled={busy}
-        onClick={() => (confirm ? setAsking(true) : void run())}
+        onClick={() => {
+          if (confirm) {
+            setAsking(true);
+          } else {
+            void run();
+          }
+        }}
       >
         {busy ? busyLabel : label}
       </Button>
@@ -65,7 +72,9 @@ function ActionButton({
           title={`${label}?`}
           description={confirm}
           confirmLabel={label}
-          onConfirm={() => void run()}
+          onConfirm={() => {
+            void run();
+          }}
         />
       ) : null}
       {problem ? (

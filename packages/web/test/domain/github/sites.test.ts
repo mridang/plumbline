@@ -1,15 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  MAX_DOMAINS,
-  addDomain,
-  listDomains,
-  type SiteSource,
-} from '@/domain/db/domains';
+import { MAX_DOMAINS, addDomain, listDomains } from '@/domain/db/domains';
 import { reconcileSites } from '@/domain/github/sites';
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import type { SiteSource } from '@/domain/db/domains';
 
 /** Compares strings in the default locale order, built once. */
 const collator = new Intl.Collator();

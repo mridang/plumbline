@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, type ReactElement } from 'react';
+import { useState } from 'react';
 
 import {
   BoltIcon,
@@ -14,8 +14,6 @@ import { NotificationSettings } from '@/components/notifications/notification-se
 import {
   accountLinks,
   NOTHING_CONNECTED,
-  type AccountLink,
-  type AccountState,
 } from '@/components/site/account-links';
 import { signOut } from '@/components/site/sign-out';
 import {
@@ -30,6 +28,11 @@ import {
   PopoverLabel,
   PopoverSeparator,
 } from '@/components/ui/popover';
+import type {
+  AccountLink,
+  AccountState,
+} from '@/components/site/account-links';
+import type { ReactElement } from 'react';
 
 /**
  * The person's Google photo, or their initial when there is none or it fails to
@@ -165,7 +168,9 @@ export function AccountMenu({
           email={email}
           {...(state ? { state } : {})}
           onNotifications={() => setNotifying(true)}
-          onSignOut={() => void signOut()}
+          onSignOut={() => {
+            void signOut();
+          }}
         />
       </Popover>
       {/* Outside the popover: the menu unmounts its items the moment one is chosen. */}

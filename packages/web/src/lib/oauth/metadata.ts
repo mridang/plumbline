@@ -36,11 +36,10 @@ export function issuerOf(origin: string): string {
 
 /** A path without its trailing slashes. */
 const withoutTrailingSlashes = (path: string): string => {
-  let end = path.length;
-  while (end > 0 && path.codePointAt(end - 1) === 47) {
-    end -= 1;
-  }
-  return path.slice(0, end);
+  const parts = path.split('/');
+  return parts
+    .slice(0, parts.findLastIndex((part) => part !== '') + 1)
+    .join('/');
 };
 
 /**

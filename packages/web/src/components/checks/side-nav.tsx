@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import type { ReactElement, ReactNode } from 'react';
 
 import { Chevron } from '@/components/checks/parts';
 import { cn } from '@/components/ui/cn';
@@ -14,6 +13,7 @@ import { OVERVIEW_PATH, areaPath, setPath } from '@/domain/checks/browse';
 import { findRuleSet } from '@/domain/checks/sets';
 import { STOCK_HINTS } from '@/domain/checks/stock';
 import { formatCount } from '@/lib/intl';
+import type { ReactElement, ReactNode } from 'react';
 
 /** The page the visitor is on, so the sidebar can mark it and open its fold. */
 export type Here =

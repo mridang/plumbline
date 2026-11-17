@@ -2,8 +2,6 @@ import { describe, expect, it } from '@jest/globals';
 
 import { findCheck } from '@/domain/checks/catalogue';
 
-import type { Domain } from '@/domain/db/domains';
-import type { Report, ReportSummary } from '@/domain/db/reports';
 import {
   DOMAINS_LINK,
   checkName,
@@ -16,6 +14,8 @@ import {
   tallyLine,
   textResult,
 } from '@/domain/mcp/tool-results';
+import type { Domain } from '@/domain/db/domains';
+import type { Report, ReportSummary } from '@/domain/db/reports';
 import type { DomainListData } from '@/domain/mcp/ui-types';
 
 const DOMAIN: Domain = {

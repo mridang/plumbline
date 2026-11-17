@@ -2,8 +2,8 @@ import { describe, expect, it } from '@jest/globals';
 
 import { DEFAULT_SORT, rowsOf } from '@/components/repos/site-rows';
 import { SitesTable } from '@/components/repos/sites-table';
-import type { RepoStatus } from '@/domain/db/live';
 import { htmlAt } from '../render';
+import type { RepoStatus } from '@/domain/db/live';
 
 /** The clock the page was made with: a day after the first deployment. */
 const NOW = Date.parse('2026-01-02T00:00:00.000Z');
@@ -76,7 +76,7 @@ describe('SitesTable', () => {
     ]) {
       expect(out).toContain(heading);
     }
-    expect(out.match(/<tr/g)).toHaveLength(3);
+    expect(out.match(/<tr/gu)).toHaveLength(3);
   });
 
   it('names the repository with the Octocat, linked to the site’s tab, and the host under it', () => {
@@ -105,7 +105,7 @@ describe('SitesTable', () => {
     expect(out).toContain('<span class="sr-only"> failed</span>');
     expect(out).toContain('<span class="sr-only"> warned</span>');
     expect(out).toContain('failed: not kept for this run');
-    expect(out.match(/text-right/g)?.length).toBeGreaterThanOrEqual(5);
+    expect(out.match(/text-right/gu)?.length).toBeGreaterThanOrEqual(5);
   });
 
   it('shows the issues open for the repository, linked to them on GitHub', () => {
@@ -125,12 +125,12 @@ describe('SitesTable', () => {
 
   it('marks the column the table is sorted by, and lets the others be pressed', () => {
     expect(out).toContain('aria-sort="ascending"');
-    expect(out.match(/aria-sort="none"/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(out.match(/aria-sort="none"/gu)?.length).toBeGreaterThanOrEqual(3);
   });
 
   it('is also a list for phones, with the same rows', () => {
     expect(out).toContain('sm:hidden');
-    expect(out.match(/<li/g)).toHaveLength(2);
+    expect(out.match(/<li/gu)).toHaveLength(2);
   });
 
   it('marks a repository whose checks are paused as a state beside its result, and dims its row', () => {
@@ -141,7 +141,8 @@ describe('SitesTable', () => {
   });
 
   it('keeps the state apart from the result: a live row has no state marker', () => {
-    expect(draw(new Set())).not.toContain('>Paused<');
-    expect(draw(new Set())).not.toContain('Unresponsive');
+    const live = draw(new Set());
+    expect(live).not.toContain('>Paused<');
+    expect(live).not.toContain('Unresponsive');
   });
 });

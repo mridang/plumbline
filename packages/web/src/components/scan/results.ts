@@ -6,9 +6,9 @@
  * outcomes first inside each section.
  */
 
+import { compareText } from '@/lib/intl';
 import type { IssueRef } from '@/domain/db/issue-history';
 import type { HintOutcome } from '@/domain/scan/outcome';
-import { compareText } from '@/lib/intl';
 
 /** An outcome, as the engine names it. */
 export type Status = HintOutcome['status'];
@@ -28,16 +28,14 @@ export const STATUS_ORDER: readonly Status[] = [
 export function countByStatus(
   hints: readonly HintOutcome[],
 ): Record<Status, number> {
-  const counts: Record<Status, number> = {
-    failed: 0,
-    warned: 0,
-    passed: 0,
-    skipped: 0,
+  const count = (status: Status): number =>
+    hints.filter((hint) => hint.status === status).length;
+  return {
+    failed: count('failed'),
+    warned: count('warned'),
+    passed: count('passed'),
+    skipped: count('skipped'),
   };
-  for (const hint of hints) {
-    counts[hint.status] += 1;
-  }
-  return counts;
 }
 
 /** Whether a hint is shown under a filter. */
@@ -63,27 +61,30 @@ export function sectionsOf(
   hints: readonly HintOutcome[],
   filter: Filter,
 ): Section[] {
-  const groups = new Map<
-    string,
-    { title: string; order: number; hints: HintOutcome[] }
-  >();
-  for (const hint of hints.filter((h) => matches(h, filter))) {
-    const group = groups.get(hint.section) ?? {
-      title: hint.sectionTitle,
-      order: hint.sectionOrder,
-      hints: [],
-    };
-    group.hints.push(hint);
-    groups.set(hint.section, group);
-  }
-  return [...groups.entries()]
-    .toSorted(
-      ([, a], [, b]) => a.order - b.order || compareText(a.title, b.title),
-    )
-    .map(([id, group]) => ({
+  return [
+    ...Map.groupBy(
+      hints.filter((h) => matches(h, filter)),
+      (hint) => hint.section,
+    ).entries(),
+  ]
+    .flatMap(([id, members]) => {
+      const [first] = members;
+      return first
+        ? [
+            {
+              id,
+              title: first.sectionTitle,
+              order: first.sectionOrder,
+              hints: members,
+            },
+          ]
+        : [];
+    })
+    .toSorted((a, b) => a.order - b.order || compareText(a.title, b.title))
+    .map(({ id, title, hints: members }) => ({
       id,
-      title: group.title,
-      hints: group.hints.toSorted(
+      title,
+      hints: members.toSorted(
         (a, b) =>
           STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status) ||
           compareText(a.name, b.name),
@@ -134,19 +135,19 @@ export function setAll(
   return Object.fromEntries(hints.map((hint) => [hint.id, open]));
 }
 
+/** The issues that report each check, by check id. */
+export type IssuesByCheck = Readonly<Record<string, readonly IssueRef[]>>;
+
 /** The issues of a site, grouped by the checks they reported, newest first. */
-export function issuesByCheck(
-  issues: readonly IssueRef[],
-): Readonly<Record<string, readonly IssueRef[]>> {
-  const grouped: Record<string, IssueRef[]> = {};
-  for (const issue of issues) {
-    for (const id of issue.checks) {
-      const list = grouped[id] ?? [];
-      list.push(issue);
-      grouped[id] = list;
-    }
-  }
-  return grouped;
+export function issuesByCheck(issues: readonly IssueRef[]): IssuesByCheck {
+  return Object.fromEntries(
+    Map.groupBy(
+      issues.flatMap((issue) => issue.checks.map((id) => ({ id, issue }))),
+      (entry) => entry.id,
+    )
+      .entries()
+      .map(([id, entries]) => [id, entries.map((entry) => entry.issue)]),
+  );
 }
 
 /** What each state of an issue is called on the page. */

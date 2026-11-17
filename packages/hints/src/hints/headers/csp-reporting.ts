@@ -37,12 +37,10 @@ export default defineHint({
   reference: 'https://github.com/andersju/webbkoll',
   setup(context) {
     onPage(context, (page) => {
-      let host = '';
-      try {
-        host = new URL(page.url).hostname;
-      } catch {
+      if (!URL.canParse(page.url)) {
         return;
       }
+      const host = new URL(page.url).hostname;
       const nel = headerValues(page.headers, 'nel');
       reportFindings(
         page,

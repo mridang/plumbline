@@ -30,14 +30,13 @@ export default defineHint({
       const types = Object.entries(result.byType)
         .map(([type, count]) => `${type}: ${count}`)
         .join(', ');
-      const counts = new Map<string, number>();
-      for (const request of result.thirdParty) {
-        const host = new URL(request.url).hostname.toLowerCase();
-        counts.set(host, (counts.get(host) ?? 0) + 1);
-      }
+      const requestHosts = result.thirdParty.map((request) =>
+        new URL(request.url).hostname.toLowerCase(),
+      );
       const hosts = Array.from(
-        counts,
-        ([host, count]) => `${host}: ${count}`,
+        new Set(requestHosts),
+        (host) =>
+          `${host}: ${requestHosts.filter((other) => other === host).length}`,
       ).join('\n');
       context.report(
         collected.pageUrl,

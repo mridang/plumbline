@@ -1,9 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { RunList } from '@/components/runs/run-history';
-import type { RunSummary } from '@/domain/db/runs';
-
 import { htmlAt } from '../render';
+import type { RunSummary } from '@/domain/db/runs';
 
 /** The clock the page was made with: two hours after the runs below. */
 const NOW = Date.parse('2026-11-01T12:00:00.000Z');

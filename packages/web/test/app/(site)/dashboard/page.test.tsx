@@ -6,9 +6,8 @@ import {
   it,
   jest,
 } from '@jest/globals';
-import type { ReactElement } from 'react';
 
-import { createDatabase, type Database } from '@/domain/db/client';
+import { createDatabase } from '@/domain/db/client';
 import { addDomain } from '@/domain/db/domains';
 import { disableRepo } from '@/domain/db/disabled';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
@@ -17,13 +16,15 @@ import {
   sqliteD1,
 } from '../../../lib/core/db/sqlite-d1';
 import { htmlAt } from '../../../components/render';
+import type { Database } from '@/domain/db/client';
+import type { ReactElement } from 'react';
 
 /** Matches dashboard current link. */
-const DASHBOARD_CURRENT_LINK = /aria-current="true"[^>]*href="\/dashboard"/;
+const DASHBOARD_CURRENT_LINK = /aria-current="true"[^>]*href="\/dashboard"/u;
 
 /** Matches cards view current link. */
 const CARDS_VIEW_CURRENT_LINK =
-  /aria-current="true"[^>]*href="\/dashboard\?view=cards"/;
+  /aria-current="true"[^>]*href="\/dashboard\?view=cards"/u;
 
 /** What the page asked Next to redirect to; `redirect` throws, as the real one does. */
 class RedirectedError extends Error {
@@ -34,8 +35,14 @@ class RedirectedError extends Error {
 }
 
 /** The signed-in user, or null for nobody. */
-const state: { user: { id: number } | null } = { user: null };
+interface UserState {
+  user: { id: number } | null;
+}
 
+/** The signed-in user, or null for nobody. */
+const state: UserState = { user: null };
+
+// eslint-disable-next-line tslop/no-module-mocking -- next/navigation is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('next/navigation', () => ({
   redirect: (to: string) => {
     throw new RedirectedError(to);
@@ -43,6 +50,7 @@ jest.unstable_mockModule('next/navigation', () => ({
   useRouter: () => ({ push: () => undefined, refresh: () => undefined }),
   usePathname: () => '/',
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- @/lib/core/auth/current-user is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
 }));
@@ -101,7 +109,7 @@ describe('DashboardPage', () => {
 
   it('is a compact heading, then a table of sites with a row for each', async () => {
     const out = await page();
-    expect(out.match(/<h1/g)).toHaveLength(1);
+    expect(out.match(/<h1/gu)).toHaveLength(1);
     expect(out).toContain('Your sites');
     expect(out).toContain('<table');
     expect(out).toContain('Your sites and how each stands');

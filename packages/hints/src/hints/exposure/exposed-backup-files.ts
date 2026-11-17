@@ -26,7 +26,7 @@ export default defineHint({
   reference: WSTG,
   setup(context) {
     onSite(context, async (site) => {
-      for (const probe of BACKUP_PROBES) {
+      await Array.fromAsync(BACKUP_PROBES, async (probe) => {
         const body = await fetchIfReachable(site, probe.path);
         if (body !== null && confirmsBackup(probe.path, body)) {
           reportExposure(
@@ -36,7 +36,7 @@ export default defineHint({
             body,
           );
         }
-      }
+      });
     });
   },
 });

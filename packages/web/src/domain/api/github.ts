@@ -10,11 +10,7 @@
  *   DELETE /api/users/self/github → 204, the person's GitHub link forgotten
  */
 
-import {
-  liveUid,
-  requestCookieResolver,
-  type CurrentUserResolver,
-} from '@/domain/api/auth';
+import { liveUid, requestCookieResolver } from '@/domain/api/auth';
 import { getDatabase } from '@/domain/db/client';
 import { getLink, unlinkAccount } from '@/domain/db/github';
 import { githubConfig, syncAllOf } from '@/domain/github/service';
@@ -25,6 +21,7 @@ import {
   problem,
   problems,
 } from '@/lib/core/api';
+import type { CurrentUserResolver } from '@/domain/api/auth';
 
 /** The signed-in caller's id. */
 interface UidContext {

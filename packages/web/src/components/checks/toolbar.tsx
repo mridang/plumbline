@@ -1,12 +1,13 @@
 import Link from 'next/link';
-import type { ReactElement } from 'react';
 
 import { BTN_GHOST } from '@/components/checks/parts';
 import { SearchIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
 import { TIERS } from '@/domain/checks/catalogue';
-import { queryOf, type View } from '@/domain/checks/browse';
+import { queryOf } from '@/domain/checks/browse';
 import { countOf } from '@/lib/intl';
+import type { View } from '@/domain/checks/browse';
+import type { ReactElement } from 'react';
 
 /** The class of a segment of the tier switch. */
 function segment(on: boolean): string {
@@ -57,6 +58,7 @@ export function Toolbar({
           <input
             type="search"
             name="q"
+            aria-label="Filter rules"
             defaultValue={view.q}
             placeholder="Filter rules"
             className="focus-ring-flush h-9 w-full rounded-control border border-line bg-surface pr-3 pl-9 text-sm placeholder:text-subtle"
@@ -67,9 +69,8 @@ export function Toolbar({
         ) : null}
       </form>
       {showTier ? (
-        <div
-          className="inline-flex max-w-full items-center gap-0.5 overflow-x-auto rounded-control bg-ink/6 p-0.5"
-          role="group"
+        <fieldset
+          className="m-0 inline-flex max-w-full min-w-0 items-center gap-0.5 overflow-x-auto rounded-control border-0 bg-ink/6 p-0.5"
           aria-label="Tier"
         >
           {[undefined, ...TIERS].map((tier) => (
@@ -82,7 +83,7 @@ export function Toolbar({
               {tier ? `${tier[0]?.toUpperCase()}${tier.slice(1)}` : 'All'}
             </Link>
           ))}
-        </div>
+        </fieldset>
       ) : null}
       <span className="text-sm text-subtle tabular-nums">
         {shown === total

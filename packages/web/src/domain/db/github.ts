@@ -8,13 +8,13 @@
 
 import { and, asc, eq, inArray, lt } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import {
   githubInstallations,
   githubLinks,
   githubRepos,
   users,
 } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 import type { User } from '@/domain/db/users';
 
 /** The GitHub account a person connected. */
@@ -220,19 +220,23 @@ export async function saveRepos(
   const forgotten = stored
     .map((row) => row.full_name)
     .filter((name) => !keep.has(name));
-  for (let at = 0; at < forgotten.length; at += FORGET_BATCH) {
+  const batches = Array.from(
+    { length: Math.ceil(forgotten.length / FORGET_BATCH) },
+    (_, batch) =>
+      forgotten.slice(batch * FORGET_BATCH, (batch + 1) * FORGET_BATCH),
+  );
+  await batches.reduce(async (previous, batch) => {
+    await previous;
     await db
       .delete(githubRepos)
       .where(
         and(
           eq(githubRepos.installation_id, installationId),
-          inArray(
-            githubRepos.full_name,
-            forgotten.slice(at, at + FORGET_BATCH),
-          ),
+          inArray(githubRepos.full_name, batch),
         ),
       );
-  }
+  }, Promise.resolve());
+  // eslint-disable-next-line functional/no-loop-statements -- the upserts run one after another, in the order of the repositories
   for (const repo of repos) {
     await db
       .insert(githubRepos)

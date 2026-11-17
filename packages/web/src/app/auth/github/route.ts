@@ -6,13 +6,14 @@
  * sign-in page, with a fixed flag, when the app has no GitHub settings.
  */
 
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { authorizeUrl } from '@/domain/github/oauth';
 import { githubConfig } from '@/domain/github/service';
 import { startFlowCookies } from '@/lib/core/auth';
 import { appOrigin } from '@/lib/core/origin';
 import { safeReturnPath } from '@/lib/web-security';
+import type { NextRequest } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 

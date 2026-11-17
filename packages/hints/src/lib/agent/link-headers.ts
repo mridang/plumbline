@@ -1,11 +1,11 @@
-import type { AgentEnv, CheckResult } from './types.js';
 import { evidenceFor, result } from './utility.js';
+import type { AgentEnv, CheckResult } from './types.js';
 
 /** Matches one `Link` header entry: the target in angle brackets and its parameters. */
-const LINK_ENTRY = /^<([^>]*)>(.*)$/;
+const LINK_ENTRY = /^<([^>]*)>(.*)$/u;
 
 /** Matches a run of whitespace. */
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /** One link of a `Link` header (RFC 8288). */
 export interface WebLink {
@@ -16,47 +16,50 @@ export interface WebLink {
 
 /** Splits on commas that are outside `<...>` and quoted strings. */
 function splitLinks(header: string): string[] {
-  const parts: string[] = [];
-  let current = '';
-  let inUri = false;
-  let inQuote = false;
-  for (const char of header) {
-    if (char === '"' && !inUri) inQuote = !inQuote;
-    else if (char === '<' && !inQuote) inUri = true;
-    else if (char === '>' && !inQuote) inUri = false;
-    else {
-      // Other characters leave the quoting state unchanged.
-    }
-    if (char === ',' && !inUri && !inQuote) {
-      parts.push(current);
-      current = '';
-    } else {
-      current += char;
-    }
-  }
-  parts.push(current);
-  return parts.map((part) => part.trim()).filter((part) => part.length > 0);
+  const scanned = Iterator.from(header).reduce(
+    (state, char) => {
+      const inQuote =
+        char === '"' && !state.inUri ? !state.inQuote : state.inQuote;
+      const opens = char === '<' && !state.inQuote;
+      const closes = char === '>' && !state.inQuote;
+      const inUri = opens || (state.inUri && !closes);
+      return char === ',' && !inUri && !inQuote
+        ? {
+            parts: [...state.parts, state.current],
+            current: '',
+            inUri,
+            inQuote,
+          }
+        : {
+            parts: state.parts,
+            current: state.current + char,
+            inUri,
+            inQuote,
+          };
+    },
+    { parts: [] as string[], current: '', inUri: false, inQuote: false },
+  );
+  return [...scanned.parts, scanned.current].flatMap((part) => {
+    const trimmed = part.trim();
+    return trimmed.length > 0 ? [trimmed] : [];
+  });
 }
 
 /** Parses a `Link` header value into its links. */
 export function parseLinkHeader(header: string): WebLink[] {
-  const links: WebLink[] = [];
-  for (const part of splitLinks(header)) {
+  // `rel` may be quoted and hold several space separated relations.
+  const relationshipPattern = /;\s*rel\s*=\s*(?:"([^"]*)"|([^\s;,]+))/giu;
+  return splitLinks(header).flatMap((part) => {
     const match = LINK_ENTRY.exec(part);
     if (!match) {
-      continue;
+      return [];
     }
-    const rels: string[] = [];
-    // `rel` may be quoted and hold several space separated relations.
-    const relationshipPattern = /;\s*rel\s*=\s*(?:"([^"]*)"|([^\s;,]+))/gi;
-    for (const parameter of match[2].matchAll(relationshipPattern)) {
-      rels.push(
-        ...(parameter[1] ?? parameter[2]).toLowerCase().split(WHITESPACE_RUN),
-      );
-    }
-    links.push({ target: match[1], rels: rels.filter(Boolean) });
-  }
-  return links;
+    const rels = [...match[2].matchAll(relationshipPattern)].flatMap(
+      (parameter) =>
+        (parameter[1] ?? parameter[2]).toLowerCase().split(WHITESPACE_RUN),
+    );
+    return [{ target: match[1], rels: rels.filter(Boolean) }];
+  });
 }
 
 /**

@@ -4,10 +4,10 @@ import { describe, expect, it } from '@jest/globals';
 import { hashSecret, newSecret } from '@/lib/oauth';
 
 /** Matches a freshly generated access secret. */
-const ACCESS_SECRET_PATTERN = /^cdn_at_[A-Za-z0-9_-]{43}$/;
+const ACCESS_SECRET_PATTERN = /^cdn_at_[A-Za-z0-9_-]{43}$/u;
 
 /** Matches a 64 character lowercase hexadecimal digest. */
-const SHA_256_HEX_PATTERN = /^[0-9a-f]{64}$/;
+const SHA_256_HEX_PATTERN = /^[0-9a-f]{64}$/u;
 
 describe('newSecret', () => {
   it('is prefixed, url-safe and different every time', () => {

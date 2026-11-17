@@ -67,47 +67,49 @@ export function classifyRequests(
   const page = parseWebUrl(pageUrl);
   const pageHost = page?.hostname ?? '';
   const pageSecure = page?.protocol === 'https:';
-  const report: RequestReport = {
+  const parsed = requests.flatMap((request) => {
+    const url = parseWebUrl(request.url);
+    // data:, blob: and similar never leave the browser.
+    return url
+      ? [
+          {
+            request,
+            url,
+            insecure: url.protocol === 'http:',
+            sameParty: isSameParty(url.hostname, pageHost),
+          },
+        ]
+      : [];
+  });
+  const mixed = parsed.filter(({ insecure }) => pageSecure && insecure);
+  const thirdParty = parsed.filter(({ sameParty }) => !sameParty);
+  return {
     pageDomain: registrableDomain(pageHost),
     pageSecure,
-    insecureFirstParty: [],
-    thirdParty: [],
-    thirdPartyHosts: [],
-    secure: 0,
-    insecure: 0,
-    byType: {},
-    mixedContent: { active: [], passive: [] },
+    // Webbkoll lists every plain http request to the page's own domain,
+    // whatever the scheme of the page itself.
+    insecureFirstParty: parsed.flatMap(({ request, sameParty, insecure }) =>
+      sameParty && insecure ? [request] : [],
+    ),
+    thirdParty: thirdParty.map(({ request }) => request),
+    thirdPartyHosts: [
+      ...new Set(thirdParty.map(({ url }) => url.hostname.toLowerCase())),
+    ],
+    secure: thirdParty.filter(({ insecure }) => !insecure).length,
+    insecure: thirdParty.filter(({ insecure }) => insecure).length,
+    byType: Object.fromEntries(
+      Array.from(
+        Map.groupBy(thirdParty, ({ request }) => request.type),
+        ([type, group]) => [type, group.length],
+      ),
+    ),
+    mixedContent: {
+      active: mixed.flatMap(({ request }) =>
+        ACTIVE_TYPES.has(request.type) ? [request] : [],
+      ),
+      passive: mixed.flatMap(({ request }) =>
+        ACTIVE_TYPES.has(request.type) ? [] : [request],
+      ),
+    },
   };
-  const hosts = new Set<string>();
-  for (const request of requests) {
-    const url = parseWebUrl(request.url);
-    if (!url) {
-      continue; // data:, blob: and similar never leave the browser.
-    }
-    const insecure = url.protocol === 'http:';
-    if (pageSecure && insecure) {
-      const bucket = ACTIVE_TYPES.has(request.type)
-        ? report.mixedContent.active
-        : report.mixedContent.passive;
-      bucket.push(request);
-    }
-    if (isSameParty(url.hostname, pageHost)) {
-      // Webbkoll lists every plain http request to the page's own domain,
-      // whatever the scheme of the page itself.
-      if (insecure) {
-        report.insecureFirstParty.push(request);
-      }
-    } else {
-      report.thirdParty.push(request);
-      hosts.add(url.hostname.toLowerCase());
-      if (insecure) {
-        report.insecure++;
-      } else {
-        report.secure++;
-      }
-      report.byType[request.type] = (report.byType[request.type] ?? 0) + 1;
-    }
-  }
-  report.thirdPartyHosts = [...hosts];
-  return report;
 }

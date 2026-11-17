@@ -7,12 +7,12 @@
  * recompute the id from the subscription it holds.
  */
 
-/** The shape of a subscription id: 64 lowercase hex digits. */
-const SUBSCRIPTION_ID_SHAPE = /^[0-9a-f]{64}$/;
+/** The pattern of a subscription id: 64 lowercase hex digits. */
+const SUBSCRIPTION_ID_PATTERN = /^[0-9a-f]{64}$/u;
 
 /** Whether `id` has the shape of a {@link subscriptionId}: 64 lowercase hex digits. */
 export function isSubscriptionId(id: string): boolean {
-  return SUBSCRIPTION_ID_SHAPE.test(id);
+  return SUBSCRIPTION_ID_PATTERN.test(id);
 }
 
 /** The id for a subscription `endpoint`. */
@@ -35,10 +35,8 @@ export async function endpointForId(
   endpoints: readonly string[],
   id: string,
 ): Promise<string | undefined> {
-  for (const endpoint of endpoints) {
-    if ((await subscriptionId(endpoint)) === id) {
-      return endpoint;
-    }
-  }
-  return undefined;
+  const ids = await Promise.all(
+    endpoints.map(async (endpoint) => subscriptionId(endpoint)),
+  );
+  return endpoints.find((_endpoint, index) => ids[index] === id);
 }

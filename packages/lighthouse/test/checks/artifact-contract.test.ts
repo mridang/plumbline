@@ -11,40 +11,31 @@ import { describe, expect, it } from '@jest/globals';
 import { checks } from '../../src/checks/index.js';
 
 /** A representative value for each artifact a check may declare. */
-function stubArtifact(name: string): unknown {
-  switch (name) {
-    case 'MainDocumentContent': {
-      return '<!doctype html><html lang="en"><head><title>Test page title here</title></head><body><h1>Heading</h1><p>Body text that is long enough to count as content.</p></body></html>';
-    }
-    case 'URL': {
-      return {
-        requestedUrl: 'https://example.test/',
-        mainDocumentUrl: 'https://example.test/',
-        finalDisplayedUrl: 'https://example.test/',
-      };
-    }
-    case 'MetaElements':
-    case 'LinkElements':
-    case 'ImageElements': {
-      return [];
-    }
-    case 'DevtoolsLog':
-    case 'devtoolsLogs': {
-      return [];
-    }
-    default: {
-      return {};
-    }
-  }
-}
+const STUBS = new Map<string, unknown>([
+  [
+    'MainDocumentContent',
+    '<!doctype html><html lang="en"><head><title>Test page title here</title></head><body><h1>Heading</h1><p>Body text that is long enough to count as content.</p></body></html>',
+  ],
+  [
+    'URL',
+    {
+      requestedUrl: 'https://example.test/',
+      mainDocumentUrl: 'https://example.test/',
+      finalDisplayedUrl: 'https://example.test/',
+    },
+  ],
+  ['MetaElements', []],
+  ['LinkElements', []],
+  ['ImageElements', []],
+  ['DevtoolsLog', []],
+  ['devtoolsLogs', []],
+]);
 
 /** The minimal artifacts object a check is entitled to read. */
-function artifactsFor(required: readonly string[]): Record<string, unknown> {
-  const artifacts: Record<string, unknown> = {};
-  for (const name of required) {
-    artifacts[name] = stubArtifact(name);
-  }
-  return artifacts;
+function artifactsFor(required: readonly string[]) {
+  return Object.fromEntries(
+    required.map((name) => [name, STUBS.get(name) ?? {}]),
+  );
 }
 
 describe('audit artifact contract', () => {
@@ -57,7 +48,7 @@ describe('audit artifact contract', () => {
     async (_id, check) => {
       const artifacts = artifactsFor(check.requiredArtifacts);
       // A fresh computed-artifact cache, as Lighthouse passes to every audit.
-      const context = { computedCache: new Map() };
+      const context = { computedCache: new Map<string, unknown>() };
       // Must not throw: the check may return findings or null, either is fine.
       await expect(
         (async () => check.run(artifacts as never, context as never))(),

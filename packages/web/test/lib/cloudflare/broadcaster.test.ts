@@ -1,5 +1,6 @@
 import { describe, expect, jest, test } from '@jest/globals';
-import { Broadcaster, type HubNamespace } from '@/lib/cloudflare/broadcaster';
+import { Broadcaster } from '@/lib/cloudflare/broadcaster';
+import type { HubNamespace } from '@/lib/cloudflare/broadcaster';
 
 describe('Broadcaster', () => {
   test('wakes the hub named after the repository', async () => {

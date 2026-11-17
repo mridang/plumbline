@@ -95,28 +95,33 @@ export function collectRequests(context: HintContext): Collected {
     declared: [],
   };
   context.on('scan::start', (event) => {
+    // eslint-disable-next-line functional/immutable-data -- the collection is filled in as the scan's events arrive
     collected.pageUrl = event.resource;
   });
   context.on('traverse::end', (event) => {
-    for (const [selector, attribute, type] of REFERENCES) {
-      for (const element of event.document.querySelectorAll(selector)) {
-        const value = element.getAttribute(attribute);
-        const url = value ? resolveUrl(value, collected.pageUrl) : null;
-        if (url) {
-          collected.declared.push({ url, type, element });
-        }
-      }
-    }
+    // eslint-disable-next-line functional/immutable-data -- the collection is filled in as the scan's events arrive
+    collected.declared.push(
+      ...REFERENCES.flatMap(([selector, attribute, type]) =>
+        [...event.document.querySelectorAll(selector)].flatMap((element) => {
+          const value = element.getAttribute(attribute);
+          const url = value ? resolveUrl(value, collected.pageUrl) : null;
+          return url ? [{ url, type, element }] : [];
+        }),
+      ),
+    );
   });
+  // eslint-disable-next-line functional/no-loop-statements -- registers one handler per request type
   for (const type of TYPES) {
     context.on(`fetch::end::${type}`, (event) => {
       const headers = event.response.headers ?? {};
       // The page document is by definition first party and is not a request
       // made by the page, so it is kept apart.
       if (type === 'html' && event.resource === collected.pageUrl) {
+        // eslint-disable-next-line functional/immutable-data -- the collection is filled in as the scan's events arrive
         collected.pageHeaders = headers;
         return;
       }
+      // eslint-disable-next-line functional/immutable-data -- the collection is filled in as the scan's events arrive
       collected.requests.push({
         url: event.resource,
         type,

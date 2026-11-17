@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/network/caa.js';
-import { installDns, type Zone } from '../../lib/network/fake-dns.js';
+import { installDns } from '../../lib/network/fake-dns.js';
 import { runHint } from '../../helpers/run-hint.js';
+import type { Zone } from '../../lib/network/fake-dns.js';
 
 let restore: () => void = () => undefined;
 afterEach(() => restore());

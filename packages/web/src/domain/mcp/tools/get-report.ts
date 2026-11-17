@@ -5,8 +5,7 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import type { Domain } from '@/domain/db/domains';
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import { z } from 'zod';
 import { reportResult } from '@/domain/mcp/tool-results';
 import { namedReport } from '@/domain/mcp/tools/domain-support';
 import { DomainTool } from '@/domain/mcp/tools/domain-tool';
@@ -17,17 +16,16 @@ import {
   WIDGET_CALLABLE,
 } from '@/domain/mcp/tools/schemas';
 import { REPORT_RESOURCE_URI } from '@/domain/mcp/ui-resources';
-import {
-  type ArgumentSpellings,
-  errorResult,
-  type JsonSchema,
-  READS,
-  stringArg,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
+import { errorResult, READS, stringArg } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import type { Domain } from '@/domain/db/domains';
+import type {
+  ArgumentSpellings,
+  JsonSchema,
+  ToolAnnotations,
+  ToolArgs,
+  ToolResult,
 } from '@/lib/mcp';
-import { z } from 'zod';
 
 export class GetReportTool extends DomainTool<'get_report'> {
   readonly name = 'get_report';

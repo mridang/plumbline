@@ -24,15 +24,16 @@ import {
   parseOpenssl,
   parseReachable,
   parseStarttls,
-  type Field,
-  type HandshakeAnswer,
-  type HttpAnswer,
-  type OpensslAnswer,
-  type StarttlsAnswer,
+} from './protocol.js';
+import type {
+  HandshakeAnswer,
+  HttpAnswer,
+  OpensslAnswer,
+  StarttlsAnswer,
 } from './protocol.js';
 
 /** Matches the message of a refusal to reach a non-public or unresolvable host. */
-const PUBLIC_ADDRESS_OR_RESOLVE = /public address|resolve/;
+const PUBLIC_ADDRESS_OR_RESOLVE = /public address|resolve/u;
 
 /** Sends `body` to `path` of the probe and gives back the status and the text of the answer. */
 export type ProbeTransport = (
@@ -157,13 +158,19 @@ export class ProbeClient {
   private async turn<T>(lane: Lane, work: () => Promise<T>): Promise<T> {
     const pool = this.lanes[lane];
     if (pool.active >= pool.limit) {
-      await new Promise<void>((resolve) => pool.queue.push(resolve));
+      await new Promise<void>((resolve) => {
+        // eslint-disable-next-line functional/immutable-data -- the queue of the lane is shared state
+        pool.queue.push(resolve);
+      });
     }
+    // eslint-disable-next-line functional/immutable-data -- the count of requests on their way is shared state
     pool.active += 1;
     try {
       return await work();
     } finally {
+      // eslint-disable-next-line functional/immutable-data -- the count of requests on their way is shared state
       pool.active -= 1;
+      // eslint-disable-next-line functional/immutable-data -- the queue of the lane is shared state
       pool.queue.shift()?.();
     }
   }
@@ -174,26 +181,24 @@ export class ProbeClient {
     body: string,
     lane: Lane = 'web',
   ): Promise<string> {
-    return this.turn(lane, async () => {
-      for (let attempt = 0; ; attempt += 1) {
-        let answer;
-        try {
-          answer = await this.transport(path, body);
-        } catch (error) {
+    const attemptFrom = async (attempt: number): Promise<string> => {
+      const answer = await this.transport(path, body).catch(
+        (error: unknown) => {
           throw new ProbeUnavailableError(
             `the probe could not be reached: ${error instanceof Error ? error.message : String(error)}`,
           );
-        }
-        if (answer.status === 503 && attempt < this.retries) {
-          // The probe serves a few requests at a time; wait for a place.
-          await new Promise((resolve) =>
-            setTimeout(resolve, 50 + 25 * Math.min(attempt, 12)),
-          );
-          continue;
-        }
-        return this.checked(answer);
+        },
+      );
+      if (answer.status === 503 && attempt < this.retries) {
+        // The probe serves a few requests at a time; wait for a place.
+        await new Promise((resolve) => {
+          setTimeout(resolve, 50 + 25 * Math.min(attempt, 12));
+        });
+        return attemptFrom(attempt + 1);
       }
-    });
+      return this.checked(answer);
+    };
+    return this.turn(lane, async () => attemptFrom(0));
   }
 
   /** The text of a 200 answer; a 502 is the probe's own complaint, anything else an error. */
@@ -228,14 +233,15 @@ export class ProbeClient {
     });
     const lane: Lane = request.starttls ? 'mail' : 'web';
     return new Promise((resolve, reject) => {
+      // eslint-disable-next-line functional/immutable-data -- the handshakes waiting in the lane are shared state
       this.waiting[lane].push({ request: item, resolve, reject });
       if (this.waiting[lane].length >= this.size) {
         void this.flush(lane);
       } else if (this.timers[lane] === null) {
-        this.timers[lane] = setTimeout(
-          () => void this.flush(lane),
-          this.waitMs,
-        );
+        // eslint-disable-next-line functional/immutable-data -- the timer of the lane is shared state
+        this.timers[lane] = setTimeout(() => {
+          void this.flush(lane);
+        }, this.waitMs);
       } else {
         // A timer is already set for this lane, and it will send what waits.
       }
@@ -247,8 +253,10 @@ export class ProbeClient {
     const timer = this.timers[lane];
     if (timer !== null) {
       clearTimeout(timer);
+      // eslint-disable-next-line functional/immutable-data -- the timer of the lane is shared state
       this.timers[lane] = null;
     }
+    // eslint-disable-next-line functional/immutable-data -- takes the next batch off the lane's waiting handshakes
     const batch = this.waiting[lane].splice(0, this.size);
     if (batch.length === 0) {
       return;
@@ -265,6 +273,7 @@ export class ProbeClient {
           `the probe answered ${answers.length} handshakes for ${batch.length}`,
         );
       }
+      // eslint-disable-next-line functional/no-loop-statements -- settles each waiting handshake, nothing is returned
       for (const [index, entry] of batch.entries()) {
         const answer = answers[index];
         if (answer instanceof ProbeError) {
@@ -278,6 +287,7 @@ export class ProbeClient {
     } catch (error) {
       const failure =
         error instanceof ProbeError ? error : new ProbeError(String(error));
+      // eslint-disable-next-line functional/no-loop-statements -- settles each waiting handshake, nothing is returned
       for (const entry of batch) {
         entry.reject(failure);
       }
@@ -342,18 +352,22 @@ export class ProbeClient {
 
   /** One HTTP exchange, headers and body exactly as they came. */
   public async http(request: HttpRequest): Promise<HttpAnswer> {
-    const fields: Record<string, Field> = {
-      host: request.host,
-      port: request.port,
-      tls: request.tls,
-      ip: request.ip,
-      method: request.method,
-      path: request.path,
-      header: request.headers.map(([name, value]) => `${name}: ${value}`),
-      nobody: request.nobody,
-      maxbody: request.maxBody,
-    };
-    return parseHttp(await this.send('/v1/http', encodeItem(fields)));
+    return parseHttp(
+      await this.send(
+        '/v1/http',
+        encodeItem({
+          host: request.host,
+          port: request.port,
+          tls: request.tls,
+          ip: request.ip,
+          method: request.method,
+          path: request.path,
+          header: request.headers.map(([name, value]) => `${name}: ${value}`),
+          nobody: request.nobody,
+          maxbody: request.maxBody,
+        }),
+      ),
+    );
   }
 
   /** The trusted roots the probe judges chains against, as one PEM bundle. */
@@ -363,26 +377,25 @@ export class ProbeClient {
 
   /** One `openssl s_client` run. */
   public async openssl(request: OpensslRequest): Promise<OpensslAnswer> {
-    const fields: Record<string, Field> = {
-      host: request.host,
-      port: request.port,
-      servername: request.servername,
-      starttls: request.starttls,
-      flag: request.flags,
-      sess_out: request.sessionOut,
-      sess_in: request.sessionIn,
-      early_data:
-        request.earlyData === undefined
-          ? undefined
-          : lineBase64(request.earlyData),
-      input: request.input.map((line) => lineBase64(line)),
-      delay: request.delayMs,
-      timeout: request.timeoutMs,
-    };
     return parseOpenssl(
       await this.send(
         '/v1/openssl',
-        encodeItem(fields),
+        encodeItem({
+          host: request.host,
+          port: request.port,
+          servername: request.servername,
+          starttls: request.starttls,
+          flag: request.flags,
+          sess_out: request.sessionOut,
+          sess_in: request.sessionIn,
+          early_data:
+            request.earlyData === undefined
+              ? undefined
+              : lineBase64(request.earlyData),
+          input: request.input.map((line) => lineBase64(line)),
+          delay: request.delayMs,
+          timeout: request.timeoutMs,
+        }),
         request.port === 25 ? 'mail' : 'web',
       ),
     );

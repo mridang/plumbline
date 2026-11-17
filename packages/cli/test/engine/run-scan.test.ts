@@ -1,11 +1,13 @@
+import { createServer } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
-import type { HintContext } from 'hint';
-import { createServer, type Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
 import { Severity } from '@hint/utils-types';
-import type { CatalogueEntry } from '../../src/engine/catalogue.js';
-import { runScan, type ScanEvent } from '../../src/engine/run-scan.js';
+import { runScan } from '../../src/engine/run-scan.js';
 import { HTTP_SCHEME } from '../helpers/data.js';
+import type { Server } from 'node:http';
+import type { HintContext } from 'hint';
+import type { AddressInfo } from 'node:net';
+import type { CatalogueEntry } from '../../src/engine/catalogue.js';
+import type { ScanEvent } from '../../src/engine/run-scan.js';
 
 /** A fake check that reports `message` as an error on the page. */
 function failing(id: string, message: string): CatalogueEntry {
@@ -68,13 +70,18 @@ describe('runScan', () => {
         '<!doctype html><html lang="en"><head><title>t</title></head></html>',
       );
     });
-    await new Promise<void>((resolve) =>
-      server.listen(0, '127.0.0.1', () => resolve()),
-    );
+    await new Promise<void>((resolve) => {
+      server.listen(0, '127.0.0.1', () => resolve());
+    });
     base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   });
 
-  afterAll(async () => new Promise((resolve) => server.close(() => resolve())));
+  afterAll(
+    async () =>
+      new Promise((resolve) => {
+        server.close(() => resolve());
+      }),
+  );
 
   it('tells what is to run, then each result as it finishes, then ends', async () => {
     const events = await eventsOf(`${base}/`, {

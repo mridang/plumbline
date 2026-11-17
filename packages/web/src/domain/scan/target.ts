@@ -14,10 +14,10 @@
  */
 
 /** A dotted-quad IPv4 literal. */
-const IPV4_LITERAL = /^\d{1,3}(\.\d{1,3}){3}$/;
+const IPV4_LITERAL = /^\d{1,3}(\.\d{1,3}){3}$/u;
 
 /** A leading `scheme://`. */
-const SCHEME_PREFIX = /^[a-z][a-z0-9+.-]*:\/\//i;
+const SCHEME_PREFIX = /^[a-z][a-z0-9+.-]*:\/\//iu;
 
 /** What reading the input came to: the URL to scan, or why it cannot be. */
 export type Target =
@@ -78,34 +78,34 @@ function isTrackingParameter(name: string): boolean {
  */
 export function canonicalUrl(input: URL): URL {
   const url = new URL(input.href);
+  // eslint-disable-next-line functional/immutable-data -- a URL can only be changed through its setters, and this one is our own copy
   url.hash = '';
+  // eslint-disable-next-line functional/immutable-data -- a URL can only be changed through its setters, and this one is our own copy
   url.hostname = stripTrailingDots(url.hostname);
-  url.pathname = url.pathname.replaceAll(/\/{2,}/g, '/');
+  // eslint-disable-next-line functional/immutable-data -- a URL can only be changed through its setters, and this one is our own copy
+  url.pathname = url.pathname.replaceAll(/\/{2,}/gu, '/');
   // The pairs are kept as they were written, not decoded and encoded again,
   // so a server that reads `+` and `%20` differently gets what was typed.
   const kept = url.search
     .slice(1)
     .split('&')
     .filter((pair) => pair !== '')
-    .filter((pair) => !isTrackingParameter(nameOf(pair)));
-  kept.sort((a, b) => {
-    const [x, y] = [nameOf(a), nameOf(b)];
-    if (x < y) {
-      return -1;
-    }
-    return x > y ? 1 : 0;
-  });
+    .filter((pair) => !isTrackingParameter(nameOf(pair)))
+    .toSorted((a, b) => {
+      const [x, y] = [nameOf(a), nameOf(b)];
+      if (x < y) {
+        return -1;
+      }
+      return x > y ? 1 : 0;
+    });
+  // eslint-disable-next-line functional/immutable-data -- a URL can only be changed through its setters, and this one is our own copy
   url.search = kept.join('&');
   return url;
 }
 
 /** The name without any dots at its end. */
 function stripTrailingDots(name: string): string {
-  let end = name.length;
-  while (end > 0 && name.codePointAt(end - 1) === 46) {
-    end -= 1;
-  }
-  return name.slice(0, end);
+  return name.endsWith('.') ? stripTrailingDots(name.slice(0, -1)) : name;
 }
 
 /** Whether a hostname is an IPv4 or IPv6 literal. */
@@ -131,12 +131,10 @@ export function readTarget(input: string): Target {
   const withScheme = SCHEME_PREFIX.test(trimmed)
     ? trimmed
     : `https://${trimmed}`;
-  let url: URL;
-  try {
-    url = new URL(withScheme);
-  } catch {
+  if (!URL.canParse(withScheme)) {
     return { ok: false, reason: 'That is not a domain or a URL.' };
   }
+  const url = new URL(withScheme);
   if (url.protocol !== 'https:' && url.protocol !== 'http:') {
     return {
       ok: false,

@@ -6,21 +6,20 @@ import {
   authorizeParamsFrom,
   grantedScope,
   redirectWith,
-  type AuthorizeParams,
-  type OAuthClient,
   validateAuthorizeRequest,
 } from '@/lib/oauth';
 
-import { quietSecurityLogs } from './quiet-logs';
 import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import { HTTP_SCHEME } from '../../helpers/data.js';
+import { quietSecurityLogs } from './quiet-logs';
+import type { AuthorizeParams, OAuthClient } from '@/lib/oauth';
 
 /** Matches printable ascii without quote or backslash. */
 const PRINTABLE_ASCII_WITHOUT_QUOTE_OR_BACKSLASH =
-  /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/;
+  /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/u;
 
 // A field the request leaves out: its key stays present, so an override can unset it.
-let notProvided: undefined;
+const notProvided = [].at(0);
 
 const ORIGIN = 'https://site.example';
 const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';

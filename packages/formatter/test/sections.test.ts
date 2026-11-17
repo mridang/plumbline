@@ -1,11 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import {
-  buildSections,
-  countFindings,
-  sectionFor,
-  type Finding,
-  type HintInfo,
-} from '../src/sections.js';
+import { buildSections, countFindings, sectionFor } from '../src/sections.js';
+import type { Finding, HintInfo } from '../src/sections.js';
 
 const hint = (id: string, over: Partial<HintInfo> = {}): HintInfo => ({
   id,

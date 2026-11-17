@@ -10,16 +10,15 @@
  * ever drawn, never sent anywhere.
  */
 
-import type { ReactElement } from 'react';
-
-import type { ReportData, ReportProblem } from '@/domain/mcp/ui-types';
 import { safeHttpUrl } from '@/views/follow-up';
 import { isReportData } from '@/views/guards';
 import { Announcer, LoadingCard, MessageCard } from '@/views/status-panels';
 import { STYLES } from '@/views/styles';
 import { useWidgetData } from '@/views/use-widget-data';
-import type { ViewState } from '@/views/view-state';
 import { formatTimestamp } from '@/lib/intl';
+import type { ReportData, ReportProblem } from '@/domain/mcp/ui-types';
+import type { ViewState } from '@/views/view-state';
+import type { ReactElement } from 'react';
 
 /** A count with its noun, such as "1 failed" or "12 passed". */
 function counted(count: number, word: string): string {
@@ -159,7 +158,7 @@ export function ReportScreen({
       case 'failed': {
         return <MessageCard reason={state.reason} message={state.message} />;
       }
-      case 'ready': {
+      default: {
         return <ReportCard data={state.data} onOpenLink={onOpenLink} />;
       }
     }

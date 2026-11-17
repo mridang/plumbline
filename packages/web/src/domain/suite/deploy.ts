@@ -10,35 +10,30 @@
  * sites are checked together and the rest are left for the next deployment.
  */
 
-import type { Database } from '@/domain/db/client';
 import { listDomainsOfRepo } from '@/domain/db/domains';
-import {
-  latestRuns,
-  markTried,
-  recordRun,
-  type SuiteRunKind,
-} from '@/domain/db/suite';
-import {
-  diffFindings,
-  findingsOf,
-  type Changes,
-  type StoredFinding,
-} from '@/domain/suite/diff';
-import type { Live } from '@/domain/live/live';
+import { latestRuns, markTried, recordRun } from '@/domain/db/suite';
+import { diffFindings, findingsOf } from '@/domain/suite/diff';
 import { countsOf } from '@/domain/suite/report';
-import { restrictRun, type SuiteRun } from '@/domain/suite/run';
+import { restrictRun } from '@/domain/suite/run';
 import { resolveRules } from '@/domain/suite/config';
-import { FREE_LIMITS, inBatches, type Limits } from '@/domain/suite/limits';
+import { FREE_LIMITS, inBatches } from '@/domain/suite/limits';
 import { SiteUnreachableError } from '@/domain/suite/scanner';
 import { siteAddress } from '@/domain/suite/site-address';
-import { applyLevels, fingerprintOf, type Level } from '@/domain/suite/rules';
+import { applyLevels, fingerprintOf } from '@/domain/suite/rules';
+import type { Limits } from '@/domain/suite/limits';
+import type { SuiteRun } from '@/domain/suite/run';
+import type { Level } from '@/domain/suite/rules';
+import type { Changes, StoredFinding } from '@/domain/suite/diff';
+import type { SuiteRunKind } from '@/domain/db/suite';
+import type { Live } from '@/domain/live/live';
+import type { Database } from '@/domain/db/client';
 
 /** Sites checked for one deployment on the Free plan. */
 export const MAX_SITES = FREE_LIMITS.maxSites;
 
 /** Environment names that are a preview, a staging copy or a review app, not the live site. */
 const PREVIEW =
-  /preview|staging|review|dev|pull[-_ ]?request|(^|[-_ ])pr[-_ ]?\d/i;
+  /preview|staging|review|dev|pull[-_ ]?request|(^|[-_ ])pr[-_ ]?\d/iu;
 
 /** The parts of a `deployment_status` delivery the checks need. */
 export interface DeploymentStatus {
@@ -201,22 +196,23 @@ export async function checkSite(
   const where = { host: site.host, repo: site.repo };
   const before = previous ? countsOf(previous.findings) : null;
   await deps.live?.started(userId, where, now().toISOString());
-  let result: SuiteRun;
-  try {
-    result = await run(url);
-  } catch (error) {
-    console.error('suite run failed', site.host, error);
-    if (error instanceof SiteUnreachableError) {
-      await markTried(db, userId, site.host, now().toISOString());
-    }
-    // Only a site that did not answer the scanner is told as down; a scanner
-    // that was restarting or full is our trouble and must not alarm anyone.
-    await deps.live?.finished(userId, where, {
-      before,
-      after: null,
-      at: now().toISOString(),
-      ...(error instanceof SiteUnreachableError ? {} : { failed: true }),
-    });
+  const result = await (async () => run(url))().catch(
+    async (error: unknown) => {
+      console.error('suite run failed', site.host, error);
+      if (error instanceof SiteUnreachableError) {
+        await markTried(db, userId, site.host, now().toISOString());
+      }
+      // Only a site that did not answer the scanner is told as down; a scanner
+      // that was restarting or full is our trouble and must not alarm anyone.
+      await deps.live?.finished(userId, where, {
+        before,
+        after: null,
+        at: now().toISOString(),
+        ...(error instanceof SiteUnreachableError ? {} : { failed: true }),
+      });
+    },
+  );
+  if (!result) {
     return { host: site.host, skipped: 'unreachable' };
   }
   // What the previous run found stands for a check that did not run now, but

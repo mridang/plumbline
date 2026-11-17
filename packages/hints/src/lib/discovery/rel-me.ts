@@ -7,8 +7,10 @@
  *
  * Source: the IndieWeb rel-me specification (https://microformats.org/wiki/rel-me).
  */
-import { finding, type Finding } from '../headers/finding.js';
-import { withRelationship, type RelationshipLink } from './links.js';
+import { finding } from '../headers/finding.js';
+import { withRelationship } from './links.js';
+import type { Finding } from '../headers/finding.js';
+import type { RelationshipLink } from './links.js';
 
 /**
  * Evaluates the `rel=me` links of a page.

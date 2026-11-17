@@ -1,7 +1,5 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import type { ReactElement } from 'react';
 
 import { RepoLabel } from '@/components/repos/repo-label';
 import { siteHref } from '@/components/repos/site-href';
@@ -22,6 +20,8 @@ import { getCurrentUser } from '@/lib/core/auth/current-user';
 import { countOf } from '@/lib/intl';
 
 import { DisconnectButton } from './_components/github-actions';
+import type { ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,14 +29,17 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Manage GitHub' };
 
 /** What each flag the callback can leave in the address says. */
-const ERRORS: Readonly<Record<string, string>> = {
-  unavailable: 'GitHub is not set up on this site yet.',
-  state: 'That sign-in attempt expired. Try connecting again.',
-  code: 'GitHub did not send a sign-in code. Try connecting again.',
-  taken: 'That GitHub account is already connected to someone else.',
-  failed: 'GitHub could not be reached. Try connecting again.',
-  read: 'You are connected, but the repositories could not be read. Try connecting again.',
-};
+const ERRORS = new Map([
+  ['unavailable', 'GitHub is not set up on this site yet.'],
+  ['state', 'That sign-in attempt expired. Try connecting again.'],
+  ['code', 'GitHub did not send a sign-in code. Try connecting again.'],
+  ['taken', 'That GitHub account is already connected to someone else.'],
+  ['failed', 'GitHub could not be reached. Try connecting again.'],
+  [
+    'read',
+    'You are connected, but the repositories could not be read. Try connecting again.',
+  ],
+]);
 
 /**
  * The signed-in person's GitHub: connect the account (which ties it to the
@@ -76,9 +79,9 @@ export default async function GitHubPage({
         description="Install the GitHub app and Plumbline finds the repositories that are deployed web applications, puts the sites they serve on your dashboard, and keeps them up to date as the repositories change."
       />
       <Container className="space-y-8 py-6 sm:py-8">
-        {error && ERRORS[error] ? (
-          <Callout tone="error" shape="banner">
-            {ERRORS[error]}
+        {error && ERRORS.has(error) ? (
+          <Callout tone="error" layout="banner">
+            {ERRORS.get(error)}
           </Callout>
         ) : null}
         {configured && link ? (
@@ -138,7 +141,7 @@ export default async function GitHubPage({
           </Section>
         ) : null}
         {configured ? null : (
-          <Callout tone="plain" shape="banner">
+          <Callout tone="plain" layout="banner">
             GitHub is not set up on this site. The app&apos;s settings
             (GITHUB_APP_ID, GITHUB_APP_SLUG, GITHUB_CLIENT_ID,
             GITHUB_CLIENT_SECRET, GITHUB_PRIVATE_KEY and GITHUB_WEBHOOK_SECRET)
@@ -175,24 +178,20 @@ export default async function GitHubPage({
                       href={siteHref(repo.full_name, repo.hosts[0] ?? '')}
                     />
                     <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
-                      {repo.hosts.map((host) => {
-                        return (
-                          <li key={host} className="break-all">
-                            {added.has(host) ? (
-                              <Link
-                                href={siteHref(repo.full_name, host)}
-                                className="focus-ring underline underline-offset-4 hover:text-ink"
-                              >
-                                {host}
-                              </Link>
-                            ) : (
-                              <span>
-                                {host} · not added (site limit reached)
-                              </span>
-                            )}
-                          </li>
-                        );
-                      })}
+                      {repo.hosts.map((host) => (
+                        <li key={host} className="break-all">
+                          {added.has(host) ? (
+                            <Link
+                              href={siteHref(repo.full_name, host)}
+                              className="focus-ring underline underline-offset-4 hover:text-ink"
+                            >
+                              {host}
+                            </Link>
+                          ) : (
+                            <span>{host} · not added (site limit reached)</span>
+                          )}
+                        </li>
+                      ))}
                     </ul>
                   </li>
                 ))}

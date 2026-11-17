@@ -7,21 +7,25 @@ import {
   jest,
 } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
 import { makeConnectionItem } from '@/domain/api/connections';
-import type { CurrentUserResolver } from '@/domain/api/auth';
+import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import { quietSecurityLogs } from '../../../../../../lib/oauth/quiet-logs';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../../../../../lib/core/db/sqlite-d1';
-import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import { APP_MIGRATIONS } from '../../../../../../lib/core/db/migrations';
+import type { CurrentUserResolver } from '@/domain/api/auth';
+import type { DatabaseSync } from 'node:sqlite';
+
+interface SessionState {
+  uid: number | null;
+  ended: boolean;
+}
 
 /** Who is signed in; null means nobody. */
 /** `ended`: the person signed out everywhere, though the cookie itself still verifies. */
-const session: { uid: number | null; ended: boolean } = {
+const session: SessionState = {
   uid: 7,
   ended: false,
 };
@@ -129,7 +133,9 @@ describe('DELETE /api/users/self/connections/:grant_id', () => {
     const info = jest.spyOn(console, 'info').mockImplementation(() => {});
     await del('g1');
     expect(
-      info.mock.calls.map(([line]): unknown => JSON.parse(String(line))),
+      info.mock.calls.map(
+        ([line]) => JSON.parse(String(line)) as Record<string, unknown>,
+      ),
     ).toContainEqual(
       expect.objectContaining({
         event: 'oauth.grant_revoked',

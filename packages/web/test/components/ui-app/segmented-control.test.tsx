@@ -8,18 +8,18 @@ import { html } from '../render';
 
 /** Matches pressed segment classes. */
 const PRESSED_SEGMENT_CLASSES =
-  /aria-pressed="true"[^>]*class="[^"]*bg-surface/;
+  /aria-pressed="true"[^>]*class="[^"]*bg-surface/u;
 
 /** Matches unpressed segment classes. */
 const UNPRESSED_SEGMENT_CLASSES =
-  /aria-pressed="false"[^>]*class="[^"]*text-muted/;
+  /aria-pressed="false"[^>]*class="[^"]*text-muted/u;
 
 /** Matches all button label. */
-const ALL_BUTTON_LABEL = />All<\/button>/;
+const ALL_BUTTON_LABEL = />All<\/button>/u;
 
 /** Matches cards view current link. */
 const CARDS_VIEW_CURRENT_LINK =
-  /aria-current="true"[^>]*href="\/dashboard\?view=cards"|href="\/dashboard\?view=cards"[^>]*aria-current="true"/;
+  /aria-current="true"[^>]*href="\/dashboard\?view=cards"|href="\/dashboard\?view=cards"[^>]*aria-current="true"/u;
 
 const OPTIONS = [
   { value: 'problems', label: 'Problems', count: 47 },
@@ -38,10 +38,10 @@ describe('SegmentedControl', () => {
   );
 
   it('is a labelled group of buttons with the one in force pressed', () => {
-    expect(out).toContain('role="group"');
+    expect(out).toContain('<fieldset');
     expect(out).toContain('aria-label="Show"');
-    expect(out.match(/aria-pressed="true"/g)).toHaveLength(1);
-    expect(out.match(/aria-pressed="false"/g)).toHaveLength(2);
+    expect(out.match(/aria-pressed="true"/gu)).toHaveLength(1);
+    expect(out.match(/aria-pressed="false"/gu)).toHaveLength(2);
   });
 
   it('lifts the pressed choice off the track', () => {
@@ -57,7 +57,7 @@ describe('SegmentedControl', () => {
 
   it('is never a submit button', () => {
     expect(out).not.toContain('type="submit"');
-    expect(out.match(/type="button"/g)).toHaveLength(3);
+    expect(out.match(/type="button"/gu)).toHaveLength(3);
   });
 });
 
@@ -77,7 +77,7 @@ describe('SegmentedLinks', () => {
     expect(links).toContain('<nav');
     expect(links).toContain('aria-label="View"');
     expect(links).toContain('href="/dashboard"');
-    expect(links.match(/aria-current="true"/g)).toHaveLength(1);
+    expect(links.match(/aria-current="true"/gu)).toHaveLength(1);
     expect(links).toMatch(CARDS_VIEW_CURRENT_LINK);
   });
 

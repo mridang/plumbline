@@ -34,17 +34,19 @@ export default defineHint({
         [mixedContent.active, Severity.error, 'active'],
         [mixedContent.passive, Severity.warning, 'passive'],
       ] as const;
-      for (const [requests, severity, kind] of groups) {
-        for (const request of requests) {
-          context.report(
-            request.url,
-            `The page contains ${kind} mixed content: ${request.type} loaded over http from ${request.url}`,
-            {
-              severity,
-              ...evidence(collected, request.url),
-            },
-          );
-        }
+      // eslint-disable-next-line functional/no-loop-statements -- reports each insecure request
+      for (const { request, severity, kind } of groups.flatMap(
+        ([requests, severity, kind]) =>
+          requests.map((request) => ({ request, severity, kind })),
+      )) {
+        context.report(
+          request.url,
+          `The page contains ${kind} mixed content: ${request.type} loaded over http from ${request.url}`,
+          {
+            severity,
+            ...evidence(collected, request.url),
+          },
+        );
       }
     });
   },

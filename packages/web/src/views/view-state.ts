@@ -149,7 +149,7 @@ export function reduceViewState<T>(
         ? state
         : { phase: 'failed', reason: 'connection', message: action.message };
     }
-    case 'timeout': {
+    default: {
       return isPending(state)
         ? { phase: 'failed', reason: 'timeout', message: TIMEOUT_MESSAGE }
         : state;

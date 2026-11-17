@@ -1,16 +1,16 @@
 import { createHTMLDocument } from '@hint/utils-dom';
 import { describe, expect, it } from '@jest/globals';
-import type { Artifacts } from 'lighthouse';
-import type AuditNS from 'lighthouse/types/audit.js';
-import { i18nChecks } from '../../src/checks/i18n.js';
-import type { AuditCheck } from '../../src/checks/types.js';
-// The single-source rules the webhint hints call. The equivalence test runs the
-// Lighthouse check through its own HTML parser and asserts the findings match
-// these exactly, proving the check and the hint cannot diverge.
 import {
   hreflangReturn,
   hreflangValidCodes,
 } from '@mridang/webhint-hint-plumbline/dist/lib/i18n/checks.js';
+import { i18nChecks } from '../../src/checks/i18n.js';
+import type { Artifacts } from 'lighthouse';
+import type AuditNS from 'lighthouse/types/audit.js';
+import type { AuditCheck } from '../../src/checks/types.js';
+// The single-source rules the webhint hints call. The equivalence test runs the
+// Lighthouse check through its own HTML parser and asserts the findings match
+// these exactly, proving the check and the hint cannot diverge.
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/i18n/read.js';
 
 /** Locale-aware comparator used to sort check ids deterministically. */
@@ -36,7 +36,9 @@ function artifacts(overrides: { html?: string; url?: string }): Artifacts {
 
 /** A fresh audit context. */
 function context(): AuditNS.Context {
-  return { computedCache: new Map() } as unknown as AuditNS.Context;
+  return {
+    computedCache: new Map<string, unknown>(),
+  } as unknown as AuditNS.Context;
 }
 
 /** Looks a check up by id, failing loudly if the registry drops it. */

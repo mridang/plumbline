@@ -1,5 +1,5 @@
-import { isIPv6 } from '#net';
 import { Severity } from '@hint/utils-types';
+import { isIPv6 } from '#net';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { dns } from '../../core/dns.js';
 import {
@@ -41,33 +41,31 @@ export default defineHint({
   ],
   setup(context) {
     onMailDomain(context, async (mail) => {
-      const withoutIpv6: string[] = [];
-      const unreachable: string[] = [];
-
-      for (const host of mail.hosts) {
-        let addresses: string[] | undefined;
-        try {
-          const response = await dns.client.query(host, 'AAAA');
-          // A failed lookup says nothing about the server; skip it.
-          if (response.status === 0 || response.status === 3) {
-            addresses = response.answers
-              .filter((record) => record.type === AAAA)
-              .map((record) => record.data)
-              // IPv4-mapped IPv6 addresses give no IPv6 connectivity.
-              .filter((ip) => isIPv6(ip) && !IPV4_MAPPED_IPV6_PREFIX.test(ip));
-          }
-        } catch {
-          // A failed lookup says nothing about the server; skip it.
-        }
-        if (addresses?.length === 0) {
-          withoutIpv6.push(host);
-        }
-        for (const ip of addresses ?? []) {
-          if (!(await mailNet.client.tcpReachable(ip, SMTP_PORT))) {
-            unreachable.push(`${host} ${ip}`);
-          }
-        }
-      }
+      const found = await Array.fromAsync(mail.hosts, async (host) => {
+        // A failed lookup says nothing about the server; skip it.
+        const response = await dns.client.query(host, 'AAAA').catch(() => null);
+        const addresses =
+          response && (response.status === 0 || response.status === 3)
+            ? response.answers
+                .filter((record) => record.type === AAAA)
+                .map((record) => record.data)
+                // IPv4-mapped IPv6 addresses give no IPv6 connectivity.
+                .filter((ip) => isIPv6(ip) && !IPV4_MAPPED_IPV6_PREFIX.test(ip))
+            : undefined;
+        const unreachableIps = await Array.fromAsync(
+          addresses ?? [],
+          async (ip) =>
+            (await mailNet.client.tcpReachable(ip, SMTP_PORT))
+              ? []
+              : [`${host} ${ip}`],
+        );
+        return {
+          withoutIpv6: addresses?.length === 0 ? [host] : [],
+          unreachable: unreachableIps.flat(),
+        };
+      });
+      const withoutIpv6 = found.flatMap((result) => result.withoutIpv6);
+      const unreachable = found.flatMap((result) => result.unreachable);
 
       if (withoutIpv6.length > 0) {
         mail.report(

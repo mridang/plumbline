@@ -16,7 +16,7 @@ import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 
 /** Matches a suite id. */
-const SUITE_ID = /^s\d+$/;
+const SUITE_ID = /^s\d+$/u;
 
 const setup = async () => {
   const made = sqliteD1(...APP_MIGRATIONS);

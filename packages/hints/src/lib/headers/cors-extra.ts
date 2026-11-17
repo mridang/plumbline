@@ -5,11 +5,12 @@
  * reports only what the headers themselves reveal, following the MDN
  * reference pages for each one.
  */
-import { finding, type Finding } from './finding.js';
+import { finding } from './finding.js';
 import { splitList } from './http-headers.js';
+import type { Finding } from './finding.js';
 
 /** Matches an optionally negative integer. */
-const SIGNED_INTEGER = /^-?\d+$/;
+const SIGNED_INTEGER = /^-?\d+$/u;
 
 /** Methods a cross-origin request may legitimately be granted. */
 const SAFE_METHODS = new Set([

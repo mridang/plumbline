@@ -9,14 +9,16 @@ import {
   PushError,
   pushSupport,
   sendTest,
-  type BrowserSubscription,
-  type PushCapabilities,
-  type PushHost,
 } from '@/components/notifications/push-client';
 import { subscriptionId } from '@/lib/push/subscription-id';
+import type {
+  BrowserSubscription,
+  PushCapabilities,
+  PushHost,
+} from '@/components/notifications/push-client';
 
 /** Matches the blocked notification message. */
-const BLOCKED_PATTERN = /blocked/;
+const BLOCKED_PATTERN = /blocked/u;
 
 const IPHONE =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
@@ -175,7 +177,7 @@ describe('disablePush', () => {
       existing: true,
       responses: { [`DELETE /api/users/self/push/subscriptions/${id}`]: 404 },
     });
-    await disablePush(host);
+    await expect(disablePush(host)).resolves.toBeUndefined();
     expect(unsubscribe).toHaveBeenCalled();
   });
 

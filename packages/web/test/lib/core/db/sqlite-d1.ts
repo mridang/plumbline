@@ -1,10 +1,6 @@
-import {
-  DatabaseSync,
-  type SQLInputValue,
-  type StatementSync,
-} from 'node:sqlite';
-
+import { DatabaseSync } from 'node:sqlite';
 import { migrationSql } from './migrations';
+import type { SQLInputValue, StatementSync } from 'node:sqlite';
 
 /** What a prepared statement answers, shaped like D1's `D1Result`. */
 interface Result {
@@ -59,9 +55,15 @@ class Statement {
     return this.prepared(true).all(...this.params);
   }
 
-  async first(): Promise<unknown> {
+  async first(): Promise<Record<string, unknown> | null> {
     return this.prepared(false).get(...this.params) ?? null;
   }
+}
+
+/** What `sqliteD1` gives back: the binding and the database behind it. */
+export interface SqliteD1 {
+  readonly d1: D1Database;
+  readonly raw: DatabaseSync;
 }
 
 /**
@@ -70,12 +72,11 @@ class Statement {
  * rate limiter: `prepare`, `bind`, `run`, `all`, `raw`, `first`, and `batch`
  * (one transaction, rolled back if any statement fails, as D1 does).
  */
-export function sqliteD1(...migrations: readonly string[]): {
-  readonly d1: D1Database;
-  readonly raw: DatabaseSync;
-} {
+export function sqliteD1(...migrations: readonly string[]): SqliteD1 {
   const raw = new DatabaseSync(':memory:');
-  for (const file of migrations) raw.exec(migrationSql(file));
+  for (const file of migrations) {
+    raw.exec(migrationSql(file));
+  }
   const d1 = {
     prepare: (sql: string) => new Statement(raw, sql),
     batch: async (statements: readonly Statement[]) => {

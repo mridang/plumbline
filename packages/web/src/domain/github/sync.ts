@@ -7,17 +7,18 @@
  * the installation changed, and when they ask for a refresh.
  */
 
-import type { Database } from '@/domain/db/client';
 import {
   listDomainsOfRepo,
   removeSitesOfMissingRepos,
 } from '@/domain/db/domains';
-import { listRepos, saveRepos, type AnalysedRepo } from '@/domain/db/github';
+import { listRepos, saveRepos } from '@/domain/db/github';
 import { loadConfig } from '@/domain/suite/github-run';
 
-import type { GitHubApi, Repo } from './api';
 import { deploymentHosts } from './deployments';
 import { isReal, reconcileSites } from './sites';
+import type { AnalysedRepo } from '@/domain/db/github';
+import type { GitHubApi, Repo } from './api';
+import type { Database } from '@/domain/db/client';
 
 /** How many repositories are read at once, to stay inside a request's limits. */
 const CONCURRENCY = 10;
@@ -59,27 +60,28 @@ export async function analyseRepo(
   api: GitHubApi,
   repo: Readonly<Repo>,
 ): Promise<Analysis> {
-  let fallback: string[] | null = null;
-  let declared: readonly string[] | null = null;
-  try {
-    const paths = await api.filePaths(repo.full_name, repo.default_branch);
-    fallback = await deploymentHosts({
-      paths,
-      read: async (path) => api.file(repo.full_name, path, repo.default_branch),
-      // A fork carries the upstream project's website, which is not this account's site.
-      homepage: repo.fork ? null : repo.homepage,
-    });
-    if (!repo.fork) {
-      const { loaded, unreadable } = await loadConfig(
-        api,
-        repo.full_name,
-        repo.default_branch,
-      );
-      declared = unreadable === null ? (loaded?.sites ?? []) : null;
-    }
-  } catch {
-    // A repository that cannot be read right now says nothing about its sites.
-  }
+  // A repository that cannot be read right now says nothing about its sites.
+  const paths = await api
+    .filePaths(repo.full_name, repo.default_branch)
+    .catch(() => null);
+  const fallback =
+    paths === null
+      ? null
+      : await deploymentHosts({
+          paths,
+          read: async (path) =>
+            api.file(repo.full_name, path, repo.default_branch),
+          // A fork carries the upstream project's website, which is not this account's site.
+          homepage: repo.fork ? null : repo.homepage,
+        }).catch(() => null);
+  const declared =
+    fallback === null || repo.fork
+      ? null
+      : await loadConfig(api, repo.full_name, repo.default_branch)
+          .then(({ loaded, unreadable }) =>
+            unreadable === null ? (loaded?.sites ?? []) : null,
+          )
+          .catch(() => null);
   return {
     full_name: repo.full_name,
     default_branch: repo.default_branch,
@@ -94,15 +96,17 @@ async function inBatches<T, R>(
   items: readonly T[],
   work: (item: T) => Promise<R>,
 ): Promise<R[]> {
-  const out: R[] = [];
-  for (let at = 0; at < items.length; at += CONCURRENCY) {
-    out.push(
-      ...(await Promise.all(
-        items.slice(at, at + CONCURRENCY).map(async (item) => work(item)),
-      )),
-    );
-  }
-  return out;
+  const groups = Array.from(
+    { length: Math.ceil(items.length / CONCURRENCY) },
+    (_, group) => items.slice(group * CONCURRENCY, (group + 1) * CONCURRENCY),
+  );
+  return groups.reduce(
+    async (previous, group) => [
+      ...(await previous),
+      ...(await Promise.all(group.map(async (item) => work(item)))),
+    ],
+    Promise.resolve<R[]>([]),
+  );
 }
 
 /**
@@ -124,42 +128,44 @@ export async function syncInstallation(
   );
   // Settle each repository's sites from what its file and routes say, and what
   // its deployments have already reported (those are in the database).
-  let domainsAdded = 0;
-  const settled: AnalysedRepo[] = [];
-  for (const repo of analysed) {
-    const changes = await reconcileSites(db, userId, repo.full_name, {
-      declared: repo.declared,
-      fallback: repo.fallback,
-    });
-    domainsAdded += changes.added.length;
-    const sites = await listDomainsOfRepo(db, userId, repo.full_name);
-    const declared = repo.declared ?? [];
-    const real = declared.length > 0 || sites.some((site) => isReal(site));
-    // What the repository is deployed on, even where the limit on a person's
-    // domains kept a site off the dashboard.
-    const deployedOn = new Set(sites.map((site) => site.host));
-    for (const host of declared) {
-      deployedOn.add(host);
-    }
-    for (const host of real ? [] : (repo.fallback ?? [])) {
-      deployedOn.add(host);
-    }
-    settled.push({
-      full_name: repo.full_name,
-      default_branch: repo.default_branch,
-      hosts: [...deployedOn],
-    });
-  }
+  const { domainsAdded, settled } = await analysed.reduce(
+    async (previous, repo) => {
+      const state = await previous;
+      const changes = await reconcileSites(db, userId, repo.full_name, {
+        declared: repo.declared,
+        fallback: repo.fallback,
+      });
+      const sites = await listDomainsOfRepo(db, userId, repo.full_name);
+      const declared = repo.declared ?? [];
+      const real = declared.length > 0 || sites.some((site) => isReal(site));
+      // What the repository is deployed on, even where the limit on a person's
+      // domains kept a site off the dashboard.
+      const deployedOn = new Set(sites.map((site) => site.host))
+        .union(new Set(declared))
+        .union(new Set(real ? [] : repo.fallback));
+      return {
+        domainsAdded: state.domainsAdded + changes.added.length,
+        settled: [
+          ...state.settled,
+          {
+            full_name: repo.full_name,
+            default_branch: repo.default_branch,
+            hosts: [...deployedOn],
+          },
+        ],
+      };
+    },
+    Promise.resolve({ domainsAdded: 0, settled: [] as AnalysedRepo[] }),
+  );
   await saveRepos(db, userId, installationId, settled);
   // A repository that was deleted, or taken out of the app, takes its sites
   // off the dashboard. An archived one still exists, so its sites stay, and a
   // listing cut short by the limit proves nothing about the rest.
   if (listed.length < MAX_REPOS) {
     const stored = await listRepos(db, userId);
-    const names = new Set(listed.map((repo) => repo.full_name));
-    for (const repo of stored) {
-      names.add(repo.full_name);
-    }
+    const names = new Set(listed.map((repo) => repo.full_name)).union(
+      new Set(stored.map((repo) => repo.full_name)),
+    );
     await removeSitesOfMissingRepos(db, userId, names);
   }
   return {

@@ -12,22 +12,23 @@ import { disableRepo } from '@/domain/db/disabled';
 import { addDomain } from '@/domain/db/domains';
 import { listRuns } from '@/domain/db/runs';
 import { latestRuns } from '@/domain/db/suite';
-import type { SuiteJob } from '@/domain/suite/scanner';
 
 import { GITHUB_ENV, fakeGitHub } from '../../domain/github/github-test-kit';
 import { cloudflareWorkersStub } from '../../helpers/cloudflare-workers-stub';
 import { APP_MIGRATIONS } from '../core/db/migrations';
 import { sqliteD1 } from '../core/db/sqlite-d1';
+import type { SuiteJob } from '@/domain/suite/scanner';
 
 /** Compares strings in the default locale order, built once. */
 const collator = new Intl.Collator();
 
 /** Matches host form field. */
-const HOST_FORM_FIELD = /host=(.*)/;
+const HOST_FORM_FIELD = /host=(.*)/u;
 
 /** Matches slow probe log line. */
-const SLOW_PROBE_LOG_LINE = /^slow probe call \d+ ms: \/v1\/connect /;
+const SLOW_PROBE_LOG_LINE = /^slow probe call \d+ ms: \/v1\/connect /u;
 
+// eslint-disable-next-line tslop/no-module-mocking -- `cloudflare:workers` exists only inside the Workers runtime, so Node has no real module to import
 jest.unstable_mockModule('cloudflare:workers', cloudflareWorkersStub, {
   virtual: true,
 });
@@ -254,9 +255,9 @@ describe('ProbeScanner, slow probe calls', () => {
     container.getTcpPort = () => ({
       fetch: async (input: string, init?: RequestInit) => {
         if (new URL(input).pathname === '/v1/connect') {
-          await new Promise((resolve) =>
-            setTimeout(resolve, SLOW_PROBE_MS + 100),
-          );
+          await new Promise((resolve) => {
+            setTimeout(resolve, SLOW_PROBE_MS + 100);
+          });
         }
         return inner(input, init);
       },
@@ -275,7 +276,7 @@ describe('ProbeScanner, slow probe calls', () => {
     const { container } = probe();
     const response = await made(container).fetch(run());
     await response.text();
-    expect(warn).not.toHaveBeenCalled();
+    expect(warn.mock.calls).toEqual([]);
   });
 });
 

@@ -1,14 +1,15 @@
-import { isAbsoluteUrl, splitLines, type FileIssue } from './issue.js';
+import { isAbsoluteUrl, splitLines } from './issue.js';
+import type { FileIssue } from './issue.js';
 
 /** Matches a trailing slash. */
-const TRAILING_SLASH = /\/$/;
+const TRAILING_SLASH = /\/$/u;
 
 /** Matches a trailing colon. */
-const TRAILING_COLON = /:$/;
+const TRAILING_COLON = /:$/u;
 
 const RFC3339 =
-  /^\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}(\.\d+)?([Zz]|[+-]\d{2}:\d{2})$/;
-const LANG_TAG = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
+  /^\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}(\.\d+)?([Zz]|[+-]\d{2}:\d{2})$/u;
+const LANG_TAG = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/u;
 const YEAR_MS = 366 * 24 * 3600 * 1000;
 
 export interface SecurityTxtOptions {
@@ -19,7 +20,7 @@ export interface SecurityTxtOptions {
 }
 
 /** Web URI fields and the schemes RFC 9116 allows for each. */
-const URI_FIELDS: Record<string, readonly string[]> = {
+const URI_FIELDS = {
   contact: ['https', 'mailto', 'tel'],
   encryption: ['https', 'openpgp4fpr', 'dns'],
   policy: ['https'],
@@ -29,34 +30,48 @@ const URI_FIELDS: Record<string, readonly string[]> = {
   canonical: ['https'],
 };
 
+/** The lines of a security.txt body, the index of its first line, and what was wrong with the envelope. */
+interface SignatureSplit {
+  body: string[];
+  offset: number;
+  issues: FileIssue[];
+}
+
 /** Removes the OpenPGP clearsign envelope; returns null on a broken one. */
-function stripSignature(
-  lines: string[],
-  issues: FileIssue[],
-): { body: string[]; offset: number } {
+function stripSignature(lines: string[]): SignatureSplit {
   if (!lines[0]?.startsWith('-----BEGIN PGP SIGNED MESSAGE-----')) {
-    return { body: lines, offset: 0 };
+    return { body: lines, offset: 0, issues: [] };
   }
   const blank = lines.findIndex((l, index) => index > 0 && l.trim() === '');
   const sig = lines.findIndex((l) =>
     l.startsWith('-----BEGIN PGP SIGNATURE-----'),
   );
   if (blank === -1 || sig === -1) {
-    issues.push({
-      severity: 'error',
-      line: 1,
-      message: 'The PGP clearsigned message is malformed.',
-    });
-    return { body: lines, offset: 0 };
+    return {
+      body: lines,
+      offset: 0,
+      issues: [
+        {
+          severity: 'error',
+          line: 1,
+          message: 'The PGP clearsigned message is malformed.',
+        },
+      ],
+    };
   }
-  if (!lines.some((l) => l.startsWith('-----END PGP SIGNATURE-----'))) {
-    issues.push({
-      severity: 'error',
-      line: sig + 1,
-      message: 'The PGP signature block is not terminated.',
-    });
-  }
-  return { body: lines.slice(blank + 1, sig), offset: blank + 1 };
+  return {
+    body: lines.slice(blank + 1, sig),
+    offset: blank + 1,
+    issues: lines.some((l) => l.startsWith('-----END PGP SIGNATURE-----'))
+      ? []
+      : [
+          {
+            severity: 'error',
+            line: sig + 1,
+            message: 'The PGP signature block is not terminated.',
+          },
+        ],
+  };
 }
 
 /** Validates the text of a security.txt file against RFC 9116. */
@@ -64,167 +79,159 @@ export function validateSecurityTxt(
   text: string,
   options: SecurityTxtOptions = {},
 ): FileIssue[] {
-  const issues: FileIssue[] = [];
   const now = options.now ?? new Date();
-  // Internet.nl only reads the first 100 KiB of the file.
-  if (Buffer.byteLength(text, 'utf8') > 100 * 1024) {
-    issues.push({
-      severity: 'warning',
-      message: 'The file is larger than 100 KiB; checkers may ignore the rest.',
-    });
-  }
-  const { body, offset } = stripSignature(splitLines(text), issues);
-  const fields: Record<string, { value: string; line: number }[]> = {};
-
-  for (const [index, raw] of body.entries()) {
-    const line = index + offset + 1;
-    const trimmed = raw.trim();
-    const colon = trimmed.indexOf(':');
-    if (trimmed === '' || trimmed.startsWith('#')) {
-      // Blank lines and comments carry no field.
-    } else if (colon < 1) {
-      issues.push({
-        severity: 'error',
-        line,
-        snippet: trimmed,
-        message: "Invalid line, expected 'Field: value'.",
-      });
-    } else {
-      const name = trimmed.slice(0, colon).trim().toLowerCase();
+  const {
+    body,
+    offset,
+    issues: signatureIssues,
+  } = stripSignature(splitLines(text));
+  const entries = body
+    .map((raw, index) => ({ line: index + offset + 1, trimmed: raw.trim() }))
+    // Blank lines and comments carry no field.
+    .filter(({ trimmed }) => trimmed !== '' && !trimmed.startsWith('#'))
+    .map(({ line, trimmed }) => ({
+      line,
+      trimmed,
+      colon: trimmed.indexOf(':'),
+    }));
+  const lineIssues = entries
+    .filter(({ colon }) => colon < 1)
+    .map(({ line, trimmed }): FileIssue => ({
+      severity: 'error',
+      line,
+      snippet: trimmed,
+      message: "Invalid line, expected 'Field: value'.",
+    }));
+  const parsed = entries
+    .filter(({ colon }) => colon >= 1)
+    .map(({ line, trimmed, colon }) => ({
+      name: trimmed.slice(0, colon).trim().toLowerCase(),
       // Dash-escaped lines in signed files start with "- ".
-      const value = trimmed.slice(colon + 1).trim();
-      fields[name] ??= [];
-      fields[name].push({ value, line });
-    }
-  }
+      value: trimmed.slice(colon + 1).trim(),
+      line,
+    }));
+  const fieldsOf = (name: string): { value: string; line: number }[] =>
+    parsed.filter((field) => field.name === name);
 
-  for (const required of ['contact', 'expires']) {
-    if (!fields[required]) {
-      issues.push({
-        severity: 'error',
-        message: `The required '${required === 'contact' ? 'Contact' : 'Expires'}' field is missing.`,
-      });
-    }
-  }
-
-  const expires = fields.expires ?? [];
-  if (expires.length > 1) {
-    issues.push({
+  const expires = fieldsOf('expires');
+  const first = expires.at(0);
+  const time =
+    first && RFC3339.test(first.value) ? Date.parse(first.value) : Number.NaN;
+  const expiresAt = {
+    line: first?.line,
+    snippet: `Expires: ${first?.value}`,
+  };
+  const expiresIssues: (FileIssue | false)[] = [
+    expires.length > 1 && {
       severity: 'error',
       line: expires[1].line,
       snippet: `Expires: ${expires[1].value}`,
       message: "The 'Expires' field must appear only once.",
-    });
-  }
-  if (expires[0]) {
-    const { value, line } = expires[0];
-    const snippet = `Expires: ${value}`;
-    const time = RFC3339.test(value) ? Date.parse(value) : Number.NaN;
-    if (Number.isNaN(time)) {
-      issues.push({
+    },
+    !!first &&
+      Number.isNaN(time) && {
         severity: 'error',
-        line,
-        snippet,
+        ...expiresAt,
         message: "'Expires' must be an RFC 3339 date-time.",
-      });
-    } else if (time < now.getTime()) {
-      issues.push({
+      },
+    !!first &&
+      !Number.isNaN(time) &&
+      time < now.getTime() && {
         severity: 'error',
-        line,
-        snippet,
+        ...expiresAt,
         message: 'The file has expired.',
-      });
-    } else if (time - now.getTime() > YEAR_MS) {
-      issues.push({
+      },
+    // An expiry within one year is acceptable.
+    !!first &&
+      time - now.getTime() > YEAR_MS && {
         severity: 'warning',
-        line,
-        snippet,
+        ...expiresAt,
         message: "'Expires' should be less than one year in the future.",
-      });
-    } else {
-      // An expiry within one year is acceptable.
-    }
-  }
+      },
+  ];
 
-  for (const [field, schemes] of Object.entries(URI_FIELDS)) {
-    for (const { value, line } of fields[field] ?? []) {
+  const uriIssues = Object.entries(URI_FIELDS).flatMap(([field, schemes]) =>
+    fieldsOf(field).flatMap(({ value, line }): FileIssue[] => {
       const snippet = `${field[0].toUpperCase()}${field.slice(1)}: ${value}`;
-      let scheme = '';
-      try {
-        scheme = new URL(value).protocol.replace(TRAILING_COLON, '');
-      } catch {
-        issues.push({
-          severity: 'error',
-          line,
-          snippet,
-          message: `'${value}' is not a valid URI.`,
-        });
-        continue;
+      const error = (message: string): FileIssue[] => [
+        { severity: 'error', line, snippet, message },
+      ];
+      if (!URL.canParse(value)) {
+        return error(`'${value}' is not a valid URI.`);
       }
+      const scheme = new URL(value).protocol.replace(TRAILING_COLON, '');
       if (scheme === 'http') {
-        issues.push({
-          severity: 'error',
-          line,
-          snippet,
-          message: 'Web URIs must use HTTPS.',
-        });
-      } else if (!schemes.includes(scheme)) {
-        issues.push({
-          severity: 'error',
-          line,
-          snippet,
-          message: `The URI scheme '${scheme}' is not allowed here; use ${schemes.join(', ')}.`,
-        });
-      } else if (
+        return error('Web URIs must use HTTPS.');
+      }
+      if (!schemes.includes(scheme)) {
+        return error(
+          `The URI scheme '${scheme}' is not allowed here; use ${schemes.join(', ')}.`,
+        );
+      }
+      if (
         scheme === 'https' &&
         !isAbsoluteUrl(value, ['https']) // defensive: should be unreachable
       ) {
-        issues.push({
-          severity: 'error',
-          line,
-          snippet,
-          message: `'${value}' is not a valid URL.`,
-        });
-      } else {
-        // A URI that passes every check needs no finding.
+        return error(`'${value}' is not a valid URL.`);
       }
-    }
-  }
+      return [];
+    }),
+  );
 
-  const langs = fields['preferred-languages'] ?? [];
-  if (langs.length > 1) {
-    issues.push({
+  const langs = fieldsOf('preferred-languages');
+  const tags =
+    langs
+      .at(0)
+      ?.value.split(',')
+      .map((t) => t.trim()) ?? [];
+  const languageIssues: (FileIssue | false)[] = [
+    langs.length > 1 && {
       severity: 'error',
       line: langs[1].line,
       message: "'Preferred-Languages' must appear only once.",
-    });
-  }
-  if (langs[0]) {
-    const tags = langs[0].value.split(',').map((t) => t.trim());
-    if (tags.some((t) => !LANG_TAG.test(t))) {
-      issues.push({
+    },
+    langs.length > 0 &&
+      tags.some((t) => !LANG_TAG.test(t)) && {
         severity: 'error',
         line: langs[0].line,
         snippet: `Preferred-Languages: ${langs[0].value}`,
         message:
           "'Preferred-Languages' must be a comma separated list of language tags.",
-      });
-    }
-  }
+      },
+  ];
 
-  if (options.url && fields.canonical) {
-    const wanted = options.url.replace(TRAILING_SLASH, '');
-    if (
-      !fields.canonical.some(
+  const canonical = fieldsOf('canonical');
+  const wanted = options.url?.replace(TRAILING_SLASH, '');
+  const issues: (FileIssue | false)[] = [
+    // Internet.nl only reads the first 100 KiB of the file.
+    Buffer.byteLength(text, 'utf8') > 100 * 1024 && {
+      severity: 'warning',
+      message: 'The file is larger than 100 KiB; checkers may ignore the rest.',
+    },
+    ...signatureIssues,
+    ...lineIssues,
+    ...['contact', 'expires'].flatMap((required): FileIssue[] =>
+      fieldsOf(required).length > 0
+        ? []
+        : [
+            {
+              severity: 'error',
+              message: `The required '${required === 'contact' ? 'Contact' : 'Expires'}' field is missing.`,
+            },
+          ],
+    ),
+    ...expiresIssues,
+    ...uriIssues,
+    ...languageIssues,
+    !!options.url &&
+      canonical.length > 0 &&
+      !canonical.some(
         (c) => c.value.replace(TRAILING_SLASH, '') === wanted,
-      )
-    ) {
-      issues.push({
+      ) && {
         severity: 'warning',
-        line: fields.canonical[0].line,
+        line: canonical[0].line,
         message: `No 'Canonical' field matches the URL the file was served from (${options.url}).`,
-      });
-    }
-  }
-  return issues;
+      },
+  ];
+  return issues.filter((issue) => issue !== false);
 }

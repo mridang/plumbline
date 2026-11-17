@@ -1,9 +1,8 @@
-import type { ReactElement } from 'react';
-
 import { BrandMark } from '@/components/site/logo';
 import { Container } from '@/components/ui/layout';
 import { BRAND_NAME } from '@/app/_brand';
 import { SITE_URL, SOURCE_URL } from '@/utils/site';
+import type { ReactElement } from 'react';
 
 /** A link in the footer. */
 interface FooterLink {

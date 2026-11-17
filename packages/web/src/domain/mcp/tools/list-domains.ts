@@ -5,25 +5,24 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
+import { z } from 'zod';
 import { CHECKS, enabledChecks } from '@/domain/checks/catalogue';
 import { listDomains } from '@/domain/db/domains';
 import { listReports } from '@/domain/db/reports';
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
 import { domainListResult } from '@/domain/mcp/tool-results';
 import {
   DOMAIN_LIST_OUTPUT_SCHEMA,
   viewMeta,
 } from '@/domain/mcp/tools/schemas';
 import { DOMAIN_LIST_RESOURCE_URI } from '@/domain/mcp/ui-resources';
-import {
-  type JsonSchema,
-  McpTool,
-  READS,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
+import { McpTool, READS } from '@/lib/mcp';
+import type {
+  JsonSchema,
+  ToolAnnotations,
+  ToolArgs,
+  ToolResult,
 } from '@/lib/mcp';
-import { z } from 'zod';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
 
 export class ListDomainsTool extends McpTool<
   'list_domains',

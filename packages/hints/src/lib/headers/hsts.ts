@@ -12,17 +12,21 @@
  * Observatory's preload list is not bundled, so the "preloaded" result is
  * not produced.
  */
-import { finding, type Finding, type Profile } from './finding.js';
+import { finding } from './finding.js';
 import { isBareHost, registrableDomain } from './registrable-domain.js';
+import type { Finding, Profile } from './finding.js';
 
 /** Matches a string made only of digits. */
-const DIGITS_ONLY = /^\d+$/;
+const DIGITS_ONLY = /^\d+$/u;
 
 /** Matches a double-quoted string and captures its content. */
-const QUOTED_STRING = /^"(.*)"$/;
+const QUOTED_STRING = /^"(.*)"$/u;
 
 /** Six months, Observatory's threshold. */
 const SIX_MONTHS = 15_552_000;
+
+/** The directives the parser reads; any other is reported as unknown. */
+const KNOWN_DIRECTIVES = new Set(['max-age', 'includesubdomains', 'preload']);
 
 export interface Hsts {
   valid: boolean;
@@ -37,65 +41,61 @@ export interface Hsts {
 
 /** Parses a `Strict-Transport-Security` value. */
 export function parseHsts(header: string): Hsts {
-  const result: Hsts = {
-    valid: true,
-    maxAge: null,
-    includeSubDomains: false,
-    preload: false,
-    unknown: [],
-  };
-  const invalid = (problem: string): Hsts => ({
-    ...result,
-    valid: false,
-    problem,
-  });
-
   const data = header.slice(0, 1024);
   // Two headers are folded into one value with a comma.
   if (data.includes(',')) {
-    return invalid('header set multiple times');
+    return {
+      valid: false,
+      maxAge: null,
+      includeSubDomains: false,
+      preload: false,
+      unknown: [],
+      problem: 'header set multiple times',
+    };
   }
-  const seen = new Set<string>();
-  for (const raw of data.split(';')) {
-    const directive = raw.trim();
-    if (directive === '') {
-      continue;
-    }
-    const [rawName = '', ...rest] = directive.split('=');
-    const name = rawName.trim().toLowerCase();
-    if (seen.has(name)) {
-      return invalid(`duplicate directive ${name}`);
-    }
-    seen.add(name);
-    switch (name) {
-      case 'max-age': {
-        const value = rest.join('=').trim().replace(QUOTED_STRING, '$1');
-        if (!DIGITS_ONLY.test(value)) {
-          return invalid('max-age is not a number');
-        }
-        result.maxAge = Number.parseInt(value.slice(0, 128), 10);
-
-        break;
-      }
-      case 'includesubdomains': {
-        result.includeSubDomains = true;
-
-        break;
-      }
-      case 'preload': {
-        result.preload = true;
-
-        break;
-      }
-      default: {
-        result.unknown.push(name);
-      }
-    }
+  const entries = data
+    .split(';')
+    .map((raw) => raw.trim())
+    .filter((directive) => directive !== '')
+    .map((directive) => {
+      const [rawName = '', ...rest] = directive.split('=');
+      return {
+        name: rawName.trim().toLowerCase(),
+        value: rest.join('=').trim().replace(QUOTED_STRING, '$1'),
+      };
+    });
+  // The first problem found decides; later directives are not read.
+  const problemAt = entries.findIndex(
+    ({ name, value }, index) =>
+      entries.slice(0, index).some((earlier) => earlier.name === name) ||
+      (name === 'max-age' && !DIGITS_ONLY.test(value)),
+  );
+  const read = problemAt === -1 ? entries : entries.slice(0, problemAt);
+  const maxAge = read.find(({ name }) => name === 'max-age');
+  const state: Hsts = {
+    valid: true,
+    maxAge: maxAge ? Number.parseInt(maxAge.value.slice(0, 128), 10) : null,
+    includeSubDomains: read.some(({ name }) => name === 'includesubdomains'),
+    preload: read.some(({ name }) => name === 'preload'),
+    unknown: read
+      .map(({ name }) => name)
+      .filter((name) => !KNOWN_DIRECTIVES.has(name)),
+  };
+  if (problemAt !== -1) {
+    const { name } = entries[problemAt];
+    return {
+      ...state,
+      valid: false,
+      problem: entries
+        .slice(0, problemAt)
+        .some((earlier) => earlier.name === name)
+        ? `duplicate directive ${name}`
+        : 'max-age is not a number',
+    };
   }
-  if (result.maxAge === null) {
-    return invalid('max-age missing');
-  }
-  return result;
+  return state.maxAge === null
+    ? { ...state, valid: false, problem: 'max-age missing' }
+    : state;
 }
 
 /** True when the header gives at least six months of protection. */
@@ -152,21 +152,20 @@ export function hstsFindings({
   }
 
   if (!secure) {
-    const findings = [
+    return [
       finding(
         'error',
         'Strict-Transport-Security header cannot be set for sites not available over HTTPS.',
       ),
+      ...(header === null
+        ? []
+        : [
+            finding(
+              'warning',
+              "The 'Strict-Transport-Security' header is ignored by browsers when it is sent over HTTP.",
+            ),
+          ]),
     ];
-    if (header !== null) {
-      findings.push(
-        finding(
-          'warning',
-          "The 'Strict-Transport-Security' header is ignored by browsers when it is sent over HTTP.",
-        ),
-      );
-    }
-    return findings;
   }
   if (header === null) {
     return [
@@ -185,30 +184,29 @@ export function hstsFindings({
       ),
     ];
   }
-  const findings: Finding[] = [];
-  if ((parsed.maxAge ?? 0) < SIX_MONTHS) {
-    findings.push(
-      finding(
-        'error',
-        'Strict-Transport-Security header set to less than six months (15768000). Increase the HSTS period.',
-      ),
-    );
-  }
-  for (const name of parsed.unknown) {
-    findings.push(
+  const findings: Finding[] = [
+    ...((parsed.maxAge ?? 0) < SIX_MONTHS
+      ? [
+          finding(
+            'error',
+            'Strict-Transport-Security header set to less than six months (15768000). Increase the HSTS period.',
+          ),
+        ]
+      : []),
+    ...parsed.unknown.map((name) =>
       finding(
         'warning',
         `The 'Strict-Transport-Security' header contains an unrecognized directive '${name}'.`,
       ),
-    );
-  }
+    ),
+  ];
   if (findings.length === 0 && !(parsed.includeSubDomains && parsed.preload)) {
-    findings.push(
+    return [
       finding(
         'hint',
         'Consider preloading: this requires adding the preload and includeSubDomains directives and setting max-age to at least 31536000 (1 year), and submitting your site to https://hstspreload.org/.',
       ),
-    );
+    ];
   }
   return findings;
 }

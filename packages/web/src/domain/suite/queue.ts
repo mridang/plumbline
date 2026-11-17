@@ -22,7 +22,7 @@
  *   and the scheduled sweep sends any job that waits for too long again.
  */
 
-import { createDatabase, type Database } from '@/domain/db/client';
+import { createDatabase } from '@/domain/db/client';
 import {
   claimPending,
   finishPending,
@@ -30,13 +30,9 @@ import {
   releasePending,
   revivePending,
 } from '@/domain/db/pending-scans';
-import {
-  keyOf,
-  runJobThrough,
-  ScanFailedError,
-  type ScanJob,
-  type ScannerNamespace,
-} from '@/domain/suite/scanner';
+import { keyOf, runJobThrough, ScanFailedError } from '@/domain/suite/scanner';
+import type { Database } from '@/domain/db/client';
+import type { ScanJob, ScannerNamespace } from '@/domain/suite/scanner';
 
 /** The queue the scans go through; create it with `wrangler queues create`. */
 export const SCAN_QUEUE_NAME = 'plumbline-scans';
@@ -52,7 +48,7 @@ export interface ScanMessage {
 
 /** The part of a queue binding the producers use. */
 export interface ScanQueue {
-  send(message: ScanMessage): Promise<unknown>;
+  send(message: ScanMessage): Promise<QueueSendResponse | void>;
 }
 
 /** How long a consumer may hold a job before another may take it: longer than a consumer invocation lives (15 minutes). */
@@ -117,6 +113,7 @@ export async function sweepPending(
     now.toISOString(),
     SWEEP_LIMIT,
   );
+  // eslint-disable-next-line functional/no-loop-statements -- each message is sent in turn, awaited, so one failure stops the rest
   for (const { key, seq } of revived) {
     console.error('scan job waited too long, sent again', key);
     await queue.send({ key, seq });
@@ -143,6 +140,7 @@ export async function consumeScans(
   deps: ConsumerDeps,
 ): Promise<void> {
   const now = deps.now ?? (() => new Date());
+  // eslint-disable-next-line functional/no-loop-statements -- jobs run one after another, awaited in order
   for (const message of batch.messages) {
     await consumeScan(message, deps, now);
   }
@@ -172,11 +170,15 @@ async function consumeScan(
     return;
   }
   const { seq, job: text } = claimed.claim;
-  let job: ScanJob;
-  try {
-    job = JSON.parse(text) as ScanJob;
-  } catch (error) {
-    console.error('scan job unreadable, dropped', key, error);
+  const job = ((): ScanJob | undefined => {
+    try {
+      return JSON.parse(text) as ScanJob;
+    } catch (error) {
+      console.error('scan job unreadable, dropped', key, error);
+      return undefined;
+    }
+  })();
+  if (job === undefined) {
     await finishPending(deps.db, key, seq);
     message.ack();
     return;
@@ -207,6 +209,7 @@ async function consumeScan(
 export function logDeadLetters(
   batch: Pick<MessageBatch<ScanMessage>, 'messages'>,
 ): void {
+  // eslint-disable-next-line functional/no-loop-statements -- the loop only logs and acks each message
   for (const message of batch.messages) {
     console.error('scan job dead-lettered', message.body, {
       attempts: message.attempts,

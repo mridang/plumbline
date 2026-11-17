@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import type { ReactElement } from 'react';
 
 import { ChevronIcon } from '@/components/icons';
 import { KINDS, RunList } from '@/components/runs/run-history';
@@ -7,6 +6,8 @@ import { POPOVER_ITEM, Popover } from '@/components/ui/popover';
 import { Badge } from '@/components/ui-app/badge';
 import { Count } from '@/components/ui-app/count';
 import { RelativeTime } from '@/components/ui-app/relative-time';
+import { countOf } from '@/lib/intl';
+import type { ReactElement } from 'react';
 import type { RunSummary } from '@/domain/db/runs';
 
 /** The figures of a run, in the colours the results use: failed, warned and passed. */
@@ -133,7 +134,7 @@ export function RunPicker({
         <summary className="focus-ring-flush flex cursor-pointer items-center justify-between rounded-card px-4 py-2.5 text-sm font-medium hover:bg-ink/3">
           Full history
           <span className="flex items-center gap-2 text-xs font-normal text-subtle">
-            {runs.length} {runs.length === 1 ? 'run' : 'runs'}
+            {countOf(runs.length, 'run')}
             <ChevronIcon
               size="sm"
               className="group-open:rotate-180 motion-safe:transition"

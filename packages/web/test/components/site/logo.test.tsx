@@ -5,14 +5,15 @@ import { BrandMark, Logo } from '@/components/site/logo';
 import { classOf, html } from '../render';
 
 /** Matches home link opening. */
-const HOME_LINK_OPENING = /^<a href="\/"/;
+const HOME_LINK_OPENING = /^<a href="\/"/u;
 
 describe('BrandMark', () => {
   it('is a decorative drawing in the brand colour, sized by its class', () => {
     const out = html(<BrandMark className="size-14" />);
     expect(out).toContain('aria-hidden="true"');
-    expect(classOf(out, 'svg')).toContain('text-brand');
-    expect(classOf(out, 'svg')).toContain('size-14');
+    const classes = classOf(out, 'svg');
+    expect(classes).toContain('text-brand');
+    expect(classes).toContain('size-14');
   });
 });
 

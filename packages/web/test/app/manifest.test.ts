@@ -1,17 +1,17 @@
-import { describe, expect, it } from '@jest/globals';
 import { access, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { describe, expect, it } from '@jest/globals';
 
+import { packageDirectorySync } from 'package-directory';
 import { BACKGROUND_COLOR, THEME_COLOR } from '@/app/_brand';
 import manifest from '@/app/manifest';
 import { pngSize } from '../png';
-import { packageDirectorySync } from 'package-directory';
 
 /** Matches uppercase first letter. */
 const UPPERCASE_FIRST_LETTER = /^\p{Lu}/u;
 
 /** Matches root relative path. */
-const ROOT_RELATIVE_PATH = /^\//;
+const ROOT_RELATIVE_PATH = /^\//u;
 
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 

@@ -1,17 +1,17 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { isCheckId } from '@/domain/checks/catalogue';
-import type { CheckResult } from '@/domain/suite/checks';
 import {
   DEFAULT_RULE_SET,
   RULE_SETS,
   applyLevels,
   fingerprintOf,
-  type Level,
 } from '@/domain/suite/rules';
+import type { Level } from '@/domain/suite/rules';
+import type { CheckResult } from '@/domain/suite/checks';
 
 /** Matches a lowercase hexadecimal string of 16 characters. */
-const HEX_16_PATTERN = /^[0-9a-f]{16}$/;
+const HEX_16_PATTERN = /^[0-9a-f]{16}$/u;
 
 describe('the rule sets', () => {
   it('start from the recommended one', () => {

@@ -1,11 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 import { Severity } from '@hint/utils-types';
 import hint from '../../../src/hints/email/mail-dane-rollover.js';
-import {
-  fakeDns,
-  runMailHint,
-  type FakeAnswer,
-} from '../../lib/email/fakes.js';
+import { fakeDns, runMailHint } from '../../lib/email/fakes.js';
+import type { FakeAnswer } from '../../lib/email/fakes.js';
 
 const sha = (n: number): string => n.toString(16).padStart(2, '0').repeat(32);
 

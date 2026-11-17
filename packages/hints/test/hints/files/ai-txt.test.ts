@@ -3,7 +3,7 @@ import hint from '../../../src/hints/files/ai-txt.js';
 import { runHint } from '../../helpers/run-hint.js';
 
 /** Matches a message that mentions UTF-8. */
-const UTF8_MESSAGE = /UTF-8/;
+const UTF8_MESSAGE = /UTF-8/u;
 
 const serve = (
   body: string,

@@ -5,8 +5,8 @@ import {
   headerBagFromRecord,
   metaHttpEquivContents,
   referrerSources,
-  type MetaElementArtifact,
 } from '../src/adapt.js';
+import type { MetaElementArtifact } from '../src/adapt.js';
 
 /** The structural shape of a network record the header adapters read. */
 type RecordLike = {

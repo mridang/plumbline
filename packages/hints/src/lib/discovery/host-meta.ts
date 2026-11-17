@@ -7,10 +7,11 @@
  *
  * Source: RFC 6415 (https://www.rfc-editor.org/rfc/rfc6415).
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
+import type { Finding } from '../headers/finding.js';
 
 /** Matches the opening of an `XRD` root element. */
-const XRD_ROOT_ELEMENT = /<\s*XRD(\s|>)/i;
+const XRD_ROOT_ELEMENT = /<\s*XRD(\s|>)/iu;
 
 /** The response observed when fetching the host-meta document. */
 export interface HostMetaResponse {
@@ -36,6 +37,7 @@ export function hostMetaFindings(response: HostMetaResponse | null): Finding[] {
   // A JRD (JSON) form must parse as an object; the registered type is
   // application/json but hosts commonly serve the `.json` variant.
   if (type.includes('json')) {
+    // eslint-disable-next-line functional/no-let -- assigned inside try/catch so a JSON parse error can return a finding
     let parsed: unknown;
     try {
       parsed = JSON.parse(response.body);
@@ -56,9 +58,9 @@ export function hostMetaFindings(response: HostMetaResponse | null): Finding[] {
     return [
       finding(
         'warning',
-        "The host-meta document must be an XRD document (or a JRD served as JSON), not '" +
-          response.mediaType +
-          "'.",
+        `The host-meta document must be an XRD document (or a JRD served as JSON), not '${
+          response.mediaType
+        }'.`,
       ),
     ];
   }

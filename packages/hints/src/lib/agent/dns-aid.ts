@@ -1,15 +1,15 @@
+import { result } from './utility.js';
 import type { DnsType } from '../../core/dns.js';
 import type { AgentEnv, CheckResult } from './types.js';
-import { result } from './utility.js';
 
 /** Matches a single whitespace character. */
-const WHITESPACE_CHARACTER = /\s/;
+const WHITESPACE_CHARACTER = /\s/u;
 
 /** Matches a string made only of digits. */
-const DIGITS_ONLY = /^\d+$/;
+const DIGITS_ONLY = /^\d+$/u;
 
 /** Matches any character that ends a line. */
-const LINE_BREAK_CHARACTER = /[\n\r\u2028\u2029]/;
+const LINE_BREAK_CHARACTER = /[\n\r\u2028\u2029]/u;
 
 /** The record types queried at each `_agents` label. */
 const QUERIES: readonly { label: string; types: readonly DnsType[] }[] = [
@@ -27,7 +27,7 @@ const QUERIES: readonly { label: string; types: readonly DnsType[] }[] = [
  * ALPN id) and treats TXT as a non-preferred fallback.
  */
 const PARAMS =
-  /\b(alpn|port|ipv4hint|ipv6hint|well-known|cap|cap-sha256|ech|endpoint|mcp|a2a)=/i;
+  /\b(alpn|port|ipv4hint|ipv6hint|well-known|cap|cap-sha256|ech|endpoint|mcp|a2a)=/iu;
 
 /**
  * True for a ServiceMode SVCB/HTTPS record (priority above 0, RFC 9460)
@@ -85,15 +85,14 @@ async function hasServiceModeRecord(
 
 export async function checkDnsAid(env: AgentEnv): Promise<CheckResult> {
   const id = 'agent-dns-aid';
-  const found: string[] = [];
-  for (const { label, types } of QUERIES) {
+  const perLabel = await Array.fromAsync(QUERIES, async ({ label, types }) => {
     const name = `${label}._agents.${env.host}`;
-    for (const type of types) {
-      if (await hasServiceModeRecord(env, name, type)) {
-        found.push(`${type} ${name}`);
-      }
-    }
-  }
+    const perType = await Array.fromAsync(types, async (type) =>
+      (await hasServiceModeRecord(env, name, type)) ? [`${type} ${name}`] : [],
+    );
+    return perType.flat();
+  });
+  const found = perLabel.flat();
   return found.length > 0
     ? result(id, 'discoverability', true, `Found ${found.join(', ')}.`)
     : result(

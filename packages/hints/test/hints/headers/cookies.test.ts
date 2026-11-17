@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import hint from '../../../src/hints/headers/cookies.js';
 import { Severity } from '@hint/utils-types';
+import hint from '../../../src/hints/headers/cookies.js';
 import { runHint } from '../../helpers/run-hint.js';
 
 const page = (cookie?: string) => ({

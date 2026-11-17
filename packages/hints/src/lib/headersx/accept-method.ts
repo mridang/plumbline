@@ -6,11 +6,12 @@
  * validate the media-type list when the header is present, following each
  * header's MDN reference page.
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
 import { splitList } from '../headers/http-headers.js';
+import type { Finding } from '../headers/finding.js';
 
 /** A media type: `type/subtype` with optional parameters, or `*` wildcards. */
-const MEDIA_TYPE = /^(\*|[A-Za-z0-9][\w.+-]*)\/(\*|[A-Za-z0-9][\w.+-]*)$/;
+const MEDIA_TYPE = /^(\*|[A-Za-z0-9][\w.+-]*)\/(\*|[A-Za-z0-9][\w.+-]*)$/u;
 
 /** True for a media type, ignoring any `;parameter` suffix. */
 function isMediaType(value: string): boolean {

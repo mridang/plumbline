@@ -9,7 +9,8 @@
  *   which exposes the site to CSRF-style attacks
  * - anything else: restricted to specific origins.
  */
-import { finding, type Finding } from './finding.js';
+import { finding } from './finding.js';
+import type { Finding } from './finding.js';
 
 /** The origin the probe pretends to be. */
 export const PROBE_ORIGIN = 'https://http-observatory.security.mozilla.org';

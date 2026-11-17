@@ -76,12 +76,9 @@ describe('decode', () => {
   });
 
   it('says which coding a body that does not decode was in', async () => {
-    await expect(decode(Buffer.from('not gzip'), 'gzip')).rejects.toThrow(
-      ProbeError,
-    );
-    await expect(decode(Buffer.from('not gzip'), 'gzip')).rejects.toThrow(
-      'decoded as gzip',
-    );
+    const failure = decode(Buffer.from('not gzip'), 'gzip');
+    await expect(failure).rejects.toThrow(ProbeError);
+    await expect(failure).rejects.toThrow('decoded as gzip');
   });
 });
 

@@ -1,11 +1,8 @@
-import type { HintContext } from 'hint';
 import { Severity } from '@hint/utils-types';
 import { onSite } from '../../core/page.js';
-import {
-  resourceFor,
-  targetFor,
-  type TlsTarget,
-} from '../../lib/tls/client.js';
+import { resourceFor, targetFor } from '../../lib/tls/client.js';
+import type { TlsTarget } from '../../lib/tls/client.js';
+import type { HintContext } from 'hint';
 
 /**
  * The words a finding uses for what is being tested, so one check serves the

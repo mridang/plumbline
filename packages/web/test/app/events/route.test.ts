@@ -13,8 +13,13 @@ import {
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
 
-const session: { uid: number | null } = { uid: 7 };
+interface SessionState {
+  uid: number | null;
+}
 
+const session: SessionState = { uid: 7 };
+
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/api/auth is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/domain/api/auth', () => ({
   requireLiveUid: async () =>
     session.uid === null

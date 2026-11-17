@@ -23,9 +23,14 @@ import {
 } from '../../../../../domain/github/github-test-kit';
 
 /** Matches the GitHub state cookie being cleared. */
-const CLEARED_STATE_COOKIE_PATTERN = /plumbline_github_state=;/;
+const CLEARED_STATE_COOKIE_PATTERN = /plumbline_github_state=;/u;
 
-const state: { user: { id: number } | null } = { user: { id: 7 } };
+interface UserState {
+  user: { id: number } | null;
+}
+
+const state: UserState = { user: { id: 7 } };
+// eslint-disable-next-line tslop/no-module-mocking -- @/lib/core/auth/current-user is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
 }));

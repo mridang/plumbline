@@ -9,13 +9,13 @@
  * than partly honoured.
  */
 
-const TOKEN = /^[A-Za-z*][A-Za-z0-9:/!#$%&'*+.^_`|~-]*$/;
-const PARAMETER_KEY = /^[a-z*][a-z0-9_.*-]*$/;
+const TOKEN = /^[A-Za-z*][A-Za-z0-9:/!#$%&'*+.^_`|~-]*$/u;
+const PARAMETER_KEY = /^[a-z*][a-z0-9_.*-]*$/u;
 /** The bare item shapes a parameter value may take: boolean, number, string, token. */
 const PARAMETER_VALUES = [
-  /^\?[01]$/,
-  /^-?\d+(?:\.\d+)?$/,
-  /^"(?:[^"\\]|\\["\\])*"$/,
+  /^\?[01]$/u,
+  /^-?\d+(?:\.\d+)?$/u,
+  /^"(?:[^"\\]|\\["\\])*"$/u,
   TOKEN,
 ];
 
@@ -26,18 +26,14 @@ export function parseStructuredToken(value: string): string | null {
   if (!TOKEN.test(token)) {
     return null;
   }
-  for (const parameter of parameters) {
+  const validParameters = parameters.every((parameter) => {
     const [key = '', ...rest] = parameter.trim().split('=');
-    if (!PARAMETER_KEY.test(key)) {
-      return null;
-    }
     const parameterValue = rest.join('=');
-    if (
-      rest.length > 0 &&
-      !PARAMETER_VALUES.some((pattern) => pattern.test(parameterValue))
-    ) {
-      return null;
-    }
-  }
-  return token;
+    return (
+      PARAMETER_KEY.test(key) &&
+      (rest.length === 0 ||
+        PARAMETER_VALUES.some((pattern) => pattern.test(parameterValue)))
+    );
+  });
+  return validParameters ? token : null;
 }

@@ -1,7 +1,5 @@
-import {
-  ProbeClient,
-  type ProbeTransport,
-} from '../../src/engine/probe/client.js';
+import { ProbeClient } from '../../src/engine/probe/client.js';
+import type { ProbeTransport } from '../../src/engine/probe/client.js';
 
 /** One request a fake probe was sent. */
 export interface Sent {
@@ -49,15 +47,23 @@ export function chunked(...pieces: string[]): Buffer {
   return Buffer.from(`${frames.join('')}0\r\n\r\n`);
 }
 
+/** What the fake probe answers one request with. */
+interface Answer {
+  status: number;
+  text: string;
+}
+
+/** A fake probe, its transport and the requests it was sent. */
+interface FakeProbe {
+  client: ProbeClient;
+  sent: Sent[];
+  transport: ProbeTransport;
+}
+
 /** A fake probe: `answer` decides each request; every request is kept in `sent`. */
 export function fakeProbe(
-  answer: (
-    path: string,
-    body: string,
-  ) =>
-    | { status: number; text: string }
-    | Promise<{ status: number; text: string }>,
-): { client: ProbeClient; sent: Sent[]; transport: ProbeTransport } {
+  answer: (path: string, body: string) => Answer | Promise<Answer>,
+): FakeProbe {
   const sent: Sent[] = [];
   const transport: ProbeTransport = async (path, body) => {
     sent.push({ path, body });
@@ -67,7 +73,7 @@ export function fakeProbe(
 }
 
 /** The `ok` answer carrying `text`. */
-export const ok = (text: string): { status: number; text: string } => ({
+export const ok = (text: string): Answer => ({
   status: 200,
   text,
 });
@@ -76,7 +82,7 @@ export const ok = (text: string): { status: number; text: string } => ({
 export function handshakeAnswer(
   protocol = 'TLSv1.3',
   cipher = 'TLS_AES_256_GCM_SHA384',
-): Record<string, unknown> {
+) {
   return {
     protocol,
     cipher: { name: cipher, standardName: cipher },

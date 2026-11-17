@@ -7,7 +7,7 @@
  * GitHub said.
  */
 
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { LANDING_PATH, RETURN_COOKIE, STATE_COOKIE } from '@/domain/auth/app';
 import { getDatabase } from '@/domain/db/client';
@@ -23,6 +23,7 @@ import { appOrigin } from '@/lib/core/origin';
 import { getEnv } from '@/lib/core/runtime';
 import { requireSessionSecret } from '@/lib/session';
 import { safeReturnPath } from '@/lib/web-security';
+import type { NextRequest } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 

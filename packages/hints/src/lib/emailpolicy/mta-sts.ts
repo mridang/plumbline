@@ -57,22 +57,26 @@ function stsRecords(txt: TxtLookup): string[] {
 
 /** Parses `key=value; key=value` pairs, lower-casing the keys. */
 function parsePairs(record: string): Map<string, string> {
-  const pairs = new Map<string, string>();
-  for (const part of record.split(';')) {
-    const trimmed = part.trim();
-    if (trimmed === '') {
-      continue;
-    }
-    const equals = trimmed.indexOf('=');
-    const key = (equals === -1 ? trimmed : trimmed.slice(0, equals))
-      .trim()
-      .toLowerCase();
-    const value = equals === -1 ? '' : trimmed.slice(equals + 1).trim();
-    if (!pairs.has(key)) {
-      pairs.set(key, value);
-    }
-  }
-  return pairs;
+  return new Map(
+    record
+      .split(';')
+      .flatMap((part): [string, string][] => {
+        const trimmed = part.trim();
+        if (trimmed === '') {
+          return [];
+        }
+        const equals = trimmed.indexOf('=');
+        const key = (equals === -1 ? trimmed : trimmed.slice(0, equals))
+          .trim()
+          .toLowerCase();
+        return [[key, equals === -1 ? '' : trimmed.slice(equals + 1).trim()]];
+      })
+      // The first occurrence of a tag wins.
+      .filter(
+        ([key], index, entries) =>
+          entries.findIndex(([first]) => first === key) === index,
+      ),
+  );
 }
 
 /** Checks the `_mta-sts` TXT record alone; empty when it is well formed. */
@@ -104,43 +108,39 @@ function checkTxtRecord(record: string): Finding[] {
   return [];
 }
 
+/** The fields of a parsed MTA-STS policy file. */
+interface MtaStsPolicy {
+  version?: string;
+  mode?: string;
+  maxAge?: string;
+  mx: string[];
+}
+
 /**
  * Parses the policy file body into key/value fields. Lines are separated by
  * CRLF (RFC 8461 3.2); a bare LF is accepted too for leniency. `mx` may repeat
  * so every value is collected.
  */
-function parsePolicy(body: string): {
-  version?: string;
-  mode?: string;
-  maxAge?: string;
-  mx: string[];
-} {
-  const result: {
-    version?: string;
-    mode?: string;
-    maxAge?: string;
-    mx: string[];
-  } = { mx: [] };
-  for (const line of body.split(LINE_BREAK)) {
+function parsePolicy(body: string): MtaStsPolicy {
+  const fields = body.split(LINE_BREAK).flatMap((line): [string, string][] => {
     const colon = line.indexOf(':');
-    if (colon === -1) {
-      continue;
-    }
-    const key = line.slice(0, colon).trim().toLowerCase();
-    const value = line.slice(colon + 1).trim();
-    if (key === 'version' && result.version === undefined) {
-      result.version = value;
-    } else if (key === 'mode' && result.mode === undefined) {
-      result.mode = value;
-    } else if (key === 'max_age' && result.maxAge === undefined) {
-      result.maxAge = value;
-    } else if (key === 'mx') {
-      result.mx.push(value);
-    } else {
-      // Other keys are not used by the check.
-    }
-  }
-  return result;
+    return colon === -1
+      ? []
+      : [
+          [
+            line.slice(0, colon).trim().toLowerCase(),
+            line.slice(colon + 1).trim(),
+          ],
+        ];
+  });
+  // The first occurrence of each single-valued field wins; other keys are
+  // not used by the check.
+  return {
+    version: fields.find(([key]) => key === 'version')?.[1],
+    mode: fields.find(([key]) => key === 'mode')?.[1],
+    maxAge: fields.find(([key]) => key === 'max_age')?.[1],
+    mx: fields.filter(([key]) => key === 'mx').map(([, value]) => value),
+  };
 }
 
 /** Checks the fetched policy file; empty when every field is valid. */
@@ -155,69 +155,60 @@ function checkPolicyFile(policy: PolicyFetch): Finding[] {
       },
     ];
   }
-  const findings: Finding[] = [];
   // The policy file must be served as text/plain (RFC 8461 3.2).
   const mediaType = policy.mediaType.split(';', 1)[0].trim().toLowerCase();
-  if (mediaType !== 'text/plain') {
-    findings.push({
+  const parsed = parsePolicy(policy.body);
+  const mode = parsed.mode ?? '';
+  const maxAge = Number(parsed.maxAge);
+  const maxAgeInvalid =
+    parsed.maxAge === undefined ||
+    !DIGITS_ONLY.test(parsed.maxAge) ||
+    maxAge <= 0 ||
+    maxAge > MAX_AGE_LIMIT;
+  const findings: (Finding | false)[] = [
+    mediaType !== 'text/plain' && {
       message: `Your MTA-STS policy file is *not* served as \`text/plain\` (it is \`${policy.mediaType || 'unknown'}\`).`,
       severity: 'error',
       codeSnippet: `Content-Type: ${policy.mediaType || '(none)'}`,
-    });
-  }
-  const parsed = parsePolicy(policy.body);
-  if (parsed.version !== 'STSv1') {
-    findings.push({
+    },
+    parsed.version !== 'STSv1' && {
       message:
         'Your MTA-STS policy file is *not* valid: the `version` field must be `STSv1`.',
       severity: 'error',
       codeSnippet: policy.body,
-    });
-  }
-  const mode = parsed.mode ?? '';
-  if (mode !== 'enforce' && mode !== 'testing' && mode !== 'none') {
-    findings.push({
-      message:
-        'Your MTA-STS policy file is *not* valid: `mode` must be `enforce`, `testing` or `none`.',
-      severity: 'error',
-      codeSnippet: `mode: ${mode || '(missing)'}`,
-    });
-  } else if (mode === 'testing') {
+    },
+    mode !== 'enforce' &&
+      mode !== 'testing' &&
+      mode !== 'none' && {
+        message:
+          'Your MTA-STS policy file is *not* valid: `mode` must be `enforce`, `testing` or `none`.',
+        severity: 'error',
+        codeSnippet: `mode: ${mode || '(missing)'}`,
+      },
     // Testing mode reports failures but still delivers over plaintext, so it
     // does not yet protect mail (RFC 8461 2 and 5).
-    findings.push({
+    mode === 'testing' && {
       message:
         'Your MTA-STS policy is in `testing` mode, so TLS is *not* yet enforced for mail to your domain.',
       severity: 'warning',
       codeSnippet: 'mode: testing',
-    });
-  } else {
-    // An enforcing policy needs no finding.
-  }
-  // A policy that enforces or tests must list at least one MX pattern; a
-  // `none` policy (decommissioning) need not (RFC 8461 3.2).
-  if (mode !== 'none' && parsed.mx.length === 0) {
-    findings.push({
-      message:
-        'Your MTA-STS policy file is *not* valid: it lists no `mx` host patterns.',
-      severity: 'error',
-      codeSnippet: policy.body,
-    });
-  }
-  const maxAge = Number(parsed.maxAge);
-  if (
-    parsed.maxAge === undefined ||
-    !DIGITS_ONLY.test(parsed.maxAge) ||
-    maxAge <= 0 ||
-    maxAge > MAX_AGE_LIMIT
-  ) {
-    findings.push({
+    },
+    // A policy that enforces or tests must list at least one MX pattern; a
+    // `none` policy (decommissioning) need not (RFC 8461 3.2).
+    mode !== 'none' &&
+      parsed.mx.length === 0 && {
+        message:
+          'Your MTA-STS policy file is *not* valid: it lists no `mx` host patterns.',
+        severity: 'error',
+        codeSnippet: policy.body,
+      },
+    maxAgeInvalid && {
       message: `Your MTA-STS policy file is *not* valid: \`max_age\` must be a whole number of seconds between 1 and ${MAX_AGE_LIMIT}.`,
       severity: 'error',
       codeSnippet: `max_age: ${parsed.maxAge ?? '(missing)'}`,
-    });
-  }
-  return findings;
+    },
+  ];
+  return findings.filter((finding) => finding !== false);
 }
 
 /**
@@ -250,25 +241,28 @@ export function checkMtaSts(
     ];
   }
 
-  const findings: Finding[] = [];
-  if (records.length === 0) {
-    findings.push({
-      message:
-        'Your domain serves an MTA-STS policy file but has *no* `_mta-sts` TXT record, so senders will not discover it.',
-      severity: 'error',
-      codeSnippet: `_mta-sts.${domain}. IN TXT "v=STSv1; id=20240101000000"`,
-    });
-  } else if (records.length > 1) {
-    findings.push({
-      message:
-        'Your domain has *more than one* `_mta-sts` TXT record; there must be exactly one.',
-      severity: 'error',
-      codeSnippet: records.join('\n'),
-    });
-  } else {
-    findings.push(...checkTxtRecord(records[0]));
-  }
-
-  findings.push(...checkPolicyFile(policy));
-  return findings;
+  const txtFindings: Finding[] = [
+    ...(records.length === 0
+      ? [
+          {
+            message:
+              'Your domain serves an MTA-STS policy file but has *no* `_mta-sts` TXT record, so senders will not discover it.',
+            severity: 'error' as const,
+            codeSnippet: `_mta-sts.${domain}. IN TXT "v=STSv1; id=20240101000000"`,
+          },
+        ]
+      : []),
+    ...(records.length > 1
+      ? [
+          {
+            message:
+              'Your domain has *more than one* `_mta-sts` TXT record; there must be exactly one.',
+            severity: 'error' as const,
+            codeSnippet: records.join('\n'),
+          },
+        ]
+      : []),
+    ...(records.length === 1 ? checkTxtRecord(records[0]) : []),
+  ];
+  return [...txtFindings, ...checkPolicyFile(policy)];
 }

@@ -1,19 +1,15 @@
 import { DatabaseSync } from 'node:sqlite';
 
-import { beforeEach, describe, expect, it } from '@jest/globals';
-
-import {
-  purgeRateLimits,
-  rateLimit,
-  type RateLimit,
-  type RateLimitStore,
-} from '@/lib/rate-limit';
-
-/** The statement the real store runs, read from the source so the test cannot drift from it. */
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { APP_MIGRATIONS, migrationSql } from './core/db/migrations';
+import { beforeEach, describe, expect, it } from '@jest/globals';
+
 import { packageDirectorySync } from 'package-directory';
+import { purgeRateLimits, rateLimit } from '@/lib/rate-limit';
+import { APP_MIGRATIONS, migrationSql } from './core/db/migrations';
+import type { RateLimit, RateLimitStore } from '@/lib/rate-limit';
+
+/** The statement the real store runs, read from the source so the test cannot drift from it. */
 
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
@@ -21,7 +17,7 @@ const SOURCE = await readFile(
   path.join(PACKAGE, 'src/lib/rate-limit.ts'),
   'utf8',
 );
-const HIT_SQL = /const HIT_SQL = `([^`]*)`/.exec(SOURCE)?.[1] ?? '';
+const HIT_SQL = /const HIT_SQL = `([^`]*)`/u.exec(SOURCE)?.[1] ?? '';
 /** The whole schema, every migration in order: the rate-limit table is one of them. */
 const SCHEMA = APP_MIGRATIONS.map((file) => migrationSql(file)).join('\n');
 

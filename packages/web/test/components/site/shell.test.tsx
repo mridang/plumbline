@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-import type { User } from '@/domain/db/users';
 import { htmlAt } from '../render';
+import type { User } from '@/domain/db/users';
 
 /** Who the shell finds signed in. */
-const state: { user: User | null } = { user: null };
+interface ShellState {
+  user: User | null;
+}
+const state: ShellState = { user: null };
 
+// eslint-disable-next-line tslop/no-module-mocking -- @/lib/core/auth/current-user is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
   getLiveSessionUid: async () => state.user?.id ?? null,
@@ -13,9 +17,11 @@ jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getSessionUid: async () => state.user?.id ?? null,
 }));
 
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/db/client is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/domain/db/client', () => ({
   getDatabase: () => ({}),
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/db/account-state is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/domain/db/account-state', () => ({
   connectionState: async () => ({ github: false, assistants: false }),
 }));

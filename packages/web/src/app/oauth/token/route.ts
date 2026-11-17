@@ -25,7 +25,7 @@ import { getDatabase } from '@/domain/db/client';
 import { appOrigin } from '@/lib/core/origin';
 
 /** The `Basic` scheme at the start of an Authorization header. */
-const BASIC_AUTH_SCHEME = /^basic\s/i;
+const BASIC_AUTH_SCHEME = /^basic\s/iu;
 
 /**
  * `POST /oauth/token`: trade an authorization code (`grant_type=

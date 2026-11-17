@@ -1,12 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 import { Severity } from '@hint/utils-types';
 import hint from '../../../src/hints/emailpolicy/bimi.js';
-import {
-  fakeDns,
-  runMailHint,
-  type FakeAnswer,
-} from '../../lib/email/fakes.js';
+import { fakeDns, runMailHint } from '../../lib/email/fakes.js';
 import { HTTP_SCHEME } from '../../helpers/data.js';
+import type { FakeAnswer } from '../../lib/email/fakes.js';
 
 const run = async (txt: Record<string, FakeAnswer>) =>
   runMailHint(hint, {

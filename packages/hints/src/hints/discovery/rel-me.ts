@@ -4,10 +4,10 @@ import { onPage } from '../../core/page.js';
 import {
   domRelationshipLinks,
   headerRelationshipLinks,
-  type RelationshipLink,
 } from '../../lib/discovery/links.js';
 import { relationshipMeFindings } from '../../lib/discovery/rel-me.js';
 import { reportFindings } from '../headers/shared.js';
+import type { RelationshipLink } from '../../lib/discovery/links.js';
 
 /**
  * IndieWeb `rel=me`: the page links to the author's other profiles with

@@ -9,8 +9,8 @@
 
 import { ensureOk, ProblemError } from '@/components/api/problem-message';
 
-import type { HintInfo, HintOutcome } from './outcome';
 import { readScan } from './stream';
+import type { HintInfo, HintOutcome } from './outcome';
 
 /** What the page is told as a scan goes on. */
 export interface ScanCallbacks {
@@ -67,6 +67,7 @@ export async function runScan(
     throw new ProblemError('The scan stopped.');
   }
   const chosen = only === undefined ? undefined : new Set(only);
+  // eslint-disable-next-line functional/no-let -- set from the callback that reads each line of the stream
   let started = false;
   await readScan(response.body, (line) => {
     if (line.type === 'unreachable') {

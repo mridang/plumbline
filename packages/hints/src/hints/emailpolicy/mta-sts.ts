@@ -2,16 +2,13 @@ import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { dns } from '../../core/dns.js';
 import { lookupTxt } from '../../lib/email/txt.js';
-import {
-  checkMtaSts,
-  policyUrl as defaultPolicyUrl,
-  type PolicyFetch,
-} from '../../lib/emailpolicy/mta-sts.js';
+import { checkMtaSts, policyUrl } from '../../lib/emailpolicy/mta-sts.js';
 import {
   DOMAIN_OPTION_SCHEMA,
   onPolicyDomain,
 } from '../../lib/emailpolicy/on-policy-domain.js';
 import { EMAILPOLICY_GROUPS } from './groups.js';
+import type { PolicyFetch } from '../../lib/emailpolicy/mta-sts.js';
 
 /** Maps a library finding's severity onto webhint's enum. */
 const SEVERITY = {
@@ -64,7 +61,7 @@ export default defineHint({
         typeof mail.options.policyUrl === 'string' &&
         mail.options.policyUrl !== ''
           ? mail.options.policyUrl
-          : defaultPolicyUrl(mail.domain);
+          : policyUrl(mail.domain);
       const response = await mail.fetch(url);
       const policy: PolicyFetch =
         response && response.response.statusCode < 400
@@ -75,6 +72,7 @@ export default defineHint({
             }
           : { status: 'missing' };
 
+      // eslint-disable-next-line functional/no-loop-statements -- reports each finding
       for (const finding of checkMtaSts(mail.domain, lookup, policy)) {
         mail.report(finding.message, {
           severity: SEVERITY[finding.severity],

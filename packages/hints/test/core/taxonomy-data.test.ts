@@ -20,7 +20,7 @@ import {
 } from '../../src/core/taxonomy-data.js';
 
 /** Matches a year and month such as 2025-03. */
-const ADDED_MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+const ADDED_MONTH = /^\d{4}-(0[1-9]|1[0-2])$/u;
 
 const collator = new Intl.Collator();
 
@@ -185,6 +185,7 @@ describe('the taxonomy data', () => {
       expect(section.intro.length).toBeGreaterThan(20);
     }
     expect(INTRO.length).toBeGreaterThan(0);
+    // eslint-disable-next-line tslop/no-poor-substring-tests -- the note is fixed prose that must name the opt-in prefix
     expect(OPT_IN_NOTE).toContain('plumbline:');
   });
 

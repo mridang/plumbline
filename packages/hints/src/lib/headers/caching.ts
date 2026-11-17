@@ -6,24 +6,25 @@
  * `No-Vary-Search` header. None of these duplicates the HTTP-compression
  * check; `Vary` is examined only for its own shape.
  */
-import { finding, type Finding } from './finding.js';
+import { finding } from './finding.js';
 import { splitList } from './http-headers.js';
+import type { Finding } from './finding.js';
 
 /** Matches an equals sign or semicolon. */
-const EQUALS_OR_SEMICOLON = /[=;]/;
+const EQUALS_OR_SEMICOLON = /[=;]/u;
 
 /** Matches a string made only of digits. */
-const DIGITS_ONLY = /^\d+$/;
+const DIGITS_ONLY = /^\d+$/u;
 
 /** Matches an ETag made of three hex groups. */
-const HEX_TRIPLE_ETAG = /^[0-9a-f]+-[0-9a-f]+-[0-9a-f]+$/i;
+const HEX_TRIPLE_ETAG = /^[0-9a-f]+-[0-9a-f]+-[0-9a-f]+$/iu;
 
 /** Matches a double-quoted string and captures its content. */
-const QUOTED_STRING = /^"(.*)"$/;
+const QUOTED_STRING = /^"(.*)"$/u;
 
 /** The preferred IMF-fixdate HTTP-date, plus the two obsolete formats. */
 const IMF_FIXDATE =
-  /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d\d (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d\d\d\d \d\d:\d\d:\d\d GMT$/;
+  /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d\d (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d\d\d\d \d\d:\d\d:\d\d GMT$/u;
 
 /** True when a value is a valid HTTP-date and names a real calendar day. */
 function isHttpDate(value: string): boolean {
@@ -165,16 +166,16 @@ export function noVarySearchFindings(value: string | null): Finding[] {
   if (members.length === 0) {
     return [finding('warning', "The 'No-Vary-Search' header is empty.")];
   }
-  for (const member of members) {
-    const key = member.split(EQUALS_OR_SEMICOLON, 1)[0]?.trim() ?? '';
-    if (!NO_VARY_SEARCH_KEYS.has(key)) {
-      return [
-        finding(
-          'warning',
-          `The 'No-Vary-Search' header has an unrecognised key '${key}'; use key-order, params or except.`,
-        ),
-      ];
-    }
+  const unrecognised = members
+    .map((member) => member.split(EQUALS_OR_SEMICOLON, 1)[0]?.trim() ?? '')
+    .find((key) => !NO_VARY_SEARCH_KEYS.has(key));
+  if (unrecognised !== undefined) {
+    return [
+      finding(
+        'warning',
+        `The 'No-Vary-Search' header has an unrecognised key '${unrecognised}'; use key-order, params or except.`,
+      ),
+    ];
   }
   return [];
 }

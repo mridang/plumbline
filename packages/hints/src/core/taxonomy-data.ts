@@ -1248,6 +1248,7 @@ export const OPT_IN_NOTE =
   'Sections with defaultOn false (email, advertising, ai) are not part of plumbline:recommended or plumbline:advanced. Add them explicitly: extends: [plumbline:recommended, plumbline:email/recommended].';
 
 /** Where every check is placed, by check id. */
+// eslint-disable-next-line tslop/no-known-value-widening -- consumers look an id up with an arbitrary string, so the open dictionary type is the public contract
 export const PLACEMENT: Readonly<Record<string, Placement>> = {
   'accept-ch': {
     section: 'privacy',
@@ -4303,6 +4304,7 @@ export const PLACEMENT: Readonly<Record<string, Placement>> = {
 };
 
 /** How to fix each recommended check, with a line for Vercel and for Cloudflare where one is written. */
+// eslint-disable-next-line tslop/no-known-value-widening -- consumers look an id up with an arbitrary string, so the open dictionary type is the public contract
 export const HOW_TO_FIX: Readonly<Record<string, HowToFix>> = {
   'accept-ch': {
     fix: 'Send only the client hints you use, as a comma-separated list of valid names, or remove the header.',

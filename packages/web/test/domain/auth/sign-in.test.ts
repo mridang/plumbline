@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { LANDING_PATH, SESSION_COOKIE, sessionClaims } from '@/domain/auth/app';
-import type { User } from '@/domain/auth/store';
-import { SESSION_SECRET, appRequest } from './auth-test-kit';
 import { installFakeTracing } from '../../lib/core/observability/fake-tracing';
+import { SESSION_SECRET, appRequest } from './auth-test-kit';
+import type { User } from '@/domain/auth/store';
 
 /** Matches the word email. */
-const EMAIL = /email/;
+const EMAIL = /email/u;
 /** Matches the session secret name. */
-const SESSION_SECRET_PATTERN = /SESSION_SECRET/;
+const SESSION_SECRET_PATTERN = /SESSION_SECRET/u;
 
 const tracing = installFakeTracing();
 
@@ -27,6 +27,7 @@ const afterSignIn = jest
   .fn<(user: unknown) => Promise<void>>()
   .mockResolvedValue();
 
+// eslint-disable-next-line tslop/no-module-mocking -- the store reads the D1 database of the Worker, and the module has no seam to pass a fake in
 jest.unstable_mockModule('@/domain/auth/store', () => ({
   upsertGoogleUser,
   // Importing core/auth via its barrel now also loads the current-user lookup,
@@ -34,6 +35,7 @@ jest.unstable_mockModule('@/domain/auth/store', () => ({
   getUserById: jest.fn(async () => person),
   getSessionEpoch: jest.fn(async () => 0),
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- the hooks are imported by the module under test, which has no seam to pass a fake in
 jest.unstable_mockModule('@/domain/auth/hooks', () => ({
   afterSignIn,
   OTHER_FLOWS: {},

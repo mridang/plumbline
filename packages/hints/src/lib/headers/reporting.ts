@@ -15,8 +15,9 @@
  * through Cloudflare; the same endpoint on any other site is still reported.
  */
 import { parseCspLoose } from './csp.js';
-import { finding, type Finding } from './finding.js';
+import { finding } from './finding.js';
 import { isThirdParty } from './registrable-domain.js';
+import type { Finding } from './finding.js';
 
 export interface ReportingInput {
   /** Registrable domain of the page. */
@@ -31,7 +32,7 @@ export interface ReportingInput {
 }
 
 /** Cloudflare's own Network Error Logging collector, injected on proxied sites. */
-const CLOUDFLARE_NEL = /(^|\.)nel\.cloudflare\.com$/i;
+const CLOUDFLARE_NEL = /(^|\.)nel\.cloudflare\.com$/iu;
 
 /** Whether an endpoint is Cloudflare's injected collector on a site served by Cloudflare. */
 function isPlatformEndpoint(url: string, cloudflare = false): boolean {
@@ -71,22 +72,16 @@ function thirdPartyEndpoints(
   registrable: string,
   cloudflare = false,
 ): string[] {
-  const urls: string[] = [];
-  for (const group of groups) {
-    if (group?.group !== name || !Array.isArray(group.endpoints)) {
-      continue;
-    }
-    for (const endpoint of group.endpoints as { url?: unknown }[]) {
+  return groups
+    .filter((group) => group?.group === name && Array.isArray(group.endpoints))
+    .flatMap((group) => group.endpoints as { url?: unknown }[])
+    .flatMap((endpoint) => {
       const url = typeof endpoint?.url === 'string' ? endpoint.url : '';
-      if (
-        isThirdParty(url, registrable) &&
+      return isThirdParty(url, registrable) &&
         !isPlatformEndpoint(url, cloudflare)
-      ) {
-        urls.push(url);
-      }
-    }
-  }
-  return urls;
+        ? [url]
+        : [];
+    });
 }
 
 /** Third-party endpoints of the report group named by the NEL header. */
@@ -112,7 +107,6 @@ function nelEndpoints(input: ReportingInput, groups: Group[]): string[] {
 
 /** Finds the reporting endpoints on other registrable domains. */
 export function externalReports(input: ReportingInput): ExternalReports {
-  const found: ExternalReports = {};
   const csp = parseCspLoose(input.csp);
   const reportOnly = parseCspLoose(input.cspReportOnly);
   const groups = input.reportTo === null ? null : parseGroups(input.reportTo);
@@ -123,46 +117,22 @@ export function externalReports(input: ReportingInput): ExternalReports {
         isThirdParty(url, input.registrable) &&
         !isPlatformEndpoint(url, input.cloudflare),
     );
+  const reportTo = (group: string | undefined): string[] =>
+    groups && group !== undefined
+      ? thirdPartyEndpoints(groups, group, input.registrable, input.cloudflare)
+      : [];
   const uriHeader = reportUri(csp);
-  if (uriHeader.length > 0) {
-    found.cspReportUri = uriHeader;
-  }
   const uriReportOnly = reportUri(reportOnly);
-  if (uriReportOnly.length > 0) {
-    found.cspReportOnlyReportUri = uriReportOnly;
-  }
-
-  if (groups) {
-    const toHeader = csp.get('report-to')?.[0];
-    if (toHeader !== undefined) {
-      const urls = thirdPartyEndpoints(
-        groups,
-        toHeader,
-        input.registrable,
-        input.cloudflare,
-      );
-      if (urls.length > 0) {
-        found.cspReportTo = urls;
-      }
-    }
-    const toReportOnly = reportOnly.get('report-to')?.[0];
-    if (toReportOnly !== undefined) {
-      const urls = thirdPartyEndpoints(
-        groups,
-        toReportOnly,
-        input.registrable,
-        input.cloudflare,
-      );
-      if (urls.length > 0) {
-        found.cspReportOnlyReportTo = urls;
-      }
-    }
-    const nelUrls = nelEndpoints(input, groups);
-    if (nelUrls.length > 0) {
-      found.nel = nelUrls;
-    }
-  }
-  return found;
+  const toHeader = reportTo(csp.get('report-to')?.[0]);
+  const toReportOnly = reportTo(reportOnly.get('report-to')?.[0]);
+  const nelUrls = groups ? nelEndpoints(input, groups) : [];
+  return {
+    ...(uriHeader.length > 0 && { cspReportUri: uriHeader }),
+    ...(uriReportOnly.length > 0 && { cspReportOnlyReportUri: uriReportOnly }),
+    ...(toHeader.length > 0 && { cspReportTo: toHeader }),
+    ...(toReportOnly.length > 0 && { cspReportOnlyReportTo: toReportOnly }),
+    ...(nelUrls.length > 0 && { nel: nelUrls }),
+  };
 }
 
 const LABELS: Record<keyof ExternalReports, string> = {

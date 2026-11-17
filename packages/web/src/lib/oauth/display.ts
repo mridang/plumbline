@@ -12,13 +12,14 @@
  * it. They are pure so the rules can be tested without a page.
  */
 
-import { redirectKind, type RedirectKind } from '@/lib/oauth/redirect-uri';
-import type { OAuthClient } from '@/lib/oauth/client';
+import { redirectKind } from '@/lib/oauth/redirect-uri';
 import { SCOPE_TEXT } from '@/domain/mcp/app';
 import { parseUrl } from '@/utils/url';
+import type { RedirectKind } from '@/lib/oauth/redirect-uri';
+import type { OAuthClient } from '@/lib/oauth/client';
 
 /** A single printable ASCII character. */
-const PRINTABLE_ASCII_CHARACTER = /^[\u0021-\u007E]$/;
+const PRINTABLE_ASCII_CHARACTER = /^[\u0021-\u007E]$/u;
 
 /** The longest client name we show. */
 export const MAX_DISPLAY_NAME_LENGTH = 100;

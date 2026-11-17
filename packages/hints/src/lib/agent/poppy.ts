@@ -1,4 +1,3 @@
-import type { AgentEnv, CheckResult } from './types.js';
 import {
   bareHost,
   isLoopback,
@@ -10,6 +9,7 @@ import {
   result,
   urlOf,
 } from './utility.js';
+import type { AgentEnv, CheckResult } from './types.js';
 
 /**
  * Personal Agent Protocol (Poppy): `/.well-known/poppy.json` over HTTPS
@@ -63,10 +63,10 @@ export async function checkPoppy(env: AgentEnv): Promise<CheckResult> {
   }
   const auth = parsedDocument.auth;
   if (isRecord(auth) && isText(auth.issuer)) {
-    let base = auth.issuer;
-    while (base.endsWith('/')) {
-      base = base.slice(0, -1);
-    }
+    const segments = auth.issuer.split('/');
+    const base = segments
+      .slice(0, segments.findLastIndex((segment) => segment !== '') + 1)
+      .join('/');
     const meta = parseJsonObject(
       await env.probe(`${base}/.well-known/oauth-authorization-server`),
     );

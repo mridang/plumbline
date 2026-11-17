@@ -4,9 +4,9 @@ import { FinalCta } from '@/components/landing/final-cta';
 import { html } from '../render';
 
 /** Matches the open dashboard link. */
-const OPEN_DASHBOARD_LINK = /href="\/dashboard"[^>]*>Open your dashboard<\/a>/;
+const OPEN_DASHBOARD_LINK = /href="\/dashboard"[^>]*>Open your dashboard<\/a>/u;
 /** Matches the scan a page link. */
-const SCAN_PAGE_LINK = /href="#scan"[^>]*>Scan a page now<\/a>/;
+const SCAN_PAGE_LINK = /href="#scan"[^>]*>Scan a page now<\/a>/u;
 
 describe('FinalCta', () => {
   const out = html(<FinalCta />);

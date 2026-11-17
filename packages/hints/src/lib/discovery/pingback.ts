@@ -7,8 +7,10 @@
  *
  * Source: the Pingback 1.0 specification (https://www.hixie.ch/specs/pingback/pingback).
  */
-import { finding, type Finding } from '../headers/finding.js';
-import { withRelationship, type RelationshipLink } from './links.js';
+import { finding } from '../headers/finding.js';
+import { withRelationship } from './links.js';
+import type { Finding } from '../headers/finding.js';
+import type { RelationshipLink } from './links.js';
 
 /**
  * Evaluates the Pingback advertisement of a page.

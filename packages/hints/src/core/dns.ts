@@ -91,4 +91,4 @@ function dohClient(
 }
 
 /** The client hints use; tests assign a fake to `dns.client`. */
-export const dns: { client: DnsClient } = { client: dohClient() };
+export const dns = { client: dohClient() };

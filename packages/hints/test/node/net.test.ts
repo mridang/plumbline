@@ -1,5 +1,5 @@
-import { describe, expect, it } from '@jest/globals';
 import { connect as nodeConnect, isIP as nodeIsIP } from 'node:net';
+import { describe, expect, it } from '@jest/globals';
 
 import { connect, isIP } from '../../src/node/net.js';
 

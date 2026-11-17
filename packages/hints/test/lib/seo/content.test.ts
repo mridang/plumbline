@@ -140,6 +140,7 @@ describe('linkFindings', () => {
     const links = [
       { href: '#top' },
       { href: 'mailto:a@b.c' },
+      // eslint-disable-next-line no-script-url -- the fixture is the javascript: scheme the check must ignore
       { href: 'javascript:void(0)' },
       { href: 'ftp://example.com/x' },
     ];
@@ -229,13 +230,13 @@ describe('visibleText tag stripping against the former regex', () => {
     new RegExp(parts.join(''), flags);
   const former = (html: string): string =>
     html
-      .replaceAll(/<!--[\s\S]*?-->/g, ' ')
+      .replaceAll(/<!--[\s\S]*?-->/gu, ' ')
       .replaceAll(
-        /<(script|style|noscript|template|head|svg)\b[\s\S]*?<\/\1\s*>/gi,
+        /<(script|style|noscript|template|head|svg)\b[\s\S]*?<\/\1\s*>/giu,
         ' ',
       )
       .replaceAll(old('g', '<[^', '>]*>'), ' ')
-      .replaceAll(/\s+/g, ' ')
+      .replaceAll(/\s+/gu, ' ')
       .trim();
 
   it.each([

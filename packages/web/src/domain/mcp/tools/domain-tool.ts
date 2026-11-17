@@ -11,10 +11,11 @@
  * person does not own.
  */
 
+import { ownDomain } from '@/domain/mcp/tools/domain-support';
+import { McpTool } from '@/lib/mcp';
 import type { Domain } from '@/domain/db/domains';
 import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
-import { ownDomain } from '@/domain/mcp/tools/domain-support';
-import { McpTool, type ToolArgs, type ToolResult } from '@/lib/mcp';
+import type { ToolArgs, ToolResult } from '@/lib/mcp';
 
 /**
  * A tool that acts on one domain of the user's, named by the `domain` argument

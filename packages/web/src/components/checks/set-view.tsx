@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import type { ReactElement } from 'react';
 
 import { Badge } from '@/components/ui-app/badge';
 import {
@@ -28,10 +27,11 @@ import {
   setPath,
   tierCounts,
   yamlFor,
-  type View,
 } from '@/domain/checks/browse';
 import { findRuleSet } from '@/domain/checks/sets';
 import { countOf, formatCount } from '@/lib/intl';
+import type { View } from '@/domain/checks/browse';
+import type { ReactElement } from 'react';
 
 /** The kicker over a set's title, by what kind of set it is. */
 const KICKERS = {
@@ -51,8 +51,9 @@ export function SetView({
   const path = setPath(id);
   const tiers = tierCounts(rules);
   const parts = (['recommended', 'advanced', 'experimental'] as const)
-    .filter((tier) => tiers[tier] > 0)
-    .map((tier) => `${formatCount(tiers[tier])} ${tier}`)
+    .flatMap((tier) =>
+      tiers[tier] > 0 ? [`${formatCount(tiers[tier])} ${tier}`] : [],
+    )
     .join(' · ');
   const areas = byArea(rules);
   const many = hasManyTiers(rules);
@@ -161,9 +162,10 @@ export function AreaView({
   const all = rulesOfArea(id);
   const shown = filterRules(all, view);
   const path = areaPath(id);
-  const sets = ['recommended', 'advanced', 'experimental']
-    .map((tier) => findRuleSet(`plumbline:${id}/${tier}`))
-    .filter((set) => set && set.members.length > 0);
+  const sets = ['recommended', 'advanced', 'experimental'].flatMap((tier) => {
+    const set = findRuleSet(`plumbline:${id}/${tier}`);
+    return set && set.members.length > 0 ? [set] : [];
+  });
   const many = hasManyTiers(all);
   return (
     <>

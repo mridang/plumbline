@@ -17,6 +17,7 @@ export interface Origin {
   licence: string;
 }
 
+// eslint-disable-next-line tslop/no-known-value-widening -- consumers look an id up with an arbitrary string, so the open dictionary type is the public contract
 export const ORIGINS: Readonly<Record<string, readonly Origin[]>> = {
   'agent-a2a-agent-card': [
     {

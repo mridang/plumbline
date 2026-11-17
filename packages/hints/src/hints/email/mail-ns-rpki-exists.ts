@@ -33,7 +33,7 @@ export default defineHint({
   ],
   setup(context) {
     onMailDomain(context, async (mail) => {
-      for (const host of mail.hosts) {
+      await Array.fromAsync(mail.hosts, async (host) => {
         const missing = missingRoa(await nsRpki(host));
         if (missing.length > 0) {
           mail.report(
@@ -41,7 +41,7 @@ export default defineHint({
             { severity: Severity.error, codeSnippet: rpkiLines(missing) },
           );
         }
-      }
+      });
     });
   },
 });

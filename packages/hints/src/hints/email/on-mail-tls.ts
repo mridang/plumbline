@@ -1,16 +1,14 @@
-import type { HintContext } from 'hint';
 import { Severity } from '@hint/utils-types';
-import {
-  Category,
-  defineHint,
-  type HintDefinition,
-} from '../../core/define-hint.js';
+import { Category, defineHint } from '../../core/define-hint.js';
 import {
   DOMAIN_OPTION_SCHEMA,
   onMailDomain,
 } from '../../lib/email/on-mail-domain.js';
 import { mailTargetFor } from '../../lib/tls/client.js';
-import { MAIL_SUBJECT, type TlsSite } from '../tls/on-tls-site.js';
+import { MAIL_SUBJECT } from '../tls/on-tls-site.js';
+import type { HintDefinition } from '../../core/define-hint.js';
+import type { TlsSite } from '../tls/on-tls-site.js';
+import type { HintContext } from 'hint';
 
 /**
  * Runs a TLS check once for every receiving mail server (MX) of the site's
@@ -36,10 +34,12 @@ function onMailTls(
           target,
           subject: MAIL_SUBJECT,
           report: (message, codeSnippet, severity = Severity.error) =>
+            // eslint-disable-next-line functional/immutable-data -- the reports are collected here so they can be sent in the order of the servers
             reports.push(() =>
               mail.report(`${host}: ${message}`, { severity, codeSnippet }),
             ),
           couldNotTest: (reason) =>
+            // eslint-disable-next-line functional/immutable-data -- the reports are collected here so they can be sent in the order of the servers
             reports.push(() =>
               mail.report(`${host}: Could not test: ${reason}.`, {
                 severity: Severity.hint,
@@ -50,10 +50,9 @@ function onMailTls(
         return reports;
       }),
     );
-    for (const reports of said) {
-      for (const report of reports) {
-        report();
-      }
+    // eslint-disable-next-line functional/no-loop-statements -- sends the collected reports, in the order of the servers
+    for (const report of said.flat()) {
+      report();
     }
   });
 }

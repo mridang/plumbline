@@ -21,6 +21,7 @@ export default defineHint({
   setup(context) {
     onPage(context, (page) => {
       const blocks = readJsonLd(page.document);
+      // eslint-disable-next-line functional/no-loop-statements -- reports each finding
       for (const { message, severity } of faqSchemaFindings(blocks)) {
         page.report(message, {
           severity: severity === 'error' ? Severity.error : Severity.warning,

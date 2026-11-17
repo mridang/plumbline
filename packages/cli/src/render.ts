@@ -3,7 +3,10 @@ import type { Finding, Report } from './report.js';
 import type { HintMeta } from './scan.js';
 
 /** Matches the `extra/` prefix webhint puts on a hint id. */
-const EXTRA_PREFIX = /^extra\//;
+const EXTRA_PREFIX = /^extra\//u;
+
+/** Orders text the way the terminal's locale does, for sorting hint ids. */
+const collator = new Intl.Collator();
 
 /** One finding as `plumbline scan --format json` prints it. */
 export interface JsonFinding {
@@ -36,7 +39,7 @@ function bareId(hintId: string): string {
 function bySeverity(a: Finding, b: Finding): number {
   return (
     severityRank(b.severity) - severityRank(a.severity) ||
-    a.hintId.localeCompare(b.hintId)
+    collator.compare(a.hintId, b.hintId)
   );
 }
 
@@ -96,29 +99,28 @@ export function formatFindings(
   report: Report,
   hints: readonly HintMeta[],
 ): string {
-  const groups = new Map<string, Finding[]>();
-  for (const finding of report.findings.toSorted(bySeverity)) {
-    const id = bareId(finding.hintId);
-    groups.set(id, [...(groups.get(id) ?? []), finding]);
-  }
+  const groups = Map.groupBy(report.findings.toSorted(bySeverity), (finding) =>
+    bareId(finding.hintId),
+  );
   // Map keeps insertion order, and findings were inserted most serious
   // first, so hints come out ordered by their worst finding.
   const blocks = Array.from(groups, ([id, findings]) => {
     const name = hints.find((hint) => hint.id === id)?.name;
     const heading = name && name !== id ? `${id} (${name})` : id;
-    const lines = findings.map((finding) => {
-      const parts = [`  ${finding.severity.padEnd(11)} ${finding.message}`];
-      if (finding.resource && finding.resource !== report.url) {
-        parts.push(`  ${''.padEnd(11)} at ${finding.resource}`);
-      }
-      if (finding.codeSnippet) {
-        parts.push(indent(finding.codeSnippet, `  ${''.padEnd(11)} | `));
-      }
-      return parts.join('\n');
-    });
+    const lines = findings.map((finding) =>
+      [
+        `  ${finding.severity.padEnd(11)} ${finding.message}`,
+        ...(finding.resource && finding.resource !== report.url
+          ? [`  ${''.padEnd(11)} at ${finding.resource}`]
+          : []),
+        ...(finding.codeSnippet
+          ? [indent(finding.codeSnippet, `  ${''.padEnd(11)} | `)]
+          : []),
+      ].join('\n'),
+    );
     return [heading, ...lines].join('\n');
   });
-  return [...blocks, summaryLine(report, hints.length)].join('\n\n') + '\n';
+  return `${[...blocks, summaryLine(report, hints.length)].join('\n\n')}\n`;
 }
 
 /**
@@ -140,7 +142,7 @@ export function formatChecks(checks: readonly HintMeta[]): string {
       ...(check.description ? [`  ${check.description}`] : []),
     ].join('\n'),
   );
-  return [...blocks, plural(checks.length, 'check')].join('\n\n') + '\n';
+  return `${[...blocks, plural(checks.length, 'check')].join('\n\n')}\n`;
 }
 
 /** The catalogue as `plumbline checks --format json` prints it. */

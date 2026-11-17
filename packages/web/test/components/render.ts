@@ -3,8 +3,9 @@ import {
   PathnameContext,
   SearchParamsContext,
 } from 'next/dist/shared/lib/hooks-client-context.shared-runtime';
-import { createElement, type ReactElement } from 'react';
+import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import type { ReactElement } from 'react';
 
 /** A component's HTML, for asserting on what it renders (there is no DOM in these tests). */
 export function html(element: ReactElement): string {
@@ -53,5 +54,5 @@ export function htmlAt(
 /** The class list of the first element whose tag is `tag`. */
 // eslint-disable-next-line unicorn/no-keyword-prefix -- classOf is a shared test helper imported by many specs
 export function classOf(markup: string, tag: string): string {
-  return new RegExp(`<${tag}[^>]*class="([^"]*)"`).exec(markup)?.[1] ?? '';
+  return new RegExp(`<${tag}[^>]*class="([^"]*)"`, 'u').exec(markup)?.[1] ?? '';
 }

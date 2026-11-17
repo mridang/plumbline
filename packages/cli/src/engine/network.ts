@@ -12,24 +12,23 @@ const MAX_REDIRECTS = 10;
 
 /** The headers as a plain object, names in lower case. Repeated headers are joined; `Set-Cookie` lines are kept one per line, since a cookie may hold a comma. */
 export function headersOf(headers: Headers): HttpHeaders {
-  const out: HttpHeaders = {};
-  for (const [name, value] of headers.entries()) {
-    if (name !== 'set-cookie') {
-      out[name] = value;
-    }
-  }
   const cookies = headers.getSetCookie();
-  if (cookies.length > 0) {
-    out['set-cookie'] = cookies.join('\n');
-  }
-  return out;
+  return {
+    ...Object.fromEntries(
+      [...headers.entries()].filter(([name]) => name !== 'set-cookie'),
+    ),
+    ...(cookies.length > 0 ? { 'set-cookie': cookies.join('\n') } : {}),
+  };
 }
 
 /** The media type and charset a `Content-Type` names. */
-export function contentTypeOf(value: string | undefined): {
+interface ContentType {
   mediaType: string;
   charset: string;
-} {
+}
+
+/** The media type and charset a `Content-Type` names. */
+export function contentTypeOf(value: string | undefined): ContentType {
   const [essence = '', ...params] = (value ?? '').split(';');
   const charset =
     params
@@ -64,9 +63,7 @@ export async function fetchResource(
   requestHeaders: Readonly<Record<string, string>>,
   fetcher: typeof fetch,
 ): Promise<NetworkData> {
-  const hops: string[] = [];
-  let current = new URL(url);
-  for (;;) {
+  const follow = async (current: URL, hops: string[]): Promise<NetworkData> => {
     const response = await fetcher(current.href, {
       method: 'GET',
       headers: requestHeaders,
@@ -79,9 +76,7 @@ export async function fetchResource(
       location &&
       hops.length < MAX_REDIRECTS
     ) {
-      hops.push(current.href);
-      current = new URL(location, current);
-      continue;
+      return follow(new URL(location, current), [...hops, current.href]);
     }
     const bytes = new Uint8Array(await response.arrayBuffer());
     const { mediaType, charset } = contentTypeOf(headers['content-type']);
@@ -108,5 +103,6 @@ export async function fetchResource(
         url: current.href,
       },
     };
-  }
+  };
+  return follow(new URL(url), []);
 }

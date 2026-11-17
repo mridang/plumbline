@@ -98,13 +98,16 @@ export function computeScore(
       counted: own.length > 0 && (category !== 'commerce' || commerceDetected),
     };
   });
-  let weighted = 0;
-  let weights = 0;
-  for (const c of categories.filter((entry) => entry.counted)) {
-    // Use the exact fraction, not the rounded category score.
-    weighted += CATEGORY_WEIGHTS[c.category] * (c.passed / c.total) * 100;
-    weights += CATEGORY_WEIGHTS[c.category];
-  }
+  const counted = categories.filter((entry) => entry.counted);
+  // Use the exact fraction, not the rounded category score.
+  const weighted = counted.reduce(
+    (sum, c) => sum + CATEGORY_WEIGHTS[c.category] * (c.passed / c.total) * 100,
+    0,
+  );
+  const weights = counted.reduce(
+    (sum, c) => sum + CATEGORY_WEIGHTS[c.category],
+    0,
+  );
   const score = weights === 0 ? 0 : Math.round(weighted / weights);
   return { score, level: levelFor(score), categories };
 }

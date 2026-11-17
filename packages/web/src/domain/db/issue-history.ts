@@ -9,8 +9,8 @@
 
 import { and, desc, eq, notInArray } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import { suiteIssueHistory } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 
 /**
  * How an issue stands: open, closed by the app, closed by a person, gone from

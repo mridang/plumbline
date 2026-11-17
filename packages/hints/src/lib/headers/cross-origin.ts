@@ -9,8 +9,9 @@
  * the header wins. The OWASP profile requires `same-origin` (COOP, CORP) and
  * `require-corp` (COEP).
  */
-import { finding, type Finding, type Profile } from './finding.js';
+import { finding } from './finding.js';
 import { parseStructuredToken } from './structured-field.js';
+import type { Finding, Profile } from './finding.js';
 
 export type CrossOriginPolicy = 'coop' | 'coep' | 'corp';
 
@@ -79,20 +80,18 @@ export function crossOriginFindings(
       : [finding('error', `The '${name}' header should be '${spec.owasp}'.`)];
   }
 
-  let declared: string | undefined;
-  if (policy === 'corp') {
-    // The header has precedence over a <meta http-equiv>.
-    declared = values.length > 0 ? values.join(', ') : metas.at(-1)?.trim();
-  } else if (values.length > 1) {
+  if (policy !== 'corp' && values.length > 1) {
     return [
       finding(
         'error',
         `${name} header cannot be recognized (it was sent more than once).`,
       ),
     ];
-  } else {
-    declared = values[0];
   }
+  // The header has precedence over a <meta http-equiv>.
+  const headerValue =
+    values.length > 0 ? values.join(', ') : metas.at(-1)?.trim();
+  const declared = policy === 'corp' ? headerValue : values[0];
 
   if (declared === undefined || declared === '') {
     return [finding('hint', `${name} header not implemented. ${spec.advice}`)];

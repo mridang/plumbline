@@ -12,7 +12,7 @@ describe('PageHeading', () => {
         description="How each stands."
       />,
     );
-    expect(out.match(/<h1/g)).toHaveLength(1);
+    expect(out.match(/<h1/gu)).toHaveLength(1);
     expect(out).toContain('>Your sites</h1>');
     expect(out.indexOf('Dashboard')).toBeLessThan(out.indexOf('Your sites'));
     expect(out).toContain('How each stands.');

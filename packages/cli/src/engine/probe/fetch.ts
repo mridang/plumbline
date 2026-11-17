@@ -12,12 +12,12 @@
 import { promisify } from 'node:util';
 import { brotliDecompress, gunzip, inflate } from 'node:zlib';
 
+import { ScanRefusedError, assertScannable } from '../scannable.js';
 import { ProbeError } from './protocol.js';
 import type { HttpRequest, ProbeClient } from './client.js';
-import { ScanRefusedError, assertScannable } from '../scannable.js';
 
 /** Matches a `chunked` transfer encoding. */
-const CHUNKED_ENCODING = /chunked/i;
+const CHUNKED_ENCODING = /chunked/iu;
 
 /** The user agent sent with every request, so site owners can tell what called. */
 export const USER_AGENT =
@@ -37,20 +37,20 @@ function bodyless(status: number): boolean {
 /** The body with its chunks put together (`Transfer-Encoding: chunked`). */
 export function unchunk(bytes: Uint8Array): Uint8Array {
   const parts: Uint8Array[] = [];
+  // eslint-disable-next-line functional/no-let -- the cursor of the chunk parser
   let at = 0;
-  let total = 0;
-  let more = true;
-  while (more) {
-    let end = at;
-    while (
-      end + 1 < bytes.length &&
-      !(bytes[end] === 13 && bytes[end + 1] === 10)
-    ) {
-      end += 1;
-    }
-    if (end + 1 >= bytes.length) {
+  // eslint-disable-next-line functional/no-loop-statements -- each chunk size is read where the chunk before it ends
+  for (;;) {
+    const cursor = at;
+    const found = bytes
+      .subarray(cursor)
+      .findIndex(
+        (byte, index) => byte === 13 && bytes[cursor + index + 1] === 10,
+      );
+    if (found === -1) {
       throw new ProbeError('the response ended inside a chunk header');
     }
+    const end = at + found;
     const size = Number.parseInt(
       new TextDecoder()
         .decode(bytes.subarray(at, end))
@@ -64,26 +64,18 @@ export function unchunk(bytes: Uint8Array): Uint8Array {
       );
     }
     at = end + 2;
-    if (size === 0) {
-      more = false;
-    } else if (at + size > bytes.length) {
-      // The probe cut the body at its limit; keep what came.
-      parts.push(bytes.subarray(at));
-      total += bytes.length - at;
-      more = false;
-    } else {
-      parts.push(bytes.subarray(at, at + size));
-      total += size;
-      at += size + 2;
+    // The probe cut the body at its limit; keep what came.
+    const cut = at + size > bytes.length;
+    if (size > 0) {
+      // eslint-disable-next-line functional/immutable-data -- collects the chunks in order
+      parts.push(cut ? bytes.subarray(at) : bytes.subarray(at, at + size));
     }
+    if (size === 0 || cut) {
+      break;
+    }
+    at += size + 2;
   }
-  const out = new Uint8Array(total);
-  let offset = 0;
-  for (const part of parts) {
-    out.set(part, offset);
-    offset += part.length;
-  }
-  return out;
+  return new Uint8Array(Buffer.concat(parts));
 }
 
 const gunzipAsync = promisify(gunzip);
@@ -129,14 +121,14 @@ export async function decode(
 function requestHeaders(
   init: ConstructorParameters<typeof Headers>[0] | undefined,
 ): [string, string][] {
-  const merged = new Map<string, string>([
-    ['accept', '*/*'],
-    ['accept-encoding', 'gzip, deflate, br'],
-    ['user-agent', USER_AGENT],
-  ]);
-  for (const [name, value] of new Headers(init).entries())
-    merged.set(name, value);
-  return [...merged];
+  return [
+    ...new Map<string, string>([
+      ['accept', '*/*'],
+      ['accept-encoding', 'gzip, deflate, br'],
+      ['user-agent', USER_AGENT],
+      ...new Headers(init).entries(),
+    ]),
+  ];
 }
 
 /** Sends one request without following a redirect. */
@@ -149,7 +141,7 @@ async function once(
   const tls = url.protocol === 'https:';
   const defaultPort = tls ? 443 : 80;
   const request: HttpRequest = {
-    host: url.hostname.replaceAll(/^\[|\]$/g, ''),
+    host: url.hostname.replaceAll(/^\[|\]$/gu, ''),
     port: url.port === '' ? defaultPort : Number(url.port),
     tls,
     method,
@@ -159,24 +151,28 @@ async function once(
     maxBody: MAX_BYTES + 65_536,
   };
   const answer = await client.http(request);
-  const lines = new Headers();
-  for (const [name, value] of answer.headers) {
-    try {
-      lines.append(name, value);
-    } catch {
-      // A header the Fetch API cannot hold is left out.
-    }
-  }
-  let body: Uint8Array | null = null;
-  if (method !== 'HEAD' && !bodyless(answer.status)) {
-    const chunked = CHUNKED_ENCODING.test(lines.get('transfer-encoding') ?? '');
-    const raw = chunked ? unchunk(answer.body) : answer.body;
-    body = await decode(raw, lines.get('content-encoding') ?? undefined);
-    if (body.byteLength > MAX_BYTES) {
-      throw new ScanRefusedError(
-        `The response is larger than ${MAX_BYTES} bytes`,
-      );
-    }
+  // A header the Fetch API cannot hold is left out.
+  const lines = new Headers(
+    answer.headers.flatMap(([name, value]): [string, string][] => {
+      try {
+        return new Headers([[name, value]]).has(name) ? [[name, value]] : [];
+      } catch {
+        return [];
+      }
+    }),
+  );
+  const hasBody = method !== 'HEAD' && !bodyless(answer.status);
+  const raw =
+    hasBody && CHUNKED_ENCODING.test(lines.get('transfer-encoding') ?? '')
+      ? unchunk(answer.body)
+      : answer.body;
+  const body = hasBody
+    ? await decode(raw, lines.get('content-encoding') ?? undefined)
+    : null;
+  if (body && body.byteLength > MAX_BYTES) {
+    throw new ScanRefusedError(
+      `The response is larger than ${MAX_BYTES} bytes`,
+    );
   }
   return new Response(body as ConstructorParameters<typeof Response>[0], {
     status: answer.status,
@@ -200,9 +196,11 @@ export function probeFetch(
     }
     const redirect = init.redirect ?? 'follow';
     const headers = requestHeaders(init.headers);
-    let current = first;
-    let redirected = false;
-    for (let hops = 0; ; hops += 1) {
+    const follow = async (
+      current: URL,
+      hops: number,
+      redirected: boolean,
+    ): Promise<Response> => {
       assertScannable(current);
       const response = await once(client, current, method, headers);
       const location = response.headers.get('location');
@@ -213,13 +211,14 @@ export function probeFetch(
         if (hops >= maxRedirects) {
           throw new ScanRefusedError('Too many redirects');
         }
-        current = new URL(location, current);
-        redirected = true;
-        continue;
+        return follow(new URL(location, current), hops + 1, true);
       }
+      // eslint-disable-next-line functional/immutable-data -- Response.url is read-only; it is set on the response built here
       Object.defineProperty(response, 'url', { value: current.href });
+      // eslint-disable-next-line functional/immutable-data -- Response.redirected is read-only; it is set on the response built here
       Object.defineProperty(response, 'redirected', { value: redirected });
       return response;
-    }
+    };
+    return follow(first, 0, false);
   };
 }

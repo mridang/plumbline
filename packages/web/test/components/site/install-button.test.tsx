@@ -3,8 +3,12 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { html } from '../render';
 
 /** What the install hook says: nothing to install until `installable` is set. */
-const prompt: { installable: boolean } = { installable: false };
+interface InstallState {
+  installable: boolean;
+}
+const prompt: InstallState = { installable: false };
 
+// eslint-disable-next-line tslop/no-module-mocking -- @/components/site/use-install-prompt is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/components/site/use-install-prompt', () => ({
   useInstallPrompt: () =>
     prompt.installable ? { install: async () => undefined } : {},

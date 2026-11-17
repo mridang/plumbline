@@ -10,7 +10,7 @@
  */
 
 /** The weak-validator marker at the start of an entity tag. */
-const WEAK_MARKER = /^W\//;
+const WEAK_MARKER = /^W\//u;
 
 /** A strong entity tag for some text: the quoted first 16 hex digits of its SHA-256. */
 export async function entityTag(text: string): Promise<string> {

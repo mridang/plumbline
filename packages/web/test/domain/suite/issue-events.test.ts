@@ -2,14 +2,15 @@ import { describe, expect, it } from '@jest/globals';
 
 import { createDatabase } from '@/domain/db/client';
 import { disableRepo } from '@/domain/db/disabled';
-import { issuesOf as historyOf } from '@/domain/db/issue-history';
-import { issueOf, saveIssue, type IssueState } from '@/domain/db/suite';
+import { issuesOf } from '@/domain/db/issue-history';
+import { issueOf, saveIssue } from '@/domain/db/suite';
 import { botLogin, handleIssueEvent } from '@/domain/suite/issue-events';
 import { MAX_REOPENS } from '@/domain/suite/publish';
 
 import { github, said } from '../../helpers/fake-github';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
+import type { IssueState } from '@/domain/db/suite';
 
 const SLUG = 'plumbline-test';
 const CHECK = 'seo-viewport';
@@ -97,7 +98,7 @@ describe('handleIssueEvent', () => {
     const db = await setup();
     const { api } = github();
     await handleIssueEvent(db, SLUG, event('closed'), async () => api);
-    const history = await historyOf(db, 'acme/site', 'site.test');
+    const history = await issuesOf(db, 'acme/site', 'site.test');
     expect(history.map((index) => [index.number, index.state])).toEqual([
       [12, 'open'],
     ]);

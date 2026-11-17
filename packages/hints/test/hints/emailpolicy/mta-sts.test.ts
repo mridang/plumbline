@@ -1,12 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 import { Severity } from '@hint/utils-types';
 import hint from '../../../src/hints/emailpolicy/mta-sts.js';
-import { runHint, type Routes } from '../../helpers/run-hint.js';
-import {
-  fakeDns,
-  installFakes,
-  type FakeAnswer,
-} from '../../lib/email/fakes.js';
+import { runHint } from '../../helpers/run-hint.js';
+import { fakeDns, installFakes } from '../../lib/email/fakes.js';
+import type { Routes } from '../../helpers/run-hint.js';
+import type { FakeAnswer } from '../../lib/email/fakes.js';
 
 const POLICY_PATH = '/.well-known/mta-sts.txt';
 

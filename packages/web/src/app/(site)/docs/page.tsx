@@ -1,6 +1,4 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { ReactElement } from 'react';
 
 import { pageMetadata } from '@/app/_metadata';
 import { Badge } from '@/components/ui-app/badge';
@@ -13,6 +11,8 @@ import { PageHeader } from '@/components/ui/page-header';
 import { MCP_ADDRESS, WAYS_IN } from '@/components/landing/ways-in';
 import { RULE_SET_DEFS } from '@/domain/checks/sets';
 import { SITE_URL, SOURCE_URL } from '@/utils/site';
+import type { ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 /** A public page: it may be indexed. */
 export const metadata: Metadata = pageMetadata({

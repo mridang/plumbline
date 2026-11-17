@@ -8,8 +8,8 @@
 
 import { and, asc, count, eq, inArray, isNotNull } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import { domains } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 
 /** A domain row as stored (`checks` is still JSON text). */
 type DomainRow = typeof domains.$inferSelect;
@@ -305,20 +305,17 @@ export async function deleteSites(
   userId: number,
   ids: readonly string[],
 ): Promise<number> {
-  let removed = 0;
-  for (let at = 0; at < ids.length; at += REMOVE_BATCH) {
+  const batches = Array.from(
+    { length: Math.ceil(ids.length / REMOVE_BATCH) },
+    (_, batch) => ids.slice(batch * REMOVE_BATCH, (batch + 1) * REMOVE_BATCH),
+  );
+  return batches.reduce(async (removed, batch) => {
     const gone = await db
       .delete(domains)
-      .where(
-        and(
-          eq(domains.user_id, userId),
-          inArray(domains.id, ids.slice(at, at + REMOVE_BATCH)),
-        ),
-      )
+      .where(and(eq(domains.user_id, userId), inArray(domains.id, batch)))
       .returning({ id: domains.id });
-    removed += gone.length;
-  }
-  return removed;
+    return (await removed) + gone.length;
+  }, Promise.resolve(0));
 }
 
 /**
@@ -340,15 +337,16 @@ export async function removeSitesOfMissingRepos(
   const missing = rows
     .map((row) => row.repo)
     .filter((repo): repo is string => repo !== null && !present.has(repo));
-  for (let at = 0; at < missing.length; at += REMOVE_BATCH) {
+  const batches = Array.from(
+    { length: Math.ceil(missing.length / REMOVE_BATCH) },
+    (_, batch) =>
+      missing.slice(batch * REMOVE_BATCH, (batch + 1) * REMOVE_BATCH),
+  );
+  await batches.reduce(async (previous, batch) => {
+    await previous;
     await db
       .delete(domains)
-      .where(
-        and(
-          eq(domains.user_id, userId),
-          inArray(domains.repo, missing.slice(at, at + REMOVE_BATCH)),
-        ),
-      );
-  }
+      .where(and(eq(domains.user_id, userId), inArray(domains.repo, batch)));
+  }, Promise.resolve());
   return missing;
 }

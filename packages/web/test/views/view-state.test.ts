@@ -1,7 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { REQUEST_ARGUMENTS } from '@/views/app';
-import type { ToolOutcome } from '@/views/payload';
 import {
   INITIAL_VIEW_STATE,
   LOADING_TIMEOUT_MS,
@@ -9,9 +8,9 @@ import {
   describeRequest,
   isPending,
   reduceViewState,
-  type ViewAction,
-  type ViewState,
 } from '@/views/view-state';
+import type { ViewAction, ViewState } from '@/views/view-state';
+import type { ToolOutcome } from '@/views/payload';
 
 type Data = { readonly n: number };
 

@@ -4,12 +4,12 @@
  * tested without running a scan.
  */
 
-import type { HttpHeaders } from '@hint/utils-types';
 import { headerValue } from '../../core/http.js';
+import type { HttpHeaders } from '@hint/utils-types';
 
 /** Matches a bot-specific robots directive. */
 const BOT_SPECIFIC_ROBOTS_DIRECTIVE =
-  /^\s*(?:googlebot|bingbot|[a-z0-9_-]+)\s*:\s*(?=noindex|nofollow|none)/i;
+  /^\s*(?:googlebot|bingbot|[a-z0-9_-]+)\s*:\s*(?=noindex|nofollow|none)/iu;
 
 /** The part of a DOM element these readers use. */
 interface ElementLike {
@@ -29,7 +29,7 @@ export function getTitle(parsedDocument: DocumentLike): string | null {
   if (!element) {
     return null;
   }
-  return element.textContent.replaceAll(/\s+/g, ' ').trim();
+  return element.textContent.replaceAll(/\s+/gu, ' ').trim();
 }
 
 /** Returns the trimmed content of `<meta name="description">`, or null when the tag is absent. */
@@ -40,7 +40,9 @@ export function getMetaDescription(
   if (!element) {
     return null;
   }
-  return (element.getAttribute('content') ?? '').replaceAll(/\s+/g, ' ').trim();
+  return (element.getAttribute('content') ?? '')
+    .replaceAll(/\s+/gu, ' ')
+    .trim();
 }
 
 /** Counts the `<h1>` elements of the page. */
@@ -57,12 +59,13 @@ export function getHtmlLang(parsedDocument: DocumentLike): string | null {
 
 /** Expands `none` (shorthand for noindex plus nofollow) and drops blanks. */
 function normalizeDirectives(directives: string[]): string[] {
-  return directives
-    .map((directive) => directive.trim().toLowerCase())
-    .filter((directive) => directive !== '')
-    .flatMap((directive) =>
-      directive === 'none' ? ['none', 'noindex', 'nofollow'] : [directive],
-    );
+  return directives.flatMap((raw) => {
+    const directive = raw.trim().toLowerCase();
+    if (directive === '') {
+      return [];
+    }
+    return directive === 'none' ? ['none', 'noindex', 'nofollow'] : [directive];
+  });
 }
 
 /**
@@ -168,9 +171,7 @@ export function sameUrl(canonical: string, pageUrl: string): boolean {
   try {
     const a = new URL(canonical, pageUrl);
     const b = new URL(pageUrl);
-    a.hash = '';
-    b.hash = '';
-    return a.href === b.href;
+    return a.href.split('#', 1)[0] === b.href.split('#', 1)[0];
   } catch {
     return false;
   }

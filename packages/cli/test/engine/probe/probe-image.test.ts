@@ -53,7 +53,9 @@ beforeAll(async () => {
     } catch {
       // Not listening yet.
     }
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
   }
   throw new Error('the probe did not start');
 });
@@ -87,7 +89,7 @@ describe('the probe image', () => {
     const roots = await new ProbeClient(async (route, body) =>
       post(route, body),
     ).roots();
-    expect(roots.match(/BEGIN CERTIFICATE/g)?.length).toBeGreaterThan(100);
+    expect(roots.match(/BEGIN CERTIFICATE/gu)?.length).toBeGreaterThan(100);
   });
 });
 

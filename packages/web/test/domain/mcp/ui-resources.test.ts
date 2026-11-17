@@ -3,18 +3,10 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it } from '@jest/globals';
 
 import {
-  contentHash as cardHash,
-  html as cardHtml,
-} from '../../../dist/views/report';
-import {
-  contentHash as listHash,
-  html as listHtml,
-} from '../../../dist/views/domain-list';
-import {
   APP_RESOURCES,
-  DOMAIN_LIST_RESOURCE_URI as LIST_RESOURCE_URI,
+  DOMAIN_LIST_RESOURCE_URI,
   LEGACY_RESOURCE_URI_META_KEY,
-  REPORT_RESOURCE_URI as CARD_RESOURCE_URI,
+  REPORT_RESOURCE_URI,
   OPENAI_WIDGET_DOMAIN,
   RESOURCE_MIME_TYPE,
   VIEW_RESOURCE_META,
@@ -26,46 +18,49 @@ import {
 } from '@/domain/mcp/ui-resources';
 import { SITE_URL } from '@/utils/site';
 
+const report = await import('../../../dist/views/report');
+const domainList = await import('../../../dist/views/domain-list');
+
 /** Matches module script block. */
-const MODULE_SCRIPT_BLOCK = /<script type="module">[\s\S]*<\/script>/;
+const MODULE_SCRIPT_BLOCK = /<script type="module">[\s\S]*<\/script>/u;
 
 /** Matches report resource uri. */
 const REPORT_RESOURCE_URI_PATTERN =
-  /^ui:\/\/plumbline\/report-[0-9a-f]{12}\.html$/;
+  /^ui:\/\/plumbline\/report-[0-9a-f]{12}\.html$/u;
 
 /** Matches domain list resource uri. */
 const DOMAIN_LIST_RESOURCE_URI_PATTERN =
-  /^ui:\/\/plumbline\/domain-list-[0-9a-f]{12}\.html$/;
+  /^ui:\/\/plumbline\/domain-list-[0-9a-f]{12}\.html$/u;
 
 /** Matches doctype prefix. */
-const DOCTYPE_PREFIX = /^<!doctype html>/;
+const DOCTYPE_PREFIX = /^<!doctype html>/u;
 
 /** Matches title element. */
-const TITLE_ELEMENT = /<title>[^<]+<\/title>/;
+const TITLE_ELEMENT = /<title>[^<]+<\/title>/u;
 
 /** Matches link tag. */
-const LINK_TAG = /<link\b/;
+const LINK_TAG = /<link\b/u;
 
 /** Matches img tag. */
-const IMG_TAG = /<img\b/;
+const IMG_TAG = /<img\b/u;
 
 /** Matches iframe tag. */
-const IFRAME_TAG = /<iframe\b/;
+const IFRAME_TAG = /<iframe\b/u;
 
 /** Matches src or href attribute. */
-const SRC_OR_HREF_ATTRIBUTE = /\b(src|href)=/;
+const SRC_OR_HREF_ATTRIBUTE = /\b(src|href)=/u;
 
 /** Matches fetch call. */
-const FETCH_CALL = /\bfetch\(/;
+const FETCH_CALL = /\bfetch\(/u;
 
 /** Matches websocket constructor. */
-const WEBSOCKET_CONSTRUCTOR = /new WebSocket\b/;
+const WEBSOCKET_CONSTRUCTOR = /new WebSocket\b/u;
 
 /** Matches event source constructor. */
-const EVENT_SOURCE_CONSTRUCTOR = /new EventSource\b/;
+const EVENT_SOURCE_CONSTRUCTOR = /new EventSource\b/u;
 
 /** Matches eval call. */
-const EVAL_CALL = /\beval\(/;
+const EVAL_CALL = /\beval\(/u;
 
 /** The document with its inline script removed: what the host's CSP actually has to police. */
 function shellOf(html: string): string {
@@ -74,35 +69,38 @@ function shellOf(html: string): string {
 
 describe('ui resource addresses', () => {
   it('puts a hash of the HTML in each address, so a changed view gets a new one', () => {
-    expect(CARD_RESOURCE_URI).toMatch(REPORT_RESOURCE_URI_PATTERN);
-    expect(LIST_RESOURCE_URI).toMatch(DOMAIN_LIST_RESOURCE_URI_PATTERN);
-    expect(CARD_RESOURCE_URI).toContain(cardHash.slice(0, 12));
-    expect(LIST_RESOURCE_URI).toContain(listHash.slice(0, 12));
+    expect(REPORT_RESOURCE_URI).toMatch(REPORT_RESOURCE_URI_PATTERN);
+    expect(DOMAIN_LIST_RESOURCE_URI).toMatch(DOMAIN_LIST_RESOURCE_URI_PATTERN);
+    expect(REPORT_RESOURCE_URI).toContain(report.contentHash.slice(0, 12));
+    expect(DOMAIN_LIST_RESOURCE_URI).toContain(
+      domainList.contentHash.slice(0, 12),
+    );
   });
 
   it('derives the hash from the generated HTML itself', () => {
-    expect(cardHash).toBe(createHash('sha256').update(cardHtml).digest('hex'));
-    expect(listHash).toBe(createHash('sha256').update(listHtml).digest('hex'));
+    expect(report.contentHash).toBe(
+      createHash('sha256').update(report.html).digest('hex'),
+    );
+    expect(domainList.contentHash).toBe(
+      createHash('sha256').update(domainList.html).digest('hex'),
+    );
   });
 
   it('hashedResourceUri is stable for one hash and differs for another', () => {
     const a = 'a'.repeat(64);
     const b = `b${'a'.repeat(63)}`;
-    expect(hashedResourceUri('report', a)).toBe(hashedResourceUri('report', a));
-    expect(hashedResourceUri('report', a)).not.toBe(
-      hashedResourceUri('report', b),
-    );
-    expect(hashedResourceUri('report', a)).toBe(
-      'ui://plumbline/report-aaaaaaaaaaaa.html',
-    );
+    const uriOfA = hashedResourceUri('report', a);
+    expect(uriOfA).toBe(hashedResourceUri('report', a));
+    expect(uriOfA).not.toBe(hashedResourceUri('report', b));
+    expect(uriOfA).toBe('ui://plumbline/report-aaaaaaaaaaaa.html');
   });
 });
 
 describe('ui resources served', () => {
   it('serves each view at its hashed address', () => {
     expect(APP_RESOURCES.map((r) => r.uri)).toEqual([
-      CARD_RESOURCE_URI,
-      LIST_RESOURCE_URI,
+      REPORT_RESOURCE_URI,
+      DOMAIN_LIST_RESOURCE_URI,
     ]);
   });
 
@@ -111,8 +109,8 @@ describe('ui resources served', () => {
   });
 
   it('serves a different page for each view', () => {
-    expect(findAppResource(CARD_RESOURCE_URI)?.html).not.toBe(
-      findAppResource(LIST_RESOURCE_URI)?.html,
+    expect(findAppResource(REPORT_RESOURCE_URI)?.html).not.toBe(
+      findAppResource(DOMAIN_LIST_RESOURCE_URI)?.html,
     );
   });
 
@@ -124,7 +122,7 @@ describe('ui resources served', () => {
     const stale = 'ui://plumbline/report-000000000000.html';
     const resource = findAppResource(stale);
     expect(resource?.uri).toBe(stale);
-    expect(resource?.html).toBe(cardHtml);
+    expect(resource?.html).toBe(report.html);
     expect(resource?.meta).toBe(VIEW_RESOURCE_META);
   });
 
@@ -132,7 +130,7 @@ describe('ui resources served', () => {
     const stale = 'ui://plumbline/domain-list-abcdef012345.html';
     const resource = findAppResource(stale);
     expect(resource?.uri).toBe(stale);
-    expect(resource?.html).toBe(listHtml);
+    expect(resource?.html).toBe(domainList.html);
   });
 
   it('refuses addresses that only look like a hashed view address', () => {
@@ -150,8 +148,8 @@ describe('ui resources served', () => {
   });
 
   it('marks only the current hashed addresses as immutable, so only they are cached for long', () => {
-    expect(findAppResource(CARD_RESOURCE_URI)?.immutable).toBe(true);
-    expect(findAppResource(LIST_RESOURCE_URI)?.immutable).toBe(true);
+    expect(findAppResource(REPORT_RESOURCE_URI)?.immutable).toBe(true);
+    expect(findAppResource(DOMAIN_LIST_RESOURCE_URI)?.immutable).toBe(true);
     expect(
       findAppResource('ui://plumbline/report-000000000000.html')?.immutable,
     ).toBe(false);
@@ -194,10 +192,10 @@ describe('ui resources served', () => {
 
 describe('viewToolMeta', () => {
   it('links a tool to its view in the standard, legacy and ChatGPT forms', () => {
-    expect(viewToolMeta(CARD_RESOURCE_URI)).toEqual({
-      ui: { resourceUri: CARD_RESOURCE_URI },
-      'ui/resourceUri': CARD_RESOURCE_URI,
-      'openai/outputTemplate': CARD_RESOURCE_URI,
+    expect(viewToolMeta(REPORT_RESOURCE_URI)).toEqual({
+      ui: { resourceUri: REPORT_RESOURCE_URI },
+      'ui/resourceUri': REPORT_RESOURCE_URI,
+      'openai/outputTemplate': REPORT_RESOURCE_URI,
     });
   });
 });
@@ -238,7 +236,7 @@ describe('Content-Security-Policy', () => {
   });
 
   it('is true: the views load nothing from the network', () => {
-    for (const { html } of [{ html: cardHtml }, { html: listHtml }]) {
+    for (const { html } of [{ html: report.html }, { html: domainList.html }]) {
       const shell = shellOf(html);
       expect(shell).not.toMatch(LINK_TAG);
       expect(shell).not.toMatch(IMG_TAG);
@@ -253,7 +251,7 @@ describe('Content-Security-Policy', () => {
   });
 
   it('works under the default policy, which forbids eval', () => {
-    for (const html of [cardHtml, listHtml]) {
+    for (const html of [report.html, domainList.html]) {
       expect(html).not.toMatch(EVAL_CALL);
       expect(html).not.toContain('new Function(');
     }

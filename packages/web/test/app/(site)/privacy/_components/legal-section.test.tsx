@@ -13,14 +13,15 @@ import {
 import { classOf, html } from '../../../../components/render';
 
 /** Matches the privacy policy heading. */
-const PRIVACY_POLICY_HEADING = /<h1[^>]*>Privacy Policy<\/h1>/;
+const PRIVACY_POLICY_HEADING = /<h1[^>]*>Privacy Policy<\/h1>/u;
 /** Matches the "What we store" heading. */
-const WHAT_WE_STORE_HEADING = /<h2[^>]*>What we store<\/h2>/;
+const WHAT_WE_STORE_HEADING = /<h2[^>]*>What we store<\/h2>/u;
 /** Matches the external example link. */
 const EXTERNAL_EXAMPLE_LINK =
-  /<a href="https:\/\/example\.com\/" target="_blank" rel="noopener noreferrer"[^>]*>Example<\/a>/;
+  /<a href="https:\/\/example\.com\/" target="_blank" rel="noopener noreferrer"[^>]*>Example<\/a>/u;
 /** Matches the privacy policy link. */
-const PRIVACY_POLICY_LINK = /<a [^>]*href="\/privacy"[^>]*>privacy policy<\/a>/;
+const PRIVACY_POLICY_LINK =
+  /<a [^>]*href="\/privacy"[^>]*>privacy policy<\/a>/u;
 
 describe('longDate', () => {
   it('writes an ISO day as day, month name and year', () => {
@@ -41,7 +42,7 @@ describe('LegalPage', () => {
 
   it('heads the page with its eyebrow and its one title', () => {
     expect(out).toContain('Privacy');
-    expect(out.match(/<h1/g)).toHaveLength(1);
+    expect(out.match(/<h1/gu)).toHaveLength(1);
     expect(out).toMatch(PRIVACY_POLICY_HEADING);
   });
 
@@ -57,7 +58,7 @@ describe('LegalPage', () => {
 
   it('ends with a link back home, naming the app', () => {
     expect(out).toMatch(
-      new RegExp(`<a [^>]*href="/"[^>]*>.*Back to ${BRAND_NAME}</a>`),
+      new RegExp(`<a [^>]*href="/"[^>]*>.*Back to ${BRAND_NAME}</a>`, 'u'),
     );
     expect(out.indexOf('The body.')).toBeLessThan(out.indexOf('Back to'));
   });
@@ -108,8 +109,9 @@ describe('LegalLink', () => {
 
   it('is underlined in the accent colour', () => {
     const out = html(<LegalLink href="/terms">terms</LegalLink>);
-    expect(classOf(out, 'a')).toContain('text-accent');
-    expect(classOf(out, 'a')).toContain('underline');
+    const classes = classOf(out, 'a');
+    expect(classes).toContain('text-accent');
+    expect(classes).toContain('underline');
   });
 });
 

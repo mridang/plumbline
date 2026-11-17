@@ -1,9 +1,18 @@
 import type { FileIssue } from '../files/issue.js';
 
+/** Any value JSON can hold. */
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue | undefined };
+
 /** The result of parsing a JSON document: either a value or a parse error. */
 interface JsonParse {
   /** The parsed value, or undefined when parsing failed. */
-  value?: unknown;
+  value?: JsonValue;
   /** A human-readable parse error, or undefined when parsing succeeded. */
   error?: string;
 }
@@ -15,7 +24,7 @@ interface JsonParse {
  */
 function parseJson(text: string): JsonParse {
   try {
-    return { value: JSON.parse(text) as unknown };
+    return { value: JSON.parse(text) as JsonValue };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return { error: message };
@@ -37,9 +46,13 @@ export function isStringArray(value: unknown): value is string[] {
  * parsed value. Every JSON validator opens with this so the common
  * "not valid JSON" path is identical across hints.
  */
-export function parsedOrIssue(text: string, issues: FileIssue[]): unknown {
+export function parsedOrIssue(
+  text: string,
+  issues: FileIssue[],
+): JsonValue | undefined {
   const { value, error } = parseJson(text);
   if (error !== undefined) {
+    // eslint-disable-next-line functional/immutable-data -- the documented out-parameter of this helper: callers pass the list they return
     issues.push({
       severity: 'error',
       message: `The file is not valid JSON: ${error}.`,

@@ -7,11 +7,8 @@
  */
 
 import { ApiController, ok } from '@/lib/core/api';
-import {
-  requestCookieResolver,
-  sessionUser,
-  type CurrentUserResolver,
-} from '@/domain/api/auth';
+import { requestCookieResolver, sessionUser } from '@/domain/api/auth';
+import type { CurrentUserResolver } from '@/domain/api/auth';
 import type { User } from '@/domain/db/users';
 
 /** The account as the API shows it. */

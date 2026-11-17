@@ -14,6 +14,7 @@ describe('safeReturnPath', () => {
     expect(safeReturnPath('https://evil.example')).toBeUndefined();
     expect(safeReturnPath('//evil.example')).toBeUndefined();
     expect(safeReturnPath(String.raw`/\evil.example`)).toBeUndefined();
+    // eslint-disable-next-line no-script-url -- the test feeds a hostile script URL to prove it is refused
     expect(safeReturnPath('javascript:alert(1)')).toBeUndefined();
   });
 

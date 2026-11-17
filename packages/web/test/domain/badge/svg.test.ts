@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { badgeSvg } from '@/domain/badge/svg';
 
 /** Matches width attribute. */
-const WIDTH_ATTRIBUTE = /width="(\d+)"/;
+const WIDTH_ATTRIBUTE = /width="(\d+)"/u;
 
 describe('badgeSvg', () => {
   it('is an SVG that names both parts for assistive technology', () => {

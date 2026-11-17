@@ -39,10 +39,9 @@ export async function verifySignature(
     return false;
   }
   // Every character is compared, so the time taken says nothing about where they differ.
-  let difference = 0;
-  for (let index = 0; index < expected.length; index += 1) {
-    difference |=
-      (expected.codePointAt(index) ?? 0) ^ (given.codePointAt(index) ?? 0);
-  }
-  return difference === 0;
+  return Array.from(
+    { length: expected.length },
+    (_, index) =>
+      (expected.codePointAt(index) ?? 0) === (given.codePointAt(index) ?? 0),
+  ).every(Boolean);
 }

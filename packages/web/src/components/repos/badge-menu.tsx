@@ -1,10 +1,9 @@
 'use client';
 
-import type { ReactElement } from 'react';
-
 import { ShieldIcon } from '@/components/icons';
 import { Popover } from '@/components/ui/popover';
 import { CopyButton } from '@/components/ui-app/copy-button';
+import type { ReactElement } from 'react';
 
 /**
  * The README badge, out of the way: a small "Badge" button in the page header

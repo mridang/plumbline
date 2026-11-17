@@ -4,7 +4,7 @@ import { BRAND_URL, CRAWLABLE_PATHS, PRIVATE_PATHS } from '@/app/_brand';
 import robots from '@/app/robots';
 
 /** Matches trailing dollar. */
-const TRAILING_DOLLAR = /\$$/;
+const TRAILING_DOLLAR = /\$$/u;
 
 type Group = { userAgent: string; allow: string[]; disallow: string[] };
 
@@ -21,10 +21,11 @@ describe('robots.txt', () => {
     const escaped = String.raw`\$&`;
     const matches = (pattern: string): boolean =>
       new RegExp(
-        `^${pattern.replaceAll(/[.+?^{}()|[\]\\]/g, escaped).replaceAll('*', '.*')}`,
+        `^${pattern.replaceAll(/[.+?^{}()|[\]\\]/gu, escaped).replaceAll('*', '.*')}`,
+        'u',
       ).test(target);
     const hit = (patterns: string[]): number =>
-      Math.max(-1, ...patterns.filter((p) => matches(p)).map((p) => p.length));
+      Math.max(-1, ...patterns.flatMap((p) => (matches(p) ? [p.length] : [])));
     return hit(rule.allow) >= hit(rule.disallow);
   };
 

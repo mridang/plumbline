@@ -30,29 +30,31 @@ export async function lookupMailServers(
   client: DnsClient,
   domain: string,
 ): Promise<string[]> {
-  let records;
-  try {
-    const response = await client.query(domain, 'MX');
-    if (response.status !== 0) {
-      return [];
-    }
-    records = response.answers.filter((record) => record.type === MX);
-  } catch {
+  const records = await client
+    .query(domain, 'MX')
+    .then((response) =>
+      response.status === 0
+        ? response.answers.filter((record) => record.type === MX)
+        : null,
+    )
+    .catch(() => null);
+  if (records === null) {
     return [];
   }
 
-  const hosts = new Set<string>();
-  for (const record of records) {
+  const targets = records.map((record) => {
     const [priority, ...rest] = record.data.trim().split(WHITESPACE_RUN);
-    const target = rest.join(' ').toLowerCase();
-    if (Number(priority) === 0 && target === '.') {
-      return [];
-    }
-    const host = target.replace(TRAILING_DOT, '');
-    if (host === '' || host === 'localhost') {
-      continue;
-    }
-    hosts.add(host);
+    return { priority: Number(priority), target: rest.join(' ').toLowerCase() };
+  });
+  if (
+    targets.some(({ priority, target }) => priority === 0 && target === '.')
+  ) {
+    return [];
   }
+  const hosts = new Set(
+    targets
+      .map(({ target }) => target.replace(TRAILING_DOT, ''))
+      .filter((host) => host !== '' && host !== 'localhost'),
+  );
   return [...hosts].toSorted(collator.compare).slice(0, MAX_MAIL_SERVERS);
 }

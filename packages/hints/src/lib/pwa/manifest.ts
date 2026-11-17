@@ -1,17 +1,17 @@
 /** Matches a string of lowercase letters. */
-const LOWERCASE_LETTERS_ONLY = /^[a-z]+$/;
+const LOWERCASE_LETTERS_ONLY = /^[a-z]+$/u;
 
 /** Matches a functional colour such as `rgb()`. */
-const FUNCTIONAL_COLOUR = /^(?:rgb|rgba|hsl|hsla)\([^)]*\)$/;
+const FUNCTIONAL_COLOUR = /^(?:rgb|rgba|hsl|hsla)\([^)]*\)$/u;
 
 /** Matches a hex colour. */
-const HEX_COLOUR = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/;
+const HEX_COLOUR = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/u;
 
 /** Matches a run of whitespace. */
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /** Matches the start of a query or fragment. */
-const QUERY_OR_FRAGMENT_START = /[?#]/;
+const QUERY_OR_FRAGMENT_START = /[?#]/u;
 /**
  * Pure helpers for the Web App Manifest, a fetched JSON document. These parse
  * the manifest text and read the members the W3C Web App Manifest spec and the

@@ -11,16 +11,16 @@
  */
 
 import {
-  aliases as GENERATED_ALIASES,
-  checks as GENERATED,
-  controls as GENERATED_CONTROLS,
-  displayGroups as GENERATED_DISPLAY_GROUPS,
-  intro as GENERATED_INTRO,
-  optInNote as GENERATED_OPT_IN_NOTE,
-  setDefs as GENERATED_SET_DEFS,
-  profiles as GENERATED_PROFILES,
-  sections as GENERATED_SECTIONS,
-  tags as GENERATED_TAGS,
+  aliases,
+  checks,
+  controls,
+  displayGroups,
+  intro,
+  optInNote,
+  setDefs,
+  profiles,
+  sections,
+  tags,
 } from '../../../dist/catalogue';
 
 /** How strongly a check is recommended. */
@@ -52,7 +52,7 @@ export const CONTROLS: readonly Control[] = [
 
 /** What each control means, in a sentence. */
 export const CONTROL_INFO: readonly { id: Control; description: string }[] =
-  GENERATED_CONTROLS as readonly { id: Control; description: string }[];
+  controls as readonly { id: Control; description: string }[];
 
 /** How to fix a check on the two platforms the baseline was written for. */
 export interface HowToFix {
@@ -164,30 +164,28 @@ export interface Profile extends SetInfo {
 }
 
 /** The top-level and per-section sets; their checks follow from tiers and sections. */
-export const SET_INFOS: readonly SetInfo[] =
-  GENERATED_SET_DEFS as readonly SetInfo[];
+export const SET_INFOS: readonly SetInfo[] = setDefs as readonly SetInfo[];
 
 /** An introduction to rules and rule sets, one paragraph each. */
-export const INTRO: readonly string[] = GENERATED_INTRO;
+export const INTRO: readonly string[] = intro;
 
 /** What to know about the sections that are off by default. */
-export const OPT_IN_NOTE: string = GENERATED_OPT_IN_NOTE;
+export const OPT_IN_NOTE: string = optInNote;
 
 /** The display groups, in order. */
-export const DISPLAY_GROUPS: readonly DisplayGroup[] = GENERATED_DISPLAY_GROUPS;
+export const DISPLAY_GROUPS: readonly DisplayGroup[] = displayGroups;
 
 /** The hand-listed sets. */
-export const PROFILES: readonly Profile[] =
-  GENERATED_PROFILES as readonly Profile[];
+export const PROFILES: readonly Profile[] = profiles as readonly Profile[];
 
 /** The closed list of tags. */
-export const TAGS: readonly string[] = GENERATED_TAGS;
+export const TAGS: readonly string[] = tags;
 
 /** Every section, in report order. */
-export const SECTIONS: readonly Section[] = GENERATED_SECTIONS;
+export const SECTIONS: readonly Section[] = sections;
 
 /** Every check, sorted by id. */
-export const CHECKS = GENERATED as readonly Check[];
+export const CHECKS = checks as readonly Check[];
 
 /** The checks by id. */
 const BY_ID: ReadonlyMap<string, Check> = new Map(
@@ -196,7 +194,7 @@ const BY_ID: ReadonlyMap<string, Check> = new Map(
 
 /** The groups checks list: the sources and the old topics. */
 const CHECK_GROUPS: ReadonlySet<string> = new Set(
-  GENERATED.flatMap((check) => check.groups),
+  checks.flatMap((check) => check.groups),
 );
 
 /** What a selector looks at. */
@@ -216,7 +214,7 @@ const KINDS: Readonly<
 };
 
 /** Old names that stand for selectors, as the hints package maps them. */
-const ALIASES: Readonly<Record<string, readonly string[]>> = GENERATED_ALIASES;
+const ALIASES: Readonly<Record<string, readonly string[]>> = aliases;
 
 /** One resolved selector. */
 interface Selector {
@@ -232,12 +230,10 @@ function prefixed(name: string): Selector | undefined {
   }
   const kind = name.slice(0, colon);
   const value = name.slice(colon + 1);
-  for (const [known, values] of Object.entries(KINDS)) {
-    if (known === kind && values.includes(value)) {
-      return { kind: known as SelectorKind, value };
-    }
-  }
-  return undefined;
+  const known = Object.entries(KINDS).find(
+    ([selectorKind, values]) => selectorKind === kind && values.includes(value),
+  );
+  return known ? { kind: known[0] as SelectorKind, value } : undefined;
 }
 
 /**
@@ -249,10 +245,11 @@ function selectorsOf(name: string): readonly Selector[] | undefined {
   if (given) {
     return [given];
   }
-  for (const kind of ['tag', 'section', 'target', 'tier', 'control'] as const) {
-    if (KINDS[kind].includes(name)) {
-      return [{ kind, value: name }];
-    }
+  const bare = (['tag', 'section', 'target', 'tier', 'control'] as const).find(
+    (kind) => KINDS[kind].includes(name),
+  );
+  if (bare) {
+    return [{ kind: bare, value: name }];
   }
   const alias = ALIASES[name];
   if (alias) {
@@ -279,8 +276,7 @@ function picks(selector: Selector, check: Check): boolean {
     case 'tier': {
       return check.tier === selector.value;
     }
-    case 'source':
-    case 'group': {
+    default: {
       return check.groups.includes(selector.value);
     }
   }
@@ -345,9 +341,9 @@ export function applyChoice(
   current: readonly string[] | null,
   choice: Readonly<{ enable?: readonly string[]; disable?: readonly string[] }>,
 ): string[] | null {
-  const on = new Set(enabledChecks(current));
-  for (const id of choice.enable ?? []) on.add(id);
-  for (const id of choice.disable ?? []) on.delete(id);
+  const on = new Set(enabledChecks(current))
+    .union(new Set(choice.enable))
+    .difference(new Set(choice.disable));
   const ids = CHECKS.map((check) => check.id).filter((id) => on.has(id));
   return ids.length === CHECKS.length ? null : ids;
 }
@@ -366,25 +362,24 @@ export interface Selection {
  * is both a check and a group counts as the check.
  */
 export function expandSelection(names: readonly string[]): Selection {
-  const ids = new Set<string>();
-  const unknown: string[] = [];
-  for (const name of names) {
+  const ids = names.flatMap((name) => {
     if (isCheckId(name)) {
-      ids.add(name);
-    } else if (isGroup(name)) {
-      for (const check of checksInGroup(name)) ids.add(check.id);
-    } else {
-      unknown.push(name);
+      return [name];
     }
-  }
-  return { ids: [...ids], unknown };
+    return isGroup(name) ? checksInGroup(name).map((check) => check.id) : [];
+  });
+  return {
+    ids: [...new Set(ids)],
+    unknown: names.filter((name) => !isCheckId(name) && !isGroup(name)),
+  };
 }
 
 /** How many checks each section holds, by section id. */
 export function checksPerSection(): ReadonlyMap<string, number> {
-  const counts = new Map<string, number>();
-  for (const check of CHECKS) {
-    counts.set(check.section, (counts.get(check.section) ?? 0) + 1);
-  }
-  return counts;
+  return new Map(
+    Array.from(
+      Map.groupBy(CHECKS, (check) => check.section),
+      ([section, checks]): [string, number] => [section, checks.length],
+    ),
+  );
 }

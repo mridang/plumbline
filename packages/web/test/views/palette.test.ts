@@ -1,14 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  DARK_PALETTE,
-  LIGHT_PALETTE,
-  ON_ACCENT,
-  type ThemePalette,
-} from '@/views/palette';
+import { DARK_PALETTE, LIGHT_PALETTE, ON_ACCENT } from '@/views/palette';
+import type { ThemePalette } from '@/views/palette';
 
 /** Matches a six digit hexadecimal colour. */
-const HEX_COLOUR_PATTERN = /^#[0-9a-f]{6}$/;
+const HEX_COLOUR_PATTERN = /^#[0-9a-f]{6}$/u;
 
 /** Relative luminance of a `#rrggbb` colour, as WCAG defines it. */
 function luminance(hex: string): number {

@@ -6,7 +6,7 @@ import { appJwt, installationToken } from '@/domain/github/app-auth';
 import { generateKeyPairAsync } from '../../helpers/crypto';
 
 /** Matches a bearer authorization header carrying a signed token. */
-const BEARER_JWT_PATTERN = /^Bearer ey/;
+const BEARER_JWT_PATTERN = /^Bearer ey/u;
 
 const { privateKey } = await generateKeyPairAsync('rsa', {
   modulusLength: 2048,

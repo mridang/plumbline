@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { SiteCard, SiteCards } from '@/components/repos/site-cards';
-import type { RepoStatus } from '@/domain/db/live';
 import { htmlAt } from '../render';
+import type { RepoStatus } from '@/domain/db/live';
 
 const NOW = Date.parse('2026-01-02T00:00:00.000Z');
 

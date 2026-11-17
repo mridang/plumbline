@@ -1,11 +1,12 @@
-import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import type { ReactElement } from 'react';
 
 import { pageMetadata } from '@/app/_metadata';
 import { usedTags, TagView } from '@/components/checks/reference-views';
 import { ChecksShell } from '@/components/checks/shell';
-import { parseView, tagPath, type SearchParams } from '@/domain/checks/browse';
+import { parseView, tagPath } from '@/domain/checks/browse';
+import type { SearchParams } from '@/domain/checks/browse';
+import type { ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 /** The dynamic part of the address: the tag. */
 interface Props {

@@ -1,8 +1,5 @@
-import type { ReactElement } from 'react';
-
 import { GithubIcon } from '@/components/icons';
 import { BadgeMenu } from '@/components/repos/badge-menu';
-import type { ChecksControl } from '@/components/repos/checks-control';
 import { TURNED_OFF_IN_FILE } from '@/components/repos/checks-messages';
 import { ChecksSwitch } from '@/components/repos/checks-switch';
 import { RepoLabel } from '@/components/repos/repo-label';
@@ -10,8 +7,10 @@ import { Badge } from '@/components/ui-app/badge';
 import { StatusBadge } from '@/components/repos/site-state';
 import { LinkButton } from '@/components/ui-app/link-button';
 import { PageHeading } from '@/components/ui-app/page-heading';
-import type { SiteState } from '@/domain/db/live';
 import { countOf } from '@/lib/intl';
+import type { SiteState } from '@/domain/db/live';
+import type { ChecksControl } from '@/components/repos/checks-control';
+import type { ReactElement } from 'react';
 
 /**
  * The top of a repository's page, as one compact band: the Octocat and the

@@ -1,15 +1,11 @@
-import type { HintContext, HintMetadata, IHintConstructor } from 'hint';
 import { HintScope } from '#hint';
+import { ORIGINS } from './origins.js';
+import { PLACEMENT, SECTIONS } from './taxonomy.js';
+import type { HintContext, HintMetadata, IHintConstructor } from 'hint';
 import type { Category } from '@hint/utils-types';
 import type { Group } from './groups.js';
-import { ORIGINS, type Origin } from './origins.js';
-import {
-  PLACEMENT,
-  SECTIONS,
-  type Control,
-  type Target,
-  type Tier,
-} from './taxonomy.js';
+import type { Origin } from './origins.js';
+import type { Control, Target, Tier } from './taxonomy.js';
 
 /** Describes one hint and how it attaches itself to a scan. */
 export interface HintSpec {
@@ -67,7 +63,9 @@ function withReference(context: HintContext, spec: HintSpec): HintContext {
       if (property === 'report') {
         return report;
       }
-      const value: unknown = Reflect.get(target, property, target);
+      const value: unknown = (
+        target as unknown as Record<PropertyKey, unknown>
+      )[property];
       if (typeof value === 'function') {
         const bound: unknown = value.bind(target);
         return bound;

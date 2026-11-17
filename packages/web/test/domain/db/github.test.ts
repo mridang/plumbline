@@ -106,7 +106,7 @@ describe('repositories', () => {
     const made = sqliteDatabase(...APP_MIGRATIONS);
     const prepare = made.raw.prepare.bind(made.raw);
     made.raw.prepare = (sql: string) => {
-      if ((sql.match(/\?/g) ?? []).length > 100) {
+      if ((sql.match(/\?/gu) ?? []).length > 100) {
         throw new Error('too many SQL variables');
       }
       return prepare(sql);

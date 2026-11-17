@@ -1,7 +1,5 @@
-import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import type { ReactElement } from 'react';
 
 import { getCurrentUser } from '@/lib/core/auth/current-user';
 import { mcpUrl } from '@/domain/connected-apps';
@@ -15,6 +13,8 @@ import { PageHeader } from '@/components/ui/page-header';
 import { connectionState } from '@/domain/db/account-state';
 import { getDatabase } from '@/domain/db/client';
 import { ConnectedApps } from '@/app/(site)/(pages)/connect/_components/connected-apps';
+import type { ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 /** The tab title and description of the assistants (MCP) page. */
 export const metadata: Metadata = {

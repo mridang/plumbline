@@ -10,10 +10,10 @@
  */
 
 import { requireLiveUid } from '@/domain/api/auth';
-import type { HubNamespace } from '@/lib/cloudflare/broadcaster';
 import { openEventStream } from '@/lib/cloudflare/event-stream';
 import { parseResume } from '@/lib/cloudflare/sse';
 import { getEnv } from '@/lib/core/runtime';
+import type { HubNamespace } from '@/lib/cloudflare/broadcaster';
 
 export const dynamic = 'force-dynamic';
 

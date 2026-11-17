@@ -1,29 +1,27 @@
 'use client';
 
-import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { PlugIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { accessLabel, type ConnectedApp } from '@/domain/connected-apps';
+import { accessLabel } from '@/domain/connected-apps';
 import { relativeTime } from '@/lib/intl';
-
-/** Whether an object has a string member called `key`. */
-function hasString(value: object, key: string): boolean {
-  return key in value && typeof Reflect.get(value, key) === 'string';
-}
+import type { ConnectedApp } from '@/domain/connected-apps';
+import type { ReactElement } from 'react';
 
 /** Whether a value has the members of a {@link ConnectedApp} that this list shows. */
 function isConnectedApp(value: unknown): value is ConnectedApp {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
-  return (
-    hasString(value, 'id') &&
-    hasString(value, 'name') &&
-    'scopes' in value &&
-    Array.isArray(value.scopes)
-  );
+  if (!('id' in value && typeof value.id === 'string')) {
+    return false;
+  }
+  if (!('name' in value && typeof value.name === 'string')) {
+    return false;
+  }
+  return 'scopes' in value && Array.isArray(value.scopes);
 }
 
 /** The apps in the answer of `GET /api/users/self/connections`; anything unreadable is left out. */
@@ -156,11 +154,7 @@ export function ConnectedApps(): ReactElement {
     );
   }
   if (apps === null) {
-    return (
-      <p className="mt-5 text-subtle" role="status">
-        Loading…
-      </p>
-    );
+    return <output className="mt-5 block text-subtle">Loading…</output>;
   }
   if (apps.length === 0) {
     return (
@@ -178,7 +172,9 @@ export function ConnectedApps(): ReactElement {
             key={app.id}
             app={app}
             busy={busyId === app.id}
-            onDisconnect={() => void disconnect(app.id)}
+            onDisconnect={() => {
+              void disconnect(app.id);
+            }}
           />
         ))}
       </ul>

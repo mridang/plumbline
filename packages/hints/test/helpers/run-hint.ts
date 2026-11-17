@@ -1,15 +1,11 @@
+import { createServer } from 'node:http';
 import parserHtml from '@hint/parser-html';
-import {
-  createServer,
-  type IncomingMessage,
-  type Server,
-  type ServerResponse,
-} from 'node:http';
-import type { AddressInfo } from 'node:net';
 import { Analyzer, Configuration } from 'hint';
+import TestConnector from './test-connector.js';
+import type { IncomingMessage, Server, ServerResponse } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import type { Problem } from '@hint/utils-types';
 import type { HintDefinition } from '../../src/core/define-hint.js';
-import TestConnector from './test-connector.js';
 
 const { default: HTMLParser } = parserHtml;
 
@@ -48,9 +44,11 @@ async function listen(routes: Routes): Promise<Server> {
     });
     res.end(route.body ?? '');
   });
-  return new Promise((resolve) =>
-    server.listen(0, '127.0.0.1', () => resolve(server)),
-  );
+  return new Promise((resolve) => {
+    server.listen(0, '127.0.0.1', () => {
+      resolve(server);
+    });
+  });
 }
 
 /**
@@ -94,6 +92,8 @@ export async function runHint(
     );
     return result.problems;
   } finally {
-    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => {
+      server.close(resolve);
+    });
   }
 }

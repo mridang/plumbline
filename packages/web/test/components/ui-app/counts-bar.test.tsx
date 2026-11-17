@@ -4,10 +4,10 @@ import { BAR_STEPS, CountsBar, stepsOf } from '@/components/ui-app/counts-bar';
 import { html } from '../render';
 
 /** Matches the failed segment sized to twenty percent. */
-const FAILED_SEGMENT_WIDTH_PATTERN = /bg-failed w-\[20%\]/;
+const FAILED_SEGMENT_WIDTH_PATTERN = /bg-failed w-\[20%\]/u;
 
 /** Matches the warned segment sized to thirty percent. */
-const WARNED_SEGMENT_WIDTH_PATTERN = /bg-warned w-\[30%\]/;
+const WARNED_SEGMENT_WIDTH_PATTERN = /bg-warned w-\[30%\]/u;
 
 describe('stepsOf', () => {
   it('gives one step to each finding, red first', () => {

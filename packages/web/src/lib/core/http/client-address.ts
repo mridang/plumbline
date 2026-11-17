@@ -9,7 +9,7 @@
  */
 
 /** One group of an IPv6 address: one to four hex digits. */
-const IPV6_GROUP = /^[0-9a-f]{1,4}$/;
+const IPV6_GROUP = /^[0-9a-f]{1,4}$/u;
 
 /** The subject used when no header names a caller (local development). */
 export const UNKNOWN_ADDRESS = 'unknown';
@@ -44,8 +44,8 @@ function ipv6Groups(address: string): readonly number[] | undefined {
     const [a = 0, b = 0, c = 0, d = 0] = octets;
     return [
       ...pieces.slice(0, -1),
-      ((a << 8) | b).toString(16),
-      ((c << 8) | d).toString(16),
+      (a * 256 + b).toString(16),
+      (c * 256 + d).toString(16),
     ];
   };
   const before = words(head);

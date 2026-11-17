@@ -5,18 +5,18 @@ import { htmlAt } from '../render';
 
 /** Matches a disabled switch button. */
 const DISABLED_SWITCH_PATTERN =
-  /<button[^>]*role="switch"[^>]*\sdisabled[\s=>]/;
+  /<button[^>]*role="switch"[^>]*\sdisabled[\s=>]/u;
 
 /** Matches the external link to the repository on GitHub. */
 const GITHUB_LINK_PATTERN =
-  /<a[^>]*href="https:\/\/github.com\/acme\/site"[^>]*target="_blank"/;
+  /<a[^>]*href="https:\/\/github.com\/acme\/site"[^>]*target="_blank"/u;
 
 /** Matches the muted owner prefix of the repository name. */
-const OWNER_PREFIX_PATTERN = /text-muted">acme\/<\/span>/;
+const OWNER_PREFIX_PATTERN = /text-muted">acme\/<\/span>/u;
 
 /** Matches the repository heading with its icon and site label. */
 const REPO_HEADING_WITH_ICON_PATTERN =
-  /<h1[^>]*>.*viewBox="0 0 16 16".*site<\/span>/s;
+  /<h1[^>]*>.*viewBox="0 0 16 16".*site<\/span>/su;
 
 const out = htmlAt(
   <RepoHeader
@@ -32,7 +32,7 @@ const out = htmlAt(
 
 describe('RepoHeader', () => {
   it('names the repository with the Octocat, in the one h1', () => {
-    expect(out.match(/<h1/g)).toHaveLength(1);
+    expect(out.match(/<h1/gu)).toHaveLength(1);
     expect(out).toMatch(REPO_HEADING_WITH_ICON_PATTERN);
     expect(out).toMatch(OWNER_PREFIX_PATTERN);
   });

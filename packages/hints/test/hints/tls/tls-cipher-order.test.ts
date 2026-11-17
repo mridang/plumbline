@@ -6,8 +6,8 @@ import {
   pointAt,
   restoreProbe,
   startServer,
-  type LocalServerOptions,
 } from '../../lib/tls/local-server.js';
+import type { LocalServerOptions } from '../../lib/tls/local-server.js';
 
 afterEach(restoreProbe);
 

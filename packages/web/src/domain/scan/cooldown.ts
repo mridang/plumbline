@@ -18,14 +18,8 @@
 import { runInBackground } from '@/lib/core/runtime';
 import { getDatabase } from '@/domain/db/client';
 import { errorMessage, logError } from '@/utils/logging';
-import {
-  D1RateLimitStore,
-  purgeRateLimits,
-  rateLimit,
-  type RateDecision,
-  type RateLimit,
-  type RateLimitStore,
-} from '@/lib/rate-limit';
+import { D1RateLimitStore, purgeRateLimits, rateLimit } from '@/lib/rate-limit';
+import type { RateDecision, RateLimit, RateLimitStore } from '@/lib/rate-limit';
 
 /** One scan of a page every five minutes. */
 export const SCAN_COOLDOWN = {
@@ -104,10 +98,12 @@ export function cooldownMessage(
   url: string,
   retryAfterSeconds: number,
 ): string {
+  // eslint-disable-next-line intl/prefer-intl -- the wording "3 min 5 s" is fixed and shown to people, which Intl would phrase differently
   const minutes = Math.floor(retryAfterSeconds / 60);
   const seconds = retryAfterSeconds % 60;
   const secondsPart = seconds === 0 ? '' : ` ${seconds} s`;
   const wait = minutes === 0 ? `${seconds} s` : `${minutes} min${secondsPart}`;
+  // eslint-disable-next-line intl/prefer-intl -- the wording "try again in 3 min 5 s" is fixed and shown to people, which Intl would phrase differently
   return `${url} was checked less than ${SCAN_COOLDOWN.windowSeconds / 60} minutes ago. A page can be checked once every ${SCAN_COOLDOWN.windowSeconds / 60} minutes; try again in ${wait}.`;
 }
 

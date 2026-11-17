@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
-import type { TxtLookup } from '../../../src/lib/email/txt.js';
 import { checkTlsRpt } from '../../../src/lib/emailpolicy/tls-rpt.js';
 import { HTTP_SCHEME } from '../../helpers/data.js';
+import type { TxtLookup } from '../../../src/lib/email/txt.js';
 
 const ok = (records: string[]): TxtLookup => ({ status: 'ok', records });
 

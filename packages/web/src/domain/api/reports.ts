@@ -20,13 +20,8 @@ import {
   parseLimit,
   problems,
   readJsonObject,
-  type CursorPosition,
 } from '@/lib/core/api';
-import {
-  liveUid,
-  requestCookieResolver,
-  type CurrentUserResolver,
-} from '@/domain/api/auth';
+import { liveUid, requestCookieResolver } from '@/domain/api/auth';
 import { domainPath } from '@/domain/api/domains';
 import { isDomainId } from '@/domain/api/domain-resource';
 import {
@@ -34,20 +29,18 @@ import {
   isReportId,
   parseReportInput,
   reportResource,
-  type ReportInput,
 } from '@/domain/api/report-resource';
 import { getDatabase } from '@/domain/db/client';
-import { getDomain, type Domain } from '@/domain/db/domains';
+import { getDomain } from '@/domain/db/domains';
 import { lastManualRunAt } from '@/domain/db/runs';
 import { latestRuns } from '@/domain/db/suite';
 import { secondsUntilNextRun, waitMessage } from '@/domain/scan/manual-run';
-import {
-  getReport,
-  listReports,
-  saveReport,
-  type Report,
-  type ReportSummary,
-} from '@/domain/db/reports';
+import { getReport, listReports, saveReport } from '@/domain/db/reports';
+import type { Domain } from '@/domain/db/domains';
+import type { ReportInput } from '@/domain/api/report-resource';
+import type { CurrentUserResolver } from '@/domain/api/auth';
+import type { CursorPosition } from '@/lib/core/api';
+import type { Report, ReportSummary } from '@/domain/db/reports';
 
 /** The signed-in caller's id and the domain the path names. */
 interface DomainContext {

@@ -1,8 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
-import type { CurrentUserResolver } from '@/domain/api/auth';
 import { MAX_REPORT_BYTES } from '@/domain/api/report-resource';
 import {
   createReportItem,
@@ -14,9 +11,11 @@ import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
+import type { CurrentUserResolver } from '@/domain/api/auth';
+import type { DatabaseSync } from 'node:sqlite';
 
 /** Who is signed in; null means nobody (or a session that has been ended). */
-const session: { uid: number | null } = { uid: 7 };
+const session = { uid: 7 as number | null };
 
 /** Identity injected in place of the session cookie. */
 const resolver: CurrentUserResolver = {
