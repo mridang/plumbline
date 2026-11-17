@@ -3,7 +3,7 @@ import { ALIASES, GROUPS } from '../../src/core/groups.js';
 import { matches, resolve } from '../../src/core/selectors.js';
 import { PLACEMENT } from '../../src/core/taxonomy.js';
 import hints from '../../src/index.js';
-import { groupsOf } from '../helpers/docs.js';
+import { groupsOf } from '../helpers/documentation.js';
 
 const collator = new Intl.Collator();
 

@@ -5,8 +5,11 @@ import type { AgentEnv, Probe } from '../../../src/lib/agent/types.js';
 export type FakeRoute = Partial<Omit<Probe, 'url'>> | string | object;
 
 /** Whether a route is written as a probe answer rather than as a JSON body. */
-function isProbeRoute(route: object): route is Partial<Probe> {
-  return 'status' in route || 'body' in route || 'contentType' in route;
+function isProbeRoute(route: FakeRoute): route is Partial<Probe> {
+  return (
+    typeof route === 'object' &&
+    ('status' in route || 'body' in route || 'contentType' in route)
+  );
 }
 
 /**

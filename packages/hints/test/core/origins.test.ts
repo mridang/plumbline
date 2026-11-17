@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import hints, { hintsByGroup } from '../../src/index.js';
 import { ORIGINS } from '../../src/core/origins.js';
 import { SOURCES } from '../../src/core/sources.js';
-import { groupsOf } from '../helpers/docs.js';
+import { groupsOf } from '../helpers/documentation.js';
 
 describe('the origins', () => {
   const sourceIds = new Set(SOURCES.map((s) => s.id));

@@ -92,7 +92,7 @@ async function render(
   return DomainPage({
     params: Promise.resolve({ id }),
     searchParams: Promise.resolve({
-      ...(reportText === undefined ? {} : { reportText }),
+      ...(reportText === undefined ? {} : { report: reportText }),
       ...(view === undefined ? {} : { view }),
     }),
   });

@@ -1,14 +1,14 @@
 import { describe, expect, it } from '@jest/globals';
 import hints, { hintsByGroup } from '../src/index.js';
 import { SOURCE_GROUPS } from '../src/core/groups.js';
-import { docsOf, groupsOf, textOf } from './helpers/docs.js';
+import { documentationOf, groupsOf, textOf } from './helpers/documentation.js';
 
 describe('the hint registry', () => {
   const all = Object.entries(hints);
 
   it('describes every hint completely', () => {
     for (const [id, hint] of all) {
-      const documentation = docsOf(hint);
+      const documentation = documentationOf(hint);
       expect({ id, name: Boolean(documentation.name) }).toEqual({
         id,
         name: true,

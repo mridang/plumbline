@@ -29,7 +29,7 @@ export default defineHint({
     },
   ],
   setup(context) {
-    const options = context.hintOptions;
+    const options: unknown = context.hintOptions;
     const enforce = isObject(options) && options.enforce === true;
     if (!enforce) {
       return;

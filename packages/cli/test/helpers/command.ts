@@ -23,12 +23,10 @@ function exitOf(error: unknown): number | undefined {
     typeof error === 'object' && error !== null && 'oclif' in error
       ? error.oclif
       : undefined;
-  return typeof oclif === 'object' &&
-    oclif !== null &&
-    'exit' in oclif &&
-    typeof oclif.exit === 'number'
-    ? oclif.exit
-    : undefined;
+  if (typeof oclif !== 'object' || oclif === null || !('exit' in oclif)) {
+    return undefined;
+  }
+  return typeof oclif.exit === 'number' ? oclif.exit : undefined;
 }
 
 /**

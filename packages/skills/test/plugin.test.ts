@@ -99,14 +99,16 @@ describe('the marketplace', () => {
   const plugins: unknown[] = Array.isArray(MARKETPLACE.plugins)
     ? MARKETPLACE.plugins
     : [];
-  const sources = plugins.flatMap((plugin) =>
-    typeof plugin === 'object' &&
-    plugin !== null &&
-    'source' in plugin &&
-    typeof plugin.source === 'string'
-      ? [plugin.source]
-      : [],
-  );
+  const sources = plugins.flatMap((plugin) => {
+    if (
+      typeof plugin !== 'object' ||
+      plugin === null ||
+      !('source' in plugin)
+    ) {
+      return [];
+    }
+    return typeof plugin.source === 'string' ? [plugin.source] : [];
+  });
 
   it('lists the plugin from this package', () => {
     expect(plugins).toEqual([

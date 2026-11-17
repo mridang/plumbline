@@ -63,6 +63,7 @@ function withReference(context: HintContext, spec: HintSpec): HintContext {
       if (property === 'report') {
         return report;
       }
+      // eslint-disable-next-line tslop/no-reflect-get -- the proxy forwards any member of the hint context, whose names it cannot know in advance
       const value: unknown = Reflect.get(target, property);
       if (typeof value === 'function') {
         const bound: unknown = value.bind(target);

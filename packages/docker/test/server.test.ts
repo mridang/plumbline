@@ -148,9 +148,9 @@ describe('POST /run', () => {
     expect(res.headers.get('content-type')).toContain('application/x-ndjson');
     const text = await res.text();
     const lines = text.trim().split('\n');
-    expect(lines.map((line) => JSON.parse(line))).toEqual([
-      expect.objectContaining({ type: 'ready' }),
-      expect.objectContaining({ type: 'end' }),
+    expect(lines).toEqual([
+      expect.stringContaining('"type":"ready"'),
+      expect.stringContaining('"type":"end"'),
     ]);
   });
 

@@ -173,6 +173,9 @@ export function assertAllowed(url: URL, options: GuardOptions = {}): void {
 /** The `dns.lookup` signature the guard wraps. */
 type Lookup = typeof dns.lookup;
 
+/** What `dns.lookup` takes after the host name: options, a family or the callback. */
+type LookupArgument = dns.LookupOptions | number | Respond | undefined;
+
 /** The callback `dns.lookup` answers to. */
 type Respond = (
   failure: Error | null,
@@ -191,7 +194,7 @@ export function guardedLookup(
 ): Lookup {
   const wrapped = (
     hostname: string,
-    optionsOrHandler: dns.LookupOptions | number | Respond | undefined,
+    optionsOrHandler: LookupArgument,
     maybeHandler?: Respond,
   ): void => {
     const respond =

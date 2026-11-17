@@ -14,7 +14,7 @@ import {
   supportsPopover,
 } from '@/components/ui/popover';
 import { html, htmlAt } from '../render';
-import { double } from '../../helpers/double';
+import { stub } from '../../helpers/double';
 
 /** Matches panel id attribute. */
 const PANEL_ID_ATTRIBUTE = /id="([^"]+)" popover="auto"/u;
@@ -150,8 +150,8 @@ describe('applyPlacement', () => {
 
 describe('focusLeft', () => {
   // Stand-ins for DOM nodes: all `focusLeft` asks of them is identity.
-  const inside = document.createElement('div');
-  const outside = document.createElement('div');
+  const inside = stub<Node>({ id: 'inside' });
+  const outside = stub<Node>({ id: 'outside' });
   const root = { contains: (node: Node | null) => node === inside };
 
   it('is true when focus moves to something outside the popover', () => {

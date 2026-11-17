@@ -10,13 +10,15 @@ interface HintLike {
  * fields, but `defineHint` stamps more onto it (groups, placement, origins),
  * so a test reads them as values to check rather than as typed fields.
  */
-export function docsOf(hint: HintLike): Readonly<Record<string, unknown>> {
+export function documentationOf(
+  hint: HintLike,
+): Readonly<Record<string, unknown>> {
   return isObject(hint.meta.docs) ? hint.meta.docs : {};
 }
 
 /** The groups a hint declares; none when it declares none. */
 export function groupsOf(hint: HintLike): string[] {
-  const { groups } = docsOf(hint);
+  const { groups } = documentationOf(hint);
   return Array.isArray(groups)
     ? groups.filter((group): group is string => typeof group === 'string')
     : [];

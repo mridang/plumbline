@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../src/core/define-hint.js';
 import { onPage } from '../../src/core/page.js';
-import { docsOf } from '../helpers/docs.js';
+import { documentationOf } from '../helpers/documentation.js';
 import { runHint } from '../helpers/run-hint.js';
 
 const make = (
@@ -29,7 +29,7 @@ const make = (
 describe('defineHint', () => {
   it('exposes the reference and groups on the metadata', () => {
     const hint = make('https://example.com/rule');
-    expect(docsOf(hint.ctor)).toMatchObject({
+    expect(documentationOf(hint.ctor)).toMatchObject({
       url: 'https://example.com/rule',
       groups: ['seo'],
     });

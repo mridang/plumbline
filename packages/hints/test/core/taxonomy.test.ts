@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import hints from '../../src/index.js';
-import { docsOf } from '../helpers/docs.js';
+import { documentationOf } from '../helpers/documentation.js';
 import {
   GROUP_DEFS,
   PLACEMENT,
@@ -42,7 +42,7 @@ describe('the sections', () => {
 
 describe('the metadata stamped on a hint', () => {
   it('carries the placement, the tier and where the hint came from', () => {
-    const documentation = docsOf(hints.csp);
+    const documentation = documentationOf(hints.csp);
     const placement = PLACEMENT.csp;
     expect(documentation.section).toBe(placement.section);
     expect(documentation.sectionTitle).toBeTruthy();

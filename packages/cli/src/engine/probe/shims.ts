@@ -4,12 +4,9 @@
  * has no such thing. Imported first by the Worker entry, so it runs before any
  * of them.
  */
-const filename: unknown = Reflect.get(globalThis, '__filename');
-const dirname: unknown = Reflect.get(globalThis, '__dirname');
-
-if (filename === undefined || filename === null) {
+if (!('__filename' in globalThis)) {
   Reflect.set(globalThis, '__filename', '/plumbline/worker.js');
 }
-if (dirname === undefined || dirname === null) {
+if (!('__dirname' in globalThis)) {
   Reflect.set(globalThis, '__dirname', '/plumbline');
 }

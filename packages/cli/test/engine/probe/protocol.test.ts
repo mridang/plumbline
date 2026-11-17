@@ -17,11 +17,9 @@ import {
 import { handshakeAnswer, httpAnswer } from '../../helpers/probe.js';
 
 /** An object with each key present and set to `undefined`. */
-const unset = <K extends string>(...keys: K[]): Partial<Record<K, undefined>> =>
-  keys.reduce<Partial<Record<K, undefined>>>(
-    (all, key) => ({ ...all, [key]: undefined }),
-    {},
-  );
+const unset = (...keys: string[]): Record<string, undefined> =>
+  // eslint-disable-next-line sonarjs/no-undefined-assignment -- the keys are present on purpose, set to undefined, which is what the encoder is tested against
+  Object.fromEntries(keys.map((key) => [key, undefined]));
 
 describe('encodeItem', () => {
   it('writes key=value lines, repeats a list, and leaves out undefined and false', () => {

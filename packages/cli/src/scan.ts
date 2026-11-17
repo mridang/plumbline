@@ -211,7 +211,8 @@ export async function scan(
     },
     [],
   ]) as Analyzer;
-  const result = (await analyzer.analyze(url)).at(0);
+  const results = await analyzer.analyze(url);
+  const result = results.at(0);
   return {
     problems: result?.problems ?? [],
     hints: ids.map((id) => metaOf(id)),

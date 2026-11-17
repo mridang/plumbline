@@ -129,7 +129,7 @@ describe('runScanWith', () => {
     const seen: string[] = [];
     const { env } = environment({
       fetch: async (input) => {
-        seen.push(String(input));
+        seen.push(input instanceof Request ? input.url : String(input));
         return page();
       },
     });

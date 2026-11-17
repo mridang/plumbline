@@ -34,7 +34,7 @@ export default defineHint({
     },
   ],
   setup(context) {
-    const options = context.hintOptions;
+    const options: unknown = context.hintOptions;
     const logoutUrl =
       isObject(options) && typeof options.logoutUrl === 'string'
         ? options.logoutUrl
