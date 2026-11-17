@@ -8,7 +8,6 @@ import {
   isServerHref,
   TextLink,
 } from '@/components/ui/button';
-
 import { cssClassesOf, html } from '../render';
 
 describe('buttonClass', () => {

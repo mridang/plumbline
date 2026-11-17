@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
+import { isObject } from '@/lib/core/api/json';
 import {
   canonicalArguments,
   limitArg,
@@ -131,11 +132,10 @@ describe('canonicalArguments', () => {
   });
 
   it('carries a key called __proto__ as an ordinary property', () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
-    const args = JSON.parse('{"__proto__": 1, "name": "x"}') as Record<
-      string,
-      unknown
-    >;
+    const args: unknown = JSON.parse('{"__proto__": 1, "name": "x"}');
+    if (!isObject(args)) {
+      throw new Error('expected a JSON object');
+    }
     const result = canonicalArguments(args);
     expect(
       Object.keys(result).toSorted((a, b) => collator.compare(a, b)),

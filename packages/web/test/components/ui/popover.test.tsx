@@ -14,7 +14,6 @@ import {
   supportsPopover,
 } from '@/components/ui/popover';
 import { html, htmlAt } from '../render';
-import { stub } from '../../helpers/double';
 
 /** Matches panel id attribute. */
 const PANEL_ID_ATTRIBUTE = /id="([^"]+)" popover="auto"/u;
@@ -93,19 +92,27 @@ describe('Popover', () => {
   });
 });
 
+/** A panel that has the Popover API on its prototype, as an element does. */
+class InheritsPopover {
+  get popover(): null {
+    return null;
+  }
+}
+
+/** A panel that has some other member on its prototype, but not the API. */
+class InheritsHidden {
+  get hidden(): boolean {
+    return false;
+  }
+}
+
 describe('supportsPopover', () => {
   it('is true for an element in a browser that has the Popover API', () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
-    expect(supportsPopover(Object.create({ popover: null }) as object)).toBe(
-      true,
-    );
+    expect(supportsPopover(new InheritsPopover())).toBe(true);
   });
 
   it('is false in a browser that does not, so the component shows the panel itself', () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
-    expect(supportsPopover(Object.create({ hidden: false }) as object)).toBe(
-      false,
-    );
+    expect(supportsPopover(new InheritsHidden())).toBe(false);
   });
 });
 
@@ -150,9 +157,9 @@ describe('applyPlacement', () => {
 
 describe('focusLeft', () => {
   // Stand-ins for DOM nodes: all `focusLeft` asks of them is identity.
-  const inside = stub<Node>({ id: 'inside' });
-  const outside = stub<Node>({ id: 'outside' });
-  const root = { contains: (node: Node | null) => node === inside };
+  const inside = { id: 'inside' };
+  const outside = { id: 'outside' };
+  const root = { contains: (node: { id: string } | null) => node === inside };
 
   it('is true when focus moves to something outside the popover', () => {
     expect(focusLeft(root, outside)).toBe(true);
