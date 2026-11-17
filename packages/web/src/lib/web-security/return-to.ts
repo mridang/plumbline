@@ -10,13 +10,15 @@
  * The path if it is a safe same-site path (starts with a single `/`, no
  * backslashes or control characters), otherwise undefined.
  */
-export function safeReturnPath(value?: string | null): string | undefined {
+export function safeReturnPath(
+  value: string | null | undefined,
+): string | undefined {
   if (!value || !value.startsWith('/') || value.startsWith('//')) {
     return undefined;
   }
   // Backslashes are treated as slashes by browsers (`/\evil.example`), and
   // control characters can smuggle in line breaks.
-  return Iterator.from(value).some(
+  return Array.from(value).some(
     (char) => char === '\\' || (char.codePointAt(0) ?? 0) < 0x20,
   )
     ? undefined
