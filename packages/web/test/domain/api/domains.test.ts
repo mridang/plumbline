@@ -1,8 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
-import type { CurrentUserResolver } from '@/domain/api/auth';
 import {
   createDomainItem,
   createDomainsCollection,
@@ -13,12 +10,14 @@ import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
+import type { CurrentUserResolver } from '@/domain/api/auth';
+import type { DatabaseSync } from 'node:sqlite';
 
 /** Matches a string starting with a quote. */
-const STARTS_WITH_QUOTE = /^"/;
+const STARTS_WITH_QUOTE = /^"/u;
 
 /** Who is signed in; null means nobody (or a session that has been ended). */
-const session: { uid: number | null } = { uid: 7 };
+const session = { uid: 7 as number | null };
 
 /** Identity injected in place of the session cookie. */
 const resolver: CurrentUserResolver = {

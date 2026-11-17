@@ -8,10 +8,8 @@ import {
   structuredDataInvalidFindings,
 } from '../../../src/lib/geo/checks.js';
 import { readJsonLd } from '../../../src/lib/geo/json-ld.js';
-import {
-  measureContent,
-  type ContentStats,
-} from '../../../src/lib/geo/content.js';
+import { measureContent } from '../../../src/lib/geo/content.js';
+import type { ContentStats } from '../../../src/lib/geo/content.js';
 
 // Build the shared checks' inputs from a real parse, the way both the webhint hint and the Lighthouse check do, rather than hand-rolling the shapes.
 
@@ -36,8 +34,9 @@ describe('structuredDataInvalidFindings', () => {
   it('errors, counting the blocks, when one does not parse', () => {
     const [f] = structuredDataInvalidFindings(
       blocksOf(
-        '<script type="application/ld+json">{ bad</script>' +
-          jsonLd({ '@type': 'WebPage' }),
+        `<script type="application/ld+json">{ bad</script>${jsonLd({
+          '@type': 'WebPage',
+        })}`,
       ),
     );
     expect(f.severity).toBe('error');

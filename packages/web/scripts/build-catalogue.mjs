@@ -55,6 +55,7 @@ function originsOf(documentation) {
     source: origin.source,
     title: origin.title || origin.upstreamId,
     url: origin.url,
+    // eslint-disable-next-line camelcase -- the catalogue keeps the snake_case spelling of the API
     ...(origin.docsUrl ? { docs_url: origin.docsUrl } : {}),
     summary: origin.summary,
   }));
@@ -73,7 +74,9 @@ const checks = Object.keys(extraHints)
         ? [...documentation.groups]
         : [],
       section: text(documentation, 'section', 'other'),
+      // eslint-disable-next-line camelcase -- the catalogue keeps the snake_case spelling of the API
       section_title: text(documentation, 'sectionTitle', 'Other'),
+      // eslint-disable-next-line camelcase -- the catalogue keeps the snake_case spelling of the API
       section_order:
         typeof documentation.sectionOrder === 'number'
           ? documentation.sectionOrder
@@ -87,6 +90,7 @@ const checks = Object.keys(extraHints)
       control: text(documentation, 'control', 'deployer'),
       since: typeof documentation.since === 'number' ? documentation.since : 1,
       added: text(documentation, 'added', ''),
+      // eslint-disable-next-line camelcase -- the catalogue keeps the snake_case spelling of the API
       ...(HOW_TO_FIX[id] ? { how_to_fix: HOW_TO_FIX[id] } : {}),
       ...(typeof documentation.url === 'string'
         ? { reference: documentation.url }
@@ -105,7 +109,9 @@ const sections = SECTIONS.map((section) => ({
   intro: section.intro,
   order: section.order,
   group: section.group,
+  // eslint-disable-next-line camelcase -- the catalogue keeps the snake_case spelling of the API
   group_title: section.groupTitle,
+  // eslint-disable-next-line camelcase -- the catalogue keeps the snake_case spelling of the API
   default_on:
     SECTION_DEFS.find((definition) => definition.id === section.id)
       ?.defaultOn !== false,

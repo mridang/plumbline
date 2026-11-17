@@ -9,8 +9,8 @@ import {
   parseManifest,
   readIcons,
   readString,
-  type ManifestIcon,
 } from '../../../src/lib/pwa/manifest.js';
+import type { ManifestIcon } from '../../../src/lib/pwa/manifest.js';
 
 const icon = (over: Partial<ManifestIcon> = {}): ManifestIcon => ({
   src: 'i.png',

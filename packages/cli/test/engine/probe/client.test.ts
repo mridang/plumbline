@@ -204,7 +204,9 @@ describe('web and mail lanes', () => {
     const { transport } = fakeProbe(async () => {
       running += 1;
       most = Math.max(most, running);
-      await new Promise((resolve) => setTimeout(resolve, 5));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 5);
+      });
       running -= 1;
       return ok('{"reachable":true}');
     });
@@ -249,7 +251,9 @@ describe('busy probe', () => {
     const { transport } = fakeProbe(async () => {
       running += 1;
       most = Math.max(most, running);
-      await new Promise((resolve) => setTimeout(resolve, 5));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 5);
+      });
       running -= 1;
       return ok('{"reachable":true}');
     });

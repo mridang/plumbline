@@ -10,10 +10,10 @@
 
 import { and, eq, lt } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import { previewReports } from '@/domain/db/schema';
-import type { StoredFinding } from '@/domain/suite/diff';
 import { countsOf } from '@/domain/suite/report';
+import type { Database } from '@/domain/db/client';
+import type { StoredFinding } from '@/domain/suite/diff';
 
 /** How long a report is kept, in days. */
 export const KEEP_DAYS = 30;
@@ -101,12 +101,13 @@ export async function getPreviewReport(
   if (!row) {
     return undefined;
   }
-  let findings: StoredFinding[] = [];
   try {
     const value: unknown = JSON.parse(row.findings);
-    findings = Array.isArray(value) ? (value as StoredFinding[]) : [];
+    return {
+      ...row,
+      findings: Array.isArray(value) ? (value as StoredFinding[]) : [],
+    };
   } catch {
-    findings = [];
+    return { ...row, findings: [] };
   }
-  return { ...row, findings };
 }

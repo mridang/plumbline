@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/email/mail-ipv6.js';
-import type { MailNetClient } from '../../../src/lib/email/net.js';
 import { fakeDns, runMailHint } from '../../lib/email/fakes.js';
 import { vector } from '../../helpers/data.js';
+import type { MailNetClient } from '../../../src/lib/email/net.js';
 
 const MX = {
   'example.test MX': ['10 mx1.example.test.', '20 mx2.example.test.'],

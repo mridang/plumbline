@@ -1,6 +1,5 @@
-import type { ReactElement } from 'react';
-
 import { Container, Eyebrow } from '@/components/ui/layout';
+import type { ReactElement } from 'react';
 
 /** One step of a scan, as the home page tells it. */
 interface Step {

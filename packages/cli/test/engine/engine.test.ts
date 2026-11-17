@@ -1,7 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import type { HintContext, NetworkData } from 'hint';
 import { Severity } from '@hint/utils-types';
-import type { CatalogueEntry, HintInfo } from '../../src/engine/catalogue.js';
 import {
   HINT_TIMEOUT_MS,
   findingOf,
@@ -9,8 +7,10 @@ import {
   runHint,
   skipped,
   statusOf,
-  type FetchContent,
 } from '../../src/engine/engine.js';
+import type { HintContext, NetworkData } from 'hint';
+import type { CatalogueEntry, HintInfo } from '../../src/engine/catalogue.js';
+import type { FetchContent } from '../../src/engine/engine.js';
 
 const INFO: HintInfo = {
   id: 'fake',
@@ -109,6 +109,7 @@ describe('findingOf', () => {
   it('keeps only http(s) links other than the hint reference, at most five', () => {
     const documentation = [
       { link: 'https://example.com/rule', text: 'the rule' },
+      // eslint-disable-next-line no-script-url -- the link under test is a script URL that must be dropped
       { link: 'javascript:alert(1)', text: 'bad' },
       ...Array.from({ length: 7 }, (_, index) => ({
         link: `https://example.com/${index}`,
@@ -262,8 +263,14 @@ describe('runHint', () => {
   it('skips a hint that runs out of time', async () => {
     const outcome = await runHint(
       entry((context) =>
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises -- webhint's context.on types its listener as returning void, but the engine awaits it; dropping the async would stop the scan waiting for this handler
-        context.on('scan::end', async () => new Promise(() => undefined)),
+        context.on(
+          'scan::end',
+          // eslint-disable-next-line @typescript-eslint/no-misused-promises -- webhint's context.on types its listener as returning void, but the engine awaits it; dropping the async would stop the scan waiting for this handler
+          async () =>
+            new Promise<never>(() => {
+              // never settles: the scan hangs here
+            }),
+        ),
       ),
       await page(),
       fetchContent,

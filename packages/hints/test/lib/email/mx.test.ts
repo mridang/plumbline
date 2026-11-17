@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
-import type { DnsClient } from '../../../src/core/dns.js';
 import { lookupMailServers } from '../../../src/lib/email/mx.js';
 import { fakeDns } from './fakes.js';
+import type { DnsClient } from '../../../src/core/dns.js';
 
 describe('lookupMailServers', () => {
   it('returns sorted, lower-cased hosts without the trailing dot', async () => {

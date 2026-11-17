@@ -8,19 +8,19 @@
 import { answersOfType, normalizeName, safeQuery, RR } from './dns-utility.js';
 
 /** Matches a DNS label. */
-const DNS_LABEL = /^[A-Za-z0-9-]+$/;
+const DNS_LABEL = /^[A-Za-z0-9-]+$/u;
 
 /** Matches CAA record data of flags, tag and value. */
-const CAA_RECORD_DATA = /^(\d+)\s+([A-Za-z0-9]+)\s(.*)$/s;
+const CAA_RECORD_DATA = /^(\d+)\s+([A-Za-z0-9]+)\s(.*)$/su;
 
 /** Matches a string of hex digits and whitespace. */
-const HEX_OR_WHITESPACE_ONLY = /^[\da-fA-F\s]*$/;
+const HEX_OR_WHITESPACE_ONLY = /^[\da-fA-F\s]*$/u;
 
 /** Matches leading whitespace. */
-const LEADING_WHITESPACE = /^\s/;
+const LEADING_WHITESPACE = /^\s/u;
 
 /** Matches the first non-digit character. */
-const NON_DIGIT = /\D/;
+const NON_DIGIT = /\D/u;
 
 /** At most this many records are evaluated, as in Internet.nl. */
 const CAA_MAX_RECORDS = 100;
@@ -63,12 +63,12 @@ function fromGeneric(data: string): Buffer | null {
   if (length === 0) {
     return null;
   }
-  let hex = afterMarker.slice(length);
-  if (LEADING_WHITESPACE.test(hex)) {
-    hex = hex.slice(1);
-  }
+  const afterDigits = afterMarker.slice(length);
+  const hex = LEADING_WHITESPACE.test(afterDigits)
+    ? afterDigits.slice(1)
+    : afterDigits;
   return HEX_OR_WHITESPACE_ONLY.test(hex)
-    ? Buffer.from(hex.replaceAll(/\s+/g, ''), 'hex')
+    ? Buffer.from(hex.replaceAll(/\s+/gu, ''), 'hex')
     : null;
 }
 
@@ -91,20 +91,22 @@ export function parseCaa(data: string): CaaRecord | null {
   if (!m) {
     return null;
   }
-  let value = m[3].trim();
-  if (value.startsWith('"') && value.endsWith('"') && value.length >= 2) {
-    value = value.slice(1, -1).replaceAll(/\\(.)/g, '$1');
-  }
+  const raw = m[3].trim();
+  const value =
+    raw.startsWith('"') && raw.endsWith('"') && raw.length >= 2
+      ? raw.slice(1, -1).replaceAll(/\\(.)/gu, '$1')
+      : raw;
   return { flags: Number(m[1]), tag: m[2], value };
 }
 
 const LABEL = '[A-Za-z0-9](?:-*[A-Za-z0-9])*';
-const DOMAIN = new RegExp(String.raw`^${LABEL}(?:\.${LABEL})*$`);
+const DOMAIN = new RegExp(String.raw`^${LABEL}(?:\.${LABEL})*$`, 'u');
 const PARAMETER = new RegExp(
   String.raw`^${LABEL}[ \t]*=[ \t]*[\x21-\x3A\x3C-\x7E]*$`,
+  'u',
 );
-const EMAIL = /^[^\s@;<>,"]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/;
-const PHONE = /^\+(?=[\d.()-]*\d)[\d.()-]*(?:;.*)?$/;
+const EMAIL = /^[^\s@;<>,"]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/u;
+const PHONE = /^\+(?=[\d.()-]*\d)[\d.()-]*(?:;.*)?$/u;
 
 /** Https://www.iana.org/assignments/acme/acme.xhtml#acme-validation-methods */
 const ACME_METHODS = new Set([
@@ -130,12 +132,12 @@ function checkIssueValue(value: string): string | null {
   }
   const parameters = rest.join(';').trim();
   if (rest.length > 0 && parameters !== '') {
-    for (const parameter of parameters.split(';').map((p) => p.trim())) {
-      const error = checkIssueParameter(parameter);
-      if (error !== null) {
-        return error;
-      }
-    }
+    return (
+      parameters
+        .split(';')
+        .map((p) => checkIssueParameter(p.trim()))
+        .find((error) => error !== null) ?? null
+    );
   }
   return null;
 }
@@ -152,15 +154,13 @@ function checkIssueParameter(parameter: string): string | null {
   // RFC 8657 section 4: comma separated, known or `ca-` prefixed.
   const methods = v.join('=').trim();
   const labels = methods === '' ? [] : methods.split(',');
-  for (const label of labels) {
-    if (
+  return labels.some(
+    (label) =>
       !DNS_LABEL.test(label) ||
-      (!ACME_METHODS.has(label) && !label.startsWith('ca-'))
-    ) {
-      return 'invalid-parameter-validation-methods';
-    }
-  }
-  return null;
+      (!ACME_METHODS.has(label) && !label.startsWith('ca-')),
+  )
+    ? 'invalid-parameter-validation-methods'
+    : null;
 }
 
 /** Validates the value of `iodef`: an https URL or a mailto address. */
@@ -264,23 +264,23 @@ export function evaluateCaa(
   foundOn: string | null,
 ): CaaEvaluation {
   const evaluated = records.slice(0, CAA_MAX_RECORDS);
-  const errors: CaaEvaluation['errors'] = [];
-  for (const record of evaluated) {
+  const recordErrors = evaluated.flatMap((record) => {
     const id = validateCaaRecord(record);
-    if (id) {
-      errors.push({ id, message: describeError(id, record) });
-    }
-  }
-  if (!evaluated.some((r) => r.tag.toLowerCase() === 'issue')) {
-    errors.push({
-      id: MISSING_ISSUE,
-      message: describeError(MISSING_ISSUE, {
-        flags: 0,
-        tag: 'issue',
-        value: '',
-      }),
-    });
-  }
+    return id ? [{ id, message: describeError(id, record) }] : [];
+  });
+  const missingIssue = evaluated.some((r) => r.tag.toLowerCase() === 'issue')
+    ? []
+    : [
+        {
+          id: MISSING_ISSUE,
+          message: describeError(MISSING_ISSUE, {
+            flags: 0,
+            tag: 'issue',
+            value: '',
+          }),
+        },
+      ];
+  const errors: CaaEvaluation['errors'] = [...recordErrors, ...missingIssue];
   return { found: evaluated.length > 0, foundOn, records: evaluated, errors };
 }
 
@@ -289,8 +289,16 @@ export function evaluateCaa(
  * (RFC 8659 section 3) and evaluates them.
  */
 export async function retrieveCaa(host: string): Promise<CaaEvaluation> {
-  let name = normalizeName(host);
-  while (name !== '') {
+  const notFound: CaaEvaluation = {
+    found: false,
+    foundOn: null,
+    records: [],
+    errors: [],
+  };
+  const climb = async (name: string): Promise<CaaEvaluation> => {
+    if (name === '') {
+      return notFound;
+    }
     const response = await safeQuery(name, 'CAA');
     const records = answersOfType(response, RR.CAA)
       .map((a) => parseCaa(a.data))
@@ -299,10 +307,9 @@ export async function retrieveCaa(host: string): Promise<CaaEvaluation> {
       return evaluateCaa(records, name);
     }
     // The root and single labels (TLDs) never carry a CAA policy for a site.
-    if (!name.includes('.')) {
-      break;
-    }
-    name = name.slice(name.indexOf('.') + 1);
-  }
-  return { found: false, foundOn: null, records: [], errors: [] };
+    return name.includes('.')
+      ? climb(name.slice(name.indexOf('.') + 1))
+      : notFound;
+  };
+  return climb(normalizeName(host));
 }

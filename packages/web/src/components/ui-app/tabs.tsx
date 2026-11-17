@@ -1,9 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import type { KeyboardEvent, ReactElement, ReactNode } from 'react';
-
 import { cn } from '@/components/ui/cn';
+import type { KeyboardEvent, ReactElement, ReactNode } from 'react';
 
 /** One tab: its place in the address (`key`), what it says and where it leads. */
 export interface TabItem {

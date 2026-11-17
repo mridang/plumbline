@@ -11,7 +11,7 @@ import {
 import { GITHUB_ENV } from '../../../domain/github/github-test-kit';
 
 /** Matches uuid format. */
-const UUID_FORMAT = /^[0-9a-f-]{36}$/;
+const UUID_FORMAT = /^[0-9a-f-]{36}$/u;
 
 let restore: () => void;
 

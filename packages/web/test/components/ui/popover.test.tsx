@@ -16,25 +16,26 @@ import {
 import { html, htmlAt } from '../render';
 
 /** Matches panel id attribute. */
-const PANEL_ID_ATTRIBUTE = /id="([^"]+)" popover="auto"/;
+const PANEL_ID_ATTRIBUTE = /id="([^"]+)" popover="auto"/u;
 
 /** Matches menu trigger button. */
-const MENU_TRIGGER_BUTTON = /<button[^>]*aria-label="Menu"[^>]*>Open<\/button>/;
+const MENU_TRIGGER_BUTTON =
+  /<button[^>]*aria-label="Menu"[^>]*>Open<\/button>/u;
 
 /** Matches popovertarget attribute. */
-const POPOVERTARGET_ATTRIBUTE = /popovertarget/i;
+const POPOVERTARGET_ATTRIBUTE = /popovertarget/iu;
 
 /** Matches popover panel div. */
-const POPOVER_PANEL_DIV = /<div[^>]*popover="auto"[^>]*data-popover=""/;
+const POPOVER_PANEL_DIV = /<div[^>]*popover="auto"[^>]*data-popover=""/u;
 
 /** Matches connected status paragraph. */
 const CONNECTED_STATUS_PARAGRAPH =
-  /^<p role="status"[^>]*>Google Drive connected<\/p>$/;
+  /^<output[^>]*>Google Drive connected<\/output>$/u;
 
 describe('PopoverSeparator', () => {
   it('is a thin rule that assistive technology knows is a separator', () => {
     const out = html(<PopoverSeparator />);
-    expect(out).toContain('role="separator"');
+    expect(out).toContain('<hr');
     expect(out).toContain('h-px');
   });
 });
@@ -204,8 +205,8 @@ describe('escapeHandler', () => {
     const close = jest.fn();
     const focusButton = jest.fn();
     escapeHandler(close, focusButton)({ key: 'Escape' });
-    expect(close).toHaveBeenCalledTimes(1);
-    expect(focusButton).toHaveBeenCalledTimes(1);
+    expect(close.mock.calls).toEqual([[]]);
+    expect(focusButton.mock.calls).toEqual([[]]);
   });
 
   it('leaves every other key to whatever has focus', () => {
@@ -213,7 +214,7 @@ describe('escapeHandler', () => {
     const focusButton = jest.fn();
     escapeHandler(close, focusButton)({ key: 'ArrowDown' });
     escapeHandler(close, focusButton)({ key: 'Tab' });
-    expect(close).not.toHaveBeenCalled();
-    expect(focusButton).not.toHaveBeenCalled();
+    expect(close.mock.calls).toEqual([]);
+    expect(focusButton.mock.calls).toEqual([]);
   });
 });

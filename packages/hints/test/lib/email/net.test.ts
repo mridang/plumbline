@@ -1,13 +1,16 @@
-import { connect, createServer, type AddressInfo } from 'node:net';
+import { connect, createServer } from 'node:net';
 import { afterEach, describe, expect, it } from '@jest/globals';
 import { createMailNetClient } from '../../../src/lib/email/net.js';
-import { startSmtp, type FakeSmtp } from './fake-smtp.js';
+import { startSmtp } from './fake-smtp.js';
+import type { AddressInfo } from 'node:net';
+import type { FakeSmtp } from './fake-smtp.js';
 
 let smtp: FakeSmtp | null = null;
 
 afterEach(async () => {
-  await smtp?.close();
+  const running = smtp;
   smtp = null;
+  await running?.close();
 });
 
 describe('createMailNetClient', () => {
@@ -22,11 +25,15 @@ describe('createMailNetClient', () => {
 
   it('reports an unreachable port', async () => {
     const server = createServer();
-    await new Promise<void>((resolve) =>
-      server.listen(0, '127.0.0.1', () => resolve()),
-    );
+    await new Promise<void>((resolve) => {
+      server.listen(0, '127.0.0.1', () => {
+        resolve();
+      });
+    });
     const { port } = server.address() as AddressInfo;
-    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => {
+      server.close(resolve);
+    });
     const client = createMailNetClient({
       connect: () => connect({ host: '127.0.0.1', port }),
     });

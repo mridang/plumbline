@@ -18,7 +18,7 @@ import { CSP_REPORT_DIRECTIVES } from './reporting';
 import { EXTRA_DIRECTIVES, EXTRA_IMG_SOURCES } from './site';
 
 /** The nonce value inside a policy, such as `'nonce-abc'`. */
-const NONCE_SOURCE = /'nonce-([^']+)'/;
+const NONCE_SOURCE = /'nonce-([^']+)'/u;
 
 /** A fresh, unguessable nonce: 16 random bytes, base64. */
 // eslint-disable-next-line unicorn/no-keyword-prefix -- exported name that callers import

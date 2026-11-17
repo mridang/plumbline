@@ -12,15 +12,20 @@ import { installCloudflareContext } from '../../../../lib/core/db/sqlite-d1';
 import { GITHUB_ENV } from '../../../../domain/github/github-test-kit';
 
 /** Matches http only flag. */
-const HTTP_ONLY_FLAG = /httponly/i;
+const HTTP_ONLY_FLAG = /httponly/iu;
 
 /** Matches secure flag. */
-const SECURE_FLAG = /secure/i;
+const SECURE_FLAG = /secure/iu;
 
 /** Matches github state prefix. */
-const GITHUB_STATE_PREFIX = /^github\./;
+const GITHUB_STATE_PREFIX = /^github\./u;
 
-const state: { user: { id: number } | null } = { user: { id: 1 } };
+interface UserState {
+  user: { id: number } | null;
+}
+
+const state: UserState = { user: { id: 1 } };
+// eslint-disable-next-line tslop/no-module-mocking -- @/lib/core/auth/current-user is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
 }));

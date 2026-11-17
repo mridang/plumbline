@@ -22,7 +22,7 @@
  * and MDN's link-relation reference; see each hint's doc comment for the exact
  * citation.
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
 import {
   getAlternateMediaLinks,
   getHreflangLinks,
@@ -30,8 +30,9 @@ import {
   isAbsoluteHttpUrl,
   isValidHreflang,
   sameUrl,
-  type DocumentLike,
 } from './read.js';
+import type { Finding } from '../headers/finding.js';
+import type { DocumentLike } from './read.js';
 
 // ---- Reference links (shared with each hint's `reference` metadata) --------
 /** Google Search Central: localized versions of a page (`hreflang`). */
@@ -149,25 +150,21 @@ export function hreflangSelf(
  * order, so each duplicate element can be pointed at.
  */
 export function hreflangDuplicate(parsedDocument: DocumentLike): Finding[] {
-  const seen = new Set<string>();
-  const findings: Finding[] = [];
-  for (const link of getHreflangLinks(parsedDocument)) {
+  const links = getHreflangLinks(parsedDocument);
+  return links.flatMap((link, index) => {
     const key = link.hreflang.toLowerCase();
-    if (key === '') {
-      continue;
-    }
-    if (seen.has(key)) {
-      findings.push(
-        finding(
-          'warning',
-          `The hreflang value "${link.hreflang}" is declared more than once. Each language version must appear exactly once; remove the duplicate. Read more: ${GOOGLE_LOCALIZED_REF}`,
-        ),
-      );
-    } else {
-      seen.add(key);
-    }
-  }
-  return findings;
+    const firstIndex = links.findIndex(
+      (other) => other.hreflang.toLowerCase() === key,
+    );
+    return key !== '' && firstIndex < index
+      ? [
+          finding(
+            'warning',
+            `The hreflang value "${link.hreflang}" is declared more than once. Each language version must appear exactly once; remove the duplicate. Read more: ${GOOGLE_LOCALIZED_REF}`,
+          ),
+        ]
+      : [];
+  });
 }
 
 // ---- rel=alternate media ---------------------------------------------------

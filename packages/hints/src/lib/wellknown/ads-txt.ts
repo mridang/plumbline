@@ -1,4 +1,5 @@
-import { splitLines, type FileIssue } from '../files/issue.js';
+import { splitLines } from '../files/issue.js';
+import type { FileIssue } from '../files/issue.js';
 
 /**
  * The variables the ads.txt / app-ads.txt specification defines. A line
@@ -71,33 +72,28 @@ function checkRecord(content: string, line: number): FileIssue[] {
       },
     ];
   }
-  const issues: FileIssue[] = [];
   const [domain, publisherId, relationship] = fields;
-  if (domain === '') {
-    issues.push({
-      severity: 'error',
-      line,
-      snippet: content,
-      message: 'The advertising system domain (first field) is empty.',
-    });
-  }
-  if (publisherId === '') {
-    issues.push({
-      severity: 'error',
-      line,
-      snippet: content,
-      message: 'The publisher account id (second field) is empty.',
-    });
-  }
-  if (!RELATIONSHIPS.has(relationship.toLowerCase())) {
-    issues.push({
-      severity: 'error',
-      line,
-      snippet: content,
-      message: `The account relationship (third field) must be DIRECT or RESELLER, not '${relationship}'.`,
-    });
-  }
-  return issues;
+  const issue = (message: string): FileIssue => ({
+    severity: 'error',
+    line,
+    snippet: content,
+    message,
+  });
+  return [
+    ...(domain === ''
+      ? [issue('The advertising system domain (first field) is empty.')]
+      : []),
+    ...(publisherId === ''
+      ? [issue('The publisher account id (second field) is empty.')]
+      : []),
+    ...(RELATIONSHIPS.has(relationship.toLowerCase())
+      ? []
+      : [
+          issue(
+            `The account relationship (third field) must be DIRECT or RESELLER, not '${relationship}'.`,
+          ),
+        ]),
+  ];
 }
 
 /**
@@ -109,32 +105,35 @@ function checkRecord(content: string, line: number): FileIssue[] {
  * Malformed records and unknown variables are reported with their line.
  */
 export function validateAdsTxt(text: string): FileIssue[] {
-  const issues: FileIssue[] = [];
-  const lines = splitLines(text);
-  let records = 0;
-
-  for (const [index, raw] of lines.entries()) {
-    const line = index + 1;
+  // Blank lines and comment-only lines carry no record.
+  const entries = splitLines(text).flatMap((raw, index) => {
     const content = stripComment(raw);
-    // A variable line has the form NAME=value, where NAME contains no comma
-    // (a data record's first field is a domain and never contains `=`).
+    return content === '' ? [] : [{ content, line: index + 1 }];
+  });
+  // A variable line has the form NAME=value, where NAME contains no comma
+  // (a data record's first field is a domain and never contains `=`).
+  const classified = entries.map(({ content, line }) => {
     const eq = content.indexOf('=');
-    if (content === '') {
-      // Blank lines and comment-only lines carry no record.
-    } else if (eq !== -1 && !content.slice(0, eq).includes(',')) {
-      issues.push(...checkVariable(content, eq, line));
-    } else {
-      records += 1;
-      issues.push(...checkRecord(content, line));
-    }
-  }
+    return {
+      content,
+      line,
+      eq,
+      isVariable: eq !== -1 && !content.slice(0, eq).includes(','),
+    };
+  });
+  const records = classified.filter((entry) => !entry.isVariable).length;
+  const issues = classified.flatMap(({ content, line, eq, isVariable }) =>
+    isVariable ? checkVariable(content, eq, line) : checkRecord(content, line),
+  );
 
   // A file with no variable and no data record is not a useful ads.txt.
-  if (records === 0) {
-    issues.push({
-      severity: 'warning',
-      message: 'The file contains no advertising-system records.',
-    });
-  }
-  return issues;
+  return records === 0
+    ? [
+        ...issues,
+        {
+          severity: 'warning',
+          message: 'The file contains no advertising-system records.',
+        },
+      ]
+    : issues;
 }

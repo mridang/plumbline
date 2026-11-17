@@ -5,11 +5,11 @@ import NotFound, { metadata } from '@/app/not-found';
 import { html } from '../components/render';
 
 /** Matches the link back to the home page. */
-const HOME_LINK_PATTERN = /<a [^>]*href="\/"[^>]*>Back to the home page<\/a>/;
+const HOME_LINK_PATTERN = /<a [^>]*href="\/"[^>]*>Back to the home page<\/a>/u;
 
 /** Matches the not found heading. */
 const NOT_FOUND_HEADING_PATTERN =
-  /<h1[^>]*>We couldn&#x27;t find that page<\/h1>/;
+  /<h1[^>]*>We couldn&#x27;t find that page<\/h1>/u;
 
 describe('NotFound', () => {
   const out = html(<NotFound />);

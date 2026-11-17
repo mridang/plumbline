@@ -23,26 +23,19 @@ import {
   problems,
   readJsonObject,
   sliceAfter,
-  type CursorPosition,
 } from '@/lib/core/api';
-import {
-  liveUid,
-  requestCookieResolver,
-  type CurrentUserResolver,
-} from '@/domain/api/auth';
+import { liveUid, requestCookieResolver } from '@/domain/api/auth';
 import {
   domainResource,
   isDomainId,
   parseDomainPatch,
-  type DomainResource,
 } from '@/domain/api/domain-resource';
 import { getDatabase } from '@/domain/db/client';
-import {
-  getDomain,
-  listDomains,
-  setDomainChecks,
-  type Domain,
-} from '@/domain/db/domains';
+import { getDomain, listDomains, setDomainChecks } from '@/domain/db/domains';
+import type { DomainResource } from '@/domain/api/domain-resource';
+import type { CurrentUserResolver } from '@/domain/api/auth';
+import type { CursorPosition } from '@/lib/core/api';
+import type { Domain } from '@/domain/db/domains';
 
 /** The signed-in caller's id. */
 interface UidContext {
@@ -69,9 +62,11 @@ function positionOf(domain: Readonly<Domain>): CursorPosition {
 
 /** Order two positions as the list is sorted (oldest first). */
 function compare(a: CursorPosition, b: CursorPosition): number {
+  /* eslint-disable no-restricted-properties -- keys are ISO timestamps and ids: the cursor order must not depend on a collator */
   return a.key === b.key
     ? a.id.localeCompare(b.id)
     : a.key.localeCompare(b.key);
+  /* eslint-enable no-restricted-properties -- end of the ids and keys above */
 }
 
 /** The entity tag of a domain's representation. */

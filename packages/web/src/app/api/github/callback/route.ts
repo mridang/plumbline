@@ -7,9 +7,9 @@
  * the only one registered.
  */
 
-import { NextResponse, type NextRequest } from 'next/server';
-
+import { NextResponse } from 'next/server';
 import { appOrigin } from '@/lib/core/origin';
+import type { NextRequest } from 'next/server';
 
 export function GET(request: NextRequest): NextResponse {
   const { search } = new URL(request.url);

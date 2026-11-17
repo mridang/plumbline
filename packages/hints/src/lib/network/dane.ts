@@ -6,14 +6,15 @@
  * matching with Node's crypto so no native tool is needed.
  */
 import { X509Certificate, createHash } from '#crypto';
-import { connect as tlsConnect } from '#tls';
+import { connect } from '#tls';
 import { answersOfType, normalizeName, safeQuery, RR } from './dns-utility.js';
+import type { DetailedPeerCertificate } from '#tls';
 
 /** Matches TLSA record data. */
-const TLSA_RECORD_DATA = /^(\d+)\s+(\d+)\s+(\d+)\s([\da-fA-F\s]+)$/;
+const TLSA_RECORD_DATA = /^(\d+)\s+(\d+)\s+(\d+)\s([\da-fA-F\s]+)$/u;
 
 /** Matches generic `\#` record data. */
-const GENERIC_RDATA = /^\\#\s+\d+\s([\da-fA-F\s]+)$/;
+const GENERIC_RDATA = /^\\#\s+\d+\s([\da-fA-F\s]+)$/u;
 
 export interface Tlsa {
   usage: number;
@@ -36,9 +37,24 @@ export type ChainFetcher = (
 ) => Promise<PresentedChain | null>;
 
 /** Real TLS connection that reads the presented chain. */
+/** The raw certificates from the leaf up, stopping at the first repeat. */
+const rawChain = (
+  cert: DetailedPeerCertificate | undefined,
+  seen: ReadonlySet<string>,
+): Buffer[] =>
+  cert?.raw && !seen.has(cert.fingerprint256)
+    ? [
+        cert.raw,
+        ...rawChain(
+          cert.issuerCertificate,
+          new Set([...seen, cert.fingerprint256]),
+        ),
+      ]
+    : [];
+
 const fetchChain: ChainFetcher = async (host, port) =>
   new Promise((resolve) => {
-    const socket = tlsConnect({
+    const socket = connect({
       host,
       port,
       servername: host,
@@ -47,14 +63,7 @@ const fetchChain: ChainFetcher = async (host, port) =>
       timeout: 8000,
     });
     socket.once('secureConnect', () => {
-      const chain: Buffer[] = [];
-      let cert = socket.getPeerCertificate(true);
-      const seen = new Set<string>();
-      while (cert?.raw && !seen.has(cert.fingerprint256)) {
-        seen.add(cert.fingerprint256);
-        chain.push(cert.raw);
-        cert = cert.issuerCertificate;
-      }
+      const chain = rawChain(socket.getPeerCertificate(true), new Set());
       const pkixValid = socket.authorized;
       socket.destroy();
       resolve(chain.length > 0 ? { chain, pkixValid } : null);
@@ -67,7 +76,7 @@ const fetchChain: ChainFetcher = async (host, port) =>
   });
 
 /** The TLS client the hints use; tests assign a fake. */
-export const tls: { fetchChain: ChainFetcher } = { fetchChain };
+export const tls = { fetchChain };
 
 /**
  * Parses one TLSA record in presentation format (`3 1 1 abcd...`) or in the
@@ -76,7 +85,7 @@ export const tls: { fetchChain: ChainFetcher } = { fetchChain };
 export function parseTlsa(data: string): Tlsa | null {
   const generic = GENERIC_RDATA.exec(data.trim());
   if (generic) {
-    const hex = generic[1].replaceAll(/\s+/g, '').toLowerCase();
+    const hex = generic[1].replaceAll(/\s+/gu, '').toLowerCase();
     if (hex.length < 6) {
       return null;
     }
@@ -95,7 +104,7 @@ export function parseTlsa(data: string): Tlsa | null {
     usage: Number(m[1]),
     selector: Number(m[2]),
     matching: Number(m[3]),
-    data: m[4].replaceAll(/\s+/g, '').toLowerCase(),
+    data: m[4].replaceAll(/\s+/gu, '').toLowerCase(),
   };
 }
 
@@ -156,6 +165,7 @@ function associationData(
   selector: number,
   matching: number,
 ): string | null {
+  // eslint-disable-next-line functional/no-let -- assigned per selector, and the SPKI export can throw
   let selected: Buffer;
   if (selector === 0) {
     selected = cert;

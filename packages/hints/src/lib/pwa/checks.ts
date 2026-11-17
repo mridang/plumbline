@@ -22,13 +22,8 @@
  * served manifest with the wrong media type, or a colour that is not a valid
  * CSS colour, is advice (severity `warning`): browsers are lenient about both.
  */
-import { finding, type Finding } from '../headers/finding.js';
-import {
-  getManifestHref,
-  getThemeColorMeta,
-  isAbsoluteHref,
-  type DocumentLike,
-} from './read.js';
+import { finding } from '../headers/finding.js';
+import { getManifestHref, getThemeColorMeta, isAbsoluteHref } from './read.js';
 import {
   DISPLAY_VALUES,
   hasMember,
@@ -41,6 +36,8 @@ import {
   readIcons,
   readString,
 } from './manifest.js';
+import type { Finding } from '../headers/finding.js';
+import type { DocumentLike } from './read.js';
 
 // ---- Reference links (shared with each hint's `reference` metadata) --------
 export const MANIFEST_LINKED_REF = 'https://www.w3.org/TR/appmanifest/#linking';
@@ -119,112 +116,6 @@ export function manifestValid(text: string, mediaType: string): Finding[] {
     ];
   }
 
-  const findings: Finding[] = [];
-
-  // The media type the manifest is served as. Browsers accept other types, so
-  // this is advice, not a hard failure.
-  if (mediaType.trim().toLowerCase() !== MANIFEST_MEDIA_TYPE) {
-    findings.push(
-      finding(
-        'warning',
-        `The manifest is served as "${mediaType || 'no media type'}" but should be "${MANIFEST_MEDIA_TYPE}". Read more: ${MANIFEST_VALID_REF}`,
-      ),
-    );
-  }
-
-  // Required members (install criteria) ------------------------------------
-  // A name: either `name` or `short_name` must be present.
-  if (
-    readString(manifest, 'name') === null &&
-    readString(manifest, 'short_name') === null
-  ) {
-    findings.push(
-      finding(
-        'error',
-        `The manifest has no "name" or "short_name"; add at least one so the installed app has a label. Read more: ${MANIFEST_VALID_REF}`,
-      ),
-    );
-  }
-
-  // A start URL to open when the app launches.
-  if (readString(manifest, 'start_url') === null) {
-    findings.push(
-      finding(
-        'error',
-        `The manifest has no "start_url"; add the URL the app should open at when launched. Read more: ${MANIFEST_VALID_REF}`,
-      ),
-    );
-  }
-
-  // A display mode, which must be one of the spec's values.
-  if (!hasMember(manifest, 'display')) {
-    findings.push(
-      finding(
-        'error',
-        `The manifest has no "display"; set it to one of ${DISPLAY_VALUES.join(', ')}. Read more: ${MANIFEST_VALID_REF}`,
-      ),
-    );
-  }
-  if (hasMember(manifest, 'display') && !isValidDisplay(manifest.display)) {
-    findings.push(
-      finding(
-        'error',
-        `The manifest "display" is invalid; it must be one of ${DISPLAY_VALUES.join(', ')}. Read more: ${MANIFEST_VALID_REF}`,
-      ),
-    );
-  }
-
-  // An icons member (the specific sizes are checked by `manifestIcons`).
-  if (!hasNonEmptyArray(manifest, 'icons')) {
-    findings.push(
-      finding(
-        'error',
-        `The manifest has no "icons"; add an icons array with at least a 192x192 and a 512x512 PNG. Read more: ${MANIFEST_VALID_REF}`,
-      ),
-    );
-  }
-
-  // A theme colour and a background colour, each a valid CSS colour.
-  if (!hasMember(manifest, 'theme_color')) {
-    findings.push(
-      finding(
-        'error',
-        `The manifest has no "theme_color"; add one so the browser UI is themed when the app is installed. Read more: ${MANIFEST_VALID_REF}`,
-      ),
-    );
-  }
-  if (
-    hasMember(manifest, 'theme_color') &&
-    !isValidColor(manifest.theme_color)
-  ) {
-    findings.push(
-      finding(
-        'warning',
-        `The manifest "theme_color" is not a valid CSS colour. Read more: ${MANIFEST_VALID_REF}`,
-      ),
-    );
-  }
-
-  if (!hasMember(manifest, 'background_color')) {
-    findings.push(
-      finding(
-        'error',
-        `The manifest has no "background_color"; add one so the splash screen has a background before the app paints. Read more: ${MANIFEST_VALID_REF}`,
-      ),
-    );
-  }
-  if (
-    hasMember(manifest, 'background_color') &&
-    !isValidColor(manifest.background_color)
-  ) {
-    findings.push(
-      finding(
-        'warning',
-        `The manifest "background_color" is not a valid CSS colour. Read more: ${MANIFEST_VALID_REF}`,
-      ),
-    );
-  }
-
   // Recommended members (informational) ------------------------------------
   const recommended: ReadonlyArray<{ key: string; advice: string }> = [
     {
@@ -250,22 +141,119 @@ export function manifestValid(text: string, mediaType: string): Finding[] {
       advice: 'add "description" to describe the app in install UI',
     },
   ];
-  for (const { key, advice } of recommended) {
-    const present =
-      key === 'shortcuts' || key === 'screenshots'
-        ? hasNonEmptyArray(manifest, key)
-        : hasMember(manifest, key);
-    if (!present) {
-      findings.push(
-        finding(
-          'hint',
-          `The manifest has no "${key}"; ${advice}. Read more: ${MANIFEST_VALID_REF}`,
-        ),
-      );
-    }
-  }
+  return [
+    // The media type the manifest is served as. Browsers accept other types, so
+    // this is advice, not a hard failure.
+    ...(mediaType.trim().toLowerCase() === MANIFEST_MEDIA_TYPE
+      ? []
+      : [
+          finding(
+            'warning',
+            `The manifest is served as "${mediaType || 'no media type'}" but should be "${MANIFEST_MEDIA_TYPE}". Read more: ${MANIFEST_VALID_REF}`,
+          ),
+        ]),
+    // Required members (install criteria) ------------------------------------
+    // A name: either `name` or `short_name` must be present.
+    ...(readString(manifest, 'name') === null &&
+    readString(manifest, 'short_name') === null
+      ? [
+          finding(
+            'error',
+            `The manifest has no "name" or "short_name"; add at least one so the installed app has a label. Read more: ${MANIFEST_VALID_REF}`,
+          ),
+        ]
+      : []),
 
-  return findings;
+    // A start URL to open when the app launches.
+    ...(readString(manifest, 'start_url') === null
+      ? [
+          finding(
+            'error',
+            `The manifest has no "start_url"; add the URL the app should open at when launched. Read more: ${MANIFEST_VALID_REF}`,
+          ),
+        ]
+      : []),
+
+    // A display mode, which must be one of the spec's values.
+    ...(hasMember(manifest, 'display')
+      ? []
+      : [
+          finding(
+            'error',
+            `The manifest has no "display"; set it to one of ${DISPLAY_VALUES.join(', ')}. Read more: ${MANIFEST_VALID_REF}`,
+          ),
+        ]),
+    ...(hasMember(manifest, 'display') && !isValidDisplay(manifest.display)
+      ? [
+          finding(
+            'error',
+            `The manifest "display" is invalid; it must be one of ${DISPLAY_VALUES.join(', ')}. Read more: ${MANIFEST_VALID_REF}`,
+          ),
+        ]
+      : []),
+
+    // An icons member (the specific sizes are checked by `manifestIcons`).
+    ...(hasNonEmptyArray(manifest, 'icons')
+      ? []
+      : [
+          finding(
+            'error',
+            `The manifest has no "icons"; add an icons array with at least a 192x192 and a 512x512 PNG. Read more: ${MANIFEST_VALID_REF}`,
+          ),
+        ]),
+
+    // A theme colour and a background colour, each a valid CSS colour.
+    ...(hasMember(manifest, 'theme_color')
+      ? []
+      : [
+          finding(
+            'error',
+            `The manifest has no "theme_color"; add one so the browser UI is themed when the app is installed. Read more: ${MANIFEST_VALID_REF}`,
+          ),
+        ]),
+    ...(hasMember(manifest, 'theme_color') &&
+    !isValidColor(manifest.theme_color)
+      ? [
+          finding(
+            'warning',
+            `The manifest "theme_color" is not a valid CSS colour. Read more: ${MANIFEST_VALID_REF}`,
+          ),
+        ]
+      : []),
+
+    ...(hasMember(manifest, 'background_color')
+      ? []
+      : [
+          finding(
+            'error',
+            `The manifest has no "background_color"; add one so the splash screen has a background before the app paints. Read more: ${MANIFEST_VALID_REF}`,
+          ),
+        ]),
+    ...(hasMember(manifest, 'background_color') &&
+    !isValidColor(manifest.background_color)
+      ? [
+          finding(
+            'warning',
+            `The manifest "background_color" is not a valid CSS colour. Read more: ${MANIFEST_VALID_REF}`,
+          ),
+        ]
+      : []),
+
+    ...recommended.flatMap(({ key, advice }) => {
+      const present =
+        key === 'shortcuts' || key === 'screenshots'
+          ? hasNonEmptyArray(manifest, key)
+          : hasMember(manifest, key);
+      return present
+        ? []
+        : [
+            finding(
+              'hint',
+              `The manifest has no "${key}"; ${advice}. Read more: ${MANIFEST_VALID_REF}`,
+            ),
+          ];
+    }),
+  ];
 }
 
 /**
@@ -280,22 +268,22 @@ export function manifestIcons(text: string): Finding[] {
     return [];
   }
   const icons = readIcons(manifest);
-  const findings: Finding[] = [];
-  if (!hasPngIconOfSize(icons, 192)) {
-    findings.push(
-      finding(
-        'error',
-        `The manifest declares no 192x192 PNG icon; add one (type "image/png", sizes "192x192") for the home-screen icon. Read more: ${MANIFEST_ICONS_REF}`,
-      ),
-    );
-  }
-  if (!hasPngIconOfSize(icons, 512)) {
-    findings.push(
-      finding(
-        'error',
-        `The manifest declares no 512x512 PNG icon; add one (type "image/png", sizes "512x512") for the splash screen. Read more: ${MANIFEST_ICONS_REF}`,
-      ),
-    );
-  }
-  return findings;
+  return [
+    ...(hasPngIconOfSize(icons, 192)
+      ? []
+      : [
+          finding(
+            'error',
+            `The manifest declares no 192x192 PNG icon; add one (type "image/png", sizes "192x192") for the home-screen icon. Read more: ${MANIFEST_ICONS_REF}`,
+          ),
+        ]),
+    ...(hasPngIconOfSize(icons, 512)
+      ? []
+      : [
+          finding(
+            'error',
+            `The manifest declares no 512x512 PNG icon; add one (type "image/png", sizes "512x512") for the splash screen. Read more: ${MANIFEST_ICONS_REF}`,
+          ),
+        ]),
+  ];
 }

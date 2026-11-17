@@ -7,7 +7,8 @@ import {
   hreflangSelf,
   hreflangValidCodes,
   hreflangXDefault,
-  paginationRel as paginationRelationship,
+  // eslint-disable-next-line unicorn/prevent-abbreviations -- the name the source module exports
+  paginationRel,
 } from '../../../src/lib/i18n/checks.js';
 import type { DocumentLike } from '../../../src/lib/i18n/read.js';
 
@@ -183,7 +184,7 @@ describe('alternateMedia', () => {
 describe('paginationRel', () => {
   it('passes well-formed prev/next links', () => {
     expect(
-      paginationRelationship(
+      paginationRel(
         parse(
           '<link rel="prev" href="https://x.test/1">' +
             '<link rel="next" href="https://x.test/3">',
@@ -193,8 +194,8 @@ describe('paginationRel', () => {
   });
 
   it('warns for a non-absolute next and a blank prev', () => {
-    const findings = paginationRelationship(
-      parse('<link rel="prev" href="">' + '<link rel="next" href="/3">'),
+    const findings = paginationRel(
+      parse('<link rel="prev" href=""><link rel="next" href="/3">'),
     );
     expect(findings).toHaveLength(2);
     expect(findings.map((f) => f.severity)).toEqual(['warning', 'warning']);

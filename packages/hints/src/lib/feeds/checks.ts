@@ -17,14 +17,11 @@
  * `warning`. The "is the linked document actually valid?" question needs a
  * fetch and lives in `validate.ts`, driven only by the webhint `*-valid` hints.
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
 import { isAbsoluteUrl } from '../files/issue.js';
-import {
-  getFeedLinks,
-  getOembedLinks,
-  getOpenSearchLinks,
-  type DocumentLike,
-} from './read.js';
+import { getFeedLinks, getOembedLinks, getOpenSearchLinks } from './read.js';
+import type { Finding } from '../headers/finding.js';
+import type { DocumentLike } from './read.js';
 
 // ---- Reference links (shared with each hint's `reference` metadata) --------
 /** RSS 2.0 autodiscovery, as defined by the RSS Advisory Board. */

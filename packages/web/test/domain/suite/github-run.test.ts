@@ -17,7 +17,6 @@ import {
 import { forgetIssue, issueOf, latestRuns } from '@/domain/db/suite';
 import { GitHubApi } from '@/domain/github/api';
 import { readGitHubConfig } from '@/domain/github/config';
-import type { Deployment } from '@/domain/suite/deploy';
 import {
   CONFIG_MAX_BYTES,
   handleDeployment,
@@ -25,24 +24,25 @@ import {
 } from '@/domain/suite/github-run';
 import { MAX_NEW_ISSUES } from '@/domain/suite/publish';
 import { RULE_SETS } from '@/domain/suite/rules';
-import type { SuiteRun } from '@/domain/suite/run';
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 import { GITHUB_ENV } from '../github/github-test-kit';
+import type { SuiteRun } from '@/domain/suite/run';
+import type { Deployment } from '@/domain/suite/deploy';
 
 /** Shared collator for locale-aware ordering. */
 const collator = new Intl.Collator();
 
 /** Matches a contents API path with its ref query. */
-const CONTENTS_REQUEST_PATH = /\/contents\/([^?]+)\?ref=(.+)$/;
+const CONTENTS_REQUEST_PATH = /\/contents\/([^?]+)\?ref=(.+)$/u;
 /** Matches the unreadable plumbline.yaml message. */
 const YAML_UNREADABLE_MESSAGE =
-  /^plumbline\.yaml could not be read from GitHub/;
+  /^plumbline\.yaml could not be read from GitHub/u;
 /** Matches the issue title format. */
-const ISSUE_TITLE = /^\[Plumbline\] .+ on site\.test$/;
+const ISSUE_TITLE = /^\[Plumbline\] .+ on site\.test$/u;
 /** Matches a run report link. */
-const RUN_REPORT_LINK = /^https:\/\/plumbline\.test\/r\/[0-9a-f-]{36}$/;
+const RUN_REPORT_LINK = /^https:\/\/plumbline\.test\/r\/[0-9a-f-]{36}$/u;
 
 const config = readGitHubConfig(GITHUB_ENV)!;
 
@@ -194,7 +194,7 @@ describe('loadConfig', () => {
 
 describe('loadConfig, a file that is too long', () => {
   it('is ignored with a sentence that says why', async () => {
-    const huge = '# ' + 'x'.repeat(CONFIG_MAX_BYTES + 10);
+    const huge = `# ${'x'.repeat(CONFIG_MAX_BYTES + 10)}`;
     const { fetcher } = github({ 'plumbline.yaml': huge });
     const result = await loadConfig(
       new GitHubApi('t', fetcher),
@@ -667,8 +667,9 @@ describe('handleDeployment, the life of the issues', () => {
       body: { state: 'closed', state_reason: 'not_planned' },
     });
     const note = next.calls.find((c) => c.path.endsWith('/comments'));
-    expect(String(note?.body['body'])).toContain('turned off by the rules');
-    expect(String(note?.body['body'])).toContain(
+    const noteBody = String(note?.body['body']);
+    expect(noteBody).toContain('turned off by the rules');
+    expect(noteBody).toContain(
       '[`plumbline.yaml`](https://github.com/acme/site/blob/rules99/plumbline.yaml)',
     );
     const issueRow = await issueOf(
@@ -771,7 +772,7 @@ describe('handleDeployment, the life of the issues', () => {
       run: failing(),
       pause,
     });
-    expect(pause).toHaveBeenCalled();
+    expect(pause.mock.calls.length).toBeGreaterThan(0);
   });
 
   it('logs a failure to tidy up the issues and does not throw', async () => {

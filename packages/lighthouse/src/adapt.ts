@@ -10,18 +10,15 @@
  * compiled output keeps this package's own `rootDir` at `src`, so the audits
  * still emit to `dist/audits/*.js` as the plugin manifest references them.
  */
+// `metaContents` reads the `content` of matching `<meta>` tags; reused so the
+// cross-origin audits read `<meta http-equiv>` exactly as the webhint hints do.
+import { metaContents } from '@mridang/webhint-hint-plumbline/dist/lib/headers/http-headers.js';
+// The header bag shape the header checks accept: values may repeat (an array).
+import type { HeaderBag } from '@mridang/webhint-hint-plumbline/dist/lib/headers/http-headers.js';
 // `NetworkRequest` lives inside the `Artifacts` namespace of Lighthouse's
 // type-only artifacts module (there is no runtime file, so this is a type
 // import). It is the record shape `NetworkRecords` yields.
 import type { Artifacts } from 'lighthouse/types/artifacts.js';
-
-type NetworkRequest = Artifacts.NetworkRequest;
-
-// The header bag shape the header checks accept: values may repeat (an array).
-import type { HeaderBag } from '@mridang/webhint-hint-plumbline/dist/lib/headers/http-headers.js';
-// `metaContents` reads the `content` of matching `<meta>` tags; reused so the
-// cross-origin audits read `<meta http-equiv>` exactly as the webhint hints do.
-import { metaContents } from '@mridang/webhint-hint-plumbline/dist/lib/headers/http-headers.js';
 // The structural DOM the Open Graph reader needs (querySelectorAll('meta')).
 import type { MetaDocument } from '@mridang/webhint-hint-plumbline/dist/lib/opengraph/meta.js';
 
@@ -47,9 +44,9 @@ export interface MetaElementArtifact {
  * artifact) plus `URL.mainDocumentUrl` / `URL.finalDisplayedUrl`.
  */
 export function findMainDocument(
-  records: readonly NetworkRequest[],
+  records: readonly Artifacts.NetworkRequest[],
   mainDocumentUrl: string | undefined,
-): NetworkRequest | null {
+): Artifacts.NetworkRequest | null {
   const documents = records.filter(
     (record) => record.resourceType === 'Document',
   );
@@ -75,20 +72,18 @@ export function findMainDocument(
  *
  * Source artifact: `NetworkRequest.responseHeaders` of the main document.
  */
-export function headerBagFromRecord(record: NetworkRequest): HeaderBag {
-  const bag: HeaderBag = {};
-  for (const { name, value } of record.responseHeaders ?? []) {
-    const key = name.toLowerCase();
-    const existing = bag[key];
-    if (existing === undefined) {
-      bag[key] = value;
-    } else if (Array.isArray(existing)) {
-      existing.push(value);
-    } else {
-      bag[key] = [existing, value];
-    }
-  }
-  return bag;
+export function headerBagFromRecord(
+  record: Artifacts.NetworkRequest,
+): HeaderBag {
+  const headers = (record.responseHeaders ?? []).map(
+    ({ name, value }) => [name.toLowerCase(), value] as const,
+  );
+  return Object.fromEntries(
+    Array.from(new Set(headers.map(([key]) => key)), (key) => {
+      const values = headers.filter(([name]) => name === key).map(([, v]) => v);
+      return [key, values.length === 1 ? values[0] : values];
+    }),
+  );
 }
 
 /**
@@ -156,13 +151,12 @@ export function metaHttpEquivContents(
 export function cspMetaContents(
   metaElements: readonly MetaElementArtifact[],
 ): string[] {
-  return metaElements
-    .filter(
-      (meta) =>
-        (meta.httpEquiv ?? '').trim().toLowerCase() ===
-          'content-security-policy' && (meta.content ?? '').trim() !== '',
-    )
-    .map((meta) => (meta.content ?? '').trim());
+  return metaElements.flatMap((meta) =>
+    (meta.httpEquiv ?? '').trim().toLowerCase() === 'content-security-policy' &&
+    (meta.content ?? '').trim() !== ''
+      ? [(meta.content ?? '').trim()]
+      : [],
+  );
 }
 
 /**
@@ -175,11 +169,13 @@ export function cspMetaContents(
 export function referrerSources(
   metaElements: readonly MetaElementArtifact[],
   headerValues: string[],
-): { metaName: string[]; metaHttpEquiv: string[]; header: string[] } {
+) {
   const contentWhere = (predicate: (m: MetaElementArtifact) => boolean) =>
-    metaElements
-      .filter((meta) => predicate(meta) && (meta.content ?? '').trim() !== '')
-      .map((meta) => (meta.content ?? '').trim());
+    metaElements.flatMap((meta) =>
+      predicate(meta) && (meta.content ?? '').trim() !== ''
+        ? [(meta.content ?? '').trim()]
+        : [],
+    );
   return {
     metaName: contentWhere(
       (meta) => (meta.name ?? '').trim().toLowerCase() === 'referrer',

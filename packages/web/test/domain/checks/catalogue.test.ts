@@ -23,10 +23,10 @@ import {
 } from '@/domain/checks/catalogue';
 
 /** Matches http url prefix. */
-const HTTP_URL_PREFIX = /^https?:\/\//;
+const HTTP_URL_PREFIX = /^https?:\/\//u;
 
 /** Matches year month format. */
-const YEAR_MONTH_FORMAT = /^\d{4}-\d{2}$/;
+const YEAR_MONTH_FORMAT = /^\d{4}-\d{2}$/u;
 
 const ALL = CHECKS.map((check) => check.id);
 

@@ -1,18 +1,14 @@
 'use client';
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ReactElement,
-  type SubmitEvent,
-} from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { problemText } from '@/components/api/problem-message';
 import { runScan } from '@/domain/scan/session';
 
-import { ScanResults, type Scan } from './scan-results';
+import { ScanResults } from './scan-results';
+import type { ReactElement, SubmitEvent } from 'react';
+import type { Scan } from './scan-results';
 
 /** Where the scan is. */
 export type ScanState =
@@ -29,15 +25,18 @@ export interface ScanRequest {
   readonly onFinished?: (scan: Scan) => void;
 }
 
+/** What a page gets from {@link useScan}: the state to draw and the way to start a scan. */
+export interface ScanRun {
+  readonly state: ScanState;
+  readonly run: (domain: string) => Promise<void>;
+}
+
 /**
  * Run scans from a page: the state to draw, and a function that starts one.
  * Outcomes are shown as they arrive; once every check has run the finished
  * scan is handed to `onFinished` (to save it, say).
  */
-export function useScan({ only, onFinished }: ScanRequest = {}): {
-  readonly state: ScanState;
-  readonly run: (domain: string) => Promise<void>;
-} {
+export function useScan({ only, onFinished }: ScanRequest = {}): ScanRun {
   const [state, setState] = useState<ScanState>({ kind: 'idle' });
 
   const run = async (value: string): Promise<void> => {
@@ -49,6 +48,7 @@ export function useScan({ only, onFinished }: ScanRequest = {}): {
     const startedAt = Date.now();
     // The scan as it builds up, kept here as well so the finished one can be
     // handed on without waiting for a render.
+    // eslint-disable-next-line functional/no-let -- updated by the callbacks of the running scan
     let current: Scan | undefined;
     const show = (scan: Scan): void => {
       current = scan;
@@ -156,10 +156,12 @@ export function Scanner({
     if (started.current) {
       return;
     }
+    // eslint-disable-next-line functional/immutable-data -- a ref is written by assignment
     started.current = true;
     const given = new URLSearchParams(globalThis.location.search).get('domain');
     // A shared link starts its scan by submitting the form, as a click would.
     if (given && input.current) {
+      // eslint-disable-next-line functional/immutable-data -- sets the value of the form field itself
       input.current.value = given;
       input.current.form?.requestSubmit();
     }
@@ -183,6 +185,7 @@ export function Scanner({
         </label>
         <input
           id="domain"
+          aria-label="Domain or URL"
           name="domain"
           type="text"
           inputMode="url"

@@ -16,11 +16,11 @@
  * the event, and that is logged, never raised.
  */
 
-import type { GitHubApi } from '@/domain/github/api';
 import { GitHubError } from '@/domain/github/api';
+import { conclusionOf, countsOf, safeText } from '@/domain/suite/report';
+import type { GitHubApi } from '@/domain/github/api';
 import type { Environment } from '@/domain/suite/config';
 import type { StoredFinding } from '@/domain/suite/diff';
-import { conclusionOf, countsOf, safeText } from '@/domain/suite/report';
 
 /** The most findings carried in an event. */
 export const MAX_DISPATCHED = 10;
@@ -41,7 +41,7 @@ export interface DispatchRun {
 }
 
 /** The `client_payload` of an event: at most ten properties, all plain data. */
-export function payloadOf(run: Readonly<DispatchRun>): Record<string, unknown> {
+export function payloadOf(run: Readonly<DispatchRun>) {
   const { errors, warnings, hints } = countsOf(run.findings);
   return {
     version: 1,
@@ -74,6 +74,7 @@ export async function dispatchRun(
   run: Readonly<DispatchRun>,
 ): Promise<void> {
   const payload = payloadOf(run);
+  // eslint-disable-next-line functional/no-loop-statements -- events go out in order, and the first failure stops the rest
   for (const event of eventsFor(run)) {
     try {
       await api.dispatchEvent(run.repo, event, payload);

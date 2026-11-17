@@ -6,7 +6,8 @@
  * applies it when `enforce` is switched on. The directives are compared as a
  * set, so their order does not matter.
  */
-import { finding, type Finding } from './finding.js';
+import { finding } from './finding.js';
+import type { Finding } from './finding.js';
 
 const REQUIRED = ['no-store', 'max-age=0'];
 

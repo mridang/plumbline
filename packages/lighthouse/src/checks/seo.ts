@@ -37,9 +37,6 @@
  * webhint check also falls back to fetching `/favicon.ico`, a request a plugin
  * cannot make, so only the declared `<link>`s are inspected here.
  */
-import type { Artifacts } from 'lighthouse';
-import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
-import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/seo/read.js';
 // The single-source SEO/favicon rules: predicate + message + severity. Both
 // this check and the webhint hints call these, so neither restates the wording.
 import {
@@ -62,10 +59,6 @@ import {
   titleTooLong,
   titleTooShort,
 } from '@mridang/webhint-hint-plumbline/dist/lib/seo/checks.js';
-import { mainResponse } from '../network.js';
-import { httpHeadersFromBag, seoDocument } from '../adapt-seo.js';
-import { hintDocumentation } from '../meta.js';
-import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); their check logic is reused through the
@@ -88,6 +81,13 @@ import iconsFaviconMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/
 import iconsFaviconIcoOrPngMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/icons-favicon-ico-or-png-missing.js';
 import iconsFavicon32MissingHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/icons-favicon-32-missing.js';
 import iconsFaviconSvgMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/seo/icons-favicon-svg-missing.js';
+import { hintDocumentation } from '../meta.js';
+import { httpHeadersFromBag, seoDocument } from '../adapt-seo.js';
+import { mainResponse } from '../network.js';
+import type { AuditCheck } from './types.js';
+import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/seo/read.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import type { Artifacts } from 'lighthouse';
 
 /** The artifact sets the SEO checks read, named for the rule that reads them. */
 const HTML_ONLY = ['MainDocumentContent', 'URL'] as const;

@@ -10,8 +10,8 @@
  * `domain` means from one tool should not meet a different rule in the next.
  */
 
-import { NOT_BLANK } from '@/lib/mcp';
 import { z } from 'zod';
+import { NOT_BLANK } from '@/lib/mcp';
 
 /**
  * The `_meta` that links a tool to the View that draws its result, and the
@@ -131,12 +131,12 @@ export const DOMAIN = z
   .string()
   .min(1)
   .max(2048)
-  .regex(new RegExp(NOT_BLANK))
+  .regex(new RegExp(NOT_BLANK, 'u'))
   .describe('The domain, such as example.com, or any URL on it.');
 
 /** A list of check ids or group names. */
 export const CHECK_NAMES = z
-  .array(z.string().min(1).max(100).regex(new RegExp(NOT_BLANK)))
+  .array(z.string().min(1).max(100).regex(new RegExp(NOT_BLANK, 'u')))
   .max(500);
 
 /** The furthest into a result an `offset` may reach. */

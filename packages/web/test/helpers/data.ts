@@ -7,7 +7,9 @@ async function load(name: string): Promise<Map<string, string>> {
   const table = new Map<string, string>();
   if (typeof parsed === 'object' && parsed !== null) {
     for (const [key, value] of Object.entries(parsed)) {
-      if (typeof value === 'string') table.set(key, value);
+      if (typeof value === 'string') {
+        table.set(key, value);
+      }
     }
   }
   return table;
@@ -15,7 +17,9 @@ async function load(name: string): Promise<Map<string, string>> {
 
 function pick(table: Map<string, string>, key: string): string {
   const value = table.get(key);
-  if (value === undefined) throw new Error(`Missing test data: ${key}`);
+  if (value === undefined) {
+    throw new Error(`Missing test data: ${key}`);
+  }
   return value;
 }
 

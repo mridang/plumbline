@@ -6,6 +6,7 @@
  * a test.
  */
 
+import { countOf } from '@/lib/intl';
 import type { Counts } from '@/domain/db/live';
 
 /** The problems of a check: errors and warnings (hints are only advice). */
@@ -15,7 +16,7 @@ export function problemsIn(counts: Readonly<Counts>): number {
 
 /** `1 problem` or `3 problems`. */
 function problems(n: number): string {
-  return `${n} problem${n === 1 ? '' : 's'}`;
+  return countOf(n, 'problem');
 }
 
 /** A notification: its title and its body. */

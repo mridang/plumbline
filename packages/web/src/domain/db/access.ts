@@ -12,8 +12,8 @@
 
 import { and, eq, gt, sql } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import { userRepositories } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 
 /** How long what GitHub said about a person's access is honoured, in milliseconds. */
 export const ACCESS_TTL_MS = 12 * 60 * 60 * 1000;

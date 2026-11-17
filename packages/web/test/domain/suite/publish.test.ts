@@ -12,8 +12,6 @@ import {
   legacyIssueOf,
   saveIssue,
 } from '@/domain/db/suite';
-import type { StoredFinding } from '@/domain/suite/diff';
-import type { Level } from '@/domain/suite/rules';
 import {
   CHECK_NAME,
   ISSUE_LABEL,
@@ -27,18 +25,20 @@ import {
   publishUnreachable,
   signatureOf,
   syncIssues,
-  type SiteReport,
 } from '@/domain/suite/publish';
 
 import { github, lines, said } from '../../helpers/fake-github';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
+import type { SiteReport } from '@/domain/suite/publish';
+import type { Level } from '@/domain/suite/rules';
+import type { StoredFinding } from '@/domain/suite/diff';
 
 /** Matches a lowercase hexadecimal string of 16 characters. */
-const HEX_16_PATTERN = /^[0-9a-f]{16}$/;
+const HEX_16_PATTERN = /^[0-9a-f]{16}$/u;
 
 /** Matches the title of an issue raised for the site. */
-const ISSUE_TITLE_PATTERN = /^\[Plumbline\] .+ on site\.test$/;
+const ISSUE_TITLE_PATTERN = /^\[Plumbline\] .+ on site\.test$/u;
 
 const database = () => createDatabase(sqliteD1(...APP_MIGRATIONS).d1);
 
@@ -116,10 +116,9 @@ describe('signatureOf', () => {
   });
 
   it('differs when the findings differ', async () => {
-    expect(await signatureOf([error])).not.toBe(await signatureOf([other]));
-    expect(await signatureOf([error])).not.toBe(
-      await signatureOf([error, other]),
-    );
+    const signature = await signatureOf([error]);
+    expect(signature).not.toBe(await signatureOf([other]));
+    expect(signature).not.toBe(await signatureOf([error, other]));
   });
 });
 
@@ -626,7 +625,7 @@ describe('syncIssues: when the rules change', () => {
     const db = database();
     await open(db, 'seo-viewport', 12);
     const { api, requests } = github();
-    await syncIssues(api, db, report([], { levels: new Map() }));
+    await syncIssues(api, db, report([], { levels: new Map<string, Level>() }));
     expect(said(requests)[0]).toContain('turned off by the rules');
   });
 

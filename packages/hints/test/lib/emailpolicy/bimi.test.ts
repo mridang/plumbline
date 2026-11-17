@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
-import type { TxtLookup } from '../../../src/lib/email/txt.js';
 import { checkBimi } from '../../../src/lib/emailpolicy/bimi.js';
 import { HTTP_SCHEME } from '../../helpers/data.js';
+import type { TxtLookup } from '../../../src/lib/email/txt.js';
 
 const ok = (records: string[]): TxtLookup => ({ status: 'ok', records });
 

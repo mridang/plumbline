@@ -65,88 +65,79 @@ function checkKey(keyType: 'rsa' | 'ed25519', base64: string): string | null {
 
 /** Parses and validates one DKIM key record. */
 export function parseDkim(record: string): DkimRecord {
-  const errors: string[] = [];
-  const result: DkimRecord = {
-    valid: false,
-    revoked: false,
-    testing: false,
-    keyType: null,
-    errors,
-  };
-
   const pieces = record.split(';').map((piece) => piece.trim());
   // A tag-list may end in a semicolon.
-  if (pieces.at(-1) === '') {
-    pieces.pop();
-  }
-  const tags = new Map<string, string>();
-  for (const [index, piece] of pieces.entries()) {
-    const match = TAG_VALUE_PAIR.exec(piece);
+  const tagPieces = pieces.at(-1) === '' ? pieces.slice(0, -1) : pieces;
+  const pairs = tagPieces.map((piece) => TAG_VALUE_PAIR.exec(piece));
+  const tagErrors = tagPieces.flatMap((piece, index) => {
+    const match = pairs[index];
     if (!match) {
-      errors.push(`'${piece}' is not a tag=value pair.`);
-    } else if (tags.has(match[1])) {
-      errors.push(`The '${match[1]}' tag appears more than once.`);
-    } else {
-      const name = match[1];
-      if (name === 'v' && index !== 0) {
-        errors.push("The 'v' tag must come first.");
-      }
-      tags.set(name, match[2].trim());
+      return [`'${piece}' is not a tag=value pair.`];
     }
-  }
-  // Unknown tags are ignored by verifiers, so they are not an error.
+    if (pairs.slice(0, index).some((earlier) => earlier?.[1] === match[1])) {
+      return [`The '${match[1]}' tag appears more than once.`];
+    }
+    return match[1] === 'v' && index !== 0
+      ? ["The 'v' tag must come first."]
+      : [];
+  });
+  // Unknown tags are ignored by verifiers, so they are not an error. A
+  // repeated tag keeps its first value.
+  const tags = new Map(
+    pairs.flatMap((match, index): [string, string][] =>
+      match &&
+      !pairs.slice(0, index).some((earlier) => earlier?.[1] === match[1])
+        ? [[match[1], match[2].trim()]]
+        : [],
+    ),
+  );
 
   const version = tags.get('v');
-  if (version !== undefined && version !== 'DKIM1') {
-    errors.push("The 'v' tag must be 'DKIM1'.");
-  }
-
   const kind = (tags.get('k') ?? 'rsa').toLowerCase();
-  if (kind === 'rsa' || kind === 'ed25519') {
-    result.keyType = kind;
-  } else {
-    errors.push(`The key type '${kind}' is not supported.`);
-  }
-
+  const keyType = kind === 'rsa' || kind === 'ed25519' ? kind : null;
   const key = tags.get('p');
-  if (key === undefined) {
-    errors.push("The required 'p' tag is missing.");
-  } else if (key === '') {
-    // An empty key revokes the selector.
-    result.revoked = true;
-    errors.push('The key is revoked: the p tag is empty.');
-  } else if (result.keyType) {
-    // Whitespace inside the base64 is folding and is ignored.
-    const problem = checkKey(result.keyType, key.replaceAll(/\s+/gu, ''));
-    if (problem) {
-      errors.push(problem);
-    }
-  } else {
-    // An unsupported key type is already reported above.
-  }
-
+  // Whitespace inside the base64 is folding and is ignored; an unsupported
+  // key type is already reported.
+  const keyProblem =
+    key !== undefined && key !== '' && keyType
+      ? checkKey(keyType, key.replaceAll(/\s+/gu, ''))
+      : null;
   const hashes = tags.get('h');
-  if (hashes !== undefined && !HASH_ALGORITHM_LIST.test(hashes)) {
-    errors.push("The 'h' tag must be a colon separated list of hash names.");
-  }
   const services = tags.get('s');
-  if (services !== undefined && !SERVICE_TYPE_LIST.test(services)) {
-    errors.push(
-      "The 's' tag must be '*' or a colon separated list of services.",
-    );
-  }
   const flags = tags.get('t');
-  if (flags !== undefined) {
-    if (FLAG_LIST.test(flags)) {
-      result.testing = flags
+  const flagsValid = flags !== undefined && FLAG_LIST.test(flags);
+
+  const errors = [
+    ...tagErrors,
+    version !== undefined &&
+      version !== 'DKIM1' &&
+      "The 'v' tag must be 'DKIM1'.",
+    keyType === null && `The key type '${kind}' is not supported.`,
+    key === undefined && "The required 'p' tag is missing.",
+    // An empty key revokes the selector.
+    key === '' && 'The key is revoked: the p tag is empty.',
+    keyProblem,
+    hashes !== undefined &&
+      !HASH_ALGORITHM_LIST.test(hashes) &&
+      "The 'h' tag must be a colon separated list of hash names.",
+    services !== undefined &&
+      !SERVICE_TYPE_LIST.test(services) &&
+      "The 's' tag must be '*' or a colon separated list of services.",
+    flags !== undefined &&
+      !flagsValid &&
+      "The 't' tag must be a colon separated list of flags.",
+  ].filter((error) => typeof error === 'string');
+
+  return {
+    valid: errors.length === 0,
+    revoked: key === '',
+    testing:
+      flagsValid &&
+      flags
         .split(':')
         .map((flag) => flag.trim().toLowerCase())
-        .includes('y');
-    } else {
-      errors.push("The 't' tag must be a colon separated list of flags.");
-    }
-  }
-
-  result.valid = errors.length === 0;
-  return result;
+        .includes('y'),
+    keyType,
+    errors,
+  };
 }

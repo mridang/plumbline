@@ -5,8 +5,8 @@
  * facts to the browsers watching it.
  */
 
-import type { UserHub } from './user-hub';
 import { errorMessage, logWarn } from '@/utils/logging';
+import type { UserHub } from './user-hub';
 
 /** The Durable Object namespace holding one hub per person. */
 export type HubNamespace = DurableObjectNamespace<UserHub>;

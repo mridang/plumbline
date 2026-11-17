@@ -16,8 +16,7 @@
  * its recommended properties are checked (a missing one is a `warning`). Google
  * documents what is required per type; each function links the matching page.
  */
-import type { JsonLdBlocks } from '../geo/json-ld.js';
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
 import {
   asObject,
   findNodesOfType,
@@ -26,6 +25,8 @@ import {
   nodeHasAnyType,
   typeLabel,
 } from './nodes.js';
+import type { Finding } from '../headers/finding.js';
+import type { JsonLdBlocks } from '../geo/json-ld.js';
 
 /** Base of every Google rich-results documentation page. */
 const BASE =
@@ -90,21 +91,21 @@ function validateFlat(
   recommended: readonly string[],
   parsedDocument: string,
 ): Finding[] {
-  const findings: Finding[] = [];
-  for (const node of nodesOfType(blocks, types)) {
+  return nodesOfType(blocks, types).flatMap((node) => {
     const label = typeLabel(node, fallbackLabel);
-    for (const property of required) {
-      if (!hasValue(node, property)) {
-        findings.push(missingRequired(label, property, parsedDocument));
-      }
-    }
-    for (const property of recommended) {
-      if (!hasValue(node, property)) {
-        findings.push(missingRecommended(label, property, parsedDocument));
-      }
-    }
-  }
-  return findings;
+    return [
+      ...required.flatMap((property) =>
+        hasValue(node, property)
+          ? []
+          : [missingRequired(label, property, parsedDocument)],
+      ),
+      ...recommended.flatMap((property) =>
+        hasValue(node, property)
+          ? []
+          : [missingRecommended(label, property, parsedDocument)],
+      ),
+    ];
+  });
 }
 
 /**
@@ -212,64 +213,52 @@ function offerFindings(
  * the three gets a recommendation to add one. Doc: {@link DOCS.product}.
  */
 export function productFindings(blocks: JsonLdBlocks): Finding[] {
-  const findings: Finding[] = [];
   const parsedDocument = DOCS.product;
-  for (const node of nodesOfType(blocks, ['Product'])) {
+  return nodesOfType(blocks, ['Product']).flatMap((node) => {
     const label = typeLabel(node, 'Product');
-    if (!hasValue(node, 'name')) {
-      findings.push(missingRequired(label, 'name', parsedDocument));
-    }
-    if (!hasValue(node, 'image')) {
-      findings.push(missingRecommended(label, 'image', parsedDocument));
-    }
-
     const hasOffers = hasValue(node, 'offers');
     const hasReview = hasValue(node, 'review');
     const hasAggregate = hasValue(node, 'aggregateRating');
-    if (!hasOffers && !hasReview && !hasAggregate) {
-      findings.push(
-        finding(
-          'warning',
-          `The ${label} structured data has no "offers", "review" or "aggregateRating". Add at least one so the product is eligible for a rich result. Read more: ${parsedDocument}`,
-        ),
-      );
-    }
-
-    if (hasOffers) {
-      const offer = firstObject(node, 'offers');
-      if (offer) {
-        findings.push(...offerFindings(label, offer, parsedDocument));
-      }
-    }
-
-    if (hasAggregate) {
-      const rating = firstObject(node, 'aggregateRating');
-      if (rating && !hasValue(rating, 'ratingValue')) {
-        findings.push(
-          missingRequired(
-            `${label} AggregateRating`,
-            'ratingValue',
-            parsedDocument,
-          ),
-        );
-      }
-    }
-
-    if (hasReview) {
-      const review = firstObject(node, 'review');
-      const reviewRating = review ? firstObject(review, 'reviewRating') : null;
-      if (review && (!reviewRating || !hasValue(reviewRating, 'ratingValue'))) {
-        findings.push(
-          missingRequired(
-            `${label} Review`,
-            'reviewRating.ratingValue',
-            parsedDocument,
-          ),
-        );
-      }
-    }
-  }
-  return findings;
+    const offer = hasOffers ? firstObject(node, 'offers') : null;
+    const rating = hasAggregate ? firstObject(node, 'aggregateRating') : null;
+    const review = hasReview ? firstObject(node, 'review') : null;
+    const reviewRating = review ? firstObject(review, 'reviewRating') : null;
+    return [
+      ...(hasValue(node, 'name')
+        ? []
+        : [missingRequired(label, 'name', parsedDocument)]),
+      ...(hasValue(node, 'image')
+        ? []
+        : [missingRecommended(label, 'image', parsedDocument)]),
+      ...(!hasOffers && !hasReview && !hasAggregate
+        ? [
+            finding(
+              'warning',
+              `The ${label} structured data has no "offers", "review" or "aggregateRating". Add at least one so the product is eligible for a rich result. Read more: ${parsedDocument}`,
+            ),
+          ]
+        : []),
+      ...(offer ? offerFindings(label, offer, parsedDocument) : []),
+      ...(rating && !hasValue(rating, 'ratingValue')
+        ? [
+            missingRequired(
+              `${label} AggregateRating`,
+              'ratingValue',
+              parsedDocument,
+            ),
+          ]
+        : []),
+      ...(review && (!reviewRating || !hasValue(reviewRating, 'ratingValue'))
+        ? [
+            missingRequired(
+              `${label} Review`,
+              'reviewRating.ratingValue',
+              parsedDocument,
+            ),
+          ]
+        : []),
+    ];
+  });
 }
 
 /**
@@ -279,52 +268,51 @@ export function productFindings(blocks: JsonLdBlocks): Finding[] {
  * element is an error. Doc: {@link DOCS.breadcrumb}.
  */
 export function breadcrumbFindings(blocks: JsonLdBlocks): Finding[] {
-  const findings: Finding[] = [];
   const parsedDocument = DOCS.breadcrumb;
-  for (const node of nodesOfType(blocks, ['BreadcrumbList'])) {
+  return nodesOfType(blocks, ['BreadcrumbList']).flatMap((node) => {
     const label = typeLabel(node, 'BreadcrumbList');
     const value = node.itemListElement;
     const items = Array.isArray(value)
       ? value
       : [value].filter((entry) => asObject(entry) !== null);
     if (items.length === 0) {
-      findings.push(missingRequired(label, 'itemListElement', parsedDocument));
-      continue;
+      return [missingRequired(label, 'itemListElement', parsedDocument)];
     }
-    for (const [index, raw] of items.entries()) {
+    return [...items.entries()].flatMap(([index, raw]) => {
       const item = asObject(raw);
       if (!item) {
-        continue;
-      }
-      if (!hasValue(item, 'position')) {
-        findings.push(
-          finding(
-            'error',
-            `The ${label} has a listItem without a "position". Number every breadcrumb item with "position". Read more: ${parsedDocument}`,
-          ),
-        );
-      }
-      if (!hasValue(item, 'name') && !hasValue(item, 'item')) {
-        findings.push(
-          finding(
-            'error',
-            `The ${label} has a listItem without a "name" or "item". Each breadcrumb needs a name (or an item carrying one). Read more: ${parsedDocument}`,
-          ),
-        );
+        return [];
       }
       // `item` is required for every element except the last (the current page).
       const isLast = index === items.length - 1;
-      if (!isLast && !hasValue(item, 'item') && !hasValue(item, 'name')) {
-        findings.push(
-          finding(
-            'error',
-            `The ${label} has a non-final listItem without an "item" URL. Link every breadcrumb but the last with "item". Read more: ${parsedDocument}`,
-          ),
-        );
-      }
-    }
-  }
-  return findings;
+      return [
+        ...(hasValue(item, 'position')
+          ? []
+          : [
+              finding(
+                'error',
+                `The ${label} has a listItem without a "position". Number every breadcrumb item with "position". Read more: ${parsedDocument}`,
+              ),
+            ]),
+        ...(!hasValue(item, 'name') && !hasValue(item, 'item')
+          ? [
+              finding(
+                'error',
+                `The ${label} has a listItem without a "name" or "item". Each breadcrumb needs a name (or an item carrying one). Read more: ${parsedDocument}`,
+              ),
+            ]
+          : []),
+        ...(!isLast && !hasValue(item, 'item') && !hasValue(item, 'name')
+          ? [
+              finding(
+                'error',
+                `The ${label} has a non-final listItem without an "item" URL. Link every breadcrumb but the last with "item". Read more: ${parsedDocument}`,
+              ),
+            ]
+          : []),
+      ];
+    });
+  });
 }
 
 /**
@@ -336,33 +324,29 @@ export function breadcrumbFindings(blocks: JsonLdBlocks): Finding[] {
  * {@link DOCS.jobposting}.
  */
 export function jobPostingFindings(blocks: JsonLdBlocks): Finding[] {
-  const findings: Finding[] = [];
   const parsedDocument = DOCS.jobposting;
-  for (const node of nodesOfType(blocks, ['JobPosting'])) {
+  return nodesOfType(blocks, ['JobPosting']).flatMap((node) => {
     const label = typeLabel(node, 'JobPosting');
-    for (const property of [
-      'title',
-      'description',
-      'datePosted',
-      'hiringOrganization',
-    ]) {
-      if (!hasValue(node, property)) {
-        findings.push(missingRequired(label, property, parsedDocument));
-      }
-    }
     const remote =
       typeof node.jobLocationType === 'string' &&
       node.jobLocationType.toUpperCase() === 'TELECOMMUTE';
-    if (!remote && !hasValue(node, 'jobLocation')) {
-      findings.push(missingRequired(label, 'jobLocation', parsedDocument));
-    }
-    for (const property of ['validThrough', 'baseSalary']) {
-      if (!hasValue(node, property)) {
-        findings.push(missingRecommended(label, property, parsedDocument));
-      }
-    }
-  }
-  return findings;
+    return [
+      ...['title', 'description', 'datePosted', 'hiringOrganization'].flatMap(
+        (property) =>
+          hasValue(node, property)
+            ? []
+            : [missingRequired(label, property, parsedDocument)],
+      ),
+      ...(!remote && !hasValue(node, 'jobLocation')
+        ? [missingRequired(label, 'jobLocation', parsedDocument)]
+        : []),
+      ...['validThrough', 'baseSalary'].flatMap((property) =>
+        hasValue(node, property)
+          ? []
+          : [missingRecommended(label, property, parsedDocument)],
+      ),
+    ];
+  });
 }
 
 /**
@@ -372,35 +356,37 @@ export function jobPostingFindings(blocks: JsonLdBlocks): Finding[] {
  * `ratingCount`/`reviewCount`. Doc: {@link DOCS.review}.
  */
 export function reviewFindings(blocks: JsonLdBlocks): Finding[] {
-  const findings: Finding[] = [];
   const parsedDocument = DOCS.review;
-  for (const node of nodesOfType(blocks, ['Review'])) {
-    const label = typeLabel(node, 'Review');
-    if (!hasValue(node, 'itemReviewed')) {
-      findings.push(missingRequired(label, 'itemReviewed', parsedDocument));
-    }
-    const reviewRating = firstObject(node, 'reviewRating');
-    if (!reviewRating || !hasValue(reviewRating, 'ratingValue')) {
-      findings.push(
-        missingRequired(label, 'reviewRating.ratingValue', parsedDocument),
-      );
-    }
-  }
-  for (const node of nodesOfType(blocks, ['AggregateRating'])) {
-    const label = typeLabel(node, 'AggregateRating');
-    if (!hasValue(node, 'ratingValue')) {
-      findings.push(missingRequired(label, 'ratingValue', parsedDocument));
-    }
-    if (!hasValue(node, 'ratingCount') && !hasValue(node, 'reviewCount')) {
-      findings.push(
-        finding(
-          'error',
-          `The ${label} structured data is missing a "ratingCount" or "reviewCount". Add one so the rating is eligible for a rich result. Read more: ${parsedDocument}`,
-        ),
-      );
-    }
-  }
-  return findings;
+  return [
+    ...nodesOfType(blocks, ['Review']).flatMap((node) => {
+      const label = typeLabel(node, 'Review');
+      const reviewRating = firstObject(node, 'reviewRating');
+      return [
+        ...(hasValue(node, 'itemReviewed')
+          ? []
+          : [missingRequired(label, 'itemReviewed', parsedDocument)]),
+        ...(!reviewRating || !hasValue(reviewRating, 'ratingValue')
+          ? [missingRequired(label, 'reviewRating.ratingValue', parsedDocument)]
+          : []),
+      ];
+    }),
+    ...nodesOfType(blocks, ['AggregateRating']).flatMap((node) => {
+      const label = typeLabel(node, 'AggregateRating');
+      return [
+        ...(hasValue(node, 'ratingValue')
+          ? []
+          : [missingRequired(label, 'ratingValue', parsedDocument)]),
+        ...(!hasValue(node, 'ratingCount') && !hasValue(node, 'reviewCount')
+          ? [
+              finding(
+                'error',
+                `The ${label} structured data is missing a "ratingCount" or "reviewCount". Add one so the rating is eligible for a rich result. Read more: ${parsedDocument}`,
+              ),
+            ]
+          : []),
+      ];
+    }),
+  ];
 }
 
 /**
@@ -411,9 +397,8 @@ export function reviewFindings(blocks: JsonLdBlocks): Finding[] {
  * {@link DOCS.searchaction}.
  */
 export function websiteSearchActionFindings(blocks: JsonLdBlocks): Finding[] {
-  const findings: Finding[] = [];
   const parsedDocument = DOCS.searchaction;
-  for (const node of nodesOfType(blocks, ['WebSite'])) {
+  return nodesOfType(blocks, ['WebSite']).flatMap((node) => {
     const label = typeLabel(node, 'WebSite');
     const raw = node.potentialAction;
     const actions = Array.isArray(raw)
@@ -424,19 +409,22 @@ export function websiteSearchActionFindings(blocks: JsonLdBlocks): Finding[] {
       .find((action) => action && nodeHasAnyType(action, ['SearchAction']));
     if (!search) {
       // No SearchAction present: the sitelinks search box is optional.
-      continue;
+      return [];
     }
-    if (!hasValue(search, 'target')) {
-      findings.push(
-        missingRequired(`${label} SearchAction`, 'target', parsedDocument),
-      );
-    }
-    // The property is spelled `query-input` in schema.org's action syntax.
-    if (!hasValue(search, 'query-input')) {
-      findings.push(
-        missingRequired(`${label} SearchAction`, 'query-input', parsedDocument),
-      );
-    }
-  }
-  return findings;
+    return [
+      ...(hasValue(search, 'target')
+        ? []
+        : [missingRequired(`${label} SearchAction`, 'target', parsedDocument)]),
+      // The property is spelled `query-input` in schema.org's action syntax.
+      ...(hasValue(search, 'query-input')
+        ? []
+        : [
+            missingRequired(
+              `${label} SearchAction`,
+              'query-input',
+              parsedDocument,
+            ),
+          ]),
+    ];
+  });
 }

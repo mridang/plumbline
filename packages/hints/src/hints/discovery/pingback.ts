@@ -4,10 +4,10 @@ import { onPage } from '../../core/page.js';
 import {
   domRelationshipLinks,
   headerRelationshipLinks,
-  type RelationshipLink,
 } from '../../lib/discovery/links.js';
 import { pingbackFindings } from '../../lib/discovery/pingback.js';
 import { reportFindings } from '../headers/shared.js';
+import type { RelationshipLink } from '../../lib/discovery/links.js';
 
 /**
  * Pingback: a legacy XML-RPC linkback advertised with

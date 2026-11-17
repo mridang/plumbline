@@ -30,9 +30,6 @@
  * The same applies to MDN headers that are advisory on a plugin run (`age`,
  * `alt-svc`, `server-timing`, `via`, `origin-agent-cluster` and `accept-ch`).
  */
-import type { Artifacts } from 'lighthouse';
-import type AuditNS from 'lighthouse/types/audit.js';
-import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import { finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import {
   firstHeader,
@@ -55,10 +52,7 @@ import {
   deprecatedHeaderFindings,
   exactHeaderFindings,
 } from '@mridang/webhint-hint-plumbline/dist/lib/headers/exact-header.js';
-import {
-  crossOriginFindings,
-  type CrossOriginPolicy,
-} from '@mridang/webhint-hint-plumbline/dist/lib/headers/cross-origin.js';
+import { crossOriginFindings } from '@mridang/webhint-hint-plumbline/dist/lib/headers/cross-origin.js';
 import {
   corsFindings,
   PROBE_ORIGIN,
@@ -104,14 +98,6 @@ import {
   retryAfterFindings,
   timingAllowOriginFindings,
 } from '@mridang/webhint-hint-plumbline/dist/lib/headers/client-hints.js';
-import { mainResponse } from '../network.js';
-import {
-  cspMetaContents,
-  metaHttpEquivContents,
-  referrerSources,
-} from '../adapt.js';
-import { hintDocumentation } from '../meta.js';
-import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); their check logic is reused through the
@@ -161,12 +147,24 @@ import criticalChHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/c
 import timingAllowOriginHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/timing-allow-origin.js';
 import altSvcHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/alt-svc.js';
 import retryAfterHint from '@mridang/webhint-hint-plumbline/dist/hints/headers/retry-after.js';
+import { hintDocumentation } from '../meta.js';
+import {
+  cspMetaContents,
+  metaHttpEquivContents,
+  referrerSources,
+} from '../adapt.js';
+import { mainResponse } from '../network.js';
+import type { AuditCheck } from './types.js';
+import type { CrossOriginPolicy } from '@mridang/webhint-hint-plumbline/dist/lib/headers/cross-origin.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import type AuditNS from 'lighthouse/types/audit.js';
+import type { Artifacts } from 'lighthouse';
 
 /** Matches a `frame-ancestors` directive in a CSP header value. */
-const CSP_FRAME_ANCESTORS = /(^|;)\s*frame-ancestors\b/i;
+const CSP_FRAME_ANCESTORS = /(^|;)\s*frame-ancestors\b/iu;
 
 /** Matches a `max-age` directive in a Cache-Control header value. */
-const CACHE_CONTROL_MAX_AGE = /(^|,)\s*max-age\s*=/i;
+const CACHE_CONTROL_MAX_AGE = /(^|,)\s*max-age\s*=/iu;
 
 /** The artifact set the header checks read (plus `MetaElements` where noted). */
 const HEADER_ARTIFACTS = ['DevtoolsLog', 'URL'] as const;
@@ -416,7 +414,7 @@ export const headersChecks: readonly AuditCheck[] = [
         return null;
       }
       const value = firstHeader(main.headers, 'clear-site-data');
-      const normalised = value?.replaceAll(/\s+/g, '').toLowerCase() ?? null;
+      const normalised = value?.replaceAll(/\s+/gu, '').toLowerCase() ?? null;
       return exactHeaderFindings('Clear-Site-Data', normalised, [
         CLEAR_SITE_DATA_EXPECTED,
       ]);
@@ -562,12 +560,10 @@ export const headersChecks: readonly AuditCheck[] = [
       }
       const pageUrl =
         artifacts.URL.finalDisplayedUrl || artifacts.URL.mainDocumentUrl || '';
-      let host = '';
-      try {
-        host = new URL(pageUrl).hostname;
-      } catch {
+      if (!URL.canParse(pageUrl)) {
         return null;
       }
+      const host = new URL(pageUrl).hostname;
       const nel = headerValues(main.headers, 'nel');
       return reportingFindings({
         registrable: registrableDomain(host),

@@ -96,11 +96,16 @@ export const TLS_1_3_PROBE_CIPHERS: readonly string[] = [
   'TLS_AES_128_CCM_8_SHA256',
 ];
 
+/** Algorithm names by dotted object identifier. */
+export interface OidNames {
+  readonly [oid: string]: string;
+}
+
 /** The OID arc of the Edwards-curve signature algorithms (RFC 8410). */
 const ED_ARC = '1.3.101';
 
 /** NCSC 3.3.2 / 3.3.5, as the dotted object identifiers of the algorithms. */
-export const CERT_SIGALG_SUFFICIENT: Readonly<Record<string, string>> = {
+export const CERT_SIGALG_SUFFICIENT: OidNames = {
   '1.2.840.113549.1.1.11': 'sha256WithRSAEncryption',
   '1.2.840.113549.1.1.12': 'sha384WithRSAEncryption',
   '1.2.840.113549.1.1.13': 'sha512WithRSAEncryption',
@@ -111,13 +116,13 @@ export const CERT_SIGALG_SUFFICIENT: Readonly<Record<string, string>> = {
   [`${ED_ARC}.113`]: 'ED448',
 };
 
-export const CERT_SIGALG_PHASE_OUT: Readonly<Record<string, string>> = {
+export const CERT_SIGALG_PHASE_OUT: OidNames = {
   '1.2.840.113549.1.1.14': 'sha224WithRSAEncryption',
   '1.2.840.10045.4.3.1': 'ecdsa-with-SHA224',
 };
 
 /** Names of algorithms that are known but insufficient, for messages. */
-export const CERT_SIGALG_KNOWN_BAD: Readonly<Record<string, string>> = {
+export const CERT_SIGALG_KNOWN_BAD: OidNames = {
   '1.2.840.113549.1.1.4': 'md5WithRSAEncryption',
   '1.2.840.113549.1.1.5': 'sha1WithRSAEncryption',
   '1.2.840.113549.1.1.10': 'rsassaPss',

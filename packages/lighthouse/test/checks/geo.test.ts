@@ -1,15 +1,15 @@
 import { createHTMLDocument } from '@hint/utils-dom';
 import { describe, expect, it } from '@jest/globals';
-import type { Artifacts } from 'lighthouse';
-import type AuditNS from 'lighthouse/types/audit.js';
-import { geoChecks } from '../../src/checks/geo.js';
-import type { AuditCheck } from '../../src/checks/types.js';
 import { readJsonLd } from '@mridang/webhint-hint-plumbline/dist/lib/geo/json-ld.js';
 import { measureContent } from '@mridang/webhint-hint-plumbline/dist/lib/geo/content.js';
 import {
   contentExtractionFindings,
   structuredDataInvalidFindings,
 } from '@mridang/webhint-hint-plumbline/dist/lib/geo/checks.js';
+import { geoChecks } from '../../src/checks/geo.js';
+import type { Artifacts } from 'lighthouse';
+import type AuditNS from 'lighthouse/types/audit.js';
+import type { AuditCheck } from '../../src/checks/types.js';
 
 // The same DOM parser webhint feeds its hints: the equivalence tests build the "webhint side" of each check with it, exactly as the hint does.
 
@@ -26,7 +26,9 @@ function artifacts(html: string): Artifacts {
 
 /** A geo check reads no computed artifact, but run() still takes a context. */
 function context(): AuditNS.Context {
-  return { computedCache: new Map() } as unknown as AuditNS.Context;
+  return {
+    computedCache: new Map<string, unknown>(),
+  } as unknown as AuditNS.Context;
 }
 
 /** Wraps a parsed object as one JSON-LD block of HTML. */
@@ -221,7 +223,7 @@ function multiScriptPage(): string {
         '@type': 'Thing',
         id: index,
         blob,
-      })}</script>` + `<script>${inlineJs}</script>`,
+      })}</script><script>${inlineJs}</script>`,
   ).join('');
   const svg = `<svg viewBox="0 0 10 10">${'<path d="M0 0 L10 10"/>'.repeat(1000)}</svg>`;
   return `<!doctype html><html><head>${scripts}</head><body><h1>Title</h1><p>${'This is a real paragraph with plenty of readable text. '.repeat(3)}</p>${svg}</body></html>`;
@@ -263,11 +265,9 @@ describe('the geo checks match the webhint hint for a fixture', () => {
   // The two surfaces call the same shared checks on the same parsed document,
   // so the Lighthouse findings must equal the webhint-side findings exactly.
   const fixture =
-    '<!doctype html><html><head>' +
-    '<script type="application/ld+json">{ not json</script>' +
-    '</head><body><div>' +
-    'z'.repeat(900) +
-    '</div></body></html>';
+    `<!doctype html><html><head>` +
+    `<script type="application/ld+json">{ not json</script>` +
+    `</head><body><div>${'z'.repeat(900)}</div></body></html>`;
 
   it('structured-data-invalid yields the hint findings', async () => {
     const parsedDocument = createHTMLDocument(fixture, 'https://x.test/');

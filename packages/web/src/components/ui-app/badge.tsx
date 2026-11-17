@@ -1,9 +1,9 @@
-import type { ReactElement, ReactNode } from 'react';
-
 import { cn } from '@/components/ui/cn';
 
 import { Dot } from './status-dot';
-import { TONE_FILL, type Tone } from './tone';
+import { TONE_FILL } from './tone';
+import type { Tone } from './tone';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * The one look for every label that says how something stands or what it is:

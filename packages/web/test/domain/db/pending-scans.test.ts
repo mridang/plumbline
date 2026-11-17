@@ -13,10 +13,10 @@ import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 
 /** Matches a full table scan of the pending scans table. */
-const PENDING_SCANS_FULL_SCAN_PATTERN = /SCAN pending_scans/;
+const PENDING_SCANS_FULL_SCAN_PATTERN = /SCAN pending_scans/u;
 
 /** Matches use of the pending scans enqueued index. */
-const PENDING_SCANS_INDEX_PATTERN = /idx_pending_scans_enqueued/;
+const PENDING_SCANS_INDEX_PATTERN = /idx_pending_scans_enqueued/u;
 
 const made = () => {
   const { d1, raw } = sqliteD1(...APP_MIGRATIONS);

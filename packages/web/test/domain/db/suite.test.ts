@@ -27,7 +27,7 @@ import {
   enableRepo,
   enableRepoByFile,
 } from '@/domain/db/disabled';
-import { issuesOf as historyOf } from '@/domain/db/issue-history';
+import { issuesOf } from '@/domain/db/issue-history';
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
@@ -121,8 +121,10 @@ describe('recordRun, the history columns and latestRuns', () => {
 describe('claimDelivery', () => {
   it('accepts a delivery once', async () => {
     const db = database();
-    expect(await claimDelivery(db, 'd1')).toBe(true);
-    expect(await claimDelivery(db, 'd1')).toBe(false);
+    expect([
+      await claimDelivery(db, 'd1'),
+      await claimDelivery(db, 'd1'),
+    ]).toEqual([true, false]);
     expect(await claimDelivery(db, 'd2')).toBe(true);
   });
 
@@ -265,7 +267,7 @@ describe('the issue of a check: issueOf, saveIssue, issueNumbered and forgetIssu
     expect(await issueOf(db, SITE, A, 'seo-viewport')).toEqual(
       issue(9, 'dismissed'),
     );
-    const history = await historyOf(db, SITE, A);
+    const history = await issuesOf(db, SITE, A);
     expect(
       history.map((index) => [index.number, index.state, index.checks]),
     ).toEqual(
@@ -334,8 +336,10 @@ describe('claimNewIssue and releaseIssueClaim', () => {
 
   it('gives the right to open an issue to one claimant only', async () => {
     const db = database();
-    expect(await claimNewIssue(db, SITE, A, CHECK, then)).toBe(true);
-    expect(await claimNewIssue(db, SITE, A, CHECK, then)).toBe(false);
+    expect([
+      await claimNewIssue(db, SITE, A, CHECK, then),
+      await claimNewIssue(db, SITE, A, CHECK, then),
+    ]).toEqual([true, false]);
     const claimed = await issueOf(db, SITE, A, CHECK);
     expect(claimed?.state).toBe('opening');
   });
@@ -440,11 +444,11 @@ describe('the issues of the old kind, one for each host', () => {
 
   it('are retired: forgotten, and left out of the history list', async () => {
     const { db } = withLegacy();
-    expect(await historyOf(db, SITE, A)).toHaveLength(1);
+    expect(await issuesOf(db, SITE, A)).toHaveLength(1);
     await retireLegacyIssue(db, SITE, A, 12);
     expect(await legacyIssueOf(db, SITE, A)).toBeUndefined();
     expect(await legacyIssueOf(db, 'acme/other', A)).toBeDefined();
-    expect(await historyOf(db, SITE, A)).toEqual([]);
+    expect(await issuesOf(db, SITE, A)).toEqual([]);
   });
 
   it('are forgotten when GitHub says the issue was deleted', async () => {

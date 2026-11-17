@@ -18,8 +18,8 @@ import {
   checkRobotsTxt,
   checkSitemap,
 } from './robots.js';
-import type { AgentCategory, AgentEnv, CheckResult } from './types.js';
 import { checkWebMcp } from './webmcp.js';
+import type { AgentCategory, AgentEnv, CheckResult } from './types.js';
 
 /** A check and how it takes part in the score. */
 export interface CheckDefinition {

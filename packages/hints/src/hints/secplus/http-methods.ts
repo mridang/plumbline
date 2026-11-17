@@ -1,13 +1,13 @@
-import { request as httpRequest } from '#http';
+import { request } from '#http';
 import { request as httpsRequest } from '#https';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onSite } from '../../core/page.js';
-import type { HintDefinition } from '../../core/define-hint.js';
 import {
   httpMethodsFindings,
   parseAllowedMethods,
 } from '../../lib/secplus/http-methods.js';
 import { reportSiteFindings } from '../headers/shared.js';
+import type { HintDefinition } from '../../core/define-hint.js';
 
 /**
  * The result of an `OPTIONS` probe: the raw `Allow` header, or null when the
@@ -27,7 +27,7 @@ export type OptionsRequester = (url: URL) => Promise<OptionsResult | null>;
  */
 const defaultOptionsRequester: OptionsRequester = async (url) =>
   new Promise((resolve) => {
-    const send = url.protocol === 'https:' ? httpsRequest : httpRequest;
+    const send = url.protocol === 'https:' ? httpsRequest : request;
     const req = send(url, { method: 'OPTIONS' }, (res) => {
       const allow = res.headers.allow;
       // Drain and discard the body so the socket is freed.

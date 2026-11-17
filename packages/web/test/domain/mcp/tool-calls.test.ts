@@ -1,12 +1,6 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
-import type { ToolServices } from '@/domain/mcp/tool-services';
-import type { ToolContent } from '@/domain/mcp/tool-context';
-
-import type { Database } from '@/domain/db/client';
 import { addDomain } from '@/domain/db/domains';
-import type { User } from '@/domain/db/users';
 import { callTool, callToolOrExplain } from '@/domain/mcp/tool-calls';
-import type { ToolResult } from '@/domain/mcp/tool-results';
 import {
   BackendFailureError,
   InvalidToolArgumentsError,
@@ -14,13 +8,19 @@ import {
 } from '@/lib/mcp';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import type { ToolServices } from '@/domain/mcp/tool-services';
+import type { ToolContent } from '@/domain/mcp/tool-context';
+
+import type { Database } from '@/domain/db/client';
+import type { User } from '@/domain/db/users';
+import type { ToolResult } from '@/domain/mcp/tool-results';
 
 /** Matches invalid get domain arguments. */
 const INVALID_GET_DOMAIN_ARGUMENTS =
-  /^Invalid arguments for get_domain: .*`domain` is required.*The arguments are: domain \(required\)\.$/;
+  /^Invalid arguments for get_domain: .*`domain` is required.*The arguments are: domain \(required\)\.$/u;
 
 /** Matches no arguments suffix. */
-const NO_ARGUMENTS_SUFFIX = /This tool takes no arguments\.$/;
+const NO_ARGUMENTS_SUFFIX = /This tool takes no arguments\.$/u;
 
 const USER = { id: 1 } as User;
 
@@ -118,13 +118,13 @@ describe('callTool — the request', () => {
       { name: 'get_domain', arguments: {} },
       { openDatabase: open },
     );
-    expect(open).not.toHaveBeenCalled();
+    expect(open.mock.calls).toEqual([]);
   });
 
   it('opens no database to list the checks', async () => {
     const open = jest.fn(brokenDatabase);
     await callTool(USER, { name: 'list_checks' }, { openDatabase: open });
-    expect(open).not.toHaveBeenCalled();
+    expect(open.mock.calls).toEqual([]);
   });
 
   it('reports a database that fails as a backend failure', async () => {

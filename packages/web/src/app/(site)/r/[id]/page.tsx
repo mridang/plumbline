@@ -1,6 +1,4 @@
-import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import type { ReactElement } from 'react';
 
 import { Card } from '@/components/ui/card';
 import { Container } from '@/components/ui/layout';
@@ -8,6 +6,8 @@ import { PageHeader } from '@/components/ui/page-header';
 import { findCheck } from '@/domain/checks/catalogue';
 import { getDatabase } from '@/domain/db/client';
 import { getPreviewReport } from '@/domain/db/preview-reports';
+import type { ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 

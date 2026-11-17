@@ -1,4 +1,3 @@
-import type { AgentEnv, CheckResult } from './types.js';
 import {
   firstJson,
   isRecord,
@@ -9,12 +8,13 @@ import {
   result,
   urlOf,
 } from './utility.js';
+import type { AgentEnv, CheckResult } from './types.js';
 
 /** Matches a valid skill name: lower-case letters, digits and single hyphens. */
-const SKILL_NAME_FORMAT = /^(?!-)(?!.*--)[a-z0-9-]{1,64}(?<!-)$/;
+const SKILL_NAME_FORMAT = /^(?!-)(?!.*--)[a-z0-9-]{1,64}(?<!-)$/u;
 
 /** Matches a `sha256:` digest followed by 64 hexadecimal digits. */
-const SHA256_DIGEST = /^sha256:[0-9a-f]{64}$/;
+const SHA256_DIGEST = /^sha256:[0-9a-f]{64}$/u;
 
 /**
  * Paths where an MCP server card may live. UNVERIFIED: SEP-1649 (draft)
@@ -55,8 +55,11 @@ function mcpEndpoint(card: Record<string, unknown>): string | undefined {
   }
   // SEP-1649 draft: `transport: { type, endpoint }`.
   if (isRecord(transport)) {
-    for (const key of ['endpoint', 'url']) {
-      if (isText(transport[key])) return transport[key];
+    const nested = ['endpoint', 'url']
+      .map((key) => transport[key])
+      .find(isText);
+    if (nested !== undefined) {
+      return nested;
     }
   }
   return isText(endpoint) ? endpoint : undefined;
@@ -88,14 +91,11 @@ function cardsOf(root: Record<string, unknown>): Record<string, unknown>[] {
 
 /** Finds the first valid card in a document; returns a description. */
 function validCard(root: Record<string, unknown>): string | undefined {
-  for (const card of cardsOf(root)) {
+  return cardsOf(root).flatMap((card) => {
     const identity = mcpIdentity(card);
     const endpoint = mcpEndpoint(card);
-    if (identity && endpoint) {
-      return `${identity.name} at ${endpoint}`;
-    }
-  }
-  return undefined;
+    return identity && endpoint ? [`${identity.name} at ${endpoint}`] : [];
+  })[0];
 }
 
 /**
@@ -123,19 +123,22 @@ export async function checkMcpServerCard(env: AgentEnv): Promise<CheckResult> {
         );
   }
   // SEP-2127: a catalog entry points to (or embeds) the card.
+  // eslint-disable-next-line functional/no-loop-statements -- probes the catalogs in order and stops at the first valid card
   for (const path of CATALOG_PATHS) {
     const catalog = parseJsonObject(await env.probe(path));
     const entries = Array.isArray(catalog?.entries) ? catalog.entries : [];
+    // eslint-disable-next-line functional/no-loop-statements -- reads the entries in order and stops at the first valid card
     for (const entry of entries) {
-      if (!isRecord(entry) || entry.type !== MCP_CARD_TYPE) continue;
-      let parsedDocument: Record<string, unknown> | undefined;
-      if (isRecord(entry.data)) {
-        parsedDocument = entry.data;
-      } else if (isText(entry.url)) {
-        parsedDocument = parseJsonObject(await env.probe(entry.url));
-      } else {
-        // Without embedded data or a url there is no card to check.
+      if (!isRecord(entry) || entry.type !== MCP_CARD_TYPE) {
+        continue;
       }
+      // Without embedded data or a url there is no card to check.
+      const embedded = isRecord(entry.data) ? entry.data : undefined;
+      const linked =
+        embedded === undefined && isText(entry.url)
+          ? parseJsonObject(await env.probe(entry.url))
+          : undefined;
+      const parsedDocument = embedded ?? linked;
       const card = parsedDocument && validCard(parsedDocument);
       if (card) {
         return result(id, 'discovery', true, `${path} lists ${card}.`);
@@ -199,33 +202,30 @@ export async function checkA2aAgentCard(env: AgentEnv): Promise<CheckResult> {
     );
   }
   const card = found.json;
-  const missing = ['name', 'description', 'version'].filter(
-    (key) => !isText(card[key]),
-  );
-  if (!isRecord(card.capabilities)) missing.push('capabilities');
-  for (const key of ['defaultInputModes', 'defaultOutputModes', 'skills']) {
-    if (!Array.isArray(card[key])) missing.push(key);
-  }
   const interfaces = card.supportedInterfaces;
-  if (Array.isArray(interfaces)) {
-    const complete =
-      interfaces.length > 0 &&
-      interfaces.every(
-        (entry) =>
-          isRecord(entry) &&
-          isText(entry.url) &&
-          isText(entry.protocolBinding) &&
-          isText(entry.protocolVersion),
-      );
-    if (!complete)
-      missing.push(
-        'supportedInterfaces (url, protocolBinding, protocolVersion)',
-      );
-  } else if (isText(card.url)) {
-    // A card that names its url directly needs no supportedInterfaces list.
-  } else {
-    missing.push('supportedInterfaces');
-  }
+  const hasInterfaceList = Array.isArray(interfaces);
+  const interfacesComplete =
+    hasInterfaceList &&
+    interfaces.length > 0 &&
+    interfaces.every(
+      (entry) =>
+        isRecord(entry) &&
+        isText(entry.url) &&
+        isText(entry.protocolBinding) &&
+        isText(entry.protocolVersion),
+    );
+  // A card that names its url directly needs no supportedInterfaces list.
+  const missing = [
+    ...['name', 'description', 'version'].filter((key) => !isText(card[key])),
+    ...(isRecord(card.capabilities) ? [] : ['capabilities']),
+    ...['defaultInputModes', 'defaultOutputModes', 'skills'].filter(
+      (key) => !Array.isArray(card[key]),
+    ),
+    ...(hasInterfaceList && !interfacesComplete
+      ? ['supportedInterfaces (url, protocolBinding, protocolVersion)']
+      : []),
+    ...(!hasInterfaceList && !isText(card.url) ? ['supportedInterfaces'] : []),
+  ];
   return missing.length === 0
     ? result(
         id,
@@ -248,24 +248,24 @@ export const SKILLS_SCHEMA =
 
 /** Returns the problems of one skill entry (agent-skills-discovery-rfc). */
 export function skillProblems(skill: unknown): string[] {
-  if (!isRecord(skill)) return ['is not an object'];
-  const problems: string[] = [];
-  if (!isText(skill.name) || !SKILL_NAME_FORMAT.test(skill.name)) {
-    problems.push(
-      'name must be 1-64 lowercase letters, digits and single hyphens',
-    );
+  if (!isRecord(skill)) {
+    return ['is not an object'];
   }
-  if (skill.type !== 'skill-md' && skill.type !== 'archive') {
-    problems.push('type must be skill-md or archive');
-  }
-  if (!isText(skill.description) || skill.description.length > 1024) {
-    problems.push('description must be 1-1024 characters');
-  }
-  if (!isText(skill.url)) problems.push('url is missing');
-  if (!isText(skill.digest) || !SHA256_DIGEST.test(skill.digest)) {
-    problems.push('digest must be sha256:<64 lowercase hex>');
-  }
-  return problems;
+  return [
+    ...(!isText(skill.name) || !SKILL_NAME_FORMAT.test(skill.name)
+      ? ['name must be 1-64 lowercase letters, digits and single hyphens']
+      : []),
+    ...(skill.type === 'skill-md' || skill.type === 'archive'
+      ? []
+      : ['type must be skill-md or archive']),
+    ...(!isText(skill.description) || skill.description.length > 1024
+      ? ['description must be 1-1024 characters']
+      : []),
+    ...(isText(skill.url) ? [] : ['url is missing']),
+    ...(!isText(skill.digest) || !SHA256_DIGEST.test(skill.digest)
+      ? ['digest must be sha256:<64 lowercase hex>']
+      : []),
+  ];
 }
 
 /**

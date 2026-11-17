@@ -1,5 +1,5 @@
-import { describe, expect, it } from '@jest/globals';
 import { domainToASCII as nodeDomainToASCII } from 'node:url';
+import { describe, expect, it } from '@jest/globals';
 
 import { domainToASCII } from '../../src/node/url.js';
 

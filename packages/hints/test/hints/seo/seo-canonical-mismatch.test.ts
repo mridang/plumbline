@@ -1,8 +1,8 @@
-import type { IncomingMessage } from 'node:http';
 import { describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/seo/seo-canonical-mismatch.js';
 import { runHint } from '../../helpers/run-hint.js';
 import { HTTP_SCHEME } from '../../helpers/data.js';
+import type { IncomingMessage } from 'node:http';
 
 /**
  * Builds the routes for a page. `head` is inserted into <head>, `body` into

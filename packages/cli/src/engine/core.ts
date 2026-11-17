@@ -1,18 +1,13 @@
-import type { NetworkData } from 'hint';
-
-import { catalogue, type CatalogueEntry, type HintInfo } from './catalogue.js';
-import {
-  loadPage,
-  runHint,
-  skipped,
-  type FetchContent,
-  type HintOutcome,
-} from './engine.js';
+import { catalogue } from './catalogue.js';
+import { loadPage, runHint, skipped } from './engine.js';
 import { fetchResource } from './network.js';
 import { ScanRefusedError } from './scannable.js';
+import type { FetchContent, HintOutcome } from './engine.js';
+import type { CatalogueEntry, HintInfo } from './catalogue.js';
+import type { NetworkData } from 'hint';
 
 /** Matches a finding that says a probe could not test or connect. */
-const COULD_NOT_TEST_OR_CONNECT = /\bcould not (test|connect)\b/i;
+const COULD_NOT_TEST_OR_CONNECT = /\bcould not (test|connect)\b/iu;
 
 /**
  * Running every check against a site and reporting as they finish. The server
@@ -102,11 +97,13 @@ function cachedFetchContent(fetcher: typeof fetch): FetchContent {
   return async (url, headers = {}) => {
     const href = new URL(url).href;
     const key = `${href}\n${JSON.stringify(headers)}`;
-    let pending = cache.get(key);
-    if (!pending) {
-      pending = fetchResource(href, headers as Record<string, string>, fetcher);
-      cache.set(key, pending);
+    const cached = cache.get(key);
+    if (cached) {
+      return cached;
     }
+    const pending = fetchResource(href, headers, fetcher);
+    // eslint-disable-next-line functional/immutable-data -- the cache is filled as addresses are asked for
+    cache.set(key, pending);
     return pending;
   };
 }
@@ -133,16 +130,20 @@ export async function runScanWith(
   try {
     const target = new URL(address);
     const fetchContent = cachedFetchContent(environment.fetch);
-    let page;
-    try {
-      await environment.assertScannable(target);
-      page = await loadPage(target, fetchContent);
-    } catch (error) {
-      options.diagnose?.(error);
-      if (environment.isFault?.(error)) {
-        throw error;
-      }
-      emit({ type: 'unreachable', detail: unreachableDetail(target, error) });
+    const page = await Promise.resolve()
+      .then(async () => {
+        await environment.assertScannable(target);
+        return loadPage(target, fetchContent);
+      })
+      .catch((error: unknown) => {
+        options.diagnose?.(error);
+        if (environment.isFault?.(error)) {
+          throw error;
+        }
+        emit({ type: 'unreachable', detail: unreachableDetail(target, error) });
+        return null;
+      });
+    if (!page) {
       return;
     }
     const wanted = options.only ? new Set(options.only) : undefined;
@@ -158,7 +159,9 @@ export async function runScanWith(
     const deadline = Date.now() + (options.deadlineMs ?? 180_000);
     const queue = [...entries];
     const worker = async (): Promise<void> => {
-      for (let entry = queue.shift(); entry; entry = queue.shift()) {
+      // eslint-disable-next-line functional/immutable-data -- the workers share one queue of checks, each taking the next
+      const entry = queue.shift();
+      if (entry) {
         const outcome =
           Date.now() > deadline
             ? skipped(
@@ -167,6 +170,7 @@ export async function runScanWith(
               )
             : await runHint(entry, page, fetchContent, options.hintTimeoutMs);
         emit({ type: 'done', outcome: neutralWhenUntested(outcome) });
+        await worker();
       }
     };
     await Promise.all(

@@ -1,22 +1,22 @@
-import { describe, expect, it } from '@jest/globals';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { describe, expect, it } from '@jest/globals';
 
-import { BRAND_NAME, BRAND_URL, SECURITY_CONTACT } from '@/app/_brand';
 import { packageDirectorySync } from 'package-directory';
+import { BRAND_NAME, BRAND_URL, SECURITY_CONTACT } from '@/app/_brand';
 
 /** Matches a blockquote line. */
-const BLOCKQUOTE_LINE = /\n> .+/;
+const BLOCKQUOTE_LINE = /\n> .+/u;
 /** Matches a level-two heading line. */
-const H2_HEADING_LINE = /\n## .+/;
+const H2_HEADING_LINE = /\n## .+/u;
 /** Matches the "What to expect" text. */
-const WHAT_TO_EXPECT = /What to expect/;
+const WHAT_TO_EXPECT = /What to expect/u;
 /** Matches the "In scope" text. */
-const IN_SCOPE = /In scope/;
+const IN_SCOPE = /In scope/u;
 /** Matches the "Out of scope" text. */
-const OUT_OF_SCOPE = /Out of scope/;
+const OUT_OF_SCOPE = /Out of scope/u;
 /** Matches the "good faith" text. */
-const GOOD_FAITH = /good faith/;
+const GOOD_FAITH = /good faith/u;
 
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
@@ -28,7 +28,7 @@ const SECURITY_POLICY = await read('security-policy.txt');
 const HEADERS = await read('_headers');
 
 /** Plain-text files are served without a charset, so they must be ASCII. */
-const NON_ASCII = /[\u0080-￿]/;
+const NON_ASCII = /[\u0080-￿]/u;
 
 describe('public/llms.txt', () => {
   const text = LLMS;
@@ -43,7 +43,7 @@ describe('public/llms.txt', () => {
 
   it('links only to this site, outside the Optional section', () => {
     const links = Array.from(
-      main.matchAll(/\]\((https?:[^)]+)\)/g),
+      main.matchAll(/\]\((https?:[^)]+)\)/gu),
       (m) => m[1]!,
     );
     expect(links.length).toBeGreaterThan(0);

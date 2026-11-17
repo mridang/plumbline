@@ -110,16 +110,20 @@ describe('generateReport', () => {
 
   it('renders javascript: urls as plain text', () => {
     const html = page(
+      // eslint-disable-next-line no-script-url -- the value under test is a script URL that must be refused or shown as text
       [{ ...ours, url: 'javascript:alert(1)' }],
       [
         {
           ...base,
+          // eslint-disable-next-line no-script-url -- the value under test is a script URL that must be refused or shown as text
           resource: 'javascript:alert(2)',
+          // eslint-disable-next-line no-script-url -- the value under test is a script URL that must be refused or shown as text
           documentation: [{ link: 'javascript:alert(3)', text: 'doc' }],
         },
       ],
     );
     expect(html).not.toContain('href="javascript:');
+    // eslint-disable-next-line no-script-url -- the value under test is a script URL that must be refused or shown as text
     expect(html).toContain('javascript:alert(2)');
     expect(html).toContain('doc');
   });
@@ -196,7 +200,7 @@ describe('agent score parsing against the former regexes', () => {
         );
       }
     }
-    const quoted = head[3] ? ' &quot;' + head[3] + '&quot;' : '';
+    const quoted = head[3] ? ` &quot;${head[3]}&quot;` : '';
     return {
       score: head[1],
       level: `level ${head[2]}${quoted}`,
@@ -233,7 +237,7 @@ describe('agent score parsing against the former regexes', () => {
     'Agent readiness score 5/100, level 2 "Unclosed. Alpha 5',
     'Agent readiness score 5/100, level 2 "". Alpha 5',
     'Agent readiness score 5/100, level 2. One Two 5 6; Three 250 (1/2) .; Four (1/2)',
-    'Agent readiness score 5/100, level 2. A\nB 5; C 6 \n; D 5',
+    'Agent readiness score 5/100, level 2. A\nB 5; C 6 \n; D\u20285',
     'Agent readiness score 5/100, level 2. A  B   7  ( 3/4 ) ;  C 8 (3/4)',
     'Agent readiness score 5/100',
     'odd',

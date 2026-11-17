@@ -1,22 +1,16 @@
-import {
-  createServer,
-  type IncomingMessage,
-  type Server,
-  type ServerResponse,
-} from 'node:http';
+import { createServer } from 'node:http';
 import {
   buildReport,
   hintCatalogue,
-  runScan as defaultRun,
+  runScan,
   saveReport,
-  scan as defaultScan,
-  type ScanEvent,
-  type ScanOptions,
-  type ScanResult,
+  scan,
 } from '@mridang/plumbline';
+import type { ScanEvent, ScanOptions, ScanResult } from '@mridang/plumbline';
+import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 
 /** Matches a URL that starts with an http or https scheme. */
-const HTTP_URL_PREFIX = /^https?:\/\//;
+const HTTP_URL_PREFIX = /^https?:\/\//u;
 
 /** The release version of the scanner, stamped into the image at build time. */
 const SCANNER_VERSION = process.env.SCANNER_VERSION ?? 'dev';
@@ -54,14 +48,16 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
 async function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    let size = 0;
     req.on('data', (chunk: Buffer) => {
-      size += chunk.length;
-      if (size > 1024 * 1024) {
+      if (
+        chunks.reduce((size, part) => size + part.length, chunk.length) >
+        1024 * 1024
+      ) {
         reject(new Error('request body too large'));
         req.destroy();
         return;
       }
+      // eslint-disable-next-line functional/immutable-data -- the body arrives in pieces, collected as they come
       chunks.push(chunk);
     });
     req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
@@ -73,13 +69,12 @@ async function readBody(req: IncomingMessage): Promise<string> {
 async function handleScan(
   req: IncomingMessage,
   res: ServerResponse,
-  scan: ScanFn,
+  scanner: ScanFn,
 ): Promise<void> {
-  let body: ScanRequest;
-  try {
-    const raw = await readBody(req);
-    body = raw ? (JSON.parse(raw) as ScanRequest) : {};
-  } catch {
+  const body = await readBody(req)
+    .then((raw) => (raw ? (JSON.parse(raw) as ScanRequest) : {}))
+    .catch(() => undefined);
+  if (body === undefined) {
     sendJson(res, 400, { error: 'body must be valid JSON' });
     return;
   }
@@ -103,7 +98,7 @@ async function handleScan(
       : (process.env.OUTPUT_DIR ?? undefined);
 
   try {
-    const result = await scan(body.url, {
+    const result = await scanner(body.url, {
       hints,
       executablePath: process.env.CHROMIUM_PATH,
     });
@@ -132,11 +127,10 @@ async function handleRun(
   res: ServerResponse,
   run: RunFn,
 ): Promise<void> {
-  let body: ScanRequest;
-  try {
-    const raw = await readBody(req);
-    body = raw ? (JSON.parse(raw) as ScanRequest) : {};
-  } catch {
+  const body = await readBody(req)
+    .then((raw) => (raw ? (JSON.parse(raw) as ScanRequest) : {}))
+    .catch(() => undefined);
+  if (body === undefined) {
     sendJson(res, 400, { error: 'body must be valid JSON' });
     return;
   }
@@ -170,7 +164,7 @@ async function handleRun(
 function handle(
   req: IncomingMessage,
   res: ServerResponse,
-  scan: ScanFn,
+  scanner: ScanFn,
   run: RunFn,
 ): void {
   const path = (req.url ?? '/').split('?', 1)[0];
@@ -183,7 +177,7 @@ function handle(
     return;
   }
   if (req.method === 'POST' && path === '/scan') {
-    void handleScan(req, res, scan);
+    void handleScan(req, res, scanner);
     return;
   }
   if (req.method === 'POST' && path === '/run') {
@@ -201,9 +195,9 @@ export interface ServerOptions {
 
 /** Creates the HTTP server without starting it (used by tests). */
 export function createScanServer(options: ServerOptions = {}): Server {
-  const scan = options.scan ?? defaultScan;
-  const run = options.run ?? (async (url, emit) => defaultRun(url, emit));
-  return createServer((req, res) => handle(req, res, scan, run));
+  const scanner = options.scan ?? scan;
+  const run = options.run ?? (async (url, emit) => runScan(url, emit));
+  return createServer((req, res) => handle(req, res, scanner, run));
 }
 
 /** Starts the server on HOST/PORT; the Docker image's entry point. */

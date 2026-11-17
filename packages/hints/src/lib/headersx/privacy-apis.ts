@@ -5,7 +5,8 @@
  * and validate the value, rather than recommending them. Each follows its MDN
  * reference page.
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
+import type { Finding } from '../headers/finding.js';
 
 /**
  * `Attribution-Reporting-Register-Source` and
@@ -22,28 +23,21 @@ export function attributionReportingFindings(
   source: string | null,
   trigger: string | null,
 ): Finding[] {
-  const findings: Finding[] = [];
   const checks: ReadonlyArray<[string, string | null]> = [
     ['Attribution-Reporting-Register-Source', source],
     ['Attribution-Reporting-Register-Trigger', trigger],
   ];
-  for (const [name, value] of checks) {
-    if (value === null) {
-      continue;
-    }
-    const problem = registrationProblem(name, value);
-    if (problem) {
-      findings.push(problem);
-    } else {
-      findings.push(
-        finding(
-          'hint',
-          `The '${name}' header registers this response with the Attribution Reporting API (ad measurement).`,
-        ),
-      );
-    }
-  }
-  return findings;
+  return checks.flatMap(([name, value]) =>
+    value === null
+      ? []
+      : [
+          registrationProblem(name, value) ??
+            finding(
+              'hint',
+              `The '${name}' header registers this response with the Attribution Reporting API (ad measurement).`,
+            ),
+        ],
+  );
 }
 
 /** The warning for a registration that is not a JSON object, or null when it is one. */

@@ -1,6 +1,7 @@
-import { connect as netConnect } from '#net';
+import { connect } from '#net';
+import { probeStarttls } from './smtp.js';
+import type { ConnectFn, StarttlsProbe } from './smtp.js';
 import type { ConnectionOptions } from '#tls';
-import { probeStarttls, type ConnectFn, type StarttlsProbe } from './smtp.js';
 
 /**
  * The network access the mail hints need besides DNS. Hints use
@@ -21,7 +22,7 @@ export interface MailNetOptions {
 }
 
 const defaultConnect: ConnectFn = (host, port, family) =>
-  netConnect({ host, port, family });
+  connect({ host, port, family });
 
 /** Creates the real client on top of `net` and `tls`. */
 export function createMailNetClient(
@@ -53,7 +54,12 @@ export function createMailNetClient(
   };
 }
 
+/** The holder of the client hints use. */
+export interface MailNet {
+  client: MailNetClient;
+}
+
 /** The client hints use; tests assign a fake to `mailNet.client`. */
-export const mailNet: { client: MailNetClient } = {
+export const mailNet: MailNet = {
   client: createMailNetClient(),
 };

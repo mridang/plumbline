@@ -5,11 +5,12 @@
  * Both are experimental; the checks validate the value when the header is
  * present, following each header's MDN reference page.
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
 import { tokenList, topLevelMembers } from './structured.js';
+import type { Finding } from '../headers/finding.js';
 
 /** Matches a double-quoted string and captures its content. */
-const QUOTED_STRING = /^"(.*)"$/;
+const QUOTED_STRING = /^"(.*)"$/u;
 
 /**
  * `Speculation-Rules` is a structured list of strings, each the URL of a JSON
@@ -26,16 +27,17 @@ export function speculationRulesFindings(value: string | null): Finding[] {
   if (!members) {
     return [finding('warning', "The 'Speculation-Rules' header is empty.")];
   }
-  for (const member of members) {
+  const invalid = members.find((member) => {
     const url = QUOTED_STRING.exec(member)?.[1];
-    if (url === undefined || url.trim() === '') {
-      return [
-        finding(
-          'warning',
-          `The 'Speculation-Rules' header must list quoted ruleset URLs, not '${member}'.`,
-        ),
-      ];
-    }
+    return url === undefined || url.trim() === '';
+  });
+  if (invalid !== undefined) {
+    return [
+      finding(
+        'warning',
+        `The 'Speculation-Rules' header must list quoted ruleset URLs, not '${invalid}'.`,
+      ),
+    ];
   }
   return [];
 }

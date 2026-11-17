@@ -5,8 +5,8 @@ import {
   checkOauthDiscovery,
   checkOauthProtectedResource,
 } from '../../../src/lib/agent/oauth.js';
-import { fakeEnv } from './fake-env.js';
 import { HTTP_SCHEME } from '../../helpers/data.js';
+import { fakeEnv } from './fake-env.js';
 
 describe('isIdentifierUrl', () => {
   it('accepts https URLs and http loopback hosts', () => {

@@ -1,8 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { findCheck } from '@/domain/checks/catalogue';
-import type { Comparison } from '@/domain/suite/baseline';
-import type { StoredFinding } from '@/domain/suite/diff';
 import {
   MAX_LISTED,
   MAX_PROBLEMS,
@@ -31,27 +29,29 @@ import {
   safeText,
 } from '@/domain/suite/report';
 import { HTTP_SCHEME } from '../../helpers/data.js';
+import type { Comparison } from '@/domain/suite/baseline';
+import type { StoredFinding } from '@/domain/suite/diff';
 
 /** Matches an issue number reference. */
-const ISSUE_REFERENCE_PATTERN = /#\d/;
+const ISSUE_REFERENCE_PATTERN = /#\d/u;
 
 /** Matches a control character, which could start a new line or block. */
 const CONTROL_CHARACTER = /\p{Cc}/u;
 
 /** Matches the closing code fence. */
-const JSON_FENCE_CLOSE_PATTERN = /\n```$/;
+const JSON_FENCE_CLOSE_PATTERN = /\n```$/u;
 
 /** Matches the opening json code fence. */
-const JSON_FENCE_OPEN_PATTERN = /^```json\n/;
+const JSON_FENCE_OPEN_PATTERN = /^```json\n/u;
 
 /** Matches characters that would be markdown or HTML markup. */
-const MARKDOWN_SPECIAL_PATTERN = /[<>[\]`]/;
+const MARKDOWN_SPECIAL_PATTERN = /[<>[\]`]/u;
 
 /** Matches an at-mention. */
-const MENTION_PATTERN = /@[a-z]/;
+const MENTION_PATTERN = /@[a-z]/u;
 
 /** Matches an http or https url scheme. */
-const URL_SCHEME_PATTERN = /https?:\/\//;
+const URL_SCHEME_PATTERN = /https?:\/\//u;
 
 const found = (
   severity: StoredFinding['severity'],
@@ -108,8 +108,9 @@ describe('breakdown', () => {
     const viewport = findCheck('seo-viewport')?.name ?? '';
     const links = findCheck('seo-links')?.name ?? '';
     expect(viewport).not.toBe('');
-    expect(text.indexOf(viewport)).toBeGreaterThanOrEqual(0);
-    expect(text.indexOf(viewport)).toBeLessThan(text.indexOf(links));
+    const viewportAt = text.indexOf(viewport);
+    expect(viewportAt).toBeGreaterThanOrEqual(0);
+    expect(viewportAt).toBeLessThan(text.indexOf(links));
     expect(text).toContain('(`seo-viewport`)');
     expect(text.indexOf('**warning**: w1')).toBeLessThan(
       text.indexOf('**hint**: h1'),

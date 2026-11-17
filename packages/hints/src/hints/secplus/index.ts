@@ -1,9 +1,9 @@
-import type { HintDefinition } from '../../core/define-hint.js';
 import tabnabbing from './tabnabbing.js';
 import cspStrength from './csp-strength.js';
 import cookiePrefixes from './cookie-prefixes.js';
 import httpMethods from './http-methods.js';
 import formActionSecure from './form-action-secure.js';
+import type { HintDefinition } from '../../core/define-hint.js';
 
 /**
  * Hints of the `secplus` set: security checks beyond the single-header ones —

@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
-import type { ToolContent } from '@/domain/mcp/tool-context';
 
 import { addDomain } from '@/domain/db/domains';
-import type { User } from '@/domain/db/users';
 import { callTool } from '@/domain/mcp/tool-calls';
-import type { ToolResult } from '@/domain/mcp/tool-results';
 
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../../lib/core/db/sqlite-db';
+import type { ToolResult } from '@/domain/mcp/tool-results';
+import type { User } from '@/domain/db/users';
+import type { ToolContent } from '@/domain/mcp/tool-context';
 
 const USER = { id: 1 } as User;
 

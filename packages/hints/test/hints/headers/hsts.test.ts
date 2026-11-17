@@ -37,7 +37,7 @@ describe('hsts', () => {
     const fetchHeader = jest.fn(async () => null);
     hstsClient.fetchHeader = fetchHeader;
     await runHint(hint, page('max-age=31536000'));
-    expect(fetchHeader).not.toHaveBeenCalled();
+    expect(fetchHeader.mock.calls).toEqual([]);
   });
 
   it('owasp: passes the recommended values', async () => {

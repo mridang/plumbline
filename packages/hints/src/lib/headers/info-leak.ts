@@ -6,16 +6,17 @@
  * source maps that de-minify the shipped code. The checks follow the MDN
  * reference pages for each header and report (never require) a value.
  */
-import { finding, type Finding } from './finding.js';
+import { finding } from './finding.js';
+import type { Finding } from './finding.js';
 
 /** Matches a leading `product/version` token. */
-const PRODUCT_TOKEN_PREFIX = /^\S*\/\S*\s*/;
+const PRODUCT_TOKEN_PREFIX = /^\S*\/\S*\s*/u;
 
 /** Matches a single ASCII letter. */
-const ANY_LETTER = /[a-z]/i;
+const ANY_LETTER = /[a-z]/iu;
 
 /** Matches a single digit. */
-const ANY_DIGIT = /\d/;
+const ANY_DIGIT = /\d/u;
 
 /**
  * `Server` identifies the software handling the request. A bare product name

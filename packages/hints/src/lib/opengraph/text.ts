@@ -1,5 +1,5 @@
 /** Matches an `http://` or `https://` prefix. */
-const HTTP_OR_HTTPS_PREFIX = /^https?:\/\//i;
+const HTTP_OR_HTTPS_PREFIX = /^https?:\/\//iu;
 /** Text helpers for the Open Graph title and description rules. */
 
 /** Counts characters the way a reader does (code points, not UTF-16 units). */
@@ -14,7 +14,7 @@ export function startsWithUrl(text: string): boolean {
 
 /** Collapses case and whitespace so two texts can be compared. */
 export function normalizeText(text: string): string {
-  return text.trim().replaceAll(/\s+/g, ' ').toLowerCase();
+  return text.trim().replaceAll(/\s+/gu, ' ').toLowerCase();
 }
 
 /** Words that are naturally repeated and never count as stuffing. */
@@ -49,19 +49,13 @@ const STOP_WORDS = new Set([
  */
 export function hasKeywordStuffing(text: string): boolean {
   const words = text.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
-  const counts = new Map<string, number>();
-  for (const word of words) {
-    if (word.length >= 3 && !STOP_WORDS.has(word)) {
-      counts.set(word, (counts.get(word) ?? 0) + 1);
-    }
-  }
-  for (const count of counts.values()) {
-    if (count >= 4) {
-      return true;
-    }
-    if (count >= 3 && words.length >= 6 && count / words.length > 0.3) {
-      return true;
-    }
-  }
-  return false;
+  const groups = Map.groupBy(
+    words.filter((word) => word.length >= 3 && !STOP_WORDS.has(word)),
+    (word) => word,
+  );
+  return [...groups.values()].some(
+    ({ length: count }) =>
+      count >= 4 ||
+      (count >= 3 && words.length >= 6 && count / words.length > 0.3),
+  );
 }

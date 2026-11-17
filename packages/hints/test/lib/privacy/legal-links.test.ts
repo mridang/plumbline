@@ -7,8 +7,8 @@ import {
   privacyPolicyLinkMissing,
   TERMS_OF_SERVICE_LINK_REF,
   termsOfServiceLinkMissing,
-  type DocumentLike,
 } from '../../../src/lib/privacy/legal-links.js';
+import type { DocumentLike } from '../../../src/lib/privacy/legal-links.js';
 
 /** One element of the fake document: its tag, text and attributes. */
 interface FakeElement {
@@ -25,17 +25,24 @@ interface FakeElement {
 function document_(elements: readonly FakeElement[]): DocumentLike {
   return {
     querySelectorAll: (selector: string) =>
-      elements
-        .filter((element) => element.href !== undefined)
-        .filter((element) => selector.includes(`${element.tag}[href]`))
-        .map((element) => ({
-          textContent: element.text ?? '',
-          getAttribute: (name: string) => {
-            if (name === 'href') return element.href ?? null;
-            if (name === 'rel') return element.rel ?? null;
-            return null;
-          },
-        })),
+      elements.flatMap((element) =>
+        element.href !== undefined && selector.includes(`${element.tag}[href]`)
+          ? [
+              {
+                textContent: element.text ?? '',
+                getAttribute: (name: string) => {
+                  if (name === 'href') {
+                    return element.href ?? null;
+                  }
+                  if (name === 'rel') {
+                    return element.rel ?? null;
+                  }
+                  return null;
+                },
+              },
+            ]
+          : [],
+      ),
   };
 }
 
@@ -216,6 +223,7 @@ describe('findLegalLink', () => {
     ).toBeUndefined();
   });
 
+  // eslint-disable-next-line no-script-url -- the fixture is the javascript: scheme the check must skip
   it.each(['', '#', 'javascript:openPrivacy()', 'mailto:privacy@example.com'])(
     'skips the address %p, which is not a page',
     (href) => {
@@ -292,7 +300,9 @@ describe('termsOfServiceLinkMissing', () => {
 function seeded(seed: number): () => number {
   let state = seed;
   return () => {
-    state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+    state =
+      (((Math.imul(state, 1_664_525) + 1_013_904_223) % 2 ** 32) + 2 ** 32) %
+      2 ** 32;
     return state / 2 ** 32;
   };
 }
@@ -316,7 +326,7 @@ describe('TEXT and PATH', () => {
       'condiciones|termos|gebruiksvoorwaarden|voorwaarden|termini|villkor',
       'vilk[aå]r|k[aä]ytt[oö]ehdot|regulamin)',
     ].join('|'),
-    'i',
+    'iu',
   );
   const oldPath = new RegExp(
     [
@@ -325,7 +335,7 @@ describe('TEXT and PATH', () => {
       '(^|[_.-])agb([_.-]|$)',
       'nutzungsbedingungen|condiciones|voorwaarden|villkor|vilkar)',
     ].join('|'),
-    'i',
+    'iu',
   );
   const words = [
     'terms',

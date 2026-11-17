@@ -1,4 +1,3 @@
-import type { HintDefinition } from '../../core/define-hint.js';
 import caa from './caa.js';
 import daneExists from './dane-exists.js';
 import daneRollover from './dane-rollover.js';
@@ -15,6 +14,7 @@ import rpkiNsExists from './rpki-ns-exists.js';
 import rpkiNsValid from './rpki-ns-valid.js';
 import rpkiWebExists from './rpki-web-exists.js';
 import rpkiWebValid from './rpki-web-valid.js';
+import type { HintDefinition } from '../../core/define-hint.js';
 
 /** Hints of the `network` set (IPv6, DNSSEC, DANE, RPKI, CAA, compression). */
 export const networkHints: readonly HintDefinition[] = [

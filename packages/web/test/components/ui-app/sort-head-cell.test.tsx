@@ -4,7 +4,7 @@ import { SortHeadCell } from '@/components/ui-app/sort-head-cell';
 import { html } from '../render';
 
 /** Matches the Status sort button. */
-const STATUS_BUTTON_PATTERN = /<button[^>]*type="button"[^>]*>Status/;
+const STATUS_BUTTON_PATTERN = /<button[^>]*type="button"[^>]*>Status/u;
 
 const cell = (direction: 'ascending' | 'descending' | null, align?: 'end') =>
   html(

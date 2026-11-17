@@ -1,11 +1,11 @@
 /** Matches a run of whitespace or commas. */
-const WHITESPACE_OR_COMMA_RUN = /[\s,]+/;
+const WHITESPACE_OR_COMMA_RUN = /[\s,]+/u;
 
 /** Matches an opening SVG tag. */
-const SVG_OPEN_TAG = /<svg\b[^>]*>/i;
+const SVG_OPEN_TAG = /<svg\b[^>]*>/iu;
 
 /** Matches a pixel length such as `100px`. */
-const PIXEL_LENGTH = /^([\d.]+)\s*(?:px)?$/i;
+const PIXEL_LENGTH = /^([\d.]+)\s*(?:px)?$/iu;
 /**
  * Reads the format and pixel size of an image from its header bytes, in pure
  * TypeScript. Supports PNG, JPEG, GIF, WebP and SVG.
@@ -54,8 +54,10 @@ function gif(b: Uint8Array): ImageInfo | null {
 
 function jpeg(b: Uint8Array): ImageInfo | null {
   const v = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  // eslint-disable-next-line functional/no-let -- byte cursor over an untrusted file; recursion could overflow the stack
   let index = 2;
   // Walk the marker segments until a start-of-frame marker is found.
+  // eslint-disable-next-line functional/no-loop-statements -- scans bytes of an untrusted file with an unbounded step count
   while (index + 9 < b.length) {
     const marker = b[index + 1];
 
@@ -81,30 +83,31 @@ function webp(b: Uint8Array): ImageInfo | null {
   if (b.length < 30) {
     return null;
   }
+  const v = new DataView(b.buffer, b.byteOffset, b.byteLength);
   const kind = ascii(b, 12, 16);
   if (kind === 'VP8X') {
     // 24 bit little endian "canvas size minus one" values.
     return {
       format: 'webp',
-      width: 1 + (b[24] | (b[25] << 8) | (b[26] << 16)),
-      height: 1 + (b[27] | (b[28] << 8) | (b[29] << 16)),
+      width: 1 + v.getUint16(24, true) + b[26] * 0x1_00_00,
+      height: 1 + v.getUint16(27, true) + b[29] * 0x1_00_00,
     };
   }
   if (kind === 'VP8L') {
     // 14 bit width and height minus one, packed after the 0x2f signature.
-    const bits = b[21] | (b[22] << 8) | (b[23] << 16) | (b[24] << 24);
+    const bits = v.getUint32(21, true);
     return {
       format: 'webp',
-      width: 1 + (bits & MASK_14_BITS),
-      height: 1 + ((bits >> 14) & MASK_14_BITS),
+      width: 1 + (bits % (MASK_14_BITS + 1)),
+      height: 1 + (Math.floor(bits / (MASK_14_BITS + 1)) % (MASK_14_BITS + 1)),
     };
   }
   if (kind === 'VP8 ') {
     // Lossy: 14 bit sizes after the 3 byte frame tag and 3 byte start code.
     return {
       format: 'webp',
-      width: (b[26] | (b[27] << 8)) & MASK_14_BITS,
-      height: (b[28] | (b[29] << 8)) & MASK_14_BITS,
+      width: v.getUint16(26, true) % (MASK_14_BITS + 1),
+      height: v.getUint16(28, true) % (MASK_14_BITS + 1),
     };
   }
   return null;
@@ -122,22 +125,19 @@ function svg(text: string): ImageInfo | null {
     return null;
   }
   const attribute = (name: string) =>
-    new RegExp(String.raw`\s${name}\s*=\s*["']([^"']*)["']`, 'i').exec(
+    new RegExp(String.raw`\s${name}\s*=\s*["']([^"']*)["']`, 'iu').exec(
       tag,
     )?.[1];
-  let width = svgLength(attribute('width'));
-  let height = svgLength(attribute('height'));
-  if (width === null || height === null) {
-    // Fall back to the viewBox when width/height are missing or relative.
-    const box = attribute('viewBox')
-      ?.trim()
-      .split(WHITESPACE_OR_COMMA_RUN)
-      .map(Number);
-    if (box?.length === 4 && box.every((n) => Number.isFinite(n))) {
-      width = box[2];
-      height = box[3];
-    }
-  }
+  const declaredWidth = svgLength(attribute('width'));
+  const declaredHeight = svgLength(attribute('height'));
+  // Fall back to the viewBox when width/height are missing or relative.
+  const box =
+    declaredWidth === null || declaredHeight === null
+      ? attribute('viewBox')?.trim().split(WHITESPACE_OR_COMMA_RUN).map(Number)
+      : undefined;
+  const fromBox = box?.length === 4 && box.every((n) => Number.isFinite(n));
+  const width = fromBox ? box[2] : declaredWidth;
+  const height = fromBox ? box[3] : declaredHeight;
   return width && height ? { format: 'svg', width, height } : null;
 }
 

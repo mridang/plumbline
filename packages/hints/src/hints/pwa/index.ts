@@ -1,8 +1,8 @@
-import type { HintDefinition } from '../../core/define-hint.js';
 import manifestLinked from './manifest-linked.js';
 import manifestValid from './manifest-valid.js';
 import manifestIcons from './manifest-icons.js';
 import themeColorMeta from './theme-color-meta.js';
+import type { HintDefinition } from '../../core/define-hint.js';
 
 /**
  * Hints of the `pwa` set: the Web App Manifest and the related install

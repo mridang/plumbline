@@ -170,7 +170,7 @@ describe('resyncStaleInstallation', () => {
     const sync =
       jest.fn<(user: number, installation: number) => Promise<void>>();
     await resyncStaleInstallation(db, sync, () => start);
-    expect(sync).not.toHaveBeenCalled();
+    expect(sync.mock.calls).toEqual([]);
   });
 
   it('does not fail the trigger when GitHub cannot be read', async () => {

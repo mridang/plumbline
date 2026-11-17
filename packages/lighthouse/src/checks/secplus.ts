@@ -20,22 +20,17 @@
  * `numeric` — each is a real security problem, so it is scored, not advisory.
  */
 import { createHTMLDocument } from '@hint/utils-dom';
-import type { Artifacts } from 'lighthouse';
-import type { HTMLDocument } from '@hint/utils-dom';
-import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 import { headerValues } from '@mridang/webhint-hint-plumbline/dist/lib/headers/http-headers.js';
 // The single-source secplus rules: predicate + message + severity. Both this
 // check and the webhint hints call these, so neither restates the wording.
-import {
-  tabnabbingFindings,
-  type AnchorLike,
-} from '@mridang/webhint-hint-plumbline/dist/lib/secplus/tabnabbing.js';
+import { tabnabbingFindings } from '@mridang/webhint-hint-plumbline/dist/lib/secplus/tabnabbing.js';
 import { evaluateCspStrength } from '@mridang/webhint-hint-plumbline/dist/lib/secplus/csp-strength.js';
 import { cookiePrefixFindings } from '@mridang/webhint-hint-plumbline/dist/lib/secplus/cookie-prefixes.js';
-import {
-  formActionFindings,
-  type FormLike,
-} from '@mridang/webhint-hint-plumbline/dist/lib/secplus/form-action.js';
+import { formActionFindings } from '@mridang/webhint-hint-plumbline/dist/lib/secplus/form-action.js';
+import tabnabbingHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/tabnabbing.js';
+import cspStrengthHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/csp-strength.js';
+import cookiePrefixesHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/cookie-prefixes.js';
+import formActionSecureHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/form-action-secure.js';
 import { mainResponse } from '../network.js';
 import { cspMetaContents } from '../adapt.js';
 import { hintDocumentation } from '../meta.js';
@@ -44,10 +39,11 @@ import type { AuditCheck } from './types.js';
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); their check logic is reused through the
 // `src/lib/secplus/**` functions above, not through these modules.
-import tabnabbingHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/tabnabbing.js';
-import cspStrengthHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/csp-strength.js';
-import cookiePrefixesHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/cookie-prefixes.js';
-import formActionSecureHint from '@mridang/webhint-hint-plumbline/dist/hints/secplus/form-action-secure.js';
+import type { FormLike } from '@mridang/webhint-hint-plumbline/dist/lib/secplus/form-action.js';
+import type { AnchorLike } from '@mridang/webhint-hint-plumbline/dist/lib/secplus/tabnabbing.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import type { HTMLDocument } from '@hint/utils-dom';
+import type { Artifacts } from 'lighthouse';
 
 /** The artifact sets each check reads, named for what reads them. */
 const HTML_AND_URL = ['MainDocumentContent', 'URL'] as const;

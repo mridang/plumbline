@@ -7,18 +7,19 @@
  */
 
 import { findCheck } from '@/domain/checks/catalogue';
+import { reportResource } from '@/domain/api/report-resource';
+import { SITE_URL } from '@/utils/site';
+import { textResult } from '@/lib/mcp';
 import type { Domain } from '@/domain/db/domains';
 import type { Report, ReportSummary } from '@/domain/db/reports';
-import { reportResource } from '@/domain/api/report-resource';
 import type {
   DomainListData,
   ReportData,
   ReportProblem,
   ReportTally,
 } from '@/domain/mcp/ui-types';
-import { SITE_URL } from '@/utils/site';
 
-import { textResult, type ToolResult } from '@/lib/mcp';
+import type { ToolResult } from '@/lib/mcp';
 import type { ToolContent } from '@/domain/mcp/tool-context';
 
 export {
@@ -93,28 +94,20 @@ export function reportData(
 export function reportText(data: Readonly<ReportData>): string {
   const lines = [
     `Report for ${data.host} (${data.url}), scanned ${data.created_at}: ${tallyLine(data)}.`,
-  ];
-  for (const problem of data.problems) {
-    lines.push(
+    ...data.problems.flatMap((problem) => [
       `\n${problem.status.toUpperCase()} ${problem.id}: ${problem.name}`,
-    );
-    for (const finding of problem.findings) {
-      lines.push(`- ${finding.message} (${finding.resource})`);
-      if (finding.snippet) {
-        lines.push(`  ${finding.snippet.replaceAll(/\s+/g, ' ')}`);
-      }
-    }
-    if (problem.fixer) {
-      lines.push(`Usually fixed in: ${problem.fixer}.`);
-    }
-    if (problem.reference) {
-      lines.push(`Rule: ${problem.reference}`);
-    }
-  }
-  if (data.problems.length === 0) {
-    lines.push('Nothing failed or warned.');
-  }
-  lines.push(`\nOpen it on Plumbline: ${data.link}`);
+      ...problem.findings.flatMap((finding) => [
+        `- ${finding.message} (${finding.resource})`,
+        ...(finding.snippet
+          ? [`  ${finding.snippet.replaceAll(/\s+/gu, ' ')}`]
+          : []),
+      ]),
+      ...(problem.fixer ? [`Usually fixed in: ${problem.fixer}.`] : []),
+      ...(problem.reference ? [`Rule: ${problem.reference}`] : []),
+    ]),
+    ...(data.problems.length === 0 ? ['Nothing failed or warned.'] : []),
+    `\nOpen it on Plumbline: ${data.link}`,
+  ];
   return lines.join('\n');
 }
 

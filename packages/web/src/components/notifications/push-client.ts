@@ -45,17 +45,13 @@ export function pushSupport(caps: PushCapabilities): PushSupport {
 export function keyBytes(base64url: string): Uint8Array<ArrayBuffer> {
   const base64 = base64url.replaceAll('-', '+').replaceAll('_', '/');
   const binary = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='));
-  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.codePointAt(index) ?? 0;
-  }
-  return bytes;
+  return Uint8Array.from(binary, (character) => character.codePointAt(0) ?? 0);
 }
 
 /** The part of a browser subscription the page uses. */
 export interface BrowserSubscription {
   readonly endpoint: string;
-  toJSON(): unknown;
+  toJSON(): PushSubscriptionJSON;
   unsubscribe(): Promise<boolean>;
 }
 
@@ -96,14 +92,8 @@ async function addressOf(subscription: BrowserSubscription): Promise<string> {
 }
 
 /** A subscription as the API takes it: its address and keys. */
-export function wireOf(subscription: BrowserSubscription): {
-  endpoint: unknown;
-  keys: unknown;
-} {
-  const { endpoint, keys } = subscription.toJSON() as {
-    endpoint: unknown;
-    keys: unknown;
-  };
+export function wireOf(subscription: BrowserSubscription) {
+  const { endpoint, keys } = subscription.toJSON();
   return { endpoint, keys };
 }
 

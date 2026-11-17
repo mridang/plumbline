@@ -18,7 +18,7 @@ describe('technical-image-alt-coverage', () => {
     ).toEqual([]);
   });
   it('warns at 80 percent coverage', async () => {
-    const body = '<img src="/a" alt="a">'.repeat(4) + '<img src="/b">';
+    const body = `${'<img src="/a" alt="a">'.repeat(4)}<img src="/b">`;
     const problems = await runHint(hint, page(body));
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain('1 of 5');

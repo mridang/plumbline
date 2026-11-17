@@ -1,7 +1,7 @@
-import type { IncomingMessage } from 'node:http';
 import { describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/i18n/hreflang-self.js';
 import { runHint } from '../../helpers/run-hint.js';
+import type { IncomingMessage } from 'node:http';
 
 function routes(headFor: (url: string) => string) {
   return {

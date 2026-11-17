@@ -7,7 +7,7 @@
  * failure sends them back with a fixed flag rather than leaking details.
  */
 
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { linkAccount, saveInstallation } from '@/domain/db/github';
 import { getDatabase } from '@/domain/db/client';
@@ -25,6 +25,7 @@ import {
 } from '@/domain/github/service';
 import { getCurrentUser } from '@/lib/core/auth/current-user';
 import { appOrigin } from '@/lib/core/origin';
+import type { NextRequest } from 'next/server';
 
 /** Back to the GitHub page with the one-time cookie cleared. */
 function back(origin: string, flag: string | null): NextResponse {
@@ -63,6 +64,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     if (!(await linkAccount(db, user.id, identity))) {
       return back(origin, 'taken');
     }
+    // eslint-disable-next-line functional/no-loop-statements -- installations are saved one after another, in order
     for (const installation of identity.installations) {
       await saveInstallation(
         db,

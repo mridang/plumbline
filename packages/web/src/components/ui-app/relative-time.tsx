@@ -1,25 +1,29 @@
 'use client';
 
-import { useSyncExternalStore, type ReactElement } from 'react';
-
+import { useSyncExternalStore } from 'react';
 import { formatTimestamp, relativeTime } from '@/lib/intl';
+import type { ReactElement } from 'react';
 
 /** How often the words are worked out again, in milliseconds. */
 export const TICK_MS = 30_000;
 
 /** The listeners of the one shared clock. */
 const listeners = new Set<() => void>();
+// eslint-disable-next-line functional/no-let -- the one shared clock is started and stopped by the first and last listener
 let timer: ReturnType<typeof setInterval> | null = null;
 
 /** Starts the shared clock with the first listener and stops it with the last. */
 function subscribe(listener: () => void): () => void {
+  // eslint-disable-next-line functional/immutable-data -- the listeners of the shared clock are kept in this set
   listeners.add(listener);
   timer ??= setInterval(() => {
+    // eslint-disable-next-line functional/no-loop-statements -- calls every listener, nothing is built
     for (const each of listeners) {
       each();
     }
   }, TICK_MS);
   return () => {
+    // eslint-disable-next-line functional/immutable-data -- the listeners of the shared clock are kept in this set
     listeners.delete(listener);
     if (listeners.size === 0 && timer !== null) {
       clearInterval(timer);

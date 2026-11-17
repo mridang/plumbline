@@ -1,5 +1,3 @@
-import type { ReactElement } from 'react';
-
 import { Badge } from '@/components/ui-app/badge';
 import { EmptyState } from '@/components/ui-app/empty-state';
 import { RelativeTime } from '@/components/ui-app/relative-time';
@@ -12,6 +10,7 @@ import {
   TableBody,
   TableHead,
 } from '@/components/ui-app/table';
+import type { ReactElement } from 'react';
 import type { Tone } from '@/components/ui-app/tone';
 import type { RunKind, RunSummary } from '@/domain/db/runs';
 

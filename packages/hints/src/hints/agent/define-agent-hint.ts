@@ -1,14 +1,11 @@
-import type { ReportOptions } from 'hint';
-import type { CheckResult } from '../../lib/agent/types.js';
 import { Severity } from '@hint/utils-types';
-import {
-  Category,
-  defineHint,
-  type HintDefinition,
-} from '../../core/define-hint.js';
-import type { Group } from '../../core/groups.js';
+import { Category, defineHint } from '../../core/define-hint.js';
 import { onSite } from '../../core/page.js';
 import { resultFor } from './scan.js';
+import type { HintDefinition } from '../../core/define-hint.js';
+import type { Group } from '../../core/groups.js';
+import type { CheckResult } from '../../lib/agent/types.js';
+import type { ReportOptions } from 'hint';
 
 export interface AgentHintSpec {
   /** Check id and hint id, for example `agent-robots-txt`. */

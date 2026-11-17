@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
+import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
+import { headersxChecks } from '../../src/checks/headersx.js';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
-import { headersxChecks } from '../../src/checks/headersx.js';
-import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 import type { AuditCheck } from '../../src/checks/types.js';
 
 /** Locale-aware comparator used to sort check ids deterministically. */
@@ -72,7 +72,9 @@ function artifacts(url: string, headers: Record<string, string>): Artifacts {
 }
 
 function context(): AuditNS.Context {
-  return { computedCache: new Map() } as unknown as AuditNS.Context;
+  return {
+    computedCache: new Map<string, unknown>(),
+  } as unknown as AuditNS.Context;
 }
 
 function check(id: string): AuditCheck {

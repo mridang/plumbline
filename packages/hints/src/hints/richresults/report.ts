@@ -1,6 +1,7 @@
 import { Severity } from '@hint/utils-types';
+import { readJsonLd } from '../../lib/geo/json-ld.js';
+import type { JsonLdBlocks } from '../../lib/geo/json-ld.js';
 import type { Page } from '../../core/page.js';
-import { readJsonLd, type JsonLdBlocks } from '../../lib/geo/json-ld.js';
 import type { Finding } from '../../lib/headers/finding.js';
 
 /** Maps a shared finding's severity onto webhint's. */
@@ -32,6 +33,7 @@ export function reportRichResults(
   const element =
     page.document.querySelector('script[type="application/ld+json" i]') ??
     page.document.querySelector('head');
+  // eslint-disable-next-line functional/no-loop-statements -- reports each finding
   for (const finding of check(blocks)) {
     page.report(finding.message, {
       severity: toSeverity(finding),

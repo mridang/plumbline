@@ -4,7 +4,8 @@
  * becomes the worker's allowed scope. The check validates it when present,
  * following the MDN reference page.
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
+import type { Finding } from '../headers/finding.js';
 
 /**
  * `Service-Worker-Allowed` must be a path or absolute URL. A value that is

@@ -22,8 +22,8 @@
  *   - `auditRefs` one per check, grouped by its section, weighted 1 for a scored
  *                 check and 0 for an informative one.
  */
-import { checks } from './checks/index.js';
 import { SECTIONS } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
+import { checks } from './checks/index.js';
 
 /** The published package name Lighthouse resolves audit module paths against. */
 const PACKAGE = '@mridang/lighthouse-plugin-plumbline';

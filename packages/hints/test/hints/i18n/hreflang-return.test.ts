@@ -1,7 +1,7 @@
-import type { IncomingMessage } from 'node:http';
 import { describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/i18n/hreflang-return.js';
 import { runHint } from '../../helpers/run-hint.js';
+import type { IncomingMessage } from 'node:http';
 
 /** A page whose head is built from the live page URL (so hrefs are absolute). */
 function routes(headFor: (url: string) => string) {

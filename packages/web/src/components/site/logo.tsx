@@ -1,7 +1,6 @@
-import type { ReactElement } from 'react';
-
 import { BRAND_NAME } from '@/app/_brand';
 import { cn } from '@/components/ui/cn';
+import type { ReactElement } from 'react';
 
 /** A plumb bob on its line: the app's mark, in the brand colour. */
 export function BrandMark({

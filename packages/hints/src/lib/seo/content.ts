@@ -8,7 +8,8 @@
  * Everything is a pure function over strings and plain objects so it can be
  * tested without a scan.
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
+import type { Finding } from '../headers/finding.js';
 
 /** Compares words in the default locale order. */
 const collator = new Intl.Collator();
@@ -17,25 +18,25 @@ const collator = new Intl.Collator();
 const TITLE_TRAILING_PUNCTUATION = /[\s.…»›→>]/u;
 
 /** Matches an `http:` or `https:` protocol. */
-const HTTP_OR_HTTPS_PROTOCOL = /^https?:$/;
+const HTTP_OR_HTTPS_PROTOCOL = /^https?:$/u;
 
 /** Matches a link prefix that does not point to a page. */
-const NON_PAGE_LINK_PREFIX = /^(#|mailto:|tel:|javascript:|data:)/i;
+const NON_PAGE_LINK_PREFIX = /^(#|mailto:|tel:|javascript:|data:)/iu;
 
 /** Matches a leading `www.`. */
-const WWW_PREFIX = /^www\./;
+const WWW_PREFIX = /^www\./u;
 
 /** Matches a percent-encoded byte. */
-const PERCENT_ESCAPE = /%[0-9a-f]{2}/i;
+const PERCENT_ESCAPE = /%[0-9a-f]{2}/iu;
 
 /** Matches a word made of numbers, apostrophes and hyphens. */
 const NUMERIC_WORD = /^[\p{N}'’-]+$/u;
 
 /** Matches an apostrophe or hyphen. */
-const APOSTROPHE_OR_HYPHEN = /['’-]/;
+const APOSTROPHE_OR_HYPHEN = /['’-]/u;
 
 /** Matches leading apostrophes and hyphens. */
-const LEADING_APOSTROPHES = /^['’-]+/;
+const LEADING_APOSTROPHES = /^['’-]+/u;
 
 /** Roctify lists no page per check, so every Roctify hint links the tool. */
 export const ROCTIFY_REF = 'https://roctify.com/tools/seo-checker';
@@ -52,54 +53,54 @@ export const MAX_PATH_SEGMENTS = 5;
 /** More query parameters than this make a URL look like a session or filter. */
 export const MAX_QUERY_PARAMS = 2;
 
-const ENTITIES: Readonly<Record<string, string>> = {
-  '&nbsp;': ' ',
-  '&amp;': '&',
-  '&lt;': '<',
-  '&gt;': '>',
-  '&quot;': '"',
-  '&#39;': "'",
-};
+const ENTITIES = new Map([
+  ['&nbsp;', ' '],
+  ['&amp;', '&'],
+  ['&lt;', '<'],
+  ['&gt;', '>'],
+  ['&quot;', '"'],
+  ['&#39;', "'"],
+]);
 
 /** Elements whose content is not text a visitor reads. */
 const NON_TEXT =
-  /<(script|style|noscript|template|head|svg)\b[\s\S]*?<\/\1\s*>/gi;
+  /<(script|style|noscript|template|head|svg)\b[\s\S]*?<\/\1\s*>/giu;
 
 /** Removes trailing characters matching `drop`, scanning once from the end. */
 function trimEnd(value: string, drop: RegExp): string {
-  let end = value.length;
-  while (end > 0 && drop.test(value[end - 1])) {
-    end -= 1;
-  }
-  return value.slice(0, end);
+  const characters = Array.from(value, (character) => character);
+  return characters
+    .slice(
+      0,
+      characters.findLastIndex((character) => !drop.test(character)) + 1,
+    )
+    .join('');
 }
 
 /** Replaces every `<...>` (up to the first `>`) with a space; a lone `<` stays. */
 function stripTags(html: string): string {
-  let out = '';
-  let kept = 0;
-  let open = html.indexOf('<');
-  while (open !== -1) {
-    const close = html.indexOf('>', open + 1);
-    if (close === -1) {
-      break;
-    }
-    out += `${html.slice(kept, open)} `;
-    kept = close + 1;
-    open = html.indexOf('<', kept);
-  }
-  return out + html.slice(kept);
+  const pieces = html.split('>');
+  return pieces
+    .map((piece, index) => {
+      if (index === pieces.length - 1) {
+        return piece;
+      }
+      const open = piece.indexOf('<');
+      return open === -1 ? `${piece}>` : `${piece.slice(0, open)} `;
+    })
+    .join('');
 }
 
 /** Returns the text a visitor reads in `html`, with whitespace collapsed. */
 export function visibleText(html: string): string {
   return stripTags(
-    html.replaceAll(/<!--[\s\S]*?-->/g, ' ').replaceAll(NON_TEXT, ' '),
+    html.replaceAll(/<!--[\s\S]*?-->/gu, ' ').replaceAll(NON_TEXT, ' '),
   )
-    .replaceAll(/&(?:nbsp|amp|lt|gt|quot|#39);/gi, (entity) => {
-      return ENTITIES[entity.toLowerCase()] ?? ' ';
-    })
-    .replaceAll(/\s+/g, ' ')
+    .replaceAll(
+      /&(?:nbsp|amp|lt|gt|quot|#39);/giu,
+      (entity) => ENTITIES.get(entity.toLowerCase()) ?? ' ',
+    )
+    .replaceAll(/\s+/gu, ' ')
     .trim();
 }
 
@@ -144,20 +145,22 @@ export interface Keyword {
  * numbers and not stop words. A word must appear twice to count.
  */
 export function topKeywords(text: string, limit = 5): Keyword[] {
-  const counts = new Map<string, number>();
-  for (const raw of wordsOf(text)) {
-    const word = trimEnd(
-      raw.toLowerCase().replace(LEADING_APOSTROPHES, ''),
-      APOSTROPHE_OR_HYPHEN,
-    );
-    if (word.length < 3 || STOP_WORDS.has(word) || NUMERIC_WORD.test(word)) {
-      continue;
-    }
-    counts.set(word, (counts.get(word) ?? 0) + 1);
-  }
-  return [...counts.entries()]
-    .filter(([, count]) => count >= 2)
-    .map(([word, count]) => ({ word, count }))
+  const groups = Map.groupBy(
+    wordsOf(text).flatMap((raw) => {
+      const word = trimEnd(
+        raw.toLowerCase().replace(LEADING_APOSTROPHES, ''),
+        APOSTROPHE_OR_HYPHEN,
+      );
+      return word.length < 3 || STOP_WORDS.has(word) || NUMERIC_WORD.test(word)
+        ? []
+        : [word];
+    }),
+    (word) => word,
+  );
+  return [...groups]
+    .flatMap(([word, list]) =>
+      list.length >= 2 ? [{ word, count: list.length }] : [],
+    )
     .toSorted((a, b) => b.count - a.count || collator.compare(a.word, b.word))
     .slice(0, limit);
 }
@@ -202,42 +205,63 @@ export function keywordsInTitleFindings(
 
 /** Checks that the URL is short, lower-case and readable. */
 export function friendlyUrlFindings(url: string): Finding[] {
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
+  if (!URL.canParse(url)) {
     return [];
   }
-  const out: Finding[] = [];
-  const problem = (message: string) => out.push(finding('warning', message));
+  const parsed = new URL(url);
   const path = parsed.pathname;
-  if (url.length > MAX_URL_LENGTH) {
-    problem(
-      `The URL is ${url.length} characters long; keep it under ${MAX_URL_LENGTH}.`,
-    );
-  }
-  if (path !== path.toLowerCase()) {
-    problem('The URL path has upper-case letters; use lower case only.');
-  }
-  if (path.includes('_')) {
-    problem('The URL path has underscores; separate words with hyphens.');
-  }
-  if (PERCENT_ESCAPE.test(path)) {
-    problem('The URL path has encoded characters; use plain ASCII words.');
-  }
   const segments = path.split('/').filter((segment) => segment !== '');
-  if (segments.length > MAX_PATH_SEGMENTS) {
-    problem(
-      `The URL path has ${segments.length} levels; keep it to ${MAX_PATH_SEGMENTS} or fewer.`,
-    );
-  }
   const params = [...parsed.searchParams.keys()].length;
-  if (params > MAX_QUERY_PARAMS) {
-    problem(
-      `The URL has ${params} query parameters; use a readable path instead.`,
-    );
-  }
-  return out;
+  return [
+    ...(url.length > MAX_URL_LENGTH
+      ? [
+          finding(
+            'warning',
+            `The URL is ${url.length} characters long; keep it under ${MAX_URL_LENGTH}.`,
+          ),
+        ]
+      : []),
+    ...(path === path.toLowerCase()
+      ? []
+      : [
+          finding(
+            'warning',
+            'The URL path has upper-case letters; use lower case only.',
+          ),
+        ]),
+    ...(path.includes('_')
+      ? [
+          finding(
+            'warning',
+            'The URL path has underscores; separate words with hyphens.',
+          ),
+        ]
+      : []),
+    ...(PERCENT_ESCAPE.test(path)
+      ? [
+          finding(
+            'warning',
+            'The URL path has encoded characters; use plain ASCII words.',
+          ),
+        ]
+      : []),
+    ...(segments.length > MAX_PATH_SEGMENTS
+      ? [
+          finding(
+            'warning',
+            `The URL path has ${segments.length} levels; keep it to ${MAX_PATH_SEGMENTS} or fewer.`,
+          ),
+        ]
+      : []),
+    ...(params > MAX_QUERY_PARAMS
+      ? [
+          finding(
+            'warning',
+            `The URL has ${params} query parameters; use a readable path instead.`,
+          ),
+        ]
+      : []),
+  ];
 }
 
 /** What the link check needs to know about an `<a href>`. */
@@ -255,29 +279,26 @@ export function linkFindings(
   links: readonly LinkInfo[],
   pageUrl: string,
 ): Finding[] {
-  let page: URL;
-  try {
-    page = new URL(pageUrl);
-  } catch {
+  if (!URL.canParse(pageUrl)) {
     return [];
   }
-  let total = 0;
-  let internal = 0;
-  for (const { href } of links) {
+  const page = new URL(pageUrl);
+  // An unparseable href is not a link a crawler can follow.
+  const targets = links.flatMap(({ href }) => {
     const trimmed = href.trim();
-    if (NON_PAGE_LINK_PREFIX.test(trimmed)) {
-      continue;
+    if (
+      NON_PAGE_LINK_PREFIX.test(trimmed) ||
+      !URL.canParse(trimmed, page.href)
+    ) {
+      return [];
     }
-    try {
-      const target = new URL(trimmed, page);
-      if (HTTP_OR_HTTPS_PROTOCOL.test(target.protocol)) {
-        total += 1;
-        internal += bareHost(target.host) === bareHost(page.host) ? 1 : 0;
-      }
-    } catch {
-      // An unparseable href is not a link a crawler can follow.
-    }
-  }
+    const target = new URL(trimmed, page);
+    return HTTP_OR_HTTPS_PROTOCOL.test(target.protocol) ? [target] : [];
+  });
+  const total = targets.length;
+  const internal = targets.filter(
+    (target) => bareHost(target.host) === bareHost(page.host),
+  ).length;
   if (total === 0) {
     return [
       finding(
@@ -336,7 +357,7 @@ export type AnchorProblem = 'empty' | 'generic';
 /** Classifies one anchor; null when its text is descriptive. */
 export function anchorProblem(anchor: AnchorInfo): AnchorProblem | null {
   const shown = [anchor.text, anchor.label, anchor.imageAlt, anchor.title]
-    .map((value) => value.replaceAll(/\s+/g, ' ').trim())
+    .map((value) => value.replaceAll(/\s+/gu, ' ').trim())
     .find((value) => value !== '');
   if (shown === undefined) {
     return 'empty';
@@ -350,21 +371,19 @@ export function anchorProblem(anchor: AnchorInfo): AnchorProblem | null {
 export function anchorFindings(problems: readonly AnchorProblem[]): Finding[] {
   const empty = problems.filter((p) => p === 'empty').length;
   const generic = problems.filter((p) => p === 'generic').length;
-  const out: Finding[] = [];
-  if (empty > 0) {
-    out.push(
-      finding('warning', `${empty} links have no text, label or image alt.`),
-    );
-  }
-  if (generic > 0) {
-    out.push(
-      finding(
-        'warning',
-        `${generic} links use generic text such as "click here" or "read more"; describe the target instead.`,
-      ),
-    );
-  }
-  return out;
+  return [
+    ...(empty > 0
+      ? [finding('warning', `${empty} links have no text, label or image alt.`)]
+      : []),
+    ...(generic > 0
+      ? [
+          finding(
+            'warning',
+            `${generic} links use generic text such as "click here" or "read more"; describe the target instead.`,
+          ),
+        ]
+      : []),
+  ];
 }
 
 /** Elements the HTML standard marks obsolete. */

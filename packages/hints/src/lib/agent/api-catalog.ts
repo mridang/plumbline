@@ -1,4 +1,3 @@
-import type { AgentEnv, CheckResult } from './types.js';
 import {
   isRecord,
   isText,
@@ -8,6 +7,7 @@ import {
   result,
   urlOf,
 } from './utility.js';
+import type { AgentEnv, CheckResult } from './types.js';
 
 /**
  * API Catalog (RFC 9727): `/.well-known/api-catalog`, asked for as

@@ -28,22 +28,21 @@ export type ScanLine =
 
 /** The line as an object, or a thrown error when it is not JSON or has no type. */
 function parseLine(text: string): ScanLine | undefined {
-  let value: unknown;
   try {
-    value = JSON.parse(text);
+    const value: unknown = JSON.parse(text);
+    if (typeof value !== 'object' || value === null || !('type' in value)) {
+      throw new ProblemError('The scan sent something unreadable.');
+    }
+    const { type } = value;
+    // A line of a kind this page does not know is skipped, so the scanner can
+    // grow new lines without breaking pages that are already open.
+    return typeof type === 'string' &&
+      ['ready', 'done', 'unreachable', 'end'].includes(type)
+      ? (value as ScanLine)
+      : undefined;
   } catch {
     throw new ProblemError('The scan sent something unreadable.');
   }
-  if (typeof value !== 'object' || value === null || !('type' in value)) {
-    throw new ProblemError('The scan sent something unreadable.');
-  }
-  const { type } = value;
-  // A line of a kind this page does not know is skipped, so the scanner can
-  // grow new lines without breaking pages that are already open.
-  return typeof type === 'string' &&
-    ['ready', 'done', 'unreachable', 'end'].includes(type)
-    ? (value as ScanLine)
-    : undefined;
 }
 
 /**
@@ -58,40 +57,48 @@ export async function readScan(
 ): Promise<void> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
-  let pending = '';
-  let ended = false;
-  const handle = (text: string): void => {
+  /** Reads one line; whether it was the `end` line. */
+  const handle = (text: string): boolean => {
     if (text.trim() === '') {
-      return;
+      return false;
     }
     const line = parseLine(text);
     if (line) {
-      ended ||= line.type === 'end';
       onLine(line);
     }
+    return line?.type === 'end';
   };
-  try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-      pending += decoder.decode(value, { stream: true });
-      const lines = pending.split('\n');
-      pending = lines.pop() ?? '';
-      for (const line of lines) handle(line);
+  /** Reads the rest of the body, one chunk after the other; whether an `end` line came. */
+  const readFrom = async (
+    pending: string,
+    ended: boolean,
+  ): Promise<boolean> => {
+    const { done, value } = await reader.read();
+    if (done) {
+      return handle(pending + decoder.decode()) || ended;
     }
-    pending += decoder.decode();
-    handle(pending);
-  } catch (error) {
-    // Stop reading: cancelling the body tells the Worker, and through it the
-    // scanner, to stop the scan.
-    await reader.cancel().catch(() => undefined);
-    throw error;
-  } finally {
-    reader.releaseLock();
-  }
-  if (!ended) {
+    const lines = (pending + decoder.decode(value, { stream: true })).split(
+      '\n',
+    );
+    return readFrom(
+      lines.at(-1) ?? '',
+      lines.slice(0, -1).reduce((seen, text) => handle(text) || seen, ended),
+    );
+  };
+  const consume = async (): Promise<boolean> => {
+    try {
+      return await readFrom('', false);
+    } catch (error) {
+      // Stop reading: cancelling the body tells the Worker, and through it the
+      // scanner, to stop the scan.
+      await reader.cancel().catch(() => undefined);
+      throw error;
+    } finally {
+      reader.releaseLock();
+    }
+  };
+  const finished = await consume();
+  if (!finished) {
     throw new ProblemError('The scan stopped before it finished.');
   }
 }

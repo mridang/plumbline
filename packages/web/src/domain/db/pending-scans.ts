@@ -16,8 +16,8 @@
 
 import { and, asc, eq, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import { pendingScans } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 
 /** A job, as a consumer takes it. */
 export interface ClaimedScan {

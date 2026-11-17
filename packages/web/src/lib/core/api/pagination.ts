@@ -101,10 +101,9 @@ export function sliceAfter<T>(
 
 /** Base64url-encode bytes (RFC 4648 §5: `+/` → `-_`, no padding). */
 function bytesToBase64Url(bytes: Uint8Array): string {
-  let binary = '';
-  for (const byte of bytes) {
-    binary += String.fromCodePoint(byte);
-  }
+  const binary = Array.from(bytes, (byte) => String.fromCodePoint(byte)).join(
+    '',
+  );
   return btoa(binary)
     .replaceAll('+', '-')
     .replaceAll('/', '_')

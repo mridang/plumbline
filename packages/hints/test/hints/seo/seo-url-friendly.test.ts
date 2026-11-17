@@ -11,8 +11,9 @@ describe('seo-url-friendly', () => {
   it('reports upper case and underscores', async () => {
     const path = '/My_Page';
     const problems = await runHint(hint, htmlPage({}, path), { path });
-    expect(problems.map((p) => p.message).join(' ')).toContain('upper-case');
-    expect(problems.map((p) => p.message).join(' ')).toContain('underscores');
+    const messages = problems.map((p) => p.message).join(' ');
+    expect(messages).toContain('upper-case');
+    expect(messages).toContain('underscores');
     expect(problems[0].sourceCode).toContain(path);
   });
 });

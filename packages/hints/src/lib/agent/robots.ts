@@ -1,4 +1,3 @@
-import type { AgentEnv, CheckResult, Evidence, Probe } from './types.js';
 import {
   evidenceFor,
   isHtml,
@@ -7,35 +6,36 @@ import {
   result,
   urlOf,
 } from './utility.js';
-
-/** Matches any character that ends a line. */
-const LINE_BREAK_CHARACTER = /[\n\r\u2028\u2029]/;
+import type { AgentEnv, CheckResult, Evidence, Probe } from './types.js';
 
 /** Matches a line break, with or without a carriage return. */
-const LINE_BREAK = /\r?\n/;
+const LINE_BREAK = /\r?\n/u;
 
 /** Matches a `Name: value` directive line and captures both parts. */
-const DIRECTIVE_LINE = /^([A-Za-z-]+)\s*:(.*)$/;
+const DIRECTIVE_LINE = /^([A-Za-z-]+)\s*:(.*)$/u;
 
 /** Matches a `text/plain` content type. */
-const PLAIN_TEXT_CONTENT_TYPE = /^text\/plain/i;
+const PLAIN_TEXT_CONTENT_TYPE = /^text\/plain/iu;
 
 /** Matches the start of a sitemap or sitemap index document. */
 const SITEMAP_ROOT =
-  /^\s*(<\?xml[^>]*\?>\s*)?(<!--[\s\S]*?-->\s*)*<(\w+:)?(urlset|sitemapindex)[\s>]/;
+  /^\s*(<\?xml[^>]*\?>\s*)?(<!--[\s\S]*?-->\s*)*<(\w+:)?(urlset|sitemapindex)[\s>]/u;
 
 /** Matches a `signal=yes|no` pair and captures both parts. */
-const CONTENT_SIGNAL_PAIR = /^\s*([a-z-]+)\s*=\s*(yes|no)\s*$/i;
+const CONTENT_SIGNAL_PAIR = /^\s*([a-z-]+)\s*=\s*(yes|no)\s*$/iu;
 
 /**
  * Drops a trailing comment: from the first `#` that has no line terminator
  * after it, scanning once from the end.
  */
 function stripComment(line: string): string {
-  let from = line.length;
-  while (from > 0 && !LINE_BREAK_CHARACTER.test(line[from - 1])) {
-    from -= 1;
-  }
+  const from =
+    Math.max(
+      line.lastIndexOf('\n'),
+      line.lastIndexOf('\r'),
+      line.lastIndexOf('\u2028'),
+      line.lastIndexOf('\u2029'),
+    ) + 1;
   const hash = line.indexOf('#', from);
   return hash === -1 ? line : line.slice(0, hash);
 }
@@ -54,43 +54,27 @@ export interface Robots {
 
 /** Parses the directives we need; unknown lines and comments are ignored. */
 export function parseRobots(body: string): Robots {
-  const robots: Robots = {
-    userAgents: [],
-    sitemaps: [],
-    contentSignals: [],
-    agentmaps: [],
-  };
-  for (const raw of body.split(LINE_BREAK)) {
+  const directives = body.split(LINE_BREAK).flatMap((raw) => {
     // Comments start at `#` and run to the end of the line.
     const line = stripComment(raw).trim();
     const match = DIRECTIVE_LINE.exec(line);
-    if (!match) {
-      continue;
-    }
-    const value = match[2].trim();
-    switch (match[1].toLowerCase()) {
-      case 'user-agent': {
-        if (value) robots.userAgents.push(value);
-        break;
-      }
-      case 'sitemap': {
-        if (value) robots.sitemaps.push(value);
-        break;
-      }
-      case 'content-signal': {
-        if (value) robots.contentSignals.push(value);
-        break;
-      }
-      case 'agentmap': {
-        if (value) robots.agentmaps.push(value);
-        break;
-      }
-      default: {
-        break;
-      }
-    }
-  }
-  return robots;
+    const value = match?.[2].trim();
+    return match && value ? [{ name: match[1].toLowerCase(), value }] : [];
+  });
+  return {
+    userAgents: directives
+      .filter((directive) => directive.name === 'user-agent')
+      .map((directive) => directive.value),
+    sitemaps: directives
+      .filter((directive) => directive.name === 'sitemap')
+      .map((directive) => directive.value),
+    contentSignals: directives
+      .filter((directive) => directive.name === 'content-signal')
+      .map((directive) => directive.value),
+    agentmaps: directives
+      .filter((directive) => directive.name === 'agentmap')
+      .map((directive) => directive.value),
+  };
 }
 
 /** A minimal robots.txt to publish. */
@@ -183,11 +167,15 @@ export async function checkSitemap(env: AgentEnv): Promise<CheckResult> {
   const robots = await loadRobots(env);
   const declared = robots?.sitemaps ?? [];
   const candidates = declared.length > 0 ? declared : ['/sitemap.xml'];
+  // eslint-disable-next-line functional/no-let -- keeps the first probe for the failure evidence while the loop stops at the first valid sitemap
   let first: Probe | null = null;
   // A handful of sitemaps is enough to prove the site has one.
+  // eslint-disable-next-line functional/no-loop-statements -- probes the candidates in order and stops at the first valid sitemap
   for (const [index, candidate] of candidates.slice(0, 5).entries()) {
     const probe = await env.probe(candidate);
-    if (index === 0) first = probe;
+    if (index === 0) {
+      first = probe;
+    }
     if (isSitemap(probe)) {
       return result(
         id,
@@ -303,15 +291,15 @@ const CONTENT_SIGNALS: ReadonlySet<string> = new Set([
 ]);
 
 /** Parses `ai-train=no, search=yes` into valid signal/value pairs. */
-export function parseContentSignal(value: string): Record<string, boolean> {
-  const signals: Record<string, boolean> = {};
-  for (const part of value.split(',')) {
-    const match = CONTENT_SIGNAL_PAIR.exec(part);
-    if (match && CONTENT_SIGNALS.has(match[1].toLowerCase())) {
-      signals[match[1].toLowerCase()] = match[2].toLowerCase() === 'yes';
-    }
-  }
-  return signals;
+export function parseContentSignal(value: string) {
+  return Object.fromEntries(
+    value.split(',').flatMap((part) => {
+      const match = CONTENT_SIGNAL_PAIR.exec(part);
+      return match && CONTENT_SIGNALS.has(match[1].toLowerCase())
+        ? [[match[1].toLowerCase(), match[2].toLowerCase() === 'yes'] as const]
+        : [];
+    }),
+  );
 }
 
 /**
@@ -331,16 +319,16 @@ export async function checkContentSignals(env: AgentEnv): Promise<CheckResult> {
       robotsEvidence(env, probe, true),
     );
   }
-  for (const value of robots.contentSignals) {
-    const signals = parseContentSignal(value);
-    if (Object.keys(signals).length > 0) {
-      return result(
-        id,
-        'bot-access',
-        true,
-        `robots.txt declares Content-Signal: ${value}.`,
-      );
-    }
+  const declaredSignal = robots.contentSignals.find(
+    (value) => Object.keys(parseContentSignal(value)).length > 0,
+  );
+  if (declaredSignal !== undefined) {
+    return result(
+      id,
+      'bot-access',
+      true,
+      `robots.txt declares Content-Signal: ${declaredSignal}.`,
+    );
   }
   return result(
     id,

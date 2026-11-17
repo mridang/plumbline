@@ -1,18 +1,18 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
-import type { ToolContent } from '@/domain/mcp/tool-context';
 
 import { CHECKS, checksInGroup } from '@/domain/checks/catalogue';
-import type { Database } from '@/domain/db/client';
 import { addDomain, getDomain, setDomainChecks } from '@/domain/db/domains';
-import type { User } from '@/domain/db/users';
 import { callTool } from '@/domain/mcp/tool-calls';
-import type { ToolResult } from '@/domain/mcp/tool-results';
 
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../../lib/core/db/sqlite-db';
+import type { ToolResult } from '@/domain/mcp/tool-results';
+import type { User } from '@/domain/db/users';
+import type { Database } from '@/domain/db/client';
+import type { ToolContent } from '@/domain/mcp/tool-context';
 
 /** Matches the "and more" suffix. */
-const AND_MORE_SUFFIX = /, and more\.$/;
+const AND_MORE_SUFFIX = /, and more\.$/u;
 
 const USER = { id: 1 } as User;
 const TOTAL = CHECKS.length;
@@ -112,6 +112,7 @@ describe('configure_checks', () => {
     ).toMatch(
       new RegExp(
         String.raw`^example\.com now runs ${TOTAL - 1} of ${TOTAL} checks\. Changed off: `,
+        'u',
       ),
     );
   });

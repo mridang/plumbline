@@ -1,6 +1,4 @@
-import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
-import type { ReactElement } from 'react';
 
 import { RepoHeader } from '@/components/repos/repo-header';
 import { repoPath } from '@/components/repos/repo-path';
@@ -32,6 +30,8 @@ import { serverNow } from '@/lib/clock';
 import { getCurrentUser } from '@/lib/core/auth/current-user';
 import { getEnv } from '@/lib/core/runtime';
 import { SITE_URL } from '@/utils/site';
+import type { ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 
@@ -142,7 +142,7 @@ export default async function RepoPage({
       />
       <Container className="space-y-6 py-6">
         {gaps.length > 0 ? (
-          <Callout tone="highlight" shape="banner">
+          <Callout tone="highlight" layout="banner">
             <p className="font-medium">
               {gaps.length === 1
                 ? `The ${gaps[0]} deployment of this repository reports no address.`
@@ -156,7 +156,7 @@ export default async function RepoPage({
             </p>
           </Callout>
         ) : null}
-        {ready && (
+        {ready ? (
           <>
             {mine.length > 1 ? (
               <TabList
@@ -207,7 +207,7 @@ export default async function RepoPage({
               );
             })()}
           </>
-        )}
+        ) : null}
 
         {others.length > 0 ? (
           <Section

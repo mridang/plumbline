@@ -1,8 +1,7 @@
 'use client';
 
-import type { ReactElement } from 'react';
-
 import { SearchIcon } from '@/components/icons';
+import type { ReactElement } from 'react';
 
 /**
  * A search box for narrowing a list on the page as you type. It filters what is
@@ -29,6 +28,7 @@ export function SearchField({
       />
       <input
         type="search"
+        aria-label={label}
         value={value}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}

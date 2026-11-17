@@ -12,10 +12,11 @@
  * person of its own, keyed by their GitHub id.
  */
 
-import type { Database } from '@/domain/db/client';
 import { replaceAccess } from '@/domain/db/access';
 import { linkAccount, linkedUser } from '@/domain/db/github';
-import { upsertUser, type User } from '@/domain/db/users';
+import { upsertUser } from '@/domain/db/users';
+import type { User } from '@/domain/db/users';
+import type { Database } from '@/domain/db/client';
 import type { GitHubIdentity } from '@/domain/github/oauth';
 
 /** The stable key a GitHub-only person is stored under, in place of a Google one. */

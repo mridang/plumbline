@@ -1,11 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
 import { createHTMLDocument } from '@hint/utils-dom';
-import type { DocumentLike } from '../../../src/lib/pwa/read.js';
 import {
   getManifestHref,
   getThemeColorMeta,
   isAbsoluteHref,
 } from '../../../src/lib/pwa/read.js';
+import type { DocumentLike } from '../../../src/lib/pwa/read.js';
 
 /** Parses markup with the same DOM implementation webhint uses. */
 const parse = (html: string): DocumentLike =>

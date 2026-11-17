@@ -8,6 +8,7 @@
  */
 export const ROUTE_MODULES: Readonly<
   Record<string, () => Promise<Record<string, unknown>>>
+  // eslint-disable-next-line tslop/no-known-value-widening -- the tests look a module up by a path string read from disk, so the keys must stay open
 > = {
   '/api/checks': async () => import('@/app/api/checks/route'),
   '/api/domains': async () => import('@/app/api/domains/route'),

@@ -6,8 +6,10 @@ import {
   supportedVersions,
   tryConnect,
 } from '../../lib/tls/client.js';
-import { evaluateKex, type EphemeralKey } from '../../lib/tls/evaluate.js';
-import { onTlsSite, type TlsSite } from './on-tls-site.js';
+import { evaluateKex } from '../../lib/tls/evaluate.js';
+import { onTlsSite } from './on-tls-site.js';
+import type { EphemeralKey } from '../../lib/tls/evaluate.js';
+import type { TlsSite } from './on-tls-site.js';
 
 /** Curves offered one by one to learn which ones the server accepts. */
 const CURVES = [
@@ -35,40 +37,42 @@ export async function checkTlsKexParams({
     couldNotTest(`no TLS connection to ${target.host}:${target.port}`);
     return;
   }
-  const keys: EphemeralKey[] = [];
   const legacy = highestLegacyVersion(versions);
-  if (legacy !== null) {
-    for (const cipher of await acceptedCiphers(target, legacy)) {
-      if (cipher.ephemeral) {
-        keys.push(cipher.ephemeral);
-      }
-    }
-    for (const curve of CURVES) {
-      const result = await tryConnect(target, {
-        minVersion: legacy,
-        maxVersion: legacy,
-        ciphers: 'ECDHE',
-        ecdhCurve: curve,
-      });
-      if (result?.ephemeral?.type === 'ECDH') {
-        keys.push(result.ephemeral);
-      }
-    }
-  }
-  if (versions.includes('TLSv1.3')) {
-    // Node does not report the group of a TLS 1.3 handshake, so the
-    // curve we offered and the server accepted is the evidence.
-    for (const curve of CURVES) {
-      const result = await tryConnect(target, {
-        minVersion: 'TLSv1.3',
-        maxVersion: 'TLSv1.3',
-        ecdhCurve: curve,
-      });
-      if (result !== null) {
-        keys.push({ type: 'ECDH', name: curve, size: 0 });
-      }
-    }
-  }
+  const legacyCiphers =
+    legacy === null ? [] : await acceptedCiphers(target, legacy);
+  const legacyCurves =
+    legacy === null
+      ? []
+      : await Array.fromAsync(CURVES, async (curve) => {
+          const result = await tryConnect(target, {
+            minVersion: legacy,
+            maxVersion: legacy,
+            ciphers: 'ECDHE',
+            ecdhCurve: curve,
+          });
+          return result?.ephemeral?.type === 'ECDH' ? [result.ephemeral] : [];
+        });
+  // Node does not report the group of a TLS 1.3 handshake, so the
+  // curve we offered and the server accepted is the evidence.
+  const modernCurves = versions.includes('TLSv1.3')
+    ? await Array.fromAsync(CURVES, async (curve) => {
+        const result = await tryConnect(target, {
+          minVersion: 'TLSv1.3',
+          maxVersion: 'TLSv1.3',
+          ecdhCurve: curve,
+        });
+        return result === null
+          ? []
+          : [{ type: 'ECDH' as const, name: curve, size: 0 }];
+      })
+    : [];
+  const keys: EphemeralKey[] = [
+    ...legacyCiphers.flatMap((cipher) =>
+      cipher.ephemeral ? [cipher.ephemeral] : [],
+    ),
+    ...legacyCurves.flat(),
+    ...modernCurves.flat(),
+  ];
   const { bad, phaseOut } = evaluateKex(keys);
   if (bad.length > 0) {
     report(

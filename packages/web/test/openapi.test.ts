@@ -1,3 +1,5 @@
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
 import {
   afterEach,
   beforeEach,
@@ -6,33 +8,30 @@ import {
   it,
   jest,
 } from '@jest/globals';
-import { readdir, readFile } from 'node:fs/promises';
-import path from 'node:path';
 
+import { packageDirectorySync } from 'package-directory';
 import { ROUTE_MODULES } from './helpers/route-modules';
 import { APP_MIGRATIONS } from './lib/core/db/migrations';
 import { installCloudflareContext, sqliteD1 } from './lib/core/db/sqlite-d1';
-import { packageDirectorySync } from 'package-directory';
 
 /** Matches route file suffix. */
-const ROUTE_FILE_SUFFIX = /\/?route\.ts$/;
+const ROUTE_FILE_SUFFIX = /\/?route\.ts$/u;
 
 /** Matches trailing slash. */
-const TRAILING_SLASH = /\/$/;
+const TRAILING_SLASH = /\/$/u;
 
 /** Matches openapi 31 version. */
-const OPENAPI_31_VERSION = /^3\.1\./;
+const OPENAPI_31_VERSION = /^3\.1\./u;
 
 /** Matches snake case name. */
-const SNAKE_CASE_NAME = /^[a-z][a-z0-9_]*$/;
+const SNAKE_CASE_NAME = /^[a-z][a-z0-9_]*$/u;
 
 /** Matches hyphen or trailing slash. */
-const HYPHEN_OR_TRAILING_SLASH = /(?:-|\/$)/;
+const HYPHEN_OR_TRAILING_SLASH = /(?:-|\/$)/u;
 
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
-// A route that signs a person out reads the cookie jar of the request in
-// flight; a test has none, so it gets an empty one.
+// eslint-disable-next-line tslop/no-module-mocking -- a route that signs a person out reads the cookie jar of the request in flight through next/headers; a test has none, so it gets an empty one
 jest.unstable_mockModule('next/headers', () => ({
   cookies: async () => ({ get: () => undefined, getAll: () => [] }),
   headers: async () => new Headers(),
@@ -91,14 +90,13 @@ const routeFiles = async (dir: string): Promise<string[]> => {
 
 /** The path a route file serves, with `[x]` written `{x}`. */
 const pathOf = (file: string): string =>
-  '/api/' +
-  path
+  `/api/${path
     .relative(API, file)
     .replace(ROUTE_FILE_SUFFIX, '')
     .replaceAll(
-      /\[([a-z_-]+)\]/g,
+      /\[([a-z_-]+)\]/gu,
       (_, name: string) => `{${name.replaceAll('-', '_')}}`,
-    );
+    )}`;
 
 /**
  * The routes kept only so that an address still registered outside the code
@@ -254,7 +252,9 @@ describe('openapi.json and the route files', () => {
     const bad: string[] = [];
     const walk = (value: unknown, where: string): void => {
       if (Array.isArray(value)) {
-        for (const [at, item] of value.entries()) walk(item, `${where}[${at}]`);
+        for (const [at, item] of value.entries()) {
+          walk(item, `${where}[${at}]`);
+        }
       } else if (value && typeof value === 'object') {
         const record = value as Json;
         const properties = record['properties'];
@@ -309,13 +309,13 @@ describe('what the controllers do, against what the spec says', () => {
     '%s answers 401 as a problem to a request with no session',
     async (_key, path, method, handler) => {
       const names = Array.from(
-        path.matchAll(/\{([a-z_]+)\}/g),
+        path.matchAll(/\{([a-z_]+)\}/gu),
         (m) => m[1] ?? '',
       );
       const params = Object.fromEntries(names.map((name) => [name, 'x']));
       const answer = await handler(
         new Request(
-          `https://plumbline.test${path.replaceAll(/\{[a-z_]+\}/g, 'x')}`,
+          `https://plumbline.test${path.replaceAll(/\{[a-z_]+\}/gu, 'x')}`,
           {
             method,
             headers: { 'content-type': 'application/json' },

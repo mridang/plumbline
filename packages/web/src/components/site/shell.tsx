@@ -1,5 +1,3 @@
-import type { ReactElement, ReactNode } from 'react';
-
 import { connectionState } from '@/domain/db/account-state';
 import { getDatabase } from '@/domain/db/client';
 import { getCurrentUser } from '@/lib/core/auth';
@@ -7,6 +5,7 @@ import { getCurrentUser } from '@/lib/core/auth';
 import { SiteFooter } from '@/components/site/site-footer';
 import { SiteHeader } from '@/components/site/site-header';
 import { SkipLink } from '@/components/site/skip-link';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * The frame shared by every page in `(site)`: the skip link, the header (which

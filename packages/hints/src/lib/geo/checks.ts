@@ -11,16 +11,18 @@
  * `lighthouse/src/checks/geo.ts`. Writing each message once here means the two
  * surfaces can never drift.
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
 import {
-  type JsonLdBlocks,
   containsSpeakable,
   containsType,
   ENTITY_TYPE_LABEL,
   findEntityNode,
   hasNonEmptySameAs,
 } from './json-ld.js';
-import { type ContentStats, UNSTRUCTURED_BLOCK_THRESHOLD } from './content.js';
+import { UNSTRUCTURED_BLOCK_THRESHOLD } from './content.js';
+import type { Finding } from '../headers/finding.js';
+import type { JsonLdBlocks } from './json-ld.js';
+import type { ContentStats } from './content.js';
 
 /** The source link the LLMScout geo rules append to every message. */
 export const REF = 'https://github.com/RudrenduPaul/LLMScout';
@@ -82,13 +84,10 @@ export function speakableSchemaFindings(blocks: JsonLdBlocks): Finding[] {
  * the first entity found across all blocks is the one judged, matching the hint.
  */
 export function organizationSchemaFindings(blocks: JsonLdBlocks): Finding[] {
-  let entity: Record<string, unknown> | null = null;
-  for (const data of blocks.parsed) {
-    entity = findEntityNode(data);
-    if (entity) {
-      break;
-    }
-  }
+  const entity =
+    blocks.parsed
+      .map((data) => findEntityNode(data))
+      .find((found) => found !== null) ?? null;
   if (!entity) {
     return [
       finding(

@@ -1,7 +1,7 @@
-import type { HintDefinition } from '../../core/define-hint.js';
 import bimi from './bimi.js';
 import mtaSts from './mta-sts.js';
 import tlsRpt from './tls-rpt.js';
+import type { HintDefinition } from '../../core/define-hint.js';
 
 /**
  * Hints of the `emailpolicy` set: the RFC-backed email-authentication policies

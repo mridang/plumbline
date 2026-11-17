@@ -1,11 +1,7 @@
-import type { ReactElement } from 'react';
-
-import {
-  availabilityOf,
-  resultOf,
-  type SiteResult,
-} from '@/components/repos/site-filter';
+import { availabilityOf, resultOf } from '@/components/repos/site-filter';
 import { Badge } from '@/components/ui-app/badge';
+import type { SiteResult } from '@/components/repos/site-filter';
+import type { ReactElement } from 'react';
 import type { Tone } from '@/components/ui-app/tone';
 import type { SiteState } from '@/domain/db/live';
 

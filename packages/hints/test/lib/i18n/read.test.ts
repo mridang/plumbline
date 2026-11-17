@@ -7,9 +7,9 @@ import {
   isAbsoluteHttpUrl,
   isValidHreflang,
   sameUrl,
-  type DocumentLike,
 } from '../../../src/lib/i18n/read.js';
 import { HTTP_SCHEME } from '../../helpers/data.js';
+import type { DocumentLike } from '../../../src/lib/i18n/read.js';
 
 /** Parses markup with the same DOM implementation the webhint hints use. */
 const parse = (html: string): DocumentLike =>

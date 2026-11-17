@@ -13,23 +13,20 @@ import { parseHost } from '@/domain/api/domain-resource';
 import type { DeploymentStatus } from '@/domain/suite/deploy';
 
 /** The Wrangler configuration file names. */
-const WRANGLER_FILE = /(^|\/)wrangler\.(jsonc|json|toml)$/;
+const WRANGLER_FILE = /(^|\/)wrangler\.(jsonc|json|toml)$/u;
 
 /** Paths that hold copies of someone else's configuration. */
 const VENDORED =
-  /(^|\/)(node_modules|vendor|\.git|\.next|\.open-next|dist|build)\//;
+  /(^|\/)(node_modules|vendor|\.git|\.next|\.open-next|dist|build)\//u;
 
 /** A URL scheme at the start of a route pattern, such as `https://`. */
-const URL_SCHEME_PREFIX = /^[a-z]+:\/\//i;
+const URL_SCHEME_PREFIX = /^[a-z]+:\/\//iu;
 
 /** Where the host of a route pattern ends. */
-const HOST_END = /[/?#]/;
-
-/** A single whitespace character. */
-const WHITESPACE = /\s/;
+const HOST_END = /[/?#]/u;
 
 /** A GitHub host, such as `github.com` or `owner.github.io`. */
-const GITHUB_HOST = /(^|\.)github\.(com|io)$/;
+const GITHUB_HOST = /(^|\.)github\.(com|io)$/u;
 
 /** Whether a repository path is a Wrangler configuration worth reading. */
 export function isWranglerPath(path: string): boolean {
@@ -38,43 +35,12 @@ export function isWranglerPath(path: string): boolean {
 
 /** JSON with `//` and block comments and trailing commas (what Wrangler allows), as plain JSON text. */
 export function stripJsonComments(text: string): string {
-  let out = '';
-  let inString = false;
-  for (let index = 0; index < text.length; index += 1) {
-    const char = text.charAt(index);
-    const next = text.charAt(index + 1);
-    if (inString) {
-      out += char;
-      if (char === '\\') {
-        out += next;
-        index += 1;
-      } else if (char === '"') {
-        inString = false;
-      } else {
-        // Any other character inside a string is copied as it is.
-      }
-    } else if (char === '"') {
-      inString = true;
-      out += char;
-    } else if (char === '/' && next === '/') {
-      while (index < text.length && text.charAt(index) !== '\n') {
-        index += 1;
-      }
-      out += '\n';
-    } else if (char === '/' && next === '*') {
-      index += 2;
-      while (
-        index < text.length &&
-        !(text.charAt(index) === '*' && text.charAt(index + 1) === '/')
-      ) {
-        index += 1;
-      }
-      index += 1;
-    } else {
-      out += char;
-    }
-  }
-  return out.replaceAll(/,(\s*[}\]])/g, '$1');
+  return text
+    .replaceAll(
+      /"(?:[^"\\]|\\[^])*"?|\/\/[^\n]*|\/\*[^]*?(?:\*\/|$)/gu,
+      (token) => (token.startsWith('"') ? token : ''),
+    )
+    .replaceAll(/,(\s*[}\]])/gu, '$1');
 }
 
 /** The public host a route pattern serves, or undefined for a wildcard or anything else. */
@@ -124,64 +90,45 @@ const LINE_BREAKS = '\n\r\u2028\u2029';
 
 /** Where the line holding `index` starts when only whitespace precedes it, else -1. */
 function leadingLineStart(text: string, index: number): number {
-  let at = index;
-  while (
-    at > 0 &&
-    WHITESPACE.test(text.charAt(at - 1)) &&
-    !LINE_BREAKS.includes(text.charAt(at - 1))
-  ) {
-    at -= 1;
+  if (index === 0) {
+    return 0;
   }
-  return at === 0 || LINE_BREAKS.includes(text.charAt(at - 1)) ? at : -1;
+  const lineStart =
+    Math.max(
+      ...Array.from(LINE_BREAKS, (c) => text.lastIndexOf(c, index - 1)),
+    ) + 1;
+  return text.slice(lineStart, index).trim() === '' ? lineStart : -1;
 }
 
 /** The text before the first line that opens an `[env.*]` table. */
 function beforeEnvTable(text: string): string {
-  for (
-    let hit = text.indexOf('env.');
-    hit !== -1;
-    hit = text.indexOf('env.', hit + 1)
-  ) {
-    let open = hit;
-    while (open > 0 && text.codePointAt(open - 1) === 91) {
-      open -= 1;
-    }
-    const start = open === hit ? -1 : leadingLineStart(text, open);
-    if (start !== -1) {
-      return text.slice(0, start);
-    }
-  }
-  return text;
+  const start = Array.from(text.matchAll(/(?<!\[)\[+env\./gu), (hit) =>
+    leadingLineStart(text, hit.index),
+  ).find((at) => at !== -1);
+  return start === undefined ? text : text.slice(0, start);
 }
 
 /** The matches of `pattern` (global) that begin a line, ignoring indentation. */
 function lineMatches(text: string, pattern: RegExp): RegExpExecArray[] {
-  const found: RegExpExecArray[] = [];
-  pattern.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(text)) !== null) {
-    if (leadingLineStart(text, match.index) === -1) {
-      pattern.lastIndex = match.index + 1;
-    } else {
-      found.push(match);
-    }
-  }
-  return found;
+  return [...text.matchAll(pattern)].filter(
+    (match) => leadingLineStart(text, match.index) !== -1,
+  );
 }
 
 /** The top-level routes of a `wrangler.toml`, before any `[env.*]` table. */
 function tomlPatterns(text: string): string[] {
   const top = beforeEnvTable(text);
-  const out: string[] = [];
-  for (const match of lineMatches(top, /(?:pattern|route)\s*=\s*"([^"]+)"/g)) {
-    out.push(match[1] ?? '');
-  }
-  for (const array of lineMatches(top, /routes\s*=\s*\[([^\]]*)\]/g)) {
-    for (const item of (array[1] ?? '').matchAll(/"([^"]+)"/g)) {
-      out.push(item[1] ?? '');
-    }
-  }
-  return out;
+  return [
+    ...lineMatches(top, /(?:pattern|route)\s*=\s*"([^"]+)"/gu).map(
+      (match) => match[1] ?? '',
+    ),
+    ...lineMatches(top, /routes\s*=\s*\[([^\]]*)\]/gu).flatMap((array) =>
+      Array.from(
+        (array[1] ?? '').matchAll(/"([^"]+)"/gu),
+        (item) => item[1] ?? '',
+      ),
+    ),
+  ];
 }
 
 /** The hosts a Wrangler configuration serves the Worker from. */
@@ -317,7 +264,7 @@ export function touchesWrangler(delivery: Readonly<Delivery>): boolean {
 }
 
 /** The configuration file names, in the root of a repository. */
-const CONFIG_FILE = /^plumbline\.(yaml|yml|json)$/;
+const CONFIG_FILE = /^plumbline\.(yaml|yml|json)$/u;
 
 /** Whether a push changed the repository's `plumbline` configuration, which changes the rules. */
 export function touchesConfig(delivery: Readonly<Delivery>): boolean {

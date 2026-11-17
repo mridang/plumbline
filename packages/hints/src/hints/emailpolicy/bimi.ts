@@ -51,6 +51,7 @@ export default defineHint({
       if (lookup.status === 'error') {
         return;
       }
+      // eslint-disable-next-line functional/no-loop-statements -- reports each finding
       for (const finding of checkBimi(mail.domain, lookup)) {
         mail.report(finding.message, {
           severity: SEVERITY[finding.severity],

@@ -18,5 +18,6 @@ export function toSeverity(severity: FindingSeverity): Severity {
     case 'hint': {
       return Severity.hint;
     }
+    // no default
   }
 }

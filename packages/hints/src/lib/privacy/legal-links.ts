@@ -12,13 +12,14 @@
  *    use", "AGB", …);
  *  - its address does (`/privacy`, `/datenschutz`, `/terms`, `/tos`, …).
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
+import type { Finding } from '../headers/finding.js';
 
 /** Matches a non-navigable URL scheme. */
-const NON_NAVIGABLE_SCHEME = /^(javascript|mailto|tel|data):/i;
+const NON_NAVIGABLE_SCHEME = /^(javascript|mailto|tel|data):/iu;
 
 /** Matches a run of whitespace. */
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /** The two legal pages a site is expected to link. */
 export type LegalPage = 'privacy-policy' | 'terms-of-service';
@@ -45,7 +46,7 @@ export const TERMS_OF_SERVICE_LINK_REF =
 /** Words a link's text uses for each page, in the languages most sites use. */
 export const TEXT: Readonly<Record<LegalPage, RegExp>> = {
   'privacy-policy':
-    /\b(privacy|data protection|datenschutz|privacidad|privacidade|confidentialit[eé]|vie priv[eé]e|privacybeleid|riservatezza|integritet|personvern|tietosuoja|prywatno)/i,
+    /\b(privacy|data protection|datenschutz|privacidad|privacidade|confidentialit[eé]|vie priv[eé]e|privacybeleid|riservatezza|integritet|personvern|tietosuoja|prywatno)/iu,
   'terms-of-service': new RegExp(
     String.raw`\b(${[
       'terms',
@@ -64,7 +65,7 @@ export const TEXT: Readonly<Record<LegalPage, RegExp>> = {
       'k[aä]ytt[oö]ehdot',
       'regulamin',
     ].join('|')})`,
-    'i',
+    'iu',
   ),
 };
 
@@ -74,7 +75,7 @@ export const TEXT: Readonly<Record<LegalPage, RegExp>> = {
  */
 export const PATH: Readonly<Record<LegalPage, RegExp>> = {
   'privacy-policy':
-    /(privacy|datenschutz|privacidad|privacidade|confidentialite|privacybeleid|riservatezza|integritet|personvern|tietosuoja)/i,
+    /(privacy|datenschutz|privacidad|privacidade|confidentialite|privacybeleid|riservatezza|integritet|personvern|tietosuoja)/iu,
   'terms-of-service': new RegExp(
     `(${[
       '(^|[_.-])(terms|termos|termini|conditions)',
@@ -86,7 +87,7 @@ export const PATH: Readonly<Record<LegalPage, RegExp>> = {
       'villkor',
       'vilkar',
     ].join('|')})`,
-    'i',
+    'iu',
   ),
 };
 
@@ -112,6 +113,7 @@ const MAX_SEGMENT_LENGTH = 40;
 
 /** The short segments of an address's path, without its host, query or fragment. */
 function shortSegmentsOf(href: string): string[] {
+  // eslint-disable-next-line functional/no-let -- assigned inside try so an unparsable address can be caught
   let path: string;
   try {
     path = new URL(href, 'https://page.invalid/').pathname;
@@ -137,22 +139,20 @@ export function findLegalLink(
   parsedDocument: DocumentLike,
   page: LegalPage,
 ): string | undefined {
-  for (const element of parsedDocument.querySelectorAll(
-    'a[href], link[href]',
-  )) {
-    const href = (element.getAttribute('href') ?? '').trim();
-    if (href && relsOf(element).includes(page)) {
-      return href;
-    }
+  const relatedLink = Array.from(
+    parsedDocument.querySelectorAll('a[href], link[href]'),
+    (element) => ({
+      element,
+      href: (element.getAttribute('href') ?? '').trim(),
+    }),
+  ).find(({ element, href }) => href && relsOf(element).includes(page));
+  if (relatedLink) {
+    return relatedLink.href;
   }
-  for (const element of parsedDocument.querySelectorAll('a[href]')) {
-    const href = (element.getAttribute('href') ?? '').trim();
-    const text = (element.textContent ?? '').replaceAll(/\s+/g, ' ').trim();
-    if (namesPage(href, text, page)) {
-      return href;
-    }
-  }
-  return undefined;
+  return Array.from(parsedDocument.querySelectorAll('a[href]'), (element) => ({
+    href: (element.getAttribute('href') ?? '').trim(),
+    text: (element.textContent ?? '').replaceAll(/\s+/gu, ' ').trim(),
+  })).find(({ href, text }) => namesPage(href, text, page))?.href;
 }
 
 /** Whether a link with this address and text reads as the named page. */

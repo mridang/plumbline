@@ -15,8 +15,9 @@
  *     root carrying `<ShortName>` (at most 16 characters) and at least one
  *     `<Url>` with a `template` attribute.
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
 import { childByName, descendantsByName, parseXml } from './xml.js';
+import type { Finding } from '../headers/finding.js';
 
 /** RSS 2.0, as published by the RSS Advisory Board. */
 export const FEED_VALID_RSS_REF = 'https://www.rssboard.org/rss-specification';
@@ -64,18 +65,16 @@ function validateRss(text: string): Finding[] {
   if (!channel) {
     return [finding('error', 'The RSS feed has no <channel> element.')];
   }
-  const findings: Finding[] = [];
-  for (const required of ['title', 'link', 'description'] as const) {
-    if (!hasText(channel, required)) {
-      findings.push(
-        finding(
-          'error',
-          `The RSS <channel> is missing the required <${required}> element.`,
-        ),
-      );
-    }
-  }
-  return findings;
+  return (['title', 'link', 'description'] as const).flatMap((required) =>
+    hasText(channel, required)
+      ? []
+      : [
+          finding(
+            'error',
+            `The RSS <channel> is missing the required <${required}> element.`,
+          ),
+        ],
+  );
 }
 
 /** Validates an Atom 1.0 body (root already known to be `<feed>`). */
@@ -84,18 +83,16 @@ function validateAtom(text: string): Finding[] {
   if (!root) {
     return [finding('error', 'The Atom feed is not well-formed XML.')];
   }
-  const findings: Finding[] = [];
-  for (const required of ['id', 'title', 'updated'] as const) {
-    if (!hasText(root, required)) {
-      findings.push(
-        finding(
-          'error',
-          `The Atom <feed> is missing the required <${required}> element.`,
-        ),
-      );
-    }
-  }
-  return findings;
+  return (['id', 'title', 'updated'] as const).flatMap((required) =>
+    hasText(root, required)
+      ? []
+      : [
+          finding(
+            'error',
+            `The Atom <feed> is missing the required <${required}> element.`,
+          ),
+        ],
+  );
 }
 
 /**
@@ -118,33 +115,26 @@ export function validateOpenSearch(text: string): Finding[] {
       ),
     ];
   }
-  const findings: Finding[] = [];
   const shortName = childByName(root, 'shortname');
-  if (!shortName || shortName.text === '') {
-    findings.push(
+  const urls = descendantsByName(root, 'url');
+  const findings: (Finding | false)[] = [
+    (!shortName || shortName.text === '') &&
       finding(
         'error',
         'The OpenSearch description is missing the required <ShortName> element.',
       ),
-    );
-  } else if (shortName.text.length > 16) {
-    findings.push(
+    // A ShortName within the limit needs no finding.
+    !!shortName &&
+      shortName.text.length > 16 &&
       finding(
         'error',
         `The OpenSearch <ShortName> must be 16 characters or fewer; it is ${shortName.text.length}.`,
       ),
-    );
-  } else {
-    // A ShortName within the limit needs no finding.
-  }
-  const urls = descendantsByName(root, 'url');
-  if (!urls.some((url) => (url.attrs.template ?? '').trim() !== '')) {
-    findings.push(
+    !urls.some((url) => (url.attrs.template ?? '').trim() !== '') &&
       finding(
         'error',
         'The OpenSearch description has no <Url> element with a template attribute.',
       ),
-    );
-  }
-  return findings;
+  ];
+  return findings.filter((found) => found !== false);
 }

@@ -5,7 +5,7 @@ import { SESSION_COOKIE } from '@/domain/auth/app';
 import { appRequest } from '../../../../domain/auth/auth-test-kit';
 
 /** Matches epoch expiry. */
-const EPOCH_EXPIRY = /expires=Thu, 01 Jan 1970/i;
+const EPOCH_EXPIRY = /expires=Thu, 01 Jan 1970/iu;
 
 describe('DELETE /api/sessions/self', () => {
   it('clears the session cookie and answers 204', async () => {

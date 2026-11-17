@@ -1,9 +1,9 @@
-import type { HintDefinition } from '../../core/define-hint.js';
 import feedDiscovery from './feed-discovery.js';
 import feedValid from './feed-valid.js';
 import oembedDiscovery from './oembed-discovery.js';
 import opensearchDiscovery from './opensearch-discovery.js';
 import opensearchValid from './opensearch-valid.js';
+import type { HintDefinition } from '../../core/define-hint.js';
 
 /**
  * Hints of the `feeds` set: syndication and discovery. Three DOM-only

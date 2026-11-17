@@ -6,16 +6,15 @@
  */
 
 import { ApiController, noContent, problems } from '@/lib/core/api';
-import {
-  liveUid,
-  requestCookieResolver,
-  type CurrentUserResolver,
-} from '@/domain/api/auth';
+import { liveUid, requestCookieResolver } from '@/domain/api/auth';
 import { repoOf } from '@/domain/api/repo-name';
-import { getDatabase, type Database } from '@/domain/db/client';
+import { getDatabase } from '@/domain/db/client';
 import { NOT_INSTALLER } from '@/components/repos/checks-messages';
 import { canManageRepo, canSeeRepo, enableRepo } from '@/domain/db/disabled';
-import { pauseRepo, type PauseDeps } from '@/domain/suite/disable';
+import { pauseRepo } from '@/domain/suite/disable';
+import type { Database } from '@/domain/db/client';
+import type { CurrentUserResolver } from '@/domain/api/auth';
+import type { PauseDeps } from '@/domain/suite/disable';
 
 /** The person and the repository to act on. */
 interface RepoContext {

@@ -31,9 +31,7 @@ interface LogRow {
 
 /** Holds a repository's open event streams and pushes new facts to them. */
 export class UserHub extends DurableObject<CloudflareEnv> {
-  protected readonly clients = new Set<
-    WritableStreamDefaultWriter<Uint8Array>
-  >();
+  protected clients = new Set<WritableStreamDefaultWriter<Uint8Array>>();
   protected position = 0;
   protected person: string | null = null;
   private readonly encoder = new TextEncoder();
@@ -65,20 +63,23 @@ export class UserHub extends DurableObject<CloudflareEnv> {
 
     // A client with nothing seen is a fresh page load: it already has the
     // current state, so it gets only what happens next, not the whole log.
-    let sent = resume ?? (await this.latest(userId));
+    const start = resume ?? (await this.latest(userId));
     const missed =
       resume === null ? [] : await this.since(userId, resume, MAX_REPLAY + 1);
-    if (missed.length > MAX_REPLAY) {
-      sent = await this.latest(userId);
+    const overflowed = missed.length > MAX_REPLAY;
+    const sent = overflowed
+      ? await this.latest(userId)
+      : (missed.at(-1)?.id ?? start);
+    if (overflowed) {
       this.write(writer, encodeFrame({ event: 'reset', id: sent, data: {} }));
     } else {
+      // eslint-disable-next-line functional/no-loop-statements -- the loop only writes each missed fact to the stream, in order
       for (const row of missed) {
         this.write(writer, this.eventFrame(row));
-        sent = row.id;
       }
     }
     this.position = Math.max(this.position, sent);
-    this.clients.add(writer);
+    this.clients = new Set([...this.clients, writer]);
     // A client that goes away (a closed tab, a dropped connection) ends the
     // writer; let go of it at once, not at the next ping or event.
     void writer.closed.catch(() => undefined).then(() => this.release(writer));
@@ -95,6 +96,7 @@ export class UserHub extends DurableObject<CloudflareEnv> {
       return;
     }
     const fresh = await this.since(userId, this.position, MAX_REPLAY);
+    // eslint-disable-next-line functional/no-loop-statements -- the loop only pushes each fact to the open streams, in order
     for (const row of fresh) {
       this.broadcast(this.eventFrame(row));
       this.position = row.id;
@@ -111,7 +113,9 @@ export class UserHub extends DurableObject<CloudflareEnv> {
 
   /** Forget a writer whose client has gone, and stop pinging when none is left. */
   private release(writer: WritableStreamDefaultWriter<Uint8Array>): void {
-    this.clients.delete(writer);
+    this.clients = new Set(
+      [...this.clients].filter((client) => client !== writer),
+    );
     if (this.clients.size === 0) {
       this.stopHeartbeat();
     }
@@ -157,13 +161,17 @@ export class UserHub extends DurableObject<CloudflareEnv> {
   }
 
   private broadcast(frame: string): void {
-    for (const writer of this.clients) {
-      if (writer.desiredSize === null || writer.desiredSize <= 0) {
-        this.clients.delete(writer);
+    const writers = [...this.clients];
+    const full = (writer: WritableStreamDefaultWriter<Uint8Array>): boolean =>
+      writer.desiredSize === null || writer.desiredSize <= 0;
+    this.clients = new Set(writers.filter((writer) => !full(writer)));
+    // eslint-disable-next-line functional/no-loop-statements -- the loop only writes to the open streams and aborts the slow ones
+    for (const writer of writers) {
+      if (full(writer)) {
         writer.abort().catch(() => undefined);
-        continue;
+      } else {
+        this.write(writer, frame);
       }
-      this.write(writer, frame);
     }
   }
 

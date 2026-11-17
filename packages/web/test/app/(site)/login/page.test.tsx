@@ -10,15 +10,16 @@ import {
 } from '../../../lib/core/db/sqlite-d1';
 
 /** Matches the Google sign-in link. */
-const GOOGLE_SIGN_IN_LINK = /href="\/auth\/login"[^>]*>.*Sign in with Google</s;
+const GOOGLE_SIGN_IN_LINK =
+  /href="\/auth\/login"[^>]*>.*Sign in with Google</su;
 /** Matches the GitHub sign-in link. */
 const GITHUB_SIGN_IN_LINK =
-  /href="\/auth\/github"[^>]*>.*Sign in with GitHub</s;
+  /href="\/auth\/github"[^>]*>.*Sign in with GitHub</su;
 /** Matches the GitHub link styled as primary. */
-const GITHUB_PRIMARY_LINK = /href="\/auth\/github"[^>]*class="[^"]*bg-ink/;
+const GITHUB_PRIMARY_LINK = /href="\/auth\/github"[^>]*class="[^"]*bg-ink/u;
 /** Matches the Google link styled as secondary. */
 const GOOGLE_SECONDARY_LINK =
-  /href="\/auth\/login"[^>]*class="[^"]*border-field/;
+  /href="\/auth\/login"[^>]*class="[^"]*border-field/u;
 
 let restore: () => void;
 

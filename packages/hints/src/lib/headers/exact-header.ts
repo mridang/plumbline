@@ -3,7 +3,8 @@
  * with exactly one value, and headers that must not be present at all.
  * Values are compared case-insensitively after trimming.
  */
-import { finding, type Finding } from './finding.js';
+import { finding } from './finding.js';
+import type { Finding } from './finding.js';
 
 /** The header must be sent, and be one of `allowed`. */
 export function exactHeaderFindings(

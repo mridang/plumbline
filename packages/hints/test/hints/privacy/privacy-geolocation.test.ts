@@ -3,7 +3,7 @@ import hint from '../../../src/hints/privacy/privacy-geolocation.js';
 import { runHint } from '../../helpers/run-hint.js';
 
 /** Matches a resource URL that ends in /geo.js. */
-const GEO_SCRIPT_RESOURCE = /\/geo\.js$/;
+const GEO_SCRIPT_RESOURCE = /\/geo\.js$/u;
 
 const html = (body: string) => ({
   headers: { 'content-type': 'text/html; charset=utf-8' },

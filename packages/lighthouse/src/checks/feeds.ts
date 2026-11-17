@@ -22,23 +22,23 @@
  * document* belongs to the webhint-only `*-valid` hints, not here.
  */
 import { createHTMLDocument } from '@hint/utils-dom';
-import type { Artifacts } from 'lighthouse';
-import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
-import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/feeds/read.js';
 import {
   feedDiscovery,
   oembedDiscovery,
   opensearchDiscovery,
 } from '@mridang/webhint-hint-plumbline/dist/lib/feeds/checks.js';
+import feedDiscoveryHint from '@mridang/webhint-hint-plumbline/dist/hints/feeds/feed-discovery.js';
+import oembedDiscoveryHint from '@mridang/webhint-hint-plumbline/dist/hints/feeds/oembed-discovery.js';
+import opensearchDiscoveryHint from '@mridang/webhint-hint-plumbline/dist/hints/feeds/opensearch-discovery.js';
 import { hintDocumentation } from '../meta.js';
+import type { Artifacts } from 'lighthouse';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
+import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/feeds/read.js';
 import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); their check logic is reused through the
 // `src/lib/feeds/**` rule functions above, not through these modules.
-import feedDiscoveryHint from '@mridang/webhint-hint-plumbline/dist/hints/feeds/feed-discovery.js';
-import oembedDiscoveryHint from '@mridang/webhint-hint-plumbline/dist/hints/feeds/oembed-discovery.js';
-import opensearchDiscoveryHint from '@mridang/webhint-hint-plumbline/dist/hints/feeds/opensearch-discovery.js';
 
 /** The only artifacts the discovery checks read. */
 const HTML_ONLY = ['MainDocumentContent', 'URL'] as const;
@@ -80,18 +80,18 @@ function fromHint(
 /** The three plugin-able feed-discovery checks. */
 export const feedsChecks: readonly AuditCheck[] = [
   fromHint(feedDiscoveryHint, (artifacts) =>
-    artifacts.MainDocumentContent == undefined
-      ? null
-      : feedDiscovery(documentOf(artifacts)),
+    typeof artifacts.MainDocumentContent === 'string'
+      ? feedDiscovery(documentOf(artifacts))
+      : null,
   ),
   fromHint(oembedDiscoveryHint, (artifacts) =>
-    artifacts.MainDocumentContent == undefined
-      ? null
-      : oembedDiscovery(documentOf(artifacts)),
+    typeof artifacts.MainDocumentContent === 'string'
+      ? oembedDiscovery(documentOf(artifacts))
+      : null,
   ),
   fromHint(opensearchDiscoveryHint, (artifacts) =>
-    artifacts.MainDocumentContent == undefined
-      ? null
-      : opensearchDiscovery(documentOf(artifacts)),
+    typeof artifacts.MainDocumentContent === 'string'
+      ? opensearchDiscovery(documentOf(artifacts))
+      : null,
   ),
 ];

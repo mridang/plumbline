@@ -4,20 +4,20 @@ import {
   CheckForm,
   checksToSend,
   saveChecks,
-  type CheckSection,
 } from '@/components/repos/check-form';
 import { ProblemError } from '@/components/api/problem-message';
 import { htmlAt } from '../render';
+import type { CheckSection } from '@/components/repos/check-form';
 
 /** Matches the checked CSP checkbox. */
-const CSP_CHECKED_INPUT = /id="check-csp"[^>]* checked="" value="csp"/;
+const CSP_CHECKED_INPUT = /id="check-csp"[^>]* checked="" value="csp"/u;
 /** Matches the ETag checkbox. */
-const ETAG_INPUT = /id="check-etag"[^>]* name="checks" value="etag"/;
+const ETAG_INPUT = /id="check-etag"[^>]* name="checks" value="etag"/u;
 /** Matches the DNSSEC label. */
 const DNSSEC_LABEL =
-  /<label for="check-dnssec"><span[^>]*>DNSSEC<\/span><span[^>]*>Signed\.<\/span><\/label>/;
+  /<label for="check-dnssec"><span[^>]*>DNSSEC<\/span><span[^>]*>Signed\.<\/span><\/label>/u;
 /** Matches the save button. */
-const SAVE_CHECKS_BUTTON = /<button type="submit"[^>]*>Save checks<\/button>/;
+const SAVE_CHECKS_BUTTON = /<button type="submit"[^>]*>Save checks<\/button>/u;
 
 const SECTIONS: readonly CheckSection[] = [
   {
@@ -116,7 +116,9 @@ describe('CheckForm', () => {
       <CheckForm domainId="d1" sections={SECTIONS} enabled={['dnssec']} />,
     );
     expect(
-      all.match(/<input type="checkbox" class="focus-ring" checked=""/g),
+      all.match(
+        /<input type="checkbox" aria-label="Every check in this section" class="focus-ring" checked=""/gu,
+      ),
     ).toHaveLength(1);
   });
 

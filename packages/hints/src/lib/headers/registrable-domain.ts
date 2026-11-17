@@ -1,5 +1,5 @@
 /** Matches a trailing dot. */
-const TRAILING_DOT = /\.$/;
+const TRAILING_DOT = /\.$/u;
 /**
  * An approximation of "registrable domain" (public suffix plus one label),
  * used to tell first-party hosts from third-party ones the way Webbkoll
@@ -24,7 +24,7 @@ const SECOND_LEVEL = new Set([
   'org',
 ]);
 
-const IPV4 = /^\d{1,3}(?:\.\d{1,3}){3}$/;
+const IPV4 = /^\d{1,3}(?:\.\d{1,3}){3}$/u;
 
 /** Returns the registrable domain of a host name, lower-cased. */
 export function registrableDomain(host: string): string {
@@ -50,11 +50,9 @@ export function isBareHost(host: string): boolean {
  * unparsable URLs have no host and are never third-party, as in Webbkoll.
  */
 export function isThirdParty(url: string, registrable: string): boolean {
-  let host: string;
-  try {
-    host = new URL(url).hostname;
-  } catch {
+  if (!URL.canParse(url)) {
     return false;
   }
+  const host = new URL(url).hostname;
   return host !== '' && registrableDomain(host) !== registrable;
 }

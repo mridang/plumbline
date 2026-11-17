@@ -1,7 +1,6 @@
 import {
   matches,
   resolve,
-  type Selector,
 } from '@mridang/webhint-hint-plumbline/dist/core/selectors.js';
 import {
   PLACEMENT,
@@ -9,10 +8,11 @@ import {
   TIERS,
 } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 import { UsageError } from './options.js';
+import type { Selector } from '@mridang/webhint-hint-plumbline/dist/core/selectors.js';
 import type { HintMeta } from './scan.js';
 
 /** Matches the `extra/` prefix webhint puts on a hint id. */
-const EXTRA_PREFIX = /^extra\//;
+const EXTRA_PREFIX = /^extra\//u;
 
 /** Which hints a scan should run, as given on the command line. */
 export interface Selection {

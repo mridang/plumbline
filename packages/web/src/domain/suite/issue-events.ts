@@ -10,12 +10,12 @@
  * did itself comes back as an event from its own account and is ignored.
  */
 
-import type { Database } from '@/domain/db/client';
 import { isRepoDisabled } from '@/domain/db/disabled';
 import { forgetIssue, issueNumbered, saveIssue } from '@/domain/db/suite';
+import { reopenIssue } from '@/domain/suite/publish';
+import type { Database } from '@/domain/db/client';
 import type { GitHubApi } from '@/domain/github/api';
 import type { Delivery } from '@/domain/github/deployments';
-import { reopenIssue } from '@/domain/suite/publish';
 
 /** The name GitHub gives a GitHub App's account, as the sender of what it did. */
 export function botLogin(slug: string): string {

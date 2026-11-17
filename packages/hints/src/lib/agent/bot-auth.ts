@@ -1,4 +1,3 @@
-import type { AgentEnv, CheckResult } from './types.js';
 import {
   isHtml,
   isOk,
@@ -8,6 +7,7 @@ import {
   result,
   urlOf,
 } from './utility.js';
+import type { AgentEnv, CheckResult } from './types.js';
 
 const DIRECTORY = '/.well-known/http-message-signatures-directory';
 

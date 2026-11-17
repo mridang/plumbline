@@ -21,11 +21,11 @@ import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 const collator = new Intl.Collator();
 
 /** Matches a full scan of the domains table. */
-const SCAN_DOMAINS_PLAN = /SCAN domains/;
+const SCAN_DOMAINS_PLAN = /SCAN domains/u;
 /** Matches a full scan of the suite_runs table. */
-const SCAN_SUITE_RUNS_PLAN = /SCAN suite_runs/;
+const SCAN_SUITE_RUNS_PLAN = /SCAN suite_runs/u;
 /** Matches a full scan of the suite_check_issues table. */
-const SCAN_SUITE_CHECK_ISSUES_PLAN = /SCAN suite_check_issues/;
+const SCAN_SUITE_CHECK_ISSUES_PLAN = /SCAN suite_check_issues/u;
 
 const made = () => {
   const { d1, raw } = sqliteD1(...APP_MIGRATIONS);
@@ -54,8 +54,9 @@ describe('appendEvent', () => {
     const mine = raw
       .prepare('SELECT COUNT(*) AS n FROM live_events WHERE user_id = 1')
       .get();
-    expect(Number(mine?.['n'])).toBeLessThanOrEqual(KEEP_EVENTS + 1);
-    expect(Number(mine?.['n'])).toBeGreaterThan(KEEP_EVENTS - 1);
+    const kept = Number(mine?.['n']);
+    expect(kept).toBeLessThanOrEqual(KEEP_EVENTS + 1);
+    expect(kept).toBeGreaterThan(KEEP_EVENTS - 1);
     expect(
       raw
         .prepare('SELECT COUNT(*) AS n FROM live_events WHERE user_id = 2')
@@ -283,7 +284,7 @@ describe('overviewOf, with the last deployment and the open issues', () => {
     const { db, raw } = made();
     const prepare = raw.prepare.bind(raw);
     raw.prepare = (sql: string) => {
-      if ((sql.match(/\?/g) ?? []).length > 100) {
+      if ((sql.match(/\?/gu) ?? []).length > 100) {
         throw new Error('too many SQL variables');
       }
       return prepare(sql);

@@ -37,6 +37,7 @@ export default defineHint({
           return null;
         }
       });
+      // eslint-disable-next-line functional/no-loop-statements -- reports each image that is too heavy
       for (const [index, url] of urls.entries()) {
         const bytes = sizes[index];
         // An unreachable image (null size) cannot be measured and is skipped;

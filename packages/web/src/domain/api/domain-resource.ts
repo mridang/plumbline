@@ -5,16 +5,16 @@
  * what a client posts to add a domain or to choose its checks.
  */
 
-import type { Domain } from '@/domain/db/domains';
 import { enabledChecks, expandSelection } from '@/domain/checks/catalogue';
 import { readTarget } from '@/domain/scan/target';
+import type { Domain } from '@/domain/db/domains';
 
 /** A single trailing dot, as in a fully qualified host name. */
-const TRAILING_DOT = /\.$/;
+const TRAILING_DOT = /\.$/u;
 
 /** A UUID, as the domain ids are. */
 const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 
 /** A domain as the API shows it. */
 export interface DomainResource {

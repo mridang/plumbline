@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { ReactElement } from 'react';
 
 import { MenuIcon } from '@/components/icons';
 import { InstallMenuItem } from '@/components/site/install-menu-item';
 import { cn } from '@/components/ui/cn';
 import { POPOVER_ITEM, Popover } from '@/components/ui/popover';
+import type { ReactElement } from 'react';
 
 /** One place the bar leads to. */
 export interface NavLink {

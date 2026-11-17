@@ -6,7 +6,8 @@ import {
   rateCertificateKey,
   rateSignatureAlgorithm,
 } from '../../lib/tls/evaluate.js';
-import { onTlsSite, type TlsSite } from './on-tls-site.js';
+import { onTlsSite } from './on-tls-site.js';
+import type { TlsSite } from './on-tls-site.js';
 
 /** Runs the check of the `cert-pubkey` hint against one TLS endpoint. */
 export async function checkCertPubkey({
@@ -20,31 +21,32 @@ export async function checkCertPubkey({
     couldNotTest(`no TLS connection to ${target.host}:${target.port}`);
     return;
   }
-  const bad: string[] = [];
-  const phaseOut: string[] = [];
-  const badEvidence: string[] = [];
-  const phaseOutEvidence: string[] = [];
-  for (const cert of describeChain(result.chain)) {
-    if (cert.isRoot) {
-      continue;
-    }
-    const { rating, description } = rateCertificateKey(cert.key);
-    const message = `${cert.commonName}: ${description}`;
-    const evidence = formatCertificate(
-      cert,
-      description,
-      rateSignatureAlgorithm(cert.signatureOid).name,
-    );
-    if (rating === 'bad') {
-      bad.push(message);
-      badEvidence.push(evidence);
-    } else if (rating === 'phase-out') {
-      phaseOut.push(message);
-      phaseOutEvidence.push(evidence);
-    } else {
-      // Any other rating needs no finding.
-    }
-  }
+  const rated = describeChain(result.chain)
+    .filter((cert) => !cert.isRoot)
+    .map((cert) => {
+      const { rating, description } = rateCertificateKey(cert.key);
+      return {
+        rating,
+        message: `${cert.commonName}: ${description}`,
+        evidence: formatCertificate(
+          cert,
+          description,
+          rateSignatureAlgorithm(cert.signatureOid).name,
+        ),
+      };
+    });
+  const bad = rated
+    .filter((found) => found.rating === 'bad')
+    .map((found) => found.message);
+  const badEvidence = rated
+    .filter((found) => found.rating === 'bad')
+    .map((found) => found.evidence);
+  const phaseOut = rated
+    .filter((found) => found.rating === 'phase-out')
+    .map((found) => found.message);
+  const phaseOutEvidence = rated
+    .filter((found) => found.rating === 'phase-out')
+    .map((found) => found.evidence);
   if (bad.length > 0) {
     report(
       `The public key of your ${subject.certificate} is *not* based on a secure signing algorithm with secure parameters: ${bad.join('; ')}.`,

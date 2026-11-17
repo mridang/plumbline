@@ -6,7 +6,7 @@
  */
 
 /** An address split into its base, its query and its fragment. */
-const URL_PARTS = /^([^?#]*)(\?[^#]*)?(#.*)?$/;
+const URL_PARTS = /^([^?#]*)(\?[^#]*)?(#.*)?$/u;
 
 /** One `name=value` pair of a query string. */
 type Entry = readonly [string, string];

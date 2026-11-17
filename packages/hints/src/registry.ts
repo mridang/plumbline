@@ -1,28 +1,36 @@
+import { GROUPS } from './core/groups.js';
+import type { Group } from './core/groups.js';
 import type { IHintConstructor } from 'hint';
-import { GROUPS, type Group } from './core/groups.js';
 import type { HintDefinition } from './core/define-hint.js';
 
-/** Collects hint definitions from every set into one lookup. */
-export function buildRegistry(definitions: readonly HintDefinition[]): {
+/** The lookups built from the hint definitions. */
+export interface Registry {
   /** The shape webhint expects from a package with several hints. */
   hints: Record<string, IHintConstructor>;
   /** Hint ids that belong to each group. */
   byGroup: Record<Group, string[]>;
-} {
-  const hints: Record<string, IHintConstructor> = {};
-  const byGroup = Object.fromEntries(
-    GROUPS.map((g) => [g, [] as string[]]),
-  ) as Record<Group, string[]>;
+}
 
-  for (const definition of definitions) {
-    if (hints[definition.id]) {
-      throw new Error(`Duplicate hint id: ${definition.id}`);
-    }
-    hints[definition.id] = definition.ctor;
-    for (const group of definition.groups) {
-      byGroup[group].push(definition.id);
-    }
+/** Collects hint definitions from every set into one lookup. */
+export function buildRegistry(
+  definitions: readonly HintDefinition[],
+): Registry {
+  const ids = definitions.map((definition) => definition.id);
+  const duplicate = ids.find((id, index) => ids.indexOf(id) !== index);
+  if (duplicate !== undefined) {
+    throw new Error(`Duplicate hint id: ${duplicate}`);
   }
-
-  return { hints, byGroup };
+  return {
+    hints: Object.fromEntries(
+      definitions.map((definition) => [definition.id, definition.ctor]),
+    ),
+    byGroup: Object.fromEntries(
+      GROUPS.map((group) => [
+        group,
+        definitions.flatMap((definition) =>
+          definition.groups.includes(group) ? [definition.id] : [],
+        ),
+      ]),
+    ) as Record<Group, string[]>,
+  };
 }

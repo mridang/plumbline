@@ -3,8 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import {
   HIDDEN_GRACE_MS,
   keepStreamWhileVisible,
-  type Environment,
 } from '@/domain/live/connection';
+import type { Environment } from '@/domain/live/connection';
 
 /** A fake tab and clock: change what it shows and move time on by hand. */
 function fake(visible = true) {
@@ -50,7 +50,9 @@ function fake(visible = true) {
     listeners: () => visibility.length + hide.length + show.length,
     setVisible(value: boolean) {
       state.visible = value;
-      for (const handler of visibility) handler();
+      for (const handler of visibility) {
+        handler();
+      }
     },
     advance(ms: number) {
       state.now += ms;
@@ -62,10 +64,14 @@ function fake(visible = true) {
       }
     },
     pagehide: () => {
-      for (const handler of hide) handler();
+      for (const handler of hide) {
+        handler();
+      }
     },
     pageshow: (persisted: boolean) => {
-      for (const handler of show) handler(persisted);
+      for (const handler of show) {
+        handler(persisted);
+      }
     },
   };
 }

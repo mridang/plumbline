@@ -1,7 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { ProblemError } from '@/components/api/problem-message';
-import { readScan, type ScanLine } from '@/domain/scan/stream';
+import { readScan } from '@/domain/scan/stream';
+import type { ScanLine } from '@/domain/scan/stream';
 
 /** A body that delivers `chunks` one by one. */
 function body(...chunks: string[]): ReadableStream<Uint8Array> {
@@ -33,7 +34,7 @@ describe('readScan', () => {
   });
 
   it('puts a line back together however the bytes were split, even inside a character', async () => {
-    const whole = '{"type":"unreachable","detail":"é"}\n' + END;
+    const whole = `{"type":"unreachable","detail":"é"}\n${END}`;
     const bytes = new TextEncoder().encode(whole);
     const got: ScanLine[] = [];
     await readScan(
@@ -76,7 +77,9 @@ describe('readScan', () => {
     });
     const got: string[] = [];
     const reading = readScan(stream, (line) => got.push(line.type));
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 10);
+    });
     expect(got).toEqual(['unreachable']);
     release();
     await reading;

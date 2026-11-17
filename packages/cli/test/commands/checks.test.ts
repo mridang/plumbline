@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 import Checks from '../../src/commands/checks.js';
 import { EXIT } from '../../src/exit-code.js';
-import type { HintMeta } from '../../src/scan.js';
 import { runCommand } from '../helpers/command.js';
+import type { HintMeta } from '../../src/scan.js';
 
 const CATALOGUE: HintMeta[] = [
   {

@@ -1,7 +1,6 @@
-import type { ReactElement } from 'react';
-
 import { cn } from '@/components/ui/cn';
 import { formatCompact, formatCount } from '@/lib/intl';
+import type { ReactElement } from 'react';
 
 /**
  * A number, grouped in thousands and kept in step with the digits around it;

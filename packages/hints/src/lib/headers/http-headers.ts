@@ -14,14 +14,12 @@ export function headerValues(
     return [];
   }
   const wanted = name.toLowerCase();
-  const found: string[] = [];
-  for (const [key, value] of Object.entries(headers)) {
+  return Object.entries(headers).flatMap(([key, value]) => {
     if (key.toLowerCase() !== wanted || value === undefined) {
-      continue;
+      return [];
     }
-    found.push(...(Array.isArray(value) ? value : [value]));
-  }
-  return found;
+    return Array.isArray(value) ? value : [value];
+  });
 }
 
 /**

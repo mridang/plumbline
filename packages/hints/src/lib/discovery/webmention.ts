@@ -7,12 +7,10 @@
  *
  * Source: W3C Webmention (https://www.w3.org/TR/webmention/).
  */
-import { finding, type Finding } from '../headers/finding.js';
-import {
-  isAbsoluteUrl,
-  withRelationship,
-  type RelationshipLink,
-} from './links.js';
+import { finding } from '../headers/finding.js';
+import { isAbsoluteUrl, withRelationship } from './links.js';
+import type { Finding } from '../headers/finding.js';
+import type { RelationshipLink } from './links.js';
 
 /**
  * Evaluates the Webmention endpoint of a page.

@@ -1,9 +1,9 @@
+import { createHash } from 'node:crypto';
 import { afterEach, describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/network/dane-valid.js';
 import { tls } from '../../../src/lib/network/dane.js';
 import { installDns } from '../../lib/network/fake-dns.js';
 import { runHint } from '../../helpers/run-hint.js';
-import { createHash } from 'node:crypto';
 
 const realFetch = tls.fetchChain;
 let restore: () => void = () => undefined;

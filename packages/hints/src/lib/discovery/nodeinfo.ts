@@ -7,7 +7,8 @@
  *
  * Source: the NodeInfo protocol (https://nodeinfo.diaspora.software/protocol.html).
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
+import type { Finding } from '../headers/finding.js';
 
 /** The response observed when fetching the discovery document. */
 export interface NodeinfoResponse {
@@ -32,6 +33,7 @@ export function nodeinfoFindings(response: NodeinfoResponse | null): Finding[] {
   if (response.statusCode !== 200) {
     return [];
   }
+  // eslint-disable-next-line functional/no-let -- assigned inside try/catch so a JSON parse error can return a finding
   let parsed: unknown;
   try {
     parsed = JSON.parse(response.body);

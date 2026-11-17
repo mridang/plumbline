@@ -5,7 +5,7 @@ import { expiresFindings } from '../../lib/headers/caching.js';
 import { reportFindings } from './shared.js';
 
 /** Matches a `max-age` directive in a `Cache-Control` value. */
-const MAX_AGE_DIRECTIVE = /(^|,)\s*max-age\s*=/i;
+const MAX_AGE_DIRECTIVE = /(^|,)\s*max-age\s*=/iu;
 
 /**
  * MDN: `Expires` must be a valid HTTP-date, and it is superseded by

@@ -30,13 +30,13 @@
  * request through.
  */
 
+import { errorMessage, logError } from '@/utils/logging';
 import { clientSubject } from './client-address';
 import { CSP_REPORT_PATH } from './reporting';
 import { DISCOVERY_PATHS, STATIC_PREFIXES } from './site';
-import { errorMessage, logError } from '@/utils/logging';
 
 /** An `Authorization: Bearer <token>` header, capturing the token. */
-const BEARER_HEADER = /^Bearer\s+(\S+)$/i;
+const BEARER_HEADER = /^Bearer\s+(\S+)$/iu;
 
 /** One Workers Rate Limiting binding: `limit` says whether `key` may go ahead. */
 export interface RateLimitBinding {
@@ -297,6 +297,9 @@ export function tooManyRequests(
         status: 429,
         headers: { ...common, 'Content-Type': 'text/plain; charset=utf-8' },
       });
+    }
+    default: {
+      return style satisfies never;
     }
   }
 }

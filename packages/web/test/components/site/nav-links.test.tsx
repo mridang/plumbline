@@ -10,7 +10,7 @@ import {
 import { htmlAt } from '../render';
 
 /** Matches the current-page docs link. */
-const DOCS_CURRENT_LINK = /aria-current="page"[^>]*>Docs</;
+const DOCS_CURRENT_LINK = /aria-current="page"[^>]*>Docs</u;
 
 const DASHBOARD = SIGNED_IN_LINKS[0]!;
 
@@ -55,7 +55,7 @@ describe('NavLinks', () => {
     const out = htmlAt(<NavLinks links={SIGNED_IN_LINKS} />, {
       pathname: '/docs',
     });
-    expect(out.match(/aria-current="page"/g)).toHaveLength(1);
+    expect(out.match(/aria-current="page"/gu)).toHaveLength(1);
     expect(out).toMatch(DOCS_CURRENT_LINK);
   });
 });

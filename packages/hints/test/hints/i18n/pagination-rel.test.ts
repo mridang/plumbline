@@ -30,7 +30,7 @@ describe('pagination-rel', () => {
   it('reports a blank prev and a non-absolute next', async () => {
     const problems = await runHint(
       hint,
-      routes('<link rel="prev" href="">' + '<link rel="next" href="/3">'),
+      routes('<link rel="prev" href=""><link rel="next" href="/3">'),
     );
     expect(problems).toHaveLength(2);
     expect(problems.map((p) => p.message).join('\n')).toContain(

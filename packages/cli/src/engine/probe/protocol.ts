@@ -8,7 +8,7 @@
  */
 
 /** Matches a carriage return or a line feed. */
-const LINE_BREAK = /[\r\n]/;
+const LINE_BREAK = /[\r\n]/u;
 
 /** A probe that failed, refused, timed out or answered something that is not the protocol. */
 export class ProbeError extends Error {
@@ -35,21 +35,20 @@ export type Field = string | number | boolean | readonly string[] | undefined;
 
 /** The lines of a request. `false` and `undefined` leave a key out; `true` is `1`. */
 export function encodeItem(fields: Readonly<Record<string, Field>>): string {
-  const lines: string[] = [];
-  for (const [key, value] of Object.entries(fields)) {
+  const lines = Object.entries(fields).flatMap(([key, value]) => {
     if (value === undefined || value === false) {
-      continue;
+      return [];
     }
-    for (const one of Array.isArray(value)
-      ? (value as readonly string[])
-      : [value]) {
-      const text = one === true ? '1' : String(one);
-      if (LINE_BREAK.test(text)) {
-        throw new ProbeError(`${key} holds a line break`);
-      }
-      lines.push(`${key}=${text}`);
-    }
-  }
+    return (Array.isArray(value) ? (value as readonly string[]) : [value]).map(
+      (one) => {
+        const text = one === true ? '1' : String(one);
+        if (LINE_BREAK.test(text)) {
+          throw new ProbeError(`${key} holds a line break`);
+        }
+        return `${key}=${text}`;
+      },
+    );
+  });
   return `${lines.join('\n')}\n`;
 }
 
@@ -171,12 +170,7 @@ function listOfText(value: unknown, what: string): string[] {
 
 /** The bytes in base64 text. */
 export function fromBase64(value: string): Uint8Array {
-  const raw = atob(value);
-  const bytes = new Uint8Array(raw.length);
-  for (let index = 0; index < raw.length; index += 1) {
-    bytes[index] = raw.codePointAt(index) ?? 0;
-  }
-  return bytes;
+  return Uint8Array.from(atob(value), (char) => char.codePointAt(0) ?? 0);
 }
 
 /** The text as base64 (the text is read as Latin-1, byte for byte). */
@@ -186,16 +180,15 @@ export function toBase64(value: string): string {
 
 /** The object in the JSON `body`. */
 function parseObject(body: string): Json {
-  let value: unknown;
   try {
-    value = JSON.parse(body);
+    const value: unknown = JSON.parse(body);
+    if (isObject(value)) {
+      return value;
+    }
   } catch {
     throw new ProbeError('the probe answered something that is not JSON');
   }
-  if (!isObject(value)) {
-    throw new ProbeError('the probe answered something that is not an object');
-  }
-  return value;
+  throw new ProbeError('the probe answered something that is not an object');
 }
 
 /** The object in the JSON `body`, or an error that names the probe's own complaint. */

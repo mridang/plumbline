@@ -13,7 +13,7 @@
 import { buildSchema } from '@/domain/suite/config-schema';
 
 /** The `W/` that marks a weak ETag. */
-const WEAK_ETAG_PREFIX = /^W\//;
+const WEAK_ETAG_PREFIX = /^W\//u;
 
 /** Built once per instance: it only changes with a new build. */
 const BODY = `${JSON.stringify(buildSchema(), null, 2)}\n`;

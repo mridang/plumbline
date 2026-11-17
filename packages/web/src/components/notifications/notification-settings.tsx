@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { problemText } from '@/components/api/problem-message';
 import {
@@ -12,11 +12,12 @@ import {
   PushError,
   pushSupport,
   sendTest,
-  type PushSupport,
 } from '@/components/notifications/push-client';
 import { InstallIosHint } from '@/components/site/install-ios-hint';
 import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
+import type { PushSupport } from '@/components/notifications/push-client';
+import type { ReactElement } from 'react';
 
 /** What the page knows about this browser. */
 type Status =
@@ -76,6 +77,7 @@ export function NotificationSettings(): ReactElement {
   );
 
   useEffect(() => {
+    // eslint-disable-next-line functional/no-let -- flipped by the cleanup so a late answer is dropped
     let current = true;
     const load = async (): Promise<void> => {
       const next = await detect();
@@ -116,24 +118,24 @@ export function NotificationSettings(): ReactElement {
         <Controls
           status={status}
           busy={busy}
-          onEnable={() =>
+          onEnable={() => {
             void run(async () => {
               await enablePush(browserHost());
               return 'Notifications are on.';
-            })
-          }
-          onDisable={() =>
+            });
+          }}
+          onDisable={() => {
             void run(async () => {
               await disablePush(browserHost());
               return 'Notifications are off.';
-            })
-          }
-          onTest={() =>
+            });
+          }}
+          onTest={() => {
             void run(async () => {
               await sendTest(browserHost());
               return 'Test notification sent.';
-            })
-          }
+            });
+          }}
         />
         {message ? (
           <Callout tone={message.error ? 'error' : 'plain'} className="mt-4">
@@ -198,15 +200,10 @@ function Controls({
       </div>
     );
   }
-  let stateText: string;
-  if (status.blocked) {
-    stateText =
-      'Notifications are blocked for this site. Allow them in the browser settings, then turn them on here.';
-  } else if (status.subscribed) {
-    stateText = 'Notifications are on.';
-  } else {
-    stateText = 'Notifications are off.';
-  }
+  const switched = `Notifications are ${status.subscribed ? 'on' : 'off'}.`;
+  const stateText = status.blocked
+    ? 'Notifications are blocked for this site. Allow them in the browser settings, then turn them on here.'
+    : switched;
   return (
     <div className="mt-2 flex flex-col gap-4">
       <p className="text-sm text-muted">{stateText}</p>

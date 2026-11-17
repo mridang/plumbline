@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, type ReactElement } from 'react';
+import { useState } from 'react';
 
 import { CheckIcon, CopyIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
+import type { ReactElement } from 'react';
 
 /** How long "Copied" stays up, in milliseconds. */
 export const COPIED_MS = 1500;

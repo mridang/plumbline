@@ -1,6 +1,7 @@
+import { Severity } from '@hint/utils-types';
+import type { HttpHeaders } from '@hint/utils-types';
 import type { HintContext, NetworkData, ReportOptions } from 'hint';
 import type { HTMLDocument } from '@hint/utils-dom';
-import { Severity, type HttpHeaders } from '@hint/utils-types';
 
 /** The page that was scanned, once its DOM is available. */
 export interface Page {
@@ -22,7 +23,9 @@ export function onPage(
   context: HintContext,
   check: (page: Page) => void | Promise<void>,
 ): void {
+  // eslint-disable-next-line functional/no-let -- set by the scan::start handler and read by the later traverse::end handler
   let url = '';
+  // eslint-disable-next-line functional/no-let -- set by the fetch::end::html handler and read by the later traverse::end handler
   let status = 200;
   context.on('scan::start', (event) => {
     url = event.resource;
@@ -54,7 +57,7 @@ export interface Site {
   url: URL;
   origin: string;
   /** Fetches a path or URL from the site; null when the request fails. */
-  fetch: (target: string, headers?: object) => Promise<NetworkData | null>;
+  fetch: (target: string, headers?: HttpHeaders) => Promise<NetworkData | null>;
   /** Reports a problem against a resource of the site. */
   report(
     resource: string,
@@ -72,6 +75,7 @@ export function onSite(
   context: HintContext,
   check: (site: Site) => void | Promise<void>,
 ): void {
+  // eslint-disable-next-line functional/no-let -- set by the scan::start handler and read by the later scan::end handler
   let target = '';
   context.on('scan::start', (event) => {
     target = event.resource;

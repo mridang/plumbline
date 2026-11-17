@@ -4,14 +4,14 @@ import {
   ConnectedAppItem,
   ConnectedApps,
 } from '@/app/(site)/(pages)/connect/_components/connected-apps';
-import type { ConnectedApp } from '@/domain/connected-apps';
 import { html } from '../../../../../components/render';
+import type { ConnectedApp } from '@/domain/connected-apps';
 
 /** Matches a bare disabled attribute on an element. */
-const DISABLED_ATTRIBUTE_PATTERN = /\sdisabled(=|\s|>)/;
+const DISABLED_ATTRIBUTE_PATTERN = /\sdisabled(=|\s|>)/u;
 
 /** Matches the loading status paragraph. */
-const LOADING_STATUS_PATTERN = /<p[^>]*role="status"[^>]*>Loading…<\/p>/;
+const LOADING_STATUS_PATTERN = /<output[^>]*>Loading…<\/output>/u;
 
 const APP: ConnectedApp = {
   id: 'g1',
@@ -82,8 +82,9 @@ describe('ConnectedAppItem', () => {
   });
 
   it('has a Disconnect button named after the app, disabled while it works', () => {
-    expect(item(APP)).toContain('aria-label="Disconnect Claude"');
-    expect(item(APP)).not.toMatch(DISABLED_ATTRIBUTE_PATTERN);
+    const idle = item(APP);
+    expect(idle).toContain('aria-label="Disconnect Claude"');
+    expect(idle).not.toMatch(DISABLED_ATTRIBUTE_PATTERN);
     const busy = item(APP, true);
     expect(busy).toContain('disabled');
     expect(busy).toContain('Disconnecting…');

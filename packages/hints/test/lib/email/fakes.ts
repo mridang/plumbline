@@ -1,16 +1,20 @@
-import type { Problem } from '@hint/utils-types';
-import type { HintDefinition } from '../../../src/core/define-hint.js';
 import { runHint } from '../../helpers/run-hint.js';
-import {
-  dns,
-  type DnsClient,
-  type DnsResponse,
-} from '../../../src/core/dns.js';
-import { rpki, type RpkiClient } from '../../../src/core/rpki.js';
-import { mailNet, type MailNetClient } from '../../../src/lib/email/net.js';
+import { dns } from '../../../src/core/dns.js';
+import { rpki } from '../../../src/core/rpki.js';
+import { mailNet } from '../../../src/lib/email/net.js';
+import type { DnsClient, DnsResponse } from '../../../src/core/dns.js';
+import type { RpkiClient } from '../../../src/core/rpki.js';
+import type { MailNetClient } from '../../../src/lib/email/net.js';
+import type { HintDefinition } from '../../../src/core/define-hint.js';
+import type { Problem } from '@hint/utils-types';
+
+/** Record type numbers by name. */
+interface TypeNumbers {
+  [name: string]: number;
+}
 
 /** Record type numbers by name, as DNS answers carry them. */
-const TYPE_NUMBERS: Record<string, number> = {
+const TYPE_NUMBERS: TypeNumbers = {
   A: 1,
   NS: 2,
   CNAME: 5,

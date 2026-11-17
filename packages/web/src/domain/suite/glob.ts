@@ -12,11 +12,16 @@
 export function globMatches(pattern: string, text: string): boolean {
   const want = pattern.toLowerCase();
   const have = text.toLowerCase();
+  // eslint-disable-next-line functional/no-let -- the matcher walks pattern and text with two moving positions, as a loop that cannot overflow the stack
   let p = 0;
+  // eslint-disable-next-line functional/no-let -- position in the text
   let t = 0;
   // Where the last `*` was and how much of the text it has taken so far.
+  // eslint-disable-next-line functional/no-let -- position of the last `*` in the pattern
   let star = -1;
+  // eslint-disable-next-line functional/no-let -- how much of the text the last `*` has taken
   let taken = 0;
+  // eslint-disable-next-line functional/no-loop-statements -- an iterative matcher: recursion could overflow the stack on a long name, and a pattern from a repository's file must never fail
   while (t < have.length) {
     if (
       p < want.length &&
@@ -36,6 +41,7 @@ export function globMatches(pattern: string, text: string): boolean {
       t = taken;
     }
   }
+  // eslint-disable-next-line functional/no-loop-statements -- skips the trailing `*` of the pattern
   while (p < want.length && want.codePointAt(p) === 42) {
     p += 1;
   }

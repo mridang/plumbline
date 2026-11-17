@@ -29,9 +29,11 @@ export abstract class PlumblineCommand extends Command {
    * the usage status) for a {@link UsageError}.
    */
   protected async finish(work: () => Promise<number> | number): Promise<void> {
-    let status: number;
     try {
-      status = await work();
+      const status = await work();
+      if (status !== EXIT.ok) {
+        this.exit(status);
+      }
     } catch (error) {
       if (error instanceof UsageError) {
         const help = ['plumbline', this.id, '--help'].filter(Boolean).join(' ');
@@ -40,9 +42,6 @@ export abstract class PlumblineCommand extends Command {
         });
       }
       throw error;
-    }
-    if (status !== EXIT.ok) {
-      this.exit(status);
     }
   }
 }

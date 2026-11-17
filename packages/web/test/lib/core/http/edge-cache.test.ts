@@ -189,6 +189,7 @@ describe('edgeCacheKey', () => {
     expect(edgeCacheKey(get('/'), 'v1').url).toMatch(
       new RegExp(
         String.raw`^https://edge\.${SITE_NAME.toLowerCase()}\.invalid/`,
+        'u',
       ),
     );
   });
@@ -281,7 +282,7 @@ describe('storableCopy', () => {
 });
 
 describe('edgeCache', () => {
-  const original = Reflect.get(globalThis, 'caches');
+  const original = globalThis.caches;
   afterEach(() => {
     Reflect.set(globalThis, 'caches', original);
   });

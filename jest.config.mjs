@@ -19,27 +19,24 @@ const GLOBAL_ONLY = new Set(['reporters', 'coverageReporters']);
 const packageProjects = async () => {
   const packages = await readdir(new URL('packages/', import.meta.url));
   const loaded = await Promise.all(
-    packages.map(async (name) => {
-      try {
-        // eslint-disable-next-line no-unsanitized/method -- name comes from this repository's own packages directory
-        const { default: config } = await import(
-          `./packages/${name}/jest.config.mjs`
-        );
-        const project = Object.fromEntries(
-          Object.entries(config).filter(([key]) => !GLOBAL_ONLY.has(key)),
-        );
-        const rootDir = fileURLToPath(
-          new URL(`packages/${name}/`, import.meta.url),
-        );
-        return {
-          ...project,
-          rootDir,
-          globalSetup: path.join(rootDir, project.globalSetup),
-          globalTeardown: path.join(rootDir, project.globalTeardown),
-        };
-      } catch {
-        return;
-      }
+    packages.map((name) => {
+      const rootDir = fileURLToPath(
+        new URL(`packages/${name}/`, import.meta.url),
+      );
+      // eslint-disable-next-line no-unsanitized/method -- name comes from this repository's own packages directory
+      return import(`./packages/${name}/jest.config.mjs`)
+        .then(({ default: config }) => {
+          const project = Object.fromEntries(
+            Object.entries(config).filter(([key]) => !GLOBAL_ONLY.has(key)),
+          );
+          return {
+            ...project,
+            rootDir,
+            globalSetup: path.join(rootDir, project.globalSetup),
+            globalTeardown: path.join(rootDir, project.globalTeardown),
+          };
+        })
+        .catch(() => undefined);
     }),
   );
   return loaded.filter(Boolean);

@@ -7,8 +7,6 @@ import {
   jest,
 } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
 import { DELETE, GET, OPTIONS, POST } from '@/app/mcp/route';
 import { createDatabase } from '@/domain/db/client';
 import { D1OAuthStore } from '@/domain/db/oauth';
@@ -16,15 +14,16 @@ import {
   exchangeAuthorizationCode,
   issueAuthorizationCode,
   s256,
-  type TokenResponse,
 } from '@/lib/oauth';
+import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+import { TOOL_REGISTRY } from '@/domain/mcp/tools';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
-import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
-import { TOOL_REGISTRY } from '@/domain/mcp/tools';
+import type { TokenResponse } from '@/lib/oauth';
+import type { DatabaseSync } from 'node:sqlite';
 
 const ORIGIN = 'https://app.test';
 const URL = `${ORIGIN}/mcp`;
@@ -155,10 +154,11 @@ describe('without a token', () => {
   ])('answers %s with the 401 that starts sign-in', async (method, handler) => {
     const res = await handler(request(method));
     expect(res.status).toBe(401);
-    expect(res.headers.get('www-authenticate')).toContain(
+    const challenge = res.headers.get('www-authenticate');
+    expect(challenge).toContain(
       'resource_metadata="https://app.test/.well-known/oauth-protected-resource/mcp"',
     );
-    expect(res.headers.get('www-authenticate')).not.toContain('invalid_token');
+    expect(challenge).not.toContain('invalid_token');
     expect(await res.json()).toMatchObject({
       id: null,
       error: { code: -32_600 },

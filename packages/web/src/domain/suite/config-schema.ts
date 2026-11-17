@@ -63,57 +63,61 @@ function jsonOf(schema: z.ZodType): JsonSchema {
 }
 
 /** The title and help the editor shows for a key of the file. */
-const KEY_DOCS: Readonly<Record<string, { title: string; text: string }>> = {
-  extends: {
-    title: 'Rule sets',
-    text: `The rule sets to start from, in order; a later one wins over an earlier one. Leave it out for ${DEFAULT_RULE_SET}. An empty list starts from no rules at all.`,
-  },
-  rules: {
-    title: 'Rules',
-    text: 'Changes to single rules, applied after the rule sets. A rule is a check of the catalogue; a rule that is in no rule set is off until it is turned on here.',
-  },
-  issues: {
-    title: 'Issues',
-    text: 'Which findings open a GitHub issue on the live site: only errors (the default), errors and warnings, or none.',
-  },
-  dispatch: {
-    title: 'Repository dispatch',
-    text: 'Send a repository_dispatch event after each run (plumbline.checked, and plumbline.failed when there are errors), so a workflow can react.',
-  },
-  enabled: {
-    title: 'Enabled',
-    text: 'Set to false to turn every check of this repository off: deployments and pushes are not checked, the schedule skips its sites, and its open Plumbline issues are closed with a note. Read from the default branch; set it back to true (or remove it) and checks resume with the next deployment or push of this file. Default: true.',
-  },
-  sites: {
-    title: 'Sites',
-    text: 'Addresses to check as the sites of this repository, in addition to the ones its deployments report (the environment_url of a deployment). Use it when a deployment reports no address, or to name a site by hand. Each is an https address or a host name; an address on GitHub or a package registry is refused.',
-  },
-  deployments: {
-    title: 'Deployments',
-    text: 'How the successful deployments of this repository become sites.',
-  },
-  previews: {
-    title: 'Previews',
-    text: "Which live site a preview is compared with, so a pull request fails the check only for problems it adds. Each key is an environment name (a * matches any run of characters), each value the host of a site of this repository. Without a match, the repository's only site is used, then the site whose environment name is the preview's with words like preview, pr and staging taken away; with none, the preview is judged on its own.",
-  },
-  environments: {
-    title: 'Environments',
-    text: 'Changes for one kind of deployment, applied after everything above: production is the live site, preview is a preview of a branch or pull request.',
-  },
-};
+const KEY_DOCS = new Map(
+  Object.entries({
+    extends: {
+      title: 'Rule sets',
+      text: `The rule sets to start from, in order; a later one wins over an earlier one. Leave it out for ${DEFAULT_RULE_SET}. An empty list starts from no rules at all.`,
+    },
+    rules: {
+      title: 'Rules',
+      text: 'Changes to single rules, applied after the rule sets. A rule is a check of the catalogue; a rule that is in no rule set is off until it is turned on here.',
+    },
+    issues: {
+      title: 'Issues',
+      text: 'Which findings open a GitHub issue on the live site: only errors (the default), errors and warnings, or none.',
+    },
+    dispatch: {
+      title: 'Repository dispatch',
+      text: 'Send a repository_dispatch event after each run (plumbline.checked, and plumbline.failed when there are errors), so a workflow can react.',
+    },
+    enabled: {
+      title: 'Enabled',
+      text: 'Set to false to turn every check of this repository off: deployments and pushes are not checked, the schedule skips its sites, and its open Plumbline issues are closed with a note. Read from the default branch; set it back to true (or remove it) and checks resume with the next deployment or push of this file. Default: true.',
+    },
+    sites: {
+      title: 'Sites',
+      text: 'Addresses to check as the sites of this repository, in addition to the ones its deployments report (the environment_url of a deployment). Use it when a deployment reports no address, or to name a site by hand. Each is an https address or a host name; an address on GitHub or a package registry is refused.',
+    },
+    deployments: {
+      title: 'Deployments',
+      text: 'How the successful deployments of this repository become sites.',
+    },
+    previews: {
+      title: 'Previews',
+      text: "Which live site a preview is compared with, so a pull request fails the check only for problems it adds. Each key is an environment name (a * matches any run of characters), each value the host of a site of this repository. Without a match, the repository's only site is used, then the site whose environment name is the preview's with words like preview, pr and staging taken away; with none, the preview is judged on its own.",
+    },
+    environments: {
+      title: 'Environments',
+      text: 'Changes for one kind of deployment, applied after everything above: production is the live site, preview is a preview of a branch or pull request.',
+    },
+  }),
+);
 
 /** What each environment is, for the editor. */
-const ENVIRONMENT_DOCS: Readonly<Record<string, string>> = {
-  production: 'The live site.',
-  preview: 'A preview of a branch or a pull request.',
-};
+const ENVIRONMENT_DOCS = new Map(
+  Object.entries({
+    production: 'The live site.',
+    preview: 'A preview of a branch or a pull request.',
+  }),
+);
 
 /** The keys of the file that have no help written for them yet; the tests keep this empty. */
 export function undocumentedKeys(): string[] {
   return [
     ...Object.keys(ConfigSchema.shape),
     ...Object.keys(OverlaySchema.shape),
-  ].filter((key) => !Object.hasOwn(KEY_DOCS, key));
+  ].filter((key) => !KEY_DOCS.has(key));
 }
 
 /** Files that show what a file looks like, checked against the reader by the tests and shown in the editor's completion. */
@@ -137,8 +141,8 @@ export const EXAMPLES: readonly JsonSchema[] = [
 ];
 
 /** The schema of `extends`: one rule set, or a list of them. */
-function extendsSchema(): JsonSchema {
-  const name: JsonSchema = {
+function extendsSchema() {
+  const name = {
     title: 'A rule set',
     anyOf: [
       {
@@ -157,8 +161,8 @@ function extendsSchema(): JsonSchema {
     ],
   };
   return {
-    title: KEY_DOCS['extends']?.title,
-    description: KEY_DOCS['extends']?.text,
+    title: KEY_DOCS.get('extends')?.title,
+    description: KEY_DOCS.get('extends')?.text,
     default: DEFAULT_RULE_SET,
     anyOf: [
       name,
@@ -168,10 +172,10 @@ function extendsSchema(): JsonSchema {
 }
 
 /** The schema of `rules`: every check of the catalogue, each with its level. */
-function rulesSchema(): JsonSchema {
+function rulesSchema() {
   return {
-    title: KEY_DOCS['rules']?.title,
-    description: KEY_DOCS['rules']?.text,
+    title: KEY_DOCS.get('rules')?.title,
+    description: KEY_DOCS.get('rules')?.text,
     type: 'object',
     properties: Object.fromEntries(
       CHECKS.map((check) => [
@@ -196,7 +200,7 @@ function rulesSchema(): JsonSchema {
 }
 
 /** The schema of what an environment can change: the same rule sets and rules, and nothing else. */
-function overlaySchema(): JsonSchema {
+function overlaySchema() {
   return {
     type: 'object',
     properties: {
@@ -208,10 +212,10 @@ function overlaySchema(): JsonSchema {
 }
 
 /** The schema of `environments`: the kinds of deployment there are. */
-function environmentsSchema(): JsonSchema {
+function environmentsSchema() {
   return {
-    title: KEY_DOCS['environments']?.title,
-    description: KEY_DOCS['environments']?.text,
+    title: KEY_DOCS.get('environments')?.title,
+    description: KEY_DOCS.get('environments')?.text,
     type: 'object',
     properties: Object.fromEntries(
       ENVIRONMENTS.map((name) => [
@@ -219,7 +223,7 @@ function environmentsSchema(): JsonSchema {
         {
           $ref: '#/$defs/overlay',
           title: name,
-          description: ENVIRONMENT_DOCS[name] ?? 'A kind of deployment.',
+          description: ENVIRONMENT_DOCS.get(name) ?? 'A kind of deployment.',
         },
       ]),
     ),
@@ -228,10 +232,10 @@ function environmentsSchema(): JsonSchema {
 }
 
 /** The schema of `sites`: https addresses or host names, each one a site. */
-function sitesSchema(): JsonSchema {
+function sitesSchema() {
   return {
-    title: KEY_DOCS['sites']?.title,
-    description: KEY_DOCS['sites']?.text,
+    title: KEY_DOCS.get('sites')?.title,
+    description: KEY_DOCS.get('sites')?.text,
     type: 'array',
     items: {
       type: 'string',
@@ -245,10 +249,10 @@ function sitesSchema(): JsonSchema {
 }
 
 /** The schema of `deployments`: which environments are sites. */
-function deploymentsSchema(): JsonSchema {
+function deploymentsSchema() {
   return {
-    title: KEY_DOCS['deployments']?.title,
-    description: KEY_DOCS['deployments']?.text,
+    title: KEY_DOCS.get('deployments')?.title,
+    description: KEY_DOCS.get('deployments')?.text,
     type: 'object',
     properties: {
       environments: {
@@ -265,10 +269,10 @@ function deploymentsSchema(): JsonSchema {
 }
 
 /** The schema of `previews`: environment-name patterns and the site each is compared with. */
-function previewsSchema(): JsonSchema {
+function previewsSchema() {
   return {
-    title: KEY_DOCS['previews']?.title,
-    description: KEY_DOCS['previews']?.text,
+    title: KEY_DOCS.get('previews')?.title,
+    description: KEY_DOCS.get('previews')?.text,
     type: 'object',
     additionalProperties: {
       type: 'string',
@@ -280,14 +284,16 @@ function previewsSchema(): JsonSchema {
 }
 
 /** The keys that need more than the reader's own type, built above. */
-const OWN: Readonly<Record<string, string>> = {
-  extends: '#/$defs/extends',
-  rules: '#/$defs/rules',
-  environments: '#/$defs/environments',
-  sites: '#/$defs/sites',
-  deployments: '#/$defs/deployments',
-  previews: '#/$defs/previews',
-};
+const OWN = new Map(
+  Object.entries({
+    extends: '#/$defs/extends',
+    rules: '#/$defs/rules',
+    environments: '#/$defs/environments',
+    sites: '#/$defs/sites',
+    deployments: '#/$defs/deployments',
+    previews: '#/$defs/previews',
+  }),
+);
 
 /**
  * The schema of `plumbline.yaml` (and `plumbline.yml` and `plumbline.json`,
@@ -295,18 +301,22 @@ const OWN: Readonly<Record<string, string>> = {
  * their type, such as `issues` and `dispatch`, are generated straight from its
  * zod schema.
  */
-export function buildSchema(): JsonSchema {
-  const properties: Record<string, JsonSchema> = {};
-  for (const [key, type] of Object.entries(ConfigSchema.shape)) {
-    const own = Object.hasOwn(OWN, key) ? OWN[key] : undefined;
-    properties[key] = own
-      ? { $ref: own }
-      : {
-          title: KEY_DOCS[key]?.title,
-          description: KEY_DOCS[key]?.text,
-          ...jsonOf(type),
-        };
-  }
+export function buildSchema() {
+  const properties = Object.fromEntries(
+    Object.entries(ConfigSchema.shape).map(([key, type]) => {
+      const own = OWN.get(key);
+      return [
+        key,
+        own
+          ? { $ref: own }
+          : {
+              title: KEY_DOCS.get(key)?.title,
+              description: KEY_DOCS.get(key)?.text,
+              ...jsonOf(type),
+            },
+      ];
+    }),
+  );
   return {
     $schema: 'https://json-schema.org/draft/2020-12/schema',
     $id: SCHEMA_URL,

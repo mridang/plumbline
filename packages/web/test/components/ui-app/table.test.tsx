@@ -11,7 +11,7 @@ import {
 import { html } from '../render';
 
 /** Matches right aligned cell. */
-const RIGHT_ALIGNED_CELL = /<td class="px-4 py-2\.5 text-right">/;
+const RIGHT_ALIGNED_CELL = /<td class="px-4 py-2\.5 text-right">/u;
 
 const draw = (current = false) =>
   html(

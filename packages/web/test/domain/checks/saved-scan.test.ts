@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { ReportResource } from '@/domain/api/report-resource';
 import { CHECKS, findCheck } from '@/domain/checks/catalogue';
 import { savedScan } from '@/domain/checks/saved-scan';
+import type { ReportResource } from '@/domain/api/report-resource';
 
 const REPORT: ReportResource = {
   id: 'r1',

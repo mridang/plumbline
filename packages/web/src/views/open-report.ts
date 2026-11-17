@@ -12,7 +12,7 @@
  * so anything that is not shaped like one is never sent.
  */
 const HOST_PATTERN =
-  /^(?=.{1,253}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/;
+  /^(?=.{1,253}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/u;
 
 /** Whether `value` has the shape of a host name. */
 export function isHostName(value: string): boolean {

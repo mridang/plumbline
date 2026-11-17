@@ -66,4 +66,4 @@ function ripeStatClient(
 }
 
 /** The client hints use; tests assign a fake to `rpki.client`. */
-export const rpki: { client: RpkiClient } = { client: ripeStatClient() };
+export const rpki = { client: ripeStatClient() };

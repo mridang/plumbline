@@ -1,5 +1,5 @@
 export default {
-  ignoreDependencies: [/^@semantic-release\//],
+  ignoreDependencies: [/^@semantic-release\//u],
   // The sibling apps' shared shell marks what it exports for other apps with
   // `@public`, as in their own knip config.
   tags: ['+public'],

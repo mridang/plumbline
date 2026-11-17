@@ -20,11 +20,14 @@ export interface ReportOutcome {
   readonly findings: Scan['hints'][number]['findings'];
 }
 
-/** The body of a report for a finished scan. */
-export function reportBody(scan: Readonly<Scan>): {
+/** What a report of a finished scan holds. */
+export interface ReportBodyOf {
   readonly url: string;
   readonly outcomes: readonly ReportOutcome[];
-} {
+}
+
+/** The body of a report for a finished scan. */
+export function reportBody(scan: Readonly<Scan>): ReportBodyOf {
   return {
     url: scan.finalUrl,
     outcomes: scan.hints.map((hint) => ({

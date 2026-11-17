@@ -61,7 +61,7 @@ export default defineHint({
         return;
       }
 
-      for (const selector of selectors) {
+      await Array.fromAsync(selectors, async (selector) => {
         const name = `${selector.trim()}._domainkey.${mail.domain}`;
         const lookup = await lookupTxt(dns.client, name);
         const records = lookup.status === 'ok' ? lookup.records : [];
@@ -99,7 +99,7 @@ export default defineHint({
             // A valid record outside testing mode needs no report.
           }
         }
-      }
+      });
     });
   },
 });

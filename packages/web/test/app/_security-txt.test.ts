@@ -4,7 +4,7 @@ import { BRAND_URL, SECURITY_POLICY_URL } from '@/app/_brand';
 import { SECURITY_TXT_VALID_DAYS, securityTxt } from '@/app/_security-txt';
 
 /** Matches a mailto contact address. */
-const MAILTO_CONTACT_PATTERN = /^mailto:.+@.+/;
+const MAILTO_CONTACT_PATTERN = /^mailto:.+@.+/u;
 
 describe('securityTxt', () => {
   const now = new Date('2026-10-18T00:00:00Z');

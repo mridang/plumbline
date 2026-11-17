@@ -1,9 +1,10 @@
 import { Severity } from '@hint/utils-types';
-import { splitLines, type FileIssue } from '../../lib/files/issue.js';
+import { splitLines } from '../../lib/files/issue.js';
+import type { FileIssue } from '../../lib/files/issue.js';
 import type { Site } from '../../core/page.js';
 
 /** Matches the `utf-8` charset name, with or without the hyphen. */
-const UTF8_CHARSET = /^utf-?8$/i;
+const UTF8_CHARSET = /^utf-?8$/iu;
 
 /** Maps the lib finding severity to the webhint severity. */
 const SEVERITY = {
@@ -65,6 +66,7 @@ export async function checkFile(
   }
   const body = data.response.body.content;
   const lines = splitLines(body);
+  // eslint-disable-next-line functional/no-loop-statements -- reports each issue of the file
   for (const issue of o.validate(body, url)) {
     const snippet = issue.snippet ?? (issue.line ? lines[issue.line - 1] : '');
     site.report(url, issue.message, {

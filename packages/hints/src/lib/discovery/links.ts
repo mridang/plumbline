@@ -7,7 +7,7 @@
 import { parseLinkHeader } from '../agent/link-headers.js';
 
 /** Matches a run of whitespace between the tokens of a `rel` attribute. */
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /** The slice of a DOM element these readers use. */
 interface ElementLike {
@@ -46,19 +46,21 @@ function relationshipTokens(relationship: string | null): string[] {
 export function domRelationshipLinks(
   parsedDocument: DocumentLike,
 ): RelationshipLink[] {
-  const links: RelationshipLink[] = [];
-  for (const element of parsedDocument.querySelectorAll('link[rel], a[rel]')) {
-    const rels = relationshipTokens(element.getAttribute('rel'));
-    if (rels.length === 0) {
-      continue;
-    }
-    links.push({
-      rels,
-      href: (element.getAttribute('href') ?? '').trim(),
-      source: 'dom',
-    });
-  }
-  return links;
+  return Array.from(
+    parsedDocument.querySelectorAll('link[rel], a[rel]'),
+    (element): RelationshipLink[] => {
+      const rels = relationshipTokens(element.getAttribute('rel'));
+      return rels.length === 0
+        ? []
+        : [
+            {
+              rels,
+              href: (element.getAttribute('href') ?? '').trim(),
+              source: 'dom',
+            },
+          ];
+    },
+  ).flat();
 }
 
 /** Reads the relation links from a `Link` response header value, or []. */

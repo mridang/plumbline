@@ -5,7 +5,7 @@ import { setEvaluate } from '../../helpers/test-connector.js';
 
 /** Matches the Set-Cookie header reported as the source code of the problem. */
 const SET_COOKIE_SOURCE =
-  /^Set-Cookie: sid; Domain=127\.0\.0\.1; Path=\/; Expires=.+; Secure; HttpOnly; SameSite=Strict$/;
+  /^Set-Cookie: sid; Domain=127\.0\.0\.1; Path=\/; Expires=.+; Secure; HttpOnly; SameSite=Strict$/u;
 
 afterEach(() => {
   setEvaluate(() => {

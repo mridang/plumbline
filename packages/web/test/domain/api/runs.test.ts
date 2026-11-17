@@ -1,8 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
-import type { CurrentUserResolver } from '@/domain/api/auth';
 import {
   createRunItem,
   createRunsCollection,
@@ -13,8 +10,10 @@ import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
+import type { CurrentUserResolver } from '@/domain/api/auth';
+import type { DatabaseSync } from 'node:sqlite';
 
-const session: { uid: number | null } = { uid: 7 };
+const session = { uid: 7 as number | null };
 const resolver: CurrentUserResolver = {
   currentUid: async () => session.uid,
   currentLiveUid: async () => session.uid,

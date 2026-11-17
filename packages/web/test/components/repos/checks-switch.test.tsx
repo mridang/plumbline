@@ -9,10 +9,10 @@ import { NOT_INSTALLER } from '@/components/repos/checks-messages';
 import { htmlAt } from '../render';
 
 /** Matches aria describedby attribute. */
-const ARIA_DESCRIBEDBY_ATTRIBUTE = /aria-describedby="([^"]+)"/;
+const ARIA_DESCRIBEDBY_ATTRIBUTE = /aria-describedby="([^"]+)"/u;
 
 /** Matches disabled button. */
-const DISABLED_BUTTON = /<button[^>]*\sdisabled[\s=>]/;
+const DISABLED_BUTTON = /<button[^>]*\sdisabled[\s=>]/u;
 
 const INSTALLER = { canManage: true, fileOff: false } as const;
 

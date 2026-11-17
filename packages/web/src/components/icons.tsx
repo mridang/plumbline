@@ -20,7 +20,7 @@ export type IconSize = keyof typeof ICON_SIZES;
 
 type IconProps = SVGProps<SVGSVGElement> & {
   /** One of the standard sizes, instead of sizing the icon with classes. */
-  size?: IconSize;
+  readonly size?: IconSize;
 };
 
 /** The class list for an icon of the given size, joined with any of its own. */
@@ -55,7 +55,7 @@ function Icon({ children, size, className: cssClasses, ...props }: IconProps) {
 export const HeartIcon = ({
   filled,
   ...p
-}: IconProps & { filled?: boolean }) => (
+}: IconProps & { readonly filled?: boolean }) => (
   <Icon {...p} fill={filled ? 'currentColor' : 'none'}>
     <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
   </Icon>
@@ -272,30 +272,44 @@ export const CubeIcon = (p: IconProps) => (
   </Icon>
 );
 
-const PROTEIN_ICONS: Record<string, (p: IconProps) => React.ReactElement> = {
-  chicken: ChickenIcon,
-  beef: BeefIcon,
-  pork: PorkIcon,
-  lamb: LambIcon,
-  egg: EggIcon,
-  beans: BeansIcon,
-  seafood: FishIcon,
-  tofu: CubeIcon,
-  paneer: CubeIcon,
-  vegetable: CarrotIcon,
-};
-
 /** The icon for a protein ("chicken", "beef"…), or a plate for anything else. */
 export function ProteinIcon({
   protein,
   ...props
-}: IconProps & { protein: string }) {
-  const key = protein.toLowerCase();
-  // `hasOwn`, so a word like "constructor" is not read off the object's prototype.
-  const Component = Object.hasOwn(PROTEIN_ICONS, key)
-    ? (PROTEIN_ICONS[key] ?? PanIcon)
-    : PanIcon;
-  return <Component {...props} />;
+}: IconProps & { readonly protein: string }) {
+  switch (protein.toLowerCase()) {
+    case 'chicken': {
+      return <ChickenIcon {...props} />;
+    }
+    case 'beef': {
+      return <BeefIcon {...props} />;
+    }
+    case 'pork': {
+      return <PorkIcon {...props} />;
+    }
+    case 'lamb': {
+      return <LambIcon {...props} />;
+    }
+    case 'egg': {
+      return <EggIcon {...props} />;
+    }
+    case 'beans': {
+      return <BeansIcon {...props} />;
+    }
+    case 'seafood': {
+      return <FishIcon {...props} />;
+    }
+    case 'tofu':
+    case 'paneer': {
+      return <CubeIcon {...props} />;
+    }
+    case 'vegetable': {
+      return <CarrotIcon {...props} />;
+    }
+    default: {
+      return <PanIcon {...props} />;
+    }
+  }
 }
 
 /** A globe, for a recipe's cuisine. */

@@ -32,6 +32,7 @@ export default defineHint({
       const elements = getHreflangLinks(page.document)
         .filter((link) => link.href !== '' && !isAbsoluteHttpUrl(link.href))
         .map((link) => link.element);
+      // eslint-disable-next-line functional/no-loop-statements -- reports each finding against its element
       for (const [index, found] of findings.entries()) {
         page.report(found.message, {
           severity: toSeverity(found.severity),

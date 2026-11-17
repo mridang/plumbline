@@ -1,4 +1,3 @@
-import type { HintDefinition } from '../../core/define-hint.js';
 import acceptPatch from './accept-patch.js';
 import acceptPost from './accept-post.js';
 import attributionReporting from './attribution-reporting.js';
@@ -10,6 +9,7 @@ import setLogin from './set-login.js';
 import speculationRules from './speculation-rules.js';
 import supportsLoadingMode from './supports-loading-mode.js';
 import useAsDictionary from './use-as-dictionary.js';
+import type { HintDefinition } from '../../core/define-hint.js';
 
 /**
  * The `headersx` set: the remaining non-deprecated experimental MDN response

@@ -9,7 +9,8 @@
  * from the check catalogue alone never touches it.
  */
 
-import { getDatabase, type Database } from '@/domain/db/client';
+import { getDatabase } from '@/domain/db/client';
+import type { Database } from '@/domain/db/client';
 
 /** What this app's tools reach for. */
 export interface ToolServices {

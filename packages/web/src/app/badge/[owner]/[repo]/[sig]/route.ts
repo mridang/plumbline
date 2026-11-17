@@ -21,7 +21,7 @@ import { getEnv } from '@/lib/core/runtime';
 export const dynamic = 'force-dynamic';
 
 /** The `.svg` extension at the end of the signature segment. */
-const SVG_EXTENSION = /\.svg$/;
+const SVG_EXTENSION = /\.svg$/u;
 
 /** The dynamic segments of the badge address. */
 interface Context {

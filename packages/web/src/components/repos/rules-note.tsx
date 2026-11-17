@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import type { ReactElement } from 'react';
-
 import { countOf } from '@/lib/intl';
+import type { ReactElement } from 'react';
 
 /** Where the schema of `plumbline.yaml` is served (see `schemas/plumbline.schema.json`). */
 const SCHEMA_PATH = '/schemas/plumbline.schema.json';

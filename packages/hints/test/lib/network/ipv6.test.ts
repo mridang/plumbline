@@ -1,6 +1,6 @@
-import { afterEach, describe, expect, it } from '@jest/globals';
-import { createServer, type AddressInfo, type Server } from 'node:net';
+import { createServer } from 'node:net';
 import { createServer as createHttp } from 'node:http';
+import { afterEach, describe, expect, it } from '@jest/globals';
 import {
   compareIpFamilies,
   httpGetByIp,
@@ -14,9 +14,10 @@ import {
   unreachableNameservers,
   unreachableWebAddresses,
   zoneNameservers,
-  type WebResponse,
 } from '../../../src/lib/network/ipv6.js';
 import { installDns } from './fake-dns.js';
+import type { AddressInfo, Server } from 'node:net';
+import type { WebResponse } from '../../../src/lib/network/ipv6.js';
 
 const realNetwork = { ...network };
 let restore: () => void = () => undefined;
@@ -27,11 +28,11 @@ afterEach(() => {
 });
 
 const listen = async (server: Server): Promise<number> =>
-  new Promise((resolve) =>
-    server.listen(0, '127.0.0.1', () =>
-      resolve((server.address() as AddressInfo).port),
-    ),
-  );
+  new Promise((resolve) => {
+    server.listen(0, '127.0.0.1', () => {
+      resolve((server.address() as AddressInfo).port);
+    });
+  });
 
 describe('tcpConnect', () => {
   it('connects to a listening port and fails on a closed one', async () => {
@@ -40,7 +41,9 @@ describe('tcpConnect', () => {
     try {
       expect(await tcpConnect('127.0.0.1', port, 1000)).toBe(true);
     } finally {
-      await new Promise((resolve) => server.close(resolve));
+      await new Promise((resolve) => {
+        server.close(resolve);
+      });
     }
     expect(await tcpConnect('127.0.0.1', port, 1000)).toBe(false);
   });
@@ -59,14 +62,18 @@ describe('httpGetByIp', () => {
       expect(r).toEqual({ status: 200, body: 'hello' });
       expect(seenHost).toBe('site.test');
     } finally {
-      await new Promise((resolve) => server.close(resolve));
+      await new Promise((resolve) => {
+        server.close(resolve);
+      });
     }
   });
 
   it('returns null when nothing listens', async () => {
     const server = createServer();
     const port = await listen(server);
-    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => {
+      server.close(resolve);
+    });
     expect(await httpGetByIp('site.test', '127.0.0.1', port, false)).toBeNull();
   });
 });

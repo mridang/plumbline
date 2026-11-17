@@ -7,7 +7,7 @@ import {
   jest,
 } from '@jest/globals';
 
-import { createDatabase, type Database } from '@/domain/db/client';
+import { createDatabase } from '@/domain/db/client';
 import { addDomain } from '@/domain/db/domains';
 import { linkAccount, saveInstallation, saveRepos } from '@/domain/db/github';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
@@ -17,6 +17,7 @@ import {
 } from '../../../lib/core/db/sqlite-d1';
 import { GITHUB_ENV } from '../../../domain/github/github-test-kit';
 import { htmlAt } from '../../../components/render';
+import type { Database } from '@/domain/db/client';
 
 /** What the page asked Next to redirect to; `redirect` throws, as the real one does. */
 class RedirectedError extends Error {
@@ -27,16 +28,20 @@ class RedirectedError extends Error {
 }
 
 /** The signed-in user, or null for nobody. */
-const state: {
+interface UserState {
   user: { id: number; email: string; google_sub: string } | null;
-} = { user: null };
+}
 
+const state: UserState = { user: null };
+
+// eslint-disable-next-line tslop/no-module-mocking -- next/navigation is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('next/navigation', () => ({
   redirect: (to: string) => {
     throw new RedirectedError(to);
   },
   useRouter: () => ({ push: () => undefined, refresh: () => undefined }),
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- @/lib/core/auth/current-user is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
 }));

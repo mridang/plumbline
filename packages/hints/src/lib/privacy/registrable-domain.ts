@@ -1,16 +1,16 @@
 import { domainToASCII } from '#url';
 
 /** Matches a character outside printable ASCII. */
-const NON_PRINTABLE_ASCII = /[^\u0020-\u007E]/;
+const NON_PRINTABLE_ASCII = /[^\u0020-\u007E]/u;
 
 /** Matches leading dots. */
-const LEADING_DOTS = /^\.+/;
+const LEADING_DOTS = /^\.+/u;
 
 /** Matches characters valid in an IPv6 literal. */
-const IPV6_LITERAL_CHARS = /^[0-9a-f:.]+$/i;
+const IPV6_LITERAL_CHARS = /^[0-9a-f:.]+$/iu;
 
 /** Matches a dotted IPv4 literal. */
-const IPV4_LITERAL = /^\d{1,3}(\.\d{1,3}){3}$/;
+const IPV4_LITERAL = /^\d{1,3}(\.\d{1,3}){3}$/u;
 
 /**
  * A small, dependency free stand-in for the Public Suffix List.
@@ -89,7 +89,7 @@ const GENERIC_SECOND_LEVEL: ReadonlySet<string> = new Set([
 
 /** True for dotted IPv4 and for IPv6 literals (with or without brackets). */
 export function isIpAddress(host: string): boolean {
-  const bare = host.replaceAll(/^\[|\]$/g, '');
+  const bare = host.replaceAll(/^\[|\]$/gu, '');
   if (IPV4_LITERAL.test(bare)) {
     return true;
   }
@@ -98,18 +98,17 @@ export function isIpAddress(host: string): boolean {
 
 /** Removes every trailing dot, scanning once from the end. */
 function stripTrailingDots(value: string): string {
-  let end = value.length;
-  while (end > 0 && value.codePointAt(end - 1) === 46) {
-    end -= 1;
-  }
-  return value.slice(0, end);
+  const characters = Array.from(value, (character) => character);
+  return characters
+    .slice(0, characters.findLastIndex((character) => character !== '.') + 1)
+    .join('');
 }
 
 /** Lower cases a host and removes trailing dots and IPv6 brackets. */
 export function normalizeHost(host: string): string {
   const cleaned = stripTrailingDots(host.trim().toLowerCase())
     .replace(LEADING_DOTS, '')
-    .replaceAll(/^\[|\]$/g, '');
+    .replaceAll(/^\[|\]$/gu, '');
   // Hosts from URLs are already punycode; a `Domain` attribute may carry
   // Unicode, which must compare equal to its punycode form.
   return NON_PRINTABLE_ASCII.test(cleaned)
@@ -136,20 +135,13 @@ export function registrableDomain(host: string): string {
   const second = labels.at(-2) ?? '';
   // Longest known suffix wins: a listed suffix may have any number of labels
   // (`s3.amazonaws.com` has three), so every tail of the host is tried.
-  let suffixLength = 1;
-  for (let length = labels.length; length >= 2; length--) {
-    if (MULTI_LABEL_SUFFIXES.has(labels.slice(-length).join('.'))) {
-      suffixLength = length;
-      break;
-    }
-  }
-  if (
-    suffixLength === 1 &&
-    top.length === 2 &&
-    GENERIC_SECOND_LEVEL.has(second)
-  ) {
-    suffixLength = 2;
-  }
+  const listedSuffixLength = Array.from(
+    { length: labels.length - 1 },
+    (_, offset) => labels.length - offset,
+  ).find((length) => MULTI_LABEL_SUFFIXES.has(labels.slice(-length).join('.')));
+  const suffixLength =
+    listedSuffixLength ??
+    (top.length === 2 && GENERIC_SECOND_LEVEL.has(second) ? 2 : 1);
   // The registrable domain is one label more than the public suffix. A host
   // that is itself a public suffix is returned whole, as Webbkoll does.
   return labels.slice(-Math.min(suffixLength + 1, labels.length)).join('.');

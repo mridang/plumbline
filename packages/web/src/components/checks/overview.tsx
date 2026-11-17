@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import type { ReactElement } from 'react';
 
 import {
   Arrow,
@@ -22,11 +21,12 @@ import {
   INTRO,
   SECTIONS,
   SET_INFOS,
-  type Section,
 } from '@/domain/checks/catalogue';
 import { areaPath, setPath } from '@/domain/checks/browse';
 import { findRuleSet } from '@/domain/checks/sets';
 import { countOf, formatCount } from '@/lib/intl';
+import type { Section } from '@/domain/checks/catalogue';
+import type { ReactElement } from 'react';
 
 /** The default rule set's name. */
 const DEFAULT = 'plumbline:recommended';

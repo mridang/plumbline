@@ -1,30 +1,26 @@
 import { beforeAll, beforeEach, describe, expect, it } from '@jest/globals';
-import {
-  SignJWT,
-  exportJWK,
-  generateKeyPair,
-  type CryptoKey,
-  type JWK,
-} from 'jose';
-
-import { CLIENT_ASSERTION_TYPE } from '../../../src/lib/oauth/client-auth';
+import { SignJWT, exportJWK, generateKeyPair } from 'jose';
 
 import {
   formField,
   handleTokenRequest,
   issueAuthorizationCode,
   s256,
-  type TokenRequestResult,
 } from '@/lib/oauth';
-import { MemoryStore } from './memory-store';
-import { quietSecurityLogs } from './quiet-logs';
 import { SCOPE_READ } from '@/domain/mcp/app';
 import { SITE_NAME } from '@/utils/site';
+import { CLIENT_ASSERTION_TYPE } from '../../../src/lib/oauth/client-auth';
+
+import { MemoryStore } from './memory-store';
+import { quietSecurityLogs } from './quiet-logs';
+import type { TokenRequestResult } from '@/lib/oauth';
+import type { CryptoKey, JSONWebKeySet } from 'jose';
 
 /** Matches printable ASCII without quotes or backslashes. */
-const PRINTABLE_ASCII_NO_QUOTES = /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/;
+const PRINTABLE_ASCII_NO_QUOTES =
+  /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/u;
 /** Matches the "already used" message. */
-const ALREADY_USED = /already used/;
+const ALREADY_USED = /already used/u;
 
 const ORIGIN = 'https://site.example';
 const RESOURCE = `${ORIGIN}/mcp`;
@@ -317,7 +313,7 @@ describe('handleTokenRequest for a client that signs its requests', () => {
   const REDIRECT = 'https://chatgpt.com/connector_platform_oauth_redirect';
   const KEYS = 'https://chatgpt.com/oauth/jwks.json';
   let key: CryptoKey;
-  let jwks: { keys: JWK[] };
+  let jwks: JSONWebKeySet;
 
   beforeAll(async () => {
     const pair = await generateKeyPair('RS256', { extractable: true });
@@ -352,7 +348,7 @@ describe('handleTokenRequest for a client that signs its requests', () => {
     client_assertion: await assertion(claims),
   });
 
-  const context = { fetchJwks: async () => jwks as unknown };
+  const context = { fetchJwks: async () => jwks };
 
   /** A code issued to the signing client. */
   async function codeFor() {

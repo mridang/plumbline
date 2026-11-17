@@ -3,10 +3,12 @@ import {
   analyzeRedirection,
   followRedirects,
   redirectionFindings,
-  type Hop,
-  type RedirectionClient,
 } from '../../../src/lib/headers/redirection.js';
 import { HTTP_SCHEME } from '../../helpers/data.js';
+import type {
+  Hop,
+  RedirectionClient,
+} from '../../../src/lib/headers/redirection.js';
 
 const hop = (url: string, status = 301): Hop => ({ url: new URL(url), status });
 const route = (...hops: Hop[]) => ({

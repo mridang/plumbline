@@ -1,4 +1,3 @@
-import type { HintDefinition } from '../core/define-hint.js';
 import { agentHints } from './agent/index.js';
 import { discoveryHints } from './discovery/index.js';
 import { emailHints } from './email/index.js';
@@ -20,6 +19,7 @@ import { seoHints } from './seo/index.js';
 import { technicalHints } from './technical/index.js';
 import { tlsHints } from './tls/index.js';
 import { wellknownHints } from './wellknown/index.js';
+import type { HintDefinition } from '../core/define-hint.js';
 
 /** Every hint in the package, gathered from the per-set modules. */
 export const allHints: readonly HintDefinition[] = [

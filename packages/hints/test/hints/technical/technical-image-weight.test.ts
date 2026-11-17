@@ -4,7 +4,7 @@ import hint from '../../../src/hints/technical/technical-image-weight.js';
 import { runHint } from '../../helpers/run-hint.js';
 
 /** Matches a resource URL that ends in /mid.png. */
-const MID_IMAGE_RESOURCE = /\/mid\.png$/;
+const MID_IMAGE_RESOURCE = /\/mid\.png$/u;
 
 /** Routes for a valid page whose head and body are filled in by the test. */
 const page = (body: string, head = '') => ({

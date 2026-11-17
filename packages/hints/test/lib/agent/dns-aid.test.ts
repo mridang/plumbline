@@ -86,10 +86,10 @@ describe('isServiceModeRecord against the former regex', () => {
     '',
     ' 1   svc.example.   port=443 ',
     'x 1 . alpn=h2',
-    '1 . alpn=h2',
-    '1 a alpn=h2',
+    '1\u2028. alpn=h2',
+    '1 a\u2028alpn=h2',
     '1 a b\nalpn=h2',
-    '1 a b alpn=h2',
+    '1 a b\u2029alpn=h2',
     '12 . ech=abc mcp=/x',
     '1 . noalpn=1',
   ])('agrees on %j', (data) => {

@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 import { UsageError } from '../src/options.js';
-import type { HintMeta } from '../src/scan.js';
 import { filterByGroups, selectHints } from '../src/select.js';
+import type { HintMeta } from '../src/scan.js';
 
 function hint(id: string, groups: string[]): HintMeta {
   return { id, name: id, description: '', category: 'security', groups };
@@ -54,13 +54,14 @@ describe('filterByGroups', () => {
     const placementOf = (id: string): (typeof PLACEMENT)[string] | undefined =>
       PLACEMENT[id];
     const expected = (tiers: string[], target?: string) =>
-      CATALOGUE.map((h) => h.id).filter((id) => {
-        const placement = placementOf(id);
-        return (
-          placement !== undefined &&
-          tiers.includes(placement.tier) &&
-          (target === undefined || placement.target === target)
-        );
+      CATALOGUE.flatMap((h) => {
+        const placement = placementOf(h.id);
+        if (placement === undefined || !tiers.includes(placement.tier)) {
+          return [];
+        }
+        return target === undefined || placement.target === target
+          ? [h.id]
+          : [];
       });
     expect(ids(['recommended'])).toEqual(expected(['recommended']));
     expect(ids(['recommended', 'advanced'], ['mail'])).toEqual(

@@ -1,12 +1,12 @@
-import type { HTMLElement } from '@hint/utils-dom';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage, onSite } from '../../core/page.js';
-import type { DocumentLike } from '../../lib/seo/read.js';
 import {
   faviconIcoOrPngMissing,
   ICONS_FAVICON_ICO_OR_PNG_MISSING_REF,
 } from '../../lib/seo/checks.js';
 import { toSeverity } from './to-severity.js';
+import type { DocumentLike } from '../../lib/seo/read.js';
+import type { HTMLElement } from '@hint/utils-dom';
 
 const REF = ICONS_FAVICON_ICO_OR_PNG_MISSING_REF;
 
@@ -32,7 +32,9 @@ export default defineHint({
   setup(context) {
     // The parsed document and the <head> the missing icon link belongs in,
     // captured once the DOM is available for the later onSite check.
+    // eslint-disable-next-line functional/no-let -- captured by the page handler for the later site check
     let document: DocumentLike | null = null;
+    // eslint-disable-next-line functional/no-let -- captured by the page handler for the later site check
     let head: HTMLElement | null = null;
     onPage(context, (page) => {
       document = page.document;

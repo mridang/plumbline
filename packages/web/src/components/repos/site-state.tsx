@@ -1,7 +1,6 @@
-import type { ReactElement } from 'react';
-
 import { Badge } from '@/components/ui-app/badge';
 import { Dot } from '@/components/ui-app/status-dot';
+import type { ReactElement } from 'react';
 import type { Tone } from '@/components/ui-app/tone';
 import type { SiteState } from '@/domain/db/live';
 

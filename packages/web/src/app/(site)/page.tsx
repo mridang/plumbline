@@ -1,5 +1,3 @@
-import type { ReactElement } from 'react';
-
 import { Coverage } from '@/components/landing/coverage';
 import { FinalCta } from '@/components/landing/final-cta';
 import { Hero } from '@/components/landing/hero';
@@ -7,6 +5,7 @@ import { HowItWorks } from '@/components/landing/how-it-works';
 import { WaysIn } from '@/components/landing/ways-in';
 import { CHECKS, SECTIONS, checksPerSection } from '@/domain/checks/catalogue';
 import { jsonLdText, landingJsonLd } from '@/lib/core/seo';
+import type { ReactElement } from 'react';
 
 /**
  * The front page: the scanner first, then what it checks, how a scan works,
@@ -20,6 +19,7 @@ export default function Home(): ReactElement {
     <>
       <script
         type="application/ld+json"
+        // eslint-disable-next-line react/no-danger -- JSON-LD must be emitted as raw script text; jsonLdText escapes it
         dangerouslySetInnerHTML={{ __html: jsonLdText(landingJsonLd()) }}
       />
       <Hero checks={CHECKS.length} />

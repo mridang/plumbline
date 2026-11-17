@@ -1,9 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  remoteConnect,
-  type RemoteHandshake,
-  type RemoteRequest,
+import { remoteConnect } from '../../../src/lib/tls/remote.js';
+import type {
+  RemoteHandshake,
+  RemoteRequest,
 } from '../../../src/lib/tls/remote.js';
 
 const answer = (over: Partial<RemoteHandshake> = {}): RemoteHandshake => ({

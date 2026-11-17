@@ -1,7 +1,8 @@
-import { describe, expect, it } from '@jest/globals';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { describe, expect, it } from '@jest/globals';
 
+import { packageDirectorySync } from 'package-directory';
 import {
   SECURITY_HEADERS,
   applyResponseHeaders,
@@ -12,7 +13,6 @@ import {
   PUBLIC_PAGES,
   RARELY_CHANGING,
 } from '@/lib/core/http';
-import { packageDirectorySync } from 'package-directory';
 
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 

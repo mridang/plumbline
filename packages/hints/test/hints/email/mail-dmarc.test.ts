@@ -1,11 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 import { Severity } from '@hint/utils-types';
 import hint from '../../../src/hints/email/mail-dmarc.js';
-import {
-  fakeDns,
-  runMailHint,
-  type FakeAnswer,
-} from '../../lib/email/fakes.js';
+import { fakeDns, runMailHint } from '../../lib/email/fakes.js';
+import type { FakeAnswer } from '../../lib/email/fakes.js';
 
 const run = async (txt: Record<string, FakeAnswer>) =>
   runMailHint(hint, {

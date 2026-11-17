@@ -11,12 +11,8 @@
  */
 
 import { SESSION_COOKIE } from '@/domain/auth/app';
-import {
-  GENERIC_CLASSES,
-  genericClass,
-  type ClassSpec,
-  type EdgeLimits,
-} from '@/lib/core/http/edge-limits';
+import { GENERIC_CLASSES, genericClass } from '@/lib/core/http/edge-limits';
+import type { ClassSpec, EdgeLimits } from '@/lib/core/http/edge-limits';
 
 /** The kinds of request this app counts besides the classes every app has. */
 type OwnClass = 'auth' | 'token' | 'register' | 'mcp' | 'mcpAnonymous' | 'scan';
@@ -66,7 +62,7 @@ const CLASSES: Readonly<Record<OwnClass, ClassSpec>> = {
 };
 
 /** A scan's run on the scanner container: `/api/scans/{id}/run`. It costs as much as starting a scan, so it is counted with scans. */
-const RUN = /^\/api\/scans\/[^/]+\/run$/;
+const RUN = /^\/api\/scans\/[^/]+\/run$/u;
 
 /**
  * The class of a request this app counts specially, or undefined when it is one

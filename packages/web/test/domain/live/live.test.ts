@@ -224,7 +224,7 @@ describe('createLive', () => {
       after: found(2),
       at: 'now',
     });
-    expect(fetched).not.toHaveBeenCalled();
+    expect(fetched.mock.calls).toEqual([]);
   });
 
   it('sends nothing when the Worker has no VAPID keys, and still records the check', async () => {

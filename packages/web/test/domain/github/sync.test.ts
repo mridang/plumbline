@@ -125,12 +125,11 @@ describe('syncInstallation', () => {
         files: { 'wrangler.jsonc': '{"route": "site.example.com/*"}' },
       },
     });
-    expect(await syncInstallation(db, 7, 99, api)).toMatchObject({
-      domainsAdded: 0,
-    });
-    expect(await syncInstallation(db, 7, 99, api)).toMatchObject({
-      domainsAdded: 0,
-    });
+    const syncs = [
+      await syncInstallation(db, 7, 99, api),
+      await syncInstallation(db, 7, 99, api),
+    ];
+    expect(syncs).toMatchObject([{ domainsAdded: 0 }, { domainsAdded: 0 }]);
     const domains = await listDomains(db, 7);
     expect(domains.map((d) => d.repo)).toEqual(['o/site']);
   });

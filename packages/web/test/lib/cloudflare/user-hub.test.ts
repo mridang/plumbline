@@ -4,6 +4,7 @@ import { cloudflareWorkersStub } from '../../helpers/cloudflare-workers-stub';
 import { APP_MIGRATIONS } from '../core/db/migrations';
 import { sqliteD1 } from '../core/db/sqlite-d1';
 
+// eslint-disable-next-line tslop/no-module-mocking -- `cloudflare:workers` exists only inside the Workers runtime, so Node has no real module to import
 jest.unstable_mockModule('cloudflare:workers', cloudflareWorkersStub, {
   virtual: true,
 });
@@ -62,7 +63,7 @@ async function readSome(response: Response, wanted: number): Promise<string> {
   const reader = response.body!.getReader();
   const decoder = new TextDecoder();
   let text = '';
-  while ((text.match(/\n\n/g) ?? []).length < wanted) {
+  while ((text.match(/\n\n/gu) ?? []).length < wanted) {
     const { value, done } = await reader.read();
     if (done) {
       break;
@@ -74,7 +75,7 @@ async function readSome(response: Response, wanted: number): Promise<string> {
 }
 
 const idsOf = (text: string) =>
-  Array.from(text.matchAll(/^id: (\d+)$/gm), (match) => Number(match[1]));
+  Array.from(text.matchAll(/^id: (\d+)$/gmu), (match) => Number(match[1]));
 
 describe('UserHub', () => {
   it('opens an event stream with the right headers', async () => {
@@ -128,7 +129,7 @@ describe('UserHub', () => {
     await hub.notify(PERSON);
     await hub.notify(PERSON);
     const text = await readSome(response, 1);
-    expect(text.match(/^id: /gm)).toHaveLength(1);
+    expect(text.match(/^id: /gmu)).toHaveLength(1);
   });
 
   it('does not stream another person’s events', async () => {
@@ -152,7 +153,9 @@ describe('UserHub', () => {
     const response = await open({ 'Last-Event-ID': '0' });
     expect(hub.open).toBe(1);
     await response.body!.cancel();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
     expect(hub.open).toBe(0);
   });
 
@@ -161,7 +164,9 @@ describe('UserHub', () => {
     const first = await open({ 'Last-Event-ID': '0' });
     expect(hub.pinging).toBe(true);
     await first.body!.cancel();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
     expect(hub.pinging).toBe(false);
     await open({ 'Last-Event-ID': '0' });
     expect(hub.pinging).toBe(true);
@@ -172,7 +177,9 @@ describe('UserHub', () => {
     const gone = await open({ 'Last-Event-ID': '0' });
     await open({ 'Last-Event-ID': '0' });
     await gone.body!.cancel();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
     expect(hub.open).toBe(1);
     expect(hub.pinging).toBe(true);
   });

@@ -1,5 +1,5 @@
-import type { FileIssue } from '../files/issue.js';
 import { isObject, isStringArray, parsedOrIssue } from './json.js';
+import type { FileIssue } from '../files/issue.js';
 
 /**
  * Validates one Digital Asset Links statement. A statement has a non-empty
@@ -8,69 +8,82 @@ import { isObject, isStringArray, parsedOrIssue } from './json.js';
  * are required) or `web` (then `site` is required). See
  * https://developers.google.com/digital-asset-links/v1/statements.
  */
-function validateStatement(
-  statement: unknown,
-  index: number,
-  issues: FileIssue[],
-): void {
+function validateStatement(statement: unknown, index: number): FileIssue[] {
   if (!isObject(statement)) {
-    issues.push({
-      severity: 'error',
-      message: `statement[${index}] must be an object.`,
-    });
-    return;
+    return [
+      {
+        severity: 'error',
+        message: `statement[${index}] must be an object.`,
+      },
+    ];
   }
 
   // `relation` is a non-empty array of relation strings such as
   // "delegate_permission/common.handle_all_urls".
-  const relation = statement.relation;
-  if (!isStringArray(relation) || relation.length === 0) {
-    issues.push({
-      severity: 'error',
-      message: `statement[${index}].relation must be a non-empty array of strings.`,
-    });
-  }
+  const { relation } = statement;
+  const relationIssues: FileIssue[] =
+    !isStringArray(relation) || relation.length === 0
+      ? [
+          {
+            severity: 'error',
+            message: `statement[${index}].relation must be a non-empty array of strings.`,
+          },
+        ]
+      : [];
 
-  const target = statement.target;
+  const { target } = statement;
   if (!isObject(target)) {
-    issues.push({
-      severity: 'error',
-      message: `statement[${index}].target must be an object.`,
-    });
-    return;
+    return [
+      ...relationIssues,
+      {
+        severity: 'error',
+        message: `statement[${index}].target must be an object.`,
+      },
+    ];
   }
 
   const namespace = target.namespace;
-  if (namespace === 'android_app') {
-    if (
-      typeof target.package_name !== 'string' ||
-      target.package_name.trim() === ''
-    ) {
-      issues.push({
-        severity: 'error',
-        message: `statement[${index}].target is an android_app but has no 'package_name'.`,
-      });
+  const fingerprints = target.sha256_cert_fingerprints;
+  const targetIssues: FileIssue[] = (() => {
+    if (namespace === 'android_app') {
+      return [
+        ...(typeof target.package_name !== 'string' ||
+        target.package_name.trim() === ''
+          ? [
+              {
+                severity: 'error' as const,
+                message: `statement[${index}].target is an android_app but has no 'package_name'.`,
+              },
+            ]
+          : []),
+        ...(!isStringArray(fingerprints) || fingerprints.length === 0
+          ? [
+              {
+                severity: 'error' as const,
+                message: `statement[${index}].target is an android_app but has no 'sha256_cert_fingerprints'.`,
+              },
+            ]
+          : []),
+      ];
     }
-    const fingerprints = target.sha256_cert_fingerprints;
-    if (!isStringArray(fingerprints) || fingerprints.length === 0) {
-      issues.push({
-        severity: 'error',
-        message: `statement[${index}].target is an android_app but has no 'sha256_cert_fingerprints'.`,
-      });
+    if (namespace === 'web') {
+      return typeof target.site !== 'string' || target.site.trim() === ''
+        ? [
+            {
+              severity: 'error' as const,
+              message: `statement[${index}].target is a web target but has no 'site'.`,
+            },
+          ]
+        : [];
     }
-  } else if (namespace === 'web') {
-    if (typeof target.site !== 'string' || target.site.trim() === '') {
-      issues.push({
-        severity: 'error',
-        message: `statement[${index}].target is a web target but has no 'site'.`,
-      });
-    }
-  } else {
-    issues.push({
-      severity: 'error',
-      message: `statement[${index}].target.namespace must be 'android_app' or 'web'.`,
-    });
-  }
+    return [
+      {
+        severity: 'error' as const,
+        message: `statement[${index}].target.namespace must be 'android_app' or 'web'.`,
+      },
+    ];
+  })();
+  return [...relationIssues, ...targetIssues];
 }
 
 /**
@@ -79,25 +92,28 @@ function validateStatement(
  * another site. Reports a non-array document and every malformed statement.
  */
 export function validateAssetlinksJson(text: string): FileIssue[] {
-  const issues: FileIssue[] = [];
-  const root = parsedOrIssue(text, issues);
+  const parseIssues: FileIssue[] = [];
+  const root = parsedOrIssue(text, parseIssues);
   if (root === undefined) {
-    return issues;
+    return parseIssues;
   }
   if (!Array.isArray(root)) {
-    issues.push({
-      severity: 'error',
-      message: 'The top-level value must be a JSON array of statements.',
-    });
-    return issues;
+    return [
+      {
+        severity: 'error',
+        message: 'The top-level value must be a JSON array of statements.',
+      },
+    ];
   }
-  if (root.length === 0) {
-    issues.push({
-      severity: 'warning',
-      message: 'The file contains no statements.',
-    });
-  }
-  for (const [index, statement] of root.entries())
-    validateStatement(statement, index, issues);
-  return issues;
+  return [
+    ...(root.length === 0
+      ? [
+          {
+            severity: 'warning' as const,
+            message: 'The file contains no statements.',
+          },
+        ]
+      : []),
+    ...root.flatMap((statement, index) => validateStatement(statement, index)),
+  ];
 }

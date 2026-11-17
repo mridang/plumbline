@@ -6,7 +6,8 @@ import {
   tryConnect,
 } from '../../lib/tls/client.js';
 import { evaluateCipherOrder } from '../../lib/tls/evaluate.js';
-import { onTlsSite, type TlsSite } from './on-tls-site.js';
+import { onTlsSite } from './on-tls-site.js';
+import type { TlsSite } from './on-tls-site.js';
 
 /** Runs the check of the `tls-cipher-order` hint against one TLS endpoint. */
 export async function checkTlsCipherOrder({

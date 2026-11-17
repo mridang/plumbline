@@ -41,10 +41,10 @@ import type { HeaderBag } from '@mridang/webhint-hint-plumbline/dist/lib/headers
 import type { MetaElementArtifact } from './adapt.js';
 
 /** Matches a run of whitespace, used to split space-separated tokens. */
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /** Matches a selector that starts with the `title` tag name. */
-const TITLE_SELECTOR = /^title\b/;
+const TITLE_SELECTOR = /^title\b/u;
 
 /** Lighthouse's `LinkElement` artifact entry, narrowed to what we read. */
 export interface LinkElementArtifact {
@@ -197,15 +197,12 @@ export function seoDocument(artifacts: {
  * repeated values with a comma so `X-Robots-Tag` is read exactly as the webhint
  * hint reads it. A repeated header is rare here but kept distinguishable.
  */
-export function httpHeadersFromBag(
-  bag: HeaderBag | undefined,
-): Record<string, string> {
-  const headers: Record<string, string> = {};
-  for (const [name, value] of Object.entries(bag ?? {})) {
-    if (value === undefined) {
-      continue;
-    }
-    headers[name] = Array.isArray(value) ? value.join(', ') : value;
-  }
-  return headers;
+export function httpHeadersFromBag(bag: HeaderBag | undefined) {
+  return Object.fromEntries(
+    Object.entries(bag ?? {}).flatMap(([name, value]): [string, string][] =>
+      value === undefined
+        ? []
+        : [[name, Array.isArray(value) ? value.join(', ') : value]],
+    ),
+  );
 }

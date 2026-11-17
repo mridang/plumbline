@@ -1,9 +1,9 @@
 import Link from 'next/link';
-import type { ReactElement } from 'react';
 
 import { GithubIcon } from '@/components/icons';
 import { repoPath } from '@/components/repos/repo-path';
 import { cn } from '@/components/ui/cn';
+import type { ReactElement } from 'react';
 
 /** The owner and the name of `owner/name`; a name with no slash has no owner. */
 export function splitRepo(repo: string): { owner: string; name: string } {

@@ -5,10 +5,10 @@ import { runHint } from '../../helpers/run-hint.js';
 
 /** Matches a source code that starts with the accelerometer feature of a Permissions-Policy header. */
 const PERMISSIONS_POLICY_ACCELEROMETER_SOURCE =
-  /^Permissions-Policy: accelerometer=\(\), /;
+  /^Permissions-Policy: accelerometer=\(\), /u;
 
 /** Matches a message that names the camera feature. */
-const CAMERA_FEATURE_MENTION = / camera[,.]/;
+const CAMERA_FEATURE_MENTION = / camera[,.]/u;
 
 const full = [
   ...DISABLED_FEATURES.map((f) => `${f}=()`),

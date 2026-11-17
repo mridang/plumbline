@@ -1,16 +1,14 @@
 'use client';
 
-import type { ReactElement } from 'react';
-
 import {
   CHIPS,
   toggleStatus,
   togglePaused,
-  type Counts,
-  type Filter,
 } from '@/components/repos/site-filter';
 import { RESULTS } from '@/components/repos/site-status';
 import { FilterChip } from '@/components/ui-app/filter-chip';
+import type { Counts, Filter } from '@/components/repos/site-filter';
+import type { ReactElement } from 'react';
 import type { Tone } from '@/components/ui-app/tone';
 
 /** The dot colour for each chip: the result's own, and red for a site that does not answer. */
@@ -34,10 +32,9 @@ export function StatusFilterBar({
   onChange: (filter: Filter) => void;
 }>): ReactElement {
   return (
-    <div
-      role="group"
+    <fieldset
       aria-label="Filter sites by status"
-      className="flex flex-wrap items-center gap-2"
+      className="m-0 flex min-w-0 flex-wrap items-center gap-2 border-0 p-0"
     >
       <FilterChip
         label="All"
@@ -63,6 +60,6 @@ export function StatusFilterBar({
         pressed={filter.paused}
         onPress={() => onChange(togglePaused(filter))}
       />
-    </div>
+    </fieldset>
   );
 }

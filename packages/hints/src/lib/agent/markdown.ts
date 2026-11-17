@@ -1,8 +1,8 @@
-import type { AgentEnv, CheckResult } from './types.js';
 import { evidenceFor, result } from './utility.js';
+import type { AgentEnv, CheckResult } from './types.js';
 
 /** Matches a `text/markdown` content type. */
-const MARKDOWN_CONTENT_TYPE = /^text\/markdown/i;
+const MARKDOWN_CONTENT_TYPE = /^text\/markdown/iu;
 
 /**
  * Markdown negotiation: `GET /` with `Accept: text/markdown` is answered

@@ -22,8 +22,8 @@ export type ContextAttributes = Readonly<
 
 /** The part of a Workers span this file uses. */
 interface ContextSpan {
-  setAttribute(key: string, value: ContextValue): unknown;
-  recordException(exception: { name: string; message: string }): unknown;
+  setAttribute(key: string, value: ContextValue): void;
+  recordException(exception: { name: string; message: string }): void;
 }
 
 /** The part of `tracing` from `cloudflare:workers` this file uses. */
@@ -35,6 +35,7 @@ interface ContextTracing {
 const MAX_TEXT = 256;
 
 /** The tracing API once loaded; `null` where there is none. */
+// eslint-disable-next-line functional/no-let -- the module is loaded once, on first use, and remembered for later calls
 let loaded: ContextTracing | null | undefined;
 
 /**
@@ -82,19 +83,21 @@ async function withActiveSpan(
 
 /** The attributes worth keeping: defined, and a string, a finite number or a boolean. */
 function accepted(attributes: ContextAttributes): [string, ContextValue][] {
-  const kept: [string, ContextValue][] = [];
-  for (const [key, value] of Object.entries(attributes)) {
-    if (typeof value === 'string') {
-      kept.push([key, value.slice(0, MAX_TEXT)]);
-    } else if (typeof value === 'boolean') {
-      kept.push([key, value]);
-    } else if (typeof value === 'number' && Number.isFinite(value)) {
-      kept.push([key, value]);
-    } else {
+  return Object.entries(attributes).flatMap(
+    ([key, value]): [string, ContextValue][] => {
+      if (typeof value === 'string') {
+        return [[key, value.slice(0, MAX_TEXT)]];
+      }
+      if (
+        typeof value === 'boolean' ||
+        (typeof value === 'number' && Number.isFinite(value))
+      ) {
+        return [[key, value]];
+      }
       // Anything else (an object, undefined, NaN) is not kept.
-    }
-  }
-  return kept;
+      return [];
+    },
+  );
 }
 
 /**
@@ -113,12 +116,13 @@ export async function setErrorContext(
       return;
     }
     await withActiveSpan((span) => {
+      // eslint-disable-next-line functional/no-loop-statements -- the loop only sets each attribute on the span
       for (const [key, value] of kept) {
         span.setAttribute(key, value);
       }
     });
   } catch {
-    return;
+    // Never rejects: context is a courtesy to whoever reads the error.
   }
 }
 

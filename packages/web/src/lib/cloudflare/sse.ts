@@ -1,5 +1,5 @@
 /** A string of digits and nothing else. */
-const DIGITS_ONLY = /^\d+$/;
+const DIGITS_ONLY = /^\d+$/u;
 
 /** A server-sent event. */
 export interface SseFrame {
@@ -23,16 +23,13 @@ export const SSE_HEADERS = {
  * @returns The `id:`, `event:` and `data:` lines followed by a blank line.
  */
 export function encodeFrame(frame: SseFrame): string {
-  const lines: string[] = [];
-  if (frame.id !== undefined) {
-    lines.push(`id: ${frame.id}`);
-  }
-  if (frame.event !== undefined) {
-    lines.push(`event: ${frame.event}`);
-  }
-  if (frame.data !== undefined) {
-    lines.push(`data: ${JSON.stringify(frame.data)}`);
-  }
+  const lines = [
+    ...(frame.id === undefined ? [] : [`id: ${frame.id}`]),
+    ...(frame.event === undefined ? [] : [`event: ${frame.event}`]),
+    ...(frame.data === undefined
+      ? []
+      : [`data: ${JSON.stringify(frame.data)}`]),
+  ];
   return `${lines.join('\n')}\n\n`;
 }
 
@@ -55,14 +52,11 @@ export function parseResume(
   lastEventId: string | null | undefined,
   after?: string | null,
 ): number | null {
-  for (const candidate of [lastEventId, after]) {
-    if (
+  const found = [lastEventId, after].find(
+    (candidate) =>
       candidate !== undefined &&
       candidate !== null &&
-      DIGITS_ONLY.test(candidate.trim())
-    ) {
-      return Number(candidate.trim());
-    }
-  }
-  return null;
+      DIGITS_ONLY.test(candidate.trim()),
+  );
+  return found === undefined || found === null ? null : Number(found.trim());
 }

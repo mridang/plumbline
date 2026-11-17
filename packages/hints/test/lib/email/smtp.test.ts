@@ -5,14 +5,16 @@ import {
   probeStarttls,
   tlsVersionLevel,
 } from '../../../src/lib/email/smtp.js';
-import { startSmtp, type FakeSmtp, type SmtpOptions } from './fake-smtp.js';
+import { startSmtp } from './fake-smtp.js';
 import { TEST_CERT } from './test-cert.js';
+import type { FakeSmtp, SmtpOptions } from './fake-smtp.js';
 
 let server: FakeSmtp | null = null;
 
 afterEach(async () => {
-  await server?.close();
+  const running = server;
   server = null;
+  await running?.close();
 });
 
 /** Probes `host` while the connection actually goes to a local fake server. */
@@ -134,8 +136,9 @@ describe('negotiateStarttls', () => {
   it('rejects when the connection fails', async () => {
     server = await startSmtp();
     const { port } = server;
-    await server.close();
+    const closing = server.close();
     server = null;
+    await closing;
     await expect(
       negotiateStarttls(connect({ host: '127.0.0.1', port }), {
         timeoutMs: 3000,

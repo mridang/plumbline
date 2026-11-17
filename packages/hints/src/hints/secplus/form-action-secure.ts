@@ -1,10 +1,8 @@
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage } from '../../core/page.js';
-import {
-  formActionFinding,
-  type FormLike,
-} from '../../lib/secplus/form-action.js';
+import { formActionFinding } from '../../lib/secplus/form-action.js';
 import { reportElementFinding } from './shared.js';
+import type { FormLike } from '../../lib/secplus/form-action.js';
 
 /**
  * Insecure form submission (mixed form action).
@@ -29,6 +27,7 @@ export default defineHint({
   setup(context) {
     onPage(context, (page) => {
       const forms = [...page.document.querySelectorAll('form[action]')];
+      // eslint-disable-next-line functional/no-loop-statements -- reports each finding
       for (const element of forms) {
         const form: FormLike = { action: element.getAttribute('action') };
         const found = formActionFinding(form, page.url);

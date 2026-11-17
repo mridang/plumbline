@@ -1,13 +1,5 @@
 import { beforeAll, describe, expect, it, jest } from '@jest/globals';
-import {
-  SignJWT,
-  UnsecuredJWT,
-  exportJWK,
-  generateKeyPair,
-  type JWK,
-  type CryptoKey,
-} from 'jose';
-
+import { SignJWT, UnsecuredJWT, exportJWK, generateKeyPair } from 'jose';
 import {
   CLIENT_ASSERTION_TYPE,
   MAX_ASSERTION_LENGTH,
@@ -16,17 +8,19 @@ import {
   assertionSubject,
   fetchJwks,
   verifyClientAssertion,
-  type AssertionDeps,
 } from '../../../src/lib/oauth/client-auth';
+import type { CryptoKey, JSONWebKeySet } from 'jose';
+
+import type { AssertionDeps } from '../../../src/lib/oauth/client-auth';
 
 /** Matches the signed client assertion message. */
-const SIGNED_CLIENT_ASSERTION = /signed client_assertion/;
+const SIGNED_CLIENT_ASSERTION = /signed client_assertion/u;
 /** Matches the "too large" message. */
-const TOO_LARGE = /too large/;
+const TOO_LARGE = /too large/u;
 /** Matches the key fetch failure message. */
-const KEYS_NOT_FETCHED = /keys could not be fetched/;
+const KEYS_NOT_FETCHED = /keys could not be fetched/u;
 /** Matches the "already used" message. */
-const ALREADY_USED = /already used/;
+const ALREADY_USED = /already used/u;
 
 const CLIENT = 'https://chatgpt.com/oauth/client.json';
 const JWKS_URI = 'https://chatgpt.com/oauth/jwks.json';
@@ -37,9 +31,9 @@ const AUTH = { method: 'private_key_jwt', jwksUri: JWKS_URI } as const;
 
 let privateKey: CryptoKey;
 let otherKey: CryptoKey;
-let jwks: { keys: JWK[] };
+let jwks: JSONWebKeySet;
 // A claim the assertion leaves out: its key stays present, so an override can drop it.
-let notProvided: undefined;
+const notProvided = [].at(0);
 
 beforeAll(async () => {
   const pair = await generateKeyPair('RS256', { extractable: true });
@@ -57,7 +51,7 @@ async function sign(
   key: CryptoKey = privateKey,
   alg = 'RS256',
 ) {
-  const all: Record<string, unknown> = {
+  const all = {
     iss: CLIENT,
     sub: CLIENT,
     aud: ENDPOINT,
@@ -67,7 +61,9 @@ async function sign(
     ...claims,
   };
   const jwt = new SignJWT(
-    Object.fromEntries(Object.entries(all).filter(([, v]) => v !== undefined)),
+    Object.fromEntries(
+      Object.entries<unknown>(all).filter(([, v]) => v !== undefined),
+    ),
   ).setProtectedHeader({ alg, kid: 'k1' });
   return jwt.sign(key);
 }
@@ -77,7 +73,7 @@ function deps(keys: unknown = jwks): AssertionDeps & { used: Set<string> } {
   const used = new Set<string>();
   return {
     used,
-    fetchJwks: async () => keys,
+    fetchJwks: async () => keys as JSONWebKeySet | undefined,
     claimAssertion: async (client, jti) => {
       const key = `${client} ${jti}`;
       return used.has(key) ? false : (used.add(key), true);

@@ -1,9 +1,9 @@
-import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { mkdir, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import type { FormatterOptions } from 'hint';
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import ExtraFormatter from '../src/index.js';
+import type { FormatterOptions } from 'hint';
 
 describe('ExtraFormatter', () => {
   let dir = '';

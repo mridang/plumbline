@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import type { ReactElement } from 'react';
 
 import { Badge } from '@/components/ui-app/badge';
 import {
@@ -25,11 +24,13 @@ import {
   filterRules,
   rulesOfTag,
   tagPath,
-  type View,
 } from '@/domain/checks/browse';
-import { STOCK_HINTS, type StockStatus } from '@/domain/checks/stock';
-import type { Tone } from '@/components/ui-app/tone';
+import { STOCK_HINTS } from '@/domain/checks/stock';
 import { countOf, formatCount } from '@/lib/intl';
+import type { View } from '@/domain/checks/browse';
+import type { StockStatus } from '@/domain/checks/stock';
+import type { Tone } from '@/components/ui-app/tone';
+import type { ReactElement } from 'react';
 
 /** The tags that some rule carries, with how many. */
 export function usedTags(): readonly { tag: string; count: number }[] {

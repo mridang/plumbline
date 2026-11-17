@@ -76,15 +76,16 @@ const KEYWORD = /^[A-Za-z0-9-]*[A-Za-z0-9]$/u;
 
 /** Trims spaces only; DMARC's grammar allows no other whitespace. */
 const trimSpaces = (text: string): string => {
-  let start = 0;
-  let end = text.length;
-  while (start < end && text.codePointAt(start) === 32) {
-    start += 1;
-  }
-  while (end > start && text.codePointAt(end - 1) === 32) {
-    end -= 1;
-  }
-  return text.slice(start, end);
+  const chars = Array.from(text, (char) => char);
+  return chars
+    .slice(
+      Math.max(
+        0,
+        chars.findIndex((char) => char !== ' '),
+      ),
+      chars.findLastIndex((char) => char !== ' ') + 1,
+    )
+    .join('');
 };
 
 /** Validates one `dmarc-uri`: a URI with an optional `!size` limit. */
@@ -118,98 +119,65 @@ function parseColonList(
     : null;
 }
 
-/** Sets a directive from its tag and value; false when the value is invalid. */
-function setDirective(
-  directives: DmarcDirectives,
-  tag: string,
-  value: string,
-): boolean {
+/** Reads a directive from its tag and value; null when the value is invalid. */
+function readDirective(tag: string, value: string): DmarcDirectives | null {
   switch (tag) {
     case 'p':
     case 'sp':
     case 'np': {
       if (!POLICY.test(value)) {
-        return false;
+        return null;
       }
       const policy = value.toLowerCase() as DmarcPolicyValue;
       if (tag === 'p') {
-        directives.request = policy;
-      } else if (tag === 'sp') {
-        directives.srequest = policy;
-      } else {
-        directives.nrequest = policy;
+        return { request: policy };
       }
-      return true;
+      return tag === 'sp' ? { srequest: policy } : { nrequest: policy };
     }
     case 'psd': {
-      if (!YES_NO_UNKNOWN_VALUE.test(value)) {
-        return false;
-      }
-      directives.psd = value.toLowerCase() as 'y' | 'n' | 'u';
-      return true;
+      return YES_NO_UNKNOWN_VALUE.test(value)
+        ? { psd: value.toLowerCase() as 'y' | 'n' | 'u' }
+        : null;
     }
     case 't': {
-      if (!YES_NO_VALUE.test(value)) {
-        return false;
-      }
-      directives.testing = value.toLowerCase() as 'y' | 'n';
-      return true;
+      return YES_NO_VALUE.test(value)
+        ? { testing: value.toLowerCase() as 'y' | 'n' }
+        : null;
     }
     case 'rua':
     case 'ruf': {
       const uris = parseUriList(value);
       if (!uris) {
-        return false;
+        return null;
       }
-      if (tag === 'rua') {
-        directives.auri = uris;
-      } else {
-        directives.furi = uris;
-      }
-      return true;
+      return tag === 'rua' ? { auri: uris } : { furi: uris };
     }
     case 'adkim':
     case 'aspf': {
       if (!ALIGNMENT_MODE_VALUE.test(value)) {
-        return false;
+        return null;
       }
-      directives[tag] = value.toLowerCase() as 'r' | 's';
-      return true;
+      const mode = value.toLowerCase() as 'r' | 's';
+      return tag === 'adkim' ? { adkim: mode } : { aspf: mode };
     }
     case 'ri': {
-      if (!DIGITS_ONLY.test(value)) {
-        return false;
-      }
-      directives.ainterval = value;
-      return true;
+      return DIGITS_ONLY.test(value) ? { ainterval: value } : null;
     }
     case 'fo': {
       const options = parseColonList(value, (item) =>
         FAILURE_OPTION_VALUE.test(item),
       );
-      if (!options) {
-        return false;
-      }
-      directives.fo = options;
-      return true;
+      return options ? { fo: options } : null;
     }
     case 'rf': {
       const formats = parseColonList(value, (item) => KEYWORD.test(item));
-      if (!formats) {
-        return false;
-      }
-      directives.rfmt = formats;
-      return true;
+      return formats ? { rfmt: formats } : null;
     }
     case 'pct': {
-      if (!PERCENTAGE_VALUE.test(value)) {
-        return false;
-      }
-      directives.percent = value;
-      return true;
+      return PERCENTAGE_VALUE.test(value) ? { percent: value } : null;
     }
     default: {
-      return false;
+      return null;
     }
   }
 }
@@ -225,28 +193,30 @@ export function parseDmarc(record: string): DmarcRecord | null {
     return null;
   }
   const rest = record.slice(version[0].length);
-  const directives: DmarcDirectives = {};
   const pieces =
     rest === '' ? [] : rest.split(';').map((piece) => trimSpaces(piece));
   // One trailing separator is allowed, which leaves an empty last piece.
-  if (pieces.length > 0 && pieces.at(-1) === '') {
-    pieces.pop();
-  }
-  const seen = new Set<string>();
-  for (const [index, piece] of pieces.entries()) {
-    const match = TAG_VALUE_PAIR.exec(piece);
+  const tagPieces = pieces.at(-1) === '' ? pieces.slice(0, -1) : pieces;
+  const matches = tagPieces.map((piece) => TAG_VALUE_PAIR.exec(piece));
+  const patches = matches.map((match, index) => {
     if (!match) {
       return null;
     }
     const tag = match[1].toLowerCase();
+    const seen = matches
+      .slice(0, index)
+      .some((earlier) => earlier?.[1].toLowerCase() === tag);
     // `p` is the only tag with a fixed place: first, straight after `v`.
-    if (seen.has(tag) || (tag === 'p' && index !== 0)) {
+    if (seen || (tag === 'p' && index !== 0)) {
       return null;
     }
-    seen.add(tag);
-    if (!setDirective(directives, tag, match[2].replace(LEADING_SPACES, ''))) {
-      return null;
-    }
-  }
-  return { directives };
+    return readDirective(tag, match[2].replace(LEADING_SPACES, ''));
+  });
+  return patches.every((patch) => patch !== null)
+    ? {
+        directives: Object.fromEntries(
+          patches.flatMap((patch) => Object.entries(patch)),
+        ),
+      }
+    : null;
 }

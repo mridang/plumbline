@@ -16,7 +16,8 @@
  * (https://developer.mozilla.org/docs/Web/Security/Insecure_passwords#insecure_forms)
  * and the browser mixed-content form behaviour.
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
+import type { Finding } from '../headers/finding.js';
 
 /** The one form attribute this check reads. */
 export interface FormLike {
@@ -33,25 +34,16 @@ export function isInsecureFormAction(
   action: string | null,
   pageUrl: string,
 ): boolean {
-  let page: URL;
-  try {
-    page = new URL(pageUrl);
-  } catch {
-    return false;
-  }
-  if (page.protocol !== 'https:') {
+  if (!URL.canParse(pageUrl) || new URL(pageUrl).protocol !== 'https:') {
     return false;
   }
   if (!action || action.trim() === '') {
     return false;
   }
-  let target: URL;
-  try {
-    target = new URL(action, pageUrl);
-  } catch {
-    return false;
-  }
-  return target.protocol === 'http:';
+  return (
+    URL.canParse(action, pageUrl) &&
+    new URL(action, pageUrl).protocol === 'http:'
+  );
 }
 
 /** The finding for one form, or null when it submits securely. */
@@ -73,7 +65,8 @@ export function formActionFindings(
   forms: readonly FormLike[],
   pageUrl: string,
 ): Finding[] {
-  return forms
-    .map((form) => formActionFinding(form, pageUrl))
-    .filter((found): found is Finding => found !== null);
+  return forms.flatMap((form) => {
+    const found = formActionFinding(form, pageUrl);
+    return found === null ? [] : [found];
+  });
 }

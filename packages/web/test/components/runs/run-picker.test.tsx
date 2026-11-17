@@ -1,12 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { RunPicker } from '@/components/runs/run-picker';
+import { htmlAt } from '../render';
 import type { RunSummary } from '@/domain/db/runs';
 
-import { htmlAt } from '../render';
-
 /** Matches a details element that is open. */
-const OPEN_DETAILS_PATTERN = /<details[^>]*\sopen/;
+const OPEN_DETAILS_PATTERN = /<details[^>]*\sopen/u;
 
 const NOW = Date.parse('2026-11-01T12:00:00.000Z');
 

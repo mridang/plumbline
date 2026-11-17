@@ -19,8 +19,9 @@ describe('headerValues', () => {
   it('returns nothing for a missing header or bag', () => {
     expect(headerValues({}, 'x')).toEqual([]);
     expect(headerValues(undefined, 'x')).toEqual([]);
-    let value: string | undefined;
-    expect(headerValues({ x: value }, 'x')).toEqual([]);
+    expect(headerValues(Object.fromEntries([['x', undefined]]), 'x')).toEqual(
+      [],
+    );
   });
 });
 

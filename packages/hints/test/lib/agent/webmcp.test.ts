@@ -39,8 +39,11 @@ describe('checkWebMcp', () => {
     expect(r.detail).toContain('could not be evaluated');
   });
   it('looks for modelContext and toolname forms', () => {
+    // eslint-disable-next-line tslop/no-poor-substring-tests -- the script runs in a browser the tests do not have, so its source must name this API
     expect(WEBMCP_SCRIPT).toContain('document.modelContext');
+    // eslint-disable-next-line tslop/no-poor-substring-tests -- the script runs in a browser the tests do not have, so its source must name this API
     expect(WEBMCP_SCRIPT).toContain('getTools');
+    // eslint-disable-next-line tslop/no-poor-substring-tests -- the script runs in a browser the tests do not have, so its source must name this selector
     expect(WEBMCP_SCRIPT).toContain('form[toolname]');
   });
 });

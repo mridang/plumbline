@@ -2,7 +2,8 @@ import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../core/define-hint.js';
 import { supportedVersions } from '../../lib/tls/client.js';
 import { evaluateProtocols, formatVersion } from '../../lib/tls/evaluate.js';
-import { onTlsSite, type TlsSite } from './on-tls-site.js';
+import { onTlsSite } from './on-tls-site.js';
+import type { TlsSite } from './on-tls-site.js';
 
 /** Runs the check of the `tls-version` hint against one TLS endpoint. */
 export async function checkTlsVersion({

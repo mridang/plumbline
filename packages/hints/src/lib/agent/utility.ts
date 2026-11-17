@@ -7,10 +7,10 @@ import type {
 } from './types.js';
 
 /** Matches a content type that mentions HTML. */
-const HTML_CONTENT_TYPE = /html/i;
+const HTML_CONTENT_TYPE = /html/iu;
 
 /** Matches a leading `www.` host label. */
-const WWW_PREFIX = /^www\./;
+const WWW_PREFIX = /^www\./u;
 
 /** Builds a check result. */
 export function result(
@@ -69,26 +69,21 @@ export function isHtml(probe: Probe): boolean {
   return HTML_CONTENT_TYPE.test(probe.contentType);
 }
 
-/** Parses the body as JSON; undefined when it is not valid JSON. */
-function parseJson(probe: Probe | null): unknown {
+/** Parses the body as a JSON object; undefined for anything else. */
+export function parseJsonObject(
+  probe: Probe | null,
+): Record<string, unknown> | undefined {
   // Only a 200 answer is a document: the body of a 404 (often a JSON
   // error) or of an HTML soft 404 must never be interpreted.
   if (!isOk(probe) || isHtml(probe)) {
     return undefined;
   }
   try {
-    return JSON.parse(probe.body) as unknown;
+    const value = JSON.parse(probe.body) as unknown;
+    return isRecord(value) ? value : undefined;
   } catch {
     return undefined;
   }
-}
-
-/** Parses the body as a JSON object; undefined for anything else. */
-export function parseJsonObject(
-  probe: Probe | null,
-): Record<string, unknown> | undefined {
-  const value = parseJson(probe);
-  return isRecord(value) ? value : undefined;
 }
 
 /** Fetches the first path that answers `200` with a JSON object. */
@@ -96,6 +91,7 @@ export async function firstJson(
   paths: readonly string[],
   probe: (path: string) => Promise<Probe | null>,
 ): Promise<{ path: string; json: Record<string, unknown> } | undefined> {
+  // eslint-disable-next-line functional/no-loop-statements -- probes in order and stops at the first path that answers
   for (const path of paths) {
     const json = parseJsonObject(await probe(path));
     if (json) {
@@ -134,9 +130,13 @@ export async function notFound(
   paths: readonly string[],
   probe: (path: string) => Promise<Probe | null>,
 ): Promise<string> {
-  const reasons: string[] = [];
-  for (const path of paths) {
-    reasons.push(missingReason(path, await probe(path)));
-  }
+  // One path after the other, so the probe order stays stable.
+  const explain = async (remaining: readonly string[]): Promise<string[]> => {
+    const [path, ...others] = remaining;
+    return remaining.length === 0
+      ? []
+      : [missingReason(path, await probe(path)), ...(await explain(others))];
+  };
+  const reasons = await explain(paths);
   return `${reasons.join('; ')}.`;
 }

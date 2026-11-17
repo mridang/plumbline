@@ -4,7 +4,7 @@ import { isCheckId } from '@/domain/checks/catalogue';
 import { STOCK_HINTS } from '@/domain/checks/stock';
 
 /** Matches an https URL prefix. */
-const HTTPS_URL_PREFIX = /^https:\/\//;
+const HTTPS_URL_PREFIX = /^https:\/\//u;
 
 describe('the stock hints', () => {
   it('have each id once, a name and a link', () => {

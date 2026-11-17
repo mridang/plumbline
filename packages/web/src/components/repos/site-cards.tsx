@@ -1,13 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import type { ReactElement } from 'react';
 
 import { LinkIcon } from '@/components/icons';
-import {
-  controlOf,
-  type ChecksControl,
-} from '@/components/repos/checks-control';
+import { controlOf } from '@/components/repos/checks-control';
 import { RepoLabel } from '@/components/repos/repo-label';
 import { commitUrl, issuesUrl } from '@/components/repos/site-rows';
 import { SiteActions, sitePageOf } from '@/components/repos/site-actions';
@@ -21,8 +17,10 @@ import { cn } from '@/components/ui/cn';
 import { Badge } from '@/components/ui-app/badge';
 import { CountsBar } from '@/components/ui-app/counts-bar';
 import { RelativeTime } from '@/components/ui-app/relative-time';
-import type { RepoStatus, SiteStatus } from '@/domain/db/live';
 import { countOf } from '@/lib/intl';
+import type { ChecksControl } from '@/components/repos/checks-control';
+import type { RepoStatus, SiteStatus } from '@/domain/db/live';
+import type { ReactElement } from 'react';
 
 /** A label and its value, side by side, for a card's small facts. */
 function Fact({

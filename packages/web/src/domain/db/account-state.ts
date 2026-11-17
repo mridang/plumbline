@@ -1,8 +1,8 @@
 import { and, eq, isNull } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import { oauthGrants } from '@/domain/db/schema';
 import { getLink } from '@/domain/db/github';
+import type { Database } from '@/domain/db/client';
 
 /**
  * What the account menu needs to word its entries: whether the person has

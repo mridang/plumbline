@@ -1,11 +1,8 @@
 import Link from 'next/link';
-import type { ReactElement } from 'react';
 
 import { buttonClass } from '@/components/ui/button';
 import { Container } from '@/components/ui/layout';
-import type { User } from '@/domain/db/users';
 
-import type { AccountState } from '@/components/site/account-links';
 import { AccountMenu } from '@/components/site/account-menu';
 import { firstNameOf } from '@/components/site/first-name';
 import { InstallButton } from '@/components/site/install-button';
@@ -16,6 +13,9 @@ import {
   SIGNED_IN_LINKS,
   SIGNED_OUT_LINKS,
 } from '@/components/site/nav-links';
+import type { AccountState } from '@/components/site/account-links';
+import type { User } from '@/domain/db/users';
+import type { ReactElement } from 'react';
 
 /**
  * The bar at the top of every page, kept in view while the page scrolls.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import hint from '../../../src/hints/headers/x-xss-protection.js';
 import { Severity } from '@hint/utils-types';
+import hint from '../../../src/hints/headers/x-xss-protection.js';
 import { runHint } from '../../helpers/run-hint.js';
 
 const page = (headers: Record<string, string> = {}) => ({ '/': { headers } });

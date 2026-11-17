@@ -33,8 +33,6 @@
  * opengraph-image-not-https, opengraph-image-dimensions-missing and
  * opengraph-image-alt-missing — are included.).
  */
-import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
-import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import {
   ogDescriptionCouldBeLonger,
   ogDescriptionIsUrl,
@@ -62,9 +60,6 @@ import {
   twitterSiteMissing,
   twitterTitleMissing,
 } from '@mridang/webhint-hint-plumbline/dist/lib/opengraph/checks.js';
-import { ogMetaReader } from '../adapt-opengraph.js';
-import { hintDocumentation } from '../meta.js';
-import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); their rule logic is the shared
@@ -94,6 +89,11 @@ import twitterDescriptionMissingHint from '@mridang/webhint-hint-plumbline/dist/
 import twitterImageMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/twitter-image-missing.js';
 import twitterSiteMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/twitter-site-missing.js';
 import twitterTitleMissingHint from '@mridang/webhint-hint-plumbline/dist/hints/opengraph/twitter-title-missing.js';
+import { hintDocumentation } from '../meta.js';
+import { ogMetaReader } from '../adapt-opengraph.js';
+import type { AuditCheck } from './types.js';
+import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 
 /** The only artifact the Open Graph checks read. */
 const META_ARTIFACTS = ['MetaElements'] as const;

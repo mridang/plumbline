@@ -1,6 +1,7 @@
-import type { Site } from '../../core/page.js';
 import { Severity } from '@hint/utils-types';
-import { getManifestHref, type DocumentLike } from '../../lib/pwa/read.js';
+import { getManifestHref } from '../../lib/pwa/read.js';
+import type { DocumentLike } from '../../lib/pwa/read.js';
+import type { Site } from '../../core/page.js';
 
 /** The fetched manifest: its resolved URL, raw body and response media type. */
 export interface FetchedManifest {

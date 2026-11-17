@@ -9,8 +9,6 @@
  * creating its one-line wrapper module `../audits/<id>.ts`.
  */
 import { makeAudit } from '../audit-factory.js';
-import type { Audit } from 'lighthouse';
-import type { AuditCheck } from './types.js';
 import { headersChecks } from './headers.js';
 import { opengraphChecks } from './opengraph.js';
 import { seoChecks } from './seo.js';
@@ -24,6 +22,8 @@ import { feedsChecks } from './feeds.js';
 import { pwaChecks } from './pwa.js';
 import { secplusChecks } from './secplus.js';
 import { headersxChecks } from './headersx.js';
+import type { AuditCheck } from './types.js';
+import type { Audit } from 'lighthouse';
 
 /** Every check across every set, in set order. */
 export const checks: readonly AuditCheck[] = [

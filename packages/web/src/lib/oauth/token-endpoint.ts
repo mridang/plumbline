@@ -17,7 +17,6 @@
  *  - an access token is only good for the MCP server it was issued for.
  */
 
-import type { OAuthClient } from '@/lib/oauth/client';
 import { verifyPkce } from '@/lib/oauth/pkce';
 import {
   ACCESS_PREFIX,
@@ -33,9 +32,10 @@ import {
   isSupportedScope,
 } from '@/lib/oauth/scopes';
 import { logSecurityEvent } from '@/lib/oauth/security-log';
+import type { OAuthClient } from '@/lib/oauth/client';
 
 /** A run of whitespace, which separates the scopes of a request. */
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /** Access tokens live an hour; refresh tokens thirty days, renewed on use. */
 export const ACCESS_TTL_SECONDS = 60 * 60;

@@ -15,6 +15,7 @@
  * tests use the same rules.
  */
 
+import { countOf } from '@/lib/intl';
 import type { SiteRow } from '@/components/repos/site-rows';
 import type { SiteState } from '@/domain/db/live';
 
@@ -103,30 +104,21 @@ export function applyFilter(
 
 /** The counts for a set of rows. Paused rows are in no count but their own. */
 export function countsOf(rows: readonly SiteRow[]): Counts {
-  const counts = {
-    all: 0,
-    paused: 0,
-    failing: 0,
-    warning: 0,
-    ok: 0,
-    running: 0,
-    unchecked: 0,
-    unresponsive: 0,
+  const live = rows.filter((row) => !row.paused);
+  const count = (status: StatusFilter): number =>
+    live.filter(
+      (row) => (resultOf(row.site.state) ?? 'unresponsive') === status,
+    ).length;
+  return {
+    all: live.length,
+    paused: rows.length - live.length,
+    failing: count('failing'),
+    warning: count('warning'),
+    ok: count('ok'),
+    running: count('running'),
+    unchecked: count('unchecked'),
+    unresponsive: count('unresponsive'),
   };
-  for (const row of rows) {
-    if (row.paused) {
-      counts.paused += 1;
-      continue;
-    }
-    counts.all += 1;
-    const result = resultOf(row.site.state);
-    if (result === null) {
-      counts.unresponsive += 1;
-    } else {
-      counts[result] += 1;
-    }
-  }
-  return counts;
 }
 
 /** The filter after a chip is pressed: that status, or none when it is the one already set. */
@@ -170,7 +162,7 @@ export function queryOf(
 /** The summary of the list: "9 sites", with the paused ones named when there are any. */
 export function summaryOf(counts: Counts): string {
   const total = counts.all + counts.paused;
-  const sites = `${total} ${total === 1 ? 'site' : 'sites'}`;
+  const sites = countOf(total, 'site');
   return counts.paused > 0 ? `${sites} · ${counts.paused} paused` : sites;
 }
 

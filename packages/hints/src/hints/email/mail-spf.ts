@@ -5,11 +5,9 @@ import {
   DOMAIN_OPTION_SCHEMA,
   onMailDomain,
 } from '../../lib/email/on-mail-domain.js';
-import {
-  checkSpfPolicy,
-  type SpfPolicyStatus,
-} from '../../lib/email/spf-policy.js';
+import { checkSpfPolicy } from '../../lib/email/spf-policy.js';
 import { lookupTxt } from '../../lib/email/txt.js';
+import type { SpfPolicyStatus } from '../../lib/email/spf-policy.js';
 
 /** The verdict wording of Internet.nl for each failed SPF policy status. */
 const POLICY_MESSAGES: Record<Exclude<SpfPolicyStatus, 'valid'>, string> = {

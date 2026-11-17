@@ -26,7 +26,6 @@ import {
   isDefaultBranchPush,
   touchesConfig,
   touchesWrangler,
-  type Delivery,
 } from '@/domain/github/deployments';
 import { installationToken } from '@/domain/github/app-auth';
 import { GitHubApi } from '@/domain/github/api';
@@ -35,9 +34,10 @@ import { verifySignature } from '@/domain/github/webhook';
 import { classifyDeployment } from '@/domain/suite/deploy';
 import { handleIssueEvent } from '@/domain/suite/issue-events';
 import { enqueueScan } from '@/domain/suite/queue';
-import type { SuiteJob } from '@/domain/suite/scanner';
 import { appOrigin } from '@/lib/core/origin';
 import { getEnv, runInBackground } from '@/lib/core/runtime';
+import type { Delivery } from '@/domain/github/deployments';
+import type { SuiteJob } from '@/domain/suite/scanner';
 
 /**
  * Whether a delivery means the installation's repositories or what the app may
@@ -111,12 +111,17 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (!(await verifySignature(config.webhookSecret, body, signature))) {
     return new NextResponse(null, { status: 401 });
   }
-  let delivery: Delivery;
-  try {
-    delivery = JSON.parse(body) as Delivery;
-  } catch {
+  const parsed = ((): { readonly delivery: Delivery } | undefined => {
+    try {
+      return { delivery: JSON.parse(body) as Delivery };
+    } catch {
+      return undefined;
+    }
+  })();
+  if (!parsed) {
     return new NextResponse(null, { status: 400 });
   }
+  const { delivery } = parsed;
   const event = request.headers.get('x-github-event');
   const installationId = delivery.installation?.id;
   if (installationId === undefined) {

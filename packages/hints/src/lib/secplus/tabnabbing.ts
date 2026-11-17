@@ -18,10 +18,11 @@
  *   - MDN rel=noopener: https://developer.mozilla.org/docs/Web/HTML/Reference/Attributes/rel/noopener
  *   - OWASP reverse tabnabbing: https://owasp.org/www-community/attacks/Reverse_Tabnabbing.
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
+import type { Finding } from '../headers/finding.js';
 
 /** Matches a run of whitespace. */
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /** The three anchor attributes this check reads, as raw strings. */
 export interface AnchorLike {
@@ -54,24 +55,16 @@ export function isCrossOrigin(href: string | null, pageUrl: string): boolean {
   if (!href) {
     return false;
   }
-  let page: URL;
-  let target: URL;
-  try {
-    page = new URL(pageUrl);
-  } catch {
+  if (!URL.canParse(pageUrl) || !URL.canParse(href, pageUrl)) {
     return false;
   }
-  try {
-    // Resolve against the page so a protocol-relative or absolute href is
-    // normalised the same way a browser would normalise it.
-    target = new URL(href, pageUrl);
-  } catch {
-    return false;
-  }
+  // Resolve against the page so a protocol-relative or absolute href is
+  // normalised the same way a browser would normalise it.
+  const target = new URL(href, pageUrl);
   if (target.protocol !== 'http:' && target.protocol !== 'https:') {
     return false;
   }
-  return target.origin !== page.origin;
+  return target.origin !== new URL(pageUrl).origin;
 }
 
 /** True when an anchor is an unsafe cross-origin `target="_blank"` link. */
@@ -111,7 +104,8 @@ export function tabnabbingFindings(
   anchors: readonly AnchorLike[],
   pageUrl: string,
 ): Finding[] {
-  return anchors
-    .map((anchor) => tabnabbingFinding(anchor, pageUrl))
-    .filter((found): found is Finding => found !== null);
+  return anchors.flatMap((anchor) => {
+    const found = tabnabbingFinding(anchor, pageUrl);
+    return found === null ? [] : [found];
+  });
 }

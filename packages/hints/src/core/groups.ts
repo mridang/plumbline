@@ -60,6 +60,7 @@ export type Group = (typeof GROUPS)[number];
  * checks; the source groups and the names that are also a section or a tag
  * (`dns`, `email`, `privacy`, `seo`, `pwa`) need no entry.
  */
+// eslint-disable-next-line tslop/no-known-value-widening -- the aliases are looked up by arbitrary text, so the keys stay open
 export const ALIASES: Readonly<Record<string, readonly string[]>> = {
   'security-headers': [
     'section:https',

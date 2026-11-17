@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { decryptSecret, encryptSecret, generateKeyBase64 } from '@/lib/crypto';
 
 /** Matches key bit length. */
-const KEY_BIT_LENGTH = /256-bit/;
+const KEY_BIT_LENGTH = /256-bit/u;
 
 describe('crypto', () => {
   it('round-trips a secret through encrypt/decrypt', async () => {

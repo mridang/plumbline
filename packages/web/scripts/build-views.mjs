@@ -20,15 +20,16 @@
  * Run via `devbox run npm run build:views` (invoked before the Next build).
  */
 
-import { build as bundle } from 'esbuild';
 import { createHash } from 'node:crypto';
 import { access, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { build } from 'esbuild';
 
 const root = path.resolve(import.meta.dirname, '..');
 const outDir = path.resolve(root, 'dist/views');
 
 /** The index module of zod's locales, wherever the package manager put it. */
+// eslint-disable-next-line require-unicode-regexp -- esbuild hands the filter to Go's regexp engine, which rejects the JavaScript `u` flag
 const ZOD_LOCALES_INDEX = /zod[\\/]v4[\\/]locales[\\/]index\.js$/;
 
 /** Whether a file exists. */
@@ -43,7 +44,7 @@ async function exists(file) {
 
 /** The app's name, as `src/utils/site.ts` gives it, for the page titles. */
 const SITE_NAME =
-  /export const SITE_NAME = '([^']+)'/.exec(
+  /export const SITE_NAME = '([^']+)'/u.exec(
     await readFile(path.resolve(root, 'src/utils/site.ts'), 'utf8'),
   )?.[1] ?? '';
 
@@ -76,8 +77,8 @@ const VIEWS = VIEW_CANDIDATES.filter((_name, index) => VIEW_HAS_ENTRY[index])
  */
 const slimZodLocales = {
   name: 'slim-zod-locales',
-  setup(build) {
-    build.onLoad({ filter: ZOD_LOCALES_INDEX }, (args) => ({
+  setup(pluginBuild) {
+    pluginBuild.onLoad({ filter: ZOD_LOCALES_INDEX }, (args) => ({
       contents: "export { default as en } from './en.js';",
       resolveDir: path.dirname(args.path),
       loader: 'js',
@@ -87,8 +88,9 @@ const slimZodLocales = {
 
 await mkdir(outDir, { recursive: true });
 
+// eslint-disable-next-line functional/no-loop-statements -- builds run in order and each logs its result
 for (const { name, title } of VIEWS) {
-  const result = await bundle({
+  const result = await build({
     entryPoints: [path.resolve(root, `src/views/${name}.tsx`)],
     bundle: true,
     format: 'iife',
@@ -116,6 +118,7 @@ for (const { name, title } of VIEWS) {
       `export const contentHash = ${JSON.stringify(contentHash)};\n`,
   );
   console.log(
+    // eslint-disable-next-line no-restricted-properties -- build log output, not text a person reads in a locale
     `built view "${name}" → ${(html.length / 1024).toFixed(1)} KB (${contentHash.slice(0, 12)})`,
   );
 }

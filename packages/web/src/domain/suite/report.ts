@@ -8,12 +8,16 @@
  */
 
 import { findCheck } from '@/domain/checks/catalogue';
-import { comparisonConclusion, type Comparison } from '@/domain/suite/baseline';
+import { comparisonConclusion } from '@/domain/suite/baseline';
+import type { Comparison } from '@/domain/suite/baseline';
 import type { IssueLevel } from '@/domain/suite/config';
 import type { StoredFinding } from '@/domain/suite/diff';
 
 /** Orders rule ids as `localeCompare` does, without a collator per call. */
 const collator = new Intl.Collator();
+
+/** Cuts text at what a person sees as a character. */
+const graphemes = new Intl.Segmenter();
 
 /** The most findings written out in one summary; the rest are counted. */
 export const MAX_LISTED = 40;
@@ -40,11 +44,13 @@ export function safeText(text: string): string {
     // No mention, issue reference, tag, link or code span.
     .replaceAll('@', '@\u200B')
     .replaceAll('#', '#\u200B')
-    .replaceAll(/[<>[\]`]/g, "'")
+    .replaceAll(/[<>[\]`]/gu, "'")
     // A bare address would become a link.
-    .replaceAll(/(https?):\/\//gi, '$1:\u200B//');
+    .replaceAll(/(https?):\/\//giu, '$1:\u200B//');
   return flat.length > MAX_PROBLEM_LENGTH
-    ? `${flat.slice(0, MAX_PROBLEM_LENGTH)}...`
+    ? `${Array.from(graphemes.segment(flat), ({ segment }) => segment)
+        .slice(0, MAX_PROBLEM_LENGTH)
+        .join('')}...`
     : flat;
 }
 
@@ -116,64 +122,75 @@ export function breakdown(
   findings: readonly StoredFinding[],
   limit = MAX_LISTED,
 ): string {
-  const byRule = new Map<string, StoredFinding[]>();
-  for (const found of findings) {
-    byRule.set(found.id, [...(byRule.get(found.id) ?? []), found]);
-  }
+  const byRule = new Map<string, StoredFinding[]>(
+    Array.from(
+      new Set(findings.map((found) => found.id)),
+      (id): [string, StoredFinding[]] => [
+        id,
+        findings.filter((found) => found.id === id),
+      ],
+    ),
+  );
   const worst = (list: readonly StoredFinding[]): number =>
     Math.min(...list.map((found) => RANK[found.severity]));
   const rules = [...byRule].toSorted(
     ([a, left], [b, right]) =>
       worst(left) - worst(right) || collator.compare(a, b),
   );
-  const lines: string[] = [];
-  let listed = 0;
-  for (const [id, list] of rules) {
-    if (listed >= limit) {
-      break;
-    }
-    const check = findCheck(id);
-    lines.push(`#### ${check?.name ?? id} (\`${id}\`)`);
-    if (check?.reference) {
-      lines.push(`[Why it matters](${check.reference})`);
-    }
-    lines.push('');
-    for (const found of list.toSorted(
-      (a, b) => RANK[a.severity] - RANK[b.severity],
-    )) {
-      if (listed >= limit) {
-        break;
+  const { lines, listed } = rules.reduce<{
+    readonly lines: readonly string[];
+    readonly listed: number;
+  }>(
+    (written, [id, list]) => {
+      if (written.listed >= limit) {
+        return written;
       }
-      lines.push(`- **${found.severity}**: ${found.message}`);
-      listed += 1;
-    }
-    lines.push('');
-  }
-  if (findings.length > listed) {
-    lines.push(`...and ${findings.length - listed} more.`);
-  }
-  return lines.join('\n').trim();
+      const check = findCheck(id);
+      const shown = list
+        .toSorted((a, b) => RANK[a.severity] - RANK[b.severity])
+        .slice(0, limit - written.listed);
+      return {
+        lines: [
+          ...written.lines,
+          `#### ${check?.name ?? id} (\`${id}\`)`,
+          ...(check?.reference ? [`[Why it matters](${check.reference})`] : []),
+          '',
+          ...shown.map((found) => `- **${found.severity}**: ${found.message}`),
+          '',
+        ],
+        listed: written.listed + shown.length,
+      };
+    },
+    { lines: [], listed: 0 },
+  );
+  return [
+    ...lines,
+    ...(findings.length > listed
+      ? [`...and ${findings.length - listed} more.`]
+      : []),
+  ]
+    .join('\n')
+    .trim();
 }
 
 /** The part of a summary that says where the rules came from and what is wrong with them. */
 function rulesNote(source: string | null, problems: readonly string[]): string {
-  const lines = [
+  return [
     source
       ? `Rules from \`${source}\`.`
       : 'No `plumbline.yaml` in this repository, so the `plumbline:recommended` rules were used.',
-  ];
-  if (problems.length > 0) {
-    lines.push(
-      'Problems in the configuration:',
-      ...problems
-        .slice(0, MAX_PROBLEMS)
-        .map((problem) => `- ${safeText(problem)}`),
-    );
-    if (problems.length > MAX_PROBLEMS) {
-      lines.push(`- ...and ${problems.length - MAX_PROBLEMS} more.`);
-    }
-  }
-  return lines.join('\n');
+    ...(problems.length > 0
+      ? [
+          'Problems in the configuration:',
+          ...problems
+            .slice(0, MAX_PROBLEMS)
+            .map((problem) => `- ${safeText(problem)}`),
+          ...(problems.length > MAX_PROBLEMS
+            ? [`- ...and ${problems.length - MAX_PROBLEMS} more.`]
+            : []),
+        ]
+      : []),
+  ].join('\n');
 }
 
 /** The most findings the summary of a check lists; the full list is in its text and in the report. */
@@ -275,40 +292,49 @@ function comparedSummary(comparison: Readonly<Comparison>): string {
   const existing = worrying(comparison.existing).length;
   const fixed = comparison.fixed;
   const counts = [
-    `${existing} existing ${existing === 1 ? 'issue' : 'issues'}`,
+    amount(existing, 'existing issue'),
     added.length === 0 ? 'none new' : `${added.length} new`,
     ...(fixed.length > 0 ? [`${fixed.length} fixed`] : []),
   ].join(', ');
-  const lines = [
-    `Compared with the latest check of ${comparison.host}: ${counts}. Only problems this change adds fail the check.`,
-  ];
   const worst = added
     .toSorted((a, b) => RANK[a.severity] - RANK[b.severity])
     .slice(0, SUMMARY_LISTED);
-  if (worst.length > 0) {
-    lines.push(
-      [
-        ...worst.map(
-          (found) => `- **new ${found.severity}**: ${found.message}`,
-        ),
-        ...(added.length > worst.length
-          ? [`- ...and ${added.length - worst.length} more new in the report.`]
-          : []),
-      ].join('\n'),
-    );
-  }
-  if (fixed.length > 0) {
-    lines.push(
-      `Fixed by this change: ${fixed.map((found) => findCheck(found.id)?.name ?? found.id).join(', ')}.`,
-    );
-  }
   const uncompared = worrying(comparison.uncompared).length;
-  if (uncompared > 0) {
-    lines.push(
-      `${amount(uncompared, 'finding')} could not be compared, because ${comparison.host} does not run those checks.`,
-    );
-  }
+  const lines = [
+    `Compared with the latest check of ${comparison.host}: ${counts}. Only problems this change adds fail the check.`,
+    ...(worst.length > 0
+      ? [
+          [
+            ...worst.map(
+              (found) => `- **new ${found.severity}**: ${found.message}`,
+            ),
+            ...(added.length > worst.length
+              ? [
+                  `- ...and ${added.length - worst.length} more new in the report.`,
+                ]
+              : []),
+          ].join('\n'),
+        ]
+      : []),
+    ...(fixed.length > 0
+      ? [
+          `Fixed by this change: ${fixed.map((found) => findCheck(found.id)?.name ?? found.id).join(', ')}.`,
+        ]
+      : []),
+    ...(uncompared > 0
+      ? [
+          `${amount(uncompared, 'finding')} could not be compared, because ${comparison.host} does not run those checks.`,
+        ]
+      : []),
+  ];
   return lines.join('\n\n');
+}
+
+/** What GitHub is given for a check run. */
+interface CheckRunOutput {
+  readonly title: string;
+  readonly summary: string;
+  readonly text: string;
 }
 
 /**
@@ -318,11 +344,7 @@ function comparedSummary(comparison: Readonly<Comparison>): string {
  * whoever reads the check (a person, or an agent with only the GitHub API) has
  * everything without signing in anywhere.
  */
-export function checkRunOutput(report: Readonly<RunReport>): {
-  title: string;
-  summary: string;
-  text: string;
-} {
+export function checkRunOutput(report: Readonly<RunReport>): CheckRunOutput {
   const host = new URL(report.url).host;
   const { errors, warnings, hints } = countsOf(report.findings);
   const foundTitle =
@@ -332,27 +354,24 @@ export function checkRunOutput(report: Readonly<RunReport>): {
   const title = report.comparison
     ? comparedTitle(report.comparison, host)
     : foundTitle;
-  const parts = [`Checked ${report.url}`];
-  if (report.reportUrl) {
-    parts.push(`[Open the full report](${report.reportUrl})`);
-  }
-  if (report.comparison) {
-    parts.push(comparedSummary(report.comparison));
-  } else if (report.findings.length > 0) {
-    const worst = report.findings
-      .toSorted((a, b) => RANK[a.severity] - RANK[b.severity])
-      .slice(0, SUMMARY_LISTED);
-    const more = report.findings.length - worst.length;
-    parts.push(
-      [
-        ...worst.map((found) => `- **${found.severity}**: ${found.message}`),
-        ...(more > 0 ? [`- ...and ${more} more in the report.`] : []),
-      ].join('\n'),
-    );
-  } else {
+  const worst = report.findings
+    .toSorted((a, b) => RANK[a.severity] - RANK[b.severity])
+    .slice(0, SUMMARY_LISTED);
+  const more = report.findings.length - worst.length;
+  const found = [
+    ...worst.map((finding) => `- **${finding.severity}**: ${finding.message}`),
+    ...(more > 0 ? [`- ...and ${more} more in the report.`] : []),
+  ].join('\n');
+  const detail = report.comparison ? comparedSummary(report.comparison) : found;
+  const parts = [
+    `Checked ${report.url}`,
+    ...(report.reportUrl
+      ? [`[Open the full report](${report.reportUrl})`]
+      : []),
     // With no finding and no comparison there is nothing more to list.
-  }
-  parts.push(rulesNote(report.source, report.problems));
+    ...(report.comparison || report.findings.length > 0 ? [detail] : []),
+    rulesNote(report.source, report.problems),
+  ];
   const text = [
     report.findings.length > 0 ? breakdown(report.findings) : 'Nothing found.',
     dataBlock(report),
@@ -406,11 +425,16 @@ export interface CheckIssueInput {
   readonly pageUrl?: string;
 }
 
+/** What GitHub is given for the issue of a check. */
+interface CheckIssueText {
+  readonly title: string;
+  readonly body: string;
+}
+
 /** The title and Markdown of the issue that tracks one check of a site. */
-export function checkIssueText(input: Readonly<CheckIssueInput>): {
-  title: string;
-  body: string;
-} {
+export function checkIssueText(
+  input: Readonly<CheckIssueInput>,
+): CheckIssueText {
   const check = findCheck(input.check);
   const name = check?.name ?? input.check;
   const where = input.sha ? ` at commit \`${input.sha.slice(0, 7)}\`` : '';
@@ -504,6 +528,9 @@ export function closingComment(
     }
     case 'undeployed': {
       return `${input.host} is no longer deployed from this repository, so Plumbline stopped checking it and closed this issue.`;
+    }
+    default: {
+      return reason satisfies never;
     }
   }
 }

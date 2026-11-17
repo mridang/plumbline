@@ -1,5 +1,7 @@
-import { GROUPS, type Group } from './core/groups.js';
-import { PLACEMENT, SECTION_DEFS, type Tier } from './core/taxonomy-data.js';
+import { GROUPS } from './core/groups.js';
+import { PLACEMENT, SECTION_DEFS } from './core/taxonomy-data.js';
+import type { Group } from './core/groups.js';
+import type { Tier } from './core/taxonomy-data.js';
 
 /** Orders hint ids in the default locale order. */
 const collator = new Intl.Collator();
@@ -63,6 +65,11 @@ function presetOf(ids: readonly string[]): Preset {
   };
 }
 
+/** Presets by the file name they are served under. */
+export interface PresetsByName {
+  [name: string]: Preset;
+}
+
 /**
  * Builds the presets of the taxonomy, by file name: `plumbline-recommended`,
  * `plumbline-advanced`, `plumbline-experimental` and `plumbline-all` (the
@@ -70,9 +77,7 @@ function presetOf(ids: readonly string[]): Preset {
  * by default), and `section-<id>-<tier>` for each section and tier. A check
  * the registry does not know is left out.
  */
-export function buildTaxonomyPresets(
-  ids: readonly string[],
-): Record<string, Preset> {
+export function buildTaxonomyPresets(ids: readonly string[]): PresetsByName {
   const known = new Set(ids);
   const placed = Object.entries(PLACEMENT).filter(([id]) => known.has(id));
   const on = new Set(
@@ -86,18 +91,18 @@ export function buildTaxonomyPresets(
           (!sections || sections.has(p.section)),
       )
       .map(([id]) => id);
-  const presets: Record<string, Preset> = {
+  return {
     'plumbline-recommended': presetOf(pick('recommended', on)),
     'plumbline-advanced': presetOf(pick('advanced', on)),
     'plumbline-experimental': presetOf(pick('experimental')),
     'plumbline-all': presetOf(placed.map(([id]) => id)),
+    ...Object.fromEntries(
+      SECTION_DEFS.flatMap((section) =>
+        (Object.keys(TIERS_OF) as Tier[]).map((tier) => [
+          `section-${section.id}-${tier}`,
+          presetOf(pick(tier, new Set([section.id]))),
+        ]),
+      ),
+    ),
   };
-  for (const section of SECTION_DEFS) {
-    for (const tier of Object.keys(TIERS_OF) as Tier[]) {
-      presets[`section-${section.id}-${tier}`] = presetOf(
-        pick(tier, new Set([section.id])),
-      );
-    }
-  }
-  return presets;
 }

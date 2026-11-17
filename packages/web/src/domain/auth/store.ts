@@ -12,9 +12,9 @@ import {
   getSessionEpoch as readEpoch,
   getUserById as findUser,
   upsertUser,
-  type User,
 } from '@/domain/db/users';
 import { getDatabase } from '@/domain/db/client';
+import type { User } from '@/domain/db/users';
 
 /** What Google tells us about a person who has just signed in. */
 export interface GoogleProfile {

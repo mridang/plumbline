@@ -11,26 +11,9 @@
  * Returns the trimmed, non-empty members, or null when the value is empty.
  */
 export function topLevelMembers(value: string): string[] | null {
-  const members: string[] = [];
-  let current = '';
-  let inQuotes = false;
-  let inBytes = false;
-  for (const char of value) {
-    if (char === '"' && !inBytes) {
-      inQuotes = !inQuotes;
-      current += char;
-    } else if (char === ':' && !inQuotes) {
-      inBytes = !inBytes;
-      current += char;
-    } else if (char === ',' && !inQuotes && !inBytes) {
-      members.push(current);
-      current = '';
-    } else {
-      current += char;
-    }
-  }
-  members.push(current);
-  const trimmed = members.map((member) => member.trim()).filter(Boolean);
+  const trimmed = (
+    value.match(/(?:"[^"]*(?:"|$)|:[^:]*(?::|$)|[^,":])+/gu) ?? []
+  ).flatMap((member) => (member.trim() === '' ? [] : [member.trim()]));
   return trimmed.length > 0 ? trimmed : null;
 }
 
@@ -42,7 +25,7 @@ export interface DictionaryMember {
 }
 
 /** A dictionary key: a structured-field token key (lower-case preferred). */
-const KEY = /^[a-z*][a-z0-9_.*-]*$/i;
+const KEY = /^[a-z*][a-z0-9_.*-]*$/iu;
 
 /**
  * Parses a structured dictionary into its members, preserving order. Returns
@@ -54,21 +37,17 @@ export function dictionary(value: string): DictionaryMember[] | null {
   if (!members) {
     return null;
   }
-  const parsed: DictionaryMember[] = [];
-  for (const member of members) {
+  const parsed = members.flatMap((member) => {
     const equals = member.indexOf('=');
     const key = (equals === -1 ? member : member.slice(0, equals)).trim();
     const raw = equals === -1 ? '' : member.slice(equals + 1).trim();
-    if (!KEY.test(key)) {
-      return null;
-    }
-    parsed.push({ key: key.toLowerCase(), value: raw });
-  }
-  return parsed;
+    return KEY.test(key) ? [{ key: key.toLowerCase(), value: raw }] : [];
+  });
+  return parsed.length === members.length ? parsed : null;
 }
 
 /** A structured-field token. */
-const TOKEN = /^[A-Za-z*][A-Za-z0-9:/!#$%&'*+.^_`|~-]*$/;
+const TOKEN = /^[A-Za-z*][A-Za-z0-9:/!#$%&'*+.^_`|~-]*$/u;
 
 /**
  * Splits a comma-separated token list and returns the trimmed tokens, or null
@@ -77,7 +56,6 @@ const TOKEN = /^[A-Za-z*][A-Za-z0-9:/!#$%&'*+.^_`|~-]*$/;
 export function tokenList(value: string): string[] | null {
   const tokens = value
     .split(',')
-    .map((token) => token.trim())
-    .filter(Boolean);
+    .flatMap((token) => (token.trim() === '' ? [] : [token.trim()]));
   return tokens.every((token) => TOKEN.test(token)) ? tokens : null;
 }

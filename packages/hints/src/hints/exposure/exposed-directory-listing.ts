@@ -29,6 +29,7 @@ export default defineHint({
       // A short, documented set of directories that commonly exist and are
       // commonly left browsable.
       const directories = ['/images/', '/uploads/', '/assets/', '/files/'];
+      // eslint-disable-next-line functional/no-loop-statements -- probes the directories in order and stops at the first listing
       for (const path of directories) {
         const body = await fetchIfReachable(site, path);
         if (body !== null && looksLikeDirectoryListing(body)) {
@@ -36,7 +37,7 @@ export default defineHint({
             site,
             path,
             `Directory listing is enabled for ${path}, disclosing its contents.`,
-            body.replaceAll(/\s+/g, ' ').trim(),
+            body.replaceAll(/\s+/gu, ' ').trim(),
           );
           // One finding is enough to make the point; a misconfigured server
           // usually lists every directory.

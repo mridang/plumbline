@@ -1,6 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
 import { createHTMLDocument } from '@hint/utils-dom';
-import type { DocumentLike } from '../../../src/lib/pwa/read.js';
 import {
   manifestIcons,
   manifestLinked,
@@ -11,12 +10,28 @@ import {
   MANIFEST_VALID_REF,
   THEME_COLOR_META_REF,
 } from '../../../src/lib/pwa/checks.js';
+import type { DocumentLike } from '../../../src/lib/pwa/read.js';
 
 const parse = (html: string): DocumentLike =>
   createHTMLDocument(html, 'https://example.com/');
 
 /** A fully valid manifest; tests delete or override one member at a time. */
-const fullManifest = (): Record<string, unknown> => ({
+interface Manifest {
+  name?: string;
+  short_name?: string;
+  start_url?: string;
+  display?: string;
+  theme_color?: string;
+  background_color?: string;
+  id?: string;
+  scope?: string;
+  description?: string;
+  shortcuts?: { name: string; url: string }[];
+  screenshots?: { src: string }[];
+  icons?: { src: string; sizes: string; type: string }[];
+}
+
+const fullManifest = (): Manifest => ({
   name: 'Example',
   short_name: 'Ex',
   start_url: '/',
@@ -34,7 +49,7 @@ const fullManifest = (): Record<string, unknown> => ({
   ],
 });
 
-const json = (m: Record<string, unknown>): string => JSON.stringify(m);
+const json = (m: Manifest): string => JSON.stringify(m);
 
 describe('manifestLinked', () => {
   it('errors with the reference when there is no manifest link', () => {
@@ -122,15 +137,14 @@ describe('manifestValid', () => {
     delete m.theme_color;
     delete m.background_color;
     const found = manifestValid(json(m), CT);
-    const errors = found.filter((f) => f.severity === 'error');
-    expect(errors.map((f) => f.message).join('\n')).toContain('no "start_url"');
-    expect(errors.map((f) => f.message).join('\n')).toContain('no "display"');
-    expect(errors.map((f) => f.message).join('\n')).toContain(
-      'no "theme_color"',
-    );
-    expect(errors.map((f) => f.message).join('\n')).toContain(
-      'no "background_color"',
-    );
+    const errors = found
+      .filter((f) => f.severity === 'error')
+      .map((f) => f.message)
+      .join('\n');
+    expect(errors).toContain('no "start_url"');
+    expect(errors).toContain('no "display"');
+    expect(errors).toContain('no "theme_color"');
+    expect(errors).toContain('no "background_color"');
   });
 
   it('errors on an invalid display value', () => {

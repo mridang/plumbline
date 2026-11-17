@@ -1,9 +1,9 @@
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage, onSite } from '../../core/page.js';
-import type { DocumentLike } from '../../lib/pwa/read.js';
 import { manifestValid, MANIFEST_VALID_REF } from '../../lib/pwa/checks.js';
 import { fetchManifest } from './fetch-manifest.js';
 import { toSeverity } from './to-severity.js';
+import type { DocumentLike } from '../../lib/pwa/read.js';
 
 const REF = MANIFEST_VALID_REF;
 
@@ -33,6 +33,7 @@ export default defineHint({
   reference: REF,
   setup(context) {
     // Capture the DOM so the later onSite step can read the manifest link.
+    // eslint-disable-next-line functional/no-let -- captured by the page handler for the later site check
     let document: DocumentLike | null = null;
     onPage(context, (page) => {
       document = page.document;
@@ -42,6 +43,7 @@ export default defineHint({
       if (!manifest) {
         return;
       }
+      // eslint-disable-next-line functional/no-loop-statements -- reports each finding
       for (const found of manifestValid(manifest.text, manifest.mediaType)) {
         site.report(manifest.url, found.message, {
           severity: toSeverity(found.severity),

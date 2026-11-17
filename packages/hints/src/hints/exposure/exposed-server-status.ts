@@ -25,17 +25,20 @@ export default defineHint({
   reference: WSTG,
   setup(context) {
     onSite(context, async (site) => {
-      for (const path of ['/server-status', '/server-info']) {
-        const body = await fetchIfReachable(site, path);
-        if (body !== null && looksLikeServerStatus(body)) {
-          reportExposure(
-            site,
-            path,
-            `The Apache status page ${path} is publicly readable and leaks server internals.`,
-            body.replaceAll(/\s+/g, ' ').trim(),
-          );
-        }
-      }
+      await Array.fromAsync(
+        ['/server-status', '/server-info'],
+        async (path) => {
+          const body = await fetchIfReachable(site, path);
+          if (body !== null && looksLikeServerStatus(body)) {
+            reportExposure(
+              site,
+              path,
+              `The Apache status page ${path} is publicly readable and leaks server internals.`,
+              body.replaceAll(/\s+/gu, ' ').trim(),
+            );
+          }
+        },
+      );
     });
   },
 });

@@ -34,17 +34,17 @@ export default defineHint({
         );
       }
       // Fall back to the legacy path only when the preferred one is absent.
-      let path = EXPECTED;
       const preferred = await site.fetch(EXPECTED);
-      if (preferred?.response.statusCode !== 200) {
-        const legacy = await site.fetch(LEGACY);
-        if (legacy?.response.statusCode === 200) {
-          path = LEGACY;
-          site.report(
-            new URL(LEGACY, site.url).href,
-            `security.txt was found only at the legacy location ${LEGACY}; it should be served at ${EXPECTED}.`,
-          );
-        }
+      const legacy =
+        preferred?.response.statusCode === 200
+          ? null
+          : await site.fetch(LEGACY);
+      const path = legacy?.response.statusCode === 200 ? LEGACY : EXPECTED;
+      if (path === LEGACY) {
+        site.report(
+          new URL(LEGACY, site.url).href,
+          `security.txt was found only at the legacy location ${LEGACY}; it should be served at ${EXPECTED}.`,
+        );
       }
       await checkFile(site, {
         path,

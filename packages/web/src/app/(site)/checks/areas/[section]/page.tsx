@@ -1,12 +1,13 @@
-import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import type { ReactElement } from 'react';
 
 import { pageMetadata } from '@/app/_metadata';
 import { AreaView } from '@/components/checks/set-view';
 import { ChecksShell } from '@/components/checks/shell';
 import { SECTIONS } from '@/domain/checks/catalogue';
-import { areaPath, parseView, type SearchParams } from '@/domain/checks/browse';
+import { areaPath, parseView } from '@/domain/checks/browse';
+import type { SearchParams } from '@/domain/checks/browse';
+import type { ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 /** The dynamic part of the address: the area's id. */
 interface Props {

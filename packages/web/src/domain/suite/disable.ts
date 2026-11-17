@@ -7,15 +7,15 @@
  * here opens an issue, a check run or a notification.
  */
 
-import type { Database } from '@/domain/db/client';
 import { disableRepo, stopChecking } from '@/domain/db/disabled';
 import { installationOfRepo } from '@/domain/db/github';
 import { GitHubApi } from '@/domain/github/api';
 import { installationToken } from '@/domain/github/app-auth';
-import type { GitHubConfig } from '@/domain/github/config';
 import { githubConfig } from '@/domain/github/service';
 import { closeUndeployed, pauseBetweenWrites } from '@/domain/suite/publish';
 import { runInBackground } from '@/lib/core/runtime';
+import type { GitHubConfig } from '@/domain/github/config';
+import type { Database } from '@/domain/db/client';
 
 /** What turning checks off can be given in place of the real thing, for tests. */
 export interface PauseDeps {

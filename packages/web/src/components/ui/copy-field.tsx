@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, type ReactElement } from 'react';
+import { useState } from 'react';
 
 import { CheckIcon, CopyIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import type { ReactElement } from 'react';
 
 /** How long "Copied" stays on the button before it goes back to "Copy". */
 const CONFIRMATION_MS = 1600;
@@ -24,13 +25,9 @@ export function CopyField({
   const [copied, setCopied] = useState(false);
   return (
     <div className="flex h-12 items-center gap-2 rounded-control border border-field bg-surface pr-1 pl-4">
-      <code
-        role="group"
-        aria-label={label}
-        className="min-w-0 flex-1 truncate font-mono text-sm"
-      >
-        {value}
-      </code>
+      <fieldset aria-label={label} className="m-0 min-w-0 flex-1 border-0 p-0">
+        <code className="block truncate font-mono text-sm">{value}</code>
+      </fieldset>
       <Button
         onClick={() => {
           // `clipboard` is missing on insecure pages; then there is nothing to confirm.

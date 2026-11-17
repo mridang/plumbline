@@ -7,10 +7,11 @@
  * it, and `(self)` still keeps embedded third parties from using it. An
  * allowlist that names other origins, or `*`, or is missing, still fails.
  */
-import { finding, type Finding } from './finding.js';
+import { finding } from './finding.js';
+import type { Finding } from './finding.js';
 
 /** Matches a run of whitespace. */
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /** Features that must be `()`, in the order OSHP lists them. */
 export const DISABLED_FEATURES = [
@@ -46,29 +47,27 @@ export const DISABLED_FEATURES = [
 
 /** Splits on commas that are not inside parentheses or quotes. */
 function splitTopLevel(value: string): string[] {
-  const parts: string[] = [];
-  let depth = 0;
-  let quoted = false;
-  let current = '';
-  for (const char of value) {
-    if (char === '"') {
-      quoted = !quoted;
-    } else if (!quoted && char === '(') {
-      depth++;
-    } else if (!quoted && char === ')') {
-      depth = Math.max(0, depth - 1);
-    } else {
-      // Any other character leaves the nesting depth and quoting unchanged.
-    }
-    if (char === ',' && depth === 0 && !quoted) {
-      parts.push(current);
-      current = '';
-    } else {
-      current += char;
-    }
-  }
-  parts.push(current);
-  return parts.map((p) => p.trim()).filter((p) => p !== '');
+  const scan = Array.from(value, (char) => char).reduce(
+    (state, char) => {
+      const quoted = char === '"' ? !state.quoted : state.quoted;
+      const opens = !state.quoted && char === '(';
+      const closes = !state.quoted && char === ')';
+      const depth = Math.max(0, state.depth + Number(opens) - Number(closes));
+      return char === ',' && depth === 0 && !quoted
+        ? { parts: [...state.parts, state.current], current: '', depth, quoted }
+        : {
+            parts: state.parts,
+            current: state.current + char,
+            depth,
+            quoted,
+          };
+    },
+    { parts: [] as string[], current: '', depth: 0, quoted: false },
+  );
+  return [...scan.parts, scan.current].flatMap((part) => {
+    const trimmed = part.trim();
+    return trimmed === '' ? [] : [trimmed];
+  });
 }
 
 /**
@@ -77,25 +76,28 @@ function splitTopLevel(value: string): string[] {
  * parameters after the closing parenthesis are dropped.
  */
 export function parsePermissionsPolicy(value: string): Map<string, string> {
-  const policy = new Map<string, string>();
-  for (const member of splitTopLevel(value)) {
-    const equals = member.indexOf('=');
-    if (equals === -1) {
-      continue;
-    }
-    const feature = member.slice(0, equals).trim().toLowerCase();
-    let allowlist = member.slice(equals + 1).trim();
-    if (allowlist.startsWith('(')) {
-      const close = allowlist.indexOf(')');
-      const inner =
-        close === -1 ? allowlist.slice(1) : allowlist.slice(1, close);
-      allowlist = `(${inner.trim().split(WHITESPACE_RUN).filter(Boolean).join(' ')})`;
-    }
-    if (!policy.has(feature)) {
-      policy.set(feature, allowlist);
-    }
-  }
-  return policy;
+  return new Map(
+    splitTopLevel(value)
+      .flatMap((member): [string, string][] => {
+        const equals = member.indexOf('=');
+        if (equals === -1) {
+          return [];
+        }
+        const feature = member.slice(0, equals).trim().toLowerCase();
+        const raw = member.slice(equals + 1).trim();
+        const close = raw.indexOf(')');
+        const inner = close === -1 ? raw.slice(1) : raw.slice(1, close);
+        const allowlist = raw.startsWith('(')
+          ? `(${inner.trim().split(WHITESPACE_RUN).filter(Boolean).join(' ')})`
+          : raw;
+        return [[feature, allowlist]];
+      })
+      // The first occurrence of a feature wins.
+      .filter(
+        ([feature], index, entries) =>
+          entries.findIndex(([first]) => first === feature) === index,
+      ),
+  );
 }
 
 /** Whether an allowlist keeps a feature from third parties: empty, or this origin only. */
@@ -111,12 +113,10 @@ export function permissionsPolicyFindings(value: string | null): Finding[] {
     ];
   }
   const policy = parsePermissionsPolicy(value);
-  const failing: string[] = DISABLED_FEATURES.filter(
-    (feature) => !isClosed(policy.get(feature)),
-  );
-  if (!isClosed(policy.get('sync-xhr'))) {
-    failing.push('sync-xhr');
-  }
+  const failing: string[] = [
+    ...DISABLED_FEATURES.filter((feature) => !isClosed(policy.get(feature))),
+    ...(isClosed(policy.get('sync-xhr')) ? [] : ['sync-xhr']),
+  ];
   if (failing.length === 0) {
     return [];
   }

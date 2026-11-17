@@ -1,11 +1,11 @@
-import type { HintContext, NetworkData, ReportOptions } from 'hint';
 import { createHTMLDocument } from '@hint/utils-dom/dist/src/create-html-document.js';
 import { Severity } from '@hint/utils-types';
+import type { HintContext, NetworkData, ReportOptions } from 'hint';
 
 import type { CatalogueEntry, HintInfo } from './catalogue.js';
 
 /** Matches a link that starts with an http or https scheme. */
-const HTTP_URL_PREFIX = /^https?:\/\//;
+const HTTP_URL_PREFIX = /^https?:\/\//u;
 
 /**
  * A scan in Node: the real hint classes from the hints package, driven by a
@@ -66,7 +66,7 @@ export interface HintOutcome extends HintInfo {
 /** Fetches a resource as webhint's `fetchContent` does. */
 export type FetchContent = (
   target: URL | string,
-  headers?: object,
+  headers?: Readonly<Record<string, string>>,
 ) => Promise<NetworkData>;
 
 /** The scanned page, fetched and parsed once for every hint. */
@@ -118,7 +118,7 @@ const EVENTS = [
 type EventName = (typeof EVENTS)[number];
 
 /** A hint's handler for one event. */
-type Handler = (event: unknown) => unknown;
+type Handler = (event: unknown) => Promise<void> | void;
 
 /** Webhint's severities, in the page's words; `off` findings are dropped. */
 function levelOf(severity: Severity | undefined): FindingLevel | null {
@@ -184,7 +184,9 @@ export function findingOf(
     return null;
   }
   const element = options.element ?? null;
+  // eslint-disable-next-line functional/no-let -- filled in from the element, and kept even if reading the location then throws
   let snippet = options.codeSnippet;
+  // eslint-disable-next-line functional/no-let -- filled in from the element when the report names none
   let location = options.location ?? null;
   if (element) {
     try {
@@ -224,10 +226,10 @@ export function statusOf(findings: readonly Finding[]): HintStatus {
 
 /** `promise`, or a {@link TimedOutError} once `ms` have passed. */
 async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => reject(new TimedOutError(ms)), ms);
-  });
+  const { promise: timeout, reject } = Promise.withResolvers<never>();
+  const timer = setTimeout(() => {
+    reject(new TimedOutError(ms));
+  }, ms);
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
@@ -244,7 +246,11 @@ interface Running {
   readonly entry: CatalogueEntry;
   readonly handlers: Map<string, Handler[]>;
   readonly findings: Finding[];
-  failure?: unknown;
+}
+
+/** What stopped a hint: the error it threw. */
+interface Failure {
+  readonly error: unknown;
 }
 
 /** The stand-in context one hint is given. */
@@ -260,7 +266,9 @@ function contextFor(
     targetedBrowsers: [],
     on(name: string, handler: Handler): void {
       const list = running.handlers.get(name) ?? [];
+      // eslint-disable-next-line functional/immutable-data -- the hint registers its handlers on the running hint
       list.push(handler);
+      // eslint-disable-next-line functional/immutable-data -- the hint registers its handlers on the running hint
       running.handlers.set(name, list);
     },
     report(
@@ -275,6 +283,7 @@ function contextFor(
         running.entry.info.reference,
       );
       if (finding) {
+        // eslint-disable-next-line functional/immutable-data -- the hint reports its findings onto the running hint
         running.findings.push(finding);
       }
     },
@@ -298,14 +307,14 @@ export function skipped(
 }
 
 /** What one hint came to. */
-function outcomeOf(running: Running): HintOutcome {
+function outcomeOf(running: Running, failure?: Failure): HintOutcome {
   const { info } = running.entry;
   const listened = [...running.handlers.keys()];
   if (BROWSER_ONLY.has(info.id)) {
     return skipped(info, 'Needs a browser: it runs script in the page.');
   }
-  if (running.failure !== undefined) {
-    return skipped(info, reasonOf(running.failure), running.findings);
+  if (failure !== undefined) {
+    return skipped(info, reasonOf(failure.error), running.findings);
   }
   if (
     running.findings.length === 0 &&
@@ -354,12 +363,11 @@ export async function runHint(
   fetchContent: FetchContent,
   timeoutMs: number = HINT_TIMEOUT_MS,
 ): Promise<HintOutcome> {
-  const running: Running = { entry, handlers: new Map(), findings: [] };
-  try {
-    new entry.ctor(contextFor(running, page, fetchContent));
-  } catch (error) {
-    running.failure = error;
-  }
+  const running: Running = {
+    entry,
+    handlers: new Map<string, Handler[]>(),
+    findings: [],
+  };
   const finalUrl = page.data.response.url;
   const events: readonly [EventName, unknown][] = [
     ['scan::start', { resource: page.url }],
@@ -375,22 +383,26 @@ export async function runHint(
     ['traverse::end', { resource: finalUrl, document: page.document }],
     ['scan::end', { resource: page.url }],
   ];
-  for (const [name, event] of events) {
-    if (running.failure !== undefined) {
-      break;
-    }
+  const failure = await (async (): Promise<Failure | undefined> => {
     try {
-      await withTimeout(
-        Promise.all(
-          (running.handlers.get(name) ?? []).map(async (handler) =>
-            Promise.resolve().then(() => handler(event)),
+      // Constructing the hint registers its handlers.
+      // eslint-disable-next-line no-new -- the constructor registers the hint's handlers; the instance itself is not used
+      new entry.ctor(contextFor(running, page, fetchContent));
+      // eslint-disable-next-line functional/no-loop-statements -- the events are given in order, and the first to fail stops the rest
+      for (const [name, event] of events) {
+        await withTimeout(
+          Promise.all(
+            (running.handlers.get(name) ?? []).map(async (handler) =>
+              Promise.resolve().then(async () => handler(event)),
+            ),
           ),
-        ),
-        timeoutMs,
-      );
+          timeoutMs,
+        );
+      }
     } catch (error) {
-      running.failure = error;
+      return { error };
     }
-  }
-  return outcomeOf(running);
+    return undefined;
+  })();
+  return outcomeOf(running, failure);
 }

@@ -1,7 +1,7 @@
 import Link from 'next/link';
+import { Badge } from '@/components/ui-app/badge';
 import type { ReactElement, ReactNode } from 'react';
 
-import { Badge } from '@/components/ui-app/badge';
 import type { Tone } from '@/components/ui-app/tone';
 import type { Tier } from '@/domain/checks/catalogue';
 
@@ -46,7 +46,7 @@ export function Code({
 /** Text in which set names and file keys are set as code. */
 export function Rich({ text }: Readonly<{ text: string }>): ReactElement {
   const parts = text.split(
-    /(plumbline:[a-z/-]+|plumbline\.yaml|extends:|rules:|hsts: off)/g,
+    /(plumbline:[a-z/-]+|plumbline\.yaml|extends:|rules:|hsts: off)/gu,
   );
   return (
     <>

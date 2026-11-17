@@ -1,8 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import {
-  checkSpfPolicy,
-  type SpfResolver,
-} from '../../../src/lib/email/spf-policy.js';
+import { checkSpfPolicy } from '../../../src/lib/email/spf-policy.js';
+import type { SpfResolver } from '../../../src/lib/email/spf-policy.js';
 
 /** Resolves from a table; a missing entry gives null, `Error` throws. */
 const resolver =
@@ -156,7 +154,7 @@ describe('checkSpfPolicy', () => {
   });
 
   it('reports the lookup limit across nested includes', async () => {
-    const table: Record<string, string> = {
+    const table = {
       'a.com': 'v=spf1 include:b.com a a a a a -all',
       'b.com': 'v=spf1 mx mx mx -all',
     };

@@ -1,18 +1,18 @@
-import type { ReactElement } from 'react';
-
 import { ChevronIcon } from '@/components/icons';
 import { Badge } from '@/components/ui-app/badge';
 import { CopyButton } from '@/components/ui-app/copy-button';
 import { RelativeTime } from '@/components/ui-app/relative-time';
+import { countOf } from '@/lib/intl';
+import { ISSUE_STATE_LABELS, STATUS_LABELS } from './results';
 import type { Tone } from '@/components/ui-app/tone';
 import type { IssueRef } from '@/domain/db/issue-history';
-import { countOf } from '@/lib/intl';
 import type { Finding, FindingLink, HintOutcome } from '@/domain/scan/outcome';
 
-import { ISSUE_STATE_LABELS, STATUS_LABELS, type Status } from './results';
+import type { Status } from './results';
+import type { ReactElement } from 'react';
 
 /** A plain `http:` or `https:` address at the start of the text. */
-const WEB_LINK_PATTERN = /^https?:\/\//i;
+const WEB_LINK_PATTERN = /^https?:\/\//iu;
 
 /** The colour of each outcome's badge. */
 const BADGE_TONE: Readonly<Record<Status, Tone>> = {
@@ -53,13 +53,13 @@ export function placeOf(finding: Readonly<Finding>): string {
 export function furtherReading(
   findings: readonly Finding[],
 ): readonly FindingLink[] {
-  const seen = new Map<string, FindingLink>();
-  for (const link of findings.flatMap((finding) => finding.links ?? [])) {
-    if (isWebLink(link.url) && !seen.has(link.url)) {
-      seen.set(link.url, link);
-    }
-  }
-  return [...seen.values()];
+  return findings
+    .flatMap((finding) => finding.links ?? [])
+    .filter(
+      (link, index, links) =>
+        isWebLink(link.url) &&
+        links.findIndex((other) => other.url === link.url) === index,
+    );
 }
 
 /** A link to somewhere else, or the address as text when it is not a web link. */
@@ -236,6 +236,9 @@ function IssueList({
   );
 }
 
+/** The issues of a check that has none, one array so the default is stable between renders. */
+const NO_ISSUES: readonly IssueRef[] = [];
+
 /**
  * One check in the results: its outcome, name and id, and on opening what it
  * looks at, what it found and how to fix it. Whether it is open is the
@@ -248,7 +251,7 @@ export function HintRow({
   open = hint.status === 'failed',
   onToggle,
   repository,
-  issues = [],
+  issues = NO_ISSUES,
   now,
 }: Readonly<{
   hint: HintOutcome;

@@ -1,17 +1,17 @@
 import { createHTMLDocument } from '@hint/utils-dom';
 import { describe, expect, it } from '@jest/globals';
-import type { Artifacts } from 'lighthouse';
-import type AuditNS from 'lighthouse/types/audit.js';
-import { pwaChecks } from '../../src/checks/pwa.js';
 import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
-import type { AuditCheck } from '../../src/checks/types.js';
-// The single-source rules the webhint hints call. The Lighthouse check runs the
-// same functions through its own HTML parse, so the findings must match these
-// exactly, proving the check and the hint cannot diverge.
 import {
   manifestLinked,
   themeColorMeta,
 } from '@mridang/webhint-hint-plumbline/dist/lib/pwa/checks.js';
+import { pwaChecks } from '../../src/checks/pwa.js';
+import type { Artifacts } from 'lighthouse';
+import type AuditNS from 'lighthouse/types/audit.js';
+import type { AuditCheck } from '../../src/checks/types.js';
+// The single-source rules the webhint hints call. The Lighthouse check runs the
+// same functions through its own HTML parse, so the findings must match these
+// exactly, proving the check and the hint cannot diverge.
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/pwa/read.js';
 
 const parse = (html: string): DocumentLike =>

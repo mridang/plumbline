@@ -1,12 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 
 import { problemText } from '@/components/api/problem-message';
 import { saveReport } from '@/components/scan/report-body';
-import { ScanResults, type Scan } from '@/components/scan/scan-results';
-import type { IssueRef } from '@/domain/db/issue-history';
+import { ScanResults } from '@/components/scan/scan-results';
 import { ScanStatus, isRunning, useScan } from '@/components/scan/scanner';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +15,9 @@ import {
   secondsLeft,
 } from '@/domain/scan/manual-run';
 import { countOf } from '@/lib/intl';
+import type { Scan } from '@/components/scan/scan-results';
+import type { ReactElement, ReactNode } from 'react';
+import type { IssueRef } from '@/domain/db/issue-history';
 
 /** Whether the finished scan has been saved yet. */
 type Saving =
@@ -98,19 +100,18 @@ export function SiteRunner({
   };
   const { state, run } = useScan({
     only: checks,
-    onFinished: (scan) => void save(scan),
+    onFinished: (scan) => {
+      void save(scan);
+    },
   });
   const running = isRunning(state);
-  let label: ReactNode;
-  if (running) {
-    label = 'Running…';
-  } else if (wait > 0) {
-    label = (
+  const idleLabel: ReactNode =
+    wait > 0 ? (
       <span suppressHydrationWarning>Run again in {formatCountdown(wait)}</span>
+    ) : (
+      `Run ${countOf(checks.length, 'check')}`
     );
-  } else {
-    label = `Run ${countOf(checks.length, 'check')}`;
-  }
+  const label: ReactNode = running ? 'Running…' : idleLabel;
 
   return (
     <div className="space-y-5">

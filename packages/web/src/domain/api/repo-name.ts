@@ -6,13 +6,13 @@
  */
 
 /** A GitHub owner: letters, digits and single hyphens. */
-const OWNER = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
+const OWNER = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/u;
 
 /** A GitHub repository name: letters, digits, dots, underscores and hyphens. */
-const NAME = /^[A-Za-z0-9._-]{1,100}$/;
+const NAME = /^[A-Za-z0-9._-]{1,100}$/u;
 
 /** A name made only of dots (`.`, `..`), which is a path and not a repository. */
-const ONLY_DOTS = /^\.+$/;
+const ONLY_DOTS = /^\.+$/u;
 
 /**
  * The repository the path names (`owner/name`), or null when it cannot be one

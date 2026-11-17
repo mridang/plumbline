@@ -15,17 +15,15 @@
  * re-checked.
  */
 
-import { createDatabase, type Database } from '@/domain/db/client';
+import { createDatabase } from '@/domain/db/client';
 import { staleInstallation, touchInstallation } from '@/domain/db/github';
 import { dueSites } from '@/domain/db/suite';
 import { readGitHubConfig } from '@/domain/github/config';
 import { syncAsApp } from '@/domain/github/service';
 import { FREE_LIMITS, readLimits } from '@/domain/suite/limits';
-import {
-  enqueueScan,
-  sweepPending,
-  type ScanQueue,
-} from '@/domain/suite/queue';
+import { enqueueScan, sweepPending } from '@/domain/suite/queue';
+import type { Database } from '@/domain/db/client';
+import type { ScanQueue } from '@/domain/suite/queue';
 
 /** Sites checked by one trigger on the Free plan. */
 export const SCHEDULED_BATCH = FREE_LIMITS.scheduledBatch;
@@ -49,8 +47,8 @@ export async function enqueueDueSites(
     new Date(now().getTime() - RECHECK_AFTER_MS).toISOString(),
     options.batch ?? SCHEDULED_BATCH,
   );
-  let sent = 0;
-  for (const site of due) {
+  return due.reduce(async (sentSoFar, site) => {
+    const sent = await sentSoFar;
     try {
       const queued = await enqueueScan(
         db,
@@ -63,12 +61,12 @@ export async function enqueueDueSites(
         },
         now(),
       );
-      sent += queued ? 1 : 0;
+      return sent + (queued ? 1 : 0);
     } catch (error) {
       console.error('re-check not queued', site.host, error);
+      return sent;
     }
-  }
-  return sent;
+  }, Promise.resolve(0));
 }
 
 /**
@@ -79,7 +77,7 @@ export async function enqueueDueSites(
  */
 export async function resyncStaleInstallation(
   db: Database,
-  sync: (userId: number, installationId: number) => Promise<unknown>,
+  sync: (userId: number, installationId: number) => Promise<void>,
   now: () => Date = () => new Date(),
 ): Promise<void> {
   const stale = await staleInstallation(
@@ -107,9 +105,9 @@ export const scheduled: ExportedHandlerScheduledHandler<CloudflareEnv> = async (
   const db = createDatabase(env.DB);
   const config = readGitHubConfig(env);
   if (config) {
-    await resyncStaleInstallation(db, async (userId, installationId) =>
-      syncAsApp(db, config, userId, installationId),
-    );
+    await resyncStaleInstallation(db, async (userId, installationId) => {
+      await syncAsApp(db, config, userId, installationId);
+    });
   }
   const queue = env.SCAN_QUEUE;
   await enqueueDueSites(db, queue, {

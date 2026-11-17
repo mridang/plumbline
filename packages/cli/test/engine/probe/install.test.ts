@@ -1,12 +1,11 @@
 import { createServer } from 'node:net';
-import type { AddressInfo } from 'node:net';
 
 import { describe, expect, it } from '@jest/globals';
 import { dns } from '@mridang/webhint-hint-plumbline/dist/core/dns.js';
 import { rpki } from '@mridang/webhint-hint-plumbline/dist/core/rpki.js';
 import { mailNet } from '@mridang/webhint-hint-plumbline/dist/lib/email/net.js';
 import { compression } from '@mridang/webhint-hint-plumbline/dist/lib/network/compression.js';
-import { tls as dane } from '@mridang/webhint-hint-plumbline/dist/lib/network/dane.js';
+import { tls } from '@mridang/webhint-hint-plumbline/dist/lib/network/dane.js';
 import { network } from '@mridang/webhint-hint-plumbline/dist/lib/network/ipv6.js';
 import { tlsProbe } from '@mridang/webhint-hint-plumbline/dist/lib/tls/client.js';
 import { openssl } from '@mridang/webhint-hint-plumbline/dist/lib/tls/openssl.js';
@@ -21,9 +20,10 @@ import {
   ok,
 } from '../../helpers/probe.js';
 import { vector } from '../../helpers/data.js';
+import type { AddressInfo } from 'node:net';
 
 /** Matches a value made only of word characters. */
-const WORD_CHARACTERS_ONLY = /^\w+$/;
+const WORD_CHARACTERS_ONLY = /^\w+$/u;
 
 /** A probe that answers each path with `answers[path]`, and keeps what it was sent. */
 function probeFor(
@@ -141,9 +141,8 @@ describe('the TLS handshake', () => {
       },
     });
     await withProbe(refusing.client, async () => {
-      await expect(
-        tlsProbe.connect({ host: 'refuses.test', port: 443 }, {}),
-      ).rejects.toThrow('no cipher');
+      const refused = tlsProbe.connect({ host: 'refuses.test', port: 443 }, {});
+      await expect(refused).rejects.toThrow('no cipher');
       await expect(
         tlsProbe.connect({ host: 'refuses.test', port: 443 }, {}),
       ).rejects.toThrow('no cipher');
@@ -158,9 +157,8 @@ describe('the TLS handshake', () => {
         : ok(JSON.stringify({ results: [handshakeAnswer()] }));
     });
     await withProbe(flaky.client, async () => {
-      await expect(
-        tlsProbe.connect({ host: 'down.test', port: 443 }, {}),
-      ).rejects.toThrow('answered 500');
+      const down = tlsProbe.connect({ host: 'down.test', port: 443 }, {});
+      await expect(down).rejects.toThrow('answered 500');
       await expect(
         tlsProbe.connect({ host: 'down.test', port: 443 }, {}),
       ).resolves.toMatchObject({ protocol: 'TLSv1.3' });
@@ -301,13 +299,13 @@ describe('the other checks', () => {
         }),
     });
     const chain = await withProbe(client, async () =>
-      dane.fetchChain('mx.example.com', 25),
+      tls.fetchChain('mx.example.com', 25),
     );
     expect(chain?.chain.map((der) => der.toString())).toEqual(['leaf', 'root']);
     expect(chain?.pkixValid).toBe(false);
     expect(
       await withProbe(probeFor({}).client, async () =>
-        dane.fetchChain('mx.example.com', 25),
+        tls.fetchChain('mx.example.com', 25),
       ),
     ).toBeNull();
   });
@@ -378,9 +376,8 @@ describe('DNS answers', () => {
   it('does not keep an answer that failed, so the next check can try again', async () => {
     const { client } = probeFor({});
     await withProbe(client, async () => {
-      await expect(dns.client.query('flaky.test', 'A')).rejects.toThrow(
-        'timed out',
-      );
+      const flaky = dns.client.query('flaky.test', 'A');
+      await expect(flaky).rejects.toThrow('timed out');
       await expect(dns.client.query('flaky.test', 'A')).resolves.toMatchObject({
         status: 0,
       });
@@ -411,7 +408,8 @@ describe('route validation', () => {
   it('does not keep a lookup that failed', async () => {
     const { client } = probeFor({});
     await withProbe(client, async () => {
-      await expect(rpki.client.check('192.0.2.99')).rejects.toThrow('down');
+      const failed = rpki.client.check('192.0.2.99');
+      await expect(failed).rejects.toThrow('down');
       await expect(rpki.client.check('192.0.2.99')).resolves.toMatchObject({
         status: 'valid',
       });
@@ -423,7 +421,9 @@ describe('outside a scan', () => {
   it('leaves the original clients alone, so a TCP connection test still opens a socket', async () => {
     await withProbe(probeFor({}).client, async () => undefined);
     const server = createServer().listen(0, '127.0.0.1');
-    await new Promise((resolve) => server.once('listening', resolve));
+    await new Promise((resolve) => {
+      server.once('listening', resolve);
+    });
     const port = (server.address() as AddressInfo).port;
     try {
       await expect(network.connect('127.0.0.1', port, 1000)).resolves.toBe(

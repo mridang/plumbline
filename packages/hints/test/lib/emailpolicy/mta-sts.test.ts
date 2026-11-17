@@ -1,12 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
-import type { TxtLookup } from '../../../src/lib/email/txt.js';
 import {
   checkMtaSts,
   MAX_AGE_LIMIT,
   policyHost,
   policyUrl,
-  type PolicyFetch,
 } from '../../../src/lib/emailpolicy/mta-sts.js';
+import type { PolicyFetch } from '../../../src/lib/emailpolicy/mta-sts.js';
+import type { TxtLookup } from '../../../src/lib/email/txt.js';
 
 const ok = (records: string[]): TxtLookup => ({ status: 'ok', records });
 const policyOk = (body: string, mediaType = 'text/plain'): PolicyFetch => ({

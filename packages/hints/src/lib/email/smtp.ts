@@ -1,10 +1,10 @@
-import { isIP, type Socket } from '#net';
-import {
-  checkServerIdentity,
-  connect,
-  type ConnectionOptions,
-  type DetailedPeerCertificate,
-  type TLSSocket,
+import { isIP } from '#net';
+import { checkServerIdentity, connect } from '#tls';
+import type { Socket } from '#net';
+import type {
+  ConnectionOptions,
+  DetailedPeerCertificate,
+  TLSSocket,
 } from '#tls';
 
 /** Matches an SMTP reply line: a three digit code, then optional text. */
@@ -92,21 +92,18 @@ class ReplyReader {
       return;
     }
     const lines = this.buffer.split('\r\n');
-    const complete: string[] = [];
-    for (const [index, line] of lines.entries()) {
-      // The last element is an unfinished line.
-      if (index === lines.length - 1) {
-        break;
-      }
-      complete.push(line);
-      // `250 text` or `250` ends a reply; `250-text` continues it.
-      if (SMTP_REPLY_LINE.test(line)) {
-        this.buffer = lines.slice(index + 1).join('\r\n');
-        const { resolve } = this.waiting;
-        this.waiting = null;
-        resolve({ code: Number(line.slice(0, 3)), lines: complete });
-        return;
-      }
+    // The last element is an unfinished line.
+    const complete = lines.slice(0, -1);
+    // `250 text` or `250` ends a reply; `250-text` continues it.
+    const end = complete.findIndex((line) => SMTP_REPLY_LINE.test(line));
+    if (end !== -1) {
+      this.buffer = lines.slice(end + 1).join('\r\n');
+      const { resolve } = this.waiting;
+      this.waiting = null;
+      resolve({
+        code: Number(complete[end].slice(0, 3)),
+        lines: complete.slice(0, end + 1),
+      });
     }
   }
 
@@ -177,16 +174,17 @@ const failed = (error: unknown): StarttlsProbe => ({
 
 /** Collects the presented chain, leaf first, without looping on self-signed roots. */
 function chainOf(socket: TLSSocket): Buffer[] {
-  const chain: Buffer[] = [];
-  const seen = new Set<Buffer>();
-  let current: DetailedPeerCertificate | undefined =
-    socket.getPeerCertificate(true);
-  while (current?.raw && !seen.has(current.raw)) {
-    seen.add(current.raw);
-    chain.push(current.raw);
-    current = current.issuerCertificate;
-  }
-  return chain;
+  const walk = (
+    current: DetailedPeerCertificate | undefined,
+    seen: readonly Buffer[],
+  ): Buffer[] =>
+    current?.raw && !seen.includes(current.raw)
+      ? [
+          current.raw,
+          ...walk(current.issuerCertificate, [...seen, current.raw]),
+        ]
+      : [];
+  return walk(socket.getPeerCertificate(true), []);
 }
 
 /** How the SMTP dialog towards STARTTLS is run. */

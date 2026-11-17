@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
+import { packageDirectorySync } from 'package-directory';
 import {
   addDomain,
   countDomains,
@@ -15,12 +16,12 @@ import {
   removeSitesOfMissingRepos,
   setDomainChecks,
 } from '@/domain/db/domains';
+import { compareText } from '@/lib/intl';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
-import { packageDirectorySync } from 'package-directory';
 
 /** Matches a 36 character lowercase hexadecimal identifier with dashes. */
-const UUID_LIKE_PATTERN = /^[0-9a-f-]{36}$/;
+const UUID_LIKE_PATTERN = /^[0-9a-f-]{36}$/u;
 
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
@@ -344,7 +345,7 @@ describe('deleteSites', () => {
 describe('migration 0020_site_sources', () => {
   it('marks the sites a repository supplied as fallback and the ones added by hand as manual', async () => {
     const before = APP_MIGRATIONS.filter(
-      (file) => file.localeCompare('0020_site_sources.sql') < 0,
+      (file) => compareText(file, '0020_site_sources.sql') < 0,
     );
     const { db, raw } = sqliteDatabase(...before);
     raw.exec(
@@ -369,7 +370,7 @@ describe('migration 0020_site_sources', () => {
 describe('migration 0012_registry_domains', () => {
   it('removes registry hosts found in a repository, and keeps real sites and hosts added by hand', async () => {
     const before = APP_MIGRATIONS.filter(
-      (file) => file.localeCompare('0012_registry_domains.sql') < 0,
+      (file) => compareText(file, '0012_registry_domains.sql') < 0,
     );
     const { raw } = sqliteDatabase(...before);
     // The database is as it was before the migration, so the rows are written

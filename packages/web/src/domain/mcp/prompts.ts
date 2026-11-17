@@ -113,11 +113,9 @@ const PROMPTS: readonly Prompt[] = [
       const focus = given(args, 'focus');
       return (
         `Help me choose which Plumbline checks run for ${given(args, 'domain') ?? ''}. ` +
-        'Use list_checks to see the groups, ' +
-        (focus
-          ? `keep the ones about ${focus}, `
-          : 'suggest a sensible set, ') +
-        'and switch them with configure_checks once I agree.'
+        `Use list_checks to see the groups, ${
+          focus ? `keep the ones about ${focus}, ` : 'suggest a sensible set, '
+        }and switch them with configure_checks once I agree.`
       );
     },
   },

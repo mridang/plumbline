@@ -9,8 +9,8 @@ import {
   target,
 } from '../../../src/lib/network/dns-utility.js';
 import { dns } from '../../../src/core/dns.js';
-import { installDns } from './fake-dns.js';
 import { vector } from '../../helpers/data.js';
+import { installDns } from './fake-dns.js';
 
 let restore: () => void = () => undefined;
 afterEach(() => restore());
@@ -46,6 +46,7 @@ describe('dns-util', () => {
     try {
       expect(await safeQuery('a.test', 'A')).toBeNull();
     } finally {
+      // eslint-disable-next-line require-atomic-updates -- the test is the only writer of the shared client, and it restores what it saved
       dns.client = real;
     }
   });

@@ -20,8 +20,7 @@
  * Thresholds and wording are faithful to the opengraph.to source each rule
  * came from; see the matching hint's doc comment for the citation.
  */
-import type { HttpHeaders } from '@hint/utils-types';
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
 import {
   countH1,
   findRobotsSource,
@@ -31,7 +30,6 @@ import {
   getTitle,
   hasJsonLd,
   sameUrl,
-  type DocumentLike,
 } from './read.js';
 import {
   getIconLinks,
@@ -40,6 +38,9 @@ import {
   isPngIcon,
   isSvgIcon,
 } from './icons.js';
+import type { Finding } from '../headers/finding.js';
+import type { DocumentLike } from './read.js';
+import type { HttpHeaders } from '@hint/utils-types';
 
 // ---- Reference links (shared with each hint's `reference` metadata) --------
 export const SEO_TITLE_MISSING_REF =

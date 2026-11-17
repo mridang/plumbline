@@ -1,4 +1,5 @@
-import { createServer, type Server } from 'node:http';
+import { createServer } from 'node:http';
+import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
 /** A local site for a real scan: its URL and a way to stop it. */
@@ -25,9 +26,9 @@ export async function serve(
       '<!doctype html><html lang="en"><head><title>t</title></head><body></body></html>',
     );
   });
-  await new Promise<void>((resolve) =>
-    server.listen(0, '127.0.0.1', () => resolve()),
-  );
+  await new Promise<void>((resolve) => {
+    server.listen(0, '127.0.0.1', () => resolve());
+  });
   const { port } = server.address() as AddressInfo;
   return {
     url: `http://127.0.0.1:${port}/`,

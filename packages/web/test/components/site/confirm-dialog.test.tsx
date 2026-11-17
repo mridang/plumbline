@@ -4,7 +4,7 @@ import { ConfirmDialog } from '@/components/site/confirm-dialog';
 import { html } from '../render';
 
 /** Matches closed by any dialog. */
-const CLOSED_BY_ANY_DIALOG = /<dialog[^>]*closedby="any"/;
+const CLOSED_BY_ANY_DIALOG = /<dialog[^>]*closedby="any"/u;
 
 /** A confirmation, open or closed as told. */
 const sample = (open: boolean) =>

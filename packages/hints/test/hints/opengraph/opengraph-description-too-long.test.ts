@@ -2,8 +2,8 @@ import { describe, expect, it } from '@jest/globals';
 import { Severity } from '@hint/utils-types';
 import hint from '../../../src/hints/opengraph/opengraph-description-too-long.js';
 import { runHint } from '../../helpers/run-hint.js';
-import type { Routes } from '../../helpers/run-hint.js';
 import { page } from './page.js';
+import type { Routes } from '../../helpers/run-hint.js';
 
 const description = (length: number): Routes =>
   page(`<meta property="og:description" content="${'x'.repeat(length)}">`);

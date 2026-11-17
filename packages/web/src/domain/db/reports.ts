@@ -9,8 +9,8 @@
 
 import { and, desc, eq, lt, or } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import { reports } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 
 /** A report row as stored (`outcomes` is still JSON text). */
 type ReportRow = typeof reports.$inferSelect;

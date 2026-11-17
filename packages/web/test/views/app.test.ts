@@ -5,13 +5,13 @@ import { APP_STYLES, REQUEST_ARGUMENTS } from '@/views/app';
 /** The value of one rule's declaration, such as the padding of `.wrap`. */
 function declaration(selector: string, property: string): string {
   const escaped = selector.replace('.', String.raw`\.`);
-  const rule = new RegExp(String.raw`(?:^|\n)${escaped} \{([^}]*)\}`).exec(
+  const rule = new RegExp(String.raw`(?:^|\n)${escaped} \{([^}]*)\}`, 'u').exec(
     APP_STYLES,
   );
   const value = rule?.[1]?.match(
-    new RegExp(String.raw`${property}:\s*([^;]*);`),
+    new RegExp(String.raw`${property}:\s*([^;]*);`, 'u'),
   );
-  return value?.[1]?.replaceAll(/\s+/g, ' ').trim() ?? '';
+  return value?.[1]?.replaceAll(/\s+/gu, ' ').trim() ?? '';
 }
 
 describe('REQUEST_ARGUMENTS', () => {
@@ -27,6 +27,7 @@ describe('the report', () => {
       expect(APP_STYLES).toMatch(
         new RegExp(
           String.raw`\.tally \.${status}[^{]*\{[^}]*var\(--color-text-\w+, #`,
+          'u',
         ),
       );
     },

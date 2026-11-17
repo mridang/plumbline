@@ -7,16 +7,16 @@ import {
   issueUrl,
   placeOf,
 } from '@/components/scan/hint-row';
+import { html } from '../render';
 import type { IssueRef } from '@/domain/db/issue-history';
 import type { Finding, HintOutcome } from '@/domain/scan/outcome';
-import { html } from '../render';
 
 /** Matches the time element with the expected timestamp. */
 const ISO_TIME_ELEMENT_PATTERN =
-  /<time[^>]*dateTime="2026-01-01T00:00:00.000Z"/;
+  /<time[^>]*dateTime="2026-01-01T00:00:00.000Z"/u;
 
 /** Matches the closing summary tag. */
-const SUMMARY_CLOSE_PATTERN = /<\/summary>/;
+const SUMMARY_CLOSE_PATTERN = /<\/summary>/u;
 
 /** A check with the given outcome. */
 const hint = (
@@ -37,7 +37,7 @@ const hint = (
 });
 
 /** A `<details>` that starts open. */
-const OPEN = /<details[^>]* open=""/;
+const OPEN = /<details[^>]* open=""/u;
 
 /** A finding on example.com. */
 const finding = (extra: Partial<Finding> = {}): Finding => ({
@@ -54,6 +54,7 @@ describe('isWebLink', () => {
   });
 
   it('refuses anything else', () => {
+    // eslint-disable-next-line no-script-url -- the test needs the dangerous scheme as its input
     expect(isWebLink('javascript:alert(1)')).toBe(false);
     expect(isWebLink('example.com')).toBe(false);
     expect(isWebLink('dns:example.com')).toBe(false);
@@ -97,6 +98,7 @@ describe('furtherReading', () => {
   it('drops links that are not web links, and is empty without any', () => {
     expect(
       furtherReading([
+        // eslint-disable-next-line no-script-url -- the test needs the dangerous scheme as its input
         finding({ links: [{ url: 'javascript:x', text: 'x' }] }),
         finding(),
       ]),
@@ -315,6 +317,7 @@ describe('HintRow', () => {
               source: 'owasp',
               title: 'HSTS',
               url: 'https://upstream.test/hsts',
+              // eslint-disable-next-line no-script-url -- the test needs the dangerous scheme as its input
               docsUrl: 'javascript:x',
               summary: '',
             },

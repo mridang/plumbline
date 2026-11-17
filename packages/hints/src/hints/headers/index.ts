@@ -1,4 +1,3 @@
-import type { HintDefinition } from '../../core/define-hint.js';
 import acceptCh from './accept-ch.js';
 import age from './age.js';
 import altSvc from './alt-svc.js';
@@ -46,6 +45,7 @@ import xPermittedCrossDomainPolicies from './x-permitted-cross-domain-policies.j
 import xPoweredBy from './x-powered-by.js';
 import xXssProtection from './x-xss-protection.js';
 import xContentTypeOptions from './x-content-type-options.js';
+import type { HintDefinition } from '../../core/define-hint.js';
 
 /**
  * Security and response-header checks from Observatory, OWASP, Webbkoll and the

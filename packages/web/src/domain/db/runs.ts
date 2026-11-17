@@ -11,13 +11,13 @@
 
 import { and, desc, eq, lt, or, sql } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import { reports, suiteRuns } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 import type { Report } from '@/domain/db/reports';
 import type { SuiteRunKind } from '@/domain/db/suite';
 
 /** The listed id of a server run: `s` and a number with no leading zero. */
-const SUITE_RUN_ID = /^s[1-9]\d{0,15}$/;
+const SUITE_RUN_ID = /^s[1-9]\d{0,15}$/u;
 
 /** How a run started: a person pressed "Run checks", or the server did. */
 export type RunKind = 'manual' | SuiteRunKind;
@@ -285,7 +285,8 @@ function countedIn(outcomes: readonly unknown[], status: string): number {
     (outcome) =>
       typeof outcome === 'object' &&
       outcome !== null &&
-      Reflect.get(outcome, 'status') === status,
+      'status' in outcome &&
+      outcome.status === status,
   ).length;
 }
 

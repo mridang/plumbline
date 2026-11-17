@@ -3,12 +3,13 @@
  * for every IP address of the web server or of the name servers, is a Route
  * Origin Authorisation published (existence) and is the announcement valid.
  */
-import { rpki, type RpkiResult } from '../../core/rpki.js';
+import { rpki } from '../../core/rpki.js';
 import {
   findNameservers,
   ipv4Addresses,
   ipv6Addresses,
 } from './dns-utility.js';
+import type { RpkiResult } from '../../core/rpki.js';
 
 export interface IpRpki {
   host: string;
@@ -61,15 +62,18 @@ export const missingRoa = (all: IpRpki[]): IpRpki[] =>
 
 export type RpkiValidity = 'good' | 'invalid' | 'bad' | 'not-routed' | 'none';
 
+/** The validity verdict and the entries that caused it. */
+export interface RpkiJudgement {
+  verdict: RpkiValidity;
+  offenders: IpRpki[];
+}
+
 /**
  * Internet.nl `valid`: any invalid announcement is the worst case; then any
  * announcement without ROA; if no address has a route at all the test did
  * not run.
  */
-export function judgeValidity(all: IpRpki[]): {
-  verdict: RpkiValidity;
-  offenders: IpRpki[];
-} {
+export function judgeValidity(all: IpRpki[]): RpkiJudgement {
   if (all.length === 0) {
     return { verdict: 'none', offenders: [] };
   }

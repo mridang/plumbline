@@ -9,12 +9,14 @@ export function headerValue(
     return null;
   }
   const wanted = name.toLowerCase();
-  for (const [key, value] of Object.entries(headers)) {
-    if (key.toLowerCase() === wanted) {
-      return (Array.isArray(value) ? value.join(', ') : String(value)).trim();
-    }
+  const match = Object.entries(headers).find(
+    ([key]) => key.toLowerCase() === wanted,
+  );
+  if (!match) {
+    return null;
   }
-  return null;
+  const [, value] = match;
+  return (Array.isArray(value) ? value.join(', ') : String(value)).trim();
 }
 
 /** Renders `Name: value` for use as a report snippet. */

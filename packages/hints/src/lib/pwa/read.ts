@@ -1,5 +1,5 @@
 /** Matches an absolute or scheme-relative URL prefix. */
-const SCHEME_RELATIVE_OR_ABSOLUTE_URL = /^(?:[a-z][a-z0-9+.-]*:)?\/\//i;
+const SCHEME_RELATIVE_OR_ABSOLUTE_URL = /^(?:[a-z][a-z0-9+.-]*:)?\/\//iu;
 /**
  * Readers that pull the Progressive-Web-App install signals out of a parsed
  * HTML document. They read only the tiny slice of the DOM described below, so

@@ -45,7 +45,7 @@ describe('altCoverage', () => {
     ).toBeNull();
   });
   it('warns from 80% coverage', () => {
-    const img = '<img src="a" alt="a">'.repeat(4) + '<img src="b">';
+    const img = `${'<img src="a" alt="a">'.repeat(4)}<img src="b">`;
     expect(altCoverage(parsedDocument(img))).toEqual({
       total: 5,
       missing: 1,
@@ -107,7 +107,9 @@ describe('mapWithConcurrency', () => {
     const out = await mapWithConcurrency([1, 2, 3, 4, 5, 6], 2, async (n) => {
       active++;
       peak = Math.max(peak, active);
-      await new Promise((resolve) => setTimeout(resolve, 5));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 5);
+      });
       active--;
       return n * 2;
     });

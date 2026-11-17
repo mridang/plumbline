@@ -22,6 +22,7 @@ export default defineHint({
     const collected = collectRequests(context);
     context.on('scan::end', () => {
       const result = classifyRequests(collected.pageUrl, collected.requests);
+      // eslint-disable-next-line functional/no-loop-statements -- reports each insecure request
       for (const request of result.insecureFirstParty) {
         context.report(
           request.url,

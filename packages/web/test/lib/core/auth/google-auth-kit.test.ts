@@ -9,7 +9,6 @@ import {
 import { NextResponse } from 'next/server';
 
 import { STATE_COOKIE } from '@/domain/auth/app';
-import type { User } from '@/domain/auth/store';
 import {
   answerFetch,
   appRequest,
@@ -17,14 +16,14 @@ import {
   jar,
 } from '../../../domain/auth/auth-test-kit';
 import { installFakeTracing } from '../observability/fake-tracing';
+import type { User } from '@/domain/auth/store';
 
 const tracing = installFakeTracing();
 
 const person = { id: 7, email: 'a@b.com' } as User;
 const getCurrentUser = jest.fn<() => Promise<User | null>>();
 
-// Mock the specific module and import the kit from its own file: mocking the
-// package barrel would replace GoogleAuthKit too.
+// eslint-disable-next-line tslop/no-module-mocking -- the kit imports getCurrentUser directly and has no injection point; the specific module is mocked, as mocking the package barrel would replace GoogleAuthKit too
 jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser,
 }));

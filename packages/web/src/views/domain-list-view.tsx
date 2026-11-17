@@ -11,22 +11,24 @@
  * shown right here instead.
  */
 
-import { useCallback, useState, type ReactElement } from 'react';
+import { useCallback, useState } from 'react';
 
-import type {
-  DomainListData,
-  DomainListItem,
-  ReportData,
-} from '@/domain/mcp/ui-types';
+import { countOf } from '@/lib/intl';
 import { safeHttpUrl } from '@/views/follow-up';
 import { openReportPrompt } from '@/views/open-report';
 import { isDomainListData, isReportData } from '@/views/guards';
 import { ReportCard } from '@/views/report-view';
 import { Announcer, LoadingCard, MessageCard } from '@/views/status-panels';
 import { STYLES } from '@/views/styles';
-import { useWidgetData, type WidgetBridge } from '@/views/use-widget-data';
+import { useWidgetData } from '@/views/use-widget-data';
+import type { WidgetBridge } from '@/views/use-widget-data';
 import type { ViewState } from '@/views/view-state';
-import { countOf } from '@/lib/intl';
+import type { ReactElement } from 'react';
+import type {
+  DomainListData,
+  DomainListItem,
+  ReportData,
+} from '@/domain/mcp/ui-types';
 
 /** How a domain's newest scan went, in a few words. */
 export function latestLine(item: Readonly<DomainListItem>): string {
@@ -47,7 +49,7 @@ function DomainTiles({
   pendingId: string | undefined;
   onOpen: (item: DomainListItem) => void;
 }>): ReactElement {
-  const count = `${data.domains.length} ${data.domains.length === 1 ? 'domain' : 'domains'}`;
+  const count = countOf(data.domains.length, 'domain');
   return (
     <>
       <div className="list-head">
@@ -127,7 +129,7 @@ export function DomainListScreen({
       case 'failed': {
         return <MessageCard reason={state.reason} message={state.message} />;
       }
-      case 'ready': {
+      default: {
         const link = safeHttpUrl(state.data.link);
         return (
           <div className="wrap">
@@ -148,9 +150,9 @@ export function DomainListScreen({
               </div>
             ) : null}
             {notice ? (
-              <div className="status-line" role="status">
+              <output className="status-line" style={{ display: 'block' }}>
                 {notice}
-              </div>
+              </output>
             ) : null}
           </div>
         );
@@ -231,7 +233,9 @@ export function DomainListApp(): ReactElement {
       pendingId={pendingId}
       notice={notice}
       detail={detail}
-      onOpen={(item) => void open(item)}
+      onOpen={(item) => {
+        void open(item);
+      }}
       onBack={() => setDetail(undefined)}
       onOpenLink={openLink}
     />

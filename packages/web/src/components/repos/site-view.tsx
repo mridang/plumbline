@@ -1,8 +1,7 @@
 import Link from 'next/link';
-import type { ReactElement } from 'react';
 
 import { LinkIcon } from '@/components/icons';
-import { CheckForm, type CheckSection } from '@/components/repos/check-form';
+import { CheckForm } from '@/components/repos/check-form';
 import { SiteRunner } from '@/components/repos/site-runner';
 import { RulesNote } from '@/components/repos/rules-note';
 import { StatusBadge } from '@/components/repos/site-state';
@@ -17,37 +16,37 @@ import { RelativeTime } from '@/components/ui-app/relative-time';
 import { reportResource } from '@/domain/api/report-resource';
 import { CHECKS, enabledChecks } from '@/domain/checks/catalogue';
 import { savedScan } from '@/domain/checks/saved-scan';
+import { compareText } from '@/lib/intl';
+import type { CheckSection } from '@/components/repos/check-form';
 import type { Domain } from '@/domain/db/domains';
 import type { IssueRef } from '@/domain/db/issue-history';
 import type { SiteStatus } from '@/domain/db/live';
 import type { Report } from '@/domain/db/reports';
 import type { RunSummary } from '@/domain/db/runs';
-import { compareText } from '@/lib/intl';
+import type { ReactElement } from 'react';
 
 /** Every check, grouped by report section in the report's own order. */
 export function sections(): CheckSection[] {
-  const bySection = new Map<
-    string,
-    { title: string; order: number; checks: CheckSection['checks'][number][] }
-  >();
-  for (const check of CHECKS) {
-    const group = bySection.get(check.section) ?? {
-      title: check.section_title,
-      order: check.section_order,
-      checks: [],
-    };
-    group.checks.push({
-      id: check.id,
-      name: check.name,
-      description: check.description,
-    });
-    bySection.set(check.section, group);
-  }
-  return [...bySection.entries()]
-    .toSorted(
-      ([, a], [, b]) => a.order - b.order || compareText(a.title, b.title),
-    )
-    .map(([id, group]) => ({ id, title: group.title, checks: group.checks }));
+  return [...Map.groupBy(CHECKS, (check) => check.section).entries()]
+    .flatMap(([id, members]) => {
+      const [first] = members;
+      return first
+        ? [
+            {
+              id,
+              title: first.section_title,
+              order: first.section_order,
+              checks: members.map((check) => ({
+                id: check.id,
+                name: check.name,
+                description: check.description,
+              })),
+            },
+          ]
+        : [];
+    })
+    .toSorted((a, b) => a.order - b.order || compareText(a.title, b.title))
+    .map(({ id, title, checks }) => ({ id, title, checks }));
 }
 
 /** What a site's tab says about the site: its address, how it stands, when it was checked and the commit. */

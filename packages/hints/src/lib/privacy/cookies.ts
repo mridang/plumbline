@@ -2,10 +2,10 @@ import { truncate } from './local-storage.js';
 import { isSameParty, normalizeHost } from './registrable-domain.js';
 
 /** Matches an optionally negative integer. */
-const SIGNED_INTEGER = /^-?\d+$/;
+const SIGNED_INTEGER = /^-?\d+$/u;
 
 /** Matches a comma that separates two cookies. */
-const COOKIE_SEPARATOR = /,(?=\s*[^;,=\s]+=)/;
+const COOKIE_SEPARATOR = /,(?=\s*[^;,=\s]+=)/u;
 
 /** Webbkoll cuts cookie names to this many characters when listing them. */
 const COOKIE_NAME_LENGTH = 20;
@@ -69,62 +69,37 @@ export function parseSetCookie(
     return null;
   }
   const origin = normalizeHost(host);
-  let domain = origin;
-  let path = '/';
-  let expiresAt: number | null = null;
-  let maxAge: number | null = null;
-  let secure = false;
-  let httpOnly = false;
-  let sameSite: string | null = null;
-  for (const attribute of attributes) {
+  const attributePairs = attributes.map((attribute) => {
     const [key, ...rest] = attribute.split('=');
-    const value = rest.join('=').trim();
-    switch (key.trim().toLowerCase()) {
-      case 'domain': {
-        if (value) {
-          domain = normalizeHost(value);
-        }
-        break;
-      }
-      case 'path': {
-        if (value.startsWith('/')) {
-          path = value;
-        }
-        break;
-      }
-      case 'expires': {
-        const time = Date.parse(value);
-        if (!Number.isNaN(time)) {
-          expiresAt = time;
-        }
-        break;
-      }
-      case 'max-age': {
-        if (SIGNED_INTEGER.test(value)) {
-          maxAge = Number(value);
-        }
-        break;
-      }
-      case 'secure': {
-        secure = true;
-        break;
-      }
-      case 'httponly': {
-        httpOnly = true;
-        break;
-      }
-      case 'samesite': {
-        sameSite = value || null;
-        break;
-      }
-    }
-  }
+    return { key: key.trim().toLowerCase(), value: rest.join('=').trim() };
+  });
+  // Each attribute overrides an earlier one, but only when its value is usable.
+  const domainValue = attributePairs.findLast(
+    ({ key, value }) => key === 'domain' && value !== '',
+  )?.value;
+  const expiresValue = attributePairs.findLast(
+    ({ key, value }) => key === 'expires' && !Number.isNaN(Date.parse(value)),
+  )?.value;
+  const maxAgeValue = attributePairs.findLast(
+    ({ key, value }) => key === 'max-age' && SIGNED_INTEGER.test(value),
+  )?.value;
+  const domain = domainValue ? normalizeHost(domainValue) : origin;
+  const path =
+    attributePairs.findLast(
+      ({ key, value }) => key === 'path' && value.startsWith('/'),
+    )?.value ?? '/';
+  const secure = attributePairs.some(({ key }) => key === 'secure');
+  const httpOnly = attributePairs.some(({ key }) => key === 'httponly');
+  const sameSite =
+    attributePairs.findLast(({ key }) => key === 'samesite')?.value || null;
   if (!domainMatches(origin, domain)) {
     return null; // The browser rejects a Domain that does not cover the host.
   }
-  if (maxAge !== null) {
-    expiresAt = now + maxAge * 1000;
-  }
+  // `Max-Age` wins over `Expires`.
+  const fromExpires =
+    expiresValue === undefined ? null : Date.parse(expiresValue);
+  const expiresAt =
+    maxAgeValue === undefined ? fromExpires : now + Number(maxAgeValue) * 1000;
   if (expiresAt !== null && expiresAt <= now) {
     return null;
   }
@@ -197,29 +172,34 @@ export function summarizeCookies(
   cookies: readonly CookieRecord[],
   pageHost: string,
 ): CookieSummary {
-  const firstParty: CookieRecord[] = [];
-  const thirdParty: CookieRecord[] = [];
-  const seen = new Set<string>();
-  const keep = new Set<string>();
   const page = normalizeHost(pageHost);
   // Header cookies first, so script cookies can be matched against them.
   const ordered = [
     ...cookies.filter((cookie) => !cookie.fromScript),
     ...cookies.filter((cookie) => cookie.fromScript),
   ];
-  for (const cookie of ordered) {
-    const key = `${cookie.domain}|${cookie.path}|${cookie.name}`;
-    if (!seen.has(key) && !heldByHeader(cookie, page, seen)) {
-      seen.add(key);
-      if (isSameParty(cookie.domain, pageHost)) {
-        firstParty.push(cookie);
-      } else {
-        thirdParty.push(cookie);
-        keep.add(cookie.domain);
-      }
+  const keepFrom = (
+    rest: readonly CookieRecord[],
+    seen: ReadonlySet<string>,
+  ): CookieRecord[] => {
+    const cookie = rest.at(0);
+    if (cookie === undefined) {
+      return [];
     }
-  }
-  return { firstParty, thirdParty, thirdPartyDomains: [...keep] };
+    const key = `${cookie.domain}|${cookie.path}|${cookie.name}`;
+    return seen.has(key) || heldByHeader(cookie, page, seen)
+      ? keepFrom(rest.slice(1), seen)
+      : [cookie, ...keepFrom(rest.slice(1), new Set([...seen, key]))];
+  };
+  const kept = keepFrom(ordered, new Set());
+  const thirdParty = kept.filter(
+    (cookie) => !isSameParty(cookie.domain, pageHost),
+  );
+  return {
+    firstParty: kept.filter((cookie) => isSameParty(cookie.domain, pageHost)),
+    thirdParty,
+    thirdPartyDomains: [...new Set(thirdParty.map((cookie) => cookie.domain))],
+  };
 }
 
 /** True when a script cookie is already held under a domain that covers the page. */

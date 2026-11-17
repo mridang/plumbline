@@ -4,9 +4,9 @@ import path from 'node:path';
 import { describe, expect, it } from '@jest/globals';
 import ts from 'typescript';
 
+import { packageDirectorySync } from 'package-directory';
 import { INTERACTIVE_SHARDS } from '@/domain/scan/run';
 import { SCAN_DEAD_LETTER_NAME, SCAN_QUEUE_NAME } from '@/domain/suite/queue';
-import { packageDirectorySync } from 'package-directory';
 
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 

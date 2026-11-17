@@ -1,6 +1,5 @@
-import type { ReactElement } from 'react';
-
 import { formatElapsed } from '@/lib/intl';
+import type { ReactElement } from 'react';
 
 /** How long something took, from milliseconds: "21.1s", "1m 5s". */
 export function Duration({

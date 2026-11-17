@@ -6,10 +6,10 @@ import { html } from '../render';
 
 /** Matches skip link opening. */
 const SKIP_LINK_OPENING =
-  /^<div[^>]*><a href="#main"[^>]*>Skip to content<\/a>/;
+  /^<div[^>]*><a href="#main"[^>]*>Skip to content<\/a>/u;
 
 /** Matches not found heading. */
-const NOT_FOUND_HEADING = /<h1[^>]*>We couldn&#x27;t find that page<\/h1>/;
+const NOT_FOUND_HEADING = /<h1[^>]*>We couldn&#x27;t find that page<\/h1>/u;
 
 describe('BarePage', () => {
   it('brings its own main landmark and a wordmark that links home', () => {

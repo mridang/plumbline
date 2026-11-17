@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { createScanRun, createScansCollection } from '@/domain/api/scans';
-import type { CooldownDeps } from '@/domain/scan/cooldown';
 import { issueScanId } from '@/domain/scan/token';
+import type { CooldownDeps } from '@/domain/scan/cooldown';
 import type { RateLimitStore } from '@/lib/rate-limit';
 
 const SECRET = 'test-secret';

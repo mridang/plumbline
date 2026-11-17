@@ -36,13 +36,8 @@ import { finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/findin
 import {
   describeCookie,
   summarizeCookies,
-  type CookieRecord,
 } from '@mridang/webhint-hint-plumbline/dist/lib/privacy/cookies.js';
 import { classifyRequests } from '@mridang/webhint-hint-plumbline/dist/lib/privacy/requests.js';
-import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
-import { privacyNetwork } from '../adapt-privacy.js';
-import { hintDocumentation } from '../meta.js';
-import type { AuditCheck } from './types.js';
 
 // The compiled webhint hints, imported only for their metadata (name,
 // description, reference, section); the check logic is reused through the
@@ -51,6 +46,11 @@ import privacyCookiesHint from '@mridang/webhint-hint-plumbline/dist/hints/priva
 import privacyInsecureFirstPartyHint from '@mridang/webhint-hint-plumbline/dist/hints/privacy/privacy-insecure-first-party.js';
 import privacyMixedContentHint from '@mridang/webhint-hint-plumbline/dist/hints/privacy/privacy-mixed-content.js';
 import privacyThirdPartyRequestsHint from '@mridang/webhint-hint-plumbline/dist/hints/privacy/privacy-third-party-requests.js';
+import { hintDocumentation } from '../meta.js';
+import { privacyNetwork } from '../adapt-privacy.js';
+import type { AuditCheck } from './types.js';
+import type { CookieRecord } from '@mridang/webhint-hint-plumbline/dist/lib/privacy/cookies.js';
+import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/define-hint.js';
 
 /** The artifact set every privacy check reads. */
 const PRIVACY_ARTIFACTS = ['DevtoolsLog', 'URL'] as const;
@@ -119,14 +119,14 @@ export const privacyChecks: readonly AuditCheck[] = [
         return [];
       }
       const domains = summary.thirdPartyDomains;
-      const message =
-        `${first} first-party and ${third} third-party cookies were set` +
-        (third > 0
+      const message = `${first} first-party and ${third} third-party cookies were set${
+        third > 0
           ? `; third-party cookie domains (${domains.length}): ${domains.join(', ')}`
-          : '') +
-        '.' +
-        list('First-party cookies', summary.firstParty) +
-        list('Third-party cookies', summary.thirdParty);
+          : ''
+      }.${list(
+        'First-party cookies',
+        summary.firstParty,
+      )}${list('Third-party cookies', summary.thirdParty)}`;
       return [finding(third > 0 ? 'warning' : 'hint', message)];
     },
   }),

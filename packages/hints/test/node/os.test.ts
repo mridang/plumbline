@@ -1,5 +1,5 @@
-import { describe, expect, it } from '@jest/globals';
 import { tmpdir as nodeTmpdir } from 'node:os';
+import { describe, expect, it } from '@jest/globals';
 
 import { tmpdir } from '../../src/node/os.js';
 

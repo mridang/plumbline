@@ -1,10 +1,10 @@
-import { describe, expect, it } from '@jest/globals';
 import { createServer } from 'node:http';
-import type { AddressInfo } from 'node:net';
+import { describe, expect, it } from '@jest/globals';
 import {
   ACCEPT_ENCODING,
   probeContentEncoding,
 } from '../../../src/lib/network/compression.js';
+import type { AddressInfo } from 'node:net';
 
 const serve = async (
   headers: Record<string, string>,
@@ -15,12 +15,19 @@ const serve = async (
     res.writeHead(200, headers);
     res.end('x');
   });
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  await new Promise<void>((resolve) => {
+    server.listen(0, '127.0.0.1', resolve);
+  });
   const { port } = server.address() as AddressInfo;
   return {
     url: new URL(`http://127.0.0.1:${port}/`),
     seen: () => accept,
-    close: async () => new Promise((resolve) => server.close(() => resolve())),
+    close: async () =>
+      new Promise<void>((resolve) => {
+        server.close(() => {
+          resolve();
+        });
+      }),
   };
 };
 

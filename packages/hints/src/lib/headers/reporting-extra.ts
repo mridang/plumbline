@@ -5,19 +5,20 @@
  * and `Origin-Agent-Cluster` is a structured boolean. The checks validate the
  * value when the header is present and recommend `Origin-Agent-Cluster`.
  */
-import { finding, type Finding } from './finding.js';
+import { finding } from './finding.js';
+import type { Finding } from './finding.js';
 
 /** Matches a parenthesised list value and captures its content. */
-const PARENTHESISED_LIST_VALUE = /=\s*\((.*)\)\s*$/;
+const PARENTHESISED_LIST_VALUE = /=\s*\((.*)\)\s*$/u;
 
 /** Matches a `blocked-destinations` dictionary member. */
-const BLOCKED_DESTINATIONS_MEMBER = /^blocked-destinations\s*=/;
+const BLOCKED_DESTINATIONS_MEMBER = /^blocked-destinations\s*=/u;
 
 /** Matches an `https://` prefix. */
-const HTTPS_PREFIX = /^https:\/\//i;
+const HTTPS_PREFIX = /^https:\/\//iu;
 
 /** Matches a double-quoted string and captures its content. */
-const QUOTED_STRING = /^"(.*)"$/;
+const QUOTED_STRING = /^"(.*)"$/u;
 
 /**
  * Splits a structured-field dictionary into its `key=value` members at the
@@ -25,26 +26,13 @@ const QUOTED_STRING = /^"(.*)"$/;
  * the value is empty.
  */
 function dictionaryMembers(value: string): string[] | null {
-  const members: string[] = [];
-  let current = '';
-  let inQuotes = false;
-  for (const char of value) {
-    if (char === '"') {
-      inQuotes = !inQuotes;
-      current += char;
-    } else if (char === ',' && !inQuotes) {
-      members.push(current);
-      current = '';
-    } else {
-      current += char;
-    }
-  }
-  members.push(current);
-  const trimmed = members.map((member) => member.trim()).filter(Boolean);
+  const trimmed = (value.match(/(?:"[^"]*(?:"|$)|[^,"])+/gu) ?? []).flatMap(
+    (member) => (member.trim() === '' ? [] : [member.trim()]),
+  );
   return trimmed.length > 0 ? trimmed : null;
 }
 
-const KEY = /^[a-z*][a-z0-9_.*-]*$/;
+const KEY = /^[a-z*][a-z0-9_.*-]*$/u;
 
 /**
  * `Reporting-Endpoints` maps endpoint names to the URL reports are posted to,
@@ -65,29 +53,31 @@ export function reportingEndpointsFindings(value: string | null): Finding[] {
       ),
     ];
   }
-  for (const member of members) {
-    const equals = member.indexOf('=');
-    const key = equals === -1 ? member : member.slice(0, equals);
-    const raw = equals === -1 ? '' : member.slice(equals + 1).trim();
-    if (equals === -1 || !KEY.test(key.trim())) {
-      return [
-        finding(
-          'warning',
-          `The 'Reporting-Endpoints' header has an invalid member '${member}'; use name="https-url".`,
-        ),
-      ];
-    }
-    const url = QUOTED_STRING.exec(raw)?.[1];
-    if (url === undefined || !HTTPS_PREFIX.test(url)) {
-      return [
-        finding(
-          'warning',
-          `The endpoint '${key.trim()}' in 'Reporting-Endpoints' must be a quoted absolute https URL, not '${raw}'.`,
-        ),
-      ];
-    }
-  }
-  return [];
+  return members
+    .flatMap((member) => {
+      const equals = member.indexOf('=');
+      const key = equals === -1 ? member : member.slice(0, equals);
+      const raw = equals === -1 ? '' : member.slice(equals + 1).trim();
+      if (equals === -1 || !KEY.test(key.trim())) {
+        return [
+          finding(
+            'warning',
+            `The 'Reporting-Endpoints' header has an invalid member '${member}'; use name="https-url".`,
+          ),
+        ];
+      }
+      const url = QUOTED_STRING.exec(raw)?.[1];
+      if (url === undefined || !HTTPS_PREFIX.test(url)) {
+        return [
+          finding(
+            'warning',
+            `The endpoint '${key.trim()}' in 'Reporting-Endpoints' must be a quoted absolute https URL, not '${raw}'.`,
+          ),
+        ];
+      }
+      return [];
+    })
+    .slice(0, 1);
 }
 
 /**
@@ -101,6 +91,7 @@ export function nelFindings(value: string | null): Finding[] {
   if (value === null) {
     return [];
   }
+  // eslint-disable-next-line functional/no-let -- assigned inside try so the parse error can be caught
   let parsed: unknown;
   try {
     parsed = JSON.parse(value);

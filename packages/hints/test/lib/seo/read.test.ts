@@ -11,9 +11,9 @@ import {
   getTitle,
   hasJsonLd,
   sameUrl,
-  type DocumentLike,
 } from '../../../src/lib/seo/read.js';
 import { HTTP_SCHEME } from '../../helpers/data.js';
+import type { DocumentLike } from '../../../src/lib/seo/read.js';
 
 /** Parses markup with the same DOM implementation webhint uses. */
 const parse = (html: string): DocumentLike =>

@@ -1,5 +1,5 @@
-import { describe, expect, it } from '@jest/globals';
 import { readFile } from 'node:fs/promises';
+import { describe, expect, it } from '@jest/globals';
 import { packageVersion } from '../src/version.js';
 
 describe('packageVersion', () => {

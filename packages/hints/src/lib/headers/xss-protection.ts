@@ -7,7 +7,8 @@
  * value means (enabled, `mode=block`, disabled or invalid) and whether a
  * passing CSP makes it unnecessary; both are used to word the finding.
  */
-import { finding, type Finding } from './finding.js';
+import { finding } from './finding.js';
+import type { Finding } from './finding.js';
 
 export interface XssProtection {
   valid: boolean;
@@ -18,21 +19,19 @@ export interface XssProtection {
 /** Webbkoll's `check_xxssp_directive`: `0|1` plus `mode=block`, `report=`. */
 function parseDirectives(data: string): Map<string, string | null> | null {
   const valid = new Set(['0', '1', 'mode', 'report']);
-  const result = new Map<string, string | null>();
-  for (const part of data.split(';')) {
+  const entries = data.split(';').map((part): [string, string | null] => {
     const equals = part.indexOf('=');
-    const key = (equals === -1 ? part : part.slice(0, equals)).trim();
-    const value = equals === -1 ? null : part.slice(equals + 1).trim();
-    if (
-      !valid.has(key) ||
-      (key === 'mode' && value !== 'block') ||
-      result.has(key)
-    ) {
-      return null;
-    }
-    result.set(key, value);
-  }
-  return result;
+    return [
+      (equals === -1 ? part : part.slice(0, equals)).trim(),
+      equals === -1 ? null : part.slice(equals + 1).trim(),
+    ];
+  });
+  const invalid =
+    entries.some(
+      ([key, value]) =>
+        !valid.has(key) || (key === 'mode' && value !== 'block'),
+    ) || new Set(entries.map(([key]) => key)).size !== entries.length;
+  return invalid ? null : new Map(entries);
 }
 
 /** Reads a header value the way Webbkoll does. */

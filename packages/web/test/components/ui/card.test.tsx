@@ -5,14 +5,15 @@ import { Card } from '@/components/ui/card';
 import { classOf, html } from '../render';
 
 /** Matches padding class. */
-const PADDING_CLASS = /\bp-\d/;
+const PADDING_CLASS = /\bp-\d/u;
 
 describe('Card', () => {
   it('is a white, bordered, rounded box with room inside', () => {
     const out = html(<Card>hello</Card>);
-    expect(classOf(out, 'div')).toContain('rounded-card');
-    expect(classOf(out, 'div')).toContain('bg-white');
-    expect(classOf(out, 'div')).toContain('border-line');
+    const classes = classOf(out, 'div');
+    expect(classes).toContain('rounded-card');
+    expect(classes).toContain('bg-white');
+    expect(classes).toContain('border-line');
     expect(out).toContain('hello');
   });
 

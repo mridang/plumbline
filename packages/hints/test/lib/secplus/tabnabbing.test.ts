@@ -23,6 +23,7 @@ describe('isCrossOrigin', () => {
 
   it('is false for a non-HTTP scheme', () => {
     expect(isCrossOrigin('mailto:a@b.test', PAGE)).toBe(false);
+    // eslint-disable-next-line no-script-url -- the fixture is the javascript: scheme the check must ignore
     expect(isCrossOrigin('javascript:void 0', PAGE)).toBe(false);
   });
 

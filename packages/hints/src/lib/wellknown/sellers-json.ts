@@ -1,5 +1,5 @@
-import type { FileIssue } from '../files/issue.js';
 import { isObject, parsedOrIssue } from './json.js';
+import type { FileIssue } from '../files/issue.js';
 
 /**
  * The seller types the IAB Tech Lab "sellers.json" specification defines for
@@ -45,99 +45,120 @@ function checkIdentifiers(identifiers: unknown): FileIssue[] {
  * and `domain` unless it is marked confidential (section 3).
  */
 export function validateSellersJson(text: string): FileIssue[] {
-  const issues: FileIssue[] = [];
-  const root = parsedOrIssue(text, issues);
+  const parseIssues: FileIssue[] = [];
+  const root = parsedOrIssue(text, parseIssues);
   if (root === undefined) {
-    return issues;
+    return parseIssues;
   }
   if (!isObject(root)) {
-    issues.push({
-      severity: 'error',
-      message: 'The top-level value must be a JSON object.',
-    });
-    return issues;
+    return [
+      {
+        severity: 'error',
+        message: 'The top-level value must be a JSON object.',
+      },
+    ];
   }
 
-  // `version` is required and identifies the schema revision (section 3.3).
-  if (typeof root.version !== 'string' || root.version.trim() === '') {
-    issues.push({
-      severity: 'error',
-      message: "The required 'version' field is missing or not a string.",
-    });
-  }
-  // `contact_email` is optional, but when present it must be a string.
-  if (
-    root.contact_email !== undefined &&
+  const rootIssues: FileIssue[] = [
+    // `version` is required and identifies the schema revision (section 3.3).
+    ...(typeof root.version !== 'string' || root.version.trim() === ''
+      ? [
+          {
+            severity: 'error' as const,
+            message: "The required 'version' field is missing or not a string.",
+          },
+        ]
+      : []),
+    // `contact_email` is optional, but when present it must be a string.
+    ...(root.contact_email !== undefined &&
     typeof root.contact_email !== 'string'
-  ) {
-    issues.push({
-      severity: 'error',
-      message: "The 'contact_email' field must be a string.",
-    });
-  }
-  // `identifiers` is optional; when present it is an array of {name, value}.
-  if (root.identifiers !== undefined) {
-    issues.push(...checkIdentifiers(root.identifiers));
-  }
+      ? [
+          {
+            severity: 'error' as const,
+            message: "The 'contact_email' field must be a string.",
+          },
+        ]
+      : []),
+    // `identifiers` is optional; when present it is an array of {name, value}.
+    ...(root.identifiers === undefined
+      ? []
+      : checkIdentifiers(root.identifiers)),
+  ];
 
   const sellers = root.sellers;
   if (!Array.isArray(sellers)) {
-    issues.push({
-      severity: 'error',
-      message: "The required 'sellers' field must be an array.",
-    });
-    return issues;
+    return [
+      ...rootIssues,
+      {
+        severity: 'error',
+        message: "The required 'sellers' field must be an array.",
+      },
+    ];
   }
 
-  const seenIds = new Set<string>();
-  for (const [index, seller] of sellers.entries()) {
+  const sellerIssues = sellers.flatMap((seller, index): FileIssue[] => {
     if (!isObject(seller)) {
-      issues.push({
-        severity: 'error',
-        message: `sellers[${index}] must be an object.`,
-      });
-      continue;
+      return [
+        {
+          severity: 'error',
+          message: `sellers[${index}] must be an object.`,
+        },
+      ];
     }
     const id = seller.seller_id;
-    if (typeof id !== 'string' || id.trim() === '') {
-      issues.push({
-        severity: 'error',
-        message: `sellers[${index}] is missing a string 'seller_id'.`,
-      });
-    } else if (seenIds.has(id)) {
-      // Section 3.1: seller_id must be unique within the file.
-      issues.push({
-        severity: 'error',
-        message: `sellers[${index}] repeats the seller_id '${id}', which must be unique.`,
-      });
-    } else {
-      seenIds.add(id);
-    }
-
     const type = seller.seller_type;
-    if (typeof type !== 'string' || !SELLER_TYPES.has(type.toLowerCase())) {
-      issues.push({
-        severity: 'error',
-        message: `sellers[${index}] has an invalid seller_type; expected PUBLISHER, INTERMEDIARY or BOTH.`,
-      });
-    }
+    const confidential = isConfidential(seller);
+    return [
+      ...(typeof id !== 'string' || id.trim() === ''
+        ? [
+            {
+              severity: 'error' as const,
+              message: `sellers[${index}] is missing a string 'seller_id'.`,
+            },
+          ]
+        : []),
+      // Section 3.1: seller_id must be unique within the file.
+      ...(typeof id === 'string' &&
+      id.trim() !== '' &&
+      sellers
+        .slice(0, index)
+        .some((earlier) => isObject(earlier) && earlier.seller_id === id)
+        ? [
+            {
+              severity: 'error' as const,
+              message: `sellers[${index}] repeats the seller_id '${id}', which must be unique.`,
+            },
+          ]
+        : []),
+      ...(typeof type !== 'string' || !SELLER_TYPES.has(type.toLowerCase())
+        ? [
+            {
+              severity: 'error' as const,
+              message: `sellers[${index}] has an invalid seller_type; expected PUBLISHER, INTERMEDIARY or BOTH.`,
+            },
+          ]
+        : []),
+      // name and domain are required unless the seller is confidential.
+      ...(!confidential &&
+      (typeof seller.name !== 'string' || seller.name.trim() === '')
+        ? [
+            {
+              severity: 'error' as const,
+              message: `sellers[${index}] must have a 'name' unless it is confidential.`,
+            },
+          ]
+        : []),
+      ...(!confidential &&
+      (typeof seller.domain !== 'string' || seller.domain.trim() === '')
+        ? [
+            {
+              severity: 'error' as const,
+              message: `sellers[${index}] must have a 'domain' unless it is confidential.`,
+            },
+          ]
+        : []),
+    ];
+  });
 
-    // name and domain are required unless the seller is confidential.
-    if (!isConfidential(seller)) {
-      if (typeof seller.name !== 'string' || seller.name.trim() === '') {
-        issues.push({
-          severity: 'error',
-          message: `sellers[${index}] must have a 'name' unless it is confidential.`,
-        });
-      }
-      if (typeof seller.domain !== 'string' || seller.domain.trim() === '') {
-        issues.push({
-          severity: 'error',
-          message: `sellers[${index}] must have a 'domain' unless it is confidential.`,
-        });
-      }
-    }
-  }
-
-  return issues;
+  return [...rootIssues, ...sellerIssues];
 }

@@ -1,37 +1,38 @@
-import { isAbsoluteUrl, splitLines, type FileIssue } from './issue.js';
+import { isAbsoluteUrl, splitLines } from './issue.js';
+import type { FileIssue } from './issue.js';
 
 /** Matches a file extension glob or a path. */
-const PATH_OR_EXTENSION_PATTERN = /^(\*?\.\w+|\/\S*|\*\.\w+)$/;
+const PATH_OR_EXTENSION_PATTERN = /^(\*?\.\w+|\/\S*|\*\.\w+)$/u;
 
 /** Matches a run of whitespace or commas. */
-const WHITESPACE_OR_COMMA_RUN = /[\s,]+/;
+const WHITESPACE_OR_COMMA_RUN = /[\s,]+/u;
 
 /** Matches a single whitespace character. */
-const WHITESPACE_CHAR = /\s/;
+const WHITESPACE_CHAR = /\s/u;
 
 /** Matches the level-two Markdown heading marker and its spacing. */
-const H2_HEADING_MARKER = /^##\s+/;
+const H2_HEADING_MARKER = /^##\s+/u;
 
 /** Matches a level-two Markdown heading prefix. */
-const H2_HEADING_PREFIX = /^##\s/;
+const H2_HEADING_PREFIX = /^##\s/u;
 
 /** Matches a level-one Markdown heading with text. */
-const H1_HEADING = /^#\s+\S/;
+const H1_HEADING = /^#\s+\S/u;
 
 /** Matches an ISO `YYYY-MM-DD` date. */
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/u;
 
 /** Matches a `Key: value` line. */
-const KEY_VALUE_LINE = /^([A-Za-z_-]+)\s*:(.*)$/;
+const KEY_VALUE_LINE = /^([A-Za-z_-]+)\s*:(.*)$/u;
 
 /** Matches a robots-style `User-agent:` directive line. */
-const USER_AGENT_DIRECTIVE = /^user-agent\s*:/im;
+const USER_AGENT_DIRECTIVE = /^user-agent\s*:/imu;
 
 /** Matches a Markdown heading line anywhere in the text. */
-const MARKDOWN_HEADING_LINE_MULTILINE = /^#\s/m;
+const MARKDOWN_HEADING_LINE_MULTILINE = /^#\s/mu;
 
 /** Matches a leading byte order mark. */
-const LEADING_BOM = /^\uFEFF/;
+const LEADING_BOM = /^\uFEFF/u;
 
 export type AiTxtFormat = 'markdown' | 'spawning';
 
@@ -53,193 +54,236 @@ const SECTIONS = [
   'Guidance for AI Assistants',
 ];
 
+/** The `key: value` pairs of a front matter block. */
+type FrontMatter = Partial<Record<string, string>>;
+
 /** Parses the `key: value` pairs of a front matter block. */
-function parseFrontMatter(block: string[]): Partial<Record<string, string>> {
-  const meta: Partial<Record<string, string>> = {};
-  for (const l of block) {
-    const m = KEY_VALUE_LINE.exec(l);
-    if (m) {
-      meta[m[1].toLowerCase()] = m[2].trim().replaceAll(/^["']|["']$/g, '');
-    }
-  }
-  return meta;
+function parseFrontMatter(block: string[]): FrontMatter {
+  return Object.fromEntries(
+    block.flatMap((l) => {
+      const m = KEY_VALUE_LINE.exec(l);
+      return m
+        ? [[m[1].toLowerCase(), m[2].trim().replaceAll(/^["']|["']$/gu, '')]]
+        : [];
+    }),
+  );
 }
 
 /** Checks the `updated` and `scope` fields of a closed front matter block. */
 function frontMatterIssues(block: string[]): FileIssue[] {
-  const issues: FileIssue[] = [];
   const meta = parseFrontMatter(block);
   const updated = meta.updated;
-  if (updated === undefined) {
-    issues.push({
+  const issues: (FileIssue | false)[] = [
+    updated === undefined && {
       severity: 'error',
       line: 1,
       message: "The front matter needs an 'updated' date.",
-    });
-  } else if (!ISO_DATE.test(updated) || Number.isNaN(Date.parse(updated))) {
-    issues.push({
-      severity: 'error',
-      line: 1,
-      message: `'updated' must be a YYYY-MM-DD date, not '${updated}'.`,
-    });
-  } else {
-    // A well-formed 'updated' date needs no finding.
-  }
-  if (!meta.scope) {
-    issues.push({
+    },
+    updated !== undefined &&
+      (!ISO_DATE.test(updated) || Number.isNaN(Date.parse(updated))) && {
+        severity: 'error',
+        line: 1,
+        message: `'updated' must be a YYYY-MM-DD date, not '${updated}'.`,
+      },
+    !meta.scope && {
       severity: 'error',
       line: 1,
       message: "The front matter needs a 'scope'.",
-    });
-  }
-  return issues;
+    },
+  ];
+  return issues.filter((issue) => issue !== false);
 }
 
 /** Validates an aitxt.ing Markdown + YAML front matter file. */
 function validateMarkdownAiTxt(text: string): FileIssue[] {
-  const issues: FileIssue[] = [];
   const lines = splitLines(text);
-  let bodyStart = 0;
-  if (lines[0]?.trim() === '---') {
-    const end = lines.findIndex((l, index) => index > 0 && l.trim() === '---');
-    if (end === -1) {
-      issues.push({
-        severity: 'error',
-        line: 1,
-        message: 'The front matter is never closed with ---.',
-      });
-    } else {
-      bodyStart = end + 1;
-      issues.push(...frontMatterIssues(lines.slice(1, end)));
-    }
-  } else {
-    issues.push({
-      severity: 'error',
-      line: 1,
-      message: "The file needs YAML front matter with 'updated' and 'scope'.",
-    });
-  }
+  const hasFrontMatter = lines[0]?.trim() === '---';
+  const end = hasFrontMatter
+    ? lines.findIndex((l, index) => index > 0 && l.trim() === '---')
+    : -1;
+  const bodyStart = hasFrontMatter && end !== -1 ? end + 1 : 0;
+  const closedFrontMatter: FileIssue[] =
+    end === -1
+      ? [
+          {
+            severity: 'error',
+            line: 1,
+            message: 'The front matter is never closed with ---.',
+          },
+        ]
+      : frontMatterIssues(lines.slice(1, end));
+  const frontMatter: FileIssue[] = hasFrontMatter
+    ? closedFrontMatter
+    : [
+        {
+          severity: 'error',
+          line: 1,
+          message:
+            "The file needs YAML front matter with 'updated' and 'scope'.",
+        },
+      ];
   const body = lines.slice(bodyStart);
-  if (!body.some((l) => H1_HEADING.test(l))) {
-    issues.push({
-      severity: 'error',
-      message: 'The file must contain an H1 title.',
-    });
-  }
   const headings = new Set(
     body
       .filter((l) => H2_HEADING_PREFIX.test(l))
       .map((l) => l.replace(H2_HEADING_MARKER, '').trim().toLowerCase()),
   );
-  for (const section of SECTIONS) {
-    if (!headings.has(section.toLowerCase())) {
-      issues.push({
-        severity: 'warning',
-        message: `The expected section '${section}' is missing.`,
-      });
-    }
-  }
-  return issues;
+  return [
+    ...frontMatter,
+    ...(body.some((l) => H1_HEADING.test(l))
+      ? []
+      : [
+          {
+            severity: 'error' as const,
+            message: 'The file must contain an H1 title.',
+          },
+        ]),
+    ...SECTIONS.flatMap((section) =>
+      headings.has(section.toLowerCase())
+        ? []
+        : [
+            {
+              severity: 'warning' as const,
+              message: `The expected section '${section}' is missing.`,
+            },
+          ],
+    ),
+  ];
 }
 
 /** Media type tokens of the Spawning ai.txt syntax. */
 const TOKENS = new Set(['*', 'images', 'audio', 'video', 'text', 'code']);
 
-/** Tracks which directives a Spawning ai.txt file has declared so far. */
-interface SpawningState {
-  hasAgent: boolean;
-  hasRule: boolean;
+/** Lists a warning for every unknown media type token of an Allow or Disallow rule. */
+function unknownTokenMessages(value: string): string[] {
+  return value
+    .split(WHITESPACE_OR_COMMA_RUN)
+    .flatMap((token) =>
+      token === '' ||
+      TOKENS.has(token.toLowerCase()) ||
+      PATH_OR_EXTENSION_PATTERN.test(token)
+        ? []
+        : [`Unknown media type token '${token}'.`],
+    );
 }
 
-/** Warns about every unknown media type token of an Allow or Disallow rule. */
-function checkTokens(value: string, warn: (message: string) => number): void {
-  const tokens = value.split(WHITESPACE_OR_COMMA_RUN).filter(Boolean);
-  for (const token of tokens) {
-    if (
-      !TOKENS.has(token.toLowerCase()) &&
-      !PATH_OR_EXTENSION_PATTERN.test(token)
-    ) {
-      warn(`Unknown media type token '${token}'.`);
-    }
-  }
+/** A non-empty line of a Spawning ai.txt file split into its parts. */
+interface SpawningLine {
+  raw: string;
+  line: number;
+  /** The text before the first `#`, trimmed. */
+  content: string;
+  /** Where the key ends; below 1 when the line has no key. */
+  colon: number;
+  rawKey: string;
+  key: string;
+  value: string;
+}
+
+/** Splits one line of a Spawning ai.txt file into its parts. */
+function splitSpawningLine(raw: string, line: number): SpawningLine {
+  const content = raw.split('#', 1)[0].trim();
+  const colon = content.indexOf(':');
+  const rawKey = content.slice(0, colon).trim();
+  return {
+    raw,
+    line,
+    content,
+    colon,
+    rawKey,
+    key: rawKey.toLowerCase(),
+    value: content.slice(colon + 1).trim(),
+  };
 }
 
 /** Validates one non-empty line of a Spawning ai.txt file. */
 function validateSpawningLine(
-  raw: string,
-  line: number,
-  state: SpawningState,
-  issues: FileIssue[],
-): void {
-  const content = raw.split('#', 1)[0].trim();
-  const at = (severity: FileIssue['severity'], message: string) =>
-    issues.push({ severity, message, line, snippet: raw.trim() });
-  const colon = content.indexOf(':');
+  { raw, line, colon, rawKey, key, value }: SpawningLine,
+  hasAgent: boolean,
+): FileIssue[] {
+  const at = (severity: FileIssue['severity'], message: string): FileIssue => ({
+    severity,
+    message,
+    line,
+    snippet: raw.trim(),
+  });
   if (colon < 1) {
-    at('error', "Invalid line, expected 'Key: value'.");
-    return;
+    return [at('error', "Invalid line, expected 'Key: value'.")];
   }
-  const rawKey = content.slice(0, colon).trim();
-  const value = content.slice(colon + 1).trim();
-  const key = rawKey.toLowerCase();
   if (!['user-agent', 'allow', 'disallow', 'sitemap'].includes(key)) {
-    const near = key.replaceAll(/[\s_]+/g, '-');
-    at(
-      'error',
-      ['user-agent'].includes(near)
-        ? `Malformed key '${rawKey}', use 'User-Agent'.`
-        : `Unknown key '${rawKey}'.`,
-    );
-    return;
+    const near = key.replaceAll(/[\s_]+/gu, '-');
+    return [
+      at(
+        'error',
+        ['user-agent'].includes(near)
+          ? `Malformed key '${rawKey}', use 'User-Agent'.`
+          : `Unknown key '${rawKey}'.`,
+      ),
+    ];
   }
-  if (rawKey !== rawKey.trim() || WHITESPACE_CHAR.test(rawKey)) {
-    at('error', `Malformed key '${rawKey}'.`);
-  }
-  if (key === 'user-agent') {
-    state.hasAgent = true;
-  } else if (key === 'sitemap') {
-    if (!isAbsoluteUrl(value)) {
-      at('error', `The Sitemap '${value}' is not an absolute http(s) URL.`);
-    }
-  } else {
-    if (!state.hasAgent) {
-      at('error', `'${rawKey}' appears before any User-Agent line.`);
-    }
-    state.hasRule = true;
-    checkTokens(value, (message) => at('warning', message));
-  }
+  const isRule = key === 'allow' || key === 'disallow';
+  const issues: (FileIssue | false)[] = [
+    (rawKey !== rawKey.trim() || WHITESPACE_CHAR.test(rawKey)) &&
+      at('error', `Malformed key '${rawKey}'.`),
+    key === 'sitemap' &&
+      !isAbsoluteUrl(value) &&
+      at('error', `The Sitemap '${value}' is not an absolute http(s) URL.`),
+    isRule &&
+      !hasAgent &&
+      at('error', `'${rawKey}' appears before any User-Agent line.`),
+    ...(isRule
+      ? unknownTokenMessages(value).map((message) => at('warning', message))
+      : []),
+  ];
+  return issues.filter((issue) => issue !== false);
 }
 
 /** Validates a Spawning robots-style ai.txt file. */
 function validateSpawningAiTxt(text: string): FileIssue[] {
-  const issues: FileIssue[] = [];
-  const state: SpawningState = { hasAgent: false, hasRule: false };
-  for (const [index, raw] of splitLines(text).entries()) {
-    if (raw.split('#', 1)[0].trim() !== '') {
-      validateSpawningLine(raw, index + 1, state, issues);
-    }
-  }
-  if (state.hasAgent) {
-    if (!state.hasRule) {
-      issues.push({
-        severity: 'warning',
-        message: 'The file has no Allow or Disallow rules.',
-      });
-    }
-  } else {
-    issues.push({
-      severity: 'error',
-      message: 'The file has no User-Agent line.',
-    });
-  }
-  return issues;
+  const entries = splitLines(text)
+    .map((raw, index) => splitSpawningLine(raw, index + 1))
+    .filter((entry) => entry.content !== '');
+  const isAgent = (entry: SpawningLine): boolean =>
+    entry.colon >= 1 && entry.key === 'user-agent';
+  const hasAgent = entries.some((entry) => isAgent(entry));
+  const hasRule = entries.some(
+    (entry) =>
+      entry.colon >= 1 && (entry.key === 'allow' || entry.key === 'disallow'),
+  );
+  return [
+    ...entries.flatMap((entry, index) =>
+      validateSpawningLine(
+        entry,
+        entries.slice(0, index).some((earlier) => isAgent(earlier)),
+      ),
+    ),
+    ...(hasAgent && !hasRule
+      ? [
+          {
+            severity: 'warning' as const,
+            message: 'The file has no Allow or Disallow rules.',
+          },
+        ]
+      : []),
+    ...(hasAgent
+      ? []
+      : [
+          {
+            severity: 'error' as const,
+            message: 'The file has no User-Agent line.',
+          },
+        ]),
+  ];
+}
+
+/** The detected format of an ai.txt file and its issues. */
+export interface AiTxtResult {
+  format: AiTxtFormat;
+  issues: FileIssue[];
 }
 
 /** Validates an ai.txt file, whichever format it uses. */
-export function validateAiTxt(text: string): {
-  format: AiTxtFormat;
-  issues: FileIssue[];
-} {
+export function validateAiTxt(text: string): AiTxtResult {
   if (text.trim() === '') {
     return {
       format: 'spawning',

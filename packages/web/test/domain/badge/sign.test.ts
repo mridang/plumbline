@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { badgePath, signRepo, verifyRepo } from '@/domain/badge/sign';
 
 /** Matches a lowercase hexadecimal string of 20 characters. */
-const HEX_20_PATTERN = /^[0-9a-f]{20}$/;
+const HEX_20_PATTERN = /^[0-9a-f]{20}$/u;
 
 describe('signRepo and verifyRepo', () => {
   it('gives the same signature for the same repository whatever the case', async () => {

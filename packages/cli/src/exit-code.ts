@@ -16,12 +16,12 @@ export const EXIT = {
  * Webhint's severities from least to most serious, as the report names them.
  * `default` and `off` never appear on a finding.
  */
-const RANK: Record<string, number> = {
-  information: 1,
-  hint: 2,
-  warning: 3,
-  error: 4,
-};
+const RANK: ReadonlyMap<string, number> = new Map([
+  ['information', 1],
+  ['hint', 2],
+  ['warning', 3],
+  ['error', 4],
+]);
 
 /**
  * Decides the exit status of a scan: non-zero when any finding is at or above
@@ -38,12 +38,12 @@ export function exitCodeFor(
   if (failOn === 'none') {
     return EXIT.ok;
   }
-  const threshold = RANK[failOn];
-  const failed = findings.some((f) => (RANK[f.severity] ?? 0) >= threshold);
+  const threshold = RANK.get(failOn) ?? 0;
+  const failed = findings.some((f) => (RANK.get(f.severity) ?? 0) >= threshold);
   return failed ? EXIT.findings : EXIT.ok;
 }
 
 /** Orders severities most serious first, for sorting findings. */
 export function severityRank(severity: string): number {
-  return RANK[severity] ?? 0;
+  return RANK.get(severity) ?? 0;
 }

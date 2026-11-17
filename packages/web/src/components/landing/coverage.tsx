@@ -1,6 +1,6 @@
-import type { ReactElement } from 'react';
-
+import { countOf } from '@/lib/intl';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
+import type { ReactElement } from 'react';
 
 /** One area the checks cover, as the home page shows it. */
 export interface CoverageArea {
@@ -53,7 +53,7 @@ export function Coverage({
                   {area.title}
                 </Heading>
                 <span className="shrink-0 rounded-full bg-brand/8 px-2.5 py-0.5 text-xs font-semibold text-brand tabular-nums">
-                  {area.checks} {area.checks === 1 ? 'check' : 'checks'}
+                  {countOf(area.checks, 'check')}
                 </span>
               </div>
               <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-muted">

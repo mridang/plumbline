@@ -39,22 +39,26 @@ function bimiRecords(txt: TxtLookup): string[] {
 
 /** Parses `tag=value; tag=value` pairs, lower-casing the tag names. */
 function parseTags(record: string): Map<string, string> {
-  const tags = new Map<string, string>();
-  for (const part of record.split(';')) {
-    const trimmed = part.trim();
-    if (trimmed === '') {
-      continue;
-    }
-    const equals = trimmed.indexOf('=');
-    const key = (equals === -1 ? trimmed : trimmed.slice(0, equals))
-      .trim()
-      .toLowerCase();
-    const value = equals === -1 ? '' : trimmed.slice(equals + 1).trim();
-    if (!tags.has(key)) {
-      tags.set(key, value);
-    }
-  }
-  return tags;
+  return new Map(
+    record
+      .split(';')
+      .flatMap((part): [string, string][] => {
+        const trimmed = part.trim();
+        if (trimmed === '') {
+          return [];
+        }
+        const equals = trimmed.indexOf('=');
+        const key = (equals === -1 ? trimmed : trimmed.slice(0, equals))
+          .trim()
+          .toLowerCase();
+        return [[key, equals === -1 ? '' : trimmed.slice(equals + 1).trim()]];
+      })
+      // The first occurrence of a tag wins.
+      .filter(
+        ([key], index, entries) =>
+          entries.findIndex(([first]) => first === key) === index,
+      ),
+  );
 }
 
 /**
@@ -107,8 +111,6 @@ export function checkBimi(domain: string, txt: TxtLookup): Finding[] {
 
   const logo = tags.get('l') ?? '';
   const authority = tags.get('a') ?? '';
-  const findings: Finding[] = [];
-
   if (logo === '' && authority === '') {
     // An empty `l` with an empty `a` is a valid declination to participate.
     return [
@@ -121,47 +123,47 @@ export function checkBimi(domain: string, txt: TxtLookup): Finding[] {
     ];
   }
 
-  if (logo === '') {
-    findings.push({
+  const candidates: (Finding | false)[] = [
+    logo === '' && {
       message:
         'Your BIMI record has *no* `l` logo URL, so there is no image for mail clients to show.',
       severity: 'error',
       codeSnippet: record,
-    });
-  } else if (!HTTPS_PREFIX.test(logo)) {
-    findings.push({
-      message: 'Your BIMI `l` logo URL must be served over `https:`.',
-      severity: 'error',
-      codeSnippet: `l=${logo}`,
-    });
-  } else if (SVG_EXTENSION.test(logo)) {
+    },
+    logo !== '' &&
+      !HTTPS_PREFIX.test(logo) && {
+        message: 'Your BIMI `l` logo URL must be served over `https:`.',
+        severity: 'error',
+        codeSnippet: `l=${logo}`,
+      },
     // An HTTPS logo that points to an SVG file is acceptable.
-  } else {
-    findings.push({
-      message:
-        'Your BIMI `l` logo URL must point to an SVG file (an SVG Tiny Portable/Secure logo).',
-      severity: 'error',
-      codeSnippet: `l=${logo}`,
-    });
-  }
-
-  if (authority !== '' && !HTTPS_PREFIX.test(authority)) {
-    findings.push({
-      message: 'Your BIMI `a` certificate URL must be served over `https:`.',
-      severity: 'error',
-      codeSnippet: `a=${authority}`,
-    });
-  }
+    logo !== '' &&
+      HTTPS_PREFIX.test(logo) &&
+      !SVG_EXTENSION.test(logo) && {
+        message:
+          'Your BIMI `l` logo URL must point to an SVG file (an SVG Tiny Portable/Secure logo).',
+        severity: 'error',
+        codeSnippet: `l=${logo}`,
+      },
+    authority !== '' &&
+      !HTTPS_PREFIX.test(authority) && {
+        message: 'Your BIMI `a` certificate URL must be served over `https:`.',
+        severity: 'error',
+        codeSnippet: `a=${authority}`,
+      },
+  ];
+  const findings = candidates.filter((finding) => finding !== false);
 
   // When the record itself is well formed, remind that DMARC enforcement is a
   // prerequisite for the logo to ever be displayed.
-  if (findings.length === 0) {
-    findings.push({
-      message:
-        'Your BIMI record is valid; note that your domain must also enforce DMARC (`p=quarantine` or `p=reject`) for the logo to be shown.',
-      severity: 'hint',
-      codeSnippet: record,
-    });
-  }
-  return findings;
+  return findings.length > 0
+    ? findings
+    : [
+        {
+          message:
+            'Your BIMI record is valid; note that your domain must also enforce DMARC (`p=quarantine` or `p=reject`) for the logo to be shown.',
+          severity: 'hint',
+          codeSnippet: record,
+        },
+      ];
 }

@@ -13,7 +13,7 @@ import {
 } from '../../lib/core/db/sqlite-d1';
 
 /** Matches a quoted hexadecimal entity tag. */
-const QUOTED_HEX_ETAG_PATTERN = /^"[0-9a-f]+"$/;
+const QUOTED_HEX_ETAG_PATTERN = /^"[0-9a-f]+"$/u;
 
 let restore: () => void;
 let db: ReturnType<typeof createDatabase>;

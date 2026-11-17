@@ -48,6 +48,7 @@ export default {
           'package-lock.json',
         ],
         message:
+          // eslint-disable-next-line no-template-curly-in-string -- a semantic-release template, expanded by the plugin
           'chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}',
       },
     ],

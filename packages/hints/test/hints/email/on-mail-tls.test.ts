@@ -71,9 +71,9 @@ describe('defineMailTlsHint', () => {
       check: async ({ target, report }) => {
         running += 1;
         most = Math.max(most, running);
-        await new Promise((resolve) =>
-          setTimeout(resolve, target.host === 'mx1.example.test' ? 30 : 1),
-        );
+        await new Promise((resolve) => {
+          setTimeout(resolve, target.host === 'mx1.example.test' ? 30 : 1);
+        });
         running -= 1;
         report(`checked ${target.host}`, 'evidence');
       },

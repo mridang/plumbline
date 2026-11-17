@@ -38,7 +38,7 @@ export default defineHint({
   ],
   setup(context) {
     onMailDomain(context, async (mail) => {
-      for (const host of mail.hosts) {
+      await Array.fromAsync(mail.hosts, async (host) => {
         const existence = await daneExistence(host, 25);
         // Receiving mail servers must not use the PKIX usages (RFC 7672).
         const records =
@@ -48,7 +48,7 @@ export default defineHint({
               )
             : [];
         if (records.length === 0 || hasDaneRollover(records)) {
-          continue;
+          return;
         }
         mail.report(
           `${host}: Your mail server domain does *not* have an active DANE scheme for a reliable rollover of certificate keys: publish a second DANE-EE(3) record for the next key, or a DANE-TA(2) record for the issuer.`,
@@ -59,7 +59,7 @@ export default defineHint({
               .join('\n'),
           },
         );
-      }
+      });
     });
   },
 });

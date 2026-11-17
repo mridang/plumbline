@@ -4,6 +4,7 @@ import path from 'node:path';
 import { describe, expect, it, jest } from '@jest/globals';
 import ts from 'typescript';
 
+import { packageDirectorySync } from 'package-directory';
 import {
   GENERIC_CLASSES,
   OVERALL_BINDING,
@@ -12,21 +13,21 @@ import {
   genericClass,
   genericLimits,
   tooManyRequests,
-  type GenericClass,
-  type RateLimitBinding,
+  DISCOVERY_PATHS,
+  EDGE_LIMITS,
+  STATIC_PREFIXES,
 } from '@/lib/core/http';
-import { DISCOVERY_PATHS, EDGE_LIMITS, STATIC_PREFIXES } from '@/lib/core/http';
 import { vector } from '../../../helpers/data.js';
-import { packageDirectorySync } from 'package-directory';
+import type { GenericClass, RateLimitBinding } from '@/lib/core/http';
 
 /** Matches a path key with a 32 character hash. */
-const PATH_KEY_PATTERN = /^p:[0-9a-f]{32}$/;
+const PATH_KEY_PATTERN = /^p:[0-9a-f]{32}$/u;
 
 /** Matches the path key prefix. */
-const PATH_KEY_PREFIX_PATTERN = /^p:/;
+const PATH_KEY_PREFIX_PATTERN = /^p:/u;
 
 /** Matches a token key with a 32 character hash. */
-const TOKEN_KEY_PATTERN = /^t:[0-9a-f]{32}$/;
+const TOKEN_KEY_PATTERN = /^t:[0-9a-f]{32}$/u;
 
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
@@ -102,8 +103,9 @@ describe('counterKey', () => {
         new Headers({ cookie: `app_session=${value}` }),
         'app_session',
       );
-    expect(await of('one')).toBe(await of('one'));
-    expect(await of('one')).not.toBe(await of('two'));
+    const one = await of('one');
+    expect(one).toBe(await of('one'));
+    expect(one).not.toBe(await of('two'));
   });
 
   it('falls back to the address for a caller with no cookie', async () => {
@@ -167,8 +169,11 @@ describe('edgeLimitRefusal', () => {
   it('refuses the request after the allowance, with Retry-After', async () => {
     const env = { RL_SITE: binding(2) };
     const headers = { 'cf-connecting-ip': '203.0.113.7' };
-    expect(await edgeLimitRefusal(get('/', headers), env, limits)).toBeNull();
-    expect(await edgeLimitRefusal(get('/', headers), env, limits)).toBeNull();
+    const allowed = [
+      await edgeLimitRefusal(get('/', headers), env, limits),
+      await edgeLimitRefusal(get('/', headers), env, limits),
+    ];
+    expect(allowed).toEqual([null, null]);
     const refused = await edgeLimitRefusal(get('/', headers), env, limits);
     expect(refused?.status).toBe(429);
     expect(refused?.headers.get('retry-after')).toBe('60');

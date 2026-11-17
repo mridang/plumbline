@@ -56,7 +56,10 @@ export function parseTlsa(text: string): TlsaRecord | null {
 }
 
 /** Digest lengths in bytes for the matching types that hash. */
-const DIGEST_LENGTH: Record<number, number | undefined> = { 1: 32, 2: 64 };
+const DIGEST_LENGTH = new Map([
+  [1, 32],
+  [2, 64],
+]);
 
 /**
  * Returns what is wrong with the record's fields, or null when it is well
@@ -73,7 +76,7 @@ export function tlsaFieldProblem(record: TlsaRecord): string | null {
   if (record.matching < 0 || record.matching > 2) {
     return `unknown matching type ${record.matching}`;
   }
-  const expected = DIGEST_LENGTH[record.matching];
+  const expected = DIGEST_LENGTH.get(record.matching);
   if (expected !== undefined && record.data.length !== expected) {
     return `the digest is ${record.data.length} bytes, expected ${expected}`;
   }

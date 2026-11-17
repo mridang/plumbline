@@ -1,6 +1,5 @@
-import type { ReactElement, ReactNode } from 'react';
-
 import { cn } from '@/components/ui/cn';
+import type { ReactElement, ReactNode } from 'react';
 
 /** Which side of a cell its content sits on. */
 const ALIGN = { start: 'text-left', end: 'text-right' } as const;

@@ -49,8 +49,8 @@ export default defineHint({
           const href = (element.getAttribute('href') ?? '').trim();
           return type === OPENSEARCH_TYPE && !isAbsoluteUrl(href);
         });
-      let offenderIndex = 0;
-      for (const found of findings) {
+      // eslint-disable-next-line functional/no-loop-statements -- reports each finding against its element
+      for (const [index, found] of findings.entries()) {
         if (found.severity === 'hint') {
           page.report(found.message, {
             severity: toSeverity(found.severity),
@@ -59,8 +59,11 @@ export default defineHint({
             codeLanguage: 'html',
           });
         } else {
-          const element = offenders[offenderIndex];
-          offenderIndex += 1;
+          const element =
+            offenders[
+              findings.slice(0, index).filter((f) => f.severity !== 'hint')
+                .length
+            ];
           page.report(found.message, {
             severity: toSeverity(found.severity),
             ...(element ? { element } : {}),

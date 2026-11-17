@@ -5,21 +5,20 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import type { Domain } from '@/domain/db/domains';
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import { z } from 'zod';
 import { domainLink } from '@/domain/mcp/tool-results';
 import { CLI_COMMAND } from '@/domain/mcp/tools/domain-support';
 import { DomainTool } from '@/domain/mcp/tools/domain-tool';
 import { DOMAIN } from '@/domain/mcp/tools/schemas';
-import {
-  type ArgumentSpellings,
-  READS,
-  textResult,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
+import { READS, textResult } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import type { Domain } from '@/domain/db/domains';
+import type {
+  ArgumentSpellings,
+  ToolAnnotations,
+  ToolArgs,
+  ToolResult,
 } from '@/lib/mcp';
-import { z } from 'zod';
 
 export class ScanDomainTool extends DomainTool<'scan_domain'> {
   readonly name = 'scan_domain';

@@ -18,72 +18,72 @@
  */
 
 /** Matches a line break, with or without a carriage return. */
-const LINE_BREAK = /\r?\n/;
+const LINE_BREAK = /\r?\n/u;
 
 /** Matches a symbolic `ref: refs/...` line of a git HEAD file. */
-const GIT_HEAD_REF = /^ref:\s+refs\/\S+/;
+const GIT_HEAD_REF = /^ref:\s+refs\/\S+/u;
 
 /** Matches a 40 character hexadecimal git commit id. */
-const GIT_COMMIT_ID = /^[0-9a-f]{40}$/i;
+const GIT_COMMIT_ID = /^[0-9a-f]{40}$/iu;
 
 /** Matches the `[core]` section header of a git config. */
-const GIT_CONFIG_CORE_SECTION = /\[core\]/i;
+const GIT_CONFIG_CORE_SECTION = /\[core\]/iu;
 
 /** Matches the `repositoryformatversion` setting of a git config. */
-const GIT_REPOSITORY_FORMAT_VERSION = /repositoryformatversion\s*=/i;
+const GIT_REPOSITORY_FORMAT_VERSION = /repositoryformatversion\s*=/iu;
 
 /** Matches a dotenv `KEY=` assignment, with an optional `export`. */
-const ENV_ASSIGNMENT = /^(export\s+)?[A-Za-z_]\w*=/;
+const ENV_ASSIGNMENT = /^(export\s+)?[A-Za-z_]\w*=/u;
 
 /** Matches a short integer, as in the first line of `.svn/entries`. */
-const FORMAT_VERSION_LINE = /^\d{1,3}$/;
+const FORMAT_VERSION_LINE = /^\d{1,3}$/u;
 
 /** Matches the `dir` token of a working-copy layout. */
-const SVN_DIR_TOKEN = /\bdir\b/;
+const SVN_DIR_TOKEN = /\bdir\b/u;
 
 /** Matches an `Index of /` page title. */
-const TITLE_INDEX_OF = /<title>\s*Index of \//i;
+const TITLE_INDEX_OF = /<title>\s*Index of \//iu;
 
 /** Matches an `Index of /` page heading. */
-const HEADING_INDEX_OF = /<h1>\s*Index of \//i;
+const HEADING_INDEX_OF = /<h1>\s*Index of \//iu;
 
 /** Matches a `Directory listing for /` heading. */
-const DIRECTORY_LISTING_FOR = /Directory listing for \//i;
+const DIRECTORY_LISTING_FOR = /Directory listing for \//iu;
 
 /** Matches the title of the Apache server status page. */
-const APACHE_SERVER_STATUS = /Apache Server Status/i;
+const APACHE_SERVER_STATUS = /Apache Server Status/iu;
 
 /** Matches the title of the Apache server information page. */
-const APACHE_SERVER_INFORMATION = /Apache Server Information/i;
+const APACHE_SERVER_INFORMATION = /Apache Server Information/iu;
 
 /** Matches the `Server Version:` line of a status page. */
-const SERVER_VERSION_LABEL = /Server Version:/i;
+const SERVER_VERSION_LABEL = /Server Version:/iu;
 
 /** Matches the `Server uptime:` line of a status page. */
-const SERVER_UPTIME_LABEL = /Server uptime:/i;
+const SERVER_UPTIME_LABEL = /Server uptime:/iu;
 
 /** Matches the `cross-domain-policy` root element. */
-const CROSS_DOMAIN_POLICY_ROOT = /<cross-domain-policy/i;
+const CROSS_DOMAIN_POLICY_ROOT = /<cross-domain-policy/iu;
 
 /** Matches an `allow-access-from` element that allows every domain. */
 const ALLOW_ACCESS_FROM_ANY_DOMAIN =
-  /<allow-access-from\b[^>]*\bdomain\s*=\s*["']\*["']/i;
+  /<allow-access-from\b[^>]*\bdomain\s*=\s*["']\*["']/iu;
 
 /** Matches a path that ends in `.zip`. */
-const ZIP_EXTENSION = /\.zip$/i;
+const ZIP_EXTENSION = /\.zip$/iu;
 
 /** Matches a path that ends in `.php.bak` or `.php~`. */
-const PHP_BACKUP_EXTENSION = /\.php(\.bak|~)$/i;
+const PHP_BACKUP_EXTENSION = /\.php(\.bak|~)$/iu;
 
 /** Matches a PHP opening tag. */
-const PHP_OPEN_TAG = /<\?php\b/;
+const PHP_OPEN_TAG = /<\?php\b/u;
 
 /** Matches a path that ends in `.htaccess.bak`. */
-const HTACCESS_BACKUP_EXTENSION = /\.htaccess\.bak$/i;
+const HTACCESS_BACKUP_EXTENSION = /\.htaccess\.bak$/iu;
 
 /** Matches a line that starts with a common Apache per-directory directive. */
 const APACHE_DIRECTIVE_LINE =
-  /^[ \t]*(RewriteEngine|RewriteRule|Options|AuthType|Require|Order|Deny|Allow|ErrorDocument|<Files|<Directory|AddHandler|DirectoryIndex)\b/im;
+  /^[ \t]*(RewriteEngine|RewriteRule|Options|AuthType|Require|Order|Deny|Allow|ErrorDocument|<Files|<Directory|AddHandler|DirectoryIndex)\b/imu;
 
 /**
  * True when the body is, at a glance, an HTML document. Used to reject the
@@ -214,6 +214,7 @@ export function looksLikeDirectoryListing(content: string): boolean {
  * returns HTML, or JSON of some other shape, is not a source map.
  */
 export function isExposedSourceMap(content: string): boolean {
+  // eslint-disable-next-line functional/no-let -- assigned inside try/catch so a JSON parse error returns false
   let parsed: unknown;
   try {
     parsed = JSON.parse(content);

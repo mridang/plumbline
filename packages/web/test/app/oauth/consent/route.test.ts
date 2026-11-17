@@ -7,26 +7,29 @@ import {
   jest,
 } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
 import { handleConsent } from '@/app/oauth/consent/handler';
-import type { CurrentUserResolver } from '@/domain/api/auth';
 import { s256 } from '@/lib/oauth';
+import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../../lib/core/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
-import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 import { HTTP_SCHEME } from '../../../helpers/data.js';
+import type { CurrentUserResolver } from '@/domain/api/auth';
+import type { DatabaseSync } from 'node:sqlite';
 
 /** Matches authorization code prefix. */
-const CODE_PREFIX = /^cdn_/;
+const CODE_PREFIX = /^cdn_/u;
 
 /** Who is signed in; null means nobody. */
 /** `ended`: the person signed out everywhere, though the cookie itself still verifies. */
-const session: { uid: number | null; ended: boolean } = {
+interface Session {
+  uid: number | null;
+  ended: boolean;
+}
+const session: Session = {
   uid: 7,
   ended: false,
 };
@@ -245,7 +248,7 @@ describe('POST /oauth/consent', () => {
       const info = jest.spyOn(console, 'info').mockImplementation(() => {});
       await consent({ access: 'read' });
       expect(
-        info.mock.calls.map(([line]): unknown => JSON.parse(String(line))),
+        info.mock.calls.map(([line]) => JSON.parse(String(line)) as object),
       ).toContainEqual(
         expect.objectContaining({
           event: 'oauth.scope_narrowed',
@@ -262,7 +265,7 @@ describe('POST /oauth/consent', () => {
     const info = jest.spyOn(console, 'info').mockImplementation(() => {});
     await consent({ decision: 'deny' });
     expect(
-      info.mock.calls.map(([line]): unknown => JSON.parse(String(line))),
+      info.mock.calls.map(([line]) => JSON.parse(String(line)) as object),
     ).toContainEqual(
       expect.objectContaining({
         event: 'oauth.consent_denied',

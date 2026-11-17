@@ -5,28 +5,28 @@ import { DARK_PALETTE, LIGHT_PALETTE } from '@/views/palette';
 import { STYLES } from '@/views/styles';
 
 /** Matches the secondary background variable with a colour fallback. */
-const BACKGROUND_FALLBACK_PATTERN = /var\(--color-background-secondary, #/;
+const BACKGROUND_FALLBACK_PATTERN = /var\(--color-background-secondary, #/u;
 
 /** Matches a css url function. */
-const CSS_URL_PATTERN = /url\(/;
+const CSS_URL_PATTERN = /url\(/u;
 
 /** Matches a list-style of none. */
-const LIST_STYLE_NONE_PATTERN = /list-style:\s*none/;
+const LIST_STYLE_NONE_PATTERN = /list-style:\s*none/u;
 
 /** Captures the focus outline offset. */
-const OUTLINE_OFFSET_PATTERN = /outline-offset: (\d+)px/;
+const OUTLINE_OFFSET_PATTERN = /outline-offset: (\d+)px/u;
 
 /** Captures the focus outline width. */
-const OUTLINE_WIDTH_PATTERN = /outline: (\d+)px/;
+const OUTLINE_WIDTH_PATTERN = /outline: (\d+)px/u;
 
 /** Captures the pixel padding added to the top safe area. */
-const SAFE_TOP_PADDING_PATTERN = /calc\((\d+)px \+ var\(--safe-top/;
+const SAFE_TOP_PADDING_PATTERN = /calc\((\d+)px \+ var\(--safe-top/u;
 
 /** Matches the sans font variable. */
-const SANS_FONT_VARIABLE_PATTERN = /var\(--font-sans,/;
+const SANS_FONT_VARIABLE_PATTERN = /var\(--font-sans,/u;
 
 /** Matches the screen reader only rule that clips the element. */
-const SR_ONLY_CLIP_PATTERN = /\.sr-only \{[^}]*clip-path:inset\(50%\)/;
+const SR_ONLY_CLIP_PATTERN = /\.sr-only \{[^}]*clip-path:inset\(50%\)/u;
 
 describe('STYLES', () => {
   it('follows the host’s theme, with the operating system only as a fallback', () => {
@@ -42,7 +42,7 @@ describe('STYLES', () => {
   it('keeps controls clear of the safe area and large enough to tap', () => {
     expect(STYLES).toContain('var(--safe-top, 0px)');
     expect(STYLES).toContain('var(--safe-bottom, 0px)');
-    expect(STYLES.match(/min-height:44px/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(STYLES.match(/min-height:44px/gu)?.length).toBeGreaterThanOrEqual(3);
   });
 
   it('respects the request for reduced motion', () => {
@@ -62,13 +62,13 @@ describe('STYLES', () => {
 /** The value of one rule's declaration, such as the padding of `.wrap`. */
 function declaration(selector: string, property: string): string {
   const escaped = selector.replace('.', String.raw`\.`);
-  const rule = new RegExp(String.raw`(?:^|\n)${escaped} \{([^}]*)\}`).exec(
+  const rule = new RegExp(String.raw`(?:^|\n)${escaped} \{([^}]*)\}`, 'u').exec(
     STYLES,
   );
   const value = rule?.[1]?.match(
-    new RegExp(String.raw`${property}:\s*([^;]*);`),
+    new RegExp(String.raw`${property}:\s*([^;]*);`, 'u'),
   );
-  return value?.[1]?.replaceAll(/\s+/g, ' ').trim() ?? '';
+  return value?.[1]?.replaceAll(/\s+/gu, ' ').trim() ?? '';
 }
 
 describe('keyboard focus', () => {
@@ -86,7 +86,7 @@ describe('keyboard focus', () => {
 
 describe('text sizes', () => {
   it('are relative, so they follow the person’s text size setting', () => {
-    const fixed = [...STYLES.matchAll(/font-size:\s*(\d+(?:\.\d+)?)px/g)];
+    const fixed = [...STYLES.matchAll(/font-size:\s*(\d+(?:\.\d+)?)px/gu)];
     expect(fixed.map((match) => match[0])).toEqual([]);
   });
 
@@ -105,7 +105,7 @@ describe('assistive text', () => {
 describe('lists', () => {
   it('hide their markers without `none`, which makes WebKit drop the list meaning', () => {
     expect(STYLES).not.toMatch(LIST_STYLE_NONE_PATTERN);
-    expect(STYLES.match(/list-style-type:""/g)?.length).toBeGreaterThanOrEqual(
+    expect(STYLES.match(/list-style-type:""/gu)?.length).toBeGreaterThanOrEqual(
       4,
     );
   });

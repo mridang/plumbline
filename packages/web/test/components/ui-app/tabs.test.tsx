@@ -1,18 +1,18 @@
 import { describe, expect, it } from '@jest/globals';
-import type { KeyboardEvent } from 'react';
 
 import { TabList, TabPanel, moveFocus, tabId } from '@/components/ui-app/tabs';
 import { html } from '../render';
+import type { KeyboardEvent } from 'react';
 
 /** Matches the first tab link. */
-const FIRST_TAB_LINK = /<a[^>]*role="tab"[^>]*href="\/r\?site=a\.test"/;
+const FIRST_TAB_LINK = /<a[^>]*role="tab"[^>]*href="\/r\?site=a\.test"/u;
 /** Matches the selected second tab link. */
 const SELECTED_SECOND_TAB_LINK =
-  /aria-selected="true"[^>]*href="\/r\?site=b\.test"/;
+  /aria-selected="true"[^>]*href="\/r\?site=b\.test"/u;
 /** Matches an unselected tab. */
-const UNSELECTED_TAB = /aria-selected="false"[^>]*tabindex="-1"/;
+const UNSELECTED_TAB = /aria-selected="false"[^>]*tabindex="-1"/u;
 /** Matches a selected tab. */
-const SELECTED_TAB = /aria-selected="true"[^>]*tabindex="0"/;
+const SELECTED_TAB = /aria-selected="true"[^>]*tabindex="0"/u;
 
 const TABS = [
   { key: 'a.test', label: 'a.test', href: '/r?site=a.test' },
@@ -33,7 +33,7 @@ describe('TabList and TabPanel', () => {
     expect(out).toContain('role="tablist"');
     expect(out).toContain('aria-label="Sites"');
     expect(out).toMatch(FIRST_TAB_LINK);
-    expect(out.match(/aria-selected="true"/g)).toHaveLength(1);
+    expect(out.match(/aria-selected="true"/gu)).toHaveLength(1);
     expect(out).toMatch(SELECTED_SECOND_TAB_LINK);
   });
 
@@ -57,11 +57,12 @@ describe('TabList and TabPanel', () => {
 describe('moveFocus', () => {
   const press = (key: string, active: number) => {
     const focused: number[] = [];
-    const tabs = [0, 1, 2].map((n) => {
-      return {
-        focus: () => focused.push(n),
-      } as unknown as HTMLElement;
-    });
+    const tabs = [0, 1, 2].map(
+      (n) =>
+        ({
+          focus: () => focused.push(n),
+        }) as unknown as HTMLElement,
+    );
     Object.defineProperty(globalThis, 'document', {
       value: { activeElement: tabs[active] },
       configurable: true,

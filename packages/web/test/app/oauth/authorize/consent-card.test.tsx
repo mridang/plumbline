@@ -2,32 +2,33 @@ import { describe, expect, it } from '@jest/globals';
 
 import { ConsentCard } from '@/app/oauth/authorize/consent-card';
 import { clientIdentity, describeRedirect } from '@/lib/oauth';
-import { html } from '../../../components/render';
 import { BRAND_NAME } from '@/app/_brand';
 import { SCOPE_READ, SCOPE_TEXT, SCOPE_WRITE } from '@/domain/mcp/app';
+import { html } from '../../../components/render';
 
 /** Matches the approve button that grants the request. */
-const APPROVE_BUTTON_PATTERN = /value="approve" name="decision">Approve/;
+const APPROVE_BUTTON_PATTERN = /value="approve" name="decision">Approve/u;
 
 /** Matches the emphasised client name followed by its code element. */
 const CLIENT_NAME_SPAN_PATTERN =
-  /<span class="[^"]*font-semibold[^"]*">claude\.ai<\/span><code/;
+  /<span class="[^"]*font-semibold[^"]*">claude\.ai<\/span><code/u;
 
 /** Matches the cancel button that denies the request. */
-const DENY_BUTTON_PATTERN = /value="deny" name="decision">Cancel/;
+const DENY_BUTTON_PATTERN = /value="deny" name="decision">Cancel/u;
 
 /** Matches a form that carries an aria-label. */
-const LABELLED_FORM_PATTERN = /<form [^>]*aria-label=/;
+const LABELLED_FORM_PATTERN = /<form [^>]*aria-label=/u;
 
 /** Matches the read access radio input. */
-const READ_ACCESS_INPUT_PATTERN = /<input[^>]*name="access"[^>]*value="read"/;
+const READ_ACCESS_INPUT_PATTERN = /<input[^>]*name="access"[^>]*value="read"/u;
 
 /** Matches the write access input rendered as checked. */
 const WRITE_ACCESS_CHECKED_PATTERN =
-  /value="write"[^>]*checked|checked=""[^>]*value="write"/;
+  /value="write"[^>]*checked|checked=""[^>]*value="write"/u;
 
 /** Matches the write access radio input. */
-const WRITE_ACCESS_INPUT_PATTERN = /<input[^>]*name="access"[^>]*value="write"/;
+const WRITE_ACCESS_INPUT_PATTERN =
+  /<input[^>]*name="access"[^>]*value="write"/u;
 
 const FIELDS = [
   { name: 'client_id', value: 'https://claude.ai/oauth/meta' },
@@ -67,10 +68,11 @@ function card(
 describe('ConsentCard', () => {
   it('has exactly one h1, naming the app', () => {
     const markup = card();
-    expect(markup.match(/<h1/g)).toHaveLength(1);
+    expect(markup.match(/<h1/gu)).toHaveLength(1);
     expect(markup).toMatch(
       new RegExp(
         String.raw`<h1[^>]*>Connect <span[^>]*>Claude</span> to ${BRAND_NAME}\?</h1>`,
+        'u',
       ),
     );
   });
@@ -123,7 +125,7 @@ describe('ConsentCard', () => {
     expect(markup).toContain('<legend');
     expect(markup).toMatch(WRITE_ACCESS_INPUT_PATTERN);
     expect(markup).toMatch(READ_ACCESS_INPUT_PATTERN);
-    expect(markup.match(/name="access"[^>]*checked/g)).toHaveLength(1);
+    expect(markup.match(/name="access"[^>]*checked/gu)).toHaveLength(1);
     expect(markup).toMatch(WRITE_ACCESS_CHECKED_PATTERN);
   });
 

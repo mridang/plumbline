@@ -6,9 +6,9 @@ import {
   cookieLine,
   describeCookie,
   summarizeCookies,
-  type CookieRecord,
 } from '../../lib/privacy/cookies.js';
 import { collectRequests } from './collect.js';
+import type { CookieRecord } from '../../lib/privacy/cookies.js';
 
 /**
  * Webbkoll, "Cookies": counts the cookies set while loading the page and
@@ -35,27 +35,23 @@ export default defineHint({
     // eslint-disable-next-line @typescript-eslint/no-misused-promises -- webhint's context.on types its listener as returning void, but the engine awaits it; dropping the async would stop the scan waiting for this handler
     context.on('scan::end', async () => {
       const pageHost = new URL(collected.pageUrl).hostname;
-      const cookies: CookieRecord[] = cookiesFromHeaders(
-        rawHeader(collected.pageHeaders),
-        pageHost,
-      );
-      for (const request of collected.requests) {
-        cookies.push(
-          ...cookiesFromHeaders(
+      // No browser to ask (for example a plain HTTP connector): only the
+      // cookies seen in headers are counted.
+      const script: unknown = await context
+        .evaluate('document.cookie')
+        .catch(() => null);
+      const fromScript: CookieRecord[] =
+        typeof script === 'string' ? cookiesFromDocument(script, pageHost) : [];
+      const cookies: CookieRecord[] = [
+        ...cookiesFromHeaders(rawHeader(collected.pageHeaders), pageHost),
+        ...collected.requests.flatMap((request) =>
+          cookiesFromHeaders(
             rawHeader(request.headers),
             new URL(request.url).hostname,
           ),
-        );
-      }
-      try {
-        const script: unknown = await context.evaluate('document.cookie');
-        if (typeof script === 'string') {
-          cookies.push(...cookiesFromDocument(script, pageHost));
-        }
-      } catch {
-        // No browser to ask (for example a plain HTTP connector): only the
-        // cookies seen in headers are counted.
-      }
+        ),
+        ...fromScript,
+      ];
       const summary = summarizeCookies(cookies, pageHost);
       const first = summary.firstParty.length;
       const third = summary.thirdParty.length;
@@ -65,13 +61,14 @@ export default defineHint({
       const domains = summary.thirdPartyDomains;
       context.report(
         collected.pageUrl,
-        `${first} first-party and ${third} third-party cookies were set` +
-          (third > 0
+        `${first} first-party and ${third} third-party cookies were set${
+          third > 0
             ? `; third-party cookie domains (${domains.length}): ${domains.join(', ')}`
-            : '') +
-          '.' +
-          list('First-party cookies', summary.firstParty) +
-          list('Third-party cookies', summary.thirdParty),
+            : ''
+        }.${list(
+          'First-party cookies',
+          summary.firstParty,
+        )}${list('Third-party cookies', summary.thirdParty)}`,
         {
           severity: third > 0 ? Severity.warning : Severity.hint,
           codeSnippet: [...summary.firstParty, ...summary.thirdParty]
@@ -95,10 +92,7 @@ function list(label: string, cookies: readonly CookieRecord[]): string {
 function rawHeader(
   headers: Record<string, string | string[] | undefined>,
 ): string | string[] | undefined {
-  for (const [key, value] of Object.entries(headers)) {
-    if (key.toLowerCase() === 'set-cookie') {
-      return value;
-    }
-  }
-  return undefined;
+  return Object.entries(headers).find(
+    ([key]) => key.toLowerCase() === 'set-cookie',
+  )?.[1];
 }

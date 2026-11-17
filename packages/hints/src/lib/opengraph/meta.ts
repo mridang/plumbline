@@ -25,19 +25,15 @@ function metaElements(
   key: string,
 ): MetaElement[] {
   const wanted = key.toLowerCase();
-  const found: MetaElement[] = [];
-  for (const meta of parsedDocument.querySelectorAll('meta')) {
+  return [...parsedDocument.querySelectorAll('meta')].filter((meta) => {
     // A tag may carry both attributes (for example property="og:title" name="title"), so match either one.
     const names = [
       meta.getAttribute('property'),
       meta.getAttribute('name'),
     ].map((attribute) => (attribute ?? '').trim().toLowerCase());
     const content = meta.getAttribute('content');
-    if (names.includes(wanted) && content !== null && content.trim() !== '') {
-      found.push(meta);
-    }
-  }
-  return found;
+    return names.includes(wanted) && content !== null && content.trim() !== '';
+  });
 }
 
 /** Returns every non-empty value of a meta tag, in document order. */

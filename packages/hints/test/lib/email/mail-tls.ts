@@ -1,13 +1,13 @@
-import type { Problem } from '@hint/utils-types';
-import type { DnsClient } from '../../../src/core/dns.js';
-import type { HintDefinition } from '../../../src/core/define-hint.js';
 import {
   pointAtMail,
   restoreProbe,
   startMailServer,
-  type LocalMailServerOptions,
 } from '../tls/local-server.js';
 import { fakeDns, runMailHint } from './fakes.js';
+import type { LocalMailServerOptions } from '../tls/local-server.js';
+import type { Problem } from '@hint/utils-types';
+import type { DnsClient } from '../../../src/core/dns.js';
+import type { HintDefinition } from '../../../src/core/define-hint.js';
 
 /**
  * One mail server named by its IP address, so the TLS probes reach the local

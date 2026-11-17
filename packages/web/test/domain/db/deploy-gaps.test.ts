@@ -8,9 +8,9 @@ import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 
 /** Matches the deploy gaps autoindex in a query plan. */
 const AUTOINDEX_PLAN =
-  /USING (COVERING )?INDEX sqlite_autoindex_deploy_url_gaps_1/;
+  /USING (COVERING )?INDEX sqlite_autoindex_deploy_url_gaps_1/u;
 /** Matches a scan step in a query plan. */
-const SCAN_PLAN = /SCAN/;
+const SCAN_PLAN = /SCAN/u;
 
 const made = () => {
   const { d1, raw } = sqliteD1(...APP_MIGRATIONS);

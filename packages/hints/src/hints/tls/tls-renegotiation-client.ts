@@ -3,7 +3,8 @@ import { Category, defineHint } from '../../core/define-hint.js';
 import { tryConnect } from '../../lib/tls/client.js';
 import { testClientRenegotiation } from '../../lib/tls/openssl.js';
 import { rateClientRenegotiation } from '../../lib/tls/evaluate.js';
-import { onTlsSite, type TlsSite } from './on-tls-site.js';
+import { onTlsSite } from './on-tls-site.js';
+import type { TlsSite } from './on-tls-site.js';
 
 /** Runs the check of the `tls-renegotiation-client` hint against one TLS endpoint. */
 export async function checkTlsRenegotiationClient({

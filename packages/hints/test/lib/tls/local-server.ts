@@ -4,19 +4,11 @@
  * were generated once with the `openssl` command line tool.
  */
 import { readFile } from 'node:fs/promises';
-import {
-  TLSSocket,
-  createSecureContext,
-  createServer,
-  type Server,
-  type TlsOptions,
-} from 'node:tls';
-import {
-  createServer as createTcpServer,
-  type AddressInfo,
-  type Socket,
-} from 'node:net';
+import { TLSSocket, createSecureContext, createServer } from 'node:tls';
+import { createServer as createTcpServer } from 'node:net';
 import { tlsProbe, connectWithNode } from '../../../src/lib/tls/client.js';
+import type { Server, TlsOptions } from 'node:tls';
+import type { AddressInfo, Socket } from 'node:net';
 
 const FIXTURES = new URL('../../fixtures/tls/', import.meta.url);
 
@@ -76,9 +68,11 @@ export async function startServer(
       socket.end();
     }
   });
-  await new Promise<void>((resolve) =>
-    server.listen(0, '127.0.0.1', () => resolve()),
-  );
+  await new Promise<void>((resolve) => {
+    server.listen(0, '127.0.0.1', () => {
+      resolve();
+    });
+  });
   const { port } = server.address() as AddressInfo;
   return {
     server,
@@ -172,9 +166,11 @@ export async function startMailServer(
     };
     socket.on('data', onData);
   });
-  await new Promise<void>((resolve) =>
-    server.listen(0, '127.0.0.1', () => resolve()),
-  );
+  await new Promise<void>((resolve) => {
+    server.listen(0, '127.0.0.1', () => {
+      resolve();
+    });
+  });
   return {
     port: (server.address() as AddressInfo).port,
     upgrades: () => upgrades,

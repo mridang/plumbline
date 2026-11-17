@@ -12,12 +12,12 @@ import {
 } from '@/domain/suite/deploy';
 import { PAID_LIMITS } from '@/domain/suite/limits';
 import { RULE_SETS } from '@/domain/suite/rules';
-import type { SuiteRun } from '@/domain/suite/run';
 import { ScanFailedError, SiteUnreachableError } from '@/domain/suite/scanner';
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 import { HTTP_SCHEME } from '../../helpers/data.js';
+import type { SuiteRun } from '@/domain/suite/run';
 
 const deployed = { repo: 'acme/site', sha: 'abc123' };
 
@@ -362,7 +362,9 @@ describe('checkDeployment, the sites together and the commits apart', () => {
       run: async () => {
         running += 1;
         most = Math.max(most, running);
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        await new Promise((resolve) => {
+          setTimeout(resolve, 10);
+        });
         running -= 1;
         return finding();
       },

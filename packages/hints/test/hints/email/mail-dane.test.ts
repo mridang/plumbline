@@ -2,14 +2,11 @@ import { X509Certificate, createHash } from 'node:crypto';
 import { describe, expect, it } from '@jest/globals';
 import { Severity } from '@hint/utils-types';
 import hint from '../../../src/hints/email/mail-dane.js';
+import { fakeDns, runMailHint } from '../../lib/email/fakes.js';
+import { TEST_CERT } from '../../lib/email/test-cert.js';
+import type { FakeAnswer } from '../../lib/email/fakes.js';
 import type { MailNetClient } from '../../../src/lib/email/net.js';
 import type { StarttlsProbe } from '../../../src/lib/email/smtp.js';
-import {
-  fakeDns,
-  runMailHint,
-  type FakeAnswer,
-} from '../../lib/email/fakes.js';
-import { TEST_CERT } from '../../lib/email/test-cert.js';
 
 const cert = new X509Certificate(TEST_CERT);
 const digest = (selector: 0 | 1): string =>

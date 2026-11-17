@@ -10,6 +10,7 @@ import {
   tlsProbe,
   tryConnect,
 } from '../../../src/lib/tls/client.js';
+import { HTTP_SCHEME } from '../../helpers/data.js';
 import {
   OCSP_STAPLE,
   pointAt,
@@ -18,7 +19,6 @@ import {
   startMailServer,
   startServer,
 } from './local-server.js';
-import { HTTP_SCHEME } from '../../helpers/data.js';
 
 const collator = new Intl.Collator();
 

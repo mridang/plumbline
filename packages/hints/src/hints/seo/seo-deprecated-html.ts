@@ -21,10 +21,12 @@ export default defineHint({
   reference: ROCTIFY_REF,
   setup(context) {
     onPage(context, (page) => {
-      const counts: Record<string, number> = {};
-      for (const tag of DEPRECATED_TAGS) {
-        counts[tag] = page.document.querySelectorAll(tag).length;
-      }
+      const counts: Record<string, number> = Object.fromEntries(
+        DEPRECATED_TAGS.map((tag) => [
+          tag,
+          page.document.querySelectorAll(tag).length,
+        ]),
+      );
       reportFindings(page, deprecatedTagFindings(counts), {
         element: page.document.querySelector(DEPRECATED_TAGS.join(',')),
       });

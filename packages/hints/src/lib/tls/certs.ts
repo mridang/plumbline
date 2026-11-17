@@ -9,7 +9,7 @@ import { signatureAlgorithmOid } from './der.js';
 import type { CertKey } from './evaluate.js';
 
 /** Matches the common name of a certificate subject. */
-const COMMON_NAME = /^CN=(.*)$/m;
+const COMMON_NAME = /^CN=(.*)$/mu;
 
 /** One certificate of the chain, ready to be rated. */
 export interface ChainCertificate {
@@ -25,6 +25,7 @@ export interface ChainCertificate {
 }
 
 /** SHA-1 fingerprints of the roots Node trusts, to recognise a root. */
+// eslint-disable-next-line functional/no-let -- lazy memo: parsing every root certificate at import time would slow every load
 let rootFingerprints: Set<string> | null = null;
 
 function knownRoots(): Set<string> {

@@ -5,28 +5,26 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
+import { z } from 'zod';
 import {
   applyChoice,
   CHECKS,
   enabledChecks,
   expandSelection,
 } from '@/domain/checks/catalogue';
-import { type Domain, setDomainChecks } from '@/domain/db/domains';
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import { setDomainChecks } from '@/domain/db/domains';
 import { checkName } from '@/domain/mcp/tool-results';
 import { DomainTool } from '@/domain/mcp/tools/domain-tool';
 import { CHECK_NAMES, DOMAIN } from '@/domain/mcp/tools/schemas';
-import {
-  type ArgumentSpellings,
-  errorResult,
-  stringListArg,
-  textResult,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
-  writes,
+import { errorResult, stringListArg, textResult, writes } from '@/lib/mcp';
+import type {
+  ArgumentSpellings,
+  ToolAnnotations,
+  ToolArgs,
+  ToolResult,
 } from '@/lib/mcp';
-import { z } from 'zod';
+import type { Domain } from '@/domain/db/domains';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
 
 export class ConfigureChecksTool extends DomainTool<'configure_checks'> {
   readonly name = 'configure_checks';

@@ -5,20 +5,20 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import { deleteDomain, type Domain } from '@/domain/db/domains';
+import { z } from 'zod';
+import { deleteDomain } from '@/domain/db/domains';
 import { deleteReportsOf } from '@/domain/db/reports';
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
 import { DomainTool } from '@/domain/mcp/tools/domain-tool';
 import { DOMAIN } from '@/domain/mcp/tools/schemas';
-import {
-  type ArgumentSpellings,
-  textResult,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
-  writes,
+import { textResult, writes } from '@/lib/mcp';
+import type {
+  ArgumentSpellings,
+  ToolAnnotations,
+  ToolArgs,
+  ToolResult,
 } from '@/lib/mcp';
-import { z } from 'zod';
+import type { Domain } from '@/domain/db/domains';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
 
 export class RemoveDomainTool extends DomainTool<'remove_domain'> {
   readonly name = 'remove_domain';

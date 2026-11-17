@@ -1,10 +1,11 @@
 import { Category, defineHint } from '../../core/define-hint.js';
-import { onPage, onSite, type Page, type Site } from '../../core/page.js';
+import { onPage, onSite } from '../../core/page.js';
 import { isExposedSourceMap } from '../../lib/exposure/detect.js';
 import { fetchIfReachable, reportExposure } from './shared.js';
+import type { Page, Site } from '../../core/page.js';
 
 /** Matches a path that ends in a `.js` extension. */
-const JAVASCRIPT_EXTENSION = /\.js$/i;
+const JAVASCRIPT_EXTENSION = /\.js$/iu;
 
 const WSTG =
   'https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/04-Review_Old_Backup_and_Unreferenced_Files_for_Sensitive_Information';
@@ -14,12 +15,10 @@ const WSTG =
  * Returns undefined when the URL is not parseable or not a same-origin `.js`.
  */
 function sourceMapPath(src: string, site: Site): string | undefined {
-  let scriptUrl: URL;
-  try {
-    scriptUrl = new URL(src, site.url);
-  } catch {
+  if (!URL.canParse(src, site.url.href)) {
     return undefined;
   }
+  const scriptUrl = new URL(src, site.url);
   if (
     scriptUrl.origin !== site.origin ||
     !JAVASCRIPT_EXTENSION.test(scriptUrl.pathname)
@@ -51,22 +50,18 @@ export default defineHint({
     // fetching after the scan, when onSite can reach other URLs.
     const scripts: string[] = [];
     onPage(context, (page: Page) => {
-      for (const element of page.document.querySelectorAll('script[src]')) {
-        const src = element.getAttribute('src');
-        if (src) {
-          scripts.push(src);
-        }
-      }
+      // eslint-disable-next-line functional/immutable-data -- the script URLs are gathered here while the page DOM is available, for the later site check
+      scripts.push(
+        ...[...page.document.querySelectorAll('script[src]')].flatMap(
+          (element) => element.getAttribute('src') || [],
+        ),
+      );
     });
     onSite(context, async (site) => {
-      const mapPaths = new Set<string>();
-      for (const src of scripts) {
-        const mapPath = sourceMapPath(src, site);
-        if (mapPath !== undefined) {
-          mapPaths.add(mapPath);
-        }
-      }
-      for (const mapPath of mapPaths) {
+      const mapPaths = new Set(
+        scripts.flatMap((src) => sourceMapPath(src, site) ?? []),
+      );
+      await Array.fromAsync(mapPaths, async (mapPath) => {
         const body = await fetchIfReachable(site, mapPath);
         if (body !== null && isExposedSourceMap(body)) {
           reportExposure(
@@ -76,7 +71,7 @@ export default defineHint({
             body,
           );
         }
-      }
+      });
     });
   },
 });

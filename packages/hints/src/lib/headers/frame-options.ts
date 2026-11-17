@@ -6,7 +6,8 @@
  * treat a CSP `frame-ancestors` directive as an equivalent that makes the
  * header unnecessary. The OWASP profile requires exactly `deny`.
  */
-import { finding, type Finding, type Profile } from './finding.js';
+import { finding } from './finding.js';
+import type { Finding, Profile } from './finding.js';
 
 export interface FrameOptionsInput {
   header: string | null;

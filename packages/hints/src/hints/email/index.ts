@@ -1,4 +1,3 @@
-import type { HintDefinition } from '../../core/define-hint.js';
 import mailCaa from './mail-caa.js';
 import mailCertHostname from './mail-cert-hostname.js';
 import mailCertPubkey from './mail-cert-pubkey.js';
@@ -26,6 +25,7 @@ import mailTlsRenegotiationClient from './mail-tls-renegotiation-client.js';
 import mailTlsRenegotiationSecure from './mail-tls-renegotiation-secure.js';
 import mailTlsVersion from './mail-tls-version.js';
 import mailTlsZeroRtt from './mail-tls-zero-rtt.js';
+import type { HintDefinition } from '../../core/define-hint.js';
 
 /** Hints of the `email` set: Internet.nl's email checks on the site domain. */
 export const emailHints: readonly HintDefinition[] = [

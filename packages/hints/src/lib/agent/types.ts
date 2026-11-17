@@ -69,5 +69,6 @@ export interface AgentEnv {
   probe(path: string, headers?: Record<string, string>): Promise<Probe | null>;
   dns: DnsLike;
   /** Runs code in the scanned page; undefined when no browser is attached. */
+  // eslint-disable-next-line tslop/no-unknown-returns -- a script evaluated in the page returns a value of no fixed shape; the caller checks it with isRecord
   evaluate?: (code: string) => Promise<unknown>;
 }

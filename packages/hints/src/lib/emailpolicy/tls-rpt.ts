@@ -24,22 +24,26 @@ function tlsRptRecords(txt: TxtLookup): string[] {
 
 /** Parses `tag=value; tag=value` pairs, lower-casing the tag names. */
 function parseTags(record: string): Map<string, string> {
-  const tags = new Map<string, string>();
-  for (const part of record.split(';')) {
-    const trimmed = part.trim();
-    if (trimmed === '') {
-      continue;
-    }
-    const equals = trimmed.indexOf('=');
-    const key = (equals === -1 ? trimmed : trimmed.slice(0, equals))
-      .trim()
-      .toLowerCase();
-    const value = equals === -1 ? '' : trimmed.slice(equals + 1).trim();
-    if (!tags.has(key)) {
-      tags.set(key, value);
-    }
-  }
-  return tags;
+  return new Map(
+    record
+      .split(';')
+      .flatMap((part): [string, string][] => {
+        const trimmed = part.trim();
+        if (trimmed === '') {
+          return [];
+        }
+        const equals = trimmed.indexOf('=');
+        const key = (equals === -1 ? trimmed : trimmed.slice(0, equals))
+          .trim()
+          .toLowerCase();
+        return [[key, equals === -1 ? '' : trimmed.slice(equals + 1).trim()]];
+      })
+      // The first occurrence of a tag wins.
+      .filter(
+        ([key], index, entries) =>
+          entries.findIndex(([first]) => first === key) === index,
+      ),
+  );
 }
 
 /**
@@ -55,16 +59,15 @@ function invalidRuaDestination(rua: string): string | null {
   if (destinations.length === 0) {
     return '';
   }
-  for (const destination of destinations) {
-    const lower = destination.toLowerCase();
-    const isValid =
-      (lower.startsWith('mailto:') && destination.includes('@')) ||
-      lower.startsWith('https://');
-    if (!isValid) {
-      return destination;
-    }
-  }
-  return null;
+  return (
+    destinations.find((destination) => {
+      const lower = destination.toLowerCase();
+      const isValid =
+        (lower.startsWith('mailto:') && destination.includes('@')) ||
+        lower.startsWith('https://');
+      return !isValid;
+    }) ?? null
+  );
 }
 
 /**

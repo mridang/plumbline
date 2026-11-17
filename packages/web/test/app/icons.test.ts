@@ -1,13 +1,13 @@
-import { describe, expect, it } from '@jest/globals';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { describe, expect, it } from '@jest/globals';
 
+import { packageDirectorySync } from 'package-directory';
 import { BRAND_NAME } from '@/app/_brand';
 import { pngIsOpaque, pngSize } from '../png';
-import { packageDirectorySync } from 'package-directory';
 
 /** Matches an svg element that declares a viewBox. */
-const SVG_WITH_VIEWBOX_PATTERN = /^<svg [^>]*viewBox=/;
+const SVG_WITH_VIEWBOX_PATTERN = /^<svg [^>]*viewBox=/u;
 
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 

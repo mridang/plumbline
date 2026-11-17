@@ -1,20 +1,20 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
-import type { ToolContent } from '@/domain/mcp/tool-context';
 
 import { CHECKS, checksInGroup } from '@/domain/checks/catalogue';
-import type { User } from '@/domain/db/users';
 import { callTool } from '@/domain/mcp/tool-calls';
-import type { ToolResult } from '@/domain/mcp/tool-results';
 
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../../lib/core/db/sqlite-db';
+import type { ToolResult } from '@/domain/mcp/tool-results';
+import type { User } from '@/domain/db/users';
+import type { ToolContent } from '@/domain/mcp/tool-context';
 
 /** Matches the groups line that mentions tls. */
-const GROUPS_LINE_PATTERN = /^Groups: .*\btls\b.*\.$/;
+const GROUPS_LINE_PATTERN = /^Groups: .*\btls\b.*\.$/u;
 
 /** Matches the message for an unknown group that lists the groups. */
 const UNKNOWN_GROUP_PATTERN =
-  /^There is no group "nope"\. The groups are .*tls/;
+  /^There is no group "nope"\. The groups are .*tls/u;
 
 const USER = { id: 1 } as User;
 const TOTAL = CHECKS.length;

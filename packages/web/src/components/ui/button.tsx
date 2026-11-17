@@ -1,10 +1,9 @@
 import Link from 'next/link';
+import { cn } from '@/components/ui/cn';
 import type { ComponentProps, ReactElement, ReactNode } from 'react';
 
-import { cn } from '@/components/ui/cn';
-
 /** Matches an address that starts with an http or https scheme. */
-const HTTP_URL_PREFIX = /^https?:/;
+const HTTP_URL_PREFIX = /^https?:/u;
 
 /** The colours of each kind of button. */
 const VARIANTS = {

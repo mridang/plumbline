@@ -1,18 +1,14 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  isRunning,
-  Scanner,
-  ScanStatus,
-  type ScanState,
-} from '@/components/scan/scanner';
-import type { Scan } from '@/components/scan/scan-results';
+import { isRunning, Scanner, ScanStatus } from '@/components/scan/scanner';
 import { html } from '../render';
+import type { ScanState } from '@/components/scan/scanner';
+import type { Scan } from '@/components/scan/scan-results';
 
 /** Matches the scan submit button. */
-const SCAN_SUBMIT_BUTTON = /<button[^>]*type="submit"[^>]*>Scan<\/button>/;
+const SCAN_SUBMIT_BUTTON = /<button[^>]*type="submit"[^>]*>Scan<\/button>/u;
 /** Matches the rate limit alert. */
-const TOO_MANY_SCANS_ALERT = /<p role="alert"[^>]*>Too many scans<\/p>/;
+const TOO_MANY_SCANS_ALERT = /<p role="alert"[^>]*>Too many scans<\/p>/u;
 
 /** A scan of one page, under way unless `finishedAt` is given. */
 const scan = (finishedAt?: number): Scan => ({

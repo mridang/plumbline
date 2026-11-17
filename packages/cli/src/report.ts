@@ -1,15 +1,17 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import type { FormatterOptions } from 'hint';
-import { Severity, type Problem } from '@hint/utils-types';
+import { Severity } from '@hint/utils-types';
 import ExtraFormatter from '@mridang/webhint-formatter-plumbline';
-import { hintCtors, type HintMeta, type ScanResult } from './scan.js';
+import { hintCtors } from './scan.js';
+import type { Problem } from '@hint/utils-types';
+import type { HintMeta, ScanResult } from './scan.js';
+import type { FormatterOptions } from 'hint';
 
 /** Matches the `extra/` prefix webhint puts on a hint id. */
-const EXTRA_PREFIX = /^extra\//;
+const EXTRA_PREFIX = /^extra\//u;
 
 /** Matches a dash at the end of a string. */
-const TRAILING_DASH = /-$/;
+const TRAILING_DASH = /-$/u;
 
 /** One finding in the JSON report, flattened from a webhint `Problem`. */
 export interface Finding {
@@ -114,7 +116,7 @@ function slug(target: string): string {
     .replaceAll(':', '-')
     .replaceAll('.', '-')
     .replaceAll('/', '-')
-    .replaceAll(/[?=]/g, '-query-')
+    .replaceAll(/[?=]/gu, '-query-')
     .replace(TRAILING_DASH, '');
   return name || 'report';
 }

@@ -1,11 +1,10 @@
-import type { Metadata } from 'next';
-import type { ReactElement } from 'react';
-
 import { GithubIcon, GoogleIcon } from '@/components/icons';
 import { CenteredCard } from '@/components/site/centered-card';
 import { buttonClass } from '@/components/ui/button';
 import { Eyebrow, Heading } from '@/components/ui/layout';
 import { githubConfig } from '@/domain/github/service';
+import type { ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 

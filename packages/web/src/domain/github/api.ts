@@ -146,21 +146,19 @@ export class GitHubApi {
     schema: z.ZodType<P>,
     pick: (page: P) => readonly I[],
   ): Promise<I[]> {
-    const items: I[] = [];
-    for (let page = 1; page <= MAX_PAGES; page += 1) {
-      const joiner = path.includes('?') ? '&' : '?';
+    const joiner = path.includes('?') ? '&' : '?';
+    const from = async (page: number): Promise<I[]> => {
       const got = pick(
         await this.json(
           `${path}${joiner}per_page=${PER_PAGE}&page=${page}`,
           schema,
         ),
       );
-      items.push(...got);
-      if (got.length < PER_PAGE) {
-        break;
-      }
-    }
-    return items;
+      return got.length < PER_PAGE || page >= MAX_PAGES
+        ? [...got]
+        : [...got, ...(await from(page + 1))];
+    };
+    return from(1);
   }
 
   /** The repositories an installation token can reach. */

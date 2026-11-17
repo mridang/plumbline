@@ -2,14 +2,13 @@ import { connect } from 'node:net';
 import { afterEach, describe, expect, it } from '@jest/globals';
 import { Severity } from '@hint/utils-types';
 import hint from '../../../src/hints/email/mail-starttls.js';
-import {
-  createMailNetClient,
-  type MailNetClient,
-} from '../../../src/lib/email/net.js';
-import type { StarttlsProbe } from '../../../src/lib/email/smtp.js';
-import { startSmtp, type FakeSmtp } from '../../lib/email/fake-smtp.js';
+import { createMailNetClient } from '../../../src/lib/email/net.js';
+import { startSmtp } from '../../lib/email/fake-smtp.js';
 import { fakeDns, runMailHint } from '../../lib/email/fakes.js';
 import { TEST_CERT } from '../../lib/email/test-cert.js';
+import type { FakeSmtp } from '../../lib/email/fake-smtp.js';
+import type { MailNetClient } from '../../../src/lib/email/net.js';
+import type { StarttlsProbe } from '../../../src/lib/email/smtp.js';
 
 const dns = fakeDns({ 'example.test MX': ['10 mail.example.test.'] });
 
@@ -32,8 +31,9 @@ const net = (probe: Partial<StarttlsProbe>): MailNetClient => ({
 
 let smtp: FakeSmtp | null = null;
 afterEach(async () => {
-  await smtp?.close();
+  const running = smtp;
   smtp = null;
+  await running?.close();
 });
 
 describe('mail-starttls', () => {

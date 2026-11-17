@@ -7,9 +7,8 @@ import {
   keyOf,
   runJobThrough,
   scanWith,
-  type ScannerNamespace,
-  type SuiteJob,
 } from '@/domain/suite/scanner';
+import type { ScannerNamespace, SuiteJob } from '@/domain/suite/scanner';
 
 /** A stream that delivers `chunks` as they are given, whatever their line breaks. */
 const streamOf = (...chunks: string[]): ReadableStream<Uint8Array> =>

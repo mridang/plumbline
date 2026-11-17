@@ -1,6 +1,6 @@
+import { Dot } from '@/components/ui-app/status-dot';
 import type { ReactElement } from 'react';
 
-import { Dot } from '@/components/ui-app/status-dot';
 import type { Tone } from '@/components/ui-app/tone';
 
 /** How the page's link to the server stands. */
@@ -22,13 +22,9 @@ export function ConnectionIndicator({
 }: Readonly<{ state: Connection }>): ReactElement {
   const { label, tone } = WORDS[state];
   return (
-    <span
-      role="status"
-      aria-live="polite"
-      className="inline-flex items-center gap-1.5 text-xs text-muted"
-    >
+    <output className="inline-flex items-center gap-1.5 text-xs text-muted">
       <Dot tone={tone} pulse={state === 'connecting'} size="xs" />
       {label}
-    </span>
+    </output>
   );
 }

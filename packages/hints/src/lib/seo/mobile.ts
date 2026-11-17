@@ -3,27 +3,28 @@
  * (https://roctify.com/tools/seo-checker): the viewport, responsive images
  * and the Apple touch icon. Pure functions over plain values.
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
+import type { Finding } from '../headers/finding.js';
 
 /** Matches an `.svg` file extension. */
-const SVG_EXTENSION = /\.svg(?:[?#]|$)/i;
+const SVG_EXTENSION = /\.svg(?:[?#]|$)/iu;
 
 /** Matches a `data:` URI prefix. */
-const DATA_URI_PREFIX = /^data:/i;
+const DATA_URI_PREFIX = /^data:/iu;
 
 /** Matches a comma or semicolon. */
-const COMMA_OR_SEMICOLON = /[,;]/;
+const COMMA_OR_SEMICOLON = /[,;]/u;
 
 /** Parses a viewport `content` into lower-cased key/value pairs. */
 function viewportDirectives(content: string): Map<string, string> {
-  const directives = new Map<string, string>();
-  for (const part of content.split(COMMA_OR_SEMICOLON)) {
-    const [key, value = ''] = part.split('=');
-    if (key.trim() !== '') {
-      directives.set(key.trim().toLowerCase(), value.trim().toLowerCase());
-    }
-  }
-  return directives;
+  return new Map(
+    content.split(COMMA_OR_SEMICOLON).flatMap((part): [string, string][] => {
+      const [key, value = ''] = part.split('=');
+      return key.trim() === ''
+        ? []
+        : [[key.trim().toLowerCase(), value.trim().toLowerCase()]];
+    }),
+  );
 }
 
 /**
@@ -41,28 +42,26 @@ export function viewportFindings(content: string | null): Finding[] {
     ];
   }
   const directives = viewportDirectives(content);
-  const out: Finding[] = [];
-  if (directives.get('width') !== 'device-width') {
-    out.push(
-      finding(
-        'warning',
-        'The viewport does not set width=device-width, so the layout does not follow the screen width.',
-      ),
-    );
-  }
   const scale = Number.parseFloat(directives.get('maximum-scale') ?? '');
-  if (
-    ['no', '0', 'false'].includes(directives.get('user-scalable') ?? '') ||
+  return [
+    ...(directives.get('width') === 'device-width'
+      ? []
+      : [
+          finding(
+            'warning',
+            'The viewport does not set width=device-width, so the layout does not follow the screen width.',
+          ),
+        ]),
+    ...(['no', '0', 'false'].includes(directives.get('user-scalable') ?? '') ||
     (Number.isFinite(scale) && scale < 2)
-  ) {
-    out.push(
-      finding(
-        'warning',
-        'The viewport stops visitors from zooming (user-scalable=no or a low maximum-scale).',
-      ),
-    );
-  }
-  return out;
+      ? [
+          finding(
+            'warning',
+            'The viewport stops visitors from zooming (user-scalable=no or a low maximum-scale).',
+          ),
+        ]
+      : []),
+  ];
 }
 
 /** What the responsive-image check needs to know about an `<img>`. */

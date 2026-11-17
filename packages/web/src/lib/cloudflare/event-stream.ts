@@ -4,8 +4,8 @@
  * Opens a person's server-sent-event stream from its hub.
  */
 
-import type { HubNamespace } from './broadcaster';
 import { SSE_HEADERS } from './sse';
+import type { HubNamespace } from './broadcaster';
 
 /**
  * Ask the person's hub for an event stream, resuming after a position.

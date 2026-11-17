@@ -16,11 +16,11 @@ import {
   SCHEMA_URL,
   buildSchema,
   undocumentedKeys,
-  type JsonSchema,
 } from '@/domain/suite/config-schema';
 import { RULE_SET_DEFS } from '@/domain/checks/sets';
 import { DEFAULT_RULE_SET } from '@/domain/suite/rules';
 import { HTTP_SCHEME } from '../../helpers/data.js';
+import type { JsonSchema } from '@/domain/suite/config-schema';
 
 /** Compares strings in the default locale order, built once. */
 const collator = new Intl.Collator();
@@ -166,16 +166,14 @@ const FILES: readonly [string, string, boolean][] = [
 
 describe('buildSchema', () => {
   it('is a draft 2020-12 schema that names itself by the address it is served at', () => {
-    expect(schema['$schema']).toBe(
-      'https://json-schema.org/draft/2020-12/schema',
-    );
-    expect(schema['$id']).toBe(SCHEMA_URL);
+    expect(schema.$schema).toBe('https://json-schema.org/draft/2020-12/schema');
+    expect(schema.$id).toBe(SCHEMA_URL);
     expect(SCHEMA_URL.endsWith(SCHEMA_PATH)).toBe(true);
   });
 
   it('refuses keys it does not know, at the top and in an environment', () => {
-    const defs = schema['$defs'] as Record<string, JsonSchema>;
-    expect(schema['additionalProperties']).toBe(false);
+    const defs = schema.$defs as Record<string, JsonSchema>;
+    expect(schema.additionalProperties).toBe(false);
     expect(defs['overlay']?.['additionalProperties']).toBe(false);
     expect(defs['environments']?.['additionalProperties']).toBe(false);
     expect(defs['rules']?.['additionalProperties']).toBe(false);
@@ -183,7 +181,7 @@ describe('buildSchema', () => {
 
   it('has every key of the reader, with the same names', () => {
     expect(
-      Object.keys(schema['properties'] as object).toSorted(collator.compare),
+      Object.keys(schema.properties as object).toSorted(collator.compare),
     ).toEqual([
       'deployments',
       'dispatch',
@@ -198,16 +196,17 @@ describe('buildSchema', () => {
   });
 
   it('describes enabled as a boolean that turns the repository off, true by default', () => {
-    const enabled = (schema['properties'] as Record<string, JsonSchema>)[
+    const enabled = (schema.properties as Record<string, JsonSchema>)[
       'enabled'
     ];
     expect(enabled).toMatchObject({ title: 'Enabled', type: 'boolean' });
-    expect(String(enabled?.['description'])).toContain('false');
-    expect(String(enabled?.['description'])).toContain('turn every check');
+    const description = String(enabled?.['description']);
+    expect(description).toContain('false');
+    expect(description).toContain('turn every check');
   });
 
   it('lists every check of the catalogue as a rule, with its name and what it looks at', () => {
-    const rules = (schema['$defs'] as Record<string, JsonSchema>)['rules'];
+    const rules = (schema.$defs as Record<string, JsonSchema>)['rules'];
     const properties = rules?.['properties'] as Record<string, JsonSchema>;
     expect(Object.keys(properties).toSorted(collator.compare)).toEqual(
       CHECKS.map((check) => check.id).toSorted(collator.compare),
@@ -221,7 +220,7 @@ describe('buildSchema', () => {
   });
 
   it('lists every rule set, and the environments of the reader', () => {
-    const defs = schema['$defs'] as Record<string, JsonSchema>;
+    const defs = schema.$defs as Record<string, JsonSchema>;
     const name = (defs['extends']?.['anyOf'] as JsonSchema[])[0]!;
     expect(
       ((name['anyOf'] as JsonSchema[])[0]!['oneOf'] as { const: string }[])
@@ -241,7 +240,7 @@ describe('buildSchema', () => {
   });
 
   it('takes the files the reader looks for as one kind of file', () => {
-    expect(schema['description']).toContain(CONFIG_FILES.join(', '));
+    expect(schema.description).toContain(CONFIG_FILES.join(', '));
   });
 
   it('serialises, so it can be served', () => {
@@ -330,6 +329,6 @@ describe('the examples', () => {
   );
 
   it('are listed in the schema for the editor', () => {
-    expect(schema['examples']).toEqual(EXAMPLES);
+    expect(schema.examples).toEqual(EXAMPLES);
   });
 });

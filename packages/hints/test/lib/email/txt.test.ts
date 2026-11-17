@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
-import type { DnsClient } from '../../../src/core/dns.js';
 import { decodeTxt, lookupTxt } from '../../../src/lib/email/txt.js';
 import { fakeDns } from './fakes.js';
+import type { DnsClient } from '../../../src/core/dns.js';
 
 describe('decodeTxt', () => {
   it('unquotes a single string', () => {

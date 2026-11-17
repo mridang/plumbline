@@ -1,5 +1,5 @@
-import type { AgentEnv, CheckResult } from './types.js';
 import { isRecord, result } from './utility.js';
+import type { AgentEnv, CheckResult } from './types.js';
 
 /**
  * Runs in the page. The WebMCP explainer attaches the API to the document:
@@ -41,6 +41,7 @@ export async function checkWebMcp(env: AgentEnv): Promise<CheckResult> {
       'No browser was available to look for WebMCP tools.',
     );
   }
+  // eslint-disable-next-line functional/no-let -- assigned inside try/catch so a failed evaluation can return a result
   let value: unknown;
   try {
     value = await env.evaluate(WEBMCP_SCRIPT);

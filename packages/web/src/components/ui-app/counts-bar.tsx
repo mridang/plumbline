@@ -18,11 +18,14 @@ const WIDTHS: readonly string[] = [
   'w-full',
 ];
 
+/** The steps of the failed and of the warned segment. */
+export interface Steps {
+  failed: number;
+  warned: number;
+}
+
 /** How many steps each segment takes: one per finding, red first, until the bar is full. */
-export function stepsOf(
-  failed: number,
-  warned: number,
-): { failed: number; warned: number } {
+export function stepsOf(failed: number, warned: number): Steps {
   const failedSteps = Math.min(BAR_STEPS, failed);
   return {
     failed: failedSteps,
@@ -41,6 +44,7 @@ export function CountsBar({
 }: Readonly<{ failed: number; warned: number }>): ReactElement {
   const steps = stepsOf(failed, warned);
   return (
+    // eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- an img element cannot hold the bar's segments
     <span
       role="img"
       aria-label={`${failed} failed, ${warned} with warnings`}

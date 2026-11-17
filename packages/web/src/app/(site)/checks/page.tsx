@@ -1,9 +1,8 @@
-import type { Metadata } from 'next';
-import type { ReactElement } from 'react';
-
 import { pageMetadata } from '@/app/_metadata';
 import { ChecksShell } from '@/components/checks/shell';
 import { Overview } from '@/components/checks/overview';
+import type { ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 /** A public page: it may be indexed. */
 export const metadata: Metadata = pageMetadata({

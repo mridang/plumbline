@@ -20,6 +20,7 @@ export const SCOPE_READ = 'checks:read';
 export const SCOPE_WRITE = 'checks:write';
 
 /** What each scope lets the app do, in plain words, for the approval screen. */
+// eslint-disable-next-line tslop/no-known-value-widening -- callers look it up with any scope string taken from a request, which a narrowed key type would reject
 export const SCOPE_TEXT: Readonly<Record<string, string>> = {
   [SCOPE_READ]:
     'See your domains, the checks chosen for them and their reports',

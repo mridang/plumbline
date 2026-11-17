@@ -14,8 +14,10 @@ import type { Deployment } from '@/domain/suite/deploy';
 
 /** The part of the container's Durable Object namespace the server side uses. */
 export interface ScannerNamespace {
-  idFromName(name: string): unknown;
-  get(id: unknown): { fetch(request: Request): Promise<Response> };
+  idFromName(name: string): DurableObjectId | string;
+  get(id: DurableObjectId | string): {
+    fetch(request: Request): Promise<Response>;
+  };
 }
 
 /** The scanner could not be reached, or the site could not be scanned. */
@@ -72,6 +74,14 @@ export interface ScanResult {
   readonly raw: readonly unknown[];
 }
 
+/** What has been read of a scan's stream so far. */
+interface Progress {
+  readonly ready?: { readonly finalUrl: string; readonly status: number };
+  readonly ended: boolean;
+  readonly outcomes: readonly ScanOutcome[];
+  readonly raw: readonly unknown[];
+}
+
 /**
  * Reads the scanner's stream to its end. Throws {@link ScanFailedError} when the
  * site could not be reached, when a line is not JSON, or when the stream stops
@@ -83,24 +93,20 @@ export async function collectScan(
 ): Promise<ScanResult> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
-  const outcomes: ScanOutcome[] = [];
-  const raw: unknown[] = [];
-  let ready: { finalUrl: string; status: number } | undefined;
-  let ended = false;
-  let buffer = '';
-  const take = (line: string): void => {
+  const take = (progress: Progress, line: string): Progress => {
     if (line.trim() === '') {
-      return;
+      return progress;
     }
-    let json: unknown;
-    try {
-      json = JSON.parse(line);
-    } catch {
-      throw new ScanFailedError('The scanner sent a line that is not JSON.');
-    }
+    const json = (() => {
+      try {
+        return JSON.parse(line) as unknown;
+      } catch {
+        throw new ScanFailedError('The scanner sent a line that is not JSON.');
+      }
+    })();
     const parsed = LineSchema.safeParse(json);
     if (!parsed.success) {
-      return;
+      return progress;
     }
     const event = parsed.data;
     switch (event.type) {
@@ -108,32 +114,42 @@ export async function collectScan(
         throw new SiteUnreachableError(event.detail);
       }
       case 'ready': {
-        ready = { finalUrl: event.finalUrl, status: event.status };
-
-        break;
+        return {
+          ...progress,
+          ready: { finalUrl: event.finalUrl, status: event.status },
+        };
       }
       case 'done': {
-        outcomes.push(event.outcome);
-        raw.push((json as { outcome: unknown }).outcome);
-
-        break;
+        return {
+          ...progress,
+          outcomes: [...progress.outcomes, event.outcome],
+          raw: [...progress.raw, (json as { outcome: unknown }).outcome],
+        };
       }
       default: {
-        ended = true;
+        return { ...progress, ended: true };
       }
     }
   };
-  for (;;) {
+  const read = async (
+    buffer: string,
+    progress: Progress,
+  ): Promise<Progress> => {
     const { done, value } = await reader.read();
-    buffer += decoder.decode(value, { stream: !done });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() ?? '';
-    for (const line of lines) take(line);
-    if (done) {
-      break;
-    }
-  }
-  take(buffer);
+    const parts = (buffer + decoder.decode(value, { stream: !done })).split(
+      '\n',
+    );
+    const next = parts
+      .slice(0, -1)
+      .reduce((soFar, line) => take(soFar, line), progress);
+    const rest = parts.at(-1) ?? '';
+    return done ? take(next, rest) : read(rest, next);
+  };
+  const { ready, ended, outcomes, raw } = await read('', {
+    ended: false,
+    outcomes: [],
+    raw: [],
+  });
   if (!ready || !ended) {
     throw new ScanFailedError('The scan stopped before it finished.');
   }

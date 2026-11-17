@@ -23,17 +23,18 @@
  * issue a fetch — reuse the tag-only rules while leaving the image-fetch rules
  * to a gatherer.
  */
-import { finding, type Finding } from '../headers/finding.js';
-import type { ImageInfo } from './image-size.js';
+import { finding } from '../headers/finding.js';
 import {
   charLength,
   hasKeywordStuffing,
   normalizeText,
   startsWithUrl,
 } from './text.js';
+import type { Finding } from '../headers/finding.js';
+import type { ImageInfo } from './image-size.js';
 
 /** Matches an insecure `http://` prefix. */
-const HTTP_PREFIX = /^http:\/\//i;
+const HTTP_PREFIX = /^http:\/\//iu;
 
 /** Reads the first non-empty value of an `og:*`/`twitter:*` tag, or null. */
 type MetaReader = (key: string) => string | null;

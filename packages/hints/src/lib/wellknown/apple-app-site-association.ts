@@ -1,5 +1,5 @@
-import type { FileIssue } from '../files/issue.js';
 import { isObject, isStringArray, parsedOrIssue } from './json.js';
+import type { FileIssue } from '../files/issue.js';
 
 /** The three top-level services Apple defines for the association file. */
 const SERVICES = ['applinks', 'webcredentials', 'appclips'];
@@ -11,90 +11,100 @@ const SERVICES = ['applinks', 'webcredentials', 'appclips'];
  * array. Apple's reference:
  * https://developer.apple.com/documentation/xcode/supporting-associated-domains.
  */
-function validateDetail(
-  detail: unknown,
-  index: number,
-  issues: FileIssue[],
-): void {
+function validateDetail(detail: unknown, index: number): FileIssue[] {
   if (!isObject(detail)) {
-    issues.push({
-      severity: 'error',
-      message: `applinks.details[${index}] must be an object.`,
-    });
-    return;
+    return [
+      {
+        severity: 'error',
+        message: `applinks.details[${index}] must be an object.`,
+      },
+    ];
   }
   const hasAppId = typeof detail.appID === 'string';
   const hasAppIds = isStringArray(detail.appIDs);
-  if (!hasAppId && !hasAppIds) {
-    issues.push({
-      severity: 'error',
-      message: `applinks.details[${index}] must have a string 'appID' or a string array 'appIDs'.`,
-    });
-  }
-  // One of components (modern) or paths (legacy) carries the match rules.
-  if (detail.components !== undefined && !Array.isArray(detail.components)) {
-    issues.push({
-      severity: 'error',
-      message: `applinks.details[${index}].components must be an array.`,
-    });
-  }
-  if (detail.paths !== undefined && !isStringArray(detail.paths)) {
-    issues.push({
-      severity: 'error',
-      message: `applinks.details[${index}].paths must be an array of strings.`,
-    });
-  }
+  return [
+    ...(hasAppId || hasAppIds
+      ? []
+      : [
+          {
+            severity: 'error' as const,
+            message: `applinks.details[${index}] must have a string 'appID' or a string array 'appIDs'.`,
+          },
+        ]),
+    // One of components (modern) or paths (legacy) carries the match rules.
+    ...(detail.components !== undefined && !Array.isArray(detail.components)
+      ? [
+          {
+            severity: 'error' as const,
+            message: `applinks.details[${index}].components must be an array.`,
+          },
+        ]
+      : []),
+    ...(detail.paths !== undefined && !isStringArray(detail.paths)
+      ? [
+          {
+            severity: 'error' as const,
+            message: `applinks.details[${index}].paths must be an array of strings.`,
+          },
+        ]
+      : []),
+  ];
 }
 
 /** Validates the `applinks` service object. */
-function validateApplinks(value: unknown, issues: FileIssue[]): void {
+function validateApplinks(value: unknown): FileIssue[] {
   if (!isObject(value)) {
-    issues.push({
-      severity: 'error',
-      message: "'applinks' must be an object.",
-    });
-    return;
-  }
-  // Apple requires `apps` to be present and empty (historical compatibility).
-  if (value.apps !== undefined && !isStringArray(value.apps)) {
-    issues.push({
-      severity: 'error',
-      message: "'applinks.apps' must be an array.",
-    });
+    return [
+      {
+        severity: 'error',
+        message: "'applinks' must be an object.",
+      },
+    ];
   }
   const details = value.details;
-  if (details !== undefined) {
-    if (Array.isArray(details)) {
-      for (const [index, detail] of details.entries())
-        validateDetail(detail, index, issues);
-    } else {
-      issues.push({
-        severity: 'error',
-        message: "'applinks.details' must be an array.",
-      });
-    }
-  }
+  const detailIssues = Array.isArray(details)
+    ? details.flatMap((detail, index) => validateDetail(detail, index))
+    : [];
+  return [
+    // Apple requires `apps` to be present and empty (historical compatibility).
+    ...(value.apps !== undefined && !isStringArray(value.apps)
+      ? [
+          {
+            severity: 'error' as const,
+            message: "'applinks.apps' must be an array.",
+          },
+        ]
+      : []),
+    ...(details !== undefined && !Array.isArray(details)
+      ? [
+          {
+            severity: 'error' as const,
+            message: "'applinks.details' must be an array.",
+          },
+        ]
+      : []),
+    ...detailIssues,
+  ];
 }
 
 /** Validates a service whose only member is an `apps` string array. */
-function validateAppsService(
-  name: string,
-  value: unknown,
-  issues: FileIssue[],
-): void {
+function validateAppsService(name: string, value: unknown): FileIssue[] {
   if (!isObject(value)) {
-    issues.push({
-      severity: 'error',
-      message: `'${name}' must be an object.`,
-    });
-    return;
+    return [
+      {
+        severity: 'error',
+        message: `'${name}' must be an object.`,
+      },
+    ];
   }
-  if (!isStringArray(value.apps)) {
-    issues.push({
-      severity: 'error',
-      message: `'${name}.apps' must be an array of app identifiers.`,
-    });
-  }
+  return isStringArray(value.apps)
+    ? []
+    : [
+        {
+          severity: 'error',
+          message: `'${name}.apps' must be an array of app identifiers.`,
+        },
+      ];
 }
 
 /**
@@ -104,38 +114,37 @@ function validateAppsService(
  * checked for the shape Apple documents.
  */
 export function validateAppleAppSiteAssociation(text: string): FileIssue[] {
-  const issues: FileIssue[] = [];
-  const root = parsedOrIssue(text, issues);
+  const parseIssues: FileIssue[] = [];
+  const root = parsedOrIssue(text, parseIssues);
   if (root === undefined) {
-    return issues;
+    return parseIssues;
   }
   if (!isObject(root)) {
-    issues.push({
-      severity: 'error',
-      message: 'The top-level value must be a JSON object.',
-    });
-    return issues;
+    return [
+      {
+        severity: 'error',
+        message: 'The top-level value must be a JSON object.',
+      },
+    ];
   }
-
-  // At least one recognised service must be declared, or the file does
-  // nothing.
-  if (!SERVICES.some((service) => root[service] !== undefined)) {
-    issues.push({
-      severity: 'error',
-      message:
-        'The file declares none of applinks, webcredentials or appclips.',
-    });
-  }
-
-  if (root.applinks !== undefined) {
-    validateApplinks(root.applinks, issues);
-  }
-  if (root.webcredentials !== undefined) {
-    validateAppsService('webcredentials', root.webcredentials, issues);
-  }
-  if (root.appclips !== undefined) {
-    validateAppsService('appclips', root.appclips, issues);
-  }
-
-  return issues;
+  return [
+    // At least one recognised service must be declared, or the file does
+    // nothing.
+    ...(SERVICES.some((service) => root[service] !== undefined)
+      ? []
+      : [
+          {
+            severity: 'error' as const,
+            message:
+              'The file declares none of applinks, webcredentials or appclips.',
+          },
+        ]),
+    ...(root.applinks === undefined ? [] : validateApplinks(root.applinks)),
+    ...(root.webcredentials === undefined
+      ? []
+      : validateAppsService('webcredentials', root.webcredentials)),
+    ...(root.appclips === undefined
+      ? []
+      : validateAppsService('appclips', root.appclips)),
+  ];
 }

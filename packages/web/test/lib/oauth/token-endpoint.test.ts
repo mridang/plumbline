@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 
-import { MemoryStore } from './memory-store';
-import { quietSecurityLogs, type LogSpy } from './quiet-logs';
 import {
   ACCESS_TTL_SECONDS,
   CODE_TTL_SECONDS,
@@ -14,21 +12,22 @@ import {
   issueAuthorizationCode,
   revokeToken,
   s256,
-  type CodeRecord,
-  type OAuthFailure,
-  type TokenResponse,
   withinRefreshGrace,
 } from '@/lib/oauth';
 import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+import { MemoryStore } from './memory-store';
+import { quietSecurityLogs } from './quiet-logs';
+import type { LogSpy } from './quiet-logs';
+import type { CodeRecord, OAuthFailure, TokenResponse } from '@/lib/oauth';
 
 /** Matches access token prefix pattern. */
-const ACCESS_TOKEN_PREFIX_PATTERN = /^cdn_at_/;
+const ACCESS_TOKEN_PREFIX_PATTERN = /^cdn_at_/u;
 
 /** Matches refresh token prefix pattern. */
-const REFRESH_TOKEN_PREFIX_PATTERN = /^cdn_rt_/;
+const REFRESH_TOKEN_PREFIX_PATTERN = /^cdn_rt_/u;
 
 // A field the request leaves out: its key stays present, so an override can unset it.
-let notProvided: undefined;
+const notProvided = [].at(0);
 
 const RESOURCE = 'https://site.example/mcp';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
@@ -439,20 +438,14 @@ describe('exchangeRefreshToken', () => {
     it('answers a parallel refresh that lost the race with its own pair, without revoking', async () => {
       const first = (await redeem(code)) as TokenResponse;
       // The other process rotates the token between our read and our write.
-      const racing = new Proxy(store, {
-        get(target, property) {
-          if (property !== 'rotateRefreshToken') {
-            const value: unknown = Reflect.get(target, property, target);
-            return typeof value === 'function'
-              ? (value.bind(target) as unknown)
-              : value;
-          }
-          return async (hash: string, now: number) => {
-            await target.rotateRefreshToken(hash, now, []);
+      const racing = Object.create(store, {
+        rotateRefreshToken: {
+          value: async (hash: string, now: number) => {
+            await store.rotateRefreshToken(hash, now, []);
             return false;
-          };
+          },
         },
-      });
+      }) as MemoryStore;
       const result = await exchangeRefreshToken(
         racing,
         {
@@ -468,17 +461,9 @@ describe('exchangeRefreshToken', () => {
 
     it('revokes when rotation fails and nothing explains why', async () => {
       const first = (await redeem(code)) as TokenResponse;
-      const failing = new Proxy(store, {
-        get(target, property) {
-          if (property === 'rotateRefreshToken') {
-            return async () => false;
-          }
-          const value: unknown = Reflect.get(target, property, target);
-          return typeof value === 'function'
-            ? (value.bind(target) as unknown)
-            : value;
-        },
-      });
+      const failing = Object.create(store, {
+        rotateRefreshToken: { value: async () => false },
+      }) as MemoryStore;
       const result = await exchangeRefreshToken(
         failing,
         {

@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import type { ComponentProps, ReactElement, ReactNode } from 'react';
-
 import { buttonClass } from '@/components/ui/button';
+import type { ComponentProps, ReactElement, ReactNode } from 'react';
 
 type Look = Parameters<typeof buttonClass>[0];
 

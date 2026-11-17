@@ -1,25 +1,22 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  progressLine,
-  ScanResults,
-  type Scan,
-} from '@/components/scan/scan-results';
-import type { HintOutcome } from '@/domain/scan/outcome';
+import { progressLine, ScanResults } from '@/components/scan/scan-results';
 import { html } from '../render';
+import type { Scan } from '@/components/scan/scan-results';
+import type { HintOutcome } from '@/domain/scan/outcome';
 
 /** Matches the pressed All filter button. */
-const ALL_FILTER_PRESSED_PATTERN = /aria-pressed="true"[^>]*>All/;
+const ALL_FILTER_PRESSED_PATTERN = /aria-pressed="true"[^>]*>All/u;
 
 /** Matches the Expand all button controlling the check list. */
 const EXPAND_ALL_BUTTON_PATTERN =
-  /<button[^>]*aria-controls="check-list"[^>]*>Expand all</;
+  /<button[^>]*aria-controls="check-list"[^>]*>Expand all</u;
 
 /** Matches the pressed Problems filter button. */
-const PROBLEMS_FILTER_PRESSED_PATTERN = /aria-pressed="true"[^>]*>Problems/;
+const PROBLEMS_FILTER_PRESSED_PATTERN = /aria-pressed="true"[^>]*>Problems/u;
 
 /** Matches the progress element showing one of three. */
-const PROGRESS_ELEMENT_PATTERN = /<progress[^>]*max="3" value="1"/;
+const PROGRESS_ELEMENT_PATTERN = /<progress[^>]*max="3" value="1"/u;
 
 /** A check with the given outcome. */
 const hint = (
@@ -106,7 +103,7 @@ describe('ScanResults, laid out as a report', () => {
   const out = html(<ScanResults scan={scanOf(hints)} />);
 
   it('has one stat row of the four outcomes, in the colours of the badges', () => {
-    expect(out.match(/<dt/g)).toHaveLength(4);
+    expect(out.match(/<dt/gu)).toHaveLength(4);
     for (const word of ['Failed', 'Warning', 'Passed', 'Skipped']) {
       expect(out).toContain(`</span>${word}</dt>`);
     }
@@ -124,7 +121,7 @@ describe('ScanResults, laid out as a report', () => {
   });
 
   it('has a segmented control with counts and Expand all on the same line, to the right', () => {
-    expect(out).toContain('role="group" aria-label="Show"');
+    expect(out).toContain('aria-label="Show"');
     expect(out).toContain('Problems<span');
     const bar = out.slice(
       out.indexOf('sticky top-16'),
@@ -147,7 +144,7 @@ describe('ScanResults, laid out as a report', () => {
   });
 
   it('opens the failed checks and closes the rest, with the failed ones first', () => {
-    expect(out.match(/<details[^>]* open=""/g)).toHaveLength(1);
+    expect(out.match(/<details[^>]* open=""/gu)).toHaveLength(1);
     expect(out.indexOf('Check a')).toBeLessThan(out.indexOf('Check b'));
   });
 });
@@ -224,7 +221,7 @@ describe('ScanResults', () => {
 });
 
 describe('ScanResults, opening and closing the checks', () => {
-  const OPEN = /<details[^>]* open=""/g;
+  const OPEN = /<details[^>]* open=""/gu;
   const opened = (out: string) => (out.match(OPEN) ?? []).length;
 
   it('starts the checks that failed open, and the warnings, passes and skips closed', () => {

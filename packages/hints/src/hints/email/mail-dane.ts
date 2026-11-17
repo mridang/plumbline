@@ -11,8 +11,8 @@ import {
   isDaneUsage,
   parseTlsa,
   tlsaMatches,
-  type TlsaRecord,
 } from '../../lib/email/tlsa.js';
+import type { TlsaRecord } from '../../lib/email/tlsa.js';
 
 /** The mail hosts a DANE check reports on, by what is wrong with them. */
 interface DaneBuckets {
@@ -31,22 +31,23 @@ interface DaneOutcome {
 
 /** Looks up the host's TLSA records and matches them against its certificate. */
 async function daneOutcome(host: string): Promise<DaneOutcome> {
-  let records: TlsaRecord[] = [];
-  try {
-    const response = await dns.client.query(`_25._tcp.${host}`, 'TLSA');
-    if (response.status === 2) {
-      return { bucket: 'bogus' };
-    }
-    // DANE is only usable with DNSSEC; an unsigned answer is no answer.
-    if (response.authenticated) {
-      records = response.answers
-        .filter((record) => record.type === TLSA)
-        .flatMap((record) => parseTlsa(record.data) ?? [])
-        .filter(isDaneUsage);
-    }
-  } catch {
+  const lookup = await dns.client
+    .query(`_25._tcp.${host}`, 'TLSA')
+    .then((response) => ({ response }))
+    .catch(() => null);
+  if (!lookup) {
     return { bucket: null };
   }
+  if (lookup.response.status === 2) {
+    return { bucket: 'bogus' };
+  }
+  // DANE is only usable with DNSSEC; an unsigned answer is no answer.
+  const records: TlsaRecord[] = lookup.response.authenticated
+    ? lookup.response.answers
+        .filter((record) => record.type === TLSA)
+        .flatMap((record) => parseTlsa(record.data) ?? [])
+        .filter(isDaneUsage)
+    : [];
   if (records.length === 0) {
     return { bucket: 'missing' };
   }
@@ -89,20 +90,18 @@ export default defineHint({
   ],
   setup(context) {
     onMailDomain(context, async (mail) => {
-      const buckets: DaneBuckets = {
-        missing: [],
-        bogus: [],
-        invalid: [],
-        unchecked: [],
-      };
-
-      for (const host of mail.hosts) {
-        const outcome = await daneOutcome(host);
-        if (outcome.bucket) {
-          buckets[outcome.bucket].push(outcome.entry ?? host);
-        }
-      }
-      const { missing, bogus, invalid, unchecked } = buckets;
+      const outcomes = await Array.fromAsync(mail.hosts, async (host) => ({
+        host,
+        outcome: await daneOutcome(host),
+      }));
+      const bucketOf = (bucket: keyof DaneBuckets): string[] =>
+        outcomes
+          .filter((found) => found.outcome.bucket === bucket)
+          .map((found) => found.outcome.entry ?? found.host);
+      const missing = bucketOf('missing');
+      const bogus = bucketOf('bogus');
+      const invalid = bucketOf('invalid');
+      const unchecked = bucketOf('unchecked');
 
       if (missing.length > 0) {
         mail.report(

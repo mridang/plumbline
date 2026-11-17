@@ -17,38 +17,38 @@ import { SCAN_RENEGOTIATION_LIMIT } from './constants.js';
 import type { TlsTarget } from './client.js';
 
 /** Matches an early data evidence line. */
-const EARLY_DATA_EVIDENCE_LINE = /^Early data was/i;
+const EARLY_DATA_EVIDENCE_LINE = /^Early data was/iu;
 
 /** Matches an extended master secret evidence line. */
-const EXTENDED_MASTER_SECRET_EVIDENCE_LINE = /^Extended master secret:/i;
+const EXTENDED_MASTER_SECRET_EVIDENCE_LINE = /^Extended master secret:/iu;
 
 /** Matches a secure renegotiation evidence line. */
-const SECURE_RENEGOTIATION_EVIDENCE_LINE = /^Secure Renegotiation IS/i;
+const SECURE_RENEGOTIATION_EVIDENCE_LINE = /^Secure Renegotiation IS/iu;
 
 /** Matches a compression evidence line. */
-const COMPRESSION_EVIDENCE_LINE = /^Compression:/;
+const COMPRESSION_EVIDENCE_LINE = /^Compression:/u;
 
 /** Matches a rejected or unsent early data line. */
-const EARLY_DATA_NOT_ACCEPTED = /Early data was (rejected|not sent)/i;
+const EARLY_DATA_NOT_ACCEPTED = /Early data was (rejected|not sent)/iu;
 
 /** Matches an accepted early data line. */
-const EARLY_DATA_ACCEPTED = /Early data was accepted/i;
+const EARLY_DATA_ACCEPTED = /Early data was accepted/iu;
 
 /** Matches the extended master secret result. */
-const EXTENDED_MASTER_SECRET_RESULT = /Extended master secret: (yes|no)/i;
+const EXTENDED_MASTER_SECRET_RESULT = /Extended master secret: (yes|no)/iu;
 
 /** Matches the compression methods length in a trace. */
-const COMPRESSION_METHODS_LENGTH = /compression_methods \(len=(\d+)\)/;
+const COMPRESSION_METHODS_LENGTH = /compression_methods \(len=(\d+)\)/u;
 
 /** Matches the negotiated compression line. */
-const COMPRESSION_LINE = /^Compression: (\S+)/m;
+const COMPRESSION_LINE = /^Compression: (\S+)/mu;
 
 /** Matches an unsupported secure renegotiation line. */
 const SECURE_RENEGOTIATION_UNSUPPORTED =
-  /Secure Renegotiation IS NOT supported/i;
+  /Secure Renegotiation IS NOT supported/iu;
 
 /** Matches a supported secure renegotiation line. */
-const SECURE_RENEGOTIATION_SUPPORTED = /Secure Renegotiation IS supported/i;
+const SECURE_RENEGOTIATION_SUPPORTED = /Secure Renegotiation IS supported/iu;
 
 /** What a finished `openssl` process printed. */
 export interface OpensslRun {
@@ -78,7 +78,9 @@ export const execOpenssl: OpensslExec = async (args, options = {}) =>
     const child = spawn(openssl.command, [...args], {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
+    // eslint-disable-next-line functional/no-let -- accumulates the streamed output across data events
     let stdout = '';
+    // eslint-disable-next-line functional/no-let -- accumulates the streamed output across data events
     let stderr = '';
     child.stdout.on('data', (chunk: Buffer) => (stdout += chunk.toString()));
     child.stderr.on('data', (chunk: Buffer) => (stderr += chunk.toString()));
@@ -94,24 +96,31 @@ export const execOpenssl: OpensslExec = async (args, options = {}) =>
       resolve({ stdout, stderr, code });
     });
     // Feed the lines slowly: s_client must finish each command first.
-    const lines = [...(options.input ?? [])];
-    const feed = (): void => {
-      const line = lines.shift();
-      if (line === undefined) {
+    const lines = options.input ?? [];
+    const feed = (index: number): void => {
+      if (index >= lines.length) {
         child.stdin.end();
         return;
       }
-      child.stdin.write(line);
-      setTimeout(feed, options.inputDelayMs ?? 0);
+      child.stdin.write(lines[index]);
+      setTimeout(() => {
+        feed(index + 1);
+      }, options.inputDelayMs ?? 0);
     };
-    feed();
+    feed(0);
   });
+
+/** The settings of {@link openssl}. */
+export interface OpensslSettings {
+  exec: OpensslExec;
+  command: string;
+}
 
 /**
  * The `openssl` runner hints use; tests assign a fake `exec`. `command` is
  * the program `execOpenssl` starts, `openssl` from the PATH by default.
  */
-export const openssl: { exec: OpensslExec; command: string } = {
+export const openssl: OpensslSettings = {
   exec: execOpenssl,
   command: 'openssl',
 };
@@ -383,12 +392,13 @@ export async function testExtendedMasterSecret(
 export async function testZeroRtt(
   target: TlsTarget,
 ): Promise<OpensslOutcome<boolean>> {
-  let directory: string;
-  try {
-    directory = await mkdtemp(join(tmpdir(), 'webhint-0rtt-'));
-  } catch (error) {
-    return { kind: 'failed', reason: String(error) };
+  const created = await mkdtemp(join(tmpdir(), 'webhint-0rtt-'))
+    .then((path) => ({ directory: path }))
+    .catch((error: unknown) => ({ failure: String(error) }));
+  if ('failure' in created) {
+    return { kind: 'failed', reason: created.failure };
   }
+  const { directory } = created;
   try {
     const session = join(directory, 'session.pem');
     const early = join(directory, 'early.txt');

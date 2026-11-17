@@ -5,22 +5,21 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
+import { z } from 'zod';
 import { CHECKS, enabledChecks } from '@/domain/checks/catalogue';
-import type { Domain } from '@/domain/db/domains';
 import { listReports } from '@/domain/db/reports';
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
 import { domainLink, tallyLine } from '@/domain/mcp/tool-results';
 import { DomainTool } from '@/domain/mcp/tools/domain-tool';
 import { DOMAIN } from '@/domain/mcp/tools/schemas';
-import {
-  type ArgumentSpellings,
-  READS,
-  textResult,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
+import { READS, textResult } from '@/lib/mcp';
+import type {
+  ArgumentSpellings,
+  ToolAnnotations,
+  ToolArgs,
+  ToolResult,
 } from '@/lib/mcp';
-import { z } from 'zod';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import type { Domain } from '@/domain/db/domains';
 
 export class GetDomainTool extends DomainTool<'get_domain'> {
   readonly name = 'get_domain';

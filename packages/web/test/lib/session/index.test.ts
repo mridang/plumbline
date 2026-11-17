@@ -4,17 +4,17 @@ import { bytesToBase64Url } from '@/utils/base64';
 import {
   SESSION_TTL_SECONDS,
   SessionTokens,
-  type NewSession,
   requireSessionSecret,
   sessionIsCurrent,
 } from '@/lib/session';
+import type { NewSession } from '@/lib/session';
 
 /** Matches session secret name. */
-const SESSION_SECRET_NAME = /SESSION_SECRET/;
+const SESSION_SECRET_NAME = /SESSION_SECRET/u;
 
 const SECRET = 'test-session-secret-value';
 // A claim the payload leaves out: its key stays present, so the test can check it is dropped.
-let notProvided: undefined;
+const notProvided = [].at(0);
 
 // Thin adapters over the SessionTokens handle, so each case reads as a
 // one-line sign/verify.

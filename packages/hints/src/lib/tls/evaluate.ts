@@ -25,9 +25,8 @@ import {
   PROTOCOLS_SUFFICIENT,
   TLS_1_3_CIPHERS,
   TLS_1_3_PROBE_CIPHERS,
-  type Rating,
-  type TlsVersion,
 } from './constants.js';
+import type { Rating, TlsVersion } from './constants.js';
 
 /** Items of one evaluation, grouped by their rating. */
 export interface Grouped<T> {
@@ -37,35 +36,24 @@ export interface Grouped<T> {
   bad: T[];
 }
 
-const emptyGroups = <T>(): Grouped<T> => ({
-  good: [],
-  sufficient: [],
-  phaseOut: [],
-  bad: [],
-});
-
-/** Adds an item to the group for its rating. */
-function addRated<T>(groups: Grouped<T>, rating: Rating, item: T): void {
-  switch (rating) {
-    case 'good': {
-      groups.good.push(item);
-
-      break;
-    }
-    case 'sufficient': {
-      groups.sufficient.push(item);
-
-      break;
-    }
-    case 'phase-out': {
-      groups.phaseOut.push(item);
-
-      break;
-    }
-    default: {
-      groups.bad.push(item);
-    }
-  }
+/** Groups items by their rating; anything not rated above `bad` is bad. */
+function groupRated<T>(
+  items: readonly T[],
+  rate: (item: T) => Rating,
+): Grouped<T> {
+  const rated = items.map((item) => ({ item, rating: rate(item) }));
+  const pick = (rating: Rating): T[] =>
+    rated.flatMap((entry) => (entry.rating === rating ? [entry.item] : []));
+  return {
+    good: pick('good'),
+    sufficient: pick('sufficient'),
+    phaseOut: pick('phase-out'),
+    bad: rated.flatMap((entry) =>
+      ['good', 'sufficient', 'phase-out'].includes(entry.rating)
+        ? []
+        : [entry.item],
+    ),
+  };
 }
 
 /** Rates a TLS version (NCSC 3.3.1). */
@@ -86,11 +74,7 @@ export function rateProtocol(version: TlsVersion): Rating {
 export function evaluateProtocols(
   accepted: readonly TlsVersion[],
 ): Grouped<TlsVersion> {
-  const groups = emptyGroups<TlsVersion>();
-  for (const version of accepted) {
-    addRated(groups, rateProtocol(version), version);
-  }
-  return groups;
+  return groupRated(accepted, rateProtocol);
 }
 
 /**
@@ -122,11 +106,7 @@ export function rateCipher(standardName: string): Rating {
 export function evaluateCiphers(
   standardNames: readonly string[],
 ): Grouped<string> {
-  const groups = emptyGroups<string>();
-  for (const name of new Set(standardNames)) {
-    addRated(groups, rateCipher(name), name);
-  }
-  return groups;
+  return groupRated([...new Set(standardNames)], rateCipher);
 }
 
 /** What `getEphemeralKeyInfo()` of a Node TLS socket returns. */
@@ -180,25 +160,20 @@ export interface KexEvaluation {
 
 /** Evaluates the ephemeral keys of all accepted cipher suites. */
 export function evaluateKex(keys: readonly EphemeralKey[]): KexEvaluation {
-  const phaseOut = new Set<string>();
-  const bad = new Set<string>();
-  for (const key of keys) {
-    const { rating, label } = rateEphemeralKey(key);
-    if (rating === 'phase-out') {
-      phaseOut.add(label);
-    } else if (rating === 'bad') {
-      bad.add(label);
-    } else {
-      // Good and sufficient keys are not reported.
-    }
-  }
+  const rated = keys.map((key) => rateEphemeralKey(key));
+  // Good and sufficient keys are not reported.
+  const labelsOf = (rating: RatedParameter['rating']): string[] => [
+    ...new Set(
+      rated.flatMap((entry) => (entry.rating === rating ? [entry.label] : [])),
+    ),
+  ];
   const sizes = (type: EphemeralKey['type']): number[] =>
-    keys.filter((key) => key.type === type).map((key) => key.size);
+    keys.flatMap((key) => (key.type === type ? [key.size] : []));
   const max = (values: number[]): number | null =>
     values.length > 0 ? Math.max(...values) : null;
   return {
-    phaseOut: [...phaseOut],
-    bad: [...bad],
+    phaseOut: labelsOf('phase-out'),
+    bad: labelsOf('bad'),
     maxDhSize: max(sizes('DH')),
     maxEcSize: max(sizes('ECDH')),
   };
@@ -257,10 +232,14 @@ export async function evaluateCipherOrder(
       Number(a.standardName.includes('CHACHA')) -
       Number(b.standardName.includes('CHACHA')),
   );
-  for (const expected of better) {
-    if (lessPreferred.length === 0) {
-      continue;
+  const check = async (index: number): Promise<CipherOrderEvaluation> => {
+    if (index >= better.length) {
+      return { status: 'good', violation: null };
     }
+    if (lessPreferred.length === 0) {
+      return check(index + 1);
+    }
+    const expected = better[index];
     const picked = await choose([...lessPreferred, expected]);
     if (picked === null) {
       // The cipher was accepted before: treat an unusable test as n/a.
@@ -272,8 +251,9 @@ export async function evaluateCipherOrder(
         violation: [picked.standardName, expected.standardName],
       };
     }
-  }
-  return { status: 'good', violation: null };
+    return check(index + 1);
+  };
+  return check(0);
 }
 
 /** The public key of a certificate, as read from X.509. */

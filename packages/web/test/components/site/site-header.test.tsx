@@ -1,24 +1,24 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { SiteHeader } from '@/components/site/site-header';
-import type { User } from '@/domain/db/users';
 import { htmlAt } from '../render';
+import type { User } from '@/domain/db/users';
 
 /** Matches a home link around the brand name. */
-const BRAND_HOME_LINK = /<a[^>]*href="\/"[^>]*>[^]*?Plumbline<\/a>/;
+const BRAND_HOME_LINK = /<a[^>]*href="\/"[^>]*>[^]*?Plumbline<\/a>/u;
 /** Matches the scan anchor link. */
-const SCAN_ANCHOR_LINK = /href="\/#scan"[^>]*>Scan a site<\/a>/;
+const SCAN_ANCHOR_LINK = /href="\/#scan"[^>]*>Scan a site<\/a>/u;
 /** Matches links and text shown only to signed-in users. */
-const SIGNED_IN_ONLY_CONTENT = /href="\/dashboard"|href="\/connect"|Sign out/;
+const SIGNED_IN_ONLY_CONTENT = /href="\/dashboard"|href="\/connect"|Sign out/u;
 /** Matches a dashboard link around the brand name. */
 const BRAND_DASHBOARD_LINK =
-  /<a[^>]*href="\/dashboard"[^>]*>[^]*?Plumbline<\/a>/;
+  /<a[^>]*href="\/dashboard"[^>]*>[^]*?Plumbline<\/a>/u;
 /** Matches the connect or GitHub links. */
-const CONNECT_OR_GITHUB_LINK = /href="\/connect"|href="\/github"/;
+const CONNECT_OR_GITHUB_LINK = /href="\/connect"|href="\/github"/u;
 /** Matches the current-page checks link. */
-const CHECKS_CURRENT_LINK = /aria-current="page"[^>]*>Checks</;
+const CHECKS_CURRENT_LINK = /aria-current="page"[^>]*>Checks</u;
 /** Matches the current-page dashboard link. */
-const DASHBOARD_CURRENT_LINK = /aria-current="page"[^>]*>Dashboard</;
+const DASHBOARD_CURRENT_LINK = /aria-current="page"[^>]*>Dashboard</u;
 
 const ADA: User = {
   id: 1,

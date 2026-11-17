@@ -1,9 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import type { ReactElement } from 'react';
 
-import type { ChecksControl } from '@/components/repos/checks-control';
 import {
   ChecksMenuItem,
   useRepoChecks,
@@ -11,6 +9,8 @@ import {
 import { repoPath } from '@/components/repos/repo-path';
 import { POPOVER_ITEM, PopoverSeparator } from '@/components/ui/popover';
 import { RowActions } from '@/components/ui-app/row-actions';
+import type { ChecksControl } from '@/components/repos/checks-control';
+import type { ReactElement } from 'react';
 
 /** Where a site's page is: its repository's page on the site's tab, or the old page of a site added by hand. */
 export function sitePageOf(

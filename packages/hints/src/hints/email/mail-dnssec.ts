@@ -66,18 +66,16 @@ export default defineHint({
         // Any other state needs no report.
       }
 
-      const insecure: string[] = [];
-      const bogus: string[] = [];
-      for (const host of mail.hosts) {
-        const state = await zoneState(host);
-        if (state === 'insecure') {
-          insecure.push(host);
-        } else if (state === 'bogus') {
-          bogus.push(host);
-        } else {
-          // Any other state needs no report.
-        }
-      }
+      const states = await Array.fromAsync(mail.hosts, async (host) => ({
+        host,
+        state: await zoneState(host),
+      }));
+      const insecure = states
+        .filter((found) => found.state === 'insecure')
+        .map((found) => found.host);
+      const bogus = states
+        .filter((found) => found.state === 'bogus')
+        .map((found) => found.host);
       if (insecure.length > 0) {
         mail.report(
           'At least one of your mail server domains is insecure, because it is *not* DNSSEC signed.',

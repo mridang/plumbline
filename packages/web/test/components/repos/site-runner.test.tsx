@@ -4,15 +4,15 @@ import { SiteRunner } from '@/components/repos/site-runner';
 import { htmlAt } from '../render';
 
 /** Matches a disabled button. */
-const DISABLED_BUTTON = /<button[^>]*disabled=""/;
+const DISABLED_BUTTON = /<button[^>]*disabled=""/u;
 /** Matches the run-again countdown text. */
-const RUN_AGAIN_COUNTDOWN = /Run again in (3:5\d|4:00)/;
+const RUN_AGAIN_COUNTDOWN = /Run again in (3:5\d|4:00)/u;
 /** Matches the run button for two checks. */
-const RUN_TWO_CHECKS_BUTTON = /<button[^>]*>Run 2 checks<\/button>/;
+const RUN_TWO_CHECKS_BUTTON = /<button[^>]*>Run 2 checks<\/button>/u;
 /** Matches the run button for one check. */
-const RUN_ONE_CHECK_BUTTON = /<button[^>]*>Run 1 check<\/button>/;
+const RUN_ONE_CHECK_BUTTON = /<button[^>]*>Run 1 check<\/button>/u;
 /** Matches the disabled run button for zero checks. */
-const RUN_ZERO_CHECKS_BUTTON = /<button[^>]*disabled=""[^>]*>Run 0 checks/;
+const RUN_ZERO_CHECKS_BUTTON = /<button[^>]*disabled=""[^>]*>Run 0 checks/u;
 
 /** The button and status for a domain that runs these checks. */
 const draw = (checks: readonly string[]) =>

@@ -17,19 +17,14 @@
  *   empty. Declaring more would only widen what a host has to trust.
  */
 
-import {
-  SUPPORTED_DISPLAY_MODES,
-  type DisplayMode,
-} from '@/views/display-mode';
-import {
-  contentHash as reportHash,
-  html as reportHtml,
-} from '../../../dist/views/report';
+import { SUPPORTED_DISPLAY_MODES } from '@/views/display-mode';
+import { SITE_URL } from '@/utils/site';
+import { contentHash, html as reportHtml } from '../../../dist/views/report';
 import {
   contentHash as domainListHash,
-  html as domainListHtml,
+  html,
 } from '../../../dist/views/domain-list';
-import { SITE_URL } from '@/utils/site';
+import type { DisplayMode } from '@/views/display-mode';
 
 /**
  * MIME type the MCP Apps spec requires for UI resources. Defined locally so the
@@ -63,7 +58,7 @@ export function hashedResourceUri(name: string, contentHash: string): string {
  * The `ui://` address of the report View. Tool definitions point at this, so a
  * host fetches the new HTML whenever the View changes.
  */
-export const REPORT_RESOURCE_URI = hashedResourceUri('report', reportHash);
+export const REPORT_RESOURCE_URI = hashedResourceUri('report', contentHash);
 
 /**
  * The `ui://` address of the domain list View. Tool definitions point at this,
@@ -81,11 +76,7 @@ export const DOMAIN_LIST_RESOURCE_URI = hashedResourceUri(
  *
  * @param resourceUri - The view's `ui://` address.
  */
-export function viewToolMeta(resourceUri: string): {
-  readonly ui: { readonly resourceUri: string };
-  readonly 'ui/resourceUri': string;
-  readonly 'openai/outputTemplate': string;
-} {
+export function viewToolMeta(resourceUri: string) {
   return {
     ui: { resourceUri },
     [LEGACY_RESOURCE_URI_META_KEY]: resourceUri,
@@ -127,10 +118,7 @@ export interface OpenAiWidgetCsp {
  * since omitting them already means "none" and a present-but-empty frame list
  * can trip the extra review hosts apply to embedded frames.
  */
-export function buildCsp(origins: ViewOrigins = {}): {
-  readonly ui: UiCsp;
-  readonly openai: OpenAiWidgetCsp;
-} {
+export function buildCsp(origins: ViewOrigins = {}) {
   const { connect = [], resource = [], frame = [], baseUri = [] } = origins;
   return {
     ui: {
@@ -252,7 +240,7 @@ export const APP_RESOURCES: readonly AppResource[] = [
     {
       name: 'Domain list',
       description: 'The domains Plumbline keeps an eye on.',
-      html: domainListHtml,
+      html,
     },
     DOMAIN_LIST_RESOURCE_URI,
   ),
@@ -265,7 +253,7 @@ export const APP_RESOURCES: readonly AppResource[] = [
  * it again when it redraws that conversation.
  */
 const HASHED_ADDRESS =
-  /^ui:\/\/plumbline\/(report|domain-list)-[0-9a-f]{12}\.html$/;
+  /^ui:\/\/plumbline\/(report|domain-list)-[0-9a-f]{12}\.html$/u;
 
 /**
  * The view served at `uri`: the current address, or any earlier

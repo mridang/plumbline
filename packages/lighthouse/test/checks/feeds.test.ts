@@ -1,17 +1,17 @@
 import { createHTMLDocument } from '@hint/utils-dom';
 import { describe, expect, it } from '@jest/globals';
-import type { Artifacts } from 'lighthouse';
-import type AuditNS from 'lighthouse/types/audit.js';
-import { feedsChecks } from '../../src/checks/feeds.js';
-import type { AuditCheck } from '../../src/checks/types.js';
-// The single-source rules the webhint hints call. Running the Lighthouse check
-// through its own HTML parser and asserting the findings match these proves the
-// check and the hint cannot diverge.
 import {
   feedDiscovery,
   oembedDiscovery,
   opensearchDiscovery,
 } from '@mridang/webhint-hint-plumbline/dist/lib/feeds/checks.js';
+import { feedsChecks } from '../../src/checks/feeds.js';
+import type { Artifacts } from 'lighthouse';
+import type AuditNS from 'lighthouse/types/audit.js';
+import type { AuditCheck } from '../../src/checks/types.js';
+// The single-source rules the webhint hints call. Running the Lighthouse check
+// through its own HTML parser and asserting the findings match these proves the
+// check and the hint cannot diverge.
 import type { DocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/feeds/read.js';
 
 const parse = (html: string): DocumentLike =>

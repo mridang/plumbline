@@ -17,10 +17,10 @@ export type SiteAddress =
   | { readonly ok: false; readonly reason: string };
 
 /** A leading `scheme://`, capturing the scheme. */
-const SCHEME_PREFIX = /^([a-z][a-z0-9+.-]*):\/\//i;
+const SCHEME_PREFIX = /^([a-z][a-z0-9+.-]*):\/\//iu;
 
 /** GitHub's own addresses: an Actions job page is not the site that was deployed. */
-const GITHUB_HOST = /(^|\.)github\.(com|io)$/;
+const GITHUB_HOST = /(^|\.)github\.(com|io)$/u;
 
 /**
  * The host of `value`, an https address or a bare host name. An `http:` (or any

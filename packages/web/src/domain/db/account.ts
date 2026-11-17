@@ -9,7 +9,6 @@
 
 import { eq, inArray } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import {
   domains,
   githubInstallations,
@@ -25,6 +24,7 @@ import {
   userRepositories,
   users,
 } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 
 /**
  * Delete the user row and every row that hangs off it: their domains and the

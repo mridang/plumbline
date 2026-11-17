@@ -3,7 +3,10 @@ import { describe, expect, it } from '@jest/globals';
 import { isDomainListData, isReportData } from '@/views/guards';
 
 /** A copy of a record without one key, so the key is missing rather than undefined. */
-const without = (record: object, key: string): Record<string, unknown> =>
+const without = (
+  record: Record<string, unknown>,
+  key: string,
+): Record<string, unknown> =>
   Object.fromEntries(Object.entries(record).filter(([name]) => name !== key));
 
 /** A report payload the server would send. */

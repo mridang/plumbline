@@ -12,7 +12,7 @@ import {
 import type { StoredFinding } from '@/domain/suite/diff';
 
 /** Matches an at-mention or markdown https link. */
-const MENTION_OR_MARKDOWN_LINK = /@[a-z]|\]\(https:\/\//;
+const MENTION_OR_MARKDOWN_LINK = /@[a-z]|\]\(https:\/\//u;
 
 const found = (
   severity: StoredFinding['severity'],

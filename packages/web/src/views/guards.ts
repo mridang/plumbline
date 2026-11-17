@@ -6,8 +6,8 @@
  * reading of a result around these guards is shared (`payload.ts`).
  */
 
-import type { DomainListData, ReportData } from '@/domain/mcp/ui-types';
 import { everyEntry, isRecord, isString } from '@/views/payload';
+import type { DomainListData, ReportData } from '@/domain/mcp/ui-types';
 
 /** Whether the value is a whole number of at least zero. */
 function isCount(value: unknown): value is number {

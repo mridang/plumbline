@@ -5,7 +5,7 @@ import { RULE_SOURCES } from '@/components/landing/sources';
 import { html } from '../render';
 
 /** Matches the hero heading. */
-const HERO_HEADING_PATTERN = /<h1[^>]*>Find what your website gets wrong/;
+const HERO_HEADING_PATTERN = /<h1[^>]*>Find what your website gets wrong/u;
 
 describe('Hero', () => {
   const out = html(<Hero checks={267} />);

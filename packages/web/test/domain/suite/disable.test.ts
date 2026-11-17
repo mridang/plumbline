@@ -14,7 +14,7 @@ import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 import { GITHUB_ENV } from '../github/github-test-kit';
 
 /** Matches check run or issue call. */
-const CHECK_RUN_OR_ISSUE_CALL = /(?:check-runs|issues$)/;
+const CHECK_RUN_OR_ISSUE_CALL = /(?:check-runs|issues$)/u;
 
 const config = readGitHubConfig(GITHUB_ENV)!;
 

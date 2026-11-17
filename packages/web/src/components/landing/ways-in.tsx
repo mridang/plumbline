@@ -1,7 +1,6 @@
-import type { ReactElement, ReactNode } from 'react';
-
 import { Container, Eyebrow } from '@/components/ui/layout';
 import { SITE_URL, SOURCE_URL } from '@/utils/site';
+import type { ReactElement, ReactNode } from 'react';
 
 /** The command that installs the plumbline skill into a coding agent. */
 export const SKILL_INSTALL = 'npx skills add mridang/plumbline';

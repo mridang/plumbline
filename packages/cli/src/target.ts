@@ -1,7 +1,7 @@
 import { UsageError } from './options.js';
 
 /** Matches a string that starts with a URL scheme such as `https://`. */
-const URL_SCHEME_PREFIX = /^[a-z][a-z0-9+.-]*:\/\//i;
+const URL_SCHEME_PREFIX = /^[a-z][a-z0-9+.-]*:\/\//iu;
 
 /**
  * Turns what was typed after `scan` into the absolute URL webhint scans. A
@@ -21,12 +21,10 @@ export function normalizeTarget(input: string): string {
   const withScheme = URL_SCHEME_PREFIX.test(trimmed)
     ? trimmed
     : `https://${trimmed}`;
-  let url: URL;
-  try {
-    url = new URL(withScheme);
-  } catch {
+  if (!URL.canParse(withScheme)) {
     throw new UsageError(`"${input}" is not a URL or a domain`);
   }
+  const url = new URL(withScheme);
   if (url.protocol !== 'https:' && url.protocol !== 'http:') {
     throw new UsageError(`only http and https URLs can be scanned`);
   }

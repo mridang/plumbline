@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/network/ipv6-same-content.js';
-import { network, type WebResponse } from '../../../src/lib/network/ipv6.js';
+import { network } from '../../../src/lib/network/ipv6.js';
 import { installDns } from '../../lib/network/fake-dns.js';
 import { runHint } from '../../helpers/run-hint.js';
+import type { WebResponse } from '../../../src/lib/network/ipv6.js';
 
 const realGet = network.get;
 let restore: () => void = () => undefined;

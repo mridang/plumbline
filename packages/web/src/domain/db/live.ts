@@ -9,7 +9,6 @@
 
 import { and, asc, eq, inArray, lt, or, sql } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import { cutoffOf } from '@/domain/db/access';
 import {
   domains,
@@ -18,6 +17,7 @@ import {
   suiteRuns,
   userRepositories,
 } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 
 /** Orders repository names as `localeCompare` does, without a collator per call. */
 const collator = new Intl.Collator();
@@ -166,11 +166,9 @@ const BATCH = 80;
 
 /** `items` in groups of at most {@link BATCH}. */
 function inBatches<T>(items: readonly T[]): T[][] {
-  const groups: T[][] = [];
-  for (let at = 0; at < items.length; at += BATCH) {
-    groups.push(items.slice(at, at + BATCH));
-  }
-  return groups;
+  return Array.from({ length: Math.ceil(items.length / BATCH) }, (_, group) =>
+    items.slice(group * BATCH, (group + 1) * BATCH),
+  );
 }
 
 /** The last deployment of a site: when, and which commit. */
@@ -188,41 +186,44 @@ async function deploymentsOf(
   db: Database,
   sites: readonly { owner: number; host: string }[],
 ): Promise<Map<string, Deployment>> {
-  const hostsOf = new Map<number, Set<string>>();
-  for (const site of sites) {
-    const hosts = hostsOf.get(site.owner) ?? new Set<string>();
-    hosts.add(site.host);
-    hostsOf.set(site.owner, hosts);
-  }
-  const found = new Map<string, Deployment>();
-  for (const [owner, hosts] of hostsOf) {
-    for (const group of inBatches([...hosts])) {
-      const rows = await db
-        .select({
-          host: suiteRuns.host,
-          sha: suiteRuns.sha,
-          ran_at: suiteRuns.ran_at,
-        })
-        .from(suiteRuns)
-        .where(
-          and(
-            eq(suiteRuns.user_id, owner),
-            inArray(suiteRuns.host, group),
-            sql`
+  const queries = [...Map.groupBy(sites, (site) => site.owner)].flatMap(
+    ([owner, ownerSites]) =>
+      inBatches([...new Set(ownerSites.map((site) => site.host))]).map(
+        (group) => ({ owner, group }),
+      ),
+  );
+  return queries.reduce(async (previous, { owner, group }) => {
+    const found = await previous;
+    const rows = await db
+      .select({
+        host: suiteRuns.host,
+        sha: suiteRuns.sha,
+        ran_at: suiteRuns.ran_at,
+      })
+      .from(suiteRuns)
+      .where(
+        and(
+          eq(suiteRuns.user_id, owner),
+          inArray(suiteRuns.host, group),
+          sql`
               ${suiteRuns.id} = (
                             select max(r.id) from suite_runs r
                             where r.user_id = ${suiteRuns.user_id}
                               and r.host = ${suiteRuns.host}
                               and r.kind = 'deployment')
             `,
-          ),
-        );
-      for (const row of rows) {
-        found.set(`${owner}/${row.host}`, { at: row.ran_at, sha: row.sha });
-      }
-    }
-  }
-  return found;
+        ),
+      );
+    return new Map<string, Deployment>(
+      [
+        [...found],
+        rows.map((row): [string, Deployment] => [
+          `${owner}/${row.host}`,
+          { at: row.ran_at, sha: row.sha },
+        ]),
+      ].flat(),
+    );
+  }, Promise.resolve(new Map<string, Deployment>()));
 }
 
 /** How many issues are open for each of the repositories, in one query for each group. */
@@ -230,8 +231,8 @@ async function openIssuesOf(
   db: Database,
   repos: readonly string[],
 ): Promise<Map<string, number>> {
-  const counts = new Map<string, number>();
-  for (const group of inBatches(repos)) {
+  return inBatches(repos).reduce(async (previous, group) => {
+    const counts = await previous;
     const rows = await db
       .select({ repo: suiteCheckIssues.repo, total: sql<number>`count(*)` })
       .from(suiteCheckIssues)
@@ -242,11 +243,13 @@ async function openIssuesOf(
         ),
       )
       .groupBy(suiteCheckIssues.repo);
-    for (const row of rows) {
-      counts.set(row.repo, row.total);
-    }
-  }
-  return counts;
+    return new Map<string, number>(
+      [
+        [...counts],
+        rows.map((row): [string, number] => [row.repo, row.total]),
+      ].flat(),
+    );
+  }, Promise.resolve(new Map<string, number>()));
 }
 
 /**
@@ -306,27 +309,28 @@ export async function overviewOf(
       ...new Set(rows.flatMap((row) => (row.repo === null ? [] : [row.repo]))),
     ]),
   ]);
-  const byRepo = new Map<string | null, SiteStatus[]>();
-  for (const row of rows) {
-    const deployed = deployments.get(`${row.owner}/${row.host}`);
-    const sites = byRepo.get(row.repo) ?? [];
-    sites.push({
-      id: row.id,
-      host: row.host,
-      state: stateOf(row, now),
-      errors: row.errors ?? 0,
-      warnings: row.warnings ?? 0,
-      hints: row.hints ?? 0,
-      checked_at: row.checked_at === '' ? null : row.checked_at,
-      deployed_at: deployed?.at ?? null,
-      sha: deployed?.sha ?? null,
-      mine: row.owner === userId,
-    });
-    byRepo.set(row.repo, sites);
-  }
-  return Array.from(byRepo, ([repo, sites]) => ({
+  const byRepo = Map.groupBy(
+    rows.map((row) => {
+      const deployed = deployments.get(`${row.owner}/${row.host}`);
+      const site: SiteStatus = {
+        id: row.id,
+        host: row.host,
+        state: stateOf(row, now),
+        errors: row.errors ?? 0,
+        warnings: row.warnings ?? 0,
+        hints: row.hints ?? 0,
+        checked_at: row.checked_at === '' ? null : row.checked_at,
+        deployed_at: deployed?.at ?? null,
+        sha: deployed?.sha ?? null,
+        mine: row.owner === userId,
+      };
+      return { repo: row.repo, site };
+    }),
+    (entry) => entry.repo,
+  );
+  return Array.from(byRepo, ([repo, entries]) => ({
     repo,
-    sites,
+    sites: entries.map((entry) => entry.site),
     open_issues: repo === null ? 0 : (issues.get(repo) ?? 0),
   })).toSorted((a, b) => {
     if (a.repo === null) {

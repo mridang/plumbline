@@ -3,10 +3,10 @@ import hint from '../../../src/hints/headers/csp.js';
 import { runHint } from '../../helpers/run-hint.js';
 
 /** Matches a source code that starts with a Content-Security-Policy default-src directive. */
-const CSP_DEFAULT_SRC_SOURCE = /^Content-Security-Policy: default-src/;
+const CSP_DEFAULT_SRC_SOURCE = /^Content-Security-Policy: default-src/u;
 
 /** Matches a Content-Security-Policy source code that contains unsafe-eval. */
-const CSP_UNSAFE_EVAL_SOURCE = /^Content-Security-Policy: .*unsafe-eval/;
+const CSP_UNSAFE_EVAL_SOURCE = /^Content-Security-Policy: .*unsafe-eval/u;
 
 const page = (headers: Record<string, string | string[]> = {}, head = '') => ({
   '/': {

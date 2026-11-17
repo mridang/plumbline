@@ -1,18 +1,20 @@
 import dns from 'node:dns';
-import http, { type IncomingMessage } from 'node:http';
+import http from 'node:http';
 import https from 'node:https';
 import { BlockList, isIP } from 'node:net';
-import { Transform, Writable, type TransformCallback } from 'node:stream';
+import { Transform, Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import zlib from 'node:zlib';
 
 import { ALLOWED_PORTS, ScanRefusedError } from './scannable.js';
+import type { TransformCallback } from 'node:stream';
+import type { IncomingMessage } from 'node:http';
 
 /** Matches an IPv4-mapped or NAT64 IPv6 address that spells the IPv4 in dots. */
-const MAPPED_DOTTED_V4 = /^(?:::ffff:|64:ff9b::)(\d+\.\d+\.\d+\.\d+)$/;
+const MAPPED_DOTTED_V4 = /^(?:::ffff:|64:ff9b::)(\d+\.\d+\.\d+\.\d+)$/u;
 
 /** Matches an IPv4-mapped or NAT64 IPv6 address that spells the IPv4 in two hex groups. */
-const MAPPED_HEX_V4 = /^(?:::ffff:|64:ff9b::)([0-9a-f]{1,4}):([0-9a-f]{1,4})$/;
+const MAPPED_HEX_V4 = /^(?:::ffff:|64:ff9b::)([0-9a-f]{1,4}):([0-9a-f]{1,4})$/u;
 
 /**
  * The scan server fetches whatever address a visitor types, from inside the
@@ -69,9 +71,11 @@ const RESERVED_V6: readonly (readonly [string, number])[] = [
 ];
 
 const reserved = new BlockList();
+// eslint-disable-next-line functional/no-loop-statements -- fills the block list, one addSubnet call for each range
 for (const [address, prefix] of RESERVED_V4) {
   reserved.addSubnet(address, prefix, 'ipv4');
 }
+// eslint-disable-next-line functional/no-loop-statements -- fills the block list, one addSubnet call for each range
 for (const [address, prefix] of RESERVED_V6) {
   reserved.addSubnet(address, prefix, 'ipv6');
 }
@@ -88,7 +92,7 @@ function embeddedV4(ip: string): string | undefined {
     const high = Number.parseInt(hex[1] ?? '0', 16);
     const low = Number.parseInt(hex[2] ?? '0', 16);
 
-    return `${high >> 8}.${high & 0xff}.${low >> 8}.${low & 0xff}`;
+    return `${Math.trunc(high / 256)}.${high % 256}.${Math.trunc(low / 256)}.${low % 256}`;
   }
   return undefined;
 }
@@ -135,7 +139,7 @@ export class GuardError extends ScanRefusedError {
 
 /** The host of a URL without the brackets around an IPv6 address. */
 function bareHost(url: URL): string {
-  return url.hostname.replaceAll(/^\[|\]$/g, '');
+  return url.hostname.replaceAll(/^\[|\]$/gu, '');
 }
 
 /**
@@ -190,14 +194,16 @@ export function guardedLookup(
       address?: string | dns.LookupAddress[],
       family?: number,
     ) => void;
-    let lookupOptions: dns.LookupOptions = {};
-    if (typeof optionsOrHandler === 'object' && optionsOrHandler !== null) {
-      lookupOptions = optionsOrHandler;
-    } else if (typeof optionsOrHandler === 'number') {
-      lookupOptions = { family: optionsOrHandler };
-    } else {
-      // No options were given, so the defaults stand.
-    }
+    const given =
+      typeof optionsOrHandler === 'object' && optionsOrHandler !== null
+        ? optionsOrHandler
+        : undefined;
+    // With no options given, the defaults stand.
+    const lookupOptions: dns.LookupOptions =
+      given ??
+      (typeof optionsOrHandler === 'number'
+        ? { family: optionsOrHandler }
+        : {});
     lookup(hostname, { ...lookupOptions, all: true }, (failure, addresses) => {
       if (failure) {
         respond(failure);
@@ -237,12 +243,8 @@ type HeadersInit = ConstructorParameters<typeof Headers>[0];
 type BodyInit = NonNullable<ConstructorParameters<typeof Response>[0]>;
 
 /** The request headers as a plain object, from any of the forms `fetch` accepts. */
-function headersOf(init: HeadersInit | undefined): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const [name, value] of new Headers(init).entries()) {
-    out[name] = value;
-  }
-  return out;
+function headersOf(init: HeadersInit | undefined) {
+  return Object.fromEntries(new Headers(init).entries());
 }
 
 /** The body of a request as bytes, for the forms the checks use. */
@@ -286,6 +288,7 @@ function decoderFor(encoding: string | undefined): Transform | undefined {
 
 /** A stream stage that fails once more than `max` bytes have gone through. */
 function capBytes(max: number): Transform {
+  // eslint-disable-next-line functional/no-let -- the stream stage counts the bytes that went through it
   let seen = 0;
   return new Transform({
     transform(chunk: Buffer, _encoding: string, done: TransformCallback) {
@@ -307,6 +310,7 @@ async function readBody(
   const chunks: Buffer[] = [];
   const sink = new Writable({
     write(chunk: Buffer, _encoding, done) {
+      // eslint-disable-next-line functional/immutable-data -- the body is collected as it streams in
       chunks.push(chunk);
       done();
     },
@@ -320,18 +324,22 @@ async function readBody(
 
 /** The response headers, one entry per header line, as a `Headers`. */
 function responseHeaders(response: IncomingMessage): Headers {
-  const headers = new Headers();
-  for (let index = 0; index + 1 < response.rawHeaders.length; index += 2) {
-    try {
-      headers.append(
-        response.rawHeaders[index] ?? '',
-        response.rawHeaders[index + 1] ?? '',
-      );
-    } catch {
-      // A header the Fetch API cannot hold is left out.
-    }
-  }
-  return headers;
+  // A header the Fetch API cannot hold is left out.
+  return new Headers(
+    Array.from(
+      { length: Math.floor(response.rawHeaders.length / 2) },
+      (_, line): [string, string] => [
+        response.rawHeaders[line * 2] ?? '',
+        response.rawHeaders[line * 2 + 1] ?? '',
+      ],
+    ).flatMap((pair): [string, string][] => {
+      try {
+        return new Headers([pair]).has(pair[0]) ? [pair] : [];
+      } catch {
+        return [];
+      }
+    }),
+  );
 }
 
 /** Whether a status carries no body. */
@@ -352,7 +360,7 @@ async function once(
     const transport = url.protocol === 'https:' ? https : http;
     const request = transport.request(
       url,
-      { method, headers, signal, lookup: lookup },
+      { method, headers, signal, lookup },
       resolve,
     );
     request.on('error', reject);
@@ -383,17 +391,14 @@ export function guardedFetch(options: GuardOptions = {}): typeof fetch {
       AbortSignal.timeout(timeoutMs),
       ...(init.signal ? [init.signal] : []),
     ]);
-    let headers: Record<string, string> = {
-      accept: '*/*',
-      'accept-encoding': 'gzip, deflate, br',
-      'user-agent': USER_AGENT,
-      ...headersOf(init.headers),
-    };
-    let body: Buffer | null = bodyOf(init.body) ?? null;
-    let current = first;
-    let verb = method;
-    let redirected = false;
-    for (let hops = 0; ; hops += 1) {
+    const follow = async (
+      current: URL,
+      hops: number,
+      verb: string,
+      headers: Record<string, string>,
+      body: Buffer | null,
+      redirected: boolean,
+    ): Promise<Response> => {
       assertAllowed(current, options);
       const sent = await once(
         current,
@@ -414,24 +419,25 @@ export function guardedFetch(options: GuardOptions = {}): typeof fetch {
           throw new GuardError('Too many redirects');
         }
         const next = new URL(location, current);
-        if (next.origin !== current.origin) {
-          // Credentials stay with the site they were meant for.
-          headers = Object.fromEntries(
-            Object.entries(headers).filter(
-              ([name]) => name !== 'authorization' && name !== 'cookie',
-            ),
-          );
-        }
-        if (
+        const asGet =
           status === 303 ||
-          ((status === 301 || status === 302) && verb === 'POST')
-        ) {
-          verb = verb === 'HEAD' ? 'HEAD' : 'GET';
-          body = null;
-        }
-        current = next;
-        redirected = true;
-        continue;
+          ((status === 301 || status === 302) && verb === 'POST');
+        const getVerb = verb === 'HEAD' ? 'HEAD' : 'GET';
+        return follow(
+          next,
+          hops + 1,
+          asGet ? getVerb : verb,
+          // Credentials stay with the site they were meant for.
+          next.origin === current.origin
+            ? headers
+            : Object.fromEntries(
+                Object.entries(headers).filter(
+                  ([name]) => name !== 'authorization' && name !== 'cookie',
+                ),
+              ),
+          asGet ? null : body,
+          true,
+        );
       }
       const content =
         verb === 'HEAD' || bodyless(status)
@@ -445,15 +451,32 @@ export function guardedFetch(options: GuardOptions = {}): typeof fetch {
           headers: responseHeaders(sent),
         },
       );
+      // eslint-disable-next-line functional/immutable-data -- Response.url is read-only; it is set on the response built here
       Object.defineProperty(response, 'url', { value: current.href });
+      // eslint-disable-next-line functional/immutable-data -- Response.redirected is read-only; it is set on the response built here
       Object.defineProperty(response, 'redirected', { value: redirected });
       return response;
-    }
+    };
+    return follow(
+      first,
+      0,
+      method,
+      {
+        accept: '*/*',
+        'accept-encoding': 'gzip, deflate, br',
+        'user-agent': USER_AGENT,
+        ...headersOf(init.headers),
+      },
+      bodyOf(init.body) ?? null,
+      false,
+    );
   };
 }
 
 /** How many scans have the guard installed. */
+// eslint-disable-next-line functional/no-let -- how many scans have the guard installed
 let installed = 0;
+// eslint-disable-next-line functional/no-let -- what the guard replaced, to put back
 let saved: { fetch: typeof fetch; lookup: Lookup } | null = null;
 
 /**
@@ -468,10 +491,13 @@ let saved: { fetch: typeof fetch; lookup: Lookup } | null = null;
 export function installGuard(options: GuardOptions = {}): () => void {
   if (installed === 0) {
     saved = { fetch: globalThis.fetch, lookup: dns.lookup };
+    // eslint-disable-next-line functional/immutable-data -- the guard is put under the global fetch for the scan
     globalThis.fetch = guardedFetch(options);
+    // eslint-disable-next-line functional/immutable-data -- the guard is put under the name lookup sockets use
     (dns as { lookup: Lookup }).lookup = guardedLookup(saved.lookup, options);
   }
   installed += 1;
+  // eslint-disable-next-line functional/no-let -- makes the removal run once
   let removed = false;
   return () => {
     if (removed) {
@@ -480,7 +506,9 @@ export function installGuard(options: GuardOptions = {}): () => void {
     removed = true;
     installed -= 1;
     if (installed === 0 && saved) {
+      // eslint-disable-next-line functional/immutable-data -- puts back the global fetch the guard replaced
       globalThis.fetch = saved.fetch;
+      // eslint-disable-next-line functional/immutable-data -- puts back the name lookup the guard replaced
       (dns as { lookup: Lookup }).lookup = saved.lookup;
       saved = null;
     }

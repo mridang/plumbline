@@ -6,7 +6,8 @@ import {
   supportedVersions,
 } from '../../lib/tls/client.js';
 import { evaluateCiphers } from '../../lib/tls/evaluate.js';
-import { onTlsSite, type TlsSite } from './on-tls-site.js';
+import { onTlsSite } from './on-tls-site.js';
+import type { TlsSite } from './on-tls-site.js';
 
 /** Runs the check of the `tls-ciphers` hint against one TLS endpoint. */
 export async function checkTlsCiphers({
@@ -25,16 +26,18 @@ export async function checkTlsCiphers({
     couldNotTest(`no TLS connection to ${target.host}:${target.port}`);
     return;
   }
-  const names: string[] = [];
-  const offeredOn = new Map<string, string>();
+  const perVersion = await Array.fromAsync(probed, async (version) => {
+    const ciphers = await acceptedCiphers(target, version);
+    return ciphers.map((cipher) => ({ name: cipher.standardName, version }));
+  });
+  const accepted = perVersion.flat();
+  const names = accepted.map((cipher) => cipher.name);
+  // A suite offered on both versions is listed under the later one.
+  const offeredOn = new Map(
+    accepted.map((cipher) => [cipher.name, cipher.version] as const),
+  );
   const lines = (list: string[]): string =>
     list.map((name) => `${offeredOn.get(name)} ${name}`).join('\n');
-  for (const version of probed) {
-    for (const cipher of await acceptedCiphers(target, version)) {
-      names.push(cipher.standardName);
-      offeredOn.set(cipher.standardName, version);
-    }
-  }
   const { bad, phaseOut } = evaluateCiphers(names);
   if (bad.length > 0) {
     report(

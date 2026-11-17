@@ -1,7 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
 import { OPTIONS, POST } from '@/app/oauth/register/route';
 import {
   installCloudflareContext,
@@ -10,9 +8,10 @@ import {
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 import { HTTP_SCHEME } from '../../../helpers/data.js';
+import type { DatabaseSync, SQLOutputValue } from 'node:sqlite';
 
 /** Matches a string of digits. */
-const DIGITS_ONLY = /^\d+$/;
+const DIGITS_ONLY = /^\d+$/u;
 
 const body = JSON.stringify({
   client_name: 'Assistant',
@@ -42,7 +41,7 @@ beforeEach(() => {
 afterEach(() => restore());
 
 /** How many clients are in the registry. */
-const registered = (): unknown =>
+const registered = (): SQLOutputValue | undefined =>
   raw.prepare('SELECT COUNT(*) AS n FROM oauth_clients').get()?.['n'];
 
 describe('POST /oauth/register', () => {

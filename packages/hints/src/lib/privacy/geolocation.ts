@@ -1,8 +1,8 @@
 /** The Geolocation API methods that ask the browser for a position. */
-const POSITION_METHODS = /\b(?:getCurrentPosition|watchPosition)\b/;
+const POSITION_METHODS = /\b(?:getCurrentPosition|watchPosition)\b/u;
 
 /** The property that exposes the API, as `navigator.geolocation`. */
-const GEOLOCATION = /\bgeolocation\b/;
+const GEOLOCATION = /\bgeolocation\b/u;
 
 /** Words that stay readable when they are the whole content of a string. */
 const KEPT_STRINGS: ReadonlySet<string> = new Set([
@@ -10,6 +10,16 @@ const KEPT_STRINGS: ReadonlySet<string> = new Set([
   'getCurrentPosition',
   'watchPosition',
 ]);
+
+/** A line comment, a block comment (capturing its body) or a string (capturing its quote and content). */
+const COMMENT_OR_STRING = new RegExp(
+  [
+    String.raw`//[^\n]*`,
+    String.raw`/\*([\s\S]*?)(?:\*/|$)`,
+    String.raw`(["'\x60])((?:\\[\s\S]?|(?!\2)[^\\])*)\2?`,
+  ].join('|'),
+  'gu',
+);
 
 /**
  * Removes what is not code from a script so that text in comments and
@@ -21,36 +31,25 @@ const KEPT_STRINGS: ReadonlySet<string> = new Set([
  * that contains a quote or comment marker.
  */
 export function stripCommentsAndStrings(source: string): string {
-  let out = '';
-  let index = 0;
-  while (index < source.length) {
-    const char = source[index];
-    const next = source[index + 1];
-    if (char === '/' && next === '/') {
-      while (index < source.length && source.codePointAt(index) !== 10) {
-        index++;
+  return source.replaceAll(
+    COMMENT_OR_STRING,
+    (
+      _match: string,
+      comment: string | undefined,
+      _quote: string | undefined,
+      content: string | undefined,
+    ) => {
+      if (comment !== undefined) {
+        return ` ${'\n'.repeat((comment.match(/\n/gu) ?? []).length)}`;
       }
-    } else if (char === '/' && next === '*') {
-      const end = source.indexOf('*/', index + 2);
-      const comment = source.slice(index, end === -1 ? source.length : end);
-      index = end === -1 ? source.length : end + 2;
-      out += ' ' + '\n'.repeat((comment.match(/\n/g) ?? []).length);
-    } else if (['"', "'", '`'].includes(char)) {
-      let end = index + 1;
-      while (end < source.length && source[end] !== char) {
-        end += source.codePointAt(end) === 92 ? 2 : 1;
+      if (content === undefined) {
+        return '';
       }
-      const content = source.slice(index + 1, end);
-      out += KEPT_STRINGS.has(content)
+      return KEPT_STRINGS.has(content)
         ? content
-        : '""' + '\n'.repeat((content.match(/\n/g) ?? []).length);
-      index = end + 1;
-    } else {
-      out += char;
-      index++;
-    }
-  }
-  return out;
+        : `""${'\n'.repeat((content.match(/\n/gu) ?? []).length)}`;
+    },
+  );
 }
 
 /**

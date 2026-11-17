@@ -16,15 +16,15 @@
  * its own message), so it is intentionally absent here; both surfaces call that
  * function directly.
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
 import {
-  type AltCoverage,
-  type RobotsAdvanced,
   formatKb,
   imageWeightLevel,
   resolvesAsUrl,
   TWITTER_CARD_TYPES,
 } from './read.js';
+import type { Finding } from '../headers/finding.js';
+import type { AltCoverage, RobotsAdvanced } from './read.js';
 
 /** The shape `firstSkippedLevel` returns: a jump of more than one level. */
 export interface SkippedLevel {

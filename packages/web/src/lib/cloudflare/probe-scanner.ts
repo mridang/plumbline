@@ -21,9 +21,9 @@
  * `wrangler.jsonc`).
  */
 
+import { DurableObject } from 'cloudflare:workers';
 import { ProbeClient } from '@mridang/plumbline/dist/engine/probe/client.js';
 import { runWorkerScan } from '@mridang/plumbline/dist/engine/probe/worker.js';
-import { DurableObject } from 'cloudflare:workers';
 
 import { createDatabase } from '@/domain/db/client';
 import { isRepoDisabled } from '@/domain/db/disabled';
@@ -32,16 +32,17 @@ import { createLive } from '@/domain/live/live';
 import { checkSite } from '@/domain/suite/deploy';
 import { handleDeployment } from '@/domain/suite/github-run';
 import { readLimits, scanLimits } from '@/domain/suite/limits';
-import { suiteRunOf, type SuiteRun } from '@/domain/suite/run';
+import { suiteRunOf } from '@/domain/suite/run';
 import {
   JOBS_PATH,
   SiteUnreachableError,
   collectScan,
-  type ScanJob,
 } from '@/domain/suite/scanner';
+import type { SuiteRun } from '@/domain/suite/run';
+import type { ScanJob } from '@/domain/suite/scanner';
 
 /** The first `=` of a line, splitting a key from its value. */
-const KEY_VALUE_SEPARATOR = /=(.*)/s;
+const KEY_VALUE_SEPARATOR = /=(.*)/su;
 
 /** The port the probe listens on. */
 const PORT = 8080;
@@ -166,6 +167,7 @@ export class ProbeScanner extends DurableObject<CloudflareEnv> {
    */
   private async perform(job: Readonly<ScanJob>): Promise<void> {
     const db = createDatabase(this.env.DB);
+    // eslint-disable-next-line functional/no-let -- set by the `run` callback while the job runs, read after it
     let trouble: Error | undefined;
     const run = async (url: string): Promise<SuiteRun> => {
       try {
@@ -219,10 +221,8 @@ export class ProbeScanner extends DurableObject<CloudflareEnv> {
 
   /** Run the job in the request and answer when it is done. */
   private async runJob(request: Request): Promise<Response> {
-    let job: ScanJob;
-    try {
-      job = await request.json<ScanJob>();
-    } catch {
+    const job = await request.json<ScanJob>().catch(() => undefined);
+    if (job === undefined) {
       return new Response('The job is not JSON.', { status: 400 });
     }
     try {
@@ -268,6 +268,7 @@ export class ProbeScanner extends DurableObject<CloudflareEnv> {
     await container.setInactivityTimeout(IDLE_MS);
     const port = container.getTcpPort(PORT);
     const deadline = Date.now() + START_TIMEOUT_MS;
+    // eslint-disable-next-line functional/no-loop-statements -- polls in turn, awaited, until the probe answers or the deadline passes
     for (;;) {
       try {
         const health = await port.fetch(`${CHANNEL}/healthz`);
@@ -280,7 +281,9 @@ export class ProbeScanner extends DurableObject<CloudflareEnv> {
       if (Date.now() > deadline) {
         return new Response('The probe did not start.', { status: 503 });
       }
-      await new Promise((resolve) => setTimeout(resolve, RETRY_MS));
+      await new Promise((resolve) => {
+        setTimeout(resolve, RETRY_MS);
+      });
     }
     const url = new URL(request.url);
     return port.fetch(`${CHANNEL}${url.pathname}`, {

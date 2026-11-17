@@ -9,8 +9,8 @@
 
 import { and, asc, eq } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import { deployUrlGaps } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 
 /** Note that the environment's latest deployment reported no address. */
 export async function noteGap(

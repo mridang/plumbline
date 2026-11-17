@@ -45,6 +45,8 @@ export interface SpfPolicyResult {
 interface Walk {
   status: SpfPolicyStatus;
   left: number;
+  /** The invalid records found on the way, innermost first. */
+  records: SpfPolicyResult['records'];
 }
 
 /** A bare `all` is `+all`; `?all` is only acceptable inside an include. */
@@ -63,124 +65,127 @@ export async function checkSpfPolicy(
   record: string,
   resolve: SpfResolver,
 ): Promise<SpfPolicyResult> {
-  const records: SpfPolicyResult['records'] = [];
-  const result = await walk(domain, record, resolve, records, {
+  const result = await walk(domain, record, resolve, {
     left: MAX_SPF_LOOKUPS,
     isInclude: false,
   });
-  return { status: result.status, lookupsLeft: result.left, records };
+  return {
+    status: result.status,
+    lookupsLeft: result.left,
+    records: result.records,
+  };
+}
+
+/** Adds the record itself to the invalid ones when its status is not valid. */
+function withRecord(domain: string, record: string, outcome: Walk): Walk {
+  return outcome.status === 'valid'
+    ? outcome
+    : { ...outcome, records: [...outcome.records, { domain, record }] };
 }
 
 async function walk(
   domain: string,
   record: string,
   resolve: SpfResolver,
-  records: SpfPolicyResult['records'],
   state: { left: number; isInclude: boolean },
 ): Promise<Walk> {
-  let left = state.left;
-  let status: SpfPolicyStatus = 'valid';
   const parsed = parseSpf(record);
 
   if (!parsed) {
-    status = 'invalid_syntax';
-  } else if (parsed.terms.length === 0) {
+    return withRecord(domain, record, {
+      status: 'invalid_syntax',
+      left: state.left,
+      records: [],
+    });
+  }
+  if (parsed.terms.length === 0) {
     // No terms at all: the default result is `?all`, which is neutral.
-    status = 'invalid_all';
-  } else {
-    const includes = [];
-    const redirects = [];
-    const allIndex = parsed.terms.findIndex((term) => term.kind === 'all');
-    const allFound = allIndex !== -1;
-    // Terms after the first `all` are never evaluated.
-    const evaluated = allFound ? parsed.terms.slice(0, allIndex) : parsed.terms;
-    for (const term of evaluated) {
-      if (term.kind === 'redirect') {
-        redirects.push(term);
-      }
-      if (term.kind === 'include') {
-        includes.push(term);
-      }
-      if (LOOKUP_KINDS.has(term.kind)) {
-        left -= 1;
-      }
-    }
-    const allTerm = allFound ? parsed.terms[allIndex] : null;
+    return withRecord(domain, record, {
+      status: 'invalid_all',
+      left: state.left,
+      records: [],
+    });
+  }
+  const allIndex = parsed.terms.findIndex((term) => term.kind === 'all');
+  const allFound = allIndex !== -1;
+  // Terms after the first `all` are never evaluated.
+  const evaluated = allFound ? parsed.terms.slice(0, allIndex) : parsed.terms;
+  const includes = evaluated.filter((term) => term.kind === 'include');
+  const redirects = evaluated.filter((term) => term.kind === 'redirect');
+  const left =
+    state.left - evaluated.filter((term) => LOOKUP_KINDS.has(term.kind)).length;
+  const allTerm = allFound ? parsed.terms[allIndex] : null;
+
+  const startStatus = ((): SpfPolicyStatus => {
     if (allTerm !== null && isInvalidAll(allTerm.qualifier, state.isInclude)) {
-      status = 'invalid_all';
+      return 'invalid_all';
     }
-
-    if (
-      status === 'valid' &&
-      !state.isInclude &&
-      redirects.length === 0 &&
-      !allFound
-    ) {
-      // Neither `all` nor `redirect`: the default is `?all`.
-      status = 'invalid_all';
+    // Neither `all` nor `redirect`: the default is `?all`.
+    if (!state.isInclude && redirects.length === 0 && !allFound) {
+      return 'invalid_all';
     }
-
     // Deliberate tightening of the original, which only noticed an exceeded
     // limit when it reached an include or redirect: a record needing more
     // than ten lookups is ineffective whatever its terms are.
-    if (status === 'valid' && left < 0) {
-      status = 'max_dns_lookups';
-    }
+    return left < 0 ? 'max_dns_lookups' : 'valid';
+  })();
 
-    // Redirects are followed after includes, but only the first one and never
-    // when `all` is present.
-    const targets = [...includes, ...(allFound ? [] : redirects.slice(0, 1))];
-    for (const term of targets) {
-      if (status === 'valid') {
-        const followed = await follow(
-          term.value ?? '',
-          resolve,
-          records,
-          left,
-          term.kind === 'redirect' ? 'invalid_redirect' : 'invalid_include',
-          term.kind !== 'redirect',
-        );
-        status = followed.status;
-        left = followed.left;
-      }
+  // Redirects are followed after includes, but only the first one and never
+  // when `all` is present.
+  const targets = [...includes, ...(allFound ? [] : redirects.slice(0, 1))];
+  // One target after the other, each with the lookups the one before left;
+  // the first bad result stops the rest.
+  const followAll = async (
+    remaining: typeof targets,
+    current: Walk,
+  ): Promise<Walk> => {
+    const [term, ...others] = remaining;
+    if (remaining.length === 0 || current.status !== 'valid') {
+      return current;
     }
-  }
-
-  if (status !== 'valid') {
-    records.push({ domain, record });
-  }
-  return { status, left };
+    const followed = await follow(
+      term.value ?? '',
+      resolve,
+      current.left,
+      term.kind === 'redirect' ? 'invalid_redirect' : 'invalid_include',
+      term.kind !== 'redirect',
+    );
+    return followAll(others, {
+      status: followed.status,
+      left: followed.left,
+      records: [...current.records, ...followed.records],
+    });
+  };
+  return withRecord(
+    domain,
+    record,
+    await followAll(targets, { status: startStatus, left, records: [] }),
+  );
 }
 
 /** Follows an `include` or `redirect` and maps a bad result to `badStatus`. */
 async function follow(
   target: string,
   resolve: SpfResolver,
-  records: SpfPolicyResult['records'],
   left: number,
   badStatus: SpfPolicyStatus,
   isInclude: boolean,
 ): Promise<Walk> {
   if (left < 0) {
-    return { status: 'max_dns_lookups', left };
+    return { status: 'max_dns_lookups', left, records: [] };
   }
   // Macros cannot be expanded without a real message, so they are not followed.
   if (target.includes('{')) {
-    return { status: 'valid', left };
+    return { status: 'valid', left, records: [] };
   }
-  let next: string | null;
-  try {
-    next = await resolve(target);
-  } catch {
-    return { status: badStatus, left };
-  }
+  const next = await resolve(target).catch(() => null);
   if (next === null) {
-    return { status: badStatus, left };
+    return { status: badStatus, left, records: [] };
   }
-  const inner = await walk(target, next, resolve, records, { left, isInclude });
+  const inner = await walk(target, next, resolve, { left, isInclude });
   const status =
     inner.status !== 'valid' && inner.status !== 'max_dns_lookups'
       ? badStatus
       : inner.status;
-  return { status, left: inner.left };
+  return { status, left: inner.left, records: inner.records };
 }

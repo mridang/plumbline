@@ -1,7 +1,7 @@
+import { toSeverity } from './to-severity.js';
 import type { ReportOptions } from 'hint';
 import type { Page } from '../../core/page.js';
 import type { Finding } from '../../lib/headers/finding.js';
-import { toSeverity } from './to-severity.js';
 
 /**
  * Reports each finding of a pure rule against the page, keeping the severity
@@ -12,6 +12,7 @@ export function reportFindings(
   findings: readonly Finding[],
   options: Partial<ReportOptions> = {},
 ): void {
+  // eslint-disable-next-line functional/no-loop-statements -- reports each finding
   for (const found of findings) {
     page.report(found.message, {
       ...options,

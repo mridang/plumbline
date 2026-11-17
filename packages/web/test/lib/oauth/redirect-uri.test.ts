@@ -48,6 +48,7 @@ describe('isAcceptableRedirectUri', () => {
     'chrome://settings',
     'myapp://callback',
     'ftp://example.com/cb',
+    // eslint-disable-next-line no-script-url -- the test feeds a hostile script URL to prove it is refused
     'javascript:alert(1)',
     'data:text/html,hi',
     'file:///etc/passwd',

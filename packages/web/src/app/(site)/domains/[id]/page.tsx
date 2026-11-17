@@ -1,6 +1,4 @@
-import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
-import type { ReactElement } from 'react';
 
 import { siteHref } from '@/components/repos/site-href';
 import { RUNS_SHOWN } from '@/components/runs/run-history';
@@ -15,6 +13,8 @@ import { latestReport, listReports } from '@/domain/db/reports';
 import { getRun, listRuns, runAsReport } from '@/domain/db/runs';
 import { serverNow } from '@/lib/clock';
 import { getCurrentUser } from '@/lib/core/auth/current-user';
+import type { ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 

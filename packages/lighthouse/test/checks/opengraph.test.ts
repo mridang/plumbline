@@ -1,10 +1,7 @@
 import { access } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from '@jest/globals';
-import type { Artifacts } from 'lighthouse';
-import type AuditNS from 'lighthouse/types/audit.js';
 import { SECTIONS } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
-import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import {
   ogDescriptionCouldBeLonger,
   ogDescriptionIsUrl,
@@ -34,8 +31,11 @@ import {
 } from '@mridang/webhint-hint-plumbline/dist/lib/opengraph/checks.js';
 import { ogMetaReader } from '../../src/adapt-opengraph.js';
 import { opengraphChecks } from '../../src/checks/opengraph.js';
-import type { AuditCheck } from '../../src/checks/types.js';
 import { HTTP_SCHEME } from '../helpers/data.js';
+import type { AuditCheck } from '../../src/checks/types.js';
+import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
+import type AuditNS from 'lighthouse/types/audit.js';
+import type { Artifacts } from 'lighthouse';
 
 /** Locale-aware comparator used to sort check ids deterministically. */
 const collator = new Intl.Collator();
@@ -58,7 +58,9 @@ function artifacts(metas: readonly Meta[]): Artifacts {
 
 /** A fresh audit context; the checks never read it, but the signature wants it. */
 function context(): AuditNS.Context {
-  return { computedCache: new Map() } as unknown as AuditNS.Context;
+  return {
+    computedCache: new Map<string, unknown>(),
+  } as unknown as AuditNS.Context;
 }
 
 /** Looks a check up by id, failing loudly if the registry drops it. */
@@ -399,38 +401,36 @@ describe('the twitter checks run()', () => {
  * a check id to the same function, so the equivalence test below can run the
  * function itself and the Lighthouse check side by side and assert they agree.
  */
-const LIB_FN: Readonly<
-  Record<
-    string,
-    (input: { meta: (key: string) => string | null }) => readonly Finding[]
-  >
-> = {
-  'opengraph-title-missing': ogTitleMissing,
-  'opengraph-title-too-long': ogTitleTooLong,
-  'opengraph-title-too-short': ogTitleTooShort,
-  'opengraph-description-missing': ogDescriptionMissing,
-  'opengraph-description-too-long': ogDescriptionTooLong,
-  'opengraph-description-slightly-long': ogDescriptionSlightlyLong,
-  'opengraph-description-too-short': ogDescriptionTooShort,
-  'opengraph-description-could-be-longer': ogDescriptionCouldBeLonger,
-  'opengraph-description-is-url': ogDescriptionIsUrl,
-  'opengraph-description-same-as-title': ogDescriptionSameAsTitle,
-  'opengraph-description-keyword-stuffing': ogDescriptionKeywordStuffing,
-  'opengraph-url-missing': ogUrlMissing,
-  'opengraph-type-missing': ogTypeMissing,
-  'opengraph-site-name-missing': ogSiteNameMissing,
-  'opengraph-locale-missing': ogLocaleMissing,
-  'opengraph-image-missing': ogImageMissing,
-  'opengraph-image-not-https': ogImageNotHttps,
-  'opengraph-image-dimensions-missing': ogImageDimensionsMissing,
-  'opengraph-image-alt-missing': ogImageAltMissing,
-  'twitter-card-missing': twitterCardMissing,
-  'twitter-card-not-large': twitterCardNotLarge,
-  'twitter-title-missing': twitterTitleMissing,
-  'twitter-description-missing': twitterDescriptionMissing,
-  'twitter-image-missing': twitterImageMissing,
-  'twitter-site-missing': twitterSiteMissing,
-};
+const LIB_FN = new Map<
+  string,
+  (input: { meta: (key: string) => string | null }) => readonly Finding[]
+>([
+  ['opengraph-title-missing', ogTitleMissing],
+  ['opengraph-title-too-long', ogTitleTooLong],
+  ['opengraph-title-too-short', ogTitleTooShort],
+  ['opengraph-description-missing', ogDescriptionMissing],
+  ['opengraph-description-too-long', ogDescriptionTooLong],
+  ['opengraph-description-slightly-long', ogDescriptionSlightlyLong],
+  ['opengraph-description-too-short', ogDescriptionTooShort],
+  ['opengraph-description-could-be-longer', ogDescriptionCouldBeLonger],
+  ['opengraph-description-is-url', ogDescriptionIsUrl],
+  ['opengraph-description-same-as-title', ogDescriptionSameAsTitle],
+  ['opengraph-description-keyword-stuffing', ogDescriptionKeywordStuffing],
+  ['opengraph-url-missing', ogUrlMissing],
+  ['opengraph-type-missing', ogTypeMissing],
+  ['opengraph-site-name-missing', ogSiteNameMissing],
+  ['opengraph-locale-missing', ogLocaleMissing],
+  ['opengraph-image-missing', ogImageMissing],
+  ['opengraph-image-not-https', ogImageNotHttps],
+  ['opengraph-image-dimensions-missing', ogImageDimensionsMissing],
+  ['opengraph-image-alt-missing', ogImageAltMissing],
+  ['twitter-card-missing', twitterCardMissing],
+  ['twitter-card-not-large', twitterCardNotLarge],
+  ['twitter-title-missing', twitterTitleMissing],
+  ['twitter-description-missing', twitterDescriptionMissing],
+  ['twitter-image-missing', twitterImageMissing],
+  ['twitter-site-missing', twitterSiteMissing],
+]);
 
 /**
  * A representative, deliberately-flawed meta set that trips several rules at
@@ -450,12 +450,12 @@ describe('the opengraph checks never drift from their library function', () => {
   it('yields exactly what the shared lib function yields, for every check', async () => {
     const meta = ogMetaReader(FLAWED_METAS);
     for (const c of opengraphChecks) {
-      const libraryFn = LIB_FN[c.id];
+      const libraryFn = LIB_FN.get(c.id);
       expect(libraryFn).toBeDefined();
       // Both sides read the same tags; the Lighthouse check is a pure
       // pass-through to the library function, so their findings must match.
       const viaCheck = await run(c.id, FLAWED_METAS);
-      const viaLibrary = [...libraryFn({ meta })];
+      const viaLibrary = [...(libraryFn?.({ meta }) ?? [])];
       expect(viaCheck).toEqual(viaLibrary);
     }
   });

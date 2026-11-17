@@ -4,10 +4,10 @@ import { onPage } from '../../core/page.js';
 import {
   domRelationshipLinks,
   headerRelationshipLinks,
-  type RelationshipLink,
 } from '../../lib/discovery/links.js';
 import { webmentionFindings } from '../../lib/discovery/webmention.js';
 import { reportFindings } from '../headers/shared.js';
+import type { RelationshipLink } from '../../lib/discovery/links.js';
 
 /**
  * W3C Webmention: a receiver advertises its endpoint with

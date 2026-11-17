@@ -10,21 +10,15 @@
  */
 
 import { foldText } from '@/lib/intl';
-import {
-  CHECKS,
-  SECTIONS,
-  TIERS,
-  type Check,
-  type Section,
-  type Tier,
-} from '@/domain/checks/catalogue';
+import { CHECKS, SECTIONS, TIERS } from '@/domain/checks/catalogue';
 import { findRuleSet } from '@/domain/checks/sets';
+import type { Check, Section, Tier } from '@/domain/checks/catalogue';
 
 /** The `plumbline:` prefix of a rule set id. */
-const PLUMBLINE_PREFIX = /^plumbline:/;
+const PLUMBLINE_PREFIX = /^plumbline:/u;
 
 /** One or more whitespace characters, where a search query splits into words. */
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /** A query string as Next hands it over. */
 export type SearchParams = Readonly<
@@ -67,19 +61,18 @@ export function queryOf(
   view: View,
   change: Partial<Record<keyof View, string | undefined>> = {},
 ): string {
-  const merged: Record<string, string | undefined> = {
+  const merged = {
     q: view.q || undefined,
     tier: view.tier,
     rule: view.rule,
     open: view.open,
     ...change,
   };
-  const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(merged)) {
-    if (value) {
-      query.set(key, value);
-    }
-  }
+  const query = new URLSearchParams(
+    Object.entries(merged).flatMap(([key, value]) =>
+      value ? [[key, value]] : [],
+    ),
+  );
   const text = query.toString();
   return text === '' ? '' : `?${text}`;
 }

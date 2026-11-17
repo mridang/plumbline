@@ -11,11 +11,9 @@
  * who installed the app for a repository may flip the switch.
  */
 
-import { and, eq, inArray, or, sql, type SQL } from 'drizzle-orm';
-import type { SQLiteColumn } from 'drizzle-orm/sqlite-core';
+import { and, eq, inArray, or, sql } from 'drizzle-orm';
 
 import { cutoffOf } from '@/domain/db/access';
-import type { Database } from '@/domain/db/client';
 import { installationOfRepo, ownerOfInstallation } from '@/domain/db/github';
 import {
   configDisabledRepos,
@@ -25,6 +23,9 @@ import {
   githubRepos,
   userRepositories,
 } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
+import type { SQL } from 'drizzle-orm';
+import type { SQLiteColumn } from 'drizzle-orm/sqlite-core';
 
 /**
  * Whether the person has a site in `repo` on their dashboard: one they added,

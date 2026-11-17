@@ -4,10 +4,10 @@ import { RepoLabel, splitRepo } from '@/components/repos/repo-label';
 import { html } from '../render';
 
 /** Matches owner span. */
-const OWNER_SPAN = /text-muted">acme\/<\/span>/;
+const OWNER_SPAN = /text-muted">acme\/<\/span>/u;
 
 /** Matches name span. */
-const NAME_SPAN = /font-semibold">site<\/span>/;
+const NAME_SPAN = /font-semibold">site<\/span>/u;
 
 describe('splitRepo', () => {
   it('splits owner and name, and copes with a name alone', () => {

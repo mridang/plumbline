@@ -3,18 +3,14 @@
  * host, finding name servers and resolving addresses through `dns.client`.
  */
 import { isIP } from '#net';
-import {
-  dns,
-  type DnsRecord,
-  type DnsResponse,
-  type DnsType,
-} from '../../core/dns.js';
+import { dns } from '../../core/dns.js';
+import type { DnsRecord, DnsResponse, DnsType } from '../../core/dns.js';
 
 /** Matches an IPv4-mapped IPv6 prefix. */
-const IPV4_MAPPED_PREFIX = /^::ffff:/i;
+const IPV4_MAPPED_PREFIX = /^::ffff:/iu;
 
 /** Matches a trailing dot. */
-const TRAILING_DOT = /\.$/;
+const TRAILING_DOT = /\.$/u;
 
 /** Numeric DNS record types used when filtering answers. */
 export const RR = {
@@ -34,8 +30,8 @@ export const RR = {
  * default is the URL's own host name; tests replace `hostOf` because the
  * test server is only reachable by IP address.
  */
-export const target: { hostOf: (url: URL) => string } = {
-  hostOf: (url) => url.hostname,
+export const target = {
+  hostOf: (url: URL): string => url.hostname,
 };
 
 /** Removes a trailing dot and lower-cases a DNS name. */
@@ -48,7 +44,7 @@ export function normalizeName(name: string): string {
  * IP literal (there is nothing to look up in DNS for those).
  */
 export function siteHost(url: URL): string | null {
-  const host = normalizeName(target.hostOf(url)).replaceAll(/^\[|\]$/g, '');
+  const host = normalizeName(target.hostOf(url)).replaceAll(/^\[|\]$/gu, '');
   return host === '' || isIP(host) !== 0 ? null : host;
 }
 
@@ -105,14 +101,15 @@ export interface Zone {
  * servers only if that suffix publishes NS records, which is rare.
  */
 export async function findNameservers(host: string): Promise<Zone> {
-  let name = normalizeName(host);
-  while (name.includes('.')) {
+  const climb = async (name: string): Promise<Zone> => {
+    if (!name.includes('.')) {
+      return { zone: normalizeName(host), nameservers: [] };
+    }
     const r = await safeQuery(name, 'NS');
     const ns = answersOfType(r, RR.NS).map((a) => normalizeName(a.data));
-    if (ns.length > 0) {
-      return { zone: name, nameservers: [...new Set(ns)] };
-    }
-    name = name.slice(name.indexOf('.') + 1);
-  }
-  return { zone: normalizeName(host), nameservers: [] };
+    return ns.length > 0
+      ? { zone: name, nameservers: [...new Set(ns)] }
+      : climb(name.slice(name.indexOf('.') + 1));
+  };
+  return climb(normalizeName(host));
 }

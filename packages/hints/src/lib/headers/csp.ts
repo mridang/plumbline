@@ -8,11 +8,13 @@
  * The OWASP Secure Headers Project rule is much simpler and lives in
  * `owaspCspFindings`.
  */
-import { finding, type Finding } from './finding.js';
-import { headerValues, type HeaderBag } from './http-headers.js';
+import { finding } from './finding.js';
+import { headerValues } from './http-headers.js';
+import type { Finding } from './finding.js';
+import type { HeaderBag } from './http-headers.js';
 
 /** Matches a run of whitespace. */
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /** A parsed policy: directive name to its set of sources. */
 export type CspMap = Map<string, Set<string>>;
@@ -28,11 +30,11 @@ const compareString = new Intl.Collator('en').compare;
 const SHORTEST_POLICY_LENGTH = 'img-src'.length - 1;
 
 // Directives the HTML spec does not honour in a <meta> policy.
-const DIRECTIVES_DISALLOWED_IN_META = [
+const DIRECTIVES_DISALLOWED_IN_META = new Set([
   'frame-ancestors',
   'report-uri',
   'sandbox',
-];
+]);
 
 // Repeated report-uri/report-to are tolerated (with a warning); any other
 // repeated directive makes the policy invalid.
@@ -61,42 +63,38 @@ function pathPartMatch(pathA: string, pathB: string): boolean {
   ) {
     return false;
   }
-  if (!exactMatch) {
-    listA.pop();
-  }
-  for (const [index, elementA] of listA.entries()) {
+  return (exactMatch ? listA : listA.slice(0, -1)).every((elementA, index) => {
     const elementB = listB.at(index);
-    if (elementB === undefined) {
-      return false;
-    }
-    if (decodeURIComponent(elementA) !== decodeURIComponent(elementB)) {
-      return false;
-    }
-  }
-  return true;
+    return (
+      elementB !== undefined &&
+      decodeURIComponent(elementA) === decodeURIComponent(elementB)
+    );
+  });
 }
 
-/** Records an allowed repeated directive, and throws for one that is not allowed. */
+/**
+ * Records an allowed repeated directive, and throws for one that is not
+ * allowed. Returns the warnings including the new one.
+ */
 function noteDuplicate(
   directive: string,
   policyIndex: number,
-  duplicateWarnings: Set<string>,
-): void {
+  duplicateWarnings: ReadonlySet<string>,
+): Set<string> {
   if (!ALLOWED_DUPLICATE_KEYS.has(directive)) {
     throw new CspParseError(
       `Duplicate directive ${directive} in policy ${policyIndex}`,
     );
   }
-  duplicateWarnings.add(directive);
+  return new Set([...duplicateWarnings, directive]);
 }
 
 /** Marks which adjacent sources in a sorted list survive the merge. */
-function markSurvivors(combined: SourceEntry[]): void {
-  for (let index = 1; index < combined.length; index++) {
-    const source = combined[index];
+function markSurvivors(combined: SourceEntry[]): SourceEntry[] {
+  return combined.map((source, index) => {
     const previous = combined[index - 1];
-    if (!source || !previous) {
-      continue;
+    if (index === 0 || !previous) {
+      return source;
     }
     // Within one policy a longer source that starts with a shorter one
     // is superfluous (example.com/foo and example.com/foobar).
@@ -104,23 +102,86 @@ function markSurvivors(combined: SourceEntry[]): void {
       source.index === previous.index &&
       source.source.startsWith(previous.source)
     ) {
-      source.keep = false;
+      return { ...source, keep: false };
     }
     // Across policies a source has to exist in both to count.
     if (
       source.index !== previous.index &&
       pathPartMatch(previous.source, source.source)
     ) {
-      source.keep = true;
+      return { ...source, keep: true };
     }
-  }
+    return source;
+  });
 }
 
-/** Marks every source as not yet confirmed by a later policy. */
-function resetKeep(sources: SourceEntry[]): void {
-  for (const source of sources) {
-    source.keep = false;
-  }
+/** What the scan of the policies has collected so far. */
+interface CspScan {
+  csp: ReadonlyMap<string, SourceEntry[]>;
+  duplicateWarnings: ReadonlySet<string>;
+}
+
+/** Folds one policy into the scan of the policies before it. */
+function scanPolicy(
+  scan: CspScan,
+  policy: string,
+  policyIndex: number,
+  policyCount: number,
+): CspScan {
+  const entries = policy
+    .split(';')
+    .map((part) => part.trim().split(WHITESPACE_RUN));
+  return entries.reduce<CspScan>(
+    (current, [directiveEntry, ...valueEntries], entryIndex) => {
+      if (!directiveEntry) {
+        return current;
+      }
+      // Directive names are case-insensitive since CSP3.
+      const directive = directiveEntry.toLowerCase();
+
+      // A repeated directive is technically fine (the first wins) but is
+      // reported as invalid so people notice, except report-uri/report-to.
+      const repeated = entries
+        .slice(0, entryIndex)
+        .some(([earlier]) => earlier?.toLowerCase() === directive);
+      const duplicateWarnings = repeated
+        ? noteDuplicate(directive, policyIndex, current.duplicateWarnings)
+        : current.duplicateWarnings;
+
+      const keep = policyIndex === 0;
+      const sourceValues = valueEntries.map((raw) => ({
+        source: raw.trim().toLocaleLowerCase(),
+        index: policyIndex,
+        keep,
+      }));
+      // A source list without values is the same as 'none'; any other
+      // directive without values adds none.
+      const values: SourceEntry[] =
+        sourceValues.length === 0 && directive.endsWith('-src')
+          ? [{ source: "'none'", index: policyIndex, keep }]
+          : sourceValues;
+
+      const combined = (
+        policyIndex === 0
+          ? values
+          : [...(current.csp.get(directive) ?? []), ...values]
+      ).toSorted((a, b) => compareString(a.source, b.source));
+
+      const survivors = markSurvivors(combined).filter((source) => source.keep);
+
+      // With more policies to come, everything from the first one must be
+      // re-confirmed by the later ones.
+      const stored =
+        policyIndex === 0 && policyCount > 1
+          ? survivors.map((source) => ({ ...source, keep: false }))
+          : survivors;
+      return {
+        csp: new Map([...current.csp, [directive, stored]]),
+        duplicateWarnings,
+      };
+    },
+    scan,
+  );
 }
 
 /**
@@ -131,98 +192,42 @@ function resetKeep(sources: SourceEntry[]): void {
  */
 export function parseCsp(cspList: string[]): CspMap {
   const cleanList = cspList.map((policy) =>
-    policy.replaceAll(/[\r\n]/g, '').trim(),
+    policy.replaceAll(/[\r\n]/gu, '').trim(),
   );
   if (cleanList.length === 0) {
-    return new Map();
+    return new Map<string, Set<string>>();
   }
-  for (const policy of cleanList) {
-    if (!policy || policy.length < SHORTEST_POLICY_LENGTH) {
-      throw new CspParseError(`Invalid policy: ${policy}`);
-    }
-  }
-
-  const csp = new Map<string, SourceEntry[]>();
-  const duplicateWarnings = new Set<string>();
-
-  for (const [policyIndex, policy] of cleanList.entries()) {
-    const seenInThisPolicy = new Set<string>();
-
-    for (const entry of policy
-      .split(';')
-      .map((part) => part.trim().split(WHITESPACE_RUN))) {
-      const [directiveEntry, ...valueEntries] = entry;
-      if (!directiveEntry) {
-        continue;
-      }
-      // Directive names are case-insensitive since CSP3.
-      const directive = directiveEntry.toLowerCase();
-
-      // A repeated directive is technically fine (the first wins) but is
-      // reported as invalid so people notice, except report-uri/report-to.
-      if (seenInThisPolicy.has(directive)) {
-        noteDuplicate(directive, policyIndex, duplicateWarnings);
-      } else {
-        seenInThisPolicy.add(directive);
-      }
-
-      const keep = policyIndex === 0;
-      const values: SourceEntry[] = [];
-      if (valueEntries.length > 0) {
-        values.push(
-          ...valueEntries.map((raw) => ({
-            source: raw.trim().toLocaleLowerCase(),
-            index: policyIndex,
-            keep,
-          })),
-        );
-      } else if (directive.endsWith('-src')) {
-        // A source list without values is the same as 'none'.
-        values.push({ source: "'none'", index: policyIndex, keep });
-      } else {
-        // A directive that is not a source list adds no values.
-      }
-
-      const combined =
-        policyIndex === 0
-          ? [...values]
-          : [...(csp.get(directive) ?? []), ...values];
-      combined.sort((a, b) => compareString(a.source, b.source));
-
-      markSurvivors(combined);
-      csp.set(
-        directive,
-        combined.filter((source) => source.keep),
-      );
-
-      // With more policies to come, everything from the first one must be
-      // re-confirmed by the later ones.
-      if (policyIndex === 0 && cleanList.length > 1) {
-        resetKeep(csp.get(directive) ?? []);
-      }
-    }
+  const invalid = cleanList.find(
+    (policy) => !policy || policy.length < SHORTEST_POLICY_LENGTH,
+  );
+  if (invalid !== undefined) {
+    throw new CspParseError(`Invalid policy: ${invalid}`);
   }
 
-  const result: CspMap = new Map();
-  for (const [directive, sources] of csp) {
-    result.set(
+  const { csp, duplicateWarnings } = cleanList.reduce<CspScan>(
+    (scan, policy, policyIndex) =>
+      scanPolicy(scan, policy, policyIndex, cleanList.length),
+    { csp: new Map<string, SourceEntry[]>(), duplicateWarnings: new Set() },
+  );
+
+  const result: CspMap = new Map(
+    Array.from(csp, ([directive, sources]): [string, Set<string>] => [
       directive,
       new Set(sources.length > 0 ? sources.map((s) => s.source) : ["'none'"]),
-    );
-  }
-  if (duplicateWarnings.size > 0) {
-    result.set(DUPLICATE_WARNINGS_KEY, duplicateWarnings);
-  }
-  return result;
+    ]),
+  );
+  return duplicateWarnings.size > 0
+    ? new Map([...result, [DUPLICATE_WARNINGS_KEY, new Set(duplicateWarnings)]])
+    : result;
 }
 
 /** Parses policies from `<meta>` tags, dropping header-only directives. */
 export function parseCspMeta(cspList: string[]): CspMap {
-  const parsed = parseCsp(cspList);
-  for (const directive of DIRECTIVES_DISALLOWED_IN_META) {
-    parsed.delete(directive);
-  }
-  return parsed;
+  return new Map(
+    [...parseCsp(cspList)].filter(
+      ([directive]) => !DIRECTIVES_DISALLOWED_IN_META.has(directive),
+    ),
+  );
 }
 
 /**
@@ -233,25 +238,26 @@ export function parseCspMeta(cspList: string[]): CspMap {
 export function parseCspLoose(
   policy: string | null | undefined,
 ): Map<string, string[]> {
-  const result = new Map<string, string[]>();
   if (!policy) {
-    return result;
+    return new Map<string, string[]>();
   }
-  const parts = policy
-    .replaceAll('\n', ';')
-    .trim()
-    .split(';')
-    .map((part) => part.trim())
-    .filter((part) => part.length >= 6);
-  for (const part of parts) {
-    const [name = '', ...values] = part.split(WHITESPACE_RUN);
-    if (result.has(name)) {
-      continue;
-    }
-    const lowered = values.map((value) => value.toLowerCase());
-    result.set(name, lowered.length > 0 ? lowered : ["'none'"]);
-  }
-  return result;
+  return new Map(
+    policy
+      .replaceAll('\n', ';')
+      .trim()
+      .split(';')
+      .map((part) => part.trim())
+      .filter((part) => part.length >= 6)
+      .map((part): [string, string[]] => {
+        const [name = '', ...values] = part.split(WHITESPACE_RUN);
+        const lowered = values.map((value) => value.toLowerCase());
+        return [name, lowered.length > 0 ? lowered : ["'none'"]];
+      })
+      .filter(
+        ([name], index, entries) =>
+          entries.findIndex(([first]) => first === name) === index,
+      ),
+  );
 }
 
 /** Observatory/Webbkoll CSP result codes. */
@@ -334,22 +340,13 @@ const intersects = (
   list: readonly string[],
 ): boolean => {
   const wanted = new Set(list);
-  for (const value of set) {
-    if (wanted.has(value)) {
-      return true;
-    }
-  }
-  return false;
+  return [...set].some((value) => wanted.has(value));
 };
 
-const hasNonceOrHash = (sources: Iterable<string>): boolean => {
-  for (const source of sources) {
-    if (NONCES_HASHES.some((prefix) => source.startsWith(prefix))) {
-      return true;
-    }
-  }
-  return false;
-};
+const hasNonceOrHash = (sources: Iterable<string>): boolean =>
+  [...sources].some((source) =>
+    NONCES_HASHES.some((prefix) => source.startsWith(prefix)),
+  );
 
 /** Splits header values on commas: commas separate policies (CSP3 2.2). */
 function splitPolicies(values: string[]): string[] {
@@ -360,61 +357,45 @@ function splitPolicies(values: string[]): string[] {
 export function analyzeCsp(input: CspInput): CspAnalysis {
   const httpPolicies = splitPolicies(input.headers);
   const metaPolicies = splitPolicies(input.metas);
-  const analysis: CspAnalysis = {
-    result: 'csp-not-implemented',
-    pass: false,
-    policy: null,
-    data: null,
-  };
 
+  // eslint-disable-next-line functional/no-let -- assigned inside try/catch, where a parse error means an invalid header
   let csp: CspMap;
   try {
     csp = parseCsp([...httpPolicies, ...metaPolicies]);
   } catch {
-    analysis.result = 'csp-header-invalid';
-    return analysis;
+    return {
+      result: 'csp-header-invalid',
+      pass: false,
+      policy: null,
+      data: null,
+    };
   }
+  // eslint-disable-next-line functional/no-let -- assigned inside try/catch, where a parse error means no header policy
   let httpOnly: CspMap;
   try {
     httpOnly = parseCsp(httpPolicies);
   } catch {
-    httpOnly = new Map();
+    httpOnly = new Map<string, Set<string>>();
   }
+  // eslint-disable-next-line functional/no-let -- assigned inside try/catch, where a parse error means no meta policy
   let metaOnly: CspMap;
   try {
     metaOnly = parseCspMeta(metaPolicies);
   } catch {
-    metaOnly = new Map();
+    metaOnly = new Map<string, Set<string>>();
   }
 
   // A <meta> policy with only header-only directives counts as nothing.
   if (httpOnly.size + metaOnly.size === 0) {
-    analysis.result = input.reportOnly
-      ? 'csp-not-implemented-but-reporting-enabled'
-      : 'csp-not-implemented';
-    return analysis;
+    return {
+      result: input.reportOnly
+        ? 'csp-not-implemented-but-reporting-enabled'
+        : 'csp-not-implemented',
+      pass: false,
+      policy: null,
+      data: null,
+    };
   }
-
-  const flags: CspPolicyFlags = {
-    antiClickjacking: false,
-    defaultNone: false,
-    insecureBaseUri: false,
-    insecureFormAction: false,
-    insecureSchemeActive: false,
-    insecureSchemePassive: false,
-    strictDynamic: false,
-    unsafeEval: false,
-    unsafeInline: false,
-    unsafeInlineStyle: false,
-    unsafeObjects: false,
-  };
-  analysis.policy = flags;
-
-  // The first problem found decides the result; later ones only set flags.
-  let result: CspResultCode | null = null;
-  const setResult = (code: CspResultCode): void => {
-    result ??= code;
-  };
 
   const baseUri = csp.get('base-uri') ?? new Set(['*']);
   // frame-ancestors is only honoured in a header, never in a <meta>.
@@ -428,117 +409,129 @@ export function analyzeCsp(input: CspInput): CspAnalysis {
     csp.get('style-src') ?? csp.get('default-src') ?? new Set(['*']);
 
   // A nonce or hash makes browsers ignore 'unsafe-inline'.
+  // eslint-disable-next-line functional/no-loop-statements -- cleans the parsed sets in place; analysis.data reports them cleaned and default-src may be shared
   for (const sources of [scriptSrc, styleSrc]) {
     if (hasNonceOrHash(sources)) {
+      // eslint-disable-next-line functional/immutable-data -- see the loop above
       sources.delete("'unsafe-inline'");
     }
   }
 
   // 'strict-dynamic' needs a nonce/hash; it then makes browsers ignore
   // scheme/host sources, 'self' and 'unsafe-inline'.
-  if (hasNonceOrHash(scriptSrc) && scriptSrc.has("'strict-dynamic'")) {
+  const strictDynamic =
+    hasNonceOrHash(scriptSrc) && scriptSrc.has("'strict-dynamic'");
+  if (strictDynamic) {
+    // eslint-disable-next-line functional/no-loop-statements -- cleans the parsed script-src set in place; analysis.data reports it cleaned and default-src may be shared
     for (const source of scriptSrc) {
       if (
         DANGEROUSLY_BROAD.some((broad) => source.startsWith(broad)) ||
         source === "'self'" ||
         source === "'unsafe-inline'"
       ) {
+        // eslint-disable-next-line functional/immutable-data -- see the loop above
         scriptSrc.delete(source);
       }
     }
-    flags.strictDynamic = true;
-  } else if (scriptSrc.has("'strict-dynamic'")) {
-    setResult('csp-header-invalid');
-  } else {
-    // Without 'strict-dynamic' the script sources are used as written.
   }
+  // Without 'strict-dynamic' the script sources are used as written, and
+  // 'strict-dynamic' without a nonce or hash is invalid.
+  const invalidStrictDynamic =
+    !strictDynamic && scriptSrc.has("'strict-dynamic'");
 
-  const activeSources: string[] = [];
-  for (const [directive, sources] of csp) {
-    if (!PASSIVE_DIRECTIVES.has(directive) && directive !== 'script-src') {
-      activeSources.push(...sources);
-    }
-  }
-  activeSources.push(...scriptSrc);
+  const activeSources = [
+    ...[...csp]
+      .filter(
+        ([directive]) =>
+          !PASSIVE_DIRECTIVES.has(directive) && directive !== 'script-src',
+      )
+      .flatMap(([, sources]) => [...sources]),
+    ...scriptSrc,
+  ];
 
   const passiveSources = [...PASSIVE_DIRECTIVES].flatMap((directive) => [
     ...(csp.get(directive) ?? csp.get('default-src') ?? []),
   ]);
 
+  const insecure = (source: string): boolean =>
+    source.startsWith('http:') || source.startsWith('ftp:');
   // No 'unsafe-inline' or data: in script-src, no overly broad scheme in
   // object-src or script-src, and both must be restricted at all.
-  if (
+  const unsafeInline =
     intersects(scriptSrc, [...DANGEROUSLY_BROAD, ...UNSAFE_INLINE]) ||
-    intersects(objectSrc, DANGEROUSLY_BROAD)
-  ) {
-    setResult('csp-implemented-with-unsafe-inline');
-    flags.unsafeInline = true;
-  }
-
-  // An HTTPS site must not allow http: or ftp: for active content.
-  if (
-    input.secure &&
-    activeSources.some((s) => s.startsWith('http:') || s.startsWith('ftp:'))
-  ) {
-    setResult('csp-implemented-with-insecure-scheme');
-    flags.insecureSchemeActive = true;
-  }
-
-  if (scriptSrc.has("'unsafe-eval'") || styleSrc.has("'unsafe-eval'")) {
-    setResult('csp-implemented-with-unsafe-eval');
-    flags.unsafeEval = true;
-  }
-
+    intersects(objectSrc, DANGEROUSLY_BROAD);
+  // An HTTPS site must not allow http: or ftp: for active content...
+  const insecureSchemeActive =
+    input.secure && activeSources.some((source) => insecure(source));
+  const unsafeEval =
+    scriptSrc.has("'unsafe-eval'") || styleSrc.has("'unsafe-eval'");
   // ...and not for passive content either.
-  if (
-    input.secure &&
-    passiveSources.some((s) => s.startsWith('http:') || s.startsWith('ftp:'))
-  ) {
-    setResult('csp-implemented-with-insecure-scheme-in-passive-content-only');
-    flags.insecureSchemePassive = true;
-  }
-
-  if (intersects(styleSrc, [...DANGEROUSLY_BROAD, ...UNSAFE_INLINE])) {
-    setResult('csp-implemented-with-unsafe-inline-in-style-src-only');
-    flags.unsafeInlineStyle = true;
-  }
-
-  const defaultSrc = csp.get('default-src');
-  if (defaultSrc?.has("'none'") && defaultSrc.size === 1) {
-    setResult('csp-implemented-with-no-unsafe-default-src-none');
-    flags.defaultNone = true;
-  } else {
-    setResult('csp-implemented-with-no-unsafe');
-  }
-
-  flags.antiClickjacking = !intersects(frameAncestors, DANGEROUSLY_BROAD);
-  flags.insecureBaseUri = intersects(baseUri, [
+  const insecureSchemePassive =
+    input.secure && passiveSources.some((source) => insecure(source));
+  const unsafeInlineStyle = intersects(styleSrc, [
     ...DANGEROUSLY_BROAD,
     ...UNSAFE_INLINE,
   ]);
-  flags.insecureFormAction = intersects(formAction, DANGEROUSLY_BROAD);
-  flags.unsafeObjects = intersects(objectSrc, DANGEROUSLY_BROAD);
+  const defaultSrc = csp.get('default-src');
+  const defaultNone =
+    defaultSrc?.has("'none'") === true && defaultSrc.size === 1;
 
-  const decided: CspResultCode = result ?? 'csp-implemented-with-no-unsafe';
-  analysis.result = decided;
-  if (PASSING.has(decided)) {
-    analysis.pass = true;
+  // The first problem found decides the result; later ones only set flags.
+  const problems: [boolean, CspResultCode][] = [
+    [invalidStrictDynamic, 'csp-header-invalid'],
+    [unsafeInline, 'csp-implemented-with-unsafe-inline'],
+    [insecureSchemeActive, 'csp-implemented-with-insecure-scheme'],
+    [unsafeEval, 'csp-implemented-with-unsafe-eval'],
+    [
+      insecureSchemePassive,
+      'csp-implemented-with-insecure-scheme-in-passive-content-only',
+    ],
+    [unsafeInlineStyle, 'csp-implemented-with-unsafe-inline-in-style-src-only'],
+  ];
+  const decided: CspResultCode =
+    problems.find(([found]) => found)?.[1] ??
+    (defaultNone
+      ? 'csp-implemented-with-no-unsafe-default-src-none'
+      : 'csp-implemented-with-no-unsafe');
+
+  const pass = PASSING.has(decided);
+  return {
     // A passing policy with a repeated report-uri/report-to is flagged.
-    if (csp.has(DUPLICATE_WARNINGS_KEY)) {
-      analysis.result = 'csp-implemented-but-duplicate-directives';
-    }
-  }
-
-  analysis.data = {};
-  for (const [key, value] of csp) {
-    if (key !== DUPLICATE_WARNINGS_KEY) {
-      // Code-unit order, as the default sort uses.
-      analysis.data[key] = [...value].toSorted(
-        (a, b) => Number(a > b) - Number(a < b),
-      );
-    }
-  }
-  return analysis;
+    result:
+      pass && csp.has(DUPLICATE_WARNINGS_KEY)
+        ? 'csp-implemented-but-duplicate-directives'
+        : decided,
+    pass,
+    policy: {
+      antiClickjacking: !intersects(frameAncestors, DANGEROUSLY_BROAD),
+      defaultNone,
+      insecureBaseUri: intersects(baseUri, [
+        ...DANGEROUSLY_BROAD,
+        ...UNSAFE_INLINE,
+      ]),
+      insecureFormAction: intersects(formAction, DANGEROUSLY_BROAD),
+      insecureSchemeActive,
+      insecureSchemePassive,
+      strictDynamic,
+      unsafeEval,
+      unsafeInline,
+      unsafeInlineStyle,
+      unsafeObjects: intersects(objectSrc, DANGEROUSLY_BROAD),
+    },
+    data: Object.fromEntries(
+      [...csp].flatMap(([key, value]) =>
+        key === DUPLICATE_WARNINGS_KEY
+          ? []
+          : // Code-unit order, as the default sort uses.
+            [
+              [
+                key,
+                [...value].toSorted((a, b) => Number(a > b) - Number(a < b)),
+              ],
+            ],
+      ),
+    ),
+  };
 }
 
 const MESSAGES: Record<CspResultCode, string> = {

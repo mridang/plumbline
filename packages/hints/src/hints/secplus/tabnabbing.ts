@@ -1,10 +1,8 @@
 import { Category, defineHint } from '../../core/define-hint.js';
 import { onPage } from '../../core/page.js';
-import {
-  tabnabbingFinding,
-  type AnchorLike,
-} from '../../lib/secplus/tabnabbing.js';
+import { tabnabbingFinding } from '../../lib/secplus/tabnabbing.js';
 import { reportElementFinding } from './shared.js';
+import type { AnchorLike } from '../../lib/secplus/tabnabbing.js';
 
 /**
  * Reverse tabnabbing.
@@ -32,6 +30,7 @@ export default defineHint({
       // Only anchors with a `target` attribute can open a new tab; the rest
       // cannot be reverse-tabnabbing vectors.
       const anchors = [...page.document.querySelectorAll('a[target]')];
+      // eslint-disable-next-line functional/no-loop-statements -- reports each finding
       for (const element of anchors) {
         const anchor: AnchorLike = {
           target: element.getAttribute('target'),

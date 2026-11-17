@@ -5,11 +5,8 @@
  * a tier, a target, who controls its fix and the month it was added. See
  * README.md for the policy; the data is the single source of truth.
  */
-import {
-  GROUP_DEFS,
-  SECTION_DEFS,
-  type GroupDefinition,
-} from './taxonomy-data.js';
+import { GROUP_DEFS, SECTION_DEFS } from './taxonomy-data.js';
+import type { GroupDefinition } from './taxonomy-data.js';
 
 export {
   AUDIENCE_TAGS,
@@ -27,6 +24,7 @@ export {
   TARGETS,
   TIERS,
 } from './taxonomy-data.js';
+
 export type {
   Control,
   GroupDefinition,

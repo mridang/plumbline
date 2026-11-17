@@ -1,9 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import {
-  catalogue,
-  entryOf,
-  type HintClass,
-} from '../../src/engine/catalogue.js';
+import { catalogue, entryOf } from '../../src/engine/catalogue.js';
+import type { HintClass } from '../../src/engine/catalogue.js';
 
 /** A hint class with the given `meta.docs`. */
 function hintWith(

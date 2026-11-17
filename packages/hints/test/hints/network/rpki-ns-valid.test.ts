@@ -1,14 +1,15 @@
 import { afterEach, describe, expect, it } from '@jest/globals';
 import hint from '../../../src/hints/network/rpki-ns-valid.js';
-import { rpki, type RpkiResult } from '../../../src/core/rpki.js';
+import { rpki } from '../../../src/core/rpki.js';
 import { installDns } from '../../lib/network/fake-dns.js';
 import { runHint } from '../../helpers/run-hint.js';
+import type { RpkiResult } from '../../../src/core/rpki.js';
 
 /** Matches the source code reported for an invalid nameserver route. */
-const NAMESERVER_INVALID_SOURCE = /^ns\.example\.net \S+ p AS1 invalid$/;
+const NAMESERVER_INVALID_SOURCE = /^ns\.example\.net \S+ p AS1 invalid$/u;
 
 /** Matches the source code reported for an unknown nameserver route. */
-const NAMESERVER_UNKNOWN_SOURCE = /^ns\.example\.net \S+ p AS1 unknown$/;
+const NAMESERVER_UNKNOWN_SOURCE = /^ns\.example\.net \S+ p AS1 unknown$/u;
 
 const realClient = rpki.client;
 let restore: () => void = () => undefined;

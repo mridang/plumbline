@@ -9,9 +9,9 @@
 import { SignJWT, importPKCS8 } from 'jose';
 import { z } from 'zod';
 
-import type { GitHubConfig } from './config';
 import { GitHubError } from './api';
 import { toPkcs8 } from './pkcs8';
+import type { GitHubConfig } from './config';
 
 /** GitHub allows a JWT to live ten minutes at most; this leaves room for clock drift. */
 const LIFETIME_SECONDS = 540;

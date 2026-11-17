@@ -1,4 +1,3 @@
-import type { HintDefinition } from '../../core/define-hint.js';
 import h0 from './opengraph-title-missing.js';
 import h1 from './opengraph-title-too-long.js';
 import h2 from './opengraph-title-too-short.js';
@@ -29,6 +28,7 @@ import h26 from './twitter-title-missing.js';
 import h27 from './twitter-description-missing.js';
 import h28 from './twitter-image-missing.js';
 import h29 from './twitter-site-missing.js';
+import type { HintDefinition } from '../../core/define-hint.js';
 
 /** Hints of the `opengraph` set: Open Graph, image and Twitter Card rules from opengraph.to. */
 export const opengraphHints: readonly HintDefinition[] = [

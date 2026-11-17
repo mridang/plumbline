@@ -81,7 +81,7 @@ describe('validateSecurityTxt', () => {
   it('reports an unterminated signature and a malformed envelope', () => {
     const open = `-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA512\n\n${ok}-----BEGIN PGP SIGNATURE-----\nabc\n`;
     expect(msgs(open)[0]).toContain('not terminated');
-    expect(msgs('-----BEGIN PGP SIGNED MESSAGE-----\n' + ok)[0]).toContain(
+    expect(msgs(`-----BEGIN PGP SIGNED MESSAGE-----\n${ok}`)[0]).toContain(
       'malformed',
     );
   });

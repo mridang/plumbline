@@ -46,7 +46,8 @@ import {
   isGroup,
 } from '@/domain/checks/catalogue';
 import { siteAddress } from '@/domain/suite/site-address';
-import { DEFAULT_RULE_SET, RULE_SETS, type Level } from '@/domain/suite/rules';
+import { DEFAULT_RULE_SET, RULE_SETS } from '@/domain/suite/rules';
+import type { Level } from '@/domain/suite/rules';
 
 /** The file names looked for in the root of a repository, in order. */
 export const CONFIG_FILES = [
@@ -163,15 +164,22 @@ function strayKeys(
  * and a problem that says why.
  */
 export function parseConfig(text: string, path: string): LoadedConfig {
-  let raw: unknown;
-  try {
-    raw = parse(text);
-  } catch (error) {
-    const reason = String(error instanceof Error ? error.message : error);
+  const read = (() => {
+    try {
+      return { raw: parse(text) as unknown };
+    } catch (error) {
+      return { error };
+    }
+  })();
+  if ('error' in read) {
+    const reason = String(
+      read.error instanceof Error ? read.error.message : read.error,
+    );
     return empty(path, [
       `${path} could not be read: ${reason.split('\n', 1)[0] ?? reason}`,
     ]);
   }
+  const { raw } = read;
   if (raw === null || raw === undefined) {
     return empty(path, []);
   }
@@ -179,11 +187,11 @@ export function parseConfig(text: string, path: string): LoadedConfig {
     return empty(path, [`${path} must be a mapping of settings.`]);
   }
   const record = raw as Record<string, unknown>;
-  const problems = strayKeys(record, TOP_KEYS, ` in ${path}`);
+  const topProblems = strayKeys(record, TOP_KEYS, ` in ${path}`);
   const parsed = ConfigSchema.safeParse(record);
   if (!parsed.success) {
     return empty(path, [
-      ...problems,
+      ...topProblems,
       ...parsed.error.issues.map(
         (issue) =>
           `${path}: ${issue.path.join('.') || 'the file'} ${issue.message.toLowerCase()}.`,
@@ -191,36 +199,49 @@ export function parseConfig(text: string, path: string): LoadedConfig {
     ]);
   }
   const config = parsed.data;
-  const environments: Partial<Record<Environment, Overlay>> = {};
-  for (const [name, overlay] of Object.entries(config.environments ?? {})) {
-    const environment = ENVIRONMENTS.find((known) => known === name);
-    if (!environment) {
-      problems.push(
-        `Unknown environment "${name}" in ${path}; use ${ENVIRONMENTS.join(' or ')}.`,
-      );
-      continue;
-    }
-    problems.push(
-      ...strayKeys(
-        (record['environments'] as Record<string, Record<string, unknown>>)[
-          name
-        ] ?? {},
-        OVERLAY_KEYS,
-        ` in the ${name} environment of ${path}`,
+  const named = Object.entries(config.environments ?? {}).map(
+    ([name, overlay]) => ({
+      name,
+      overlay,
+      environment: ENVIRONMENTS.find((known) => known === name),
+    }),
+  );
+  const environments: Partial<Record<Environment, Overlay>> =
+    Object.fromEntries(
+      named.flatMap(({ overlay, environment }) =>
+        environment
+          ? [
+              [
+                environment,
+                {
+                  extends: namesOf(overlay.extends),
+                  rules: overlay.rules ?? {},
+                },
+              ] as const,
+            ]
+          : [],
       ),
     );
-    environments[environment] = {
-      extends: namesOf(overlay.extends),
-      rules: overlay.rules ?? {},
-    };
-  }
-  problems.push(
-    ...strayKeys(
-      (record['deployments'] ?? {}) as Record<string, unknown>,
-      DEPLOYMENT_KEYS,
-      ` in deployments of ${path}`,
-    ),
+  const environmentProblems = named.flatMap(({ name, environment }) =>
+    environment
+      ? strayKeys(
+          (record['environments'] as Record<string, Record<string, unknown>>)[
+            name
+          ] ?? {},
+          OVERLAY_KEYS,
+          ` in the ${name} environment of ${path}`,
+        )
+      : [
+          `Unknown environment "${name}" in ${path}; use ${ENVIRONMENTS.join(' or ')}.`,
+        ],
   );
+  const deploymentProblems = strayKeys(
+    (record['deployments'] ?? {}) as Record<string, unknown>,
+    DEPLOYMENT_KEYS,
+    ` in deployments of ${path}`,
+  );
+  const sites = hostsOf(config.sites ?? [], 'sites', path);
+  const previews = previewsOf(config.previews ?? {}, path);
   return {
     path,
     extends: namesOf(config.extends),
@@ -229,52 +250,58 @@ export function parseConfig(text: string, path: string): LoadedConfig {
     issues: config.issues ?? 'error',
     dispatch: config.dispatch ?? false,
     enabled: config.enabled ?? true,
-    sites: hostsOf(config.sites ?? [], 'sites', path, problems),
+    sites: sites.hosts,
     siteEnvironments: config.deployments?.environments ?? null,
-    previews: previewsOf(config.previews ?? {}, path, problems),
-    problems,
+    previews: previews.pairs,
+    problems: [
+      ...topProblems,
+      ...environmentProblems,
+      ...deploymentProblems,
+      ...sites.problems,
+      ...previews.problems,
+    ],
   };
 }
 
-/** The distinct hosts of a list of addresses; each one that cannot be a site is a problem. */
-function hostsOf(
-  addresses: readonly string[],
-  where: string,
-  path: string,
-  problems: string[],
-): string[] {
-  const hosts = new Set<string>();
-  for (const address of addresses) {
-    const site = siteAddress(address);
-    if (site.ok) {
-      hosts.add(site.host);
-    } else {
-      problems.push(
-        `${path}: "${address}" in ${where} ${site.reason}, so it was ignored.`,
-      );
-    }
-  }
-  return [...hosts];
+/** The distinct hosts of a list of addresses, and a problem for each one that cannot be a site. */
+function hostsOf(addresses: readonly string[], where: string, path: string) {
+  const sites = addresses.map((address) => ({
+    address,
+    site: siteAddress(address),
+  }));
+  return {
+    hosts: [
+      ...new Set(sites.flatMap(({ site }) => (site.ok ? [site.host] : []))),
+    ],
+    problems: sites.flatMap(({ address, site }) =>
+      site.ok
+        ? []
+        : [
+            `${path}: "${address}" in ${where} ${site.reason}, so it was ignored.`,
+          ],
+    ),
+  };
 }
 
-/** The `previews` mapping as pattern and host pairs; each target that cannot be a site is a problem. */
-function previewsOf(
-  mapping: Readonly<Record<string, string>>,
-  path: string,
-  problems: string[],
-): (readonly [string, string])[] {
-  const pairs: (readonly [string, string])[] = [];
-  for (const [pattern, address] of Object.entries(mapping)) {
-    const site = siteAddress(address);
-    if (site.ok) {
-      pairs.push([pattern, site.host]);
-    } else {
-      problems.push(
-        `${path}: "${address}" for "${pattern}" in previews ${site.reason}, so it was ignored.`,
-      );
-    }
-  }
-  return pairs;
+/** The `previews` mapping as pattern and host pairs, and a problem for each target that cannot be a site. */
+function previewsOf(mapping: Readonly<Record<string, string>>, path: string) {
+  const sites = Object.entries(mapping).map(([pattern, address]) => ({
+    pattern,
+    address,
+    site: siteAddress(address),
+  }));
+  return {
+    pairs: sites.flatMap(({ pattern, site }) =>
+      site.ok ? [[pattern, site.host] as const] : [],
+    ),
+    problems: sites.flatMap(({ pattern, address, site }) =>
+      site.ok
+        ? []
+        : [
+            `${path}: "${address}" for "${pattern}" in previews ${site.reason}, so it was ignored.`,
+          ],
+    ),
+  };
 }
 
 /**
@@ -318,6 +345,12 @@ export function parseLevel(value: unknown): Level | undefined {
   return undefined;
 }
 
+/** Levels set in order (a later one wins), and the mistakes found while reading them. */
+interface Step {
+  readonly entries: readonly (readonly [string, Level])[];
+  readonly problems: readonly string[];
+}
+
 /** The rules a deployment is checked with, and what to tell the people who wrote the configuration. */
 export interface ResolvedRules {
   /** The level of every rule that is not off, by rule id. */
@@ -349,69 +382,92 @@ export function resolveRules(
   loaded: LoadedConfig | null,
   environment: Environment,
 ): ResolvedRules {
-  const levels = new Map<string, Level>();
-  const problems = [...(loaded?.problems ?? [])];
-  const extendWith = (named: string, where: string): void => {
+  const extendWith = (named: string, where: string): Step => {
     const [name = named, pin] = named.split('@');
     const set = Object.hasOwn(RULE_SETS, name) ? RULE_SETS[name] : undefined;
     if (!set) {
-      problems.push(`Unknown rule set "${name}" in ${where}.`);
-      return;
+      return {
+        entries: [],
+        problems: [`Unknown rule set "${name}" in ${where}.`],
+      };
     }
     const version = pin === undefined ? undefined : Number(pin);
     if (version !== undefined && !Number.isInteger(version)) {
-      problems.push(
-        `Rule set "${named}" in ${where} has a version that is not a whole number.`,
-      );
-      return;
+      return {
+        entries: [],
+        problems: [
+          `Rule set "${named}" in ${where} has a version that is not a whole number.`,
+        ],
+      };
     }
-    for (const [id, level] of Object.entries(set)) {
+    return {
       // A pinned set drops the checks added to the catalogue after the pin.
-      if (version === undefined || (findCheck(id)?.since ?? 0) <= version) {
-        levels.set(id, level);
-      }
-    }
+      entries: Object.entries(set).filter(
+        ([id]) =>
+          version === undefined || (findCheck(id)?.since ?? 0) <= version,
+      ),
+      problems: [],
+    };
   };
-  const apply = (overlay: Overlay, where: string): void => {
-    for (const named of overlay.extends ?? []) {
-      extendWith(named, where);
-    }
+  const apply = (overlay: Overlay, where: string): Step => {
     // Groups first, then single checks, so a check always beats its group.
     const entries = Object.entries(overlay.rules);
     const groups = entries.filter(([id]) => !isCheckId(id));
     const checks = entries.filter(([id]) => isCheckId(id));
-    for (const [id, value] of [groups, checks].flat()) {
-      const level = parseLevel(value);
-      if (level === undefined) {
-        problems.push(
-          `Rule "${id}" in ${where} is set to ${JSON.stringify(value)}; use off, warn, error or on.`,
-        );
-      } else if (isCheckId(id)) {
-        levels.set(id, level);
-      } else if (id.includes(':') && isGroup(id)) {
-        for (const check of checksInGroup(id)) levels.set(check.id, level);
-      } else {
-        problems.push(`Unknown rule "${id}" in ${where}.`);
-      }
-    }
+    const steps = [
+      ...(overlay.extends ?? []).map((named) => extendWith(named, where)),
+      ...[groups, checks].flat().map(([id, value]): Step => {
+        const level = parseLevel(value);
+        if (level === undefined) {
+          return {
+            entries: [],
+            problems: [
+              `Rule "${id}" in ${where} is set to ${JSON.stringify(value)}; use off, warn, error or on.`,
+            ],
+          };
+        }
+        if (isCheckId(id)) {
+          return { entries: [[id, level]], problems: [] };
+        }
+        if (id.includes(':') && isGroup(id)) {
+          return {
+            entries: checksInGroup(id).map(
+              (check) => [check.id, level] as const,
+            ),
+            problems: [],
+          };
+        }
+        return { entries: [], problems: [`Unknown rule "${id}" in ${where}.`] };
+      }),
+    ];
+    return {
+      entries: steps.flatMap((step) => step.entries),
+      problems: steps.flatMap((step) => step.problems),
+    };
   };
   const path = loaded?.path ?? 'the configuration';
-  apply(
-    {
-      extends: loaded?.extends ?? [DEFAULT_RULE_SET],
-      rules: loaded?.rules ?? {},
-    },
-    path,
-  );
   const overlay = loaded?.environments[environment];
-  if (overlay) {
-    apply(overlay, `the ${environment} environment of ${path}`);
-  }
-  for (const [id, level] of levels) {
-    if (level === 'off') {
-      levels.delete(id);
-    }
-  }
+  const applied = [
+    apply(
+      {
+        extends: loaded?.extends ?? [DEFAULT_RULE_SET],
+        rules: loaded?.rules ?? {},
+      },
+      path,
+    ),
+    ...(overlay
+      ? [apply(overlay, `the ${environment} environment of ${path}`)]
+      : []),
+  ];
+  const problems = [
+    ...(loaded?.problems ?? []),
+    ...applied.flatMap((step) => step.problems),
+  ];
+  const levels = new Map(
+    [...new Map(applied.flatMap((step) => step.entries))].filter(
+      ([, level]) => level !== 'off',
+    ),
+  );
   return {
     levels,
     issues: loaded?.issues ?? 'error',

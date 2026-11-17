@@ -66,12 +66,12 @@ describe('Announcer', () => {
   it('is a polite live region that only assistive technology shows', () => {
     const out = html(<Announcer message="Report loaded: example.com" />);
     expect(out).toContain('class="sr-only"');
-    expect(out).toContain('role="status"');
+    expect(out).toContain('<output');
     expect(out).toContain('aria-live="polite"');
     expect(out).toContain('Report loaded: example.com');
   });
 
   it('is present, and empty, before there is anything to announce', () => {
-    expect(html(<Announcer message="" />)).toContain('role="status"');
+    expect(html(<Announcer message="" />)).toContain('<output');
   });
 });

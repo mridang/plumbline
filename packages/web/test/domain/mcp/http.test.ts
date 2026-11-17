@@ -1,30 +1,28 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { User } from '@/domain/db/users';
-import type { McpAuth } from '@/domain/mcp/auth';
 import {
   corsFor,
   handleMcpPost,
   originRefusal,
   respondToMcp,
   unauthorizedResponse,
-  type Authenticate,
 } from '@/domain/mcp/http';
-import {
-  MAX_BODY_BYTES,
-  type RateLimitDeps,
-} from '@/domain/mcp/request-limits';
+import { MAX_BODY_BYTES } from '@/domain/mcp/request-limits';
 import { SERVER_INFO } from '@/domain/mcp/server-info';
 import { REPORT_RESOURCE_URI } from '@/domain/mcp/ui-resources';
+import type { RateLimitDeps } from '@/domain/mcp/request-limits';
+import type { Authenticate } from '@/domain/mcp/http';
+import type { McpAuth } from '@/domain/mcp/auth';
+import type { User } from '@/domain/db/users';
 import type { RateLimitStore } from '@/lib/rate-limit';
 
 /** Shared collator for locale-aware ordering. */
 const collator = new Intl.Collator();
 
 /** Matches the "too large" message. */
-const TOO_LARGE = /too large/;
+const TOO_LARGE = /too large/u;
 /** Matches the rate limit message. */
-const RATE_LIMIT = /Rate limit/;
+const RATE_LIMIT = /Rate limit/u;
 
 const ALL_SCOPES = ['checks:read', 'checks:write'];
 const SELF = 'https://plumbline.test';
@@ -55,11 +53,7 @@ const modernHeaders = (method: string, name?: string) => ({
 });
 
 /** Counters kept in a map, so no test reaches a database. */
-function fakeRate(over: Partial<RateLimitDeps> = {}): {
-  readonly deps: RateLimitDeps;
-  readonly keys: () => readonly string[];
-  readonly purged: number[];
-} {
+function fakeRate(over: Partial<RateLimitDeps> = {}) {
   const counters = new Map<string, { count: number; windowStart: number }>();
   const purged: number[] = [];
   const store: RateLimitStore = {
@@ -276,8 +270,9 @@ describe('handleMcpPost — scopes', () => {
       fakeRate().deps,
     );
     expect(res.status).toBe(403);
-    expect(res.headers.get('www-authenticate')).toContain('insufficient_scope');
-    expect(res.headers.get('www-authenticate')).toContain('checks:write');
+    const challenge = res.headers.get('www-authenticate');
+    expect(challenge).toContain('insufficient_scope');
+    expect(challenge).toContain('checks:write');
   });
 
   it('names the request in the refusal, and uses no code from the legacy range', async () => {

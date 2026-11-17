@@ -26,11 +26,7 @@ import type { MetaElementArtifact } from './adapt.js';
 import type { TechDocumentLike } from '@mridang/webhint-hint-plumbline/dist/lib/technical/read.js';
 
 /** Matches a run of whitespace, used to split space-separated tokens. */
-const WHITESPACE_RUN = /\s+/;
-
-type NetworkRequest = Artifacts.NetworkRequest;
-type LinkElement = Artifacts.LinkElement;
-type ImageElement = Artifacts.ImageElement;
+const WHITESPACE_RUN = /\s+/u;
 
 /**
  * Parses the served HTML into a real `TechDocumentLike` document with
@@ -54,7 +50,7 @@ export function htmlDocument(html: string, base: string): TechDocumentLike {
  * reads the same set of images the page displayed.
  */
 export function imageSourceDocument(
-  images: readonly ImageElement[],
+  images: readonly Artifacts.ImageElement[],
 ): TechDocumentLike {
   const elements = images.map((image) => ({
     nodeName: 'IMG',
@@ -81,17 +77,21 @@ export function metaDocument(
   metaElements: readonly MetaElementArtifact[],
 ): TechDocumentLike {
   const byName = (name: string) =>
-    metaElements
-      .filter((meta) => (meta.name ?? '').trim().toLowerCase() === name)
-      .map((meta) => ({
-        nodeName: 'META',
-        tagName: 'META',
-        getAttribute(attribute: string): string | null {
-          return attribute.toLowerCase() === 'content'
-            ? (meta.content ?? null)
-            : null;
-        },
-      }));
+    metaElements.flatMap((meta) =>
+      (meta.name ?? '').trim().toLowerCase() === name
+        ? [
+            {
+              nodeName: 'META',
+              tagName: 'META',
+              getAttribute(attribute: string): string | null {
+                return attribute.toLowerCase() === 'content'
+                  ? (meta.content ?? null)
+                  : null;
+              },
+            },
+          ]
+        : [],
+    );
   const match = (selector: string) => {
     const lowered = selector.toLowerCase();
     if (lowered.includes('name="robots"')) {
@@ -116,24 +116,23 @@ export function metaDocument(
  * Lighthouse's already-resolved one.
  */
 export function linkDocument(
-  linkElements: readonly LinkElement[],
+  linkElements: readonly Artifacts.LinkElement[],
 ): TechDocumentLike {
-  const canonical = linkElements
-    .filter((link) =>
-      (link.rel ?? '')
-        .toLowerCase()
-        .split(WHITESPACE_RUN)
-        .includes('canonical'),
-    )
-    .map((link) => ({
-      nodeName: 'LINK',
-      tagName: 'LINK',
-      getAttribute(attribute: string): string | null {
-        return attribute.toLowerCase() === 'href'
-          ? (link.hrefRaw ?? link.href ?? null)
-          : null;
-      },
-    }));
+  const canonical = linkElements.flatMap((link) =>
+    (link.rel ?? '').toLowerCase().split(WHITESPACE_RUN).includes('canonical')
+      ? [
+          {
+            nodeName: 'LINK',
+            tagName: 'LINK',
+            getAttribute(attribute: string): string | null {
+              return attribute.toLowerCase() === 'href'
+                ? (link.hrefRaw ?? link.href ?? null)
+                : null;
+            },
+          },
+        ]
+      : [],
+  );
   const match = (selector: string) =>
     selector.toLowerCase().includes('canonical') ? canonical : [];
   return {
@@ -151,26 +150,24 @@ export function linkDocument(
  * Source artifact: `NetworkRecords` (from `DevtoolsLog`).
  */
 export function imageSizesByUrl(
-  records: readonly NetworkRequest[],
+  records: readonly Artifacts.NetworkRequest[],
 ): Map<string, number> {
-  const sizes = new Map<string, number>();
-  for (const record of records) {
-    if (record.resourceType !== 'Image') {
-      continue;
-    }
-    const header = (record.responseHeaders ?? []).find(
-      (entry) => entry.name.toLowerCase() === 'content-length',
-    );
-    const declared = header ? Number(header.value) : Number.NaN;
-    const bytes =
-      Number.isFinite(declared) && declared > 0
-        ? declared
-        : record.resourceSize;
-    if (Number.isFinite(bytes) && bytes > 0) {
-      sizes.set(record.url, bytes);
-    }
-  }
-  return sizes;
+  return new Map(
+    records.flatMap((record): [string, number][] => {
+      if (record.resourceType !== 'Image') {
+        return [];
+      }
+      const header = (record.responseHeaders ?? []).find(
+        (entry) => entry.name.toLowerCase() === 'content-length',
+      );
+      const declared = header ? Number(header.value) : Number.NaN;
+      const bytes =
+        Number.isFinite(declared) && declared > 0
+          ? declared
+          : record.resourceSize;
+      return Number.isFinite(bytes) && bytes > 0 ? [[record.url, bytes]] : [];
+    }),
+  );
 }
 
 /**
@@ -178,6 +175,6 @@ export function imageSizesByUrl(
  * redirect-chain hint reports them: the URLs of the requests that redirected
  * before the final one. Empty when the document was reached without a redirect.
  */
-export function redirectHops(main: NetworkRequest): string[] {
+export function redirectHops(main: Artifacts.NetworkRequest): string[] {
   return (main.redirects ?? []).map((record) => record.url);
 }

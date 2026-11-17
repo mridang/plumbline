@@ -5,10 +5,11 @@
  * checks but not their thresholds, so the limits are ours and are exported as
  * constants. Pure functions over plain values.
  */
-import { finding, type Finding } from '../headers/finding.js';
+import { finding } from '../headers/finding.js';
+import type { Finding } from '../headers/finding.js';
 
 /** Matches a file extension before a query or fragment. */
-const FILE_EXTENSION = /\.([a-z0-9]+)(?:[?#]|$)/i;
+const FILE_EXTENSION = /\.([a-z0-9]+)(?:[?#]|$)/iu;
 
 /** Lighthouse's "reduce initial server response time" limit. */
 export const SLOW_RESPONSE_MS = 600;
@@ -85,32 +86,32 @@ export interface AssetCounts {
 
 /** Warns about many requests and about scripts that block rendering. */
 export function assetFindings(counts: AssetCounts): Finding[] {
-  const out: Finding[] = [];
-  if (counts.scripts > MAX_SCRIPTS) {
-    out.push(
-      finding(
-        'warning',
-        `The page loads ${counts.scripts} external scripts; combine or remove some (more than ${MAX_SCRIPTS}).`,
-      ),
-    );
-  }
-  if (counts.stylesheets > MAX_STYLESHEETS) {
-    out.push(
-      finding(
-        'warning',
-        `The page loads ${counts.stylesheets} external stylesheets; combine some (more than ${MAX_STYLESHEETS}).`,
-      ),
-    );
-  }
-  if (counts.blockingScripts > 0) {
-    out.push(
-      finding(
-        'warning',
-        `${counts.blockingScripts} scripts in the <head> block rendering; add defer or async.`,
-      ),
-    );
-  }
-  return out;
+  return [
+    ...(counts.scripts > MAX_SCRIPTS
+      ? [
+          finding(
+            'warning',
+            `The page loads ${counts.scripts} external scripts; combine or remove some (more than ${MAX_SCRIPTS}).`,
+          ),
+        ]
+      : []),
+    ...(counts.stylesheets > MAX_STYLESHEETS
+      ? [
+          finding(
+            'warning',
+            `The page loads ${counts.stylesheets} external stylesheets; combine some (more than ${MAX_STYLESHEETS}).`,
+          ),
+        ]
+      : []),
+    ...(counts.blockingScripts > 0
+      ? [
+          finding(
+            'warning',
+            `${counts.blockingScripts} scripts in the <head> block rendering; add defer or async.`,
+          ),
+        ]
+      : []),
+  ];
 }
 
 /** How efficient an image URL's format is, from its file extension. */
@@ -137,18 +138,16 @@ export interface ImageFormatInfo {
 export function imageFormatFindings(
   images: readonly ImageFormatInfo[],
 ): Finding[] {
-  let legacy = 0;
-  let modern = 0;
-  for (const image of images) {
+  // Images with no recognised raster format are counted in neither.
+  const kinds = images.map((image) => {
     const formats = new Set(image.urls.map((url) => imageFormat(url)));
     if (image.hasModernSource || formats.has('modern')) {
-      modern += 1;
-    } else if (formats.has('legacy')) {
-      legacy += 1;
-    } else {
-      // Images with no recognised raster format are not counted.
+      return 'modern';
     }
-  }
+    return formats.has('legacy') ? 'legacy' : 'other';
+  });
+  const legacy = kinds.filter((kind) => kind === 'legacy').length;
+  const modern = kinds.filter((kind) => kind === 'modern').length;
   if (legacy === 0) {
     return [];
   }
