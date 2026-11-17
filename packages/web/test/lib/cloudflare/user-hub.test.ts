@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { cloudflareWorkersStub } from '../../helpers/cloudflare-workers-stub';
 import { APP_MIGRATIONS } from '../core/db/migrations';
 import { sqliteD1 } from '../core/db/sqlite-d1';
+import { double } from '../../helpers/double';
 
 // eslint-disable-next-line tslop/no-module-mocking -- `cloudflare:workers` exists only inside the Workers runtime, so Node has no real module to import
 jest.unstable_mockModule('cloudflare:workers', cloudflareWorkersStub, {
@@ -38,7 +39,7 @@ afterEach(() => {
 /** A hub over a fresh database, and a way to append events for people. */
 function setup() {
   const { d1, raw } = sqliteD1(...APP_MIGRATIONS);
-  const hub = new TestHub({} as never, { DB: d1 } as never);
+  const hub = new TestHub(double({}), double({ DB: d1 }));
   hubs.push(hub);
   const append = (from: number, to: number, user = Number(PERSON)) => {
     for (let n = from; n <= to; n += 1) {

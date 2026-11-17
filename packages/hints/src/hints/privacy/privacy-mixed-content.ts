@@ -36,8 +36,12 @@ export default defineHint({
       ] as const;
       // eslint-disable-next-line functional/no-loop-statements -- reports each insecure request
       for (const { request, severity, kind } of groups.flatMap(
-        ([requests, severity, kind]) =>
-          requests.map((request) => ({ request, severity, kind })),
+        ([requests, level, label]) =>
+          requests.map((entry) => ({
+            request: entry,
+            severity: level,
+            kind: label,
+          })),
       )) {
         context.report(
           request.url,

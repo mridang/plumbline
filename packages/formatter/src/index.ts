@@ -91,6 +91,7 @@ export default class ExtraFormatter implements IFormatter {
   ): Promise<void> {
     const target = options.target ?? '';
     const hints: HintInfo[] = (options.resources?.hints ?? []).map((ctor) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- webhint types docs with three fields; the extras are the fields defineHint stamps onto it, all optional
       const extras = (ctor.meta.docs ?? {}) as Extras;
       return {
         id: ctor.meta.id,

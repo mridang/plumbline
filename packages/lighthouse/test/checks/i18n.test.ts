@@ -5,6 +5,7 @@ import {
   hreflangValidCodes,
 } from '@mridang/webhint-hint-plumbline/dist/lib/i18n/checks.js';
 import { i18nChecks } from '../../src/checks/i18n.js';
+import { artifactsOf, contextOf } from '../helpers/fixtures.js';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type { AuditCheck } from '../../src/checks/types.js';
@@ -28,17 +29,17 @@ function document_(head: string): string {
 /** Builds the artifacts an i18n check reads. */
 function artifacts(overrides: { html?: string; url?: string }): Artifacts {
   const url = overrides.url ?? 'https://x.test/';
-  return {
+  return artifactsOf({
     MainDocumentContent: overrides.html ?? '',
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
-  } as Artifacts;
+  });
 }
 
 /** A fresh audit context. */
 function context(): AuditNS.Context {
-  return {
+  return contextOf({
     computedCache: new Map<string, unknown>(),
-  } as unknown as AuditNS.Context;
+  });
 }
 
 /** Looks a check up by id, failing loudly if the registry drops it. */

@@ -549,6 +549,7 @@ describe('checkSite, keeping only the checks the rules turn on', () => {
     outcomes: JSON.stringify(outcomes),
     statuses: outcomes.map(({ id, status }) => ({
       id,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as "passed" | "warned" | "failed", which the values it was built from or the checks around it establish
       status: status as 'warned' | 'failed' | 'passed',
     })),
   });

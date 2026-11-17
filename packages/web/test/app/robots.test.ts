@@ -9,6 +9,7 @@ const TRAILING_DOLLAR = /\$$/u;
 type Group = { userAgent: string; allow: string[]; disallow: string[] };
 
 describe('robots.txt', () => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as Group[], which the values it was built from or the checks around it establish
   const groups = robots().rules as Group[];
   const rule = groups[0]!;
 

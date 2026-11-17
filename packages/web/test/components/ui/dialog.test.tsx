@@ -217,10 +217,12 @@ describe('closedBy', () => {
 describe('supportsLightDismiss', () => {
   it('is true for a dialog whose browser knows closedBy', () => {
     const prototype = { closedBy: 'closerequest' };
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
     expect(supportsLightDismiss(Object.create(prototype) as object)).toBe(true);
   });
 
   it('is false for a dialog whose browser does not, so it must watch for the click itself', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
     expect(supportsLightDismiss(Object.create({ open: false }) as object)).toBe(
       false,
     );

@@ -59,11 +59,10 @@ export default defineHint({
             codeLanguage: 'html',
           });
         } else {
-          const element =
-            offenders[
-              findings.slice(0, index).filter((f) => f.severity !== 'hint')
-                .length
-            ];
+          const element = offenders.at(
+            findings.slice(0, index).filter((f) => f.severity !== 'hint')
+              .length,
+          );
           page.report(found.message, {
             severity: toSeverity(found.severity),
             ...(element ? { element } : {}),

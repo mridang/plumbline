@@ -57,7 +57,7 @@ describe('referrerPolicyFindings (observatory)', () => {
     'unsafe-url',
     'no-referrer-when-downgrade',
   ])('errors on unsafe %s', (value) => {
-    const [f] = referrerPolicyFindings(value, 'observatory');
+    const f = referrerPolicyFindings(value, 'observatory').at(0);
     expect(f?.severity).toBe('error');
     expect(f?.message).toContain('set unsafely');
   });
@@ -69,7 +69,7 @@ describe('referrerPolicyFindings (observatory)', () => {
   });
 
   it('warns when nothing is declared', () => {
-    const [f] = referrerPolicyFindings(null, 'observatory');
+    const f = referrerPolicyFindings(null, 'observatory').at(0);
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain('not implemented');
   });

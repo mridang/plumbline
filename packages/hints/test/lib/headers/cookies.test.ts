@@ -121,7 +121,7 @@ describe('cookieFindings', () => {
   });
 
   it('hints to use SameSite', () => {
-    const [f] = cookieFindings(['a=1; Secure; HttpOnly'], false);
+    const f = cookieFindings(['a=1; Secure; HttpOnly'], false).at(0);
     expect(f?.severity).toBe('hint');
     expect(f?.message).toContain('SameSite');
   });
@@ -146,7 +146,7 @@ describe('cookieFindings', () => {
       'Session cookie set without using the Secure flag',
     ],
   ])('errors for %s', (cookie, text) => {
-    const [f] = cookieFindings([cookie], false);
+    const f = cookieFindings([cookie], false).at(0);
     expect(f?.severity).toBe('error');
     expect(f?.message).toContain(text);
   });

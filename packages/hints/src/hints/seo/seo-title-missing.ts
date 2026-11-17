@@ -24,7 +24,7 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      const [found] = titleMissing(page.document);
+      const found = titleMissing(page.document).at(0);
       if (found) {
         const existing = page.document.querySelector('title:not(svg title)');
         page.report(

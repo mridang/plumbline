@@ -114,6 +114,7 @@ export const scheduled: ExportedHandlerScheduledHandler<CloudflareEnv> = async (
     batch: readLimits(env).scheduledBatch,
   });
   // Jobs whose messages were lost or dead-lettered are sent again.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- the queue binding is absent in a Worker deployed without it, and the guard keeps the sweep from running against nothing
   if (queue) {
     await sweepPending(db, queue);
   }

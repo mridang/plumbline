@@ -28,7 +28,7 @@ export default defineHint({
         problem: AnchorProblem;
       }[] = anchors.flatMap((element) => {
         const problem = anchorProblem({
-          text: element.textContent ?? '',
+          text: element.textContent,
           label: element.getAttribute('aria-label') ?? '',
           imageAlt: element.querySelector('img')?.getAttribute('alt') ?? '',
           title: element.getAttribute('title') ?? '',

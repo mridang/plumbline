@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { privacyChecks } from '../../src/checks/privacy.js';
 import { HTTP_SCHEME } from '../helpers/data.js';
+import { artifactsOf, contextOf, devtoolsLogOf } from '../helpers/fixtures.js';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type { AuditCheck } from '../../src/checks/types.js';
@@ -70,23 +71,23 @@ function devtoolsLog(
       },
     ];
   });
-  return events as Artifacts['DevtoolsLog'];
+  return devtoolsLogOf(events);
 }
 
 /** Builds the artifacts a privacy check reads over the given requests. */
 function artifacts(requests: readonly RequestSpec[]): Artifacts {
   const pageUrl = requests[0]?.url ?? '';
-  return {
+  return artifactsOf({
     DevtoolsLog: devtoolsLog(requests),
     URL: { mainDocumentUrl: pageUrl, finalDisplayedUrl: pageUrl },
-  } as Artifacts;
+  });
 }
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */
 function context(): AuditNS.Context {
-  return {
+  return contextOf({
     computedCache: new Map<string, unknown>(),
-  } as unknown as AuditNS.Context;
+  });
 }
 
 /** Looks a check up by id, failing loudly if the registry drops it. */
@@ -144,10 +145,10 @@ describe('the privacy registry', () => {
   });
 
   it('is not applicable when the run captured no document', async () => {
-    const empty = {
+    const empty = artifactsOf({
       DevtoolsLog: [] as Artifacts['DevtoolsLog'],
       URL: { mainDocumentUrl: '', finalDisplayedUrl: '' },
-    } as Artifacts;
+    });
     for (const c of privacyChecks) {
       expect(await c.run(empty, context())).toBeNull();
     }

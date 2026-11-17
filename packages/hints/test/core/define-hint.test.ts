@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { Severity } from '@hint/utils-types';
 import { Category, defineHint } from '../../src/core/define-hint.js';
 import { onPage } from '../../src/core/page.js';
+import { documentationOf } from '../helpers/documentation.js';
 import { runHint } from '../helpers/run-hint.js';
 
 const make = (
@@ -28,12 +29,10 @@ const make = (
 describe('defineHint', () => {
   it('exposes the reference and groups on the metadata', () => {
     const hint = make('https://example.com/rule');
-    const documentation = hint.ctor.meta.docs as {
-      url?: string;
-      groups?: string[];
-    };
-    expect(documentation.url).toBe('https://example.com/rule');
-    expect(documentation.groups).toEqual(['seo']);
+    expect(documentationOf(hint.ctor)).toMatchObject({
+      url: 'https://example.com/rule',
+      groups: ['seo'],
+    });
   });
 
   it('adds the reference as further reading to every finding', async () => {

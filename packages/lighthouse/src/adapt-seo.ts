@@ -112,9 +112,11 @@ export function seoDocument(artifacts: {
   MainDocumentContent: string;
   url?: string;
 }): DocumentLike {
-  const html = artifacts.MainDocumentContent ?? '';
   // Parse the raw HTML once; every HTML-backed selector is answered from it.
-  const parsed = parseDocument(html, artifacts.url ?? '');
+  const parsed = parseDocument(
+    artifacts.MainDocumentContent,
+    artifacts.url ?? '',
+  );
 
   // `<meta>` elements, from the parsed artifact.
   const metas = artifacts.MetaElements.map((meta) =>

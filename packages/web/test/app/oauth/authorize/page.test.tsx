@@ -132,11 +132,7 @@ async function visit(
     ...query,
   };
   const searchParams = Promise.resolve(
-    Object.fromEntries(
-      Object.entries(params).filter(
-        (entry): entry is [string, string] => entry[1] !== undefined,
-      ),
-    ),
+    Object.fromEntries(Object.entries(params)),
   );
   try {
     const element: ReactElement = await AuthorizePage({ searchParams });
@@ -153,6 +149,7 @@ describe('the authorize page', () => {
   it('shows the approval screen to a signed-in person the app lets through', async () => {
     const result = await visit();
     expect(result).toHaveProperty('markup');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { markup: string; }, which the values it was built from or the checks around it establish
     const { markup } = result as { markup: string };
     expect(markup).toContain('Connect <span');
     expect(markup).toContain('Assistant');
@@ -165,6 +162,7 @@ describe('the authorize page', () => {
     state.user = null;
     const result = await visit();
     expect(result).toHaveProperty('redirectedTo');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { redirectedTo: string; }, which the values it was built from or the checks around it establish
     const to = (result as { redirectedTo: string }).redirectedTo;
     expect(to).toMatch(LOGIN_RETURN_TO_PATH);
     const back = new URL(
@@ -178,6 +176,7 @@ describe('the authorize page', () => {
 
   it('shows what the app asks for first instead of the approval', async () => {
     state.gate = <p>Do this first</p>;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { markup: string; }, which the values it was built from or the checks around it establish
     const { markup } = (await visit()) as { markup: string };
     expect(markup).toContain('Do this first');
     expect(markup).not.toContain('action="/oauth/consent"');
@@ -194,6 +193,7 @@ describe('the authorize page', () => {
 
   describe('a problem with the request', () => {
     it('shows an unknown client as an error, with no way back to anywhere', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { markup: string; }, which the values it was built from or the checks around it establish
       const { markup } = (await visit({ client_id: 'nobody' })) as {
         markup: string;
       };
@@ -205,6 +205,7 @@ describe('the authorize page', () => {
     it('shows a redirect address the client never registered as an error, never redirecting to it', async () => {
       const result = await visit({ redirect_uri: 'https://evil.example/cb' });
       expect(result).toHaveProperty('markup');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { markup: string; }, which the values it was built from or the checks around it establish
       expect((result as { markup: string }).markup).not.toContain(
         'evil.example',
       );
@@ -213,6 +214,7 @@ describe('the authorize page', () => {
     it('does not redirect an anonymously registered client before the person has seen anything, and offers the way back as a link', async () => {
       const result = await visit({ response_type: 'token' });
       expect(result).not.toHaveProperty('redirectedTo');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { markup: string; }, which the values it was built from or the checks around it establish
       const { markup } = result as { markup: string };
       expect(markup).toContain('unsupported_response_type');
       expect(markup).toContain('Return to the app');
@@ -238,6 +240,7 @@ describe('the authorize page', () => {
         response_type: 'token',
       });
       expect(result).toHaveProperty('redirectedTo');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { redirectedTo: string; }, which the values it was built from or the checks around it establish
       const to = new URL((result as { redirectedTo: string }).redirectedTo);
       expect(to.origin + to.pathname).toBe('https://claude.ai/cb');
       expect(to.searchParams.get('error')).toBe('unsupported_response_type');
@@ -252,6 +255,7 @@ describe('the authorize page', () => {
           'INSERT INTO rate_limits (key, window_start, count) VALUES (?, ?, ?)',
         )
         .run('oauth-cimd-all:all', Math.floor(Date.now() / 1000), 10_000);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { markup: string; }, which the values it was built from or the checks around it establish
       const { markup } = (await visit({
         client_id: CIMD,
         redirect_uri: 'https://claude.ai/cb',
@@ -262,6 +266,7 @@ describe('the authorize page', () => {
 
   it('does not fetch a client document from this very site', async () => {
     const fetched = jest.spyOn(globalThis, 'fetch');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { markup: string; }, which the values it was built from or the checks around it establish
     const { markup } = (await visit({
       client_id: 'https://app.test/.well-known/oauth-authorization-server',
       redirect_uri: 'https://app.test/cb',
@@ -288,6 +293,7 @@ describe('the authorize page', () => {
     raw
       .prepare('UPDATE oauth_clients SET redirect_uris = ? WHERE client_id = ?')
       .run(JSON.stringify(['https://elsewhere.example/cb']), CIMD);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { markup: string; }, which the values it was built from or the checks around it establish
     const { markup } = (await visit({
       client_id: CIMD,
       redirect_uri: 'https://elsewhere.example/cb',

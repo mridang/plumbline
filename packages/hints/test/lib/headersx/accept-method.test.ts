@@ -20,12 +20,12 @@ describe('acceptPostFindings', () => {
   });
 
   it('warns on an empty value', () => {
-    const [f] = acceptPostFindings(' '.repeat(3));
+    const f = acceptPostFindings(' '.repeat(3)).at(0);
     expect(f?.severity).toBe('warning');
   });
 
   it('warns on a value that is not a media type', () => {
-    const [f] = acceptPostFindings('json');
+    const f = acceptPostFindings('json').at(0);
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain('Accept-Post');
   });
@@ -33,7 +33,7 @@ describe('acceptPostFindings', () => {
 
 describe('acceptPatchFindings', () => {
   it('names Accept-Patch in its message', () => {
-    const [f] = acceptPatchFindings('nonsense');
+    const f = acceptPatchFindings('nonsense').at(0);
     expect(f?.message).toContain('Accept-Patch');
   });
 

@@ -109,14 +109,13 @@ export function keepStreamWhileVisible(
 
 /** The real browser and clock. */
 export function browserEnvironment(): Environment {
-  const listen = <T extends Event>(
+  const listen = (
     target: EventTarget,
     name: string,
-    handler: (event: T) => void,
+    handler: (event: Event) => void,
   ): (() => void) => {
-    const wrapped = (event: Event): void => handler(event as T);
-    target.addEventListener(name, wrapped);
-    return () => target.removeEventListener(name, wrapped);
+    target.addEventListener(name, handler);
+    return () => target.removeEventListener(name, handler);
   };
   return {
     visible: () => document.visibilityState === 'visible',
@@ -124,10 +123,17 @@ export function browserEnvironment(): Environment {
       listen(document, 'visibilitychange', handler),
     onPageHide: (handler) => listen(globalThis, 'pagehide', handler),
     onPageShow: (handler) =>
-      listen<PageTransitionEvent>(globalThis, 'pageshow', (event) =>
-        handler(event.persisted),
-      ),
+      listen(globalThis, 'pageshow', (event) => {
+        if (event instanceof PageTransitionEvent) {
+          handler(event.persisted);
+        }
+      }),
     setTimeout: (handler, ms) => setTimeout(handler, ms),
-    clearTimeout: (timer) => clearTimeout(timer as number),
+    clearTimeout: (timer) => {
+      // The timer is the number `setTimeout` above gave back.
+      if (typeof timer === 'number') {
+        clearTimeout(timer);
+      }
+    },
   };
 }

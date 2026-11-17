@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { LANDING_PATH, SESSION_COOKIE, sessionClaims } from '@/domain/auth/app';
 import { installFakeTracing } from '../../lib/core/observability/fake-tracing';
+import { double } from '../../helpers/double';
 import { SESSION_SECRET, appRequest } from './auth-test-kit';
 import type { User } from '@/domain/auth/store';
 
@@ -12,13 +13,13 @@ const SESSION_SECRET_PATTERN = /SESSION_SECRET/u;
 
 const tracing = installFakeTracing();
 
-const person = {
+const person = double<User>({
   id: 4,
   email: 'ada@example.com',
   name: 'Ada',
   picture: null,
   session_epoch: 2,
-} as unknown as User;
+});
 
 const upsertGoogleUser = jest
   .fn<(profile: unknown) => Promise<User>>()
@@ -50,7 +51,7 @@ const env = (
   overrides: Record<string, string> = {},
   removed: readonly string[] = [],
 ) =>
-  ({
+  double<CloudflareEnv>({
     ...Object.fromEntries(
       Object.entries({
         SESSION_SECRET,
@@ -59,7 +60,7 @@ const env = (
         ...overrides,
       }).filter(([name]) => !removed.includes(name)),
     ),
-  }) as unknown as CloudflareEnv;
+  });
 
 /** No return address: a lookup that finds nothing yields `undefined`. */
 const NO_RETURN_TO = new Map<string, string>().get('returnTo');

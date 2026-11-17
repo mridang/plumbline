@@ -113,6 +113,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
   const parsed = ((): { readonly delivery: Delivery } | undefined => {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any; the body is GitHub's signed delivery payload, whose shape is the Delivery type
       return { delivery: JSON.parse(body) as Delivery };
     } catch {
       return undefined;

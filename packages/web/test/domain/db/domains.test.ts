@@ -392,7 +392,7 @@ describe('migration 0012_registry_domains', () => {
       raw
         .prepare('SELECT host FROM domains WHERE user_id = 1 ORDER BY host')
         .all()
-        .map((row) => String(row['host'])),
+        .map((record) => String(record['host'])),
     ).toEqual(['pypi.org', 'site.example.com']);
   });
 });

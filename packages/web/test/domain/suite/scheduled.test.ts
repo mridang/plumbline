@@ -16,6 +16,7 @@ import {
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
+import { double } from '../../helpers/double';
 
 /** A queue that keeps what it is sent. */
 const queue = () => {
@@ -111,9 +112,9 @@ describe('scheduled', () => {
     await addDomain(db, 1, 'a.test', 'acme/a');
     const q = queue();
     await scheduled(
-      {} as ScheduledController,
-      { DB: made.d1, SCAN_QUEUE: q } as never,
-      {} as never,
+      double<ScheduledController>({}),
+      double({ DB: made.d1, SCAN_QUEUE: q }),
+      double({}),
     );
     expect(q.sent).toEqual([{ key: 'site:1:a.test', seq: 1 }]);
     expect(await latestRuns(db, 1, 'a.test', 1)).toEqual([]);
@@ -129,9 +130,9 @@ describe('scheduled', () => {
     const q = queue();
     jest.spyOn(console, 'error').mockImplementation(() => undefined);
     await scheduled(
-      {} as ScheduledController,
-      { DB: made.d1, SCAN_QUEUE: q } as never,
-      {} as never,
+      double<ScheduledController>({}),
+      double({ DB: made.d1, SCAN_QUEUE: q }),
+      double({}),
     );
     expect(q.sent).toEqual([{ key: 'deploy:acme/a', seq: 1 }]);
   });
@@ -142,9 +143,9 @@ describe('scheduled', () => {
     jest.spyOn(console, 'error').mockImplementation(() => undefined);
     await expect(
       scheduled(
-        {} as ScheduledController,
-        { DB: made.d1 } as never,
-        {} as never,
+        double<ScheduledController>({}),
+        double({ DB: made.d1 }),
+        double({}),
       ),
     ).resolves.toBeUndefined();
   });

@@ -20,6 +20,7 @@ import {
   PROFILES,
   SECTIONS,
   SET_INFOS,
+  TIERS,
 } from '@/domain/checks/catalogue';
 import type { Check, SetInfo, SetKind, Tier } from '@/domain/checks/catalogue';
 
@@ -84,7 +85,11 @@ function membersOf(set: SetInfo): string[] {
       (a, b) => Number(a > b) - Number(a < b),
     );
   }
-  const tier = set.id.slice(set.id.lastIndexOf('/') + 1) as Tier;
+  const name = set.id.slice(set.id.lastIndexOf('/') + 1);
+  const tier = TIERS.find((candidate) => candidate === name);
+  if (tier === undefined) {
+    return [];
+  }
   return idsOf(TIERS_OF[tier], new Set(set.section ? [set.section] : []));
 }
 

@@ -3,6 +3,8 @@
  * They work on plain parsed JSON, so they can be unit tested without a scan.
  */
 
+import { isObject } from '../wellknown/json.js';
+
 /** The part of a DOM element these readers use. */
 interface ElementLike {
   textContent: string;
@@ -70,9 +72,7 @@ function nodeHasType(node: Record<string, unknown>, type: string): boolean {
 
 /** Narrows an unknown value to a plain object. */
 function asObject(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
+  return isObject(value) ? value : null;
 }
 
 /**

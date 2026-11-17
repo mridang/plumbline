@@ -82,22 +82,23 @@ export function computeScore(
   results: readonly CheckResult[],
   commerceDetected: boolean,
 ): AgentScore {
-  const categories: CategoryScore[] = (
-    Object.keys(CATEGORY_LABELS) as AgentCategory[]
-  ).map((category) => {
-    const own = results.filter(
-      (r) => r.category === category && SCORED.has(r.id),
-    );
-    const passed = own.filter((r) => r.passed).length;
-    return {
-      category,
-      label: CATEGORY_LABELS[category],
-      score: own.length === 0 ? 0 : Math.round((passed / own.length) * 100),
-      passed,
-      total: own.length,
-      counted: own.length > 0 && (category !== 'commerce' || commerceDetected),
-    };
-  });
+  const categories: CategoryScore[] =
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Object.keys is typed string[]; CATEGORY_LABELS is declared as Record<AgentCategory, string>, so its keys are exactly the AgentCategory union
+    (Object.keys(CATEGORY_LABELS) as AgentCategory[]).map((category) => {
+      const own = results.filter(
+        (r) => r.category === category && SCORED.has(r.id),
+      );
+      const passed = own.filter((r) => r.passed).length;
+      return {
+        category,
+        label: CATEGORY_LABELS[category],
+        score: own.length === 0 ? 0 : Math.round((passed / own.length) * 100),
+        passed,
+        total: own.length,
+        counted:
+          own.length > 0 && (category !== 'commerce' || commerceDetected),
+      };
+    });
   const counted = categories.filter((entry) => entry.counted);
   // Use the exact fraction, not the rounded category score.
   const weighted = counted.reduce(

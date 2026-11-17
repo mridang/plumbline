@@ -32,6 +32,7 @@ async function toNetworkData(
   // split safely because cookie dates contain commas, so keep them as a list.
   const cookies = response.headers.getSetCookie();
   if (cookies.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- webhint types a header value as a string, but a response that sets several cookies carries them as a list, as the hints under test expect
     headers['set-cookie'] = cookies as unknown as string;
   }
   const contentType = headers['content-type'] ?? '';
@@ -91,6 +92,7 @@ export default class TestConnector implements IConnector {
   public constructor(engine: Engine) {
     this.engine = engine;
     // Parser events are not part of the typed engine events.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the engine's typed events do not list the parser events, which it nevertheless emits
     (engine as unknown as ParserEvents).on(
       'parse::end::html',
       async (event) => {
@@ -123,8 +125,16 @@ export default class TestConnector implements IConnector {
    * emits a `fetch::end` event for each, as a browser based connector does.
    */
   private async fetchSubresources(base: URL): Promise<void> {
-    const found: { element: unknown; url: string; kind: string }[] = [];
-    const add = (selector: string, attribute: string, kind: string) => {
+    const found: {
+      element: ReturnType<HTMLDocument['querySelectorAll']>[number];
+      url: string;
+      kind: 'script' | 'image' | 'css';
+    }[] = [];
+    const add = (
+      selector: string,
+      attribute: string,
+      kind: 'script' | 'image' | 'css',
+    ) => {
       for (const element of this.dom?.querySelectorAll(selector) ?? []) {
         const value = element.getAttribute(attribute);
         if (!value) {
@@ -143,15 +153,12 @@ export default class TestConnector implements IConnector {
     for (const { element, url, kind } of found) {
       try {
         const data = await this.fetchContent(url);
-        await this.engine.emitAsync(
-          `fetch::end::${kind}` as 'fetch::end::*',
-          {
-            element,
-            request: data.request,
-            resource: url,
-            response: data.response,
-          } as never,
-        );
+        await this.engine.emitAsync(`fetch::end::${kind}` as const, {
+          element,
+          request: data.request,
+          resource: url,
+          response: data.response,
+        });
       } catch {
         // A resource that cannot be downloaded is not reported here.
       }

@@ -27,7 +27,7 @@ export default defineHint({
   reference: TERMS_OF_SERVICE_LINK_REF,
   setup(context) {
     onPage(context, (page) => {
-      const [found] = termsOfServiceLinkMissing(page.document);
+      const found = termsOfServiceLinkMissing(page.document).at(0);
       if (found) {
         page.report(found.message, {
           severity: Severity.warning,

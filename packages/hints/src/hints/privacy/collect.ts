@@ -113,7 +113,10 @@ export function collectRequests(context: HintContext): Collected {
   // eslint-disable-next-line functional/no-loop-statements -- registers one handler per request type
   for (const type of TYPES) {
     context.on(`fetch::end::${type}`, (event) => {
-      const headers = event.response.headers ?? {};
+      // A response that carried no headers reaches the hint without the field,
+      // although webhint types it as always present.
+      const responseHeaders = event.response.headers as HttpHeaders | undefined;
+      const headers = responseHeaders ?? {};
       // The page document is by definition first party and is not a request
       // made by the page, so it is kept apart.
       if (type === 'html' && event.resource === collected.pageUrl) {

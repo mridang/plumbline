@@ -9,6 +9,7 @@ import {
   checkRateLimits,
   readJsonBody,
 } from '@/domain/mcp/request-limits';
+import { double } from '../../helpers/double';
 import type { RateLimitDeps } from '@/domain/mcp/request-limits';
 import type { User } from '@/domain/db/users';
 import type { RateLimitStore } from '@/lib/rate-limit';
@@ -138,7 +139,7 @@ const deps = (
   ...over,
 });
 
-const someone = { id: 7 } as User;
+const someone = double<User>({ id: 7 });
 const call = { jsonrpc: '2.0' as const, id: 1, method: 'tools/call' };
 const list = { jsonrpc: '2.0' as const, id: 1, method: 'tools/list' };
 const note = { jsonrpc: '2.0' as const, method: 'notifications/initialized' };
@@ -220,7 +221,7 @@ describe('checkRateLimits', () => {
       ),
     );
     expect(
-      await checkRateLimits({ id: 8 } as User, [call], deps(store)),
+      await checkRateLimits(double<User>({ id: 8 }), [call], deps(store)),
     ).toBeNull();
   });
 
@@ -312,7 +313,9 @@ describe('chargeRefusedBody', () => {
         chargeRefusedBody(someone, deps(store)),
       ),
     );
-    expect(await chargeRefusedBody({ id: 8 } as User, deps(store))).toBeNull();
+    expect(
+      await chargeRefusedBody(double<User>({ id: 8 }), deps(store)),
+    ).toBeNull();
   });
 
   it('lets the request go on being refused as before when the counters cannot be reached', async () => {

@@ -48,10 +48,10 @@ const HASH_LENGTH_IN_URI = 12;
  * unchanged, different as soon as it changes.
  *
  * @param name - The view's file name stem, such as `report`.
- * @param contentHash - SHA-256 (hex) of the view's HTML, from the build step.
+ * @param hash - SHA-256 (hex) of the view's HTML, from the build step.
  */
-export function hashedResourceUri(name: string, contentHash: string): string {
-  return `ui://plumbline/${name}-${contentHash.slice(0, HASH_LENGTH_IN_URI)}.html`;
+export function hashedResourceUri(name: string, hash: string): string {
+  return `ui://plumbline/${name}-${hash.slice(0, HASH_LENGTH_IN_URI)}.html`;
 }
 
 /**

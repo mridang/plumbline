@@ -22,6 +22,7 @@ export { ProbeScanner } from '@/lib/cloudflare/probe-scanner';
 const extraHandlers: Partial<ExportedHandler<CloudflareEnv>> = {
   scheduled,
   // The scan queue's consumer, and the dead-letter queue's.
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the consumer handles the scan queue's message type, while the handler type is generic over the message of any queue
   queue: handleScanQueue as ExportedHandlerQueueHandler<CloudflareEnv>,
 };
 

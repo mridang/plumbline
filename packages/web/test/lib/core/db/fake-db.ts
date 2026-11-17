@@ -1,3 +1,4 @@
+import { double } from '../../../helpers/double';
 import type { Database } from '@/domain/db/client';
 
 /** One call made on a fake query builder. */
@@ -92,6 +93,7 @@ export function fakeDb(results: FakeResults = {}): FakeDatabase {
       const n = batches.length;
       batches.push(statements);
       return (
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as unknown[] | undefined, which the values it was built from or the checks around it establish
         (nth(results.batch, n) as unknown[] | undefined) ??
         statements.map(() => [])
       );
@@ -106,5 +108,5 @@ export function fakeDb(results: FakeResults = {}): FakeDatabase {
       },
     ),
   };
-  return { db: db as unknown as Database, calls, batches };
+  return { db: double<Database>(db), calls, batches };
 }

@@ -86,13 +86,13 @@ afterEach(() => restore());
 /** Render the page for a domain id and the picked report. */
 async function render(
   id: string,
-  report?: string,
+  reportText?: string,
   view?: string,
 ): Promise<ReactElement> {
   return DomainPage({
     params: Promise.resolve({ id }),
     searchParams: Promise.resolve({
-      ...(report === undefined ? {} : { report }),
+      ...(reportText === undefined ? {} : { report: reportText }),
       ...(view === undefined ? {} : { view }),
     }),
   });
@@ -101,10 +101,10 @@ async function render(
 /** The page's HTML. */
 async function page(
   id = domain.id,
-  report?: string,
+  reportText?: string,
   view?: string,
 ): Promise<string> {
-  return htmlAt(await render(id, report, view), {
+  return htmlAt(await render(id, reportText, view), {
     pathname: `/domains/${id}`,
   });
 }

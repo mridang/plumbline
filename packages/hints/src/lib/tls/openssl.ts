@@ -13,6 +13,7 @@ import { isIP } from '#net';
 import { mkdtemp, rm, writeFile } from '#fs/promises';
 import { tmpdir } from '#os';
 import { join } from '#path';
+import { isObject } from '../wellknown/json.js';
 import { SCAN_RENEGOTIATION_LIMIT } from './constants.js';
 import type { TlsTarget } from './client.js';
 
@@ -177,7 +178,7 @@ async function runSClient(
     });
     return { kind: 'ok', value: run, evidence: '' };
   } catch (error) {
-    const code = (error as { code?: string }).code;
+    const code = isObject(error) ? error.code : undefined;
     return code === 'ENOENT'
       ? { kind: 'unavailable' }
       : { kind: 'failed', reason: String(error) };

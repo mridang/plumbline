@@ -2,11 +2,12 @@ import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
 import { POST } from '@/app/api/scans/route';
 import { installCloudflareContext } from '../../../lib/core/db/sqlite-d1';
+import { double } from '../../../helpers/double';
 
 let restore: () => void;
 
 beforeEach(() => {
-  restore = installCloudflareContext({} as D1Database, {
+  restore = installCloudflareContext(double<D1Database>({}), {
     SCAN_SECRET: 'route-secret',
   });
 });

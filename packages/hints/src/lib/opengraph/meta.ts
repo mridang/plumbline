@@ -5,13 +5,13 @@
  */
 
 /** The slice of a DOM element this module needs. */
-interface MetaElement {
+export interface MetaElement {
   getAttribute(name: string): string | null;
 }
 
 /** The slice of a DOM document this module needs. */
-export interface MetaDocument {
-  querySelectorAll(selector: string): Iterable<MetaElement>;
+export interface MetaDocument<E extends MetaElement = MetaElement> {
+  querySelectorAll(selector: string): Iterable<E>;
 }
 
 /**
@@ -20,10 +20,10 @@ export interface MetaDocument {
  * `name="twitter:*"`, but sites mix the two freely, so both attributes are
  * accepted for every key.
  */
-function metaElements(
-  parsedDocument: MetaDocument,
+function metaElements<E extends MetaElement>(
+  parsedDocument: MetaDocument<E>,
   key: string,
-): MetaElement[] {
+): E[] {
   const wanted = key.toLowerCase();
   return [...parsedDocument.querySelectorAll('meta')].filter((meta) => {
     // A tag may carry both attributes (for example property="og:title" name="title"), so match either one.
@@ -55,9 +55,9 @@ export function metaValue(
 }
 
 /** Returns the first meta tag with a non-empty value for the key, or null. */
-export function metaElement(
-  parsedDocument: MetaDocument,
+export function metaElement<E extends MetaElement>(
+  parsedDocument: MetaDocument<E>,
   key: string,
-): MetaElement | null {
+): E | null {
   return metaElements(parsedDocument, key)[0] ?? null;
 }

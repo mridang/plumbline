@@ -128,20 +128,24 @@ function readDirective(tag: string, value: string): DmarcDirectives | null {
       if (!POLICY.test(value)) {
         return null;
       }
-      const policy = value.toLowerCase() as DmarcPolicyValue;
+      const lowered = value.toLowerCase();
+      const policy: DmarcPolicyValue =
+        lowered === 'quarantine' || lowered === 'reject' ? lowered : 'none';
       if (tag === 'p') {
         return { request: policy };
       }
       return tag === 'sp' ? { srequest: policy } : { nrequest: policy };
     }
     case 'psd': {
-      return YES_NO_UNKNOWN_VALUE.test(value)
-        ? { psd: value.toLowerCase() as 'y' | 'n' | 'u' }
-        : null;
+      if (!YES_NO_UNKNOWN_VALUE.test(value)) {
+        return null;
+      }
+      const flag = value.toLowerCase();
+      return { psd: flag === 'y' || flag === 'n' ? flag : 'u' };
     }
     case 't': {
       return YES_NO_VALUE.test(value)
-        ? { testing: value.toLowerCase() as 'y' | 'n' }
+        ? { testing: value.toLowerCase() === 'y' ? 'y' : 'n' }
         : null;
     }
     case 'rua':
@@ -157,7 +161,7 @@ function readDirective(tag: string, value: string): DmarcDirectives | null {
       if (!ALIGNMENT_MODE_VALUE.test(value)) {
         return null;
       }
-      const mode = value.toLowerCase() as 'r' | 's';
+      const mode = value.toLowerCase() === 's' ? 's' : 'r';
       return tag === 'adkim' ? { adkim: mode } : { aspf: mode };
     }
     case 'ri': {

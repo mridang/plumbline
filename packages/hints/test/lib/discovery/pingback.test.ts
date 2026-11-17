@@ -11,13 +11,13 @@ describe('pingbackFindings', () => {
     const links: RelationshipLink[] = [
       { rels: ['pingback'], href: 'https://x.test/xmlrpc', source: 'dom' },
     ];
-    const [f] = pingbackFindings(links, null);
+    const f = pingbackFindings(links, null).at(0);
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain('Webmention');
   });
 
   it('warns when an X-Pingback header is present', () => {
-    const [f] = pingbackFindings([], 'https://x.test/xmlrpc');
+    const f = pingbackFindings([], 'https://x.test/xmlrpc').at(0);
     expect(f?.severity).toBe('warning');
   });
 });

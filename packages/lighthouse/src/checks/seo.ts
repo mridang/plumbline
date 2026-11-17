@@ -98,7 +98,7 @@ const LINKS_AND_URL = ['LinkElements', 'URL'] as const;
 const ROBOTS_ARTIFACTS = ['MetaElements', 'DevtoolsLog', 'URL'] as const;
 
 /** The page URL a check compares against (the rendered URL, else the requested). */
-function pageUrl(artifacts: Artifacts): string {
+function pageUrl(artifacts: Partial<Artifacts>): string {
   return (
     artifacts.URL?.finalDisplayedUrl || artifacts.URL?.mainDocumentUrl || ''
   );
@@ -110,7 +110,7 @@ function pageUrl(artifacts: Artifacts): string {
  * only one of them never trips over the absence of another. The page URL is
  * threaded through so the HTML parser can resolve relative URLs.
  */
-function documentOf(artifacts: Artifacts): DocumentLike {
+function documentOf(artifacts: Partial<Artifacts>): DocumentLike {
   return seoDocument({
     MetaElements: artifacts.MetaElements ?? [],
     LinkElements: artifacts.LinkElements ?? [],
@@ -155,7 +155,7 @@ export const seoChecks: readonly AuditCheck[] = [
   fromHint(seoTitleMissingHint, {
     scoreMode: 'numeric',
     requiredArtifacts: HTML_ONLY,
-    run: (artifacts) =>
+    run: (artifacts: Partial<Artifacts>) =>
       artifacts.MainDocumentContent
         ? titleMissing(documentOf(artifacts))
         : null,
@@ -164,7 +164,7 @@ export const seoChecks: readonly AuditCheck[] = [
   fromHint(seoTitleTooLongHint, {
     scoreMode: 'numeric',
     requiredArtifacts: HTML_ONLY,
-    run: (artifacts) =>
+    run: (artifacts: Partial<Artifacts>) =>
       artifacts.MainDocumentContent
         ? titleTooLong(documentOf(artifacts))
         : null,
@@ -173,7 +173,7 @@ export const seoChecks: readonly AuditCheck[] = [
   fromHint(seoTitleTooShortHint, {
     scoreMode: 'informative',
     requiredArtifacts: HTML_ONLY,
-    run: (artifacts) =>
+    run: (artifacts: Partial<Artifacts>) =>
       artifacts.MainDocumentContent
         ? titleTooShort(documentOf(artifacts))
         : null,
@@ -183,7 +183,7 @@ export const seoChecks: readonly AuditCheck[] = [
   fromHint(seoMetaDescriptionMissingHint, {
     scoreMode: 'numeric',
     requiredArtifacts: META_ONLY,
-    run: (artifacts) =>
+    run: (artifacts: Partial<Artifacts>) =>
       artifacts.MetaElements
         ? metaDescriptionMissing(documentOf(artifacts))
         : null,
@@ -192,7 +192,7 @@ export const seoChecks: readonly AuditCheck[] = [
   fromHint(seoMetaDescriptionTooLongHint, {
     scoreMode: 'informative',
     requiredArtifacts: META_ONLY,
-    run: (artifacts) =>
+    run: (artifacts: Partial<Artifacts>) =>
       artifacts.MetaElements
         ? metaDescriptionTooLong(documentOf(artifacts))
         : null,
@@ -201,7 +201,7 @@ export const seoChecks: readonly AuditCheck[] = [
   fromHint(seoMetaDescriptionTooShortHint, {
     scoreMode: 'informative',
     requiredArtifacts: META_ONLY,
-    run: (artifacts) =>
+    run: (artifacts: Partial<Artifacts>) =>
       artifacts.MetaElements
         ? metaDescriptionTooShort(documentOf(artifacts))
         : null,
@@ -211,14 +211,14 @@ export const seoChecks: readonly AuditCheck[] = [
   fromHint(seoH1MissingHint, {
     scoreMode: 'numeric',
     requiredArtifacts: HTML_ONLY,
-    run: (artifacts) =>
+    run: (artifacts: Partial<Artifacts>) =>
       artifacts.MainDocumentContent ? h1Missing(documentOf(artifacts)) : null,
   }),
 
   fromHint(seoH1MultipleHint, {
     scoreMode: 'informative',
     requiredArtifacts: HTML_ONLY,
-    run: (artifacts) =>
+    run: (artifacts: Partial<Artifacts>) =>
       artifacts.MainDocumentContent ? h1Multiple(documentOf(artifacts)) : null,
   }),
 
@@ -226,7 +226,7 @@ export const seoChecks: readonly AuditCheck[] = [
   fromHint(seoHtmlLangMissingHint, {
     scoreMode: 'numeric',
     requiredArtifacts: HTML_ONLY,
-    run: (artifacts) =>
+    run: (artifacts: Partial<Artifacts>) =>
       artifacts.MainDocumentContent
         ? htmlLangMissing(documentOf(artifacts))
         : null,
@@ -237,7 +237,10 @@ export const seoChecks: readonly AuditCheck[] = [
     scoreMode: 'numeric',
     requiredArtifacts: ROBOTS_ARTIFACTS,
     run: async (artifacts, context) => {
-      if (!artifacts.MetaElements) {
+      // A run whose page produced no meta elements has nothing to judge.
+      const metaElements = artifacts.MetaElements as
+        Artifacts['MetaElements'] | undefined;
+      if (!metaElements) {
         return null;
       }
       // The header is best-effort: a run with no document record simply has no
@@ -252,7 +255,10 @@ export const seoChecks: readonly AuditCheck[] = [
     scoreMode: 'informative',
     requiredArtifacts: ROBOTS_ARTIFACTS,
     run: async (artifacts, context) => {
-      if (!artifacts.MetaElements) {
+      // A run whose page produced no meta elements has nothing to judge.
+      const metaElements = artifacts.MetaElements as
+        Artifacts['MetaElements'] | undefined;
+      if (!metaElements) {
         return null;
       }
       const main = await mainResponse(artifacts, context);
@@ -265,14 +271,14 @@ export const seoChecks: readonly AuditCheck[] = [
   fromHint(seoCanonicalMissingHint, {
     scoreMode: 'informative',
     requiredArtifacts: LINKS_ONLY,
-    run: (artifacts) =>
+    run: (artifacts: Partial<Artifacts>) =>
       artifacts.LinkElements ? canonicalMissing(documentOf(artifacts)) : null,
   }),
 
   fromHint(seoCanonicalMismatchHint, {
     scoreMode: 'informative',
     requiredArtifacts: LINKS_AND_URL,
-    run: (artifacts) =>
+    run: (artifacts: Partial<Artifacts>) =>
       artifacts.LinkElements
         ? canonicalMismatch(documentOf(artifacts), pageUrl(artifacts))
         : null,
@@ -282,7 +288,7 @@ export const seoChecks: readonly AuditCheck[] = [
   fromHint(seoStructuredDataMissingHint, {
     scoreMode: 'informative',
     requiredArtifacts: HTML_ONLY,
-    run: (artifacts) =>
+    run: (artifacts: Partial<Artifacts>) =>
       artifacts.MainDocumentContent
         ? structuredDataMissing(documentOf(artifacts))
         : null,
@@ -295,7 +301,7 @@ export const seoChecks: readonly AuditCheck[] = [
   fromHint(iconsFaviconMissingHint, {
     scoreMode: 'informative',
     requiredArtifacts: HTML_ONLY,
-    run: (artifacts) =>
+    run: (artifacts: Partial<Artifacts>) =>
       artifacts.MainDocumentContent
         ? faviconMissing(documentOf(artifacts))
         : null,
@@ -304,7 +310,7 @@ export const seoChecks: readonly AuditCheck[] = [
   fromHint(iconsFaviconIcoOrPngMissingHint, {
     scoreMode: 'informative',
     requiredArtifacts: HTML_ONLY,
-    run: (artifacts) =>
+    run: (artifacts: Partial<Artifacts>) =>
       artifacts.MainDocumentContent
         ? faviconIcoOrPngMissing(documentOf(artifacts))
         : null,
@@ -313,7 +319,7 @@ export const seoChecks: readonly AuditCheck[] = [
   fromHint(iconsFavicon32MissingHint, {
     scoreMode: 'informative',
     requiredArtifacts: HTML_ONLY,
-    run: (artifacts) =>
+    run: (artifacts: Partial<Artifacts>) =>
       artifacts.MainDocumentContent
         ? favicon32Missing(documentOf(artifacts))
         : null,
@@ -322,7 +328,7 @@ export const seoChecks: readonly AuditCheck[] = [
   fromHint(iconsFaviconSvgMissingHint, {
     scoreMode: 'informative',
     requiredArtifacts: HTML_ONLY,
-    run: (artifacts) =>
+    run: (artifacts: Partial<Artifacts>) =>
       artifacts.MainDocumentContent
         ? faviconSvgMissing(documentOf(artifacts))
         : null,

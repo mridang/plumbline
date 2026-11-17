@@ -278,6 +278,7 @@ export class D1OAuthStore implements OAuthStore {
       .set({ grant_id: grantId })
       .where(and(eq(oauthCodes.code_hash, hash), isNull(oauthCodes.grant_id)))
       .run();
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- D1 leaves meta.changes out of the result of some statements, although its type says it is always a number
     return (result.meta.changes ?? 0) > 0;
   }
 
@@ -555,6 +556,7 @@ export async function revokeConnectedApp(
       ),
     )
     .run();
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- D1 leaves meta.changes out of the result of some statements, although its type says it is always a number
   const revoked = result.meta.changes ?? 0;
   if (revoked > 0) {
     logSecurityEvent('oauth.grant_revoked', {
@@ -579,11 +581,11 @@ export async function purgeOAuthData(
   now: number = Math.floor(Date.now() / 1000),
 ): Promise<void> {
   const cutoffs = purgeCutoffs(now);
-  const revokedBefore = (iso: string) =>
+  const revokedBefore = (cutoff: string) =>
     db
       .select({ id: oauthGrants.id })
       .from(oauthGrants)
-      .where(lt(oauthGrants.revoked_at, iso));
+      .where(lt(oauthGrants.revoked_at, cutoff));
   const grantedClients = db
     .select({ clientId: oauthGrants.client_id })
     .from(oauthGrants);

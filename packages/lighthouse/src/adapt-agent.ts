@@ -41,6 +41,9 @@ export async function agentEnv(
   if (!document) {
     return null;
   }
+  // A record that never got a response has no status code, although
+  // Lighthouse types it as always present.
+  const statusCode = document.statusCode as number | undefined;
 
   const url = document.url || mainDocumentUrl || '';
   if (!URL.canParse(url)) {
@@ -61,7 +64,7 @@ export async function agentEnv(
 
   const probe: Probe = {
     url,
-    status: document.statusCode ?? 200,
+    status: statusCode ?? 200,
     headers,
     contentType: headers['content-type'] ?? '',
     body: '',

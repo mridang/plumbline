@@ -15,6 +15,7 @@ function fetchOf(
 ): typeof fetch {
   return async (input: unknown, init?: RequestInit) => {
     const url = String(input);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as Record<string, string>, which the values it was built from or the checks around it establish
     seen.push({ url, headers: init?.headers as Record<string, string> });
     return answers(url);
   };
@@ -131,6 +132,7 @@ describe('GitHubApi, writes and size limits', () => {
           url: input instanceof Request ? input.url : String(input),
           body: sent ? (JSON.parse(sent) as unknown) : undefined,
           type: String(
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as Record<string, string>, which the values it was built from or the checks around it establish
             (init?.headers as Record<string, string>)['Content-Type'],
           ),
         });

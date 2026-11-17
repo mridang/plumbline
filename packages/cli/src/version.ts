@@ -10,6 +10,10 @@ export async function packageVersion(): Promise<string> {
     new URL('../package.json', import.meta.url),
     'utf8',
   );
-  const { version } = JSON.parse(raw) as { version?: unknown };
+  const manifest: unknown = JSON.parse(raw);
+  const version =
+    typeof manifest === 'object' && manifest !== null && 'version' in manifest
+      ? manifest.version
+      : undefined;
   return typeof version === 'string' ? version : 'dev';
 }

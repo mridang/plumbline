@@ -10,7 +10,9 @@ describe('attributionReportingFindings', () => {
   });
 
   it('reports participation for a valid source registration', () => {
-    const [f] = attributionReportingFindings('{"source_event_id":"1"}', null);
+    const f = attributionReportingFindings('{"source_event_id":"1"}', null).at(
+      0,
+    );
     expect(f?.severity).toBe('hint');
     expect(f?.message).toContain('Attribution Reporting API');
   });
@@ -20,12 +22,12 @@ describe('attributionReportingFindings', () => {
   });
 
   it('warns on invalid JSON', () => {
-    const [f] = attributionReportingFindings('not json', null);
+    const f = attributionReportingFindings('not json', null).at(0);
     expect(f?.severity).toBe('warning');
   });
 
   it('warns when the value is a JSON array, not an object', () => {
-    const [f] = attributionReportingFindings('[1,2]', null);
+    const f = attributionReportingFindings('[1,2]', null).at(0);
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain('JSON object');
   });
@@ -37,13 +39,13 @@ describe('observeBrowsingTopicsFindings', () => {
   });
 
   it('reports participation for ?1', () => {
-    const [f] = observeBrowsingTopicsFindings('?1');
+    const f = observeBrowsingTopicsFindings('?1').at(0);
     expect(f?.severity).toBe('hint');
     expect(f?.message).toContain('Topics API');
   });
 
   it('warns on any other value', () => {
-    const [f] = observeBrowsingTopicsFindings('?0');
+    const f = observeBrowsingTopicsFindings('?0').at(0);
     expect(f?.severity).toBe('warning');
   });
 });

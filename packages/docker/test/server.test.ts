@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
-import { Severity } from '@hint/utils-types';
+import { Category, Severity } from '@hint/utils-types';
 import { createScanServer } from '../src/server.js';
+import { portOf } from './helpers/port.js';
 import type { Problem } from '@hint/utils-types';
 import type { Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
 import type { RunFn, ScanFn } from '../src/server.js';
 import type { HintMeta } from '@mridang/plumbline';
 
@@ -22,7 +22,7 @@ function problem(): Problem {
     sourceCode: '',
     resource: 'https://example.com/',
     hintId: 'extra/csp-present',
-    category: 'security' as unknown as Problem['category'],
+    category: Category.security,
     severity: Severity.error,
   };
 }
@@ -37,7 +37,7 @@ async function listen(scan: ScanFn, run?: RunFn): Promise<void> {
   server = createScanServer({ scan, run });
   return new Promise((resolve) => {
     server.listen(0, '127.0.0.1', () => {
-      const { port } = server.address() as AddressInfo;
+      const port = portOf(server);
       base = `http://127.0.0.1:${port}`;
       resolve();
     });
@@ -148,9 +148,10 @@ describe('POST /run', () => {
     expect(res.headers.get('content-type')).toContain('application/x-ndjson');
     const text = await res.text();
     const lines = text.trim().split('\n');
-    expect(
-      lines.map((line) => (JSON.parse(line) as { type: string }).type),
-    ).toEqual(['ready', 'end']);
+    expect(lines).toEqual([
+      expect.stringContaining('"type":"ready"'),
+      expect.stringContaining('"type":"end"'),
+    ]);
   });
 
   it.each([

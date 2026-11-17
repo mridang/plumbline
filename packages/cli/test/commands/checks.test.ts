@@ -65,9 +65,9 @@ describe('plumbline checks', () => {
       '--format',
       'json',
     ]);
-    expect(
-      (JSON.parse(result.stdout) as { id: string }[]).map((c) => c.id),
-    ).toEqual(['mail-spf']);
+    expect(JSON.parse(result.stdout)).toEqual([
+      expect.objectContaining({ id: 'mail-spf' }),
+    ]);
   });
 
   it('lists the checks of a section written with its kind', async () => {

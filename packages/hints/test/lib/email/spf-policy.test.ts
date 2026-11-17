@@ -4,7 +4,7 @@ import type { SpfResolver } from '../../../src/lib/email/spf-policy.js';
 
 /** Resolves from a table; a missing entry gives null, `Error` throws. */
 const resolver =
-  (table: Record<string, string | Error>): SpfResolver =>
+  (table: Record<string, string | Error | undefined>): SpfResolver =>
   async (domain) => {
     const entry = table[domain];
     if (entry instanceof Error) {

@@ -50,7 +50,11 @@ const GOOD_ARGUMENTS = {
 
 /** The input schema of a tool, as the checker types it. */
 function inputOf(name: string): JsonSchema {
-  return toolNamed(name)?.inputSchema as unknown as JsonSchema;
+  const schema = toolNamed(name)?.inputSchema;
+  if (schema === undefined) {
+    throw new Error(`no tool named ${name}`);
+  }
+  return schema;
 }
 
 /** The `_meta` of a tool, as a plain record. */
@@ -223,6 +227,7 @@ describe('the Views', () => {
     ]);
     for (const tool of withViews) {
       const meta = metaOf(tool.name);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { resourceUri: string; }, which the values it was built from or the checks around it establish
       const uri = (meta['ui'] as { resourceUri: string }).resourceUri;
       expect(uris).toContain(uri);
       expect(meta['openai/outputTemplate']).toBe(uri);
@@ -248,6 +253,7 @@ describe('the Views', () => {
     TOOLS.filter((t) => 'outputSchema' in t).map((t) => [t.name, t] as const),
   )('%s has an output schema Ajv compiles in strict mode', (_name, tool) => {
     expect(() =>
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { outputSchema: object; }, which the values it was built from or the checks around it establish
       createAjv().compile((tool as { outputSchema: object }).outputSchema),
     ).not.toThrow();
   });

@@ -3,16 +3,16 @@ import { ALIASES, GROUPS } from '../../src/core/groups.js';
 import { matches, resolve } from '../../src/core/selectors.js';
 import { PLACEMENT } from '../../src/core/taxonomy.js';
 import hints from '../../src/index.js';
+import { groupsOf } from '../helpers/documentation.js';
 
 const collator = new Intl.Collator();
 
-const groupsOf = (id: string): readonly string[] =>
-  (hints[id].meta.docs as { groups?: string[] }).groups ?? [];
-const known = new Set(Object.keys(hints).flatMap((id) => groupsOf(id)));
+const groupsFor = (id: string): readonly string[] => groupsOf(hints[id]);
+const known = new Set(Object.values(hints).flatMap((hint) => groupsOf(hint)));
 const pick = (name: string): string[] => {
   const selectors = resolve(name, known) ?? [];
   return Object.keys(PLACEMENT).filter((id) =>
-    selectors.some((s) => matches(s, { id, groups: groupsOf(id) })),
+    selectors.some((s) => matches(s, { id, groups: groupsFor(id) })),
   );
 };
 
@@ -73,7 +73,7 @@ describe('resolve', () => {
 
   it('keeps a source group as exact as it was', () => {
     const owasp = Object.keys(hints).filter((id) =>
-      groupsOf(id).includes('owasp'),
+      groupsFor(id).includes('owasp'),
     );
     expect(pick('owasp')).toEqual(owasp.toSorted(collator.compare));
   });

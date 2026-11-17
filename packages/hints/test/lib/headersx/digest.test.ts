@@ -13,19 +13,19 @@ describe('digestFindings', () => {
   });
 
   it('warns when the value is not a dictionary', () => {
-    const [f] = digestFindings('Repr-Digest', ' '.repeat(3));
+    const f = digestFindings('Repr-Digest', ' '.repeat(3)).at(0);
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain('dictionary');
   });
 
   it('warns when a digest is not a byte sequence', () => {
-    const [f] = digestFindings('Content-Digest', 'sha-256=abc');
+    const f = digestFindings('Content-Digest', 'sha-256=abc').at(0);
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain('byte sequence');
   });
 
   it('warns when only an insecure algorithm is offered', () => {
-    const [f] = digestFindings('Content-Digest', 'md5=:AA==:');
+    const f = digestFindings('Content-Digest', 'md5=:AA==:').at(0);
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain('insecure');
   });

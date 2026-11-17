@@ -19,8 +19,14 @@ export interface CommandRun {
 
 /** The exit status oclif put on an error it threw, if any. */
 function exitOf(error: unknown): number | undefined {
-  const oclif = (error as { oclif?: { exit?: unknown } } | null)?.oclif;
-  return typeof oclif?.exit === 'number' ? oclif.exit : undefined;
+  const oclif =
+    typeof error === 'object' && error !== null && 'oclif' in error
+      ? error.oclif
+      : undefined;
+  if (typeof oclif !== 'object' || oclif === null || !('exit' in oclif)) {
+    return undefined;
+  }
+  return typeof oclif.exit === 'number' ? oclif.exit : undefined;
 }
 
 /**
@@ -36,6 +42,7 @@ export async function runCommand(
   const out: string[] = [];
   const err: string[] = [];
   // Both commands share their base, so either can stand in as the parent here.
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- a class cannot extend a union of classes, and the two commands share the base members this subclass overrides
   class Under extends (Command as typeof Scan) {
     protected override io() {
       return {

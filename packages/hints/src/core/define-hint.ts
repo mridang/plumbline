@@ -63,9 +63,8 @@ function withReference(context: HintContext, spec: HintSpec): HintContext {
       if (property === 'report') {
         return report;
       }
-      const value: unknown = (
-        target as unknown as Record<PropertyKey, unknown>
-      )[property];
+      // eslint-disable-next-line tslop/no-reflect-get -- the proxy forwards any member of the hint context, whose names it cannot know in advance
+      const value: unknown = Reflect.get(target, property);
       if (typeof value === 'function') {
         const bound: unknown = value.bind(target);
         return bound;
@@ -80,7 +79,9 @@ export function defineHint(spec: HintSpec): HintDefinition {
   // Webhint types `docs` with three fields. The rest are extras that stock
   // formatters ignore and our report formatter shows: the groups, the
   // reference, where the hint is placed in the taxonomy and where it came from.
-  const placement = PLACEMENT[spec.id];
+  // The taxonomy places only some ids; others have no placement.
+  const placement = PLACEMENT[spec.id] as
+    (typeof PLACEMENT)[string] | undefined;
   const section = SECTIONS.find((s) => s.id === placement?.section);
   const documentation: HintMetadata['docs'] & {
     url?: string;

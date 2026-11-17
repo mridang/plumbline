@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
+import { portOf } from './port.js';
 import type { Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
 
 /** A local site for a real scan: its URL and a way to stop it. */
 export interface LocalSite {
@@ -29,7 +29,7 @@ export async function serve(
   await new Promise<void>((resolve) => {
     server.listen(0, '127.0.0.1', () => resolve());
   });
-  const { port } = server.address() as AddressInfo;
+  const port = portOf(server);
   return {
     url: `http://127.0.0.1:${port}/`,
     close: async () =>

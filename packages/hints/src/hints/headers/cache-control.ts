@@ -2,6 +2,7 @@ import { Category, defineHint } from '../../core/define-hint.js';
 import { headerValue } from '../../core/http.js';
 import { onPage } from '../../core/page.js';
 import { cacheControlFindings } from '../../lib/headers/cache-control.js';
+import { isObject } from '../../lib/wellknown/json.js';
 import { reportFindings } from './shared.js';
 
 /**
@@ -28,9 +29,8 @@ export default defineHint({
     },
   ],
   setup(context) {
-    const enforce =
-      (context.hintOptions as { enforce?: boolean } | undefined)?.enforce ===
-      true;
+    const options: unknown = context.hintOptions;
+    const enforce = isObject(options) && options.enforce === true;
     if (!enforce) {
       return;
     }

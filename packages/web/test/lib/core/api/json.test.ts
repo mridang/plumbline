@@ -92,6 +92,7 @@ describe('readJson size limit', () => {
 
   it('answers 413 as a problem document', async () => {
     const result = await readJson(post(jsonOf(300_000)));
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { response: Response; }, which the values it was built from or the checks around it establish
     const response = (result as { response: Response }).response;
     expect(response.status).toBe(413);
     expect(response.headers.get('content-type')).toBe(

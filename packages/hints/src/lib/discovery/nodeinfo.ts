@@ -8,6 +8,7 @@
  * Source: the NodeInfo protocol (https://nodeinfo.diaspora.software/protocol.html).
  */
 import { finding } from '../headers/finding.js';
+import { isObject } from '../wellknown/json.js';
 import type { Finding } from '../headers/finding.js';
 
 /** The response observed when fetching the discovery document. */
@@ -18,11 +19,11 @@ export interface NodeinfoResponse {
 
 /** True for a links entry that names both a schema rel and a target href. */
 function isLink(value: unknown): boolean {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-  const link = value as Record<string, unknown>;
-  return typeof link.rel === 'string' && typeof link.href === 'string';
+  return (
+    isObject(value) &&
+    typeof value.rel === 'string' &&
+    typeof value.href === 'string'
+  );
 }
 
 /** Evaluates a fetch of `/.well-known/nodeinfo`. */
@@ -46,8 +47,8 @@ export function nodeinfoFindings(response: NodeinfoResponse | null): Finding[] {
     ];
   }
   const links =
-    typeof parsed === 'object' && parsed !== null
-      ? (parsed as Record<string, unknown>).links
+    typeof parsed === 'object' && parsed !== null && 'links' in parsed
+      ? parsed.links
       : undefined;
   if (!Array.isArray(links) || links.length === 0) {
     return [

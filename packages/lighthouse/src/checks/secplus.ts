@@ -55,14 +55,14 @@ const HEADER_AND_META_ARTIFACTS = [
 ] as const;
 
 /** The page URL a DOM check resolves relative hrefs against. */
-function pageUrl(artifacts: Artifacts): string {
+function pageUrl(artifacts: Partial<Artifacts>): string {
   return (
     artifacts.URL?.finalDisplayedUrl || artifacts.URL?.mainDocumentUrl || ''
   );
 }
 
 /** Parses `MainDocumentContent` with webhint's DOM implementation. */
-function parsePage(artifacts: Artifacts): HTMLDocument {
+function parsePage(artifacts: Partial<Artifacts>): HTMLDocument {
   return createHTMLDocument(
     artifacts.MainDocumentContent ?? '',
     pageUrl(artifacts) || 'http://localhost/',

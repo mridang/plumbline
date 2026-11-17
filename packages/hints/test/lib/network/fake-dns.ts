@@ -27,7 +27,7 @@ interface Entry {
   status?: number;
 }
 
-export type Zone = Record<string, Partial<Record<DnsType, Entry>>>;
+export type Zone = Record<string, Partial<Record<DnsType, Entry>> | undefined>;
 
 /** Builds a client answering from the zone. */
 function fakeClient(zone: Zone): DnsClient {

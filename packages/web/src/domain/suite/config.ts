@@ -46,6 +46,7 @@ import {
   isGroup,
 } from '@/domain/checks/catalogue';
 import { siteAddress } from '@/domain/suite/site-address';
+import { isObject } from '@/lib/core/api/json';
 import { DEFAULT_RULE_SET, RULE_SETS } from '@/domain/suite/rules';
 import type { Level } from '@/domain/suite/rules';
 
@@ -147,6 +148,18 @@ function empty(path: string, problems: readonly string[]): LoadedConfig {
   };
 }
 
+/** The settings of one environment as written, or none when they are not a mapping. */
+function rawOverlay(
+  environments: unknown,
+  name: string,
+): Readonly<Record<string, unknown>> {
+  if (!isObject(environments)) {
+    return {};
+  }
+  const overlay = environments[name];
+  return isObject(overlay) ? overlay : {};
+}
+
 /** The unknown keys of `value`, as sentences. */
 function strayKeys(
   value: Readonly<Record<string, unknown>>,
@@ -183,10 +196,10 @@ export function parseConfig(text: string, path: string): LoadedConfig {
   if (raw === null || raw === undefined) {
     return empty(path, []);
   }
-  if (typeof raw !== 'object' || Array.isArray(raw)) {
+  if (!isObject(raw)) {
     return empty(path, [`${path} must be a mapping of settings.`]);
   }
-  const record = raw as Record<string, unknown>;
+  const record = raw;
   const topProblems = strayKeys(record, TOP_KEYS, ` in ${path}`);
   const parsed = ConfigSchema.safeParse(record);
   if (!parsed.success) {
@@ -225,9 +238,7 @@ export function parseConfig(text: string, path: string): LoadedConfig {
   const environmentProblems = named.flatMap(({ name, environment }) =>
     environment
       ? strayKeys(
-          (record['environments'] as Record<string, Record<string, unknown>>)[
-            name
-          ] ?? {},
+          rawOverlay(record['environments'], name),
           OVERLAY_KEYS,
           ` in the ${name} environment of ${path}`,
         )
@@ -236,7 +247,7 @@ export function parseConfig(text: string, path: string): LoadedConfig {
         ],
   );
   const deploymentProblems = strayKeys(
-    (record['deployments'] ?? {}) as Record<string, unknown>,
+    isObject(record['deployments']) ? record['deployments'] : {},
     DEPLOYMENT_KEYS,
     ` in deployments of ${path}`,
   );

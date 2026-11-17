@@ -952,6 +952,7 @@ describe('publishCheckRun', () => {
   it('carries the title and summary of the findings', async () => {
     const { api, requests } = github();
     await publishCheckRun(api, { ...preview, findings: [error] });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { title: string; summary: string; }, which the values it was built from or the checks around it establish
     const output = requests[0]?.body['output'] as {
       title: string;
       summary: string;

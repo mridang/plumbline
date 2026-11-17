@@ -98,7 +98,7 @@ function fromHint(
 }
 
 /** The page URL the relative-URL and image checks resolve against. */
-function pageUrl(artifacts: Artifacts): string {
+function pageUrl(artifacts: Partial<Artifacts>): string {
   return (
     artifacts.URL?.finalDisplayedUrl || artifacts.URL?.mainDocumentUrl || ''
   );

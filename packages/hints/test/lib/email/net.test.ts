@@ -1,8 +1,8 @@
 import { connect, createServer } from 'node:net';
 import { afterEach, describe, expect, it } from '@jest/globals';
 import { createMailNetClient } from '../../../src/lib/email/net.js';
+import { portOf } from '../../helpers/port.js';
 import { startSmtp } from './fake-smtp.js';
-import type { AddressInfo } from 'node:net';
 import type { FakeSmtp } from './fake-smtp.js';
 
 let smtp: FakeSmtp | null = null;
@@ -30,7 +30,7 @@ describe('createMailNetClient', () => {
         resolve();
       });
     });
-    const { port } = server.address() as AddressInfo;
+    const port = portOf(server);
     await new Promise((resolve) => {
       server.close(resolve);
     });

@@ -106,7 +106,11 @@ export function LiveOverview({
           });
           opened.addEventListener('error', () => setConnection('offline'));
           opened.addEventListener('live', (message) => {
-            const event = parseEvent((message as MessageEvent<string>).data);
+            const event =
+              message instanceof MessageEvent &&
+              typeof message.data === 'string'
+                ? parseEvent(message.data)
+                : null;
             if (event) {
               setRepos((current) => applyEvent(current, event));
             }

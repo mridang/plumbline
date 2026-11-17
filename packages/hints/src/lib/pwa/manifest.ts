@@ -26,6 +26,8 @@ const QUERY_OR_FRAGMENT_START = /[?#]/u;
  * documented installability requirements on web.dev.
  */
 
+import { isObject } from '../wellknown/json.js';
+
 /** The IANA media type a manifest should be served as (appmanifest §3). */
 export const MANIFEST_MEDIA_TYPE = 'application/manifest+json';
 
@@ -57,8 +59,8 @@ export interface ManifestIcon {
 export function parseManifest(text: string): Record<string, unknown> | null {
   try {
     const value: unknown = JSON.parse(text);
-    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-      return value as Record<string, unknown>;
+    if (isObject(value)) {
+      return value;
     }
     return null;
   } catch {

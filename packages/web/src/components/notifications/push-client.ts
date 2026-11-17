@@ -218,7 +218,7 @@ export function browserCapabilities(): PushCapabilities {
     userAgent: browser.userAgent,
     maxTouchPoints: browser.maxTouchPoints,
     standalone:
-      (browser as { standalone?: boolean }).standalone === true ||
+      ('standalone' in browser && browser.standalone === true) ||
       globalThis.window.matchMedia('(display-mode: standalone)').matches,
     hasServiceWorker: 'serviceWorker' in browser,
     hasPushManager: 'PushManager' in globalThis.window,

@@ -45,7 +45,9 @@ export interface Subject {
 
 /** Whether a selector picks a check. */
 export function matches(selector: Selector, subject: Subject): boolean {
-  const placement = PLACEMENT[subject.id];
+  // The taxonomy places only some ids; others have no placement.
+  const placement = PLACEMENT[subject.id] as
+    (typeof PLACEMENT)[string] | undefined;
   switch (selector.kind) {
     case 'section': {
       return placement?.section === selector.value;
@@ -81,11 +83,10 @@ function prefixed(name: string): Selector | undefined {
   }
   const kind = name.slice(0, colon);
   const value = name.slice(colon + 1);
-  return Object.entries(KINDS).some(
-    ([known, values]) => known === kind && values.includes(value),
-  )
-    ? { kind: kind as SelectorKind, value }
-    : undefined;
+  const known = (
+    ['tag', 'section', 'target', 'tier', 'control', 'source'] as const
+  ).find((candidate) => candidate === kind && KINDS[candidate].includes(value));
+  return known ? { kind: known, value } : undefined;
 }
 
 /**
@@ -110,7 +111,7 @@ export function resolve(
   if (kind) {
     return [{ kind, value: name }];
   }
-  const alias = ALIASES[name];
+  const alias = ALIASES[name] as (typeof ALIASES)[string] | undefined;
   if (alias) {
     return alias.flatMap((selector) => prefixed(selector) ?? []);
   }

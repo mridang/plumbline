@@ -40,11 +40,14 @@ export async function mainResponse(
   if (!document) {
     return null;
   }
+  // A record that never got a response has no status code, although
+  // Lighthouse types it as always present.
+  const statusCode = document.statusCode as number | undefined;
   return {
     headers: headerBagFromRecord(document),
     secure: (document.url || mainDocumentUrl || '')
       .toLowerCase()
       .startsWith('https:'),
-    status: document.statusCode ?? 200,
+    status: statusCode ?? 200,
   };
 }

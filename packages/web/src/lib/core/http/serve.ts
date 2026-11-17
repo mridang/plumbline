@@ -187,6 +187,7 @@ async function answer(
     headers: forwardedHeaders(request.headers, csp, nonce),
   });
   const appStarted = performance.now();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the app is generic over its bindings, which this wrapper does not know, and it hands them on unchanged
   const fetched = await app.fetch(forwarded, env as never, ctx);
   const appMs = performance.now() - appStarted;
   const isHtml = (fetched.headers.get('content-type') ?? '').startsWith(

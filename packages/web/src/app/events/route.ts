@@ -24,6 +24,7 @@ export async function GET(request: Request): Promise<Response> {
     return auth.response;
   }
   return openEventStream(
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the binding is typed as a generic Durable Object namespace, and HubNamespace is the narrow view of it that the stream reads
     getEnv().USER_HUB as unknown as HubNamespace,
     String(auth.value),
     parseResume(

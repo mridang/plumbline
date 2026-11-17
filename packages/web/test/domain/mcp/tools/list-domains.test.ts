@@ -6,12 +6,13 @@ import { callTool } from '@/domain/mcp/tool-calls';
 
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../../lib/core/db/sqlite-db';
+import { double } from '../../../helpers/double';
 import type { ToolResult } from '@/domain/mcp/tool-results';
 import type { User } from '@/domain/db/users';
 import type { ToolContent } from '@/domain/mcp/tool-context';
 
-const USER = { id: 1 } as User;
-const STRANGER = { id: 2 } as User;
+const USER = double<User>({ id: 1 });
+const STRANGER = double<User>({ id: 2 });
 const TOTAL = CHECKS.length;
 
 /** A fresh database, and a way to call a tool against it. */

@@ -10,12 +10,13 @@ const collator = new Intl.Collator();
 describe('the Puppeteer page shim', () => {
   it('keeps page.removeListener, which the connector calls and newer Puppeteer renamed to off', () => {
     const require = createRequire(import.meta.url);
-    const { Page } = createRequire(
+    const puppeteer: unknown = createRequire(
       require.resolve('@hint/connector-puppeteer'),
-    )('puppeteer-core') as {
-      Page: { prototype: { removeListener?: unknown } };
-    };
-    expect(typeof Page.prototype.removeListener).toBe('function');
+    )('puppeteer-core');
+    expect(puppeteer).toHaveProperty(
+      'Page.prototype.removeListener',
+      expect.any(Function),
+    );
   });
 });
 

@@ -32,6 +32,7 @@ import {
 import { ogMetaReader } from '../../src/adapt-opengraph.js';
 import { opengraphChecks } from '../../src/checks/opengraph.js';
 import { HTTP_SCHEME } from '../helpers/data.js';
+import { artifactsOf, contextOf } from '../helpers/fixtures.js';
 import type { AuditCheck } from '../../src/checks/types.js';
 import type { Finding } from '@mridang/webhint-hint-plumbline/dist/lib/headers/finding.js';
 import type AuditNS from 'lighthouse/types/audit.js';
@@ -53,14 +54,14 @@ interface Meta {
 
 /** Builds the artifacts an Open Graph check reads from a list of meta tags. */
 function artifacts(metas: readonly Meta[]): Artifacts {
-  return { MetaElements: metas } as Artifacts;
+  return artifactsOf({ MetaElements: [...metas] });
 }
 
 /** A fresh audit context; the checks never read it, but the signature wants it. */
 function context(): AuditNS.Context {
-  return {
+  return contextOf({
     computedCache: new Map<string, unknown>(),
-  } as unknown as AuditNS.Context;
+  });
 }
 
 /** Looks a check up by id, failing loudly if the registry drops it. */
@@ -211,7 +212,7 @@ describe('the opengraph checks run() over a complete, well-formed meta set', () 
   });
 
   it('is not applicable when the MetaElements artifact is absent', async () => {
-    const empty = {} as Artifacts;
+    const empty = artifactsOf({});
     for (const c of opengraphChecks) {
       expect(await c.run(empty, context())).toBeNull();
     }

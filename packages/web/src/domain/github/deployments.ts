@@ -10,6 +10,7 @@
  */
 
 import { parseHost } from '@/domain/api/domain-resource';
+import { isObject } from '@/lib/core/api/json';
 import type { DeploymentStatus } from '@/domain/suite/deploy';
 
 /** The Wrangler configuration file names. */
@@ -76,10 +77,10 @@ function patternsOf(value: unknown): string[] {
 function jsonPatterns(text: string): string[] {
   try {
     const config: unknown = JSON.parse(stripJsonComments(text));
-    if (!config || typeof config !== 'object') {
+    if (!isObject(config)) {
       return [];
     }
-    const record = config as Record<string, unknown>;
+    const record = config;
     return [...patternsOf(record['routes']), ...patternsOf(record['route'])];
   } catch {
     return [];

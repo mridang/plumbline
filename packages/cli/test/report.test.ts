@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from '@jest/globals';
-import { Severity } from '@hint/utils-types';
+import { Category, Severity } from '@hint/utils-types';
 import { buildReport, saveReport } from '../src/report.js';
 import type { Problem } from '@hint/utils-types';
 import type { HintMeta, ScanResult } from '../src/scan.js';
@@ -23,7 +23,7 @@ function problem(over: Partial<Problem> = {}): Problem {
     sourceCode: '',
     resource: 'https://example.com/',
     hintId: 'extra/csp-present',
-    category: 'security' as unknown as Problem['category'],
+    category: Category.security,
     severity: Severity.error,
     ...over,
   };
@@ -135,10 +135,9 @@ describe('saveReport', () => {
       expect(path.basename(saved.json)).toBe(
         `${path.basename(saved.html, '.html')}.json`,
       );
-      const written = JSON.parse(await readFile(saved.json, 'utf8')) as {
-        summary: { total: number };
-      };
-      expect(written.summary.total).toBe(1);
+      expect(JSON.parse(await readFile(saved.json, 'utf8'))).toMatchObject({
+        summary: { total: 1 },
+      });
       const html = await readFile(saved.html, 'utf8');
       expect(html).toContain('<html');
     } finally {

@@ -44,7 +44,7 @@ export function effectiveReferrerPolicy(
     sources.metaName.at(-1) ??
     sources.metaHttpEquiv.at(-1) ??
     (sources.header.length > 0 ? sources.header.join(', ') : undefined);
-  return chosen === undefined ? null : chosen;
+  return chosen ?? null;
 }
 
 /** The last token the browser would recognise, or null if there is none. */

@@ -41,7 +41,9 @@ export type FakeAnswer =
  * `'example.com MX'`. A key that is missing answers NOERROR with no data. A
  * plain array lists the record data of an unsigned answer.
  */
-export function fakeDns(table: Record<string, FakeAnswer>): DnsClient {
+export function fakeDns(
+  table: Record<string, FakeAnswer | undefined>,
+): DnsClient {
   return {
     async query(name, type): Promise<DnsResponse> {
       const entry = table[`${name} ${type}`];

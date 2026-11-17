@@ -38,5 +38,6 @@ export function concatBytes(...parts: readonly Uint8Array[]): Uint8Array {
  * so the assignment needs it. @public.
  */
 export function bs(input: Uint8Array): BufferSource {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- see above: the lib types a typed array's buffer as possibly shared, which BufferSource refuses
   return input as BufferSource;
 }

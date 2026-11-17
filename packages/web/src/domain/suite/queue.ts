@@ -172,6 +172,7 @@ async function consumeScan(
   const { seq, job: text } = claimed.claim;
   const job = ((): ScanJob | undefined => {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the job text was written by this app's own producer as JSON of exactly this type, and is read back from its own queue
       return JSON.parse(text) as ScanJob;
     } catch (error) {
       console.error('scan job unreadable, dropped', key, error);
@@ -193,8 +194,8 @@ async function consumeScan(
       attempt: message.attempts,
       error,
     });
-    await releasePending(deps.db, key, seq).catch((error: unknown) =>
-      console.error('scan job lease not released', key, error),
+    await releasePending(deps.db, key, seq).catch((failure: unknown) =>
+      console.error('scan job lease not released', key, failure),
     );
     message.retry({ delaySeconds: backoffSeconds(message.attempts) });
   }
@@ -227,6 +228,7 @@ export const handleScanQueue: ExportedHandlerQueueHandler<
     logDeadLetters(batch);
     return;
   }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the binding is typed as a generic Durable Object namespace, and ScannerNamespace is the narrow view of it that the server side uses
   const namespace = env.PROBE as unknown as ScannerNamespace | undefined;
   await consumeScans(batch, {
     db: createDatabase(env.DB),

@@ -19,7 +19,7 @@ const PRINTABLE_ASCII_WITHOUT_QUOTE_OR_BACKSLASH =
   /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/u;
 
 // A field the request leaves out: its key stays present, so an override can unset it.
-const notProvided = [].at(0);
+const notProvided = Array.from<string>([]).at(0);
 
 const ORIGIN = 'https://site.example';
 const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
@@ -232,6 +232,7 @@ describe('security events from the authorization request', () => {
   it('warns about an unknown client, with the id cut short', async () => {
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     await check({ client_id: 'n'.repeat(500) });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
     const line = JSON.parse(String(warn.mock.calls[0]?.[0])) as {
       event: string;
       clientId: string;

@@ -44,14 +44,14 @@ import type { AuditCheck } from './types.js';
 const HTML_ONLY = ['MainDocumentContent', 'URL'] as const;
 
 /** The page URL a check resolves relative hrefs against. */
-function pageUrl(artifacts: Artifacts): string {
+function pageUrl(artifacts: Partial<Artifacts>): string {
   return (
     artifacts.URL?.finalDisplayedUrl || artifacts.URL?.mainDocumentUrl || ''
   );
 }
 
 /** Parses the main document into the {@link DocumentLike} the readers query. */
-function documentOf(artifacts: Artifacts): DocumentLike {
+function documentOf(artifacts: Partial<Artifacts>): DocumentLike {
   const html = artifacts.MainDocumentContent ?? '';
   return createHTMLDocument(html, pageUrl(artifacts) || 'http://localhost/');
 }

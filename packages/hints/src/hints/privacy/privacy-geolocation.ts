@@ -44,7 +44,7 @@ export default defineHint({
       for (const script of event.document.querySelectorAll(
         'script:not([src])',
       )) {
-        const call = findGeolocationCall(script.textContent ?? '');
+        const call = findGeolocationCall(script.textContent);
         if (call) {
           const source = `${url} (inline script)`;
           // eslint-disable-next-line functional/immutable-data -- collects what the scan's events report, to be reported when the scan ends

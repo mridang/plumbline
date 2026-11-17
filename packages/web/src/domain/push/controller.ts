@@ -23,6 +23,7 @@ import {
   readJsonObject,
 } from '@/lib/core/api';
 import { getEnv } from '@/lib/core/runtime';
+import { isObject } from '@/lib/core/api/json';
 import { PushNotifier, WebPushSender } from '@/lib/push';
 import {
   endpointForId,
@@ -51,7 +52,7 @@ function checkSubscription(
   body: Readonly<Record<string, unknown>>,
 ): CheckedSubscription | readonly string[] {
   const { endpoint, keys } = body;
-  const { p256dh, auth } = (keys ?? {}) as Readonly<Record<string, unknown>>;
+  const { p256dh, auth } = isObject(keys) ? keys : {};
   const errors = [
     ...unknownFields(body, ['endpoint', 'keys']),
     ...(typeof endpoint !== 'string' || !endpoint.startsWith('https://')
@@ -62,13 +63,11 @@ function checkSubscription(
       : []),
     ...(typeof auth !== 'string' || !auth ? ['keys.auth: required.'] : []),
   ];
-  return errors.length > 0
-    ? errors
-    : {
-        endpoint: endpoint as string,
-        p256dh: p256dh as string,
-        auth: auth as string,
-      };
+  const complete =
+    typeof endpoint === 'string' &&
+    typeof p256dh === 'string' &&
+    typeof auth === 'string';
+  return errors.length > 0 || !complete ? errors : { endpoint, p256dh, auth };
 }
 
 /**
@@ -146,10 +145,10 @@ export function createSubscriptionsCollection(
         throw body.response;
       }
       const checked = checkSubscription(body.value);
-      if (Array.isArray(checked)) {
+      if (!('endpoint' in checked)) {
         throw problems.badRequest('The subscription is not valid.', checked);
       }
-      return checked as CheckedSubscription;
+      return checked;
     },
     handle: async (subscription, { uid }) => {
       const repository = new PushSubscriptionRepository(getDatabase());
@@ -197,6 +196,7 @@ export function createSubscriptionItem(
 /** The notifier for this Worker's VAPID keys, or null when it has none. */
 function notifierOf(): PushNotifier | null {
   const env = getEnv();
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- the keys are empty strings when unset, and an empty key means push is off, although the generated binding type is the configured literal
   return env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY
     ? new PushNotifier(
         new WebPushSender(

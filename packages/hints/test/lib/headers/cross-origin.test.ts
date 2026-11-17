@@ -24,7 +24,7 @@ describe('crossOriginFindings (observatory)', () => {
   it.each(['coop', 'coep', 'corp'] as const)(
     'hints when %s is missing',
     (policy) => {
-      const [f] = obs(policy, []);
+      const f = obs(policy, []).at(0);
       expect(f?.severity).toBe('hint');
       expect(f?.message).toContain('not implemented');
     },
@@ -35,7 +35,7 @@ describe('crossOriginFindings (observatory)', () => {
     ['coep', 'unsafe-none'],
     ['corp', 'cross-origin'],
   ] as const)('hints on the default %s %s', (policy, value) => {
-    const [f] = obs(policy, [value]);
+    const f = obs(policy, [value]).at(0);
     expect(f?.severity).toBe('hint');
     expect(f?.message).toContain('no protection');
   });

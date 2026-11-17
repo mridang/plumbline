@@ -27,7 +27,7 @@ export default defineHint({
   reference: PRIVACY_POLICY_LINK_REF,
   setup(context) {
     onPage(context, (page) => {
-      const [found] = privacyPolicyLinkMissing(page.document);
+      const found = privacyPolicyLinkMissing(page.document).at(0);
       if (found) {
         page.report(found.message, {
           severity: Severity.warning,

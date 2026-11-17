@@ -35,6 +35,7 @@ function fake(visible = true) {
       return id;
     },
     clearTimeout: (timer) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as number, which the values it was built from or the checks around it establish
       timers.delete(timer as number);
     },
   };

@@ -21,7 +21,9 @@ import {
 import { HTTP_SCHEME, vector } from '../../helpers/data.js';
 
 /** A fake site: the answer for each path, and the requests it saw. */
-function site(routes: Record<string, string>): ReturnType<typeof fakeProbe> {
+function site(
+  routes: Record<string, string | undefined>,
+): ReturnType<typeof fakeProbe> {
   return fakeProbe((_path, body) => {
     const line = linesOf(body);
     return ok(

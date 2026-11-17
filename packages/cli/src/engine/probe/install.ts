@@ -408,12 +408,12 @@ function installCompressionClient(): void {
       return nodeProbe(url);
     }
     try {
-      const tls = url.protocol === 'https:';
-      const defaultPort = tls ? 443 : 80;
+      const secure = url.protocol === 'https:';
+      const defaultPort = secure ? 443 : 80;
       const answer = await client.http({
         host: url.hostname,
         port: url.port === '' ? defaultPort : Number(url.port),
-        tls,
+        tls: secure,
         method: 'GET',
         path: `${url.pathname}${url.search}`,
         headers: [
@@ -497,6 +497,7 @@ function installOpensslClient(): void {
  * by its fingerprint see the same roots the probe judged the chain against.
  */
 export async function ensureRoots(client: ProbeClient): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Node types the list readonly, but it is a plain array that a Worker, where it starts empty, has to fill
   const roots = nodeTls.rootCertificates as string[];
   if (roots.length > 0) {
     return;

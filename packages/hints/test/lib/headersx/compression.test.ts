@@ -13,23 +13,23 @@ describe('compressionDictionaryFindings', () => {
   });
 
   it('warns when it is not a dictionary', () => {
-    const [f] = compressionDictionaryFindings(' '.repeat(3));
+    const f = compressionDictionaryFindings(' '.repeat(3)).at(0);
     expect(f?.severity).toBe('warning');
   });
 
   it('warns when match is missing', () => {
-    const [f] = compressionDictionaryFindings('id="v1"');
+    const f = compressionDictionaryFindings('id="v1"').at(0);
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain('match');
   });
 
   it('warns when match is empty', () => {
-    const [f] = compressionDictionaryFindings('match=""');
+    const f = compressionDictionaryFindings('match=""').at(0);
     expect(f?.severity).toBe('warning');
   });
 
   it('warns on an unrecognised key', () => {
-    const [f] = compressionDictionaryFindings('match="/a", bogus=1');
+    const f = compressionDictionaryFindings('match="/a", bogus=1').at(0);
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain('bogus');
   });

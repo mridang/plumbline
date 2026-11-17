@@ -4,7 +4,7 @@ import {
   ACCEPT_ENCODING,
   probeContentEncoding,
 } from '../../../src/lib/network/compression.js';
-import type { AddressInfo } from 'node:net';
+import { portOf } from '../../helpers/port.js';
 
 const serve = async (
   headers: Record<string, string>,
@@ -18,7 +18,7 @@ const serve = async (
   await new Promise<void>((resolve) => {
     server.listen(0, '127.0.0.1', resolve);
   });
-  const { port } = server.address() as AddressInfo;
+  const port = portOf(server);
   return {
     url: new URL(`http://127.0.0.1:${port}/`),
     seen: () => accept,

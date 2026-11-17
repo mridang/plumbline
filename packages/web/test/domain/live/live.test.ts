@@ -160,6 +160,7 @@ describe('a check that broke on our side', () => {
       at: 'now',
       failed: true,
     });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as Record<string, unknown>, which the values it was built from or the checks around it establish
     const row = raw
       .prepare('select checking_since, reachable from domains where host = ?')
       .get(site.host) as Record<string, unknown>;

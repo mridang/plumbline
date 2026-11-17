@@ -17,11 +17,9 @@ import {
 import { handshakeAnswer, httpAnswer } from '../../helpers/probe.js';
 
 /** An object with each key present and set to `undefined`. */
-const unset = <K extends string>(...keys: K[]): Record<K, undefined> =>
-  Object.fromEntries(keys.map((key) => [key, undefined])) as Record<
-    K,
-    undefined
-  >;
+const unset = (...keys: string[]): Record<string, undefined> =>
+  // eslint-disable-next-line sonarjs/no-undefined-assignment -- the keys are present on purpose, set to undefined, which is what the encoder is tested against
+  Object.fromEntries(keys.map((key) => [key, undefined]));
 
 describe('encodeItem', () => {
   it('writes key=value lines, repeats a list, and leaves out undefined and false', () => {
@@ -162,7 +160,7 @@ describe('parseBatch', () => {
     );
     expect(first).toMatchObject({ protocol: 'TLSv1.3' });
     expect(second).toBeInstanceOf(ProbeError);
-    expect((second as ProbeError).message).toBe('not a public address');
+    expect(second).toMatchObject({ message: 'not a public address' });
     expect(third).toBeInstanceOf(ProbeError);
   });
 

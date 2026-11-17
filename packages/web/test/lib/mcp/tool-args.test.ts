@@ -131,6 +131,7 @@ describe('canonicalArguments', () => {
   });
 
   it('carries a key called __proto__ as an ordinary property', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
     const args = JSON.parse('{"__proto__": 1, "name": "x"}') as Record<
       string,
       unknown

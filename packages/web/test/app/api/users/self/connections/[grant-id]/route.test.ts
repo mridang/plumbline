@@ -134,6 +134,7 @@ describe('DELETE /api/users/self/connections/:grant_id', () => {
     await del('g1');
     expect(
       info.mock.calls.map(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
         ([line]) => JSON.parse(String(line)) as Record<string, unknown>,
       ),
     ).toContainEqual(

@@ -39,5 +39,6 @@ export interface WebhintDocumentation {
 export function hintDocumentation(
   definition: HintDefinition,
 ): WebhintDocumentation {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- defineHint stamps these fields onto docs, but the published HintMetadata type leaves them out
   return definition.ctor.meta.docs as unknown as WebhintDocumentation;
 }

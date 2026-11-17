@@ -16,7 +16,6 @@ import {
 } from '@/domain/mcp/tool-results';
 import type { Domain } from '@/domain/db/domains';
 import type { Report, ReportSummary } from '@/domain/db/reports';
-import type { DomainListData } from '@/domain/mcp/ui-types';
 
 const DOMAIN: Domain = {
   id: '00000000-0000-4000-8000-000000000001',
@@ -337,9 +336,7 @@ describe('domainListResult', () => {
     expect(result.structuredContent).toMatchObject({
       domains: [{ id: other.id, host: 'example.org', checks: 3 }],
     });
-    expect(
-      (result.structuredContent as DomainListData).domains[0],
-    ).not.toHaveProperty('latest');
+    expect(result.structuredContent).not.toHaveProperty('domains.0.latest');
   });
 });
 

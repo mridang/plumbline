@@ -29,7 +29,7 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      const [found] = robotsNofollow(page.document, page.headers);
+      const found = robotsNofollow(page.document, page.headers).at(0);
       if (!found) {
         return;
       }

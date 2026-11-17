@@ -53,16 +53,16 @@ const json = (m: Manifest): string => JSON.stringify(m);
 
 describe('manifestLinked', () => {
   it('errors with the reference when there is no manifest link', () => {
-    const [found] = manifestLinked(parse('<head></head>'));
+    const found = manifestLinked(parse('<head></head>')).at(0);
     expect(found?.severity).toBe('error');
     expect(found?.message).toContain('links no Web App Manifest');
     expect(found?.message).toContain(MANIFEST_LINKED_REF);
   });
 
   it('warns when the manifest href is document-relative', () => {
-    const [found] = manifestLinked(
+    const found = manifestLinked(
       parse('<link rel="manifest" href="manifest.json">'),
-    );
+    ).at(0);
     expect(found?.severity).toBe('warning');
     expect(found?.message).toContain('document-relative');
   });
@@ -76,7 +76,7 @@ describe('manifestLinked', () => {
 
 describe('themeColorMeta', () => {
   it('hints with the reference when the meta is missing', () => {
-    const [found] = themeColorMeta(parse('<head></head>'));
+    const found = themeColorMeta(parse('<head></head>')).at(0);
     expect(found?.severity).toBe('hint');
     expect(found?.message).toContain('theme-color');
     expect(found?.message).toContain(THEME_COLOR_META_REF);

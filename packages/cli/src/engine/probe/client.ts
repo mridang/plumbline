@@ -275,7 +275,7 @@ export class ProbeClient {
       }
       // eslint-disable-next-line functional/no-loop-statements -- settles each waiting handshake, nothing is returned
       for (const [index, entry] of batch.entries()) {
-        const answer = answers[index];
+        const answer = answers.at(index);
         if (answer instanceof ProbeError) {
           entry.reject(answer);
         } else if (answer) {
@@ -405,8 +405,13 @@ export class ProbeClient {
 /** The complaint in a 502 answer: `{"error": "..."}`, or whatever else the body says. */
 function parseComplaint(body: string): string {
   try {
-    const value = JSON.parse(body) as { error?: unknown };
-    if (typeof value.error === 'string') {
+    const value: unknown = JSON.parse(body);
+    if (
+      typeof value === 'object' &&
+      value !== null &&
+      'error' in value &&
+      typeof value.error === 'string'
+    ) {
       return value.error;
     }
   } catch {

@@ -28,7 +28,7 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      const [found] = themeColorMeta(page.document);
+      const found = themeColorMeta(page.document).at(0);
       if (found) {
         page.report(found.message, {
           severity: toSeverity(found.severity),

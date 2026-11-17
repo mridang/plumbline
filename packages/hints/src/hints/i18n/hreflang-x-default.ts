@@ -27,7 +27,7 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      const [found] = hreflangXDefault(page.document);
+      const found = hreflangXDefault(page.document).at(0);
       if (found) {
         page.report(found.message, {
           severity: toSeverity(found.severity),

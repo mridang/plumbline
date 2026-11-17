@@ -9,6 +9,7 @@
  * Source: RFC 7033 (https://www.rfc-editor.org/rfc/rfc7033).
  */
 import { finding } from '../headers/finding.js';
+import { isObject } from '../wellknown/json.js';
 import type { Finding } from '../headers/finding.js';
 
 /** Matches a JRD or JSON media type. */
@@ -62,10 +63,10 @@ export function webfingerFindings(
   } catch {
     return [finding('warning', 'The WebFinger response is not valid JSON.')];
   }
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+  if (!isObject(parsed)) {
     return [finding('warning', 'The WebFinger response must be a JRD object.')];
   }
-  const jrd = parsed as Record<string, unknown>;
+  const jrd = parsed;
   if (!('subject' in jrd) && !('links' in jrd)) {
     return [
       finding(

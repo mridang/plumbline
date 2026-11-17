@@ -37,7 +37,8 @@ const SPF_VERSION_TAG = /^v=spf1/iu;
  * each term with the same grammar, which accepts the same records.
  */
 
-type SpfQualifier = '+' | '-' | '?' | '~';
+const SPF_QUALIFIERS = ['+', '-', '?', '~'] as const;
+type SpfQualifier = (typeof SPF_QUALIFIERS)[number];
 
 type SpfTermKind =
   | 'all'
@@ -135,7 +136,8 @@ function isValidIp6(argument: string): boolean {
 /** Parses one term, or returns null when it is not valid. */
 function parseTerm(raw: string): SpfTerm | null {
   const qualifierMatch = QUALIFIER_PREFIX.exec(raw);
-  const qualifier = (qualifierMatch?.[0] as SpfQualifier | undefined) ?? null;
+  const qualifier =
+    SPF_QUALIFIERS.find((q) => q === qualifierMatch?.[0]) ?? null;
   const body = qualifier ? raw.slice(1) : raw;
   const lower = body.toLowerCase();
   const term = (kind: SpfTermKind, value: string | null = null): SpfTerm => ({
@@ -173,7 +175,7 @@ function parseTerm(raw: string): SpfTerm | null {
   }
   const dual = ADDRESS_MECHANISM.exec(body);
   if (dual && isValidDomainWithCidr(dual[2])) {
-    const kind = dual[1].toLowerCase() as 'a' | 'mx';
+    const kind = dual[1].toLowerCase() === 'mx' ? 'mx' : 'a';
     return term(kind, dual[2].startsWith(':') ? dual[2].slice(1) : null);
   }
 

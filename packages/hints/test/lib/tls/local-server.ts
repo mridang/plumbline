@@ -7,8 +7,9 @@ import { readFile } from 'node:fs/promises';
 import { TLSSocket, createSecureContext, createServer } from 'node:tls';
 import { createServer as createTcpServer } from 'node:net';
 import { tlsProbe, connectWithNode } from '../../../src/lib/tls/client.js';
+import { portOf } from '../../helpers/port.js';
 import type { Server, TlsOptions } from 'node:tls';
-import type { AddressInfo, Socket } from 'node:net';
+import type { Socket } from 'node:net';
 
 const FIXTURES = new URL('../../fixtures/tls/', import.meta.url);
 
@@ -73,7 +74,7 @@ export async function startServer(
       resolve();
     });
   });
-  const { port } = server.address() as AddressInfo;
+  const port = portOf(server);
   return {
     server,
     port,
@@ -172,7 +173,7 @@ export async function startMailServer(
     });
   });
   return {
-    port: (server.address() as AddressInfo).port,
+    port: portOf(server),
     upgrades: () => upgrades,
     close: async () =>
       new Promise<void>((resolve) => {

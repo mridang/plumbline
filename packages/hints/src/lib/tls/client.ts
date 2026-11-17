@@ -154,15 +154,15 @@ export const connectWithNode: TlsConnect = async (target, options) => {
     socket.once('error', reject);
     socket.once('secureConnect', () => {
       const cipher = socket.getCipher();
-      const key = socket.getEphemeralKeyInfo() as
-        { type?: string; size?: number; name?: string } | Record<string, never>;
-      const ephemeral: EphemeralKey | null =
-        (key.type === 'DH' || key.type === 'ECDH') && key.size !== undefined
-          ? { type: key.type, size: key.size, name: key.name }
-          : null;
-      const error = socket.authorizationError;
+      const key = socket.getEphemeralKeyInfo();
+      const ephemeral = ephemeralKeyOf(key);
+      // Node sets the reason only for an unauthorized socket, although it
+      // types it as always present.
+      const error = socket.authorizationError as Error | null | undefined;
       const result: ProbeResult = {
-        protocol: socket.getProtocol() as TlsVersion | null,
+        protocol:
+          TLS_VERSIONS.find((version) => version === socket.getProtocol()) ??
+          null,
         cipher: { name: cipher.name, standardName: cipher.standardName },
         ephemeral,
         authorized: socket.authorized,
@@ -222,6 +222,24 @@ export async function tryConnect(
   } catch {
     return null;
   }
+}
+
+/** The ephemeral key exchange Node reports, or null when it reports none (or a kind this probe does not name). */
+function ephemeralKeyOf(
+  key: ReturnType<tls.TLSSocket['getEphemeralKeyInfo']>,
+): EphemeralKey | null {
+  if (key === null || !('type' in key) || !('size' in key)) {
+    return null;
+  }
+  if (
+    (key.type !== 'DH' && key.type !== 'ECDH') ||
+    typeof key.size !== 'number'
+  ) {
+    return null;
+  }
+  const name =
+    'name' in key && typeof key.name === 'string' ? key.name : undefined;
+  return { type: key.type, size: key.size, name };
 }
 
 /** Probes each TLS version separately and returns those the server accepts. */

@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 import { headersChecks } from '../../src/checks/headers.js';
+import { artifactsOf, contextOf, devtoolsLogOf } from '../helpers/fixtures.js';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type { AuditCheck } from '../../src/checks/types.js';
@@ -61,23 +62,23 @@ function devtoolsLog(
       params: { requestId, timestamp: 3, encodedDataLength: 100 },
     },
   ];
-  return events as Artifacts['DevtoolsLog'];
+  return devtoolsLogOf(events);
 }
 
 /** Builds the artifacts a header check reads, over the given headers. */
 function artifacts(url: string, headers: Record<string, string>): Artifacts {
-  return {
+  return artifactsOf({
     DevtoolsLog: devtoolsLog(url, headers),
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
     MetaElements: [] as Artifacts['MetaElements'],
-  } as Artifacts;
+  });
 }
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */
 function context(): AuditNS.Context {
-  return {
+  return contextOf({
     computedCache: new Map<string, unknown>(),
-  } as unknown as AuditNS.Context;
+  });
 }
 
 /** Looks a check up by id, failing loudly if the registry drops it. */
@@ -94,7 +95,7 @@ describe('the headers registry', () => {
     expect(headersChecks).toHaveLength(46);
     for (const c of headersChecks) {
       expect(c.id).toBeTruthy();
-      expect(c.section).toBe(PLACEMENT[c.id]?.section);
+      expect(c.section).toBe(PLACEMENT[c.id].section);
     }
   });
 
@@ -139,11 +140,11 @@ describe('the csp check run()', () => {
   });
 
   it('is not applicable when the run captured no document', async () => {
-    const empty = {
+    const empty = artifactsOf({
       DevtoolsLog: [] as Artifacts['DevtoolsLog'],
       URL: { mainDocumentUrl: '', finalDisplayedUrl: '' },
       MetaElements: [] as Artifacts['MetaElements'],
-    } as Artifacts;
+    });
     expect(await csp.run(empty, context())).toBeNull();
   });
 });

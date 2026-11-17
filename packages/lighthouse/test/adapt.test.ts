@@ -6,22 +6,21 @@ import {
   metaHttpEquivContents,
   referrerSources,
 } from '../src/adapt.js';
+import { elementOf } from './helpers/fixtures.js';
 import type { MetaElementArtifact } from '../src/adapt.js';
+import type { DeepPartial } from './helpers/fixtures.js';
+import type { Artifacts } from 'lighthouse/types/artifacts.js';
 
 /** The structural shape of a network record the header adapters read. */
-type RecordLike = {
-  url: string;
-  resourceType?: string;
-  responseHeaders?: { name: string; value: string }[];
-};
+type RecordLike = DeepPartial<Artifacts.NetworkRequest> & { url: string };
 
 /** The array type `findMainDocument` accepts, built from {@link RecordLike}. */
 type Records = Parameters<typeof findMainDocument>[0];
 
-const records = (...list: RecordLike[]): Records => list as unknown as Records;
+const records = (...list: RecordLike[]): Records => elementOf<Records>(list);
 
 const record = (r: RecordLike): Parameters<typeof headerBagFromRecord>[0] =>
-  r as unknown as Parameters<typeof headerBagFromRecord>[0];
+  elementOf<Parameters<typeof headerBagFromRecord>[0]>(r);
 
 describe('headerBagFromRecord', () => {
   it('lower-cases names and keeps a header sent twice as an array', () => {

@@ -54,6 +54,7 @@ let restore: () => void;
 
 /** Install the Worker environment with `env`. */
 function setUp(env: Record<string, unknown>): void {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- restore is assigned on the first call, and TypeScript types the let as always set
   restore?.();
   const { d1 } = sqliteD1(...APP_MIGRATIONS);
   db = createDatabase(d1);

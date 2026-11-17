@@ -184,6 +184,7 @@ export class ApiController<Ctx = Request> {
     route: RouteContext,
   ): Promise<Response> {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- without a context factory the request itself is the context, which is what Ctx defaults to
       const ctx = (
         this.#options.context
           ? await this.#options.context(request, route)
@@ -212,6 +213,7 @@ export class ApiController<Ctx = Request> {
    * methods actually registered are present.
    */
   handlers(): Record<HttpMethod, RouteHandler> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the map is typed whole so a route can destructure the one method it exports; only the registered methods are present
     return Object.fromEntries(
       Array.from(
         this.#endpoints,

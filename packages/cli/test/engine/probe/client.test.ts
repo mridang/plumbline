@@ -93,8 +93,10 @@ describe('handshake', () => {
       client.handshake({ host: 'b.test', port: 443 }),
     ]);
     expect(good.status).toBe('fulfilled');
-    expect(bad).toMatchObject({ status: 'rejected' });
-    expect((bad as PromiseRejectedResult).reason).toBeInstanceOf(ProbeError);
+    expect(bad).toMatchObject({
+      status: 'rejected',
+      reason: expect.any(ProbeError),
+    });
   });
 
   it('rejects every handshake of a batch the probe did not answer in full', async () => {
@@ -107,9 +109,12 @@ describe('handshake', () => {
       'rejected',
       'rejected',
     ]);
-    expect(
-      ((results[0] as PromiseRejectedResult).reason as Error).message,
-    ).toContain('answered 1 handshakes for 2');
+    expect(results[0]).toMatchObject({
+      status: 'rejected',
+      reason: {
+        message: expect.stringContaining('answered 1 handshakes for 2'),
+      },
+    });
   });
 
   it('rejects when the probe cannot be reached, answers 500, or says something that is not JSON', async () => {

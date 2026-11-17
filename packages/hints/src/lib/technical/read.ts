@@ -185,8 +185,12 @@ export async function mapWithConcurrency<T, R>(
   const done = await Promise.all(
     Array.from({ length: count }, async () => worker()),
   );
-  const byIndex = new Map(done.flat());
-  return items.map((_item, index) => byIndex.get(index) as R);
+  // Every index was claimed exactly once, so sorting the pairs restores the
+  // order of the items.
+  return done
+    .flat()
+    .toSorted(([first], [second]) => first - second)
+    .map(([, result]) => result);
 }
 
 /** More redirect hops than this cost crawl budget and latency. */

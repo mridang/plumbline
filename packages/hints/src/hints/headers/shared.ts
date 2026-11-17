@@ -3,6 +3,7 @@
  * turns the findings of `src/lib/headers` into webhint reports.
  */
 import { Severity } from '@hint/utils-types';
+import { isObject } from '../../lib/wellknown/json.js';
 import type { HintMetadata, ReportOptions } from 'hint';
 import type {
   Finding,
@@ -27,8 +28,8 @@ export const PROFILE_SCHEMA: HintMetadata['schema'] = [
 ];
 
 /** Reads the `profile` option, defaulting to `observatory`. */
-export function readProfile(options: unknown): Profile {
-  const profile = (options as { profile?: unknown } | undefined)?.profile;
+export function readProfile(given: unknown): Profile {
+  const profile = isObject(given) ? given.profile : undefined;
   return profile === 'owasp' ? 'owasp' : 'observatory';
 }
 

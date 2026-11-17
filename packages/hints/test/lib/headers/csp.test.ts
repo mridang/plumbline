@@ -113,9 +113,9 @@ describe('parseCspLoose', () => {
   });
 
   it('defaults an empty list to none', () => {
-    expect(
-      parseCspLoose('script-src ;\nobject-src')?.get('object-src'),
-    ).toEqual(["'none'"]);
+    expect(parseCspLoose('script-src ;\nobject-src').get('object-src')).toEqual(
+      ["'none'"],
+    );
   });
 
   it('handles a missing policy', () => {

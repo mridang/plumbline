@@ -10,6 +10,7 @@
  *
  * Requests go through `redirectionClient`, so tests replace it with a fake.
  */
+import { isObject } from '../wellknown/json.js';
 import { finding } from './finding.js';
 import type { Finding } from './finding.js';
 
@@ -50,11 +51,12 @@ const CERT_ERRORS = new Set([
 
 /** Whether a fetch failure was caused by an untrusted certificate. */
 function isCertificateError(error: unknown): boolean {
-  const code = error as { code?: string; cause?: { code?: string } } | null;
-  return (
-    CERT_ERRORS.has(code?.code ?? '') ||
-    CERT_ERRORS.has(code?.cause?.code ?? '')
-  );
+  const code =
+    isObject(error) && typeof error.code === 'string' ? error.code : '';
+  const cause = isObject(error) && isObject(error.cause) ? error.cause : null;
+  const causeCode =
+    cause !== null && typeof cause.code === 'string' ? cause.code : '';
+  return CERT_ERRORS.has(code) || CERT_ERRORS.has(causeCode);
 }
 
 export interface Route {
@@ -120,7 +122,8 @@ export function analyzeRedirection(
   if (hops.length === 1) {
     return 'redirection-missing';
   }
-  const [first, second] = hops;
+  const first = hops.at(0);
+  const second = hops.at(1);
   if (hops.at(-1)?.url.protocol !== 'https:') {
     return 'redirection-not-to-https';
   }

@@ -4,6 +4,7 @@ import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js
 import { readJsonLd } from '@mridang/webhint-hint-plumbline/dist/lib/geo/json-ld.js';
 import { recipeFindings } from '@mridang/webhint-hint-plumbline/dist/lib/richresults/checks.js';
 import { richresultsChecks } from '../../src/checks/richresults.js';
+import { artifactsOf, contextOf } from '../helpers/fixtures.js';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type { AuditCheck } from '../../src/checks/types.js';
@@ -15,20 +16,20 @@ const RICHRESULTS_ID_PREFIX = /^richresults-/u;
 
 /** Builds the artifact bag a richresults check reads: only the served HTML. */
 function artifacts(html: string): Artifacts {
-  return {
+  return artifactsOf({
     URL: {
       mainDocumentUrl: 'https://x.test/',
       finalDisplayedUrl: 'https://x.test/',
     },
     MainDocumentContent: html,
-  } as Artifacts;
+  });
 }
 
 /** A richresults check reads no computed artifact, but run() takes a context. */
 function context(): AuditNS.Context {
-  return {
+  return contextOf({
     computedCache: new Map<string, unknown>(),
-  } as unknown as AuditNS.Context;
+  });
 }
 
 /** Wraps a parsed object as one JSON-LD block of HTML. */
@@ -50,7 +51,7 @@ describe('the richresults registry', () => {
     expect(richresultsChecks).toHaveLength(10);
     for (const c of richresultsChecks) {
       expect(c.id).toMatch(RICHRESULTS_ID_PREFIX);
-      expect(c.section).toBe(PLACEMENT[c.id]?.section);
+      expect(c.section).toBe(PLACEMENT[c.id].section);
       expect(c.section).toBe('seo');
     }
   });

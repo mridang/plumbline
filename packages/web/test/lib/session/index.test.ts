@@ -14,7 +14,7 @@ const SESSION_SECRET_NAME = /SESSION_SECRET/u;
 
 const SECRET = 'test-session-secret-value';
 // A claim the payload leaves out: its key stays present, so the test can check it is dropped.
-const notProvided = [].at(0);
+const notProvided = Array.from<string>([]).at(0);
 
 // Thin adapters over the SessionTokens handle, so each case reads as a
 // one-line sign/verify.

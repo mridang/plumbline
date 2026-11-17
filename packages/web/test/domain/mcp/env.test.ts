@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from '@jest/globals';
 import { ALLOWED_ORIGINS_SETTING, getEnvSafe } from '@/domain/mcp/env';
 
 const key = Symbol.for('__cloudflare-context__');
+// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as Record<symbol, unknown>, which the values it was built from or the checks around it establish
 const holder = globalThis as unknown as Record<symbol, unknown>;
 const before = holder[key];
 

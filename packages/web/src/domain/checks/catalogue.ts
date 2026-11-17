@@ -52,6 +52,7 @@ export const CONTROLS: readonly Control[] = [
 
 /** What each control means, in a sentence. */
 export const CONTROL_INFO: readonly { id: Control; description: string }[] =
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the JSON module types the ids as plain strings, and the catalogue build writes only valid control ids
   controls as readonly { id: Control; description: string }[];
 
 /** How to fix a check on the two platforms the baseline was written for. */
@@ -164,6 +165,7 @@ export interface Profile extends SetInfo {
 }
 
 /** The top-level and per-section sets; their checks follow from tiers and sections. */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the JSON module types its fields as plain strings and numbers, and the catalogue build writes exactly the SetInfo shape
 export const SET_INFOS: readonly SetInfo[] = setDefs as readonly SetInfo[];
 
 /** An introduction to rules and rule sets, one paragraph each. */
@@ -176,6 +178,7 @@ export const OPT_IN_NOTE: string = optInNote;
 export const DISPLAY_GROUPS: readonly DisplayGroup[] = displayGroups;
 
 /** The hand-listed sets. */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the JSON module types its fields as plain strings, and the catalogue build writes exactly the Profile shape
 export const PROFILES: readonly Profile[] = profiles as readonly Profile[];
 
 /** The closed list of tags. */
@@ -185,6 +188,7 @@ export const TAGS: readonly string[] = tags;
 export const SECTIONS: readonly Section[] = sections;
 
 /** Every check, sorted by id. */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the JSON module types the tiers, targets and controls as plain strings, and the catalogue build writes only the values of those unions
 export const CHECKS = checks as readonly Check[];
 
 /** The checks by id. */
@@ -230,10 +234,13 @@ function prefixed(name: string): Selector | undefined {
   }
   const kind = name.slice(0, colon);
   const value = name.slice(colon + 1);
-  const known = Object.entries(KINDS).find(
-    ([selectorKind, values]) => selectorKind === kind && values.includes(value),
+  const known = (
+    ['section', 'tag', 'target', 'control', 'tier', 'source'] as const
+  ).find(
+    (selectorKind) =>
+      selectorKind === kind && KINDS[selectorKind].includes(value),
   );
-  return known ? { kind: known[0] as SelectorKind, value } : undefined;
+  return known ? { kind: known, value } : undefined;
 }
 
 /**
@@ -379,7 +386,7 @@ export function checksPerSection(): ReadonlyMap<string, number> {
   return new Map(
     Array.from(
       Map.groupBy(CHECKS, (check) => check.section),
-      ([section, checks]): [string, number] => [section, checks.length],
+      ([section, members]): [string, number] => [section, members.length],
     ),
   );
 }

@@ -10,40 +10,40 @@ describe('hostMetaFindings', () => {
   });
 
   it('reports a valid XRD document', () => {
-    const [f] = hostMetaFindings({
+    const f = hostMetaFindings({
       statusCode: 200,
       mediaType: 'application/xrd+xml',
       body: '<?xml version="1.0"?><XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0"></XRD>',
-    });
+    }).at(0);
     expect(f?.severity).toBe('hint');
     expect(f?.message).toContain('XRD');
   });
 
   it('reports a valid JRD document', () => {
-    const [f] = hostMetaFindings({
+    const f = hostMetaFindings({
       statusCode: 200,
       mediaType: 'application/json',
       body: '{"links":[]}',
-    });
+    }).at(0);
     expect(f?.severity).toBe('hint');
     expect(f?.message).toContain('JRD');
   });
 
   it('warns on invalid JRD JSON', () => {
-    const [f] = hostMetaFindings({
+    const f = hostMetaFindings({
       statusCode: 200,
       mediaType: 'application/json',
       body: 'nope',
-    });
+    }).at(0);
     expect(f?.severity).toBe('warning');
   });
 
   it('warns when the body is neither XRD nor JSON', () => {
-    const [f] = hostMetaFindings({
+    const f = hostMetaFindings({
       statusCode: 200,
       mediaType: 'text/plain',
       body: 'hello',
-    });
+    }).at(0);
     expect(f?.severity).toBe('warning');
   });
 });

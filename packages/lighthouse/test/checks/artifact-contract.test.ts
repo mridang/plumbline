@@ -9,6 +9,7 @@
  */
 import { describe, expect, it } from '@jest/globals';
 import { checks } from '../../src/checks/index.js';
+import { artifactsOf, contextOf } from '../helpers/fixtures.js';
 
 /** A representative value for each artifact a check may declare. */
 const STUBS = new Map<string, unknown>([
@@ -48,10 +49,10 @@ describe('audit artifact contract', () => {
     async (_id, check) => {
       const artifacts = artifactsFor(check.requiredArtifacts);
       // A fresh computed-artifact cache, as Lighthouse passes to every audit.
-      const context = { computedCache: new Map<string, unknown>() };
+      const context = contextOf({ computedCache: new Map<string, unknown>() });
       // Must not throw: the check may return findings or null, either is fine.
       await expect(
-        (async () => check.run(artifacts as never, context as never))(),
+        (async () => check.run(artifactsOf(artifacts), context))(),
       ).resolves.not.toThrow();
     },
   );

@@ -9,6 +9,7 @@
  */
 
 import { z } from 'zod';
+import { isObject } from '@/lib/core/api/json';
 
 import type { Deployment } from '@/domain/suite/deploy';
 
@@ -123,7 +124,7 @@ export async function collectScan(
         return {
           ...progress,
           outcomes: [...progress.outcomes, event.outcome],
-          raw: [...progress.raw, (json as { outcome: unknown }).outcome],
+          raw: [...progress.raw, isObject(json) ? json['outcome'] : undefined],
         };
       }
       default: {

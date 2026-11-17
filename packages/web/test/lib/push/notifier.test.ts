@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { PushNotifier } from '@/lib/push';
+import { double } from '../../helpers/double';
 import type {
   DeliveryResult,
   PushPayload,
@@ -36,7 +37,7 @@ class FakeStore implements PushSubscriptionStore {
 function senderReturning(
   statusByEndpoint: Readonly<Record<string, number>>,
 ): WebPushSender {
-  return {
+  return double<WebPushSender>({
     send: async (
       subscription: PushSubscriptionRecord,
     ): Promise<DeliveryResult> => {
@@ -47,7 +48,7 @@ function senderReturning(
         gone: status === 404 || status === 410,
       };
     },
-  } as unknown as WebPushSender;
+  });
 }
 
 describe('PushNotifier.deliver', () => {

@@ -15,6 +15,7 @@ import {
   jar,
   tokenFor,
 } from '../../../domain/auth/auth-test-kit';
+import { double } from '../../../helpers/double';
 import type { User } from '@/domain/auth/store';
 
 // eslint-disable-next-line tslop/no-module-mocking -- next/headers needs a request scope that only the Next runtime provides; the source reads it by import
@@ -22,7 +23,7 @@ jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 const getUserById = jest.fn(async (id: number) =>
   id === 1
-    ? ({ id, email: 'a@b.com', session_epoch: 0 } as unknown as User)
+    ? double<User>({ id, email: 'a@b.com', session_epoch: 0 })
     : undefined,
 );
 

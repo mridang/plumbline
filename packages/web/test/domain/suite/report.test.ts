@@ -232,6 +232,7 @@ describe('dataBlock', () => {
     dataUrl: 'https://plumbline.test/r/abc/json',
   };
   const parse = (block: string): Record<string, unknown> =>
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
     JSON.parse(
       block
         .replace(JSON_FENCE_OPEN_PATTERN, '')

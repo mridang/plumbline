@@ -23,7 +23,7 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      const [found] = titleTooLong(page.document);
+      const found = titleTooLong(page.document).at(0);
       if (found) {
         page.report(found.message, {
           severity: toSeverity(found.severity),

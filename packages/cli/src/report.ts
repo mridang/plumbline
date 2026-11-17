@@ -57,16 +57,20 @@ function metaFor(hintId: string, hints: HintMeta[]): HintMeta | undefined {
 /** Turns one webhint problem into a JSON finding. */
 function toFinding(problem: Problem, hints: HintMeta[]): Finding {
   const meta = metaFor(problem.hintId, hints);
+  // A severity webhint adds later has no name here, and a problem about the
+  // page as a whole has no location, although webhint types both as present.
+  const severityName = Severity[problem.severity] as string | undefined;
+  const location = problem.location as Problem['location'] | undefined;
   return {
     hintId: problem.hintId,
     category: meta?.category ?? 'other',
     groups: meta?.groups ?? [],
-    severity: Severity[problem.severity] ?? 'hint',
+    severity: severityName ?? 'hint',
     message: problem.message,
     resource: problem.resource,
     location:
-      problem.location && problem.location.line >= 0
-        ? { line: problem.location.line, column: problem.location.column }
+      location && location.line >= 0
+        ? { line: location.line, column: location.column }
         : undefined,
     codeSnippet: problem.sourceCode || undefined,
     documentation: problem.documentation,
@@ -150,6 +154,7 @@ export async function saveReport(
   // The formatter derives the same slug and writes `<directory>/<base>.html`.
   // Its `resources.hints` wants webhint's full hint constructor type; only
   // `meta.docs` is read, so the loose catalogue constructors are cast in.
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the formatter option type wants webhint's full hint constructor, of which only meta.docs is read, so the loose catalogue constructors are cast in
   const options = {
     target: url,
     date: report.scannedAt,

@@ -30,6 +30,7 @@ describe('technical-redirect-chain', () => {
         options: Record<string, unknown>,
       ) => reports.push({ resource, options }),
     };
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the hint reads only on and report from the context, so the double has no other members of webhint's HintContext
     const instance = new hint.ctor(context as never);
     expect(instance).toBeInstanceOf(hint.ctor);
     handlers['fetch::end::html']({

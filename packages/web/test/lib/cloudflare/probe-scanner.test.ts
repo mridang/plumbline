@@ -17,6 +17,7 @@ import { GITHUB_ENV, fakeGitHub } from '../../domain/github/github-test-kit';
 import { cloudflareWorkersStub } from '../../helpers/cloudflare-workers-stub';
 import { APP_MIGRATIONS } from '../core/db/migrations';
 import { sqliteD1 } from '../core/db/sqlite-d1';
+import { stub } from '../../helpers/double';
 import type { SuiteJob } from '@/domain/suite/scanner';
 
 /** Compares strings in the default locale order, built once. */
@@ -158,10 +159,13 @@ async function lines(
   response: Response,
 ): Promise<{ type: string; outcome?: { id: string; status: string } }[]> {
   const text = await response.text();
-  return text
-    .split('\n')
-    .filter((line) => line !== '')
-    .map((line) => JSON.parse(line) as { type: string });
+  return (
+    text
+      .split('\n')
+      .filter((line) => line !== '')
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
+      .map((line) => JSON.parse(line) as { type: string })
+  );
 }
 
 const realFetch = globalThis.fetch;
@@ -183,7 +187,7 @@ afterEach(() => {
 });
 
 const made = (container?: unknown) =>
-  new ProbeScanner({ container } as never, {} as never);
+  new ProbeScanner(stub({ container }), stub({}));
 
 describe('ProbeScanner, a scan', () => {
   it('runs every check in the object and streams them, asking the probe only for the network', async () => {
@@ -377,10 +381,7 @@ describe('ProbeScanner, the job of the queue', () => {
     const db = createDatabase(database.d1);
     await addDomain(db, 7, 'site.test', 'acme/site');
     const make = (container: unknown) =>
-      new ProbeScanner(
-        { container } as never,
-        { DB: database.d1, ...env } as never,
-      );
+      new ProbeScanner(stub({ container }), stub({ DB: database.d1, ...env }));
     const requested = fakeGitHub({
       'https://api.github.com/app/installations/5/access_tokens': () =>
         Response.json({ token: 'ghs_1' }),

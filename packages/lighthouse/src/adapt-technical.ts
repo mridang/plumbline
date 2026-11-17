@@ -119,15 +119,13 @@ export function linkDocument(
   linkElements: readonly Artifacts.LinkElement[],
 ): TechDocumentLike {
   const canonical = linkElements.flatMap((link) =>
-    (link.rel ?? '').toLowerCase().split(WHITESPACE_RUN).includes('canonical')
+    link.rel.toLowerCase().split(WHITESPACE_RUN).includes('canonical')
       ? [
           {
             nodeName: 'LINK',
             tagName: 'LINK',
             getAttribute(attribute: string): string | null {
-              return attribute.toLowerCase() === 'href'
-                ? (link.hrefRaw ?? link.href ?? null)
-                : null;
+              return attribute.toLowerCase() === 'href' ? link.hrefRaw : null;
             },
           },
         ]
@@ -157,7 +155,11 @@ export function imageSizesByUrl(
       if (record.resourceType !== 'Image') {
         return [];
       }
-      const header = (record.responseHeaders ?? []).find(
+      // A record that never got a response (a failed or aborted request) has no
+      // headers, although Lighthouse types them as always present.
+      const responseHeaders = record.responseHeaders as
+        Artifacts.NetworkRequest['responseHeaders'] | undefined;
+      const header = (responseHeaders ?? []).find(
         (entry) => entry.name.toLowerCase() === 'content-length',
       );
       const declared = header ? Number(header.value) : Number.NaN;

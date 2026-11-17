@@ -17,6 +17,8 @@
  * configuration-management tests.
  */
 
+import { isObject } from '../wellknown/json.js';
+
 /** Matches a line break, with or without a carriage return. */
 const LINE_BREAK = /\r?\n/u;
 
@@ -221,10 +223,10 @@ export function isExposedSourceMap(content: string): boolean {
   } catch {
     return false;
   }
-  if (typeof parsed !== 'object' || parsed === null) {
+  if (!isObject(parsed)) {
     return false;
   }
-  const map = parsed as Record<string, unknown>;
+  const map = parsed;
   if (map.version !== 3) {
     return false;
   }

@@ -9,6 +9,7 @@ import {
   STATE_COOKIE,
   sessionClaims,
 } from '@/domain/auth/app';
+import { double } from '../../helpers/double';
 import type { User } from '@/domain/db/users';
 
 describe('the app’s sign-in settings', () => {
@@ -28,6 +29,6 @@ describe('the app’s sign-in settings', () => {
   });
 
   it('puts nothing but who the person is in the session cookie', () => {
-    expect(sessionClaims({ id: 1 } as User)).toEqual({});
+    expect(sessionClaims(double<User>({ id: 1 }))).toEqual({});
   });
 });

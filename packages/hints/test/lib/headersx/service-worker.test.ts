@@ -16,12 +16,12 @@ describe('serviceWorkerAllowedFindings', () => {
   });
 
   it('warns on an empty value', () => {
-    const [f] = serviceWorkerAllowedFindings(' '.repeat(3));
+    const f = serviceWorkerAllowedFindings(' '.repeat(3)).at(0);
     expect(f?.severity).toBe('warning');
   });
 
   it('warns on a relative scope without a leading slash', () => {
-    const [f] = serviceWorkerAllowedFindings('app/');
+    const f = serviceWorkerAllowedFindings('app/').at(0);
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain("starting with '/'");
   });

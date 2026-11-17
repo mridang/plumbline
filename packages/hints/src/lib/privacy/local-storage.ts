@@ -15,6 +15,9 @@ const segmenter = new Intl.Segmenter();
  * as one character (a whole emoji or accented letter), so a cut never splits
  * one in half.
  */
+
+import { isObject } from '../wellknown/json.js';
+
 export function truncate(value: string, maximum: number = TRUNCATE_AT): string {
   const characters = Array.from(segmenter.segment(value), (s) => s.segment);
   return characters.length > maximum
@@ -37,10 +40,11 @@ export function parseStorage(raw: unknown): StorageEntry[] {
       return [];
     }
   }
-  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+  if (!isObject(data)) {
     return [];
   }
-  return Object.entries(data as Record<string, unknown>).map(
-    ([key, value]) => ({ key, value: String(value) }),
-  );
+  return Object.entries(data).map(([key, value]) => ({
+    key,
+    value: String(value),
+  }));
 }

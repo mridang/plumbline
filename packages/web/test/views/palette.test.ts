@@ -84,7 +84,9 @@ describe('the palettes', () => {
   it('are written as six-digit hex colours, as the contrast check reads them', () => {
     for (const colour of [
       ON_ACCENT,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
       ...(Object.values(LIGHT_PALETTE) as string[]),
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
       ...(Object.values(DARK_PALETTE) as string[]),
     ]) {
       expect(colour).toMatch(HEX_COLOUR_PATTERN);

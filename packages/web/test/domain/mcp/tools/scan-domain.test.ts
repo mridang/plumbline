@@ -7,11 +7,12 @@ import { domainLink } from '@/domain/mcp/tool-results';
 
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../../lib/core/db/sqlite-db';
+import { double } from '../../../helpers/double';
 import type { ToolResult } from '@/domain/mcp/tool-results';
 import type { User } from '@/domain/db/users';
 import type { ToolContent } from '@/domain/mcp/tool-context';
 
-const USER = { id: 1 } as User;
+const USER = double<User>({ id: 1 });
 
 /** A fresh database, and a way to call a tool against it. */
 function setup() {

@@ -218,6 +218,7 @@ export async function checkSite(
   // What the previous run found stands for a check that did not run now, but
   // only under the rules it was found with.
   const carried =
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- a first run has no previous result, and the guard keeps that path from reading one
     same && previous
       ? previous.findings.filter(
           (found) => result.skipped.includes(found.id) && levels.has(found.id),

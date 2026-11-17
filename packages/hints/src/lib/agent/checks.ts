@@ -156,7 +156,7 @@ export async function runCheck(
       id: check.id,
       category: check.category,
       passed: false,
-      detail: `The check failed to run: ${(error as Error).message}`,
+      detail: `The check failed to run: ${error instanceof Error ? error.message : String(error)}`,
     };
   }
 }

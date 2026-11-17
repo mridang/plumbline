@@ -15,6 +15,7 @@ import {
   tokenFor,
 } from '../../../domain/auth/auth-test-kit';
 import { installFakeTracing } from '../observability/fake-tracing';
+import { double } from '../../../helpers/double';
 import type { User } from '@/domain/auth/store';
 
 const tracing = installFakeTracing();
@@ -25,9 +26,9 @@ jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 /** The accounts that exist: id to the epoch their sessions must carry. */
 const accounts = new Map<number, { email: string; epoch: number }>();
 const getUserById = jest.fn(async (id: number) => {
-  const account = accounts.get(id);
-  return account
-    ? ({ id, email: account.email, session_epoch: account.epoch } as User)
+  const stored = accounts.get(id);
+  return stored
+    ? double<User>({ id, email: stored.email, session_epoch: stored.epoch })
     : undefined;
 });
 const getSessionEpoch = jest.fn(async (id: number) => accounts.get(id)?.epoch);

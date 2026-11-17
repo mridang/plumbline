@@ -31,6 +31,7 @@ export function CopyButton({
       type="button"
       aria-label={copied ? `${label}: copied` : `Copy ${label}`}
       onClick={() => {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- navigator.clipboard is undefined on pages served without a secure context, although the DOM lib types it as always present
         void navigator.clipboard?.writeText(value).then(() => {
           setCopied(true);
           return setTimeout(() => setCopied(false), COPIED_MS);

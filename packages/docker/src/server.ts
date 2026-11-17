@@ -22,6 +22,12 @@ interface ScanRequest {
   out?: unknown;
 }
 
+/** Reads a request body; anything that is not a JSON object has no fields. */
+function scanRequestOf(raw: string): ScanRequest {
+  const parsed: unknown = raw ? JSON.parse(raw) : {};
+  return typeof parsed === 'object' && parsed !== null ? { ...parsed } : {};
+}
+
 /** The scan function the server calls; injectable so tests can fake it. */
 export type ScanFn = (
   url: string,
@@ -72,7 +78,7 @@ async function handleScan(
   scanner: ScanFn,
 ): Promise<void> {
   const body = await readBody(req)
-    .then((raw) => (raw ? (JSON.parse(raw) as ScanRequest) : {}))
+    .then(scanRequestOf)
     .catch(() => undefined);
   if (body === undefined) {
     sendJson(res, 400, { error: 'body must be valid JSON' });
@@ -128,7 +134,7 @@ async function handleRun(
   run: RunFn,
 ): Promise<void> {
   const body = await readBody(req)
-    .then((raw) => (raw ? (JSON.parse(raw) as ScanRequest) : {}))
+    .then(scanRequestOf)
     .catch(() => undefined);
   if (body === undefined) {
     sendJson(res, 400, { error: 'body must be valid JSON' });

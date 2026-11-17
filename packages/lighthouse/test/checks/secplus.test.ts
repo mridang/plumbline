@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 import { secplusChecks } from '../../src/checks/secplus.js';
 import { HTTP_SCHEME } from '../helpers/data.js';
+import { artifactsOf, contextOf, devtoolsLogOf } from '../helpers/fixtures.js';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type { AuditCheck } from '../../src/checks/types.js';
@@ -58,7 +59,7 @@ function devtoolsLog(
       params: { requestId, timestamp: 3, encodedDataLength: 100 },
     },
   ];
-  return events as Artifacts['DevtoolsLog'];
+  return devtoolsLogOf(events);
 }
 
 /** Header-check artifacts over the given response headers. */
@@ -66,26 +67,26 @@ function headerArtifacts(
   url: string,
   headers: Record<string, string>,
 ): Artifacts {
-  return {
+  return artifactsOf({
     DevtoolsLog: devtoolsLog(url, headers),
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
     MetaElements: [] as Artifacts['MetaElements'],
-  } as Artifacts;
+  });
 }
 
 /** DOM-check artifacts over the given HTML and page URL. */
 function domArtifacts(url: string, html: string): Artifacts {
-  return {
+  return artifactsOf({
     MainDocumentContent: html,
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
-  } as Artifacts;
+  });
 }
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */
 function context(): AuditNS.Context {
-  return {
+  return contextOf({
     computedCache: new Map<string, unknown>(),
-  } as unknown as AuditNS.Context;
+  });
 }
 
 /** Looks a check up by id, failing loudly if the registry drops it. */
@@ -102,7 +103,7 @@ describe('the secplus registry', () => {
     expect(secplusChecks).toHaveLength(4);
     for (const c of secplusChecks) {
       expect(c.id).toBeTruthy();
-      expect(c.section).toBe(PLACEMENT[c.id]?.section);
+      expect(c.section).toBe(PLACEMENT[c.id].section);
       expect(c.title).toBeTruthy();
     }
   });

@@ -39,7 +39,7 @@ export default defineHint({
       head = page.document.querySelector('head');
     });
     onSite(context, (site) => {
-      const [found] = document ? faviconSvgMissing(document) : [];
+      const found = (document ? faviconSvgMissing(document) : []).at(0);
       if (!found) {
         return;
       }

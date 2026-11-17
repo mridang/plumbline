@@ -22,7 +22,7 @@ import {
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
-import type { TokenResponse } from '@/lib/oauth';
+import { double } from '../../helpers/double';
 import type { DatabaseSync } from 'node:sqlite';
 
 const ORIGIN = 'https://app.test';
@@ -100,8 +100,10 @@ async function accessToken(
     (resource) => resource === URL,
     now,
   );
-  expect(issued).toHaveProperty('access_token');
-  return (issued as TokenResponse).access_token;
+  if (!('access_token' in issued)) {
+    throw new Error('the code was not exchanged for a token');
+  }
+  return issued.access_token;
 }
 
 /** The headers of a signed-in caller. */
@@ -300,14 +302,14 @@ describe('when the database cannot be reached', () => {
   it('answers 503 with a JSON-RPC error and Retry-After, and leaks nothing', async () => {
     const token = await accessToken();
     restore();
-    const broken = {
+    const broken = double<D1Database>({
       prepare: () => {
         throw new Error('D1 is down: secret detail');
       },
       batch: async () => {
         throw new Error('D1 is down: secret detail');
       },
-    } as unknown as D1Database;
+    });
     restore = installCloudflareContext(broken);
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
     const res = await POST(

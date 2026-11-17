@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 
 import { SessionTokens } from '@/lib/session';
 import { installCloudflareContext } from '../../lib/core/db/sqlite-d1';
+import { double } from '../../helpers/double';
 
 /** The session secret the sign-in tests use. */
 export const SESSION_SECRET = 'test-session-secret-value-0123456789';
@@ -36,7 +37,7 @@ const DEFAULT_ENV = {
 export function installEnv(
   env: Readonly<Record<string, unknown>> = DEFAULT_ENV,
 ): () => void {
-  return installCloudflareContext({} as D1Database, env);
+  return installCloudflareContext(double<D1Database>({}), env);
 }
 
 /** A signed session token for a person, optionally under a given epoch or expiry. */

@@ -4,6 +4,7 @@ import {
   PostMessageTransport as HostTransport,
 } from '@modelcontextprotocol/ext-apps/app-bridge';
 
+import { stub } from '../helpers/double';
 import type { DocumentRoot } from '@/views/host-wiring';
 
 /** A window the harness can post a message to. */
@@ -116,14 +117,14 @@ export async function joinedHost(
   prepare(app);
   await bridge.connect(
     new HostTransport(
-      viewWindow as unknown as Window,
-      viewWindow as unknown as MessageEventSource,
+      stub<Window>(viewWindow),
+      stub<MessageEventSource>(viewWindow),
     ),
   );
   await app.connect(
     new PostMessageTransport(
-      hostWindow as unknown as Window,
-      hostWindow as unknown as MessageEventSource,
+      stub<Window>(hostWindow),
+      stub<MessageEventSource>(hostWindow),
     ),
   );
   await settle();

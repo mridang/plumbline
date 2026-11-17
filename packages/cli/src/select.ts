@@ -24,6 +24,10 @@ export interface Selection {
   targets?: readonly string[];
 }
 
+/** The tier and target names the filters accept, as plain strings to look names up in. */
+const TIER_NAMES: ReadonlySet<string> = new Set<string>(TIERS);
+const TARGET_NAMES: ReadonlySet<string> = new Set<string>(TARGETS);
+
 /** The filters on top of `--group`: a hint must also be in one of these. */
 export interface Filters {
   tiers?: readonly string[];
@@ -84,11 +88,9 @@ export function filterByGroups(
 ): HintMeta[] {
   const known = knownGroups(catalogue);
   requireKnown('group', groups, (name) => resolve(name, known) !== undefined);
-  requireKnown('tier', filters.tiers ?? [], (name) =>
-    (TIERS as readonly string[]).includes(name),
-  );
+  requireKnown('tier', filters.tiers ?? [], (name) => TIER_NAMES.has(name));
   requireKnown('target', filters.targets ?? [], (name) =>
-    (TARGETS as readonly string[]).includes(name),
+    TARGET_NAMES.has(name),
   );
   const selectors: Selector[] = groups.flatMap(
     (name) => resolve(name, known) ?? [],

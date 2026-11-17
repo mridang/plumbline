@@ -2,6 +2,7 @@ import { dns } from '../../core/dns.js';
 import { onSite } from '../../core/page.js';
 import { registrableDomain } from '../email/domain.js';
 import { lookupMailServers } from '../email/mx.js';
+import { isObject } from '../wellknown/json.js';
 import type { Site } from '../../core/page.js';
 import type { HintContext, ReportOptions } from 'hint';
 
@@ -47,7 +48,7 @@ export function onPolicyDomain(
   check: (mail: PolicyDomain) => Promise<void>,
 ): void {
   onSite(context, async (site) => {
-    const options = (context.hintOptions ?? {}) as Record<string, unknown>;
+    const options = isObject(context.hintOptions) ? context.hintOptions : {};
     const configured =
       typeof options.domain === 'string' && options.domain !== ''
         ? options.domain.toLowerCase().replace(TRAILING_DOT, '')

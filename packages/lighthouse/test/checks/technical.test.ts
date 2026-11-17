@@ -10,9 +10,16 @@ import {
   imageAltCoverageFindings,
 } from '@mridang/webhint-hint-plumbline/dist/lib/technical/checks.js';
 import { technicalChecks } from '../../src/checks/technical.js';
+import {
+  artifactsOf,
+  contextOf,
+  devtoolsLogOf,
+  elementOf,
+} from '../helpers/fixtures.js';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type { AuditCheck } from '../../src/checks/types.js';
+import type { DeepPartial } from '../helpers/fixtures.js';
 
 // The same DOM parser webhint feeds its hints: the equivalence tests build the "webhint side" of each check with it, exactly as the hint does.
 
@@ -95,12 +102,12 @@ function devtoolsLog(
       ),
     ),
   ];
-  return events as Artifacts['DevtoolsLog'];
+  return devtoolsLogOf(events);
 }
 
 /** Builds the artifact bag a technical check reads, over the given fields. */
-function artifacts(fields: Partial<Artifacts>): Artifacts {
-  return {
+function artifacts(fields: DeepPartial<Artifacts>): Artifacts {
+  return artifactsOf({
     URL: {
       mainDocumentUrl: 'https://x.test/',
       finalDisplayedUrl: 'https://x.test/',
@@ -110,14 +117,14 @@ function artifacts(fields: Partial<Artifacts>): Artifacts {
     LinkElements: [],
     ImageElements: [],
     ...fields,
-  } as Artifacts;
+  });
 }
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */
 function context(): AuditNS.Context {
-  return {
+  return contextOf({
     computedCache: new Map<string, unknown>(),
-  } as unknown as AuditNS.Context;
+  });
 }
 
 /** Looks a check up by id, failing loudly if the registry drops it. */
@@ -216,7 +223,7 @@ describe('the technical-robots-meta-advanced check run()', () => {
     const findings = await robots.run(
       artifacts({
         MetaElements: [{ name: 'robots', content: 'index, follow' }],
-      } as Partial<Artifacts>),
+      }),
       context(),
     );
     expect(findings?.[0]?.severity).toBe('warning');
@@ -232,7 +239,7 @@ describe('the technical-robots-meta-advanced check run()', () => {
               'max-snippet:-1, max-image-preview:large, max-video-preview:-1',
           },
         ],
-      } as Partial<Artifacts>),
+      }),
       context(),
     );
     expect(findings).toEqual([]);
@@ -242,7 +249,7 @@ describe('the technical-robots-meta-advanced check run()', () => {
     const findings = await robots.run(
       artifacts({
         MetaElements: [{ name: 'robots', content: 'noindex' }],
-      } as Partial<Artifacts>),
+      }),
       context(),
     );
     expect(findings).toEqual([]);
@@ -256,7 +263,7 @@ describe('the technical-twitter-card-type check run()', () => {
     const findings = await twitter.run(
       artifacts({
         MetaElements: [{ name: 'twitter:card', content: 'bogus' }],
-      } as Partial<Artifacts>),
+      }),
       context(),
     );
     expect(findings?.[0]?.severity).toBe('error');
@@ -268,7 +275,7 @@ describe('the technical-twitter-card-type check run()', () => {
         MetaElements: [
           { name: 'twitter:card', content: 'summary_large_image' },
         ],
-      } as Partial<Artifacts>),
+      }),
       context(),
     );
     expect(findings).toEqual([]);
@@ -282,7 +289,7 @@ describe('the technical-canonical-invalid check run()', () => {
     const findings = await canonical.run(
       artifacts({
         LinkElements: [{ rel: 'canonical', href: null, hrefRaw: 'http://' }],
-      } as Partial<Artifacts>),
+      }),
       context(),
     );
     expect(findings?.[0]?.severity).toBe('error');
@@ -298,7 +305,7 @@ describe('the technical-canonical-invalid check run()', () => {
             hrefRaw: 'https://x.test/',
           },
         ],
-      } as Partial<Artifacts>),
+      }),
       context(),
     );
     expect(findings).toEqual([]);
@@ -318,7 +325,7 @@ describe('the technical-redirect-chain check run()', () => {
 
   it('is not applicable when the run captured no document', async () => {
     const findings = await redirect.run(
-      artifacts({ DevtoolsLog: [] as Artifacts['DevtoolsLog'] }),
+      artifacts({ DevtoolsLog: devtoolsLogOf([]) }),
       context(),
     );
     expect(findings).toBeNull();
@@ -332,7 +339,7 @@ describe('the technical-image-weight check run()', () => {
     const url = 'https://x.test/huge.png';
     const findings = await weight.run(
       artifacts({
-        ImageElements: [{ src: url }] as Artifacts['ImageElements'],
+        ImageElements: elementOf<Artifacts['ImageElements']>([{ src: url }]),
         DevtoolsLog: devtoolsLog('https://x.test/', [
           {
             url,
@@ -351,7 +358,7 @@ describe('the technical-image-weight check run()', () => {
     const url = 'https://x.test/small.png';
     const findings = await weight.run(
       artifacts({
-        ImageElements: [{ src: url }] as Artifacts['ImageElements'],
+        ImageElements: elementOf<Artifacts['ImageElements']>([{ src: url }]),
         DevtoolsLog: devtoolsLog('https://x.test/', [
           {
             url,

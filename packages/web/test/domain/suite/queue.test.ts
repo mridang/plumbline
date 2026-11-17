@@ -16,6 +16,7 @@ import {
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
+import { double } from '../../helpers/double';
 import type { ScanMessage } from '@/domain/suite/queue';
 import type { ScanJob } from '@/domain/suite/scanner';
 
@@ -96,7 +97,7 @@ describe('enqueueScan', () => {
     const run = async (_name: string, job: ScanJob) => {
       ran.push(job);
     };
-    await consumeScans({ messages: [first, second] as never }, { db, run });
+    await consumeScans({ messages: double([first, second]) }, { db, run });
     expect(ran).toEqual([deployment('b')]);
     expect(first.calls).toEqual(['ack']);
     expect(second.calls).toEqual(['ack']);
@@ -133,7 +134,7 @@ describe('consumeScans', () => {
     const names: string[] = [];
     const msg = message(sent[0]!);
     await consumeScans(
-      { messages: [msg] as never },
+      { messages: double([msg]) },
       {
         db,
         now: () => NOW,
@@ -146,7 +147,7 @@ describe('consumeScans', () => {
     expect(msg.calls).toEqual(['ack']);
     const again = message({ key: 'deploy:acme/site', seq: 1 });
     await consumeScans(
-      { messages: [again] as never },
+      { messages: double([again]) },
       { db, now: () => NOW, run: async () => undefined },
     );
     expect(again.calls).toEqual(['ack']);
@@ -160,7 +161,7 @@ describe('consumeScans', () => {
     await enqueueScan(db, queue, deployment('a'), NOW);
     const failing = message(sent[0]!, 2);
     await consumeScans(
-      { messages: [failing] as never },
+      { messages: double([failing]) },
       {
         db,
         now: () => NOW,
@@ -178,7 +179,7 @@ describe('consumeScans', () => {
     const ran: string[] = [];
     const retry = message(sent[0]!, 3);
     await consumeScans(
-      { messages: [retry] as never },
+      { messages: double([retry]) },
       {
         db,
         now: () => NOW,
@@ -196,7 +197,7 @@ describe('consumeScans', () => {
     await enqueueScan(db, queue, deployment('a'), NOW);
     let release: () => void = () => undefined;
     const running = consumeScans(
-      { messages: [message(sent[0]!)] as never },
+      { messages: double([message(sent[0]!)]) },
       {
         db,
         now: () => NOW,
@@ -211,14 +212,14 @@ describe('consumeScans', () => {
     });
     const waiting = message(sent[0]!, 1);
     await consumeScans(
-      { messages: [waiting] as never },
+      { messages: double([waiting]) },
       { db, now: () => NOW, run: async () => undefined },
     );
     expect(waiting.calls).toEqual(['retry 30']);
     const expired = message(sent[0]!, 2);
     const names: string[] = [];
     await consumeScans(
-      { messages: [expired] as never },
+      { messages: double([expired]) },
       {
         db,
         now: () => new Date(NOW.getTime() + LEASE_MS + 1),
@@ -242,7 +243,7 @@ describe('consumeScans', () => {
     const msg = message({ key: 'bad', seq: 1 });
     const run = jest.fn(async () => undefined);
     await consumeScans(
-      { messages: [msg] as never },
+      { messages: double([msg]) },
       { db, now: () => NOW, run },
     );
     expect(run).not.toHaveBeenCalled();
@@ -275,7 +276,7 @@ describe('logDeadLetters', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => undefined);
     const msg = message({ key: 'deploy:acme/site', seq: 4 }, 6);
-    logDeadLetters({ messages: [msg] as never });
+    logDeadLetters({ messages: double([msg]) });
     expect(log).toHaveBeenCalledWith(
       'scan job dead-lettered',
       { key: 'deploy:acme/site', seq: 4 },
@@ -310,17 +311,17 @@ describe('handleScanQueue', () => {
     await enqueueScan(db, { send: async () => undefined }, recheck, NOW);
     const live = message({ key: 'site:7:a.test', seq: 1 });
     await handleScanQueue(
-      { queue: 'plumbline-scans', messages: [live] } as never,
-      env as never,
-      {} as never,
+      double({ queue: 'plumbline-scans', messages: [live] }),
+      double(env),
+      double({}),
     );
     expect(fetched).toEqual([{ name: 'site:7:a.test#1', body: recheck }]);
     expect(live.calls).toEqual(['ack']);
     const dead = message({ key: 'x', seq: 1 });
     await handleScanQueue(
-      { queue: SCAN_DEAD_LETTER_NAME, messages: [dead] } as never,
-      env as never,
-      {} as never,
+      double({ queue: SCAN_DEAD_LETTER_NAME, messages: [dead] }),
+      double(env),
+      double({}),
     );
     expect(dead.calls).toEqual(['ack']);
     expect(fetched).toHaveLength(1);
@@ -333,9 +334,9 @@ describe('handleScanQueue', () => {
     await enqueueScan(db, { send: async () => undefined }, recheck, NOW);
     const live = message({ key: 'site:7:a.test', seq: 1 });
     await handleScanQueue(
-      { queue: 'plumbline-scans', messages: [live] } as never,
-      { DB: made.d1 } as never,
-      {} as never,
+      double({ queue: 'plumbline-scans', messages: [live] }),
+      double({ DB: made.d1 }),
+      double({}),
     );
     expect(live.calls).toEqual(['retry 30']);
   });

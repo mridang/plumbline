@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
 
+import { double } from '../../../helpers/double';
 import { migrationSql } from './migrations';
 import type { SQLInputValue } from 'node:sqlite';
 import type { Database } from '@/domain/db/client';
@@ -35,6 +36,7 @@ export function sqliteDatabase(
   }
   const exec = (sql: string, params: readonly unknown[], method: Method) => {
     const statement = raw.prepare(sql);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as SQLInputValue[], which the values it was built from or the checks around it establish
     const values = params as SQLInputValue[];
     if (method === 'run') {
       const outcome = statement.run(...values);
@@ -44,6 +46,7 @@ export function sqliteDatabase(
     const rows = statement.all(...values);
     // For `get`, Drizzle wants the one row (itself an array), not a list.
     return {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as unknown[], which the values it was built from or the checks around it establish
       rows: (method === 'get' ? rows[0] : rows) as unknown as unknown[],
     };
   };
@@ -62,5 +65,5 @@ export function sqliteDatabase(
     },
     { schema },
   );
-  return { db: client as unknown as Database, raw };
+  return { db: double<Database>(client), raw };
 }

@@ -29,6 +29,7 @@ export interface Preset {
 export function buildPresets(
   byGroup: Record<Group, readonly string[]>,
 ): Record<Group, Preset> {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the entries are built from GROUPS, so every Group key is present
   return Object.fromEntries(
     GROUPS.map((group) => [
       group,
@@ -98,6 +99,7 @@ export function buildTaxonomyPresets(ids: readonly string[]): PresetsByName {
     'plumbline-all': presetOf(placed.map(([id]) => id)),
     ...Object.fromEntries(
       SECTION_DEFS.flatMap((section) =>
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Object.keys is typed string[]; TIERS_OF is declared as Record<Tier, ...>, so its keys are exactly the Tier union
         (Object.keys(TIERS_OF) as Tier[]).map((tier) => [
           `section-${section.id}-${tier}`,
           presetOf(pick(tier, new Set([section.id]))),

@@ -13,7 +13,7 @@ describe('corsAllowCredentialsFindings', () => {
   });
 
   it('errors when true is combined with Allow-Origin *', () => {
-    const [f] = corsAllowCredentialsFindings('true', '*');
+    const f = corsAllowCredentialsFindings('true', '*').at(0);
     expect(f?.severity).toBe('error');
   });
 

@@ -54,7 +54,7 @@ describe('xssProtectionFindings', () => {
   });
 
   it('errors when enabled, naming the missing CSP', () => {
-    const [f] = xssProtectionFindings('1; mode=block', false);
+    const f = xssProtectionFindings('1; mode=block', false).at(0);
     expect(f?.severity).toBe('error');
     expect(f?.message).toContain('use a Content Security Policy instead');
   });
@@ -66,7 +66,7 @@ describe('xssProtectionFindings', () => {
   });
 
   it('only warns when explicitly disabled', () => {
-    const [f] = xssProtectionFindings('0', true);
+    const f = xssProtectionFindings('0', true).at(0);
     expect(f?.severity).toBe('warning');
   });
 });

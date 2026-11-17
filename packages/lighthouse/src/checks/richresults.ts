@@ -53,7 +53,7 @@ import type { HintDefinition } from '@mridang/webhint-hint-plumbline/dist/core/d
 import type { Artifacts } from 'lighthouse';
 
 /** The page URL the document is parsed against (unused by these checks). */
-function pageUrl(artifacts: Artifacts): string {
+function pageUrl(artifacts: Partial<Artifacts>): string {
   return (
     artifacts.URL?.finalDisplayedUrl || artifacts.URL?.mainDocumentUrl || ''
   );

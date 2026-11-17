@@ -27,6 +27,7 @@ export function github(
       requests.push({
         method,
         path,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
         body: JSON.parse(
           typeof init?.body === 'string' ? init.body : '{}',
         ) as Record<string, unknown>,

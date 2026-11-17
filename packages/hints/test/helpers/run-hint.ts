@@ -2,8 +2,8 @@ import { createServer } from 'node:http';
 import parserHtml from '@hint/parser-html';
 import { Analyzer, Configuration } from 'hint';
 import TestConnector from './test-connector.js';
+import { portOf } from './port.js';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
-import type { AddressInfo } from 'node:net';
 import type { Problem } from '@hint/utils-types';
 import type { HintDefinition } from '../../src/core/define-hint.js';
 
@@ -17,7 +17,10 @@ interface Route {
 }
 
 /** Routes by path; `/` defaults to an empty HTML page. */
-export type Routes = Record<string, Route | ((req: IncomingMessage) => Route)>;
+export type Routes = Record<
+  string,
+  Route | ((req: IncomingMessage) => Route) | undefined
+>;
 
 const DEFAULT_PAGE =
   '<!doctype html><html lang="en"><head><title>t</title></head><body></body></html>';
@@ -61,7 +64,7 @@ export async function runHint(
   options: { hintOptions?: unknown; path?: string } = {},
 ): Promise<Problem[]> {
   const server = await listen(routes);
-  const { port } = server.address() as AddressInfo;
+  const port = portOf(server);
   const hintKey = `extra/${hint.id}`;
   try {
     const configuration = Configuration.fromConfig({
@@ -75,6 +78,7 @@ export async function runHint(
     });
     // The constructor is marked private, but it is the only way to hand
     // the analyzer a connector and hints that are not installed packages.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Reflect.construct on the private constructor returns object, and the instance it builds is an Analyzer
     const analyzer = Reflect.construct(Analyzer, [
       configuration,
       {

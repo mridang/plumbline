@@ -4,20 +4,19 @@ import { NextResponse } from 'next/server';
 import { SESSION_COOKIE, sessionClaims } from '@/domain/auth/app';
 import { SessionTokens } from '@/lib/session';
 import { setSessionCookie } from '@/lib/core/auth';
+import { double } from '../../../helpers/double';
 import type { User } from '@/domain/auth/store';
 
 const SECRET = 'test-session-secret-value';
 const user = (overrides: Record<string, unknown> = {}) =>
-  ({
+  double<User>({
     id: 7,
     email: 'a@b.com',
     name: 'Ada Lovelace',
     picture: null,
-    refresh_token_enc: null,
     session_epoch: 0,
-    recipes_folder_id: null,
     ...overrides,
-  }) as unknown as User;
+  });
 
 async function issued(
   u: User,

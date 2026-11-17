@@ -41,11 +41,11 @@ export function encodeItem(fields: Readonly<Record<string, Field>>): string {
     }
     return (Array.isArray(value) ? (value as readonly string[]) : [value]).map(
       (one) => {
-        const text = one === true ? '1' : String(one);
-        if (LINE_BREAK.test(text)) {
+        const line = one === true ? '1' : String(one);
+        if (LINE_BREAK.test(line)) {
           throw new ProbeError(`${key} holds a line break`);
         }
-        return `${key}=${text}`;
+        return `${key}=${line}`;
       },
     );
   });

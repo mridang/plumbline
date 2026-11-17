@@ -30,6 +30,7 @@ import {
   suiteRuns,
   webhookDeliveries,
 } from '@/domain/db/schema';
+import { isStoredFinding } from '@/domain/suite/diff';
 import type { Database } from '@/domain/db/client';
 import type { ReportCounts } from '@/domain/db/reports';
 import type { StoredFinding } from '@/domain/suite/diff';
@@ -64,7 +65,7 @@ export interface StoredRun {
 function findingsIn(text: string): readonly StoredFinding[] {
   try {
     const value: unknown = JSON.parse(text);
-    return Array.isArray(value) ? (value as StoredFinding[]) : [];
+    return Array.isArray(value) ? value.filter(isStoredFinding) : [];
   } catch {
     return [];
   }

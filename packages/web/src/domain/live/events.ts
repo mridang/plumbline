@@ -30,20 +30,23 @@ export interface FinishedEvent {
 /** Everything the stream carries. */
 export type LiveEvent = StartedEvent | FinishedEvent;
 
+/** Whether a parsed frame is an event: of a known type, with the site and the time. */
+function isLiveEvent(value: unknown): value is LiveEvent {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const knownType =
+    'type' in value && (value.type === 'started' || value.type === 'finished');
+  const hasHost = 'host' in value && typeof value.host === 'string';
+  const hasTime = 'at' in value && typeof value.at === 'string';
+  return knownType && hasHost && hasTime;
+}
+
 /** The event in a frame's data, or null for anything that is not one. */
 export function parseEvent(data: string): LiveEvent | null {
   try {
     const value: unknown = JSON.parse(data);
-    if (typeof value !== 'object' || value === null) {
-      return null;
-    }
-    const event = value as Partial<LiveEvent> & Record<string, unknown>;
-    const isKnownType = event.type === 'started' || event.type === 'finished';
-    return isKnownType &&
-      typeof event.host === 'string' &&
-      typeof event.at === 'string'
-      ? (event as unknown as LiveEvent)
-      : null;
+    return isLiveEvent(value) ? value : null;
   } catch {
     return null;
   }

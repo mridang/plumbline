@@ -60,7 +60,7 @@ export function findMainDocument(
       return matching.at(-1) ?? null;
     }
   }
-  return documents[0] ?? records[0] ?? null;
+  return documents.at(0) ?? records.at(0) ?? null;
 }
 
 /**
@@ -75,7 +75,11 @@ export function findMainDocument(
 export function headerBagFromRecord(
   record: Artifacts.NetworkRequest,
 ): HeaderBag {
-  const headers = (record.responseHeaders ?? []).map(
+  // Lighthouse types the headers as always present; a record that never got a
+  // response (a failed or aborted request) has none.
+  const responseHeaders = record.responseHeaders as
+    Artifacts.NetworkRequest['responseHeaders'] | undefined;
+  const headers = (responseHeaders ?? []).map(
     ({ name, value }) => [name.toLowerCase(), value] as const,
   );
   return Object.fromEntries(

@@ -170,25 +170,17 @@ describe('findRobotsSource', () => {
     const parsedDocument = parse(
       '<meta name="robots" content="index"><meta name="googlebot" content="noindex">',
     );
-    const found = findRobotsSource(parsedDocument as never, {}, 'noindex');
+    const found = findRobotsSource(parsedDocument, {}, 'noindex');
     expect(found).toHaveProperty('element');
   });
   it('falls back to the X-Robots-Tag header', () => {
     expect(
-      findRobotsSource(
-        parse('') as never,
-        { 'x-robots-tag': 'noindex' },
-        'noindex',
-      ),
+      findRobotsSource(parse(''), { 'x-robots-tag': 'noindex' }, 'noindex'),
     ).toEqual({ header: { name: 'X-Robots-Tag', value: 'noindex' } });
   });
   it('returns null when nothing carries it', () => {
     expect(
-      findRobotsSource(
-        parse('') as never,
-        { 'x-robots-tag': 'noarchive' },
-        'noindex',
-      ),
+      findRobotsSource(parse(''), { 'x-robots-tag': 'noarchive' }, 'noindex'),
     ).toBeNull();
   });
 });

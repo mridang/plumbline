@@ -8,6 +8,7 @@
  */
 
 import { findCheck, isCheckId } from '@/domain/checks/catalogue';
+import { isObject } from '@/lib/core/api/json';
 import { unknownFields } from '@/domain/api/domain-resource';
 import type { Parsed } from '@/domain/api/domain-resource';
 import type { Report, ReportCounts, ReportSummary } from '@/domain/db/reports';
@@ -31,12 +32,12 @@ const STATUSES: readonly OutcomeStatus[] = [
 /** How serious a finding is. */
 type FindingLevel = 'error' | 'warning' | 'hint' | 'information';
 
-const LEVELS: ReadonlySet<FindingLevel> = new Set([
+const LEVELS: readonly FindingLevel[] = [
   'error',
   'warning',
   'hint',
   'information',
-]);
+];
 
 /** A page a finding points to for more on the problem or its fix. */
 export interface StoredLink {
@@ -93,12 +94,13 @@ const MAX_LINKS = 5;
 
 /** A finding's further-reading links: plain http(s) ones only, at most {@link MAX_LINKS}. */
 function linksOf(value: unknown): StoredLink[] {
-  return (Array.isArray(value) ? (value as unknown[]) : [])
+  const raws: unknown[] = Array.isArray(value) ? value : [];
+  return raws
     .flatMap((raw) => {
-      if (typeof raw !== 'object' || raw === null) {
+      if (!isObject(raw)) {
         return [];
       }
-      const record = raw as Readonly<Record<string, unknown>>;
+      const record = raw;
       const url = textOf(record['url']);
       const text = textOf(record['text']);
       return url !== undefined && HTTP_URL.test(url)
@@ -117,18 +119,17 @@ function positionOf(value: unknown): number | undefined {
 
 /** A finding as stored, or undefined when it is not one. */
 function findingOf(raw: unknown): StoredFinding | undefined {
-  if (typeof raw !== 'object' || raw === null) {
+  if (!isObject(raw)) {
     return undefined;
   }
-  const record = raw as Readonly<Record<string, unknown>>;
+  const record = raw;
   const message = textOf(record['message']);
   const resource = textOf(record['resource']);
-  const level = record['level'];
-  if (
-    message === undefined ||
-    resource === undefined ||
-    !LEVELS.has(level as FindingLevel)
-  ) {
+  if (message === undefined || resource === undefined) {
+    return undefined;
+  }
+  const level = LEVELS.find((name) => name === record['level']);
+  if (level === undefined) {
     return undefined;
   }
   const snippet = textOf(record['snippet']);
@@ -139,7 +140,7 @@ function findingOf(raw: unknown): StoredFinding | undefined {
   return {
     resource,
     message,
-    level: level as FindingLevel,
+    level,
     ...(snippet === undefined ? {} : { snippet }),
     ...(language === undefined ? {} : { language }),
     ...(line === undefined ? {} : { line }),
@@ -151,16 +152,16 @@ function findingOf(raw: unknown): StoredFinding | undefined {
 /** One outcome as stored, or the reason it cannot be. */
 function outcomeOf(raw: unknown, index: number): Parsed<StoredOutcome> {
   const where = `outcomes[${index}]`;
-  if (typeof raw !== 'object' || raw === null) {
+  if (!isObject(raw)) {
     return { ok: false, errors: [`${where}: must be an object.`] };
   }
-  const record = raw as Readonly<Record<string, unknown>>;
+  const record = raw;
   const id = record['id'];
   if (typeof id !== 'string' || !isCheckId(id)) {
     return { ok: false, errors: [`${where}.id: not a check.`] };
   }
-  const status = record['status'];
-  if (!STATUSES.includes(status as OutcomeStatus)) {
+  const status = STATUSES.find((name) => name === record['status']);
+  if (status === undefined) {
     return {
       ok: false,
       errors: [`${where}.status: must be one of ${STATUSES.join(', ')}.`],
@@ -179,7 +180,7 @@ function outcomeOf(raw: unknown, index: number): Parsed<StoredOutcome> {
     ok: true,
     value: {
       id,
-      status: status as OutcomeStatus,
+      status,
       ...(reason === undefined ? {} : { reason }),
       findings,
     },

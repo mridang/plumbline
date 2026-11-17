@@ -53,6 +53,7 @@ export function FixPromptBox({
           onClick={() => {
             // `clipboard` is missing on insecure pages; then there is nothing to confirm.
 
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- navigator.clipboard is undefined on pages served without a secure context, although the DOM lib types it as always present
             void navigator.clipboard?.writeText(prompt).then(() => {
               setCopied(true);
               return setTimeout(() => setCopied(false), CONFIRMATION_MS);

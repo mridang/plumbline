@@ -91,10 +91,21 @@ export async function fetchJwks(
     () => undefined,
   );
   try {
-    return text === undefined ? undefined : (JSON.parse(text) as JSONWebKeySet);
+    const parsed: unknown = text === undefined ? undefined : JSON.parse(text);
+    return isJwks(parsed) ? parsed : undefined;
   } catch {
     return undefined;
   }
+}
+
+/** Whether a parsed document is a key set: an object with a list of keys. */
+function isJwks(value: unknown): value is JSONWebKeySet {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'keys' in value &&
+    Array.isArray(value.keys)
+  );
 }
 
 /** The client id an assertion claims to be from (its `sub`), read without trusting it, for a request that left `client_id` out (RFC 7523 §2.2). */

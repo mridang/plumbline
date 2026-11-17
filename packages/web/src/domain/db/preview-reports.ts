@@ -12,6 +12,7 @@ import { and, eq, lt } from 'drizzle-orm';
 
 import { previewReports } from '@/domain/db/schema';
 import { countsOf } from '@/domain/suite/report';
+import { isStoredFinding } from '@/domain/suite/diff';
 import type { Database } from '@/domain/db/client';
 import type { StoredFinding } from '@/domain/suite/diff';
 
@@ -105,7 +106,7 @@ export async function getPreviewReport(
     const value: unknown = JSON.parse(row.findings);
     return {
       ...row,
-      findings: Array.isArray(value) ? (value as StoredFinding[]) : [],
+      findings: Array.isArray(value) ? value.filter(isStoredFinding) : [],
     };
   } catch {
     return { ...row, findings: [] };

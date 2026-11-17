@@ -48,6 +48,7 @@ interface Operation {
   responses: Record<string, Json>;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads openapi.json as the document type its checks below describe
 const document = JSON.parse(
   await readFile(path.join(PACKAGE, 'openapi.json'), 'utf8'),
 ) as {
@@ -64,10 +65,10 @@ const API = path.join(PACKAGE, 'src/app/api');
 
 const documented = (): Map<string, Operation> => {
   const found = new Map<string, Operation>();
-  for (const [path, item] of Object.entries(document.paths)) {
+  for (const [pathname, item] of Object.entries(document.paths)) {
     for (const method of METHODS) {
       if (item[method]) {
-        found.set(`${method.toUpperCase()} ${path}`, item[method]);
+        found.set(`${method.toUpperCase()} ${pathname}`, item[method]);
       }
     }
   }
@@ -120,23 +121,24 @@ const registered = async (): Promise<
 > => {
   const found = [];
   for (const file of await routeFiles(API)) {
-    const path = pathOf(file).replace(TRAILING_SLASH, '');
-    if (ALIASES.has(path)) {
+    const pathname = pathOf(file).replace(TRAILING_SLASH, '');
+    if (ALIASES.has(pathname)) {
       continue;
     }
-    const load = ROUTE_MODULES[path];
+    const load = ROUTE_MODULES[pathname];
     if (!load) {
       throw new Error(
-        `${path} has a route file and no entry in test/helpers/route-modules.ts`,
+        `${pathname} has a route file and no entry in test/helpers/route-modules.ts`,
       );
     }
     const module = await load();
     for (const method of METHODS.map((m) => m.toUpperCase())) {
       if (typeof module[method] === 'function') {
         found.push({
-          key: `${method} ${path}`,
-          path,
+          key: `${method} ${pathname}`,
+          path: pathname,
           method,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the route module's exports are looked up by method name, and the table above lists only the methods it exports as handlers
           handler: module[method] as Handler,
         });
       }
@@ -168,7 +170,7 @@ describe('openapi.json and the route files', () => {
     const routeList = await routeFiles(API);
     const files = routeList
       .map((file) => pathOf(file).replace(TRAILING_SLASH, ''))
-      .filter((path) => !ALIASES.has(path));
+      .filter((pathname) => !ALIASES.has(pathname));
     expect(files.toSorted((a, b) => Number(a > b) - Number(a < b))).toEqual(
       Object.keys(ROUTE_MODULES).toSorted(
         (a, b) => Number(a > b) - Number(a < b),
@@ -229,6 +231,7 @@ describe('openapi.json and the route files', () => {
         if (Number(code) < 400) {
           continue;
         }
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- a response's content is a JSON object when present, as the schema checks around it require
         const content = response(value)['content'] as Json | undefined;
         expect([key, code, Object.keys(content ?? {})]).toEqual([
           key,
@@ -256,6 +259,7 @@ describe('openapi.json and the route files', () => {
           walk(item, `${where}[${at}]`);
         }
       } else if (value && typeof value === 'object') {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the value was just checked to be a JSON object by the guard above
         const record = value as Json;
         const properties = record['properties'];
         const names =
@@ -279,8 +283,8 @@ describe('openapi.json and the route files', () => {
   });
 
   it('has no path segment that is a verb or has a hyphen, and no trailing slash', () => {
-    for (const path of Object.keys(document.paths)) {
-      expect(path).not.toMatch(HYPHEN_OR_TRAILING_SLASH);
+    for (const pathname of Object.keys(document.paths)) {
+      expect(pathname).not.toMatch(HYPHEN_OR_TRAILING_SLASH);
     }
   });
 });
@@ -303,19 +307,20 @@ describe('what the controllers do, against what the spec says', () => {
 
   it.each(
     secured.map(
-      ({ key, path, method, handler }) => [key, path, method, handler] as const,
+      ({ key, path: pathname, method, handler }) =>
+        [key, pathname, method, handler] as const,
     ),
   )(
     '%s answers 401 as a problem to a request with no session',
-    async (_key, path, method, handler) => {
+    async (_key, pathname, method, handler) => {
       const names = Array.from(
-        path.matchAll(/\{([a-z_]+)\}/gu),
+        pathname.matchAll(/\{([a-z_]+)\}/gu),
         (m) => m[1] ?? '',
       );
       const params = Object.fromEntries(names.map((name) => [name, 'x']));
       const answer = await handler(
         new Request(
-          `https://plumbline.test${path.replaceAll(/\{[a-z_]+\}/gu, 'x')}`,
+          `https://plumbline.test${pathname.replaceAll(/\{[a-z_]+\}/gu, 'x')}`,
           {
             method,
             headers: { 'content-type': 'application/json' },

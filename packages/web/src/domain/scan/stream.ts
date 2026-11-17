@@ -26,6 +26,17 @@ export type ScanLine =
   | { readonly type: 'unreachable'; readonly detail: string }
   | { readonly type: 'end' };
 
+/** Whether a parsed line is of a kind this page knows. */
+function isScanLine(value: unknown): value is ScanLine {
+  if (typeof value !== 'object' || value === null || !('type' in value)) {
+    return false;
+  }
+  return (
+    typeof value.type === 'string' &&
+    ['ready', 'done', 'unreachable', 'end'].includes(value.type)
+  );
+}
+
 /** The line as an object, or a thrown error when it is not JSON or has no type. */
 function parseLine(text: string): ScanLine | undefined {
   try {
@@ -33,13 +44,9 @@ function parseLine(text: string): ScanLine | undefined {
     if (typeof value !== 'object' || value === null || !('type' in value)) {
       throw new ProblemError('The scan sent something unreadable.');
     }
-    const { type } = value;
     // A line of a kind this page does not know is skipped, so the scanner can
     // grow new lines without breaking pages that are already open.
-    return typeof type === 'string' &&
-      ['ready', 'done', 'unreachable', 'end'].includes(type)
-      ? (value as ScanLine)
-      : undefined;
+    return isScanLine(value) ? value : undefined;
   } catch {
     throw new ProblemError('The scan sent something unreadable.');
   }

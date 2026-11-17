@@ -19,6 +19,7 @@ const { default: HTMLParser } = parserHtml;
 const connectorRequire = createRequire(
   import.meta.resolve('@hint/connector-puppeteer'),
 );
+// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the require of a CommonJS module that this package does not depend on returns any, and only the Page prototype is read
 const { Page } = connectorRequire('puppeteer-core') as {
   Page: { prototype: { removeListener?: unknown; off?: unknown } };
 };
@@ -41,7 +42,8 @@ interface HintCtor {
 const collator = new Intl.Collator();
 
 /** The hint map the hints package default-exports, keyed by bare hint id. */
-const hintMap = extraHints as unknown as Record<string, HintCtor>;
+// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the hints package default-exports its hints as untyped webhint constructors, of which only the loosely read meta.docs is used here
+const hintMap = extraHints as unknown as Record<string, HintCtor | undefined>;
 
 /** Every hint id the package ships, without the `extra/` prefix. */
 export const allHintIds: readonly string[] = Object.freeze(
@@ -168,6 +170,7 @@ export async function scan(
     options.hints && options.hints.length > 0
       ? options.hints.filter((id) => id in hintMap)
       : allHintIds;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- webhint types the configuration with every optional key spelled out; only the connector, parsers and hints given here are read
   const configuration = Configuration.fromConfig({
     connector: {
       name: 'puppeteer',
@@ -195,6 +198,7 @@ export async function scan(
   // The constructor is marked private, but it is the only way to hand the
   // analyzer resources that webhint has not looked up itself; this is what
   // `createAnalyzer` does after its lookup, with the same resource shape.
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Reflect.construct on the private constructor returns object, and the instance it builds is an Analyzer
   const analyzer = Reflect.construct(Analyzer, [
     configuration,
     {
@@ -207,7 +211,8 @@ export async function scan(
     },
     [],
   ]) as Analyzer;
-  const [result] = await analyzer.analyze(url);
+  const results = await analyzer.analyze(url);
+  const result = results.at(0);
   return {
     problems: result?.problems ?? [],
     hints: ids.map((id) => metaOf(id)),

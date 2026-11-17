@@ -27,7 +27,7 @@ describe('xPoweredByFindings', () => {
   });
 
   it('warns on any value', () => {
-    const [f] = xPoweredByFindings('Express');
+    const f = xPoweredByFindings('Express').at(0);
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain('Express');
   });
@@ -60,7 +60,7 @@ describe('sourcemapFindings', () => {
   });
 
   it('reports a SourceMap header', () => {
-    const [f] = sourcemapFindings('/app.js.map', null);
+    const f = sourcemapFindings('/app.js.map', null).at(0);
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain('SourceMap');
   });
