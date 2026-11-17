@@ -1,8 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { DARK_PALETTE, LIGHT_PALETTE } from '@/views/app';
 import { ON_ACCENT } from '@/views/palette';
+import { DARK_PALETTE, LIGHT_PALETTE } from '@/views/app';
 import type { ThemePalette } from '@/views/palette';
+
+const collator = new Intl.Collator();
 
 /** Matches a six digit hexadecimal colour. */
 const HEX_COLOUR_PATTERN = /^#[0-9a-f]{6}$/u;
@@ -71,27 +73,22 @@ describe.each([
 describe('the palettes', () => {
   it('give light and dark the same colours to fill in', () => {
     expect(
-      Object.keys(DARK_PALETTE).toSorted(
-        (a, b) => Number(a > b) - Number(a < b),
-      ),
+      Object.keys(DARK_PALETTE).toSorted((a, b) => collator.compare(a, b)),
     ).toEqual(
-      Object.keys(LIGHT_PALETTE).toSorted(
-        (a, b) => Number(a > b) - Number(a < b),
-      ),
+      Object.keys(LIGHT_PALETTE).toSorted((a, b) => collator.compare(a, b)),
     );
   });
 
-  it('are written as six-digit hex colours, as the contrast check reads them', () => {
-    for (const colour of [
-      ON_ACCENT,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
-      ...(Object.values(LIGHT_PALETTE) as string[]),
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
-      ...(Object.values(DARK_PALETTE) as string[]),
-    ]) {
+  it.each([
+    ON_ACCENT,
+    ...Object.values<string>({ ...LIGHT_PALETTE }),
+    ...Object.values<string>({ ...DARK_PALETTE }),
+  ])(
+    'are written as six-digit hex colours, as the contrast check reads them (%j)',
+    (colour) => {
       expect(colour).toMatch(HEX_COLOUR_PATTERN);
-    }
-  });
+    },
+  );
 
   it('draw the dark card darker than the light one', () => {
     expect(luminance(DARK_PALETTE.fallbackSurface)).toBeLessThan(

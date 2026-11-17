@@ -1,4 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
+import { z } from 'zod';
 
 import { BRAND_URL, CRAWLABLE_PATHS, PRIVATE_PATHS } from '@/app/_brand';
 import robots from '@/app/robots';
@@ -6,11 +7,16 @@ import robots from '@/app/robots';
 /** Matches trailing dollar. */
 const TRAILING_DOLLAR = /\$$/u;
 
-type Group = { userAgent: string; allow: string[]; disallow: string[] };
+const GROUPS = z.array(
+  z.object({
+    userAgent: z.string(),
+    allow: z.array(z.string()),
+    disallow: z.array(z.string()),
+  }),
+);
 
 describe('robots.txt', () => {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as Group[], which the values it was built from or the checks around it establish
-  const groups = robots().rules as Group[];
+  const groups = GROUPS.parse(robots().rules);
   const rule = groups[0]!;
 
   /**

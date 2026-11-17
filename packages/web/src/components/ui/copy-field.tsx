@@ -32,12 +32,10 @@ export function CopyField({
         onClick={() => {
           // `clipboard` is missing on insecure pages; then there is nothing to confirm.
 
-          const clipboard = navigator.clipboard;
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- navigator.clipboard is undefined on pages served without a secure context, although the DOM lib types it as always present
-          if (!clipboard) {
+          if (!('clipboard' in navigator)) {
             return;
           }
-          void clipboard.writeText(value).then(() => {
+          void navigator.clipboard.writeText(value).then(() => {
             setCopied(true);
             return setTimeout(() => setCopied(false), CONFIRMATION_MS);
           });

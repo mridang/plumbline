@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
+import { z } from 'zod';
 
 import { installFakeTracing } from '../lib/core/observability/fake-tracing';
 
@@ -16,8 +17,7 @@ function firstLine(spy: ConsoleSpy): string {
 }
 
 function firstRecord(spy: ConsoleSpy): Record<string, unknown> {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
-  return JSON.parse(firstLine(spy)) as Record<string, unknown>;
+  return z.record(z.string(), z.unknown()).parse(JSON.parse(firstLine(spy)));
 }
 
 afterEach(() => {
@@ -69,8 +69,7 @@ describe('structured logging', () => {
     expect(parsed['event']).toBe('torrent.lookup');
     expect(parsed['status']).toBe('ok');
     expect(typeof parsed['ts']).toBe('string');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as string, which the values it was built from or the checks around it establish
-    expect(Number.isNaN(Date.parse(parsed['ts'] as string))).toBe(false);
+    expect(Number.isNaN(Date.parse(String(parsed['ts'])))).toBe(false);
   });
 
   it('logWarn emits one warn-level line to console.error', () => {
