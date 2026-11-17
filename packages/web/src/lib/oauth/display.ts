@@ -18,8 +18,10 @@ import { parseUrl } from '@/utils/url';
 import type { RedirectKind } from '@/lib/oauth/redirect-uri';
 import type { OAuthClient } from '@/lib/oauth/client';
 
-/** A single printable ASCII character. */
-const PRINTABLE_ASCII_CHARACTER = /^[\u0021-\u007E]$/u;
+const SANITISE_DISPLAY_NAME_PATTERN = /\s+/gu;
+const ASCII_ONLY_PATTERN = /^[\u0021-\u007E]$/u;
+
+const segmenter = new Intl.Segmenter();
 
 /** The longest client name we show. */
 export const MAX_DISPLAY_NAME_LENGTH = 100;
@@ -35,9 +37,6 @@ export const NEUTRAL_CLIENT_NAME = 'An unnamed app';
  * read as something it is not.
  */
 const INVISIBLE = /[\p{Cc}\p{Cf}\p{Cs}\p{Co}\p{Cn}]/gu;
-
-/** Splits text into the characters a reader sees (emoji and flags stay whole). */
-const segmenter = new Intl.Segmenter();
 
 /**
  * Clean a name a client gave for itself so it is safe to show: Unicode
@@ -59,12 +58,12 @@ export function sanitiseDisplayName(
     .normalize('NFKC')
     // Line and paragraph separators and tabs are whitespace, not invisible;
     // turn them into spaces before the invisible characters are dropped.
-    .replaceAll(/\s+/gu, ' ')
+    .replaceAll(SANITISE_DISPLAY_NAME_PATTERN, ' ')
     .replaceAll(INVISIBLE, '')
     .trim();
   const capped = [...segmenter.segment(cleaned)]
     .slice(0, maxLength)
-    .map(({ segment }) => segment)
+    .map((part) => part.segment)
     .join('')
     .trim();
   return capped || fallback;
@@ -128,7 +127,7 @@ export const APP_SCHEME_WARNING =
  */
 function asciiOnly(text: string): string {
   return Array.from(text, (ch) =>
-    PRINTABLE_ASCII_CHARACTER.test(ch)
+    ASCII_ONLY_PATTERN.test(ch)
       ? ch
       : String.raw`\u{${(ch.codePointAt(0) ?? 0).toString(16)}}`,
   ).join('');
@@ -184,5 +183,9 @@ export function describeRedirect(
 
 /** The plain-words description of each requested scope; an unknown scope is shown as it is. */
 export function describeScopes(scopes: readonly string[]): readonly string[] {
-  return scopes.map((scope) => SCOPE_TEXT[scope] ?? scope);
+  return scopes.map((scope) =>
+    Object.hasOwn(SCOPE_TEXT, scope)
+      ? SCOPE_TEXT[scope as keyof typeof SCOPE_TEXT]
+      : scope,
+  );
 }

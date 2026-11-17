@@ -20,6 +20,9 @@
 
 import { parseUrl } from '@/utils/url';
 
+const IS_PUBLIC_WEB_URL_PATTERN = /\.$/u;
+const IS_PUBLIC_WEB_URL_PATTERN_2 = /^[\d.]+$/u;
+
 /**
  * Who we say we are when the caller names nobody. A caller passes its own
  * `userAgent` (its site name and a contact address) so an operator who sees us
@@ -29,12 +32,6 @@ const DEFAULT_USER_AGENT = 'safe-fetch';
 
 /** The longest address we will follow; real links are far shorter. */
 const MAX_URL_LENGTH = 2048;
-
-/** A single trailing dot, as in a fully qualified host name. */
-const TRAILING_DOT = /\.$/u;
-
-/** A host made only of digits and dots, such as an IPv4 address. */
-const NUMERIC_HOST = /^[\d.]+$/u;
 
 /** Name endings that are not on the public web (private networks, reserved names). */
 const NOT_PUBLIC =
@@ -65,11 +62,13 @@ export function isPublicWebUrl(value: string): boolean {
     return false;
   }
   // `localhost.` is the same host as `localhost`.
-  const host = url.hostname.toLowerCase().replace(TRAILING_DOT, '');
+  const host = url.hostname
+    .toLowerCase()
+    .replace(IS_PUBLIC_WEB_URL_PATTERN, '');
   return !(
     !host.includes('.') ||
     host.startsWith('[') ||
-    NUMERIC_HOST.test(host) ||
+    IS_PUBLIC_WEB_URL_PATTERN_2.test(host) ||
     NOT_PUBLIC.test(host)
   );
 }
@@ -124,6 +123,12 @@ export interface CappedFetchOptions {
   readonly userAgent?: string;
   /** The function that fetches; the real `fetch` when left out. */
   readonly fetcher?: SafeFetcher;
+  /** The method to send (`GET` when left out). */
+  readonly method?: string;
+  /** Extra request headers (a webhook's signature, a push's encoding). */
+  readonly headers?: Readonly<Record<string, string>>;
+  /** The request body, for a `POST`. */
+  readonly body?: BodyInit;
 }
 
 /** Why a fetch gave nothing. */
@@ -245,10 +250,13 @@ async function fetchHop(
   }
   const fetcher = options.fetcher ?? realFetch;
   const response = await fetcher(url, {
+    method: options.method ?? 'GET',
     headers: {
+      ...options.headers,
       Accept: options.accept,
       'User-Agent': options.userAgent ?? DEFAULT_USER_AGENT,
     },
+    body: options.body,
     // Redirects are followed here, one at a time, so that every address we
     // end up at has been checked.
     redirect: 'manual',

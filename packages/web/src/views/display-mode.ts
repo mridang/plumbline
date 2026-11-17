@@ -29,15 +29,11 @@ export interface DisplayModeHostContext {
   readonly availableDisplayModes?: readonly string[];
 }
 
-const DISPLAY_MODES: ReadonlySet<unknown> = new Set<unknown>([
-  'inline',
-  'fullscreen',
-  'pip',
-]);
-
 /** Whether the value is one of the three modes the spec defines. */
-export function isDisplayMode(value?: unknown): value is DisplayMode {
-  return DISPLAY_MODES.has(value);
+export function isDisplayMode(value: unknown): value is DisplayMode {
+  return (
+    typeof value === 'string' && ['inline', 'fullscreen', 'pip'].includes(value)
+  );
 }
 
 /**
@@ -68,7 +64,9 @@ export function hostOffersMode(
 export type ExpandPlan = 'request' | 'local';
 
 /** Decide how to expand, given what the host has said it offers. */
-export function planExpand(context?: DisplayModeHostContext): ExpandPlan {
+export function planExpand(
+  context: DisplayModeHostContext | undefined,
+): ExpandPlan {
   return hostOffersMode(context, 'fullscreen') ? 'request' : 'local';
 }
 
@@ -141,9 +139,10 @@ export function reduceLayout(
     case 'collapse-locally': {
       return { ...state, expandedLocally: false, collapseRefused: false };
     }
-    default: {
+    case 'collapse-refused': {
       return { ...state, collapseRefused: true };
     }
+    // no default
   }
 }
 

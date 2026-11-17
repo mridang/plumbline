@@ -79,7 +79,7 @@ describe('sourceHost', () => {
   it('is undefined for anything that is not a web link', () => {
     // eslint-disable-next-line no-script-url -- the test feeds a hostile script URL to prove it is refused
     expect(sourceHost('javascript:alert(1)')).toBeUndefined();
-    expect(sourceHost()).toBeUndefined();
+    expect(sourceHost(undefined)).toBeUndefined();
   });
 });
 
@@ -99,6 +99,6 @@ describe('safeHttpUrl', () => {
     expect(safeHttpUrl('data:text/html,hi')).toBeUndefined();
     expect(safeHttpUrl('/relative/path')).toBeUndefined();
     expect(safeHttpUrl('not a url')).toBeUndefined();
-    expect(safeHttpUrl()).toBeUndefined();
+    expect(safeHttpUrl(undefined)).toBeUndefined();
   });
 });

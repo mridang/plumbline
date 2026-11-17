@@ -1,7 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { APP_STYLES } from '@/views/app';
-import { DARK_PALETTE, LIGHT_PALETTE } from '@/views/palette';
+import { APP_STYLES, DARK_PALETTE, LIGHT_PALETTE } from '@/views/app';
 import { STYLES } from '@/views/styles';
 
 /** Matches the secondary background variable with a colour fallback. */

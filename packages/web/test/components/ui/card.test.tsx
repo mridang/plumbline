@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { Card } from '@/components/ui/card';
-// eslint-disable-next-line unicorn/no-keyword-prefix -- classOf is the shared test helper exported by render.ts
-import { classOf, html } from '../render';
+
+import { cssClassesOf, html } from '../render';
 
 /** Matches padding class. */
 const PADDING_CLASS = /\bp-\d/u;
@@ -10,7 +10,7 @@ const PADDING_CLASS = /\bp-\d/u;
 describe('Card', () => {
   it('is a white, bordered, rounded box with room inside', () => {
     const out = html(<Card>hello</Card>);
-    const classes = classOf(out, 'div');
+    const classes = cssClassesOf(out, 'div');
     expect(classes).toContain('rounded-card');
     expect(classes).toContain('bg-white');
     expect(classes).toContain('border-line');
@@ -18,18 +18,22 @@ describe('Card', () => {
   });
 
   it('has room inside by default', () => {
-    expect(classOf(html(<Card>x</Card>), 'div')).toContain('p-5 sm:p-8');
+    expect(cssClassesOf(html(<Card>x</Card>), 'div')).toContain('p-5 sm:p-8');
   });
 
   it('offers a few padding sizes, and none', () => {
-    expect(classOf(html(<Card padding="xs">x</Card>), 'div')).toContain('p-3');
-    expect(classOf(html(<Card padding="sm">x</Card>), 'div')).toContain('p-4');
-    expect(classOf(html(<Card padding="lg">x</Card>), 'div')).toContain(
+    expect(cssClassesOf(html(<Card padding="xs">x</Card>), 'div')).toContain(
+      'p-3',
+    );
+    expect(cssClassesOf(html(<Card padding="sm">x</Card>), 'div')).toContain(
+      'p-4',
+    );
+    expect(cssClassesOf(html(<Card padding="lg">x</Card>), 'div')).toContain(
       'p-6 sm:p-8',
     );
-    expect(classOf(html(<Card padding="none">x</Card>), 'div')).not.toMatch(
-      PADDING_CLASS,
-    );
+    expect(
+      cssClassesOf(html(<Card padding="none">x</Card>), 'div'),
+    ).not.toMatch(PADDING_CLASS);
   });
 
   it('can be another element, and passes attributes through', () => {
@@ -40,7 +44,7 @@ describe('Card', () => {
     );
     expect(out.startsWith('<section')).toBe(true);
     expect(out).toContain('aria-label="Steps"');
-    expect(classOf(out, 'section')).toContain('shadow-sm');
+    expect(cssClassesOf(out, 'section')).toContain('shadow-sm');
   });
 
   it('can be a button and then takes the button’s props', () => {

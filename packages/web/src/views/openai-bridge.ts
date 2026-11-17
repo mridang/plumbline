@@ -20,7 +20,7 @@ export interface OpenAiGlobals {
 export interface OpenAiApi extends OpenAiGlobals {
   readonly requestDisplayMode?: (params: {
     readonly mode: string;
-  }) => Promise<{ readonly mode?: string }>;
+  }) => Promise<{ readonly mode: string }>;
   readonly sendFollowUpMessage?: (params: {
     readonly prompt: string;
   }) => Promise<void> | void;
@@ -28,7 +28,10 @@ export interface OpenAiApi extends OpenAiGlobals {
 
 /** ChatGPT's bridge, when the View is running inside ChatGPT; otherwise nothing. */
 export function getOpenAi(): OpenAiApi | undefined {
-  const candidate = (globalThis as { openai?: unknown }).openai;
+  const candidate: unknown = Object.getOwnPropertyDescriptor(
+    globalThis,
+    'openai',
+  )?.value;
   return typeof candidate === 'object' && candidate !== null
     ? candidate
     : undefined;
