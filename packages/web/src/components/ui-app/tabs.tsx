@@ -44,10 +44,8 @@ export function moveFocus(
   event: KeyboardEvent<HTMLElement>,
   tabs: readonly HTMLElement[],
 ): void {
-  const at =
-    document.activeElement instanceof HTMLElement
-      ? tabs.indexOf(document.activeElement)
-      : -1;
+  // eslint-disable-next-line unicorn/prefer-array-index-of -- activeElement is typed Element | null, so indexOf over HTMLElement tabs would not compile
+  const at = tabs.findIndex((tab) => tab === document.activeElement);
   const last = tabs.length - 1;
   const target = nextTabIndex(event.key, at, last);
   if (target >= 0) {
