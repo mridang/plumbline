@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-import { installFakeTracing } from './fake-tracing';
 import { stub } from '../../../helpers/double';
+import { installFakeTracing } from './fake-tracing';
 
 const fake = installFakeTracing();
 const { recordErrorOnSpan, setErrorContext } =

@@ -2,8 +2,8 @@ import { DatabaseSync } from 'node:sqlite';
 
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
 
-import { migrationSql } from './migrations';
 import { double } from '../../../helpers/double';
+import { migrationSql } from './migrations';
 import type { SQLInputValue } from 'node:sqlite';
 import type { Database } from '@/domain/db/client';
 
