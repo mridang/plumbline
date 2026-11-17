@@ -41,7 +41,7 @@ describe('describeRequest', () => {
   });
 
   it('says nothing when the arguments do not', () => {
-    expect(describeRequest()).toBeUndefined();
+    expect(describeRequest(undefined)).toBeUndefined();
     expect(describeRequest({ [FIRST]: '  ', other: 3 })).toBeUndefined();
   });
 });

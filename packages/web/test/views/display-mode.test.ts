@@ -20,7 +20,8 @@ describe('display modes a View declares', () => {
   it('recognises the three modes of the spec and nothing else', () => {
     expect(['inline', 'fullscreen', 'pip'].every(isDisplayMode)).toBe(true);
     expect(isDisplayMode('window')).toBe(false);
-    expect(isDisplayMode()).toBe(false);
+
+    expect(isDisplayMode(undefined)).toBe(false);
     expect(isDisplayMode(3)).toBe(false);
   });
 });
@@ -43,7 +44,8 @@ describe('planExpand', () => {
     expect(
       planExpand({ availableDisplayModes: ['inline', 'fullscreen'] }),
     ).toBe('request');
-    expect(planExpand()).toBe('request');
+
+    expect(planExpand(undefined)).toBe('request');
   });
 
   it('expands in place when the host has no fullscreen', () => {

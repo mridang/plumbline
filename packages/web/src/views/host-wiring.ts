@@ -54,7 +54,7 @@ export function applyDocumentContext(
   root: DocumentRoot,
 ): void {
   if (context.safeAreaInsets !== undefined) {
-    // eslint-disable-next-line functional/no-loop-statements -- one DOM property is set per entry, a side effect
+    // eslint-disable-next-line functional/no-loop-statements -- each property is set on the document root as a side effect
     for (const [name, value] of safeAreaVariables(context.safeAreaInsets)) {
       root.style.setProperty(name, value);
     }
@@ -196,10 +196,7 @@ export async function runServerTool<U>(
     return { kind: 'message', text: 'Not connected yet.', isError: true };
   }
   try {
-    const result = await app.callServerTool({
-      name,
-      arguments: { ...args },
-    });
+    const result = await app.callServerTool({ name, arguments: { ...args } });
     return readOutcome(result, guard);
   } catch (error: unknown) {
     return {

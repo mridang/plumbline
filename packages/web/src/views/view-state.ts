@@ -81,7 +81,7 @@ export function isPending<T>(state: ViewState<T>): boolean {
  * arguments say nothing useful.
  */
 export function describeRequest(
-  args?: Readonly<Record<string, unknown>>,
+  args: Readonly<Record<string, unknown>> | undefined,
 ): string | undefined {
   const label = REQUEST_ARGUMENTS.map((name) => args?.[name]).find(
     (value): value is string =>
@@ -149,10 +149,11 @@ export function reduceViewState<T>(
         ? state
         : { phase: 'failed', reason: 'connection', message: action.message };
     }
-    default: {
+    case 'timeout': {
       return isPending(state)
         ? { phase: 'failed', reason: 'timeout', message: TIMEOUT_MESSAGE }
         : state;
     }
+    // no default
   }
 }

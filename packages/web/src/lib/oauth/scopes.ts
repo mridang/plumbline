@@ -11,7 +11,6 @@ import { SCOPE_READ, SCOPE_WRITE, SUPPORTED_SCOPES } from '@/domain/mcp/app';
 import { TOOL_SCOPES } from '@/domain/mcp/tool-context';
 import { TOOL_REGISTRY } from '@/domain/mcp/tools';
 
-/** A run of whitespace, which separates the scopes of a request. */
 const WHITESPACE_RUN = /\s+/u;
 
 /**
@@ -40,7 +39,9 @@ export function isSupportedScope(scope: string): scope is Scope {
  * {@link SCOPE_OFFLINE_ACCESS} Is ignored, so asking for it alone is the same as
  * asking for nothing.
  */
-export function normaliseScope(requested?: string | null): readonly Scope[] {
+export function normaliseScope(
+  requested: string | undefined | null,
+): readonly Scope[] {
   const asked = (requested ?? '')
     .split(WHITESPACE_RUN)
     .filter((scope) => scope !== '' && scope !== SCOPE_OFFLINE_ACCESS);
@@ -93,5 +94,3 @@ export function scopeForMessage(message: ScopedMessage): Scope {
   }
   return SCOPE_READ;
 }
-
-export { SCOPE_READ, SCOPE_WRITE, SUPPORTED_SCOPES } from '@/domain/mcp/app';

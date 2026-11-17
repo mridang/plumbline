@@ -10,8 +10,8 @@
 
 import { readJsonBody as readJsonBodyUpTo } from '@/lib/core/api';
 import { runInBackground } from '@/lib/core/runtime';
-import { getDatabase } from '@/domain/db/client';
 import { countOf } from '@/lib/intl';
+import { getDatabase } from '@/domain/db/client';
 import { errorMessage, logError } from '@/utils/logging';
 import { D1RateLimitStore, purgeRateLimits, rateLimit } from '@/lib/rate-limit';
 import {
@@ -100,7 +100,7 @@ function tooManyRequests(
     id,
     // The protocol defines no code for "slow down"; this is the closest standard one.
     code: ERROR_INTERNAL,
-    message: `Rate limit reached: at most ${limit.limit} requests of this kind every ${limit.windowSeconds} seconds. Try again in ${countOf(retryAfterSeconds, 'second')}.`,
+    message: `Rate limit reached: at most ${limit.limit} requests of this kind every ${countOf(limit.windowSeconds, 'second')}. Try again in ${countOf(retryAfterSeconds, 'second')}.`,
     data: {
       retryAfterSeconds,
       limit: limit.limit,

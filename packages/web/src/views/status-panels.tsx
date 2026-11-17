@@ -1,4 +1,4 @@
-/* eslint-disable tailwindcss/no-custom-classname -- the widget's classes are defined in src/views/styles.ts and injected at build; the plugin only reads a CSS entry, and the lint config cannot be changed here */
+/* eslint-disable tailwindcss/no-custom-classname -- the widget's classes are defined in src/views/styles.ts, not in a CSS file. */
 
 /**
  * @packageDocumentation
@@ -43,7 +43,7 @@ export function LoadingCard({
           <div className="bar" />
           <div className="bar short" />
         </div>
-        <output className="status-line" style={{ display: 'block' }}>
+        <output className="status-line">
           {request ? `Loading ${noun}: ${request}…` : `Loading ${noun}…`}
         </output>
       </div>
@@ -90,4 +90,4 @@ export function Announcer({
   );
 }
 
-/* eslint-enable tailwindcss/no-custom-classname -- the classes above come from src/views/styles.ts. */
+/* eslint-enable tailwindcss/no-custom-classname -- the widget's classes are defined in src/views/styles.ts, not in a CSS file. */

@@ -12,8 +12,8 @@ import {
   ProteinIcon,
   SparklesIcon,
 } from '@/components/icons';
-// eslint-disable-next-line unicorn/no-keyword-prefix -- classOf is the name exported by the shared render helper
-import { classOf, html } from './render';
+
+import { cssClassesOf, html } from './render';
 
 describe('icons', () => {
   it('follow the text around them unless given a size', () => {
@@ -23,29 +23,32 @@ describe('icons', () => {
   });
 
   it('take a standard size instead of hand-written classes', () => {
-    expect(classOf(html(<ClockIcon size="sm" />), 'svg')).toBe('h-4 w-4');
-    expect(classOf(html(<ClockIcon size="md" />), 'svg')).toBe('h-5 w-5');
-    expect(classOf(html(<ClockIcon size="lg" />), 'svg')).toBe('h-6 w-6');
-    expect(classOf(html(<ClockIcon size="xs" />), 'svg')).toBe('h-3 w-3');
-    expect(classOf(html(<ClockIcon size="menu" />), 'svg')).toBe(
+    expect(cssClassesOf(html(<ClockIcon size="sm" />), 'svg')).toBe('h-4 w-4');
+    expect(cssClassesOf(html(<ClockIcon size="md" />), 'svg')).toBe('h-5 w-5');
+    expect(cssClassesOf(html(<ClockIcon size="lg" />), 'svg')).toBe('h-6 w-6');
+    expect(cssClassesOf(html(<ClockIcon size="xs" />), 'svg')).toBe('h-3 w-3');
+    expect(cssClassesOf(html(<ClockIcon size="menu" />), 'svg')).toBe(
       'h-[18px] w-[18px]',
     );
   });
 
   it('add any further classes after the size', () => {
     expect(
-      classOf(html(<ClockIcon size="sm" className="text-subtle" />), 'svg'),
+      cssClassesOf(
+        html(<ClockIcon size="sm" className="text-subtle" />),
+        'svg',
+      ),
     ).toBe('h-4 w-4 text-subtle');
   });
 
   it('are hidden from assistive technology, and the Google one honours sizes too', () => {
     expect(html(<HeartIcon />)).toContain('aria-hidden="true"');
-    expect(classOf(html(<GoogleIcon size="md" />), 'svg')).toBe('h-5 w-5');
+    expect(cssClassesOf(html(<GoogleIcon size="md" />), 'svg')).toBe('h-5 w-5');
   });
 
   it('has the GitHub mark, solid, in the text colour and hidden from assistive technology', () => {
     const out = html(<GithubIcon size="sm" />);
-    expect(classOf(out, 'svg')).toBe('h-4 w-4');
+    expect(cssClassesOf(out, 'svg')).toBe('h-4 w-4');
     expect(out).toContain('viewBox="0 0 16 16"');
     expect(out).toContain('fill="currentColor"');
     expect(out).toContain('aria-hidden="true"');
@@ -53,7 +56,7 @@ describe('icons', () => {
 
   it('has a filled play triangle that takes the same sizes', () => {
     const out = html(<PlayIcon size="sm" />);
-    expect(classOf(out, 'svg')).toBe('h-4 w-4');
+    expect(cssClassesOf(out, 'svg')).toBe('h-4 w-4');
     expect(out).toContain('fill="currentColor"');
     expect(out).toContain('stroke="none"');
   });
@@ -80,7 +83,7 @@ describe('icons', () => {
 
   it('draws Drive as Google’s logo in its own colours, sized like the others', () => {
     const out = html(<DriveIcon size="md" />);
-    expect(classOf(out, 'svg')).toBe('h-5 w-5');
+    expect(cssClassesOf(out, 'svg')).toBe('h-5 w-5');
     expect(out).toContain('aria-hidden="true"');
     for (const colour of [
       '#0066da',
@@ -115,7 +118,7 @@ describe('icons', () => {
 
   it('draws the AI sparkles filled, in the text colour, hidden from assistive technology', () => {
     const out = html(<SparklesIcon size="sm" />);
-    expect(classOf(out, 'svg')).toBe('h-4 w-4');
+    expect(cssClassesOf(out, 'svg')).toBe('h-4 w-4');
     expect(out).toContain('aria-hidden="true"');
     expect(out).toContain('fill="currentColor"');
   });

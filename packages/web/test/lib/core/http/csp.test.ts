@@ -4,21 +4,20 @@ import {
   buildCsp,
   cspSurfaceFor,
   forwardedHeaders,
-  // eslint-disable-next-line unicorn/no-keyword-prefix -- newNonce is the exported function under test
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- newNonce is an exported name of the module's public surface, so it is not renamed
   newNonce,
   nonceOf,
   EXTRA_DIRECTIVES,
   EXTRA_IMG_SOURCES,
 } from '@/lib/core/http';
 
-/** Matches a base64 nonce. */
-const BASE64_NONCE = /^[A-Za-z0-9+/]+=*$/u;
+const IS_BASE64_OF_16_PATTERN = /^[A-Za-z0-9+/]+=*$/u;
 
 describe('newNonce', () => {
   it('is base64 of 16 bytes, and different every time', () => {
     const a = newNonce();
     expect(Buffer.from(a, 'base64')).toHaveLength(16);
-    expect(a).toMatch(BASE64_NONCE);
+    expect(a).toMatch(IS_BASE64_OF_16_PATTERN);
     expect(newNonce()).not.toBe(a);
   });
 });

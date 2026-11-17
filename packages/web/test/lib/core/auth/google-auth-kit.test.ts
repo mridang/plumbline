@@ -97,9 +97,7 @@ beforeEach(() => {
   google.userinfo = 'ok';
   completeSignIn.mockClear();
   completeOther.mockClear();
-  for (const key of Object.keys(tracing.attributes)) {
-    delete tracing.attributes[key];
-  }
+  tracing.reset();
   jest.spyOn(console, 'error').mockImplementation(() => undefined);
   jest.spyOn(console, 'warn').mockImplementation(() => undefined);
   answerFetch({

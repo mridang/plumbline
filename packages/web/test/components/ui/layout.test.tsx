@@ -5,8 +5,8 @@ import { describe, expect, it } from '@jest/globals';
 
 import { packageDirectorySync } from 'package-directory';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
-// eslint-disable-next-line unicorn/no-keyword-prefix -- classOf is the shared test helper exported by render.ts and used by many specs
-import { classOf, html } from '../render';
+
+import { cssClassesOf, html } from '../render';
 
 /** Matches text colour class. */
 const TEXT_COLOUR_CLASS = /\btext-(ink|accent|subtle|muted|on-ink)\b/u;
@@ -31,18 +31,18 @@ describe('Eyebrow', () => {
   it('is a tracked-caps paragraph in the accent colour by default', () => {
     const out = html(<Eyebrow>Your collection</Eyebrow>);
     expect(out.startsWith('<p')).toBe(true);
-    const classes = classOf(out, 'p');
+    const classes = cssClassesOf(out, 'p');
     expect(classes).toContain('uppercase');
     expect(classes).toContain('text-accent');
   });
 
   it('takes its colour from the tone, one at a time', () => {
-    const ink = classOf(html(<Eyebrow tone="ink">x</Eyebrow>), 'p');
+    const ink = cssClassesOf(html(<Eyebrow tone="ink">x</Eyebrow>), 'p');
     expect(ink).toContain('text-ink');
     expect(ink).not.toContain('text-accent');
-    expect(classOf(html(<Eyebrow tone="subtle">x</Eyebrow>), 'p')).toContain(
-      'text-subtle',
-    );
+    expect(
+      cssClassesOf(html(<Eyebrow tone="subtle">x</Eyebrow>), 'p'),
+    ).toContain('text-subtle');
   });
 
   it('can label a term or a heading instead of being a paragraph', () => {
@@ -95,7 +95,7 @@ describe('Heading', () => {
   it('is an h2 in the display face unless told otherwise', () => {
     const out = html(<Heading>Title</Heading>);
     expect(out.startsWith('<h2')).toBe(true);
-    expect(classOf(out, 'h2')).toContain('font-display');
+    expect(cssClassesOf(out, 'h2')).toContain('font-display');
   });
 
   it('sets the tag and the size separately', () => {
@@ -105,12 +105,14 @@ describe('Heading', () => {
       </Heading>,
     );
     expect(out.startsWith('<h1')).toBe(true);
-    expect(classOf(out, 'h1')).toContain('text-5xl');
+    expect(cssClassesOf(out, 'h1')).toContain('text-5xl');
   });
 });
 
 describe('Container', () => {
   it('centres the content in the page column', () => {
-    expect(classOf(html(<Container>x</Container>), 'div')).toContain('mx-auto');
+    expect(cssClassesOf(html(<Container>x</Container>), 'div')).toContain(
+      'mx-auto',
+    );
   });
 });

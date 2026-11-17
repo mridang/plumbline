@@ -120,9 +120,7 @@ function hasType(type: JsonType, value: unknown): boolean {
     case 'null': {
       return value === null;
     }
-    default: {
-      return type satisfies never;
-    }
+    // no default
   }
 }
 
@@ -150,9 +148,7 @@ function typeWords(type: JsonType): string {
     case 'null': {
       return 'null';
     }
-    default: {
-      return type satisfies never;
-    }
+    // no default
   }
 }
 
@@ -187,18 +183,17 @@ function actualWords(value: unknown): string {
 /** Where in the arguments a value sits: `[]` is the arguments themselves. */
 type Path = readonly (string | number)[];
 
+/** Splits a name into the characters a person sees. */
+const GRAPHEMES = new Intl.Segmenter('en', { granularity: 'grapheme' });
+
 /** The longest a property name is quoted in a message; a hostile key can be a megabyte long. */
 const NAME_QUOTE_LIMIT = 40;
 
-/** Cuts a name at what a person sees as a character. */
-const graphemes = new Intl.Segmenter();
-
 /** A property name as it is quoted in a message, cut short when it is absurdly long. */
 function quotedKey(key: string): string {
-  return key.length > NAME_QUOTE_LIMIT
-    ? `${Array.from(graphemes.segment(key), ({ segment }) => segment)
-        .slice(0, NAME_QUOTE_LIMIT)
-        .join('')}…`
+  const letters = Array.from(GRAPHEMES.segment(key), ({ segment }) => segment);
+  return letters.length > NAME_QUOTE_LIMIT
+    ? `${letters.slice(0, NAME_QUOTE_LIMIT).join('')}…`
     : key;
 }
 
@@ -437,7 +432,7 @@ export function validateJson(
  * unchecked, so a test requires this to be empty for every tool.
  * @param schema - A schema (anything that is not an object has no keywords).
  */
-export function unsupportedKeywords(schema?: unknown): readonly string[] {
+export function unsupportedKeywords(schema: unknown): readonly string[] {
   if (!isJsonObject(schema)) {
     return [];
   }

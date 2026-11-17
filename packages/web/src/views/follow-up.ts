@@ -63,7 +63,7 @@ export async function firstThatWorks(
  * is not a plain http(s) link. Links come from user data, so anything
  * else (`javascript:`, `data:`, relative paths) is refused.
  */
-export function safeHttpUrl(value?: string): string | undefined {
+export function safeHttpUrl(value: string | undefined): string | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -82,7 +82,7 @@ export function safeHttpUrl(value?: string): string | undefined {
  * before they press it (an internationalised name appears in its punycode
  * form, which is the honest one). Undefined when the link is not plain http(s).
  */
-export function sourceHost(value?: string): string | undefined {
+export function sourceHost(value: string | undefined): string | undefined {
   const href = safeHttpUrl(value);
   return href === undefined ? undefined : new URL(href).hostname;
 }

@@ -140,14 +140,10 @@ export function useWidgetData<T>(
 
   // Never leave the View on a loading placeholder for good.
   const pending = isPending(state);
-  useEffect((): (() => void) | undefined => {
-    if (!pending) {
-      return undefined;
-    }
-    const timer = setTimeout(
-      () => dispatch({ type: 'timeout' }),
-      LOADING_TIMEOUT_MS,
-    );
+  useEffect(() => {
+    const timer = pending
+      ? setTimeout(() => dispatch({ type: 'timeout' }), LOADING_TIMEOUT_MS)
+      : undefined;
     return () => clearTimeout(timer);
   }, [pending]);
 

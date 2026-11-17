@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { DARK_PALETTE, LIGHT_PALETTE, ON_ACCENT } from '@/views/palette';
+import { DARK_PALETTE, LIGHT_PALETTE } from '@/views/app';
+import { ON_ACCENT } from '@/views/palette';
 import type { ThemePalette } from '@/views/palette';
 
 /** Matches a six digit hexadecimal colour. */

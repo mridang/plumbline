@@ -46,9 +46,12 @@ import {
   readJsonBody,
 } from '@/domain/mcp/request-limits';
 import { handleMcpMessage, isAdvertisedTool } from '@/domain/mcp/server';
-import type { ProtocolMessage, ProtocolRefusal } from '@/lib/mcp';
+import type {
+  JsonRpcResponse,
+  ProtocolMessage,
+  ProtocolRefusal,
+} from '@/lib/mcp';
 import type { RateLimitDeps } from '@/domain/mcp/request-limits';
-import type { JsonRpcResponse } from '@/domain/mcp/server';
 import type { McpAuth } from '@/domain/mcp/auth';
 import type { User } from '@/domain/db/users';
 

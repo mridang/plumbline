@@ -8,8 +8,8 @@ import {
   isServerHref,
   TextLink,
 } from '@/components/ui/button';
-// eslint-disable-next-line unicorn/no-keyword-prefix -- classOf is the name exported by the shared render helper
-import { classOf, html } from '../render';
+
+import { cssClassesOf, html } from '../render';
 
 describe('buttonClass', () => {
   it('is the filled button of the middle size by default', () => {
@@ -51,9 +51,9 @@ describe('Button', () => {
   });
 
   it('wears the classes of its look', () => {
-    expect(classOf(html(<Button variant="ghost">Go</Button>), 'button')).toBe(
-      buttonClass({ variant: 'ghost' }),
-    );
+    expect(
+      cssClassesOf(html(<Button variant="ghost">Go</Button>), 'button'),
+    ).toBe(buttonClass({ variant: 'ghost' }));
   });
 });
 
@@ -70,7 +70,7 @@ describe('ButtonLink', () => {
     const out = html(<ButtonLink href="/connect">Set it up</ButtonLink>);
     expect(out.startsWith('<a ')).toBe(true);
     expect(out).toContain('href="/connect"');
-    expect(classOf(out, 'a')).toBe(buttonClass({}));
+    expect(cssClassesOf(out, 'a')).toBe(buttonClass({}));
   });
 
   it('is a plain anchor for an API route, which the router cannot follow', () => {
@@ -106,7 +106,7 @@ describe('TextLink', () => {
 
   it('drops its own look when bare', () => {
     expect(
-      classOf(
+      cssClassesOf(
         html(
           <TextLink href="/x" bare className="underline">
             x
