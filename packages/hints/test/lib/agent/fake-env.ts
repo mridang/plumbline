@@ -1,8 +1,11 @@
 import type { DnsRecord } from '../../../src/core/dns.js';
 import type { AgentEnv, Probe } from '../../../src/lib/agent/types.js';
 
+/** A JSON body a fake path answers with. */
+export type JsonBody = Record<string, unknown> | unknown[];
+
 /** What a fake path answers; defaults mirror a plain 200 text response. */
-export type FakeRoute = Partial<Omit<Probe, 'url'>> | string | object;
+export type FakeRoute = Partial<Omit<Probe, 'url'>> | string | JsonBody;
 
 /** Whether a route is written as a probe answer rather than as a JSON body. */
 function isProbeRoute(route: FakeRoute): route is Partial<Probe> {
