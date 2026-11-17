@@ -289,6 +289,7 @@ describe('POST /webhooks/github, deployment_status', () => {
         .from(pendingScans);
       expect(waiting).toHaveLength(1);
       expect(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
         (JSON.parse(waiting[0]?.job ?? '{}') as { deployed: { sha: string } })
           .deployed.sha,
       ).toBe('def');

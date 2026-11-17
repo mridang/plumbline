@@ -92,7 +92,7 @@ function noteDuplicate(
 /** Marks which adjacent sources in a sorted list survive the merge. */
 function markSurvivors(combined: SourceEntry[]): SourceEntry[] {
   return combined.map((source, index) => {
-    const previous = combined[index - 1];
+    const previous = combined.at(index - 1);
     if (index === 0 || !previous) {
       return source;
     }
@@ -143,7 +143,7 @@ function scanPolicy(
       // reported as invalid so people notice, except report-uri/report-to.
       const repeated = entries
         .slice(0, entryIndex)
-        .some(([earlier]) => earlier?.toLowerCase() === directive);
+        .some(([earlier]) => earlier.toLowerCase() === directive);
       const duplicateWarnings = repeated
         ? noteDuplicate(directive, policyIndex, current.duplicateWarnings)
         : current.duplicateWarnings;

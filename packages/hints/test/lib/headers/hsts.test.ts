@@ -128,7 +128,7 @@ describe('baseDomainHstsFindings', () => {
   });
 
   it('warns when the base domain sends no header', () => {
-    const [f] = baseDomainHstsFindings('www.example.com', null);
+    const f = baseDomainHstsFindings('www.example.com', null).at(0);
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain('example.com');
   });

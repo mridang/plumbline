@@ -1,7 +1,8 @@
 import { createServer } from 'node:net';
 import { TLSSocket } from 'node:tls';
+import { portOf } from '../../helpers/port.js';
 import { TEST_CERT, TEST_KEY } from './test-cert.js';
-import type { AddressInfo, Server, Socket } from 'node:net';
+import type { Server, Socket } from 'node:net';
 import type { SecureVersion } from 'node:tls';
 
 export interface SmtpOptions {
@@ -69,7 +70,7 @@ export async function startSmtp(options: SmtpOptions = {}): Promise<FakeSmtp> {
     });
   });
   return {
-    port: (server.address() as AddressInfo).port,
+    port: portOf(server),
     close: async () =>
       new Promise<void>((resolve) => {
         for (const socket of sockets) {

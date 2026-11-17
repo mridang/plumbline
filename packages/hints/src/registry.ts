@@ -24,6 +24,7 @@ export function buildRegistry(
     hints: Object.fromEntries(
       definitions.map((definition) => [definition.id, definition.ctor]),
     ),
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the entries are built from GROUPS, so every Group key is present
     byGroup: Object.fromEntries(
       GROUPS.map((group) => [
         group,

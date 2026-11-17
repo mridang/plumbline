@@ -70,7 +70,7 @@ describe('childByName / descendantsByName', () => {
 describe('parseXml tag scanning', () => {
   interface Dumped {
     name: string;
-    attrs: Record<string, string>;
+    attrs: Readonly<Record<string, string | undefined>>;
     text: string;
     children: Dumped[];
   }

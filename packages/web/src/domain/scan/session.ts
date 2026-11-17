@@ -91,6 +91,7 @@ export async function runScan(
       // Other lines, and outcomes this run did not choose, are not shown.
     }
   });
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- the callback that sets this runs before the stream ends, but TypeScript cannot see the assignment, so the guard keeps a scan that never started from reading an absent value
   if (!started) {
     throw new ProblemError('The scan stopped.');
   }

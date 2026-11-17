@@ -16,6 +16,7 @@ function firstLine(spy: ConsoleSpy): string {
 }
 
 function firstRecord(spy: ConsoleSpy): Record<string, unknown> {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
   return JSON.parse(firstLine(spy)) as Record<string, unknown>;
 }
 
@@ -68,6 +69,7 @@ describe('structured logging', () => {
     expect(parsed['event']).toBe('torrent.lookup');
     expect(parsed['status']).toBe('ok');
     expect(typeof parsed['ts']).toBe('string');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as string, which the values it was built from or the checks around it establish
     expect(Number.isNaN(Date.parse(parsed['ts'] as string))).toBe(false);
   });
 

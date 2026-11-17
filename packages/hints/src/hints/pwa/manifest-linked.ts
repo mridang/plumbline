@@ -28,7 +28,7 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      const [found] = manifestLinked(page.document);
+      const found = manifestLinked(page.document).at(0);
       if (!found) {
         return;
       }

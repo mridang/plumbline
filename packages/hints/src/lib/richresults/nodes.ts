@@ -13,11 +13,11 @@
  * every object whose `@type` matches, which is what each check iterates over.
  */
 
+import { isObject } from '../wellknown/json.js';
+
 /** Narrows an unknown value to a plain (non-array) object. */
 export function asObject(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
+  return isObject(value) ? value : null;
 }
 
 /** True when a node's `@type` is, or (as an array) contains, `type`. */

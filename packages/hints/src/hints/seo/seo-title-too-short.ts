@@ -26,7 +26,7 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      const [found] = titleTooShort(page.document);
+      const found = titleTooShort(page.document).at(0);
       if (found) {
         page.report(found.message, {
           severity: toSeverity(found.severity),

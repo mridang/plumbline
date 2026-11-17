@@ -8,6 +8,7 @@ import type {
   PushSubscriptionStore,
   WebPushSender,
 } from '@/lib/push';
+import { double } from '../../helpers/double';
 
 const PAYLOAD: PushPayload = { title: 't', body: 'b' };
 
@@ -36,7 +37,7 @@ class FakeStore implements PushSubscriptionStore {
 function senderReturning(
   statusByEndpoint: Readonly<Record<string, number>>,
 ): WebPushSender {
-  return {
+  return double<WebPushSender>({
     send: async (
       subscription: PushSubscriptionRecord,
     ): Promise<DeliveryResult> => {
@@ -47,7 +48,7 @@ function senderReturning(
         gone: status === 404 || status === 410,
       };
     },
-  } as unknown as WebPushSender;
+  });
 }
 
 describe('PushNotifier.deliver', () => {

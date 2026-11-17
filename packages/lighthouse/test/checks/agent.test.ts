@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { agentChecks } from '../../src/checks/agent.js';
+import { artifactsOf, contextOf, devtoolsLogOf } from '../helpers/fixtures.js';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type { AuditCheck } from '../../src/checks/types.js';
@@ -57,22 +58,22 @@ function devtoolsLog(
       params: { requestId, timestamp: 3, encodedDataLength: 100 },
     },
   ];
-  return events as Artifacts['DevtoolsLog'];
+  return devtoolsLogOf(events);
 }
 
 /** Builds the artifacts the agent check reads, over the given headers. */
 function artifacts(url: string, headers: Record<string, string>): Artifacts {
-  return {
+  return artifactsOf({
     DevtoolsLog: devtoolsLog(url, headers),
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
-  } as Artifacts;
+  });
 }
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */
 function context(): AuditNS.Context {
-  return {
+  return contextOf({
     computedCache: new Map<string, unknown>(),
-  } as unknown as AuditNS.Context;
+  });
 }
 
 /** Looks a check up by id, failing loudly if the registry drops it. */
@@ -87,7 +88,7 @@ function check(id: string): AuditCheck {
 describe('the agent registry', () => {
   it('registers only agent-link-headers, graded, in ai', () => {
     expect(agentChecks).toHaveLength(1);
-    const only = agentChecks[0];
+    const only = agentChecks.at(0);
     expect(only?.id).toBe('agent-link-headers');
     expect(only?.section).toBe('ai');
     expect(only?.scoreMode).toBe('numeric');
@@ -131,10 +132,10 @@ describe('the agent-link-headers check run()', () => {
   });
 
   it('is not applicable when the run captured no document', async () => {
-    const empty = {
+    const empty = artifactsOf({
       DevtoolsLog: [] as Artifacts['DevtoolsLog'],
       URL: { mainDocumentUrl: '', finalDisplayedUrl: '' },
-    } as Artifacts;
+    });
     expect(await linkHeaders.run(empty, context())).toBeNull();
   });
 });

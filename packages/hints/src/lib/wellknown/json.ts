@@ -24,6 +24,7 @@ interface JsonParse {
  */
 function parseJson(text: string): JsonParse {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse can only produce the values JsonValue lists
     return { value: JSON.parse(text) as JsonValue };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

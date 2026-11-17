@@ -20,13 +20,17 @@ export async function checkCertHostname(
   }
   const mismatch = checkServerIdentity(target.host, result.peerCertificate);
   if (mismatch) {
+    // Node returns an empty object for a handshake that presented no
+    // certificate, although it types the subject as always present.
+    const certificateSubject = result.peerCertificate.subject as
+      typeof result.peerCertificate.subject | undefined;
     const names = [
-      result.peerCertificate.subject?.CN,
+      certificateSubject?.CN,
       ...(result.peerCertificate.subjectaltname ?? '').split(COMMA_SEPARATOR),
     ].filter(Boolean);
     report(
       `The domain name of your ${subject.owner} does *not* match the domain name on your ${subject.certificate} (${names.join(', ')}).`,
-      `Requested host: ${target.host}\nSubject: CN=${String(result.peerCertificate.subject?.CN ?? '-')}\nSubject Alternative Name: ${result.peerCertificate.subjectaltname ?? '-'}`,
+      `Requested host: ${target.host}\nSubject: CN=${String(certificateSubject?.CN ?? '-')}\nSubject Alternative Name: ${result.peerCertificate.subjectaltname ?? '-'}`,
       await severityOf(target.host),
     );
   }

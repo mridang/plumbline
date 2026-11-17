@@ -43,7 +43,7 @@ import type { AuditCheck } from './types.js';
 const HTML_ONLY = ['MainDocumentContent', 'URL'] as const;
 
 /** The page URL a check resolves relative links against. */
-function pageUrl(artifacts: Artifacts): string {
+function pageUrl(artifacts: Partial<Artifacts>): string {
   return (
     artifacts.URL?.finalDisplayedUrl || artifacts.URL?.mainDocumentUrl || ''
   );
@@ -56,7 +56,7 @@ function pageUrl(artifacts: Artifacts): string {
  * answers directly, so the parsed document is used as-is — the same parser and
  * the same selectors the webhint hints see.
  */
-function documentOf(artifacts: Artifacts): DocumentLike {
+function documentOf(artifacts: Partial<Artifacts>): DocumentLike {
   const html = artifacts.MainDocumentContent ?? '';
   return createHTMLDocument(html, pageUrl(artifacts) || 'http://localhost/');
 }

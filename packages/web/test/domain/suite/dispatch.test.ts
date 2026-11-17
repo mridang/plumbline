@@ -80,6 +80,7 @@ describe('dispatchRun', () => {
     const fetcher = (async (input: unknown, init?: RequestInit) => {
       bodies.push({
         url: input instanceof Request ? input.url : String(input),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
         body: JSON.parse(
           typeof init?.body === 'string' ? init.body : '',
         ) as Record<string, unknown>,

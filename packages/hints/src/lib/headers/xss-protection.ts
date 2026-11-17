@@ -44,7 +44,7 @@ export function parseXssProtection(header: string): XssProtection {
   return {
     valid,
     enabled: valid && first === '1',
-    modeBlock: valid && directives?.get('mode') === 'block',
+    modeBlock: valid && directives.get('mode') === 'block',
   };
 }
 

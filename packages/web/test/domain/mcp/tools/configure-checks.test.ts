@@ -10,11 +10,12 @@ import type { ToolResult } from '@/domain/mcp/tool-results';
 import type { User } from '@/domain/db/users';
 import type { Database } from '@/domain/db/client';
 import type { ToolContent } from '@/domain/mcp/tool-context';
+import { double } from '../../../helpers/double';
 
 /** Matches the "and more" suffix. */
 const AND_MORE_SUFFIX = /, and more\.$/u;
 
-const USER = { id: 1 } as User;
+const USER = double<User>({ id: 1 });
 const TOTAL = CHECKS.length;
 const TLS = checksInGroup('tls').length;
 

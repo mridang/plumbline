@@ -28,6 +28,7 @@ function updateOf(
   calls: readonly { method: string; args: readonly unknown[] }[],
 ) {
   const conflict = calls.find((c) => c.method === 'onConflictDoUpdate');
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { set: Record<string, unknown>; }, which the values it was built from or the checks around it establish
   return (conflict?.args[0] as { set: Record<string, unknown> }).set;
 }
 

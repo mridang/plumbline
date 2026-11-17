@@ -16,19 +16,19 @@ describe('webmentionFindings', () => {
   });
 
   it('reports a present absolute endpoint', () => {
-    const [f] = webmentionFindings([link('https://x.test/wm')]);
+    const f = webmentionFindings([link('https://x.test/wm')]).at(0);
     expect(f?.severity).toBe('hint');
     expect(f?.message).toContain('Webmention');
   });
 
   it('warns when the endpoint is relative', () => {
-    const [f] = webmentionFindings([link('/wm')]);
+    const f = webmentionFindings([link('/wm')]).at(0);
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain('absolute');
   });
 
   it('warns when the endpoint has no target', () => {
-    const [f] = webmentionFindings([link('')]);
+    const f = webmentionFindings([link('')]).at(0);
     expect(f?.severity).toBe('warning');
   });
 });

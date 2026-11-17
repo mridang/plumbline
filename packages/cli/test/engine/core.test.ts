@@ -3,6 +3,11 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { neutralWhenUntested, runScanWith } from '../../src/engine/core.js';
 import { ScanRefusedError } from '../../src/engine/scannable.js';
 import type { ScanEnvironment, ScanEvent } from '../../src/engine/core.js';
+import type {
+  Finding,
+  HintOutcome,
+  HintStatus,
+} from '../../src/engine/engine.js';
 
 /** Locale-aware comparator used to sort strings deterministically. */
 const collator = new Intl.Collator();
@@ -123,10 +128,10 @@ describe('runScanWith', () => {
   it('asks the site once for a file however many checks ask for it', async () => {
     const seen: string[] = [];
     const { env } = environment({
-      fetch: (async (input: string) => {
-        seen.push(input);
+      fetch: async (input) => {
+        seen.push(String(input));
         return page();
-      }) as unknown as typeof fetch,
+      },
     });
     await events(env, 'https://example.com/', {
       only: ['x-powered-by', 'alt-svc', 'x-frame-options'],
@@ -139,12 +144,24 @@ describe('runScanWith', () => {
 
 describe('neutralWhenUntested', () => {
   const outcome = (
-    status: 'passed' | 'failed',
-    findings: { level: string; message: string }[],
-  ) =>
-    ({ id: 'x', status, findings }) as unknown as Parameters<
-      typeof neutralWhenUntested
-    >[0];
+    status: HintStatus,
+    findings: { level: Finding['level']; message: string }[],
+  ): HintOutcome => ({
+    id: 'x',
+    name: 'x',
+    description: '',
+    section: 'other',
+    sectionTitle: 'Other',
+    sectionOrder: 0,
+    groups: [],
+    tags: [],
+    origins: [],
+    status,
+    findings: findings.map((entry) => ({
+      resource: 'https://example.com/',
+      ...entry,
+    })),
+  });
 
   it('skips a check that only said it could not test, and keeps what it said', () => {
     const result = neutralWhenUntested(

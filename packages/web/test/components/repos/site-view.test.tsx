@@ -6,6 +6,7 @@ import { htmlAt } from '../render';
 import type { Domain } from '@/domain/db/domains';
 import type { Report } from '@/domain/db/reports';
 import type { RunSummary } from '@/domain/db/runs';
+import { double } from '../../helpers/double';
 
 /** Matches the opening of a check group details element. */
 const CHECK_GROUP_DETAILS_PATTERN =
@@ -16,12 +17,12 @@ const RUN_CHECKS_BUTTON_PATTERN = /Run \d+ checks/u;
 
 const NOW = Date.parse('2026-01-02T00:00:00.000Z');
 
-const DOMAIN = {
+const DOMAIN = double<Domain>({
   id: 'd1',
   host: 'site.example.com',
   repo: 'acme/site',
   checks: null,
-} as unknown as Domain;
+});
 
 const RUN: RunSummary = {
   id: 'r1',
@@ -35,7 +36,7 @@ const RUN: RunSummary = {
   openable: true,
 };
 
-const SHOWN = {
+const SHOWN = double<Report>({
   id: 'r1',
   url: 'https://site.example.com/',
   passed: 1,
@@ -57,7 +58,7 @@ const SHOWN = {
     },
     { id: 'hsts', status: 'passed', findings: [] },
   ],
-} as unknown as Report;
+});
 
 const draw = ({
   noReport,
@@ -175,7 +176,7 @@ describe('SiteView', () => {
 
   it('says nothing of rules for a site added by hand, which has no repository', () => {
     const out = draw({
-      domain: { ...DOMAIN, repo: null } as unknown as Domain,
+      domain: double<Domain>({ ...DOMAIN, repo: null }),
     });
     expect(out).not.toContain('aria-label="Rules"');
   });

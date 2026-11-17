@@ -39,6 +39,7 @@ async function pngSize(file: string): Promise<string> {
 
 describe('SERVER_VERSION', () => {
   it('is the version in package.json', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
     const manifest = JSON.parse(
       await readFile(path.join(root, 'package.json'), 'utf8'),
     ) as { version: string };

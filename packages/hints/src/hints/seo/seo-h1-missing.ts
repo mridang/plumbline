@@ -23,7 +23,7 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      const [found] = h1Missing(page.document);
+      const found = h1Missing(page.document).at(0);
       if (found) {
         page.report(found.message, {
           severity: toSeverity(found.severity),

@@ -175,8 +175,8 @@ describe('getRun', () => {
     const reportId = await manual(made, '2026-01-01T11:00:00.000Z');
     await record(made.db, '2026-01-01T12:00:00.000Z', { kind: 'scheduled' });
     const [newest] = await listRuns(made.db, 1, made.site, 1);
-    const server = await getRun(made.db, 1, made.site, newest?.id ?? '');
-    expect(server).toMatchObject({
+    const serverRun = await getRun(made.db, 1, made.site, newest?.id ?? '');
+    expect(serverRun).toMatchObject({
       kind: 'scheduled',
       url: 'https://site.example.com/',
       outcomes: [{ id: 'hsts', status: 'passed', findings: [] }],

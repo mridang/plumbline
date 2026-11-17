@@ -1,5 +1,6 @@
 import { dns } from '../../core/dns.js';
 import { onSite } from '../../core/page.js';
+import { isObject } from '../wellknown/json.js';
 import { registrableDomain } from './domain.js';
 import { lookupMailServers } from './mx.js';
 import type { HintContext, ReportOptions } from 'hint';
@@ -39,7 +40,7 @@ export function onMailDomain(
   check: (mail: MailDomain) => Promise<void>,
 ): void {
   onSite(context, async (site) => {
-    const options = (context.hintOptions ?? {}) as Record<string, unknown>;
+    const options = isObject(context.hintOptions) ? context.hintOptions : {};
     const configured =
       typeof options.domain === 'string' && options.domain !== ''
         ? options.domain.toLowerCase().replace(TRAILING_DOT, '')

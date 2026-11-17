@@ -4,9 +4,12 @@
  * has no such thing. Imported first by the Worker entry, so it runs before any
  * of them.
  */
-const scope = globalThis as unknown as Record<string, unknown>;
+const filename: unknown = Reflect.get(globalThis, '__filename');
+const dirname: unknown = Reflect.get(globalThis, '__dirname');
 
-// eslint-disable-next-line functional/immutable-data -- the shim has to define a global the CommonJS packages read
-scope.__filename ??= '/plumbline/worker.js';
-// eslint-disable-next-line functional/immutable-data -- the shim has to define a global the CommonJS packages read
-scope.__dirname ??= '/plumbline';
+if (filename === undefined || filename === null) {
+  Reflect.set(globalThis, '__filename', '/plumbline/worker.js');
+}
+if (dirname === undefined || dirname === null) {
+  Reflect.set(globalThis, '__dirname', '/plumbline');
+}

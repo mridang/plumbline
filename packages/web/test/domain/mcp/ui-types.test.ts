@@ -49,13 +49,17 @@ const REPORT: Report = {
 const REPORT_DATA: ReportData = reportData(DOMAIN, REPORT);
 
 /** What the server sends the domain-list View. */
-const LIST_DATA = domainListResult(
+const LIST_CONTENT = domainListResult(
   [
     { domain: DOMAIN, checks: 10, latest: REPORT },
     { domain: { ...DOMAIN, id: 'd2', host: 'example.org' }, checks: 3 },
   ],
   267,
-).structuredContent as DomainListData;
+).structuredContent;
+if (!isDomainListData(LIST_CONTENT)) {
+  throw new Error('the domain list result carries no list data');
+}
+const LIST_DATA = LIST_CONTENT;
 
 /** The output schema a tool advertises. */
 function outputSchemaOf(name: string): object {

@@ -61,6 +61,7 @@ describe('JsonClient.request', () => {
   });
 
   it('fails without a status when the fetch itself throws', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
     const fetcher = (async () => {
       throw new Error('offline');
     }) as unknown as typeof fetch;

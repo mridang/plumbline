@@ -145,7 +145,7 @@ describe('selectHints', () => {
         tiers: ['recommended', 'advanced'],
         targets: ['web'],
       }),
-    ).toEqual(only.filter((id) => PLACEMENT[id]?.target === 'web'));
+    ).toEqual(only.filter((id) => PLACEMENT[id].target === 'web'));
   });
 
   it('names every unknown id', () => {

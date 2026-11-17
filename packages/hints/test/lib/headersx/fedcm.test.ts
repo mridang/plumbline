@@ -12,7 +12,7 @@ describe('setLoginFindings', () => {
   });
 
   it('warns on any other value', () => {
-    const [f] = setLoginFindings('maybe');
+    const f = setLoginFindings('maybe').at(0);
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain('logged-in');
   });

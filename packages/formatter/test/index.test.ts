@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
+import { Category, Severity } from '@hint/utils-types';
 import ExtraFormatter from '../src/index.js';
 import type { FormatterOptions } from 'hint';
 
@@ -55,14 +56,16 @@ describe('ExtraFormatter', () => {
     await new ExtraFormatter().format(
       [
         {
+          category: Category.security,
           hintId: 'extra/csp',
-          severity: 4,
+          severity: Severity.error,
           message: 'Missing CSP',
           resource: 'https://a.test/',
           location: { line: -1, column: -1 },
           sourceCode: '',
-        } as never,
+        },
       ],
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the options carry only the target, the output folder and the hint constructors the formatter reads, not webhint's full FormatterOptions
       {
         target: 'https://a.test/x?y=1',
         output: out,

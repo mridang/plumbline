@@ -5,6 +5,7 @@
  * and `Origin-Agent-Cluster` is a structured boolean. The checks validate the
  * value when the header is present and recommend `Origin-Agent-Cluster`.
  */
+import { isObject } from '../wellknown/json.js';
 import { finding } from './finding.js';
 import type { Finding } from './finding.js';
 
@@ -98,10 +99,10 @@ export function nelFindings(value: string | null): Finding[] {
   } catch {
     return [finding('warning', "The 'NEL' header is not valid JSON.")];
   }
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+  if (!isObject(parsed)) {
     return [finding('warning', "The 'NEL' header must be a JSON object.")];
   }
-  const policy = parsed as Record<string, unknown>;
+  const policy = parsed;
   if (typeof policy.max_age !== 'number') {
     return [
       finding('warning', "The 'NEL' header must include a numeric 'max_age'."),

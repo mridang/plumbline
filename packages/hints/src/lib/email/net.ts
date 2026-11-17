@@ -28,12 +28,12 @@ const defaultConnect: ConnectFn = (host, port, family) =>
 export function createMailNetClient(
   options: MailNetOptions = {},
 ): MailNetClient {
-  const connect = options.connect ?? defaultConnect;
+  const connectTo = options.connect ?? defaultConnect;
   const timeoutMs = options.timeoutMs ?? 10_000;
   return {
     async tcpReachable(ip, port) {
       return new Promise((resolve) => {
-        const socket = connect(ip, port, ip.includes(':') ? 6 : 4);
+        const socket = connectTo(ip, port, ip.includes(':') ? 6 : 4);
         const finish = (reachable: boolean): void => {
           clearTimeout(timer);
           socket.destroy();
@@ -46,7 +46,7 @@ export function createMailNetClient(
     },
     async probeStarttls(host) {
       return probeStarttls(host, {
-        connect,
+        connect: connectTo,
         tlsOptions: options.tlsOptions,
         timeoutMs,
       });

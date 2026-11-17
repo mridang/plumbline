@@ -10,6 +10,7 @@ import { NextRequest } from 'next/server';
 
 import { installCloudflareContext } from '../../../../lib/core/db/sqlite-d1';
 import { GITHUB_ENV } from '../../../../domain/github/github-test-kit';
+import { double } from '../../../../helpers/double';
 
 /** Matches http only flag. */
 const HTTP_ONLY_FLAG = /httponly/iu;
@@ -41,7 +42,7 @@ const get = async (query = '') =>
 describe('GET /auth/github/link', () => {
   beforeEach(() => {
     state.user = { id: 1 };
-    restore = installCloudflareContext({} as D1Database, GITHUB_ENV);
+    restore = installCloudflareContext(double<D1Database>({}), GITHUB_ENV);
   });
 
   it('sends the person to approve the app, keeping the state in a cookie', async () => {
@@ -79,7 +80,7 @@ describe('GET /auth/github/link', () => {
 
   it('says so when GitHub is not set up', async () => {
     restore();
-    restore = installCloudflareContext({} as D1Database, {});
+    restore = installCloudflareContext(double<D1Database>({}), {});
     const res = await get();
     expect(res.headers.get('location')).toBe(
       'https://plumbline.test/github?error=unavailable',

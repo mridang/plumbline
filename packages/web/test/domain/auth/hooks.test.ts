@@ -2,10 +2,11 @@ import { describe, expect, it } from '@jest/globals';
 
 import { OTHER_FLOWS, afterSignIn } from '@/domain/auth/hooks';
 import type { User } from '@/domain/db/users';
+import { double } from '../../helpers/double';
 
 describe('afterSignIn', () => {
   it('has nothing more to do once the person is recorded', async () => {
-    await expect(afterSignIn({ id: 7 } as User)).resolves.toBeUndefined();
+    await expect(afterSignIn(double<User>({ id: 7 }))).resolves.toBeUndefined();
   });
 });
 

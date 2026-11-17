@@ -17,10 +17,11 @@ import {
 } from '../../../domain/auth/auth-test-kit';
 import { installFakeTracing } from '../observability/fake-tracing';
 import type { User } from '@/domain/auth/store';
+import { double } from '../../../helpers/double';
 
 const tracing = installFakeTracing();
 
-const person = { id: 7, email: 'a@b.com' } as User;
+const person = double<User>({ id: 7, email: 'a@b.com' });
 const getCurrentUser = jest.fn<() => Promise<User | null>>();
 
 // eslint-disable-next-line tslop/no-module-mocking -- the kit imports getCurrentUser directly and has no injection point; the specific module is mocked, as mocking the package barrel would replace GoogleAuthKit too

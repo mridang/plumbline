@@ -14,7 +14,6 @@ import { sniffImage } from './image-size.js';
 import type { MetaDocument } from './meta.js';
 import type { Group } from '../../core/groups.js';
 import type { HintDefinition } from '../../core/define-hint.js';
-import type { HTMLElement } from '@hint/utils-dom';
 import type { HintContext } from 'hint';
 import type { Finding, FindingSeverity } from '../headers/finding.js';
 import type { OgImage, OgInput } from './checks.js';
@@ -85,10 +84,14 @@ async function fetchImage(context: HintContext, url: string): Promise<OgImage> {
   try {
     const data = await context.fetchContent(url);
     const raw = data.response.body.rawContent;
+    // A response without a content type has no media type, although webhint
+    // types it as always present.
+    const responseMediaType = data.response.mediaType as string | undefined;
+    const mediaType = responseMediaType ?? '';
     return {
       url,
       status: data.response.statusCode,
-      contentType: (data.response.mediaType ?? '').toLowerCase(),
+      contentType: mediaType.toLowerCase(),
       size: raw.length,
       info: sniffImage(raw),
     };
@@ -132,7 +135,7 @@ export function defineOgHint(rule: OgRule): HintDefinition {
     reference: articleUrl(rule.slug),
     setup(context) {
       onPage(context, async (page) => {
-        const parsedDocument = page.document as unknown as MetaDocument;
+        const parsedDocument = page.document;
         // Only the image-fetch rules need the downloaded file; everything else
         // reads tags only, so no network request is made for them.
         const image = rule.fetchImage
@@ -151,9 +154,7 @@ export function defineOgHint(rule: OgRule): HintDefinition {
         const tagKey = rule.image ? 'og:image' : rule.at;
         const tag = tagKey ? metaElement(parsedDocument, tagKey) : null;
         const head = page.document.querySelector('head');
-        const element = (tag ??
-          head ??
-          page.document.documentElement) as unknown as HTMLElement;
+        const element = tag ?? head ?? page.document.documentElement;
         const src = rule.image ? metaValue(parsedDocument, 'og:image') : null;
         const resource = src === null ? page.url : resolveUrl(src, page.url);
         // eslint-disable-next-line functional/no-loop-statements -- reports each finding as a side effect

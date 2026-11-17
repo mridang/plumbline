@@ -15,6 +15,7 @@ import type { Authenticate } from '@/domain/mcp/http';
 import type { McpAuth } from '@/domain/mcp/auth';
 import type { User } from '@/domain/db/users';
 import type { RateLimitStore } from '@/lib/rate-limit';
+import { double } from '../../helpers/double';
 
 /** Shared collator for locale-aware ordering. */
 const collator = new Intl.Collator();
@@ -39,7 +40,7 @@ const post = (body: unknown, headers: Record<string, string> = {}) =>
 /** A POST whose body is exactly this text. */
 const postText = (body: string, headers: Record<string, string> = {}) =>
   new Request(`${SELF}/mcp`, { method: 'POST', headers, body });
-const user = { id: 1 } as User;
+const user = double<User>({ id: 1 });
 const modern = (method: string, extra: Record<string, unknown> = {}) => ({
   jsonrpc: '2.0',
   id: 1,
@@ -107,7 +108,7 @@ async function send(
   return {
     status: res.status,
     headers: res.headers,
-    json: text ? (JSON.parse(text) as Reply) : undefined,
+    json: text ? double<Reply>(JSON.parse(text)) : undefined,
   };
 }
 
@@ -845,7 +846,7 @@ describe('handleMcpPost — rate limiting', () => {
     }
     const res = await handleMcpPost(
       post(call(1)),
-      { id: 2 } as User,
+      double<User>({ id: 2 }),
       ALL_SCOPES,
       SELF,
       rate.deps,
@@ -884,7 +885,7 @@ describe('handleMcpPost — rate limiting', () => {
     // 120 in six batches of twenty; the seventh goes over.
     for (let index = 0; index < 4; index++) {
       await send(
-        Array.from({ length: 20 }, (_, index) => call(index)),
+        Array.from({ length: 20 }, (_, position) => call(position)),
         {},
         ALL_SCOPES,
         rate.deps,

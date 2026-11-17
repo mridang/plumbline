@@ -32,11 +32,13 @@ describe('installationToken', () => {
   it('trades the JWT for an installation token', async () => {
     const fetcher = jest.fn(async (_url: unknown, init?: RequestInit) => {
       expect(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as Record<string, string>, which the values it was built from or the checks around it establish
         String((init?.headers as Record<string, string>)['Authorization']),
       ).toMatch(BEARER_JWT_PATTERN);
       return Response.json({ token: 'ghs_abc' });
     });
     expect(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
       await installationToken(config, 42, fetcher as unknown as typeof fetch),
     ).toBe('ghs_abc');
     expect(String(fetcher.mock.calls[0]?.[0])).toBe(
@@ -47,6 +49,7 @@ describe('installationToken', () => {
   it('fails with the status when GitHub refuses', async () => {
     const fetcher = async () => new Response('no', { status: 404 });
     await expect(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
       installationToken(config, 42, fetcher as unknown as typeof fetch),
     ).rejects.toMatchObject({ status: 404 });
   });

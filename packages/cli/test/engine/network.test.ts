@@ -32,7 +32,7 @@ describe('contentTypeOf', () => {
 describe('fetchResource', () => {
   /** A fetch that answers from a table of address → response. */
   const answering =
-    (table: Record<string, () => Response>): typeof fetch =>
+    (table: Record<string, (() => Response) | undefined>): typeof fetch =>
     async (input) => {
       const answer =
         table[input instanceof Request ? input.url : String(input)];

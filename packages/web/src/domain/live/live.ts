@@ -72,7 +72,8 @@ async function quietly(
 /** The real {@link Live}: stores the event, wakes the person's hub, sends the push. */
 export function createLive(db: Database, env: Readonly<LiveEnv>): Live {
   const broadcaster = env.USER_HUB
-    ? new Broadcaster(env.USER_HUB as HubNamespace)
+    ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the binding is typed as a generic Durable Object namespace, and HubNamespace is the narrow view of it that the broadcaster uses
+      new Broadcaster(env.USER_HUB as HubNamespace)
     : null;
   const subscriptions = new PushSubscriptionRepository(db);
   const notifier =

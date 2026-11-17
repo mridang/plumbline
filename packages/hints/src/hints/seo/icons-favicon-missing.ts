@@ -42,7 +42,7 @@ export default defineHint({
     });
     // Browsers request /favicon.ico on their own, so a served file counts.
     onSite(context, async (site) => {
-      const [found] = document ? faviconMissing(document) : [];
+      const found = (document ? faviconMissing(document) : []).at(0);
       if (!found) {
         return;
       }

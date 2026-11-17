@@ -33,7 +33,7 @@ let privateKey: CryptoKey;
 let otherKey: CryptoKey;
 let jwks: JSONWebKeySet;
 // A claim the assertion leaves out: its key stays present, so an override can drop it.
-const notProvided = [].at(0);
+const notProvided = Array.from<string>([]).at(0);
 
 beforeAll(async () => {
   const pair = await generateKeyPair('RS256', { extractable: true });
@@ -73,6 +73,7 @@ function deps(keys: unknown = jwks): AssertionDeps & { used: Set<string> } {
   const used = new Set<string>();
   return {
     used,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as JSONWebKeySet | undefined, which the values it was built from or the checks around it establish
     fetchJwks: async () => keys as JSONWebKeySet | undefined,
     claimAssertion: async (client, jti) => {
       const key = `${client} ${jti}`;
@@ -230,7 +231,7 @@ describe('verifyClientAssertion', () => {
 
 describe('fetchJwks', () => {
   const answer = (init: ResponseInit | undefined, body: string) =>
-    jest.fn(async () => new Response(body, init)) as unknown as typeof fetch;
+    jest.fn<typeof fetch>(async () => new Response(body, init));
 
   it('reads the key set, without following redirects', async () => {
     const fetchImpl = answer({ status: 200 }, JSON.stringify({ keys: [] }));

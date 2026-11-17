@@ -13,7 +13,7 @@ describe('acceptChFindings', () => {
   });
 
   it('notes a valid token list as fingerprinting surface', () => {
-    const [f] = acceptChFindings('Sec-CH-UA, Sec-CH-UA-Mobile');
+    const f = acceptChFindings('Sec-CH-UA, Sec-CH-UA-Mobile').at(0);
     expect(f?.severity).toBe('hint');
     expect(f?.message).toContain('fingerprinting');
   });
@@ -37,7 +37,7 @@ describe('criticalChFindings', () => {
   });
 
   it('errors on a hint missing from Accept-CH', () => {
-    const [f] = criticalChFindings('Sec-CH-UA-Platform', 'Sec-CH-UA');
+    const f = criticalChFindings('Sec-CH-UA-Platform', 'Sec-CH-UA').at(0);
     expect(f?.severity).toBe('error');
     expect(f?.message).toContain('Sec-CH-UA-Platform');
   });
@@ -70,7 +70,7 @@ describe('altSvcFindings', () => {
   });
 
   it('notes advertised protocols', () => {
-    const [f] = altSvcFindings('h3=":443"; ma=2592000, h2=":443"');
+    const f = altSvcFindings('h3=":443"; ma=2592000, h2=":443"').at(0);
     expect(f?.severity).toBe('hint');
     expect(f?.message).toContain('h3');
   });

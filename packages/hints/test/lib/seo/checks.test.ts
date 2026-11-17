@@ -41,7 +41,7 @@ describe('titleMissing', () => {
 
 describe('titleTooLong', () => {
   it('warns over seventy characters with the length in the message', () => {
-    const [found] = titleTooLong(parse(`<title>${'x'.repeat(71)}</title>`));
+    const found = titleTooLong(parse(`<title>${'x'.repeat(71)}</title>`)).at(0);
     expect(found?.severity).toBe('warning');
     expect(found?.message).toContain('71 characters');
   });
@@ -78,9 +78,9 @@ describe('metaDescriptionMissing', () => {
 
 describe('metaDescriptionTooLong', () => {
   it('flags over 160 characters as a hint', () => {
-    const [found] = metaDescriptionTooLong(
+    const found = metaDescriptionTooLong(
       parse(`<meta name="description" content="${'y'.repeat(161)}">`),
-    );
+    ).at(0);
     expect(found?.severity).toBe('hint');
     expect(found?.message).toContain('161 characters');
   });
@@ -126,7 +126,7 @@ describe('h1Missing', () => {
 
 describe('h1Multiple', () => {
   it('flags more than one h1 with the count', () => {
-    const [found] = h1Multiple(parse('<h1>a</h1><h1>b</h1>'));
+    const found = h1Multiple(parse('<h1>a</h1><h1>b</h1>')).at(0);
     expect(found?.severity).toBe('hint');
     expect(found?.message).toContain('2 <h1>');
   });
@@ -189,10 +189,10 @@ describe('canonicalMissing', () => {
 
 describe('canonicalMismatch', () => {
   it('flags a canonical that points elsewhere with both URLs', () => {
-    const [found] = canonicalMismatch(
+    const found = canonicalMismatch(
       parse(`<link rel="canonical" href="${HTTP_SCHEME}example.com/other">`),
       `${HTTP_SCHEME}example.com/page`,
-    );
+    ).at(0);
     expect(found?.severity).toBe('hint');
     expect(found?.message).toContain(`${HTTP_SCHEME}example.com/other`);
     expect(found?.message).toContain(`${HTTP_SCHEME}example.com/page`);

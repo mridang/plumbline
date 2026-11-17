@@ -128,11 +128,11 @@ export function parseCheckNames(
 export function parseDomainPatch(
   body: Readonly<Record<string, unknown>>,
 ): Parsed<readonly string[] | null> {
-  const unknownFields = Object.keys(body).filter((key) => key !== 'checks');
-  if (unknownFields.length > 0) {
+  const strayFields = Object.keys(body).filter((key) => key !== 'checks');
+  if (strayFields.length > 0) {
     return {
       ok: false,
-      errors: unknownFields.map((key) => `${key}: cannot be changed.`),
+      errors: strayFields.map((key) => `${key}: cannot be changed.`),
     };
   }
   if (!Object.hasOwn(body, 'checks')) {

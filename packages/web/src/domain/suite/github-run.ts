@@ -396,8 +396,8 @@ async function checkPreview(
       return outcome.checks;
     } catch (error) {
       console.error('preview run failed', repo, url, error);
-      await publishUnreachable(api, repo, sha, url).catch((error: unknown) =>
-        console.error('check run failed', error),
+      await publishUnreachable(api, repo, sha, url).catch((failure: unknown) =>
+        console.error('check run failed', failure),
       );
       return null;
     }

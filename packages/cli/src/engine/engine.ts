@@ -294,6 +294,7 @@ function contextFor(
     isInHead: () => false,
   };
   // Only the members above are ever read by the hints in this package.
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- webhint's HintContext has many members that only a real analyzer provides, and the hints of this package read none of them beyond those above
   return context as unknown as HintContext;
 }
 

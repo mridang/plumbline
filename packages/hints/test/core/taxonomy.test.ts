@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import hints from '../../src/index.js';
+import { docsOf } from '../helpers/docs.js';
 import {
   GROUP_DEFS,
   PLACEMENT,
@@ -41,21 +42,7 @@ describe('the sections', () => {
 
 describe('the metadata stamped on a hint', () => {
   it('carries the placement, the tier and where the hint came from', () => {
-    const documentation = hints.csp.meta.docs as {
-      section?: string;
-      sectionTitle?: string;
-      sectionOrder?: number;
-      group?: string;
-      groupTitle?: string;
-      subsection?: string;
-      tags?: string[];
-      tier?: string;
-      target?: string;
-      control?: string;
-      since?: number;
-      added?: string;
-      origins?: { source: string }[];
-    };
+    const documentation = docsOf(hints.csp);
     const placement = PLACEMENT.csp;
     expect(documentation.section).toBe(placement.section);
     expect(documentation.sectionTitle).toBeTruthy();
@@ -71,6 +58,10 @@ describe('the metadata stamped on a hint', () => {
     expect(documentation.control).toBe(placement.control);
     expect(documentation.since).toBe(placement.since);
     expect(documentation.added).toBe(placement.added);
-    expect(documentation.origins?.length).toBeGreaterThan(0);
+    expect(documentation.origins).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ source: expect.any(String) }),
+      ]),
+    );
   });
 });

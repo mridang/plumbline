@@ -74,6 +74,7 @@ function github(
     calls.push({
       method,
       path,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
       body: JSON.parse(
         typeof init?.body === 'string' ? init.body : '{}',
       ) as Record<string, unknown>,
@@ -924,6 +925,7 @@ describe('handleDeployment of a preview', () => {
       sha: 'abc1234',
       errors: 1,
     });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { text: string; }, which the values it was built from or the checks around it establish
     expect((check?.body['output'] as { text: string }).text).toContain(
       `https://plumbline.test/api/previews/${id}`,
     );
@@ -988,6 +990,7 @@ describe('handleDeployment of a preview', () => {
     });
     const check = calls.at(-1);
     expect(check?.body['conclusion']).toBe('failure');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { summary: string; }, which the values it was built from or the checks around it establish
     const summary = (check?.body['output'] as { summary: string }).summary;
     // A DNS check, which the server could not make before, is reported at the level the file gives it.
     expect(summary).toContain('- **error**: it is wrong');
@@ -1306,6 +1309,7 @@ describe('handleDeployment of a preview, against the live site', () => {
       skipped: [],
     });
   const outcome = (calls: Call[]) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
     const body = calls.at(-1)?.body as {
       conclusion: string;
       output: { title: string; summary: string };

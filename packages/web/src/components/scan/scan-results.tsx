@@ -141,7 +141,12 @@ export function ScanResults({
         <SegmentedControl
           label="Show"
           value={filter}
-          onChange={(value) => setFilter(value as Filter)}
+          onChange={(value) => {
+            const chosen = filters.find((option) => option.value === value);
+            if (chosen) {
+              setFilter(chosen.value);
+            }
+          }}
           options={filters}
         />
         {shown.length > 0 ? (

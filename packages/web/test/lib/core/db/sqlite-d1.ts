@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { migrationSql } from './migrations';
 import type { SQLInputValue, StatementSync } from 'node:sqlite';
+import { double } from '../../../helpers/double';
 
 /** What a prepared statement answers, shaped like D1's `D1Result`. */
 interface Result {
@@ -19,6 +20,7 @@ class Statement {
 
   /** The same statement with values bound to its placeholders. */
   bind(...params: readonly unknown[]): Statement {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as SQLInputValue[], which the values it was built from or the checks around it establish
     return new Statement(this.conn, this.sql, params as SQLInputValue[]);
   }
 
@@ -96,7 +98,7 @@ export function sqliteD1(...migrations: readonly string[]): SqliteD1 {
       }
     },
   };
-  return { d1: d1 as unknown as D1Database, raw };
+  return { d1: double<D1Database>(d1), raw };
 }
 
 /** Work handed to `waitUntil` since the last {@link settleBackground}. */
@@ -120,6 +122,7 @@ export function installCloudflareContext(
   env: Readonly<Record<string, unknown>> = {},
 ): () => void {
   const key = Symbol.for('__cloudflare-context__');
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as Record<symbol, unknown>, which the values it was built from or the checks around it establish
   const holder = globalThis as unknown as Record<symbol, unknown>;
   const previous = holder[key];
   holder[key] = {

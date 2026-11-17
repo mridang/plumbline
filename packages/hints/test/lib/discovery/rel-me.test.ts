@@ -16,13 +16,15 @@ describe('relationshipMeFindings', () => {
   });
 
   it('reports the identity links found', () => {
-    const [f] = relationshipMeFindings([link(['me'], 'https://github.com/x')]);
+    const f = relationshipMeFindings([link(['me'], 'https://github.com/x')]).at(
+      0,
+    );
     expect(f?.severity).toBe('hint');
     expect(f?.message).toContain('rel=me');
   });
 
   it('warns when a rel=me link has no target', () => {
-    const [f] = relationshipMeFindings([link(['me'], '')]);
+    const f = relationshipMeFindings([link(['me'], '')]).at(0);
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain('no href');
   });

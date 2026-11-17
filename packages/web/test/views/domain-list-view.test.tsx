@@ -13,7 +13,9 @@ import type {
   ReportData,
 } from '@/domain/mcp/ui-types';
 import type { ToolOutcome } from '@/views/payload';
+import type { WidgetBridge } from '@/views/use-widget-data';
 import type { ViewState } from '@/views/view-state';
+import { stub } from '../helpers/double';
 
 const SCANNED: DomainListItem = {
   id: 'd1',
@@ -97,7 +99,7 @@ function bridge(
   return {
     sendFollowUp,
     canCallTools: options.canCallTools ?? false,
-    callTool: callTool as never,
+    callTool: stub<WidgetBridge<ReportData>['callTool']>(callTool),
     calls: callTool,
   };
 }

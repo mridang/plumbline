@@ -10,8 +10,8 @@ import {
 } from '../../src/engine/guard.js';
 import { gzipAsync } from '../helpers/zlib.js';
 import { HTTP_SCHEME, vector } from '../helpers/data.js';
+import { portOf } from '../helpers/port.js';
 import type { Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
 
 /** Matches the refusal message for an address that is not public. */
 const NOT_A_PUBLIC_ADDRESS = /not a public address/u;
@@ -206,7 +206,7 @@ describe('guardedFetch', () => {
     await new Promise<void>((resolve) => {
       server.listen(0, '127.0.0.1', () => resolve());
     });
-    base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    base = `http://127.0.0.1:${portOf(server)}`;
   });
 
   afterAll(

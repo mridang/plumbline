@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { TabList, TabPanel, moveFocus, tabId } from '@/components/ui-app/tabs';
 import { html } from '../render';
 import type { KeyboardEvent } from 'react';
+import { double } from '../../helpers/double';
 
 /** Matches the first tab link. */
 const FIRST_TAB_LINK = /<a[^>]*role="tab"[^>]*href="\/r\?site=a\.test"/u;
@@ -57,11 +58,10 @@ describe('TabList and TabPanel', () => {
 describe('moveFocus', () => {
   const press = (key: string, active: number) => {
     const focused: number[] = [];
-    const tabs = [0, 1, 2].map(
-      (n) =>
-        ({
-          focus: () => focused.push(n),
-        }) as unknown as HTMLElement,
+    const tabs = [0, 1, 2].map((n) =>
+      double<HTMLElement>({
+        focus: () => focused.push(n),
+      }),
     );
     Object.defineProperty(globalThis, 'document', {
       value: { activeElement: tabs[active] },
@@ -69,12 +69,12 @@ describe('moveFocus', () => {
     });
     let prevented = false;
     moveFocus(
-      {
+      double<KeyboardEvent<HTMLElement>>({
         key,
         preventDefault: () => {
           prevented = true;
         },
-      } as unknown as KeyboardEvent<HTMLElement>,
+      }),
       tabs,
     );
     return { focused, prevented };

@@ -6,8 +6,8 @@ import {
   opensearchDiscovery,
 } from '@mridang/webhint-hint-plumbline/dist/lib/feeds/checks.js';
 import { feedsChecks } from '../../src/checks/feeds.js';
+import { artifactsOf, contextOf } from '../helpers/fixtures.js';
 import type { Artifacts } from 'lighthouse';
-import type AuditNS from 'lighthouse/types/audit.js';
 import type { AuditCheck } from '../../src/checks/types.js';
 // The single-source rules the webhint hints call. Running the Lighthouse check
 // through its own HTML parser and asserting the findings match these proves the
@@ -20,13 +20,13 @@ const parse = (html: string): DocumentLike =>
 /** Builds the artifacts the feed-discovery checks read. */
 function artifacts(html: string): Artifacts {
   const url = 'https://x.test/';
-  return {
+  return artifactsOf({
     MainDocumentContent: html,
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
-  } as Artifacts;
+  });
 }
 
-const context = {} as AuditNS.Context;
+const context = contextOf();
 
 const checkById = (id: string): AuditCheck => {
   const check = feedsChecks.find((c) => c.id === id);
@@ -49,7 +49,7 @@ describe('feeds checks', () => {
 
   it('returns null when the main document is absent', async () => {
     expect(
-      await checkById('feed-discovery').run({} as Artifacts, context),
+      await checkById('feed-discovery').run(artifactsOf({}), context),
     ).toBeNull();
   });
 

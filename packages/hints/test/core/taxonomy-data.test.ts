@@ -173,7 +173,7 @@ describe('the taxonomy data', () => {
     const recommended = ids.filter(
       (id) => PLACEMENT[id].tier === 'recommended',
     );
-    expect(recommended.filter((id) => !HOW_TO_FIX[id])).toEqual([]);
+    expect(recommended.filter((id) => !(id in HOW_TO_FIX))).toEqual([]);
     for (const id of Object.keys(HOW_TO_FIX)) {
       expect({ id, known: id in PLACEMENT }).toEqual({ id, known: true });
       expect(HOW_TO_FIX[id].fix.length).toBeGreaterThan(5);

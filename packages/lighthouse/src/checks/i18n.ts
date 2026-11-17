@@ -58,7 +58,7 @@ import type { Artifacts } from 'lighthouse';
 const HTML_AND_URL = ['MainDocumentContent', 'URL'] as const;
 
 /** The page URL a check compares against (the rendered URL, else the requested). */
-function pageUrl(artifacts: Artifacts): string {
+function pageUrl(artifacts: Partial<Artifacts>): string {
   return (
     artifacts.URL?.finalDisplayedUrl || artifacts.URL?.mainDocumentUrl || ''
   );
@@ -69,7 +69,7 @@ function pageUrl(artifacts: Artifacts): string {
  * query. `finalHref` only resolves relative URLs; an empty document URL is
  * replaced with a harmless placeholder so parsing never throws on `new URL('')`.
  */
-function documentOf(artifacts: Artifacts): DocumentLike {
+function documentOf(artifacts: Partial<Artifacts>): DocumentLike {
   const html = artifacts.MainDocumentContent ?? '';
   return createHTMLDocument(html, pageUrl(artifacts) || 'http://localhost/');
 }

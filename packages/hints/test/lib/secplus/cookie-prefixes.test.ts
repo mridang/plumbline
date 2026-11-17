@@ -28,20 +28,22 @@ describe('cookiePrefixFindings', () => {
   });
 
   it('flags a __Host- cookie without Secure', () => {
-    const [found] = cookiePrefixFindings(['__Host-id=abc; Path=/']);
+    const found = cookiePrefixFindings(['__Host-id=abc; Path=/']).at(0);
     expect(found?.severity).toBe('error');
     expect(found?.message).toContain('not Secure');
   });
 
   it('flags a __Host- cookie with a non-root Path', () => {
-    const [found] = cookiePrefixFindings(['__Host-id=abc; Secure; Path=/app']);
+    const found = cookiePrefixFindings(['__Host-id=abc; Secure; Path=/app']).at(
+      0,
+    );
     expect(found?.message).toContain("Path is not '/'");
   });
 
   it('flags a __Host- cookie that sets Domain', () => {
-    const [found] = cookiePrefixFindings([
+    const found = cookiePrefixFindings([
       '__Host-id=abc; Secure; Path=/; Domain=example.test',
-    ]);
+    ]).at(0);
     expect(found?.message).toContain('Domain');
   });
 
@@ -50,13 +52,13 @@ describe('cookiePrefixFindings', () => {
   });
 
   it('flags a __Secure- cookie without Secure', () => {
-    const [found] = cookiePrefixFindings(['__Secure-id=abc; Path=/']);
+    const found = cookiePrefixFindings(['__Secure-id=abc; Path=/']).at(0);
     expect(found?.severity).toBe('error');
     expect(found?.message).toContain('not Secure');
   });
 
   it('matches the prefix case-insensitively', () => {
-    const [found] = cookiePrefixFindings(['__host-id=abc; Path=/']);
+    const found = cookiePrefixFindings(['__host-id=abc; Path=/']).at(0);
     expect(found?.severity).toBe('error');
   });
 

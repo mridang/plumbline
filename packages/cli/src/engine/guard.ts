@@ -89,8 +89,8 @@ function embeddedV4(ip: string): string | undefined {
   }
   const hex = MAPPED_HEX_V4.exec(lower);
   if (hex) {
-    const high = Number.parseInt(hex[1] ?? '0', 16);
-    const low = Number.parseInt(hex[2] ?? '0', 16);
+    const high = Number.parseInt(hex.at(1) ?? '0', 16);
+    const low = Number.parseInt(hex.at(2) ?? '0', 16);
 
     return `${Math.trunc(high / 256)}.${high % 256}.${Math.trunc(low / 256)}.${low % 256}`;
   }
@@ -173,6 +173,13 @@ export function assertAllowed(url: URL, options: GuardOptions = {}): void {
 /** The `dns.lookup` signature the guard wraps. */
 type Lookup = typeof dns.lookup;
 
+/** The callback `dns.lookup` answers to. */
+type Respond = (
+  failure: Error | null,
+  address?: string | dns.LookupAddress[],
+  family?: number,
+) => void;
+
 /**
  * A `lookup` for a socket that resolves the name and refuses it when any
  * address it resolves to is not public. Node connects to the address handed
@@ -184,20 +191,16 @@ export function guardedLookup(
 ): Lookup {
   const wrapped = (
     hostname: string,
-    optionsOrHandler: unknown,
-    maybeHandler?: unknown,
+    optionsOrHandler: dns.LookupOptions | number | Respond | undefined,
+    maybeHandler?: Respond,
   ): void => {
-    const respond = (
-      typeof optionsOrHandler === 'function' ? optionsOrHandler : maybeHandler
-    ) as (
-      failure: Error | null,
-      address?: string | dns.LookupAddress[],
-      family?: number,
-    ) => void;
+    const respond =
+      typeof optionsOrHandler === 'function' ? optionsOrHandler : maybeHandler;
+    if (respond === undefined) {
+      throw new TypeError('A lookup needs a callback');
+    }
     const given =
-      typeof optionsOrHandler === 'object' && optionsOrHandler !== null
-        ? optionsOrHandler
-        : undefined;
+      typeof optionsOrHandler === 'object' ? optionsOrHandler : undefined;
     // With no options given, the defaults stand.
     const lookupOptions: dns.LookupOptions =
       given ??
@@ -225,7 +228,7 @@ export function guardedLookup(
         respond(null, list);
         return;
       }
-      const first = list[0];
+      const first = list.at(0);
       if (!first) {
         respond(new GuardError(`${hostname} did not resolve`));
         return;
@@ -233,6 +236,7 @@ export function guardedLookup(
       respond(null, first.address, first.family);
     });
   };
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- dns.lookup is an overloaded function with a promisify companion, which a single implementation signature cannot be declared to satisfy
   return wrapped as unknown as Lookup;
 }
 
@@ -356,7 +360,7 @@ async function once(
   signal: AbortSignal,
   lookup: Lookup,
 ): Promise<IncomingMessage> {
-  return new Promise((resolve, reject) => {
+  return new Promise<IncomingMessage>((resolve, reject) => {
     const transport = url.protocol === 'https:' ? https : http;
     const request = transport.request(
       url,
@@ -365,7 +369,7 @@ async function once(
     );
     request.on('error', reject);
     request.end(body);
-  }).then((response) => response as IncomingMessage);
+  });
 }
 
 /** The status codes that redirect. */

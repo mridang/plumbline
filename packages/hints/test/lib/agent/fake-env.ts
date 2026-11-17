@@ -4,6 +4,11 @@ import type { AgentEnv, Probe } from '../../../src/lib/agent/types.js';
 /** What a fake path answers; defaults mirror a plain 200 text response. */
 export type FakeRoute = Partial<Omit<Probe, 'url'>> | string | object;
 
+/** Whether a route is written as a probe answer rather than as a JSON body. */
+function isProbeRoute(route: object): route is Partial<Probe> {
+  return 'status' in route || 'body' in route || 'contentType' in route;
+}
+
 /**
  * Builds an environment whose probes are answered from a table. A string
  * becomes a text body, an object a JSON body, and unknown paths fail like
@@ -29,9 +34,6 @@ export function fakeEnv(
       if (route === undefined) {
         return null;
       }
-      const isProbe =
-        typeof route === 'object' &&
-        ('status' in route || 'body' in route || 'contentType' in route);
       if (typeof route === 'string') {
         return {
           url: path,
@@ -41,7 +43,7 @@ export function fakeEnv(
           body: route,
         };
       }
-      if (!isProbe) {
+      if (!isProbeRoute(route)) {
         return {
           url: path,
           status: 200,
@@ -50,7 +52,7 @@ export function fakeEnv(
           body: JSON.stringify(route),
         };
       }
-      const given = route as Partial<Probe>;
+      const given = route;
       return {
         url: path,
         status: given.status ?? 200,

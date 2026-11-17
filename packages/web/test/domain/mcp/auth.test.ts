@@ -6,6 +6,7 @@ import { installFakeTracing } from '../../lib/core/observability/fake-tracing';
 import type { User } from '@/domain/db/users';
 
 import type { McpAuthDeps } from '@/domain/mcp/auth';
+import { double } from '../../helpers/double';
 
 /** Matches access token format. */
 const ACCESS_TOKEN_FORMAT = /^cdn_at_[A-Za-z0-9_-]{43}$/u;
@@ -14,7 +15,7 @@ const tracing = installFakeTracing();
 const { authenticateMcpRequest } = await import('@/domain/mcp/auth');
 
 const ORIGIN = 'https://plumbline.test';
-const user = { id: 7 } as User;
+const user = double<User>({ id: 7 });
 /** A token shaped like the ones we issue, so it gets as far as the database. */
 const GOOD = newSecret(ACCESS_PREFIX);
 const BAD = newSecret(ACCESS_PREFIX);

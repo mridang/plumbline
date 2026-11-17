@@ -17,9 +17,9 @@ export type JsonParseResult<T> =
  * the parser's message otherwise.
  * @public
  */
-export function safeJsonParse<T>(text: string): JsonParseResult<T> {
+export function safeJsonParse(text: string): JsonParseResult<unknown> {
   try {
-    return { ok: true, value: JSON.parse(text) as T };
+    return { ok: true, value: JSON.parse(text) };
   } catch (error) {
     return {
       ok: false,

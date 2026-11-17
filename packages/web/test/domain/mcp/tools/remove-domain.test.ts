@@ -8,9 +8,10 @@ import { sqliteDatabase } from '../../../lib/core/db/sqlite-db';
 import type { ToolResult } from '@/domain/mcp/tool-results';
 import type { User } from '@/domain/db/users';
 import type { ToolContent } from '@/domain/mcp/tool-context';
+import { double } from '../../../helpers/double';
 
-const USER = { id: 1 } as User;
-const STRANGER = { id: 2 } as User;
+const USER = double<User>({ id: 1 });
+const STRANGER = double<User>({ id: 2 });
 
 /** A fresh database, and a way to call a tool against it. */
 function setup() {

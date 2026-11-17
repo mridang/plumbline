@@ -54,7 +54,7 @@ const CHATGPT_DOCUMENT = {
 };
 
 // A field the document leaves out: its key stays present, so an override can drop it.
-const notProvided = [].at(0);
+const notProvided = Array.from<string>([]).at(0);
 
 const respond = (body: string, status = 200) =>
   jest.fn<typeof fetch>(async () => new Response(body, { status }));
@@ -215,11 +215,13 @@ describe('parseClientMetadataDocument', () => {
   });
 
   it('falls back to the host as the name and caps its length', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { client: { name: string; }; }, which the values it was built from or the checks around it establish
     const { client } = parseClientMetadataDocument(
       { ...goodDocument, client_name: notProvided },
       URL_ID,
     ) as { client: { name: string } };
     expect(client.name).toBe('chatgpt.com');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { client: { name: string; }; }, which the values it was built from or the checks around it establish
     const long = parseClientMetadataDocument(
       { ...goodDocument, client_name: 'x'.repeat(500) },
       URL_ID,
@@ -238,6 +240,7 @@ describe('fetchClientMetadata', () => {
     const fetchImpl = respond(JSON.stringify(goodDocument));
     const result = await fetchClientMetadata(URL_ID, fetchImpl);
     expect(result.ok).toBe(true);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as Mock<UnknownFunction>, which the values it was built from or the checks around it establish
     const init = (fetchImpl as unknown as jest.Mock).mock.calls[0]?.[1] as
       RequestInit | undefined;
     expect(init?.redirect).toBe('manual');
@@ -253,9 +256,9 @@ describe('fetchClientMetadata', () => {
       respond(' '.repeat(20_000)),
     );
     expect(oversized.ok).toBe(false);
-    const throwing = jest.fn(async () => {
+    const throwing = jest.fn<typeof fetch>(async () => {
       throw new Error('down');
-    }) as unknown as typeof fetch;
+    });
     const failed = await fetchClientMetadata(URL_ID, throwing);
     expect(failed.ok).toBe(false);
   });
@@ -279,6 +282,7 @@ describe('parseRegistration', () => {
       client: { name: 'Claude', kind: 'dcr' },
     });
     expect(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { client: { clientId: string; }; }, which the values it was built from or the checks around it establish
       (result as { client: { clientId: string } }).client.clientId,
     ).toMatch(DCR_CLIENT_ID_PREFIX);
   });
@@ -375,6 +379,7 @@ describe('registrationResponse', () => {
 
 describe('client names', () => {
   it('are cleaned of invisible and direction-changing characters', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { client: { name: string; }; }, which the values it was built from or the checks around it establish
     const result = parseClientMetadataDocument(
       { ...goodDocument, client_name: '\u202EClaude\u200B  Desktop\n' },
       URL_ID,
@@ -383,6 +388,7 @@ describe('client names', () => {
   });
 
   it('fall back to the host when only invisible characters were given', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { client: { name: string; }; }, which the values it was built from or the checks around it establish
     const result = parseClientMetadataDocument(
       { ...goodDocument, client_name: '\u200B\u200B' },
       URL_ID,
@@ -391,11 +397,13 @@ describe('client names', () => {
   });
 
   it('are cleaned for a registered client too, with a neutral fallback', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { client: { name: string; }; }, which the values it was built from or the checks around it establish
     const named = parseRegistration({
       client_name: '\u202EEvil\u202C',
       redirect_uris: ['https://a.com/cb'],
     }) as { client: { name: string } };
     expect(named.client.name).toBe('Evil');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { client: { name: string; }; }, which the values it was built from or the checks around it establish
     const unnamed = parseRegistration({
       client_name: '\u200B',
       redirect_uris: ['https://a.com/cb'],
@@ -443,6 +451,7 @@ describe('fetchClientMetadata details', () => {
   it('introduces itself with a User-Agent that says whom to ask', async () => {
     const fetchImpl = respond(JSON.stringify(goodDocument));
     await fetchClientMetadata(URL_ID, fetchImpl);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as Mock<UnknownFunction>, which the values it was built from or the checks around it establish
     const init = (fetchImpl as unknown as jest.Mock).mock.calls[0]?.[1] as
       RequestInit | undefined;
     expect(init?.headers).toMatchObject({ 'User-Agent': FETCH_USER_AGENT });
@@ -466,13 +475,13 @@ describe('fetchClientMetadata details', () => {
   });
 
   it('counts a redirect as a failed fetch: the document must be served at the client_id itself', async () => {
-    const redirected = jest.fn(
+    const redirected = jest.fn<typeof fetch>(
       async () =>
         new Response(null, {
           status: 302,
           headers: { location: 'https://elsewhere.example/doc' },
         }),
-    ) as unknown as typeof fetch;
+    );
     expect(await fetchClientMetadata(URL_ID, redirected)).toMatchObject({
       ok: false,
     });
@@ -621,7 +630,7 @@ describe('fetchClientMetadata streaming and caching', () => {
   const serve = (
     init: ResponseInit,
     body: string = JSON.stringify(goodDocument),
-  ) => jest.fn(async () => new Response(body, init)) as unknown as typeof fetch;
+  ) => jest.fn<typeof fetch>(async () => new Response(body, init));
 
   it('reports how long the document may be cached', async () => {
     const result = await fetchClientMetadata(
@@ -656,7 +665,7 @@ describe('fetchClientMetadata streaming and caching', () => {
   });
 
   it('fails when reading the body fails', async () => {
-    const broken = jest.fn(
+    const broken = jest.fn<typeof fetch>(
       async () =>
         new Response(
           new ReadableStream<Uint8Array>({
@@ -665,7 +674,7 @@ describe('fetchClientMetadata streaming and caching', () => {
             },
           }),
         ),
-    ) as unknown as typeof fetch;
+    );
     const outcome = await fetchClientMetadata(URL_ID, broken);
     expect(outcome.ok).toBe(false);
   });

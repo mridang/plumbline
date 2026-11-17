@@ -257,6 +257,7 @@ describe('tooManyRequests', () => {
 const WRANGLER = await readFile(path.join(PACKAGE, 'wrangler.jsonc'), 'utf8');
 
 describe('wrangler.jsonc', () => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
   const parsed = ts.parseConfigFileTextToJson('wrangler.jsonc', WRANGLER)
     .config as {
     ratelimits: {

@@ -248,6 +248,7 @@ describe('POST /oauth/consent', () => {
       const info = jest.spyOn(console, 'info').mockImplementation(() => {});
       await consent({ access: 'read' });
       expect(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
         info.mock.calls.map(([line]) => JSON.parse(String(line)) as object),
       ).toContainEqual(
         expect.objectContaining({
@@ -265,6 +266,7 @@ describe('POST /oauth/consent', () => {
     const info = jest.spyOn(console, 'info').mockImplementation(() => {});
     await consent({ decision: 'deny' });
     expect(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
       info.mock.calls.map(([line]) => JSON.parse(String(line)) as object),
     ).toContainEqual(
       expect.objectContaining({

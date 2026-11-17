@@ -3,6 +3,7 @@ import { headerValue } from '../../core/http.js';
 import { onSite } from '../../core/page.js';
 import { exactHeaderFindings } from '../../lib/headers/exact-header.js';
 import { finding } from '../../lib/headers/finding.js';
+import { isObject } from '../../lib/wellknown/json.js';
 import { reportSiteFindings } from './shared.js';
 
 /** The value OWASP expects, without spaces and in lower case. */
@@ -33,9 +34,11 @@ export default defineHint({
     },
   ],
   setup(context) {
-    const logoutUrl = (
-      context.hintOptions as { logoutUrl?: string } | undefined
-    )?.logoutUrl;
+    const options = context.hintOptions;
+    const logoutUrl =
+      isObject(options) && typeof options.logoutUrl === 'string'
+        ? options.logoutUrl
+        : undefined;
     if (!logoutUrl) {
       return;
     }

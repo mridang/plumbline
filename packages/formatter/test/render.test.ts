@@ -188,7 +188,7 @@ describe('agent score parsing against the former regexes', () => {
       return null;
     }
     const categories: string[] = [];
-    for (const part of (head[4] ?? '').split(';')) {
+    for (const part of (head.at(4) ?? '').split(';')) {
       const match = old(
         '',
         String.raw`^(.+?)\s+(\d+)`,

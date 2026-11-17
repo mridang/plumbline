@@ -29,6 +29,7 @@ import { SCOPE_READ, SCOPE_WRITE, scopeForTool } from '@/lib/oauth';
 import { addDomain } from '@/domain/db/domains';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import { double } from '../../helpers/double';
 import type { JsonRpcResponse, ToolRunner } from '@/domain/mcp/server';
 import type { User } from '@/domain/db/users';
 
@@ -40,7 +41,7 @@ const GET_DOMAIN_INVALID_ARGUMENTS_PATTERN =
 const FIRST_VIEW = APP_RESOURCES.at(0)?.uri ?? '';
 
 /** The user every test acts as. */
-const someone = { id: 1 } as User;
+const someone = double<User>({ id: 1 });
 
 /** Compares strings in the default locale order, built once. */
 const collator = new Intl.Collator();
@@ -157,6 +158,7 @@ describe('handleMcpMessage routing', () => {
   });
 
   it('lists the views and serves their HTML', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
     const listed = (await send({ method: 'resources/list' })) as {
       result: { resources: { uri: string; mimeType: string }[] };
     };
@@ -194,6 +196,7 @@ describe('handleMcpMessage routing', () => {
   });
 
   it('lists the prompts and returns one with its arguments filled in', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { result: { prompts: { name: string; }[]; }; }, which the values it was built from or the checks around it establish
     const listed = (await send({ method: 'prompts/list' })) as {
       result: { prompts: { name: string }[] };
     };
@@ -313,6 +316,7 @@ describe('handleMcpMessage — the newest revision', () => {
     if (!reply || !('result' in reply)) {
       throw new Error(`expected a result, got ${JSON.stringify(reply)}`);
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as Record<string, unknown>, which the values it was built from or the checks around it establish
     return reply.result as Record<string, unknown>;
   };
 
@@ -402,6 +406,7 @@ describe('handleMcpMessage — the newest revision', () => {
       },
     ]) {
       const reply = await send(message, async () => textResult('ok'));
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { result: Record<string, unknown>; }, which the values it was built from or the checks around it establish
       const result = (reply as { result: Record<string, unknown> }).result;
       expect(result).not.toHaveProperty('ttlMs');
       expect(result).not.toHaveProperty('cacheScope');
@@ -441,6 +446,7 @@ describe('handleMcpMessage — the newest revision', () => {
       },
       withMeta,
     );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { result: { _meta: unknown; }; }, which the values it was built from or the checks around it establish
     expect((reply as { result: { _meta: unknown } }).result._meta).toEqual({
       'openai/outputTemplate': 'ui://x',
       [SERVER_INFO_KEY]: SERVER_INFO,
@@ -483,14 +489,16 @@ describe('handleMcpMessage — the newest revision', () => {
 });
 
 describe('handleMcpMessage — what the server says about itself', () => {
-  const result = async (message: Record<string, unknown>) =>
-    (
-      (await handleMcpMessage(someone, {
-        jsonrpc: '2.0',
-        id: 1,
-        ...message,
-      })) as { result: Record<string, unknown> }
-    ).result;
+  const result = async (message: Record<string, unknown>) => {
+    const reply = await handleMcpMessage(someone, {
+      jsonrpc: '2.0',
+      id: 1,
+      ...message,
+    });
+    expect(reply).toHaveProperty('result');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the reply has a result, as the assertion above shows, and the tests read it as a record
+    return (reply as { result: Record<string, unknown> }).result;
+  };
 
   it('answers the older handshake with the full identity, the capabilities and the instructions', async () => {
     expect(
@@ -550,6 +558,7 @@ describe('handleMcpMessage — refusals', () => {
       params: { name: 'wibble', arguments: {} },
     });
     expect(reply).toMatchObject({ error: { code: -32_602 } });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { error: { message: string; }; }, which the values it was built from or the checks around it establish
     const message = (reply as { error: { message: string } }).error.message;
     expect(message).toContain('Unknown tool: wibble');
     expect(message).toContain('list_domains');
@@ -678,6 +687,7 @@ describe('handleMcpMessage — refusals', () => {
       method: 'tools/call',
       params: { name: 'x'.repeat(100_000) },
     });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as { error: { message: string; }; }, which the values it was built from or the checks around it establish
     const message = (reply as { error: { message: string } }).error.message;
     expect(message.length).toBeLessThan(500);
   });

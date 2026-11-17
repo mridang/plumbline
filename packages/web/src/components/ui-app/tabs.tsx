@@ -44,7 +44,7 @@ export function moveFocus(
   event: KeyboardEvent<HTMLElement>,
   tabs: readonly HTMLElement[],
 ): void {
-  const at = tabs.indexOf(document.activeElement as HTMLElement);
+  const at = tabs.findIndex((tab) => tab === document.activeElement);
   const last = tabs.length - 1;
   const target = nextTabIndex(event.key, at, last);
   if (target >= 0) {

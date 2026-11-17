@@ -20,14 +20,14 @@ import {
   ok,
 } from '../../helpers/probe.js';
 import { vector } from '../../helpers/data.js';
-import type { AddressInfo } from 'node:net';
+import { portOf } from '../../helpers/port.js';
 
 /** Matches a value made only of word characters. */
 const WORD_CHARACTERS_ONLY = /^\w+$/u;
 
 /** A probe that answers each path with `answers[path]`, and keeps what it was sent. */
 function probeFor(
-  answers: Record<string, (body: string) => string>,
+  answers: Record<string, ((body: string) => string) | undefined>,
 ): ReturnType<typeof fakeProbe> {
   return fakeProbe((path, body) => {
     const answer = answers[path];
@@ -150,13 +150,13 @@ describe('the TLS handshake', () => {
     expect(calls).toBe(1);
 
     let tries = 0;
-    const flaky = fakeProbe(() => {
+    const unstable = fakeProbe(() => {
       tries += 1;
       return tries === 1
         ? { status: 500, text: '' }
         : ok(JSON.stringify({ results: [handshakeAnswer()] }));
     });
-    await withProbe(flaky.client, async () => {
+    await withProbe(unstable.client, async () => {
       const down = tlsProbe.connect({ host: 'down.test', port: 443 }, {});
       await expect(down).rejects.toThrow('answered 500');
       await expect(
@@ -376,8 +376,8 @@ describe('DNS answers', () => {
   it('does not keep an answer that failed, so the next check can try again', async () => {
     const { client } = probeFor({});
     await withProbe(client, async () => {
-      const flaky = dns.client.query('flaky.test', 'A');
-      await expect(flaky).rejects.toThrow('timed out');
+      const pending = dns.client.query('flaky.test', 'A');
+      await expect(pending).rejects.toThrow('timed out');
       await expect(dns.client.query('flaky.test', 'A')).resolves.toMatchObject({
         status: 0,
       });
@@ -424,7 +424,7 @@ describe('outside a scan', () => {
     await new Promise((resolve) => {
       server.once('listening', resolve);
     });
-    const port = (server.address() as AddressInfo).port;
+    const port = portOf(server);
     try {
       await expect(network.connect('127.0.0.1', port, 1000)).resolves.toBe(
         true,

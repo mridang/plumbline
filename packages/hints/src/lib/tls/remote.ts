@@ -12,7 +12,6 @@
  * failed handshake.
  */
 import { TLS_VERSIONS } from './constants.js';
-import type { TlsVersion } from './constants.js';
 import type { PeerCertificate } from '#tls';
 import type { EphemeralKey } from './evaluate.js';
 import type { ProbeResult, TlsConnect } from './client.js';
@@ -78,7 +77,8 @@ function peerOf(
   certs: readonly RemoteCertificate[],
   chain: readonly Buffer[],
 ): PeerCertificate {
-  const leaf = certs[0];
+  const leaf = certs.at(0);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- like Node's own getPeerCertificate, which answers an empty object for a handshake without a certificate, the fields are absent when the prober sent no leaf
   return {
     subject: leaf?.subject ?? {},
     issuer: leaf?.issuer ?? {},
@@ -109,11 +109,8 @@ export function remoteConnect(call: RemoteCall): TlsConnect {
       ...(options.requestOCSP ? { requestOCSP: true } : {}),
     });
     const chain = (answer.chain ?? []).map((cert) => bytesOf(cert));
-    const protocol = (TLS_VERSIONS as readonly string[]).includes(
-      answer.protocol,
-    )
-      ? (answer.protocol as TlsVersion)
-      : null;
+    const protocol =
+      TLS_VERSIONS.find((version) => version === answer.protocol) ?? null;
     const result: ProbeResult = {
       protocol,
       cipher: answer.cipher,

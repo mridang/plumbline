@@ -37,7 +37,7 @@ describe('analyzeCors', () => {
 
 describe('corsFindings', () => {
   it('errors on universal access', () => {
-    const [f] = corsFindings(input(PROBE_ORIGIN, 'true'));
+    const f = corsFindings(input(PROBE_ORIGIN, 'true')).at(0);
     expect(f?.severity).toBe('error');
     expect(f?.message).toContain('CSRF');
   });

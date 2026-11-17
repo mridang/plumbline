@@ -2,8 +2,9 @@ import { describe, expect, it } from '@jest/globals';
 
 import { approvalGate } from '@/app/oauth/authorize/app-gate';
 import type { User } from '@/domain/auth/store';
+import { double } from '../../../helpers/double';
 
-const person = { id: 7, email: 'someone@example.com' } as User;
+const person = double<User>({ id: 7, email: 'someone@example.com' });
 
 describe('approvalGate', () => {
   it('lets every signed-in person go on to approve', () => {

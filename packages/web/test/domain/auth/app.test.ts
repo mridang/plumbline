@@ -10,6 +10,7 @@ import {
   sessionClaims,
 } from '@/domain/auth/app';
 import type { User } from '@/domain/db/users';
+import { double } from '../../helpers/double';
 
 describe('the app’s sign-in settings', () => {
   it('names its three cookies after the app, so another app on the same domain never reads them', () => {
@@ -28,6 +29,6 @@ describe('the app’s sign-in settings', () => {
   });
 
   it('puts nothing but who the person is in the session cookie', () => {
-    expect(sessionClaims({ id: 1 } as User)).toEqual({});
+    expect(sessionClaims(double<User>({ id: 1 }))).toEqual({});
   });
 });

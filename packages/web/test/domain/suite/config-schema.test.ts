@@ -207,6 +207,7 @@ describe('buildSchema', () => {
 
   it('lists every check of the catalogue as a rule, with its name and what it looks at', () => {
     const rules = (schema.$defs as Record<string, JsonSchema>)['rules'];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as Record<string, JsonSchema>, which the values it was built from or the checks around it establish
     const properties = rules?.['properties'] as Record<string, JsonSchema>;
     expect(Object.keys(properties).toSorted(collator.compare)).toEqual(
       CHECKS.map((check) => check.id).toSorted(collator.compare),
@@ -221,13 +222,16 @@ describe('buildSchema', () => {
 
   it('lists every rule set, and the environments of the reader', () => {
     const defs = schema.$defs as Record<string, JsonSchema>;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as JsonSchema[], which the values it was built from or the checks around it establish
     const name = (defs['extends']?.['anyOf'] as JsonSchema[])[0]!;
     expect(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as JsonSchema[], which the values it was built from or the checks around it establish
       ((name['anyOf'] as JsonSchema[])[0]!['oneOf'] as { const: string }[])
         .map((set) => set.const)
         .toSorted(collator.compare),
     ).toEqual(RULE_SET_DEFS.map((set) => set.id).toSorted(collator.compare));
     expect(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as object, which the values it was built from or the checks around it establish
       Object.keys(defs['environments']?.['properties'] as object).toSorted(
         collator.compare,
       ),

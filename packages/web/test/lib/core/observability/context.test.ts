@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { installFakeTracing } from './fake-tracing';
+import { stub } from '../../../helpers/double';
 
 const fake = installFakeTracing();
 const { recordErrorOnSpan, setErrorContext } =
@@ -12,6 +13,7 @@ beforeEach(() => {
 
 /** An object with each key present and set to `undefined`. */
 const unset = <K extends string>(...keys: K[]): Record<K, undefined> =>
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as Record<K, undefined>, which the values it was built from or the checks around it establish
   Object.fromEntries(keys.map((key) => [key, undefined])) as Record<
     K,
     undefined
@@ -37,7 +39,7 @@ describe('setErrorContext', () => {
     await setErrorContext({
       ...unset('gone'),
       nan: Number.NaN,
-      object: { a: 1 } as never,
+      object: stub({ a: 1 }),
       kept: 'yes',
     });
     expect(fake.attributes).toEqual({ kept: 'yes' });

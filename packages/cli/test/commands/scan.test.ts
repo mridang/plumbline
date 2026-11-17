@@ -2,7 +2,7 @@ import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from '@jest/globals';
-import { Severity } from '@hint/utils-types';
+import { Category, Severity } from '@hint/utils-types';
 import { findBrowser } from '../../src/browser.js';
 import Checks from '../../src/commands/checks.js';
 import Scan, { scanCommandOf } from '../../src/commands/scan.js';
@@ -40,7 +40,7 @@ function problem(severity: Severity): Problem {
     sourceCode: 'Content-Security-Policy: default-src',
     resource: 'https://example.com/',
     hintId: 'extra/csp',
-    category: 'security' as unknown as Problem['category'],
+    category: Category.security,
     severity,
   };
 }
@@ -230,8 +230,9 @@ describe('plumbline scan', () => {
         { findBrowser },
       );
       expect(code).toBe(EXIT.findings);
-      const findings = JSON.parse(stdout) as { hint: string }[];
-      expect(findings.map((f) => f.hint)).toContain('csp');
+      expect(JSON.parse(stdout)).toContainEqual(
+        expect.objectContaining({ hint: 'csp' }),
+      );
     } finally {
       await site.close();
     }

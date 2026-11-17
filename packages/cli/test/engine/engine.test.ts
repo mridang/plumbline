@@ -41,6 +41,7 @@ function entry(
 }
 
 const data = (html: string): NetworkData =>
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the double carries only the request and response members the hints read, not webhint's full NetworkData
   ({
     request: { headers: {}, url: 'https://example.com/' },
     response: {
@@ -316,9 +317,7 @@ describe('runHint', () => {
 
   it('skips a hint that listens only to resources a browser loads', async () => {
     const outcome = await runHint(
-      entry((context) =>
-        context.on('fetch::end::script' as 'scan::end', () => undefined),
-      ),
+      entry((context) => context.on('fetch::end::script', () => undefined)),
       await page(),
       fetchContent,
     );

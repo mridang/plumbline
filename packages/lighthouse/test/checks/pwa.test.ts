@@ -6,8 +6,8 @@ import {
   themeColorMeta,
 } from '@mridang/webhint-hint-plumbline/dist/lib/pwa/checks.js';
 import { pwaChecks } from '../../src/checks/pwa.js';
+import { artifactsOf, contextOf } from '../helpers/fixtures.js';
 import type { Artifacts } from 'lighthouse';
-import type AuditNS from 'lighthouse/types/audit.js';
 import type { AuditCheck } from '../../src/checks/types.js';
 // The single-source rules the webhint hints call. The Lighthouse check runs the
 // same functions through its own HTML parse, so the findings must match these
@@ -19,16 +19,16 @@ const parse = (html: string): DocumentLike =>
 
 /** Builds the artifacts a PWA check reads: the raw HTML and the page URL. */
 function artifacts(html: string): Artifacts {
-  return {
+  return artifactsOf({
     MainDocumentContent: html,
     URL: {
       mainDocumentUrl: 'https://x.test/',
       finalDisplayedUrl: 'https://x.test/',
     },
-  } as Artifacts;
+  });
 }
 
-const context = {} as AuditNS.Context;
+const context = contextOf();
 
 const byId = (id: string): AuditCheck => {
   const check = pwaChecks.find((c) => c.id === id);
@@ -52,7 +52,7 @@ describe('pwaChecks', () => {
     const check = byId('manifest-linked');
     expect(check.title).toBe('Page links a Web App Manifest');
     expect(check.section).toBe('pwa');
-    expect(check.section).toBe(PLACEMENT['manifest-linked']?.section);
+    expect(check.section).toBe(PLACEMENT['manifest-linked'].section);
     expect(check.reference).toContain('w3.org');
   });
 

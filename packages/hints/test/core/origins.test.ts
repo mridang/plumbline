@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import hints, { hintsByGroup } from '../../src/index.js';
 import { ORIGINS } from '../../src/core/origins.js';
 import { SOURCES } from '../../src/core/sources.js';
+import { groupsOf } from '../helpers/docs.js';
 
 describe('the origins', () => {
   const sourceIds = new Set(SOURCES.map((s) => s.id));
@@ -20,9 +21,11 @@ describe('the origins', () => {
 
   it('gives every ported hint at least one origin', () => {
     const ported = new Set(
-      SOURCES.filter((s) => s.id !== 'original').flatMap(
-        (s) => hintsByGroup[s.id as keyof typeof hintsByGroup],
-      ),
+      Object.entries(hintsByGroup)
+        .filter(([group]) =>
+          SOURCES.some((s) => s.id === group && s.id !== 'original'),
+        )
+        .flatMap(([, ids]) => ids),
     );
     for (const id of ported) {
       expect({ id, origins: (ORIGINS[id] ?? []).length > 0 }).toEqual({
@@ -34,8 +37,7 @@ describe('the origins', () => {
 
   it('lists an origin for each source group a hint is in', () => {
     for (const [id, origins] of Object.entries(ORIGINS)) {
-      const groups =
-        (hints[id].meta.docs as { groups?: string[] }).groups ?? [];
+      const groups = groupsOf(hints[id]);
       for (const origin of origins) {
         expect({
           id,
@@ -52,8 +54,8 @@ describe('the origins', () => {
 
   it('marks hints written for this package as original work', () => {
     expect(hintsByGroup.original).toContain('privacy-geolocation');
-    expect(ORIGINS['privacy-geolocation']?.[0].source).toBe('original');
-    expect(ORIGINS['privacy-geolocation']?.[0].url).toBe(
+    expect(ORIGINS['privacy-geolocation'][0].source).toBe('original');
+    expect(ORIGINS['privacy-geolocation'][0].url).toBe(
       'https://www.w3.org/TR/geolocation/',
     );
   });

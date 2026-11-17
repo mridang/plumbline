@@ -3,9 +3,9 @@ import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 import { Severity } from '@hint/utils-types';
 import { runScan } from '../../src/engine/run-scan.js';
 import { HTTP_SCHEME } from '../helpers/data.js';
+import { portOf } from '../helpers/port.js';
 import type { Server } from 'node:http';
 import type { HintContext } from 'hint';
-import type { AddressInfo } from 'node:net';
 import type { CatalogueEntry } from '../../src/engine/catalogue.js';
 import type { ScanEvent } from '../../src/engine/run-scan.js';
 
@@ -73,7 +73,7 @@ describe('runScan', () => {
     await new Promise<void>((resolve) => {
       server.listen(0, '127.0.0.1', () => resolve());
     });
-    base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    base = `http://127.0.0.1:${portOf(server)}`;
   });
 
   afterAll(
@@ -94,7 +94,7 @@ describe('runScan', () => {
       'done',
       'end',
     ]);
-    const ready = events[0];
+    const ready = events.at(0);
     expect(ready).toMatchObject({
       type: 'ready',
       finalUrl: `${base}/`,

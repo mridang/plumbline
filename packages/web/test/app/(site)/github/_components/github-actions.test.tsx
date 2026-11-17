@@ -21,6 +21,7 @@ describe('callOn', () => {
   it('rejects when the endpoint refuses', async () => {
     const transport = async () => new Response('{}', { status: 503 });
     await expect(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
       callOn('/x', 'POST', transport as unknown as typeof fetch),
     ).rejects.toBeDefined();
   });

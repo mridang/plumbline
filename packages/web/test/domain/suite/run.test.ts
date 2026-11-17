@@ -180,6 +180,7 @@ describe('restrictRun', () => {
     );
     expect(run.counts).toEqual({ passed: 1, warned: 1, failed: 0, skipped: 0 });
     expect(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
       (JSON.parse(run.outcomes ?? '[]') as { id: string }[]).map((o) => o.id),
     ).toEqual(['seo-links', 'seo-viewport']);
     expect(run.statuses).toHaveLength(2);

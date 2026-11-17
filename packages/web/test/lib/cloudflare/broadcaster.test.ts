@@ -1,18 +1,19 @@
 import { describe, expect, jest, test } from '@jest/globals';
 import { Broadcaster } from '@/lib/cloudflare/broadcaster';
 import type { HubNamespace } from '@/lib/cloudflare/broadcaster';
+import { double } from '../../helpers/double';
 
 describe('Broadcaster', () => {
   test('wakes the hub named after the repository', async () => {
     const notify = jest.fn<(id: string) => Promise<void>>().mockResolvedValue();
     const names: string[] = [];
-    const hubs = {
+    const hubs = double<HubNamespace>({
       idFromName: (name: string) => {
         names.push(name);
         return name;
       },
       get: () => ({ notify, fetch: async () => new Response() }),
-    } as unknown as HubNamespace;
+    });
     await new Broadcaster(hubs).notify('7');
     expect(names).toEqual(['7']);
     expect(notify).toHaveBeenCalledWith('7');
@@ -41,7 +42,7 @@ describe('Broadcaster', () => {
     ],
   ])('never fails the caller when the hub %s', async (_label, hubs) => {
     await expect(
-      new Broadcaster(hubs as unknown as HubNamespace).notify('7'),
+      new Broadcaster(double<HubNamespace>(hubs)).notify('7'),
     ).resolves.toBeUndefined();
   });
 });

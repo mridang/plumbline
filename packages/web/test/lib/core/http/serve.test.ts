@@ -6,6 +6,7 @@ const tracing = installFakeTracing();
 const { nonceOf, genericLimits, serve, serverTiming } =
   await import('@/lib/core/http');
 import type { ServeApp } from '@/lib/core/http';
+import { double } from '../../../helpers/double';
 
 /** Matches uuid format. */
 const UUID_FORMAT = /^[0-9a-f-]{36}$/u;
@@ -41,6 +42,7 @@ function refusing() {
 /** A cache that keeps responses in memory, keyed by URL. */
 function memoryCache(): Cache & { readonly stored: Map<string, Response> } {
   const stored = new Map<string, Response>();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as Cache & { readonly stored: Map<string, Response>; }, which the values it was built from or the checks around it establish
   return {
     stored,
     match: async (request: RequestInfo | URL) =>
@@ -60,12 +62,12 @@ const ctx = () => {
   const pending: Promise<unknown>[] = [];
   return {
     pending,
-    context: {
+    context: double<ExecutionContext>({
       waitUntil: (promise: Promise<unknown>) => {
         pending.push(promise);
       },
       passThroughOnException: () => {},
-    } as unknown as ExecutionContext,
+    }),
   };
 };
 

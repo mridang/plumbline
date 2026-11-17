@@ -18,18 +18,18 @@ describe('speculationRulesFindings', () => {
   });
 
   it('warns on an empty value', () => {
-    const [f] = speculationRulesFindings(' '.repeat(3));
+    const f = speculationRulesFindings(' '.repeat(3)).at(0);
     expect(f?.severity).toBe('warning');
   });
 
   it('warns on a bare (unquoted) member', () => {
-    const [f] = speculationRulesFindings('/rules.json');
+    const f = speculationRulesFindings('/rules.json').at(0);
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain('quoted');
   });
 
   it('warns on an empty quoted URL', () => {
-    const [f] = speculationRulesFindings('""');
+    const f = speculationRulesFindings('""').at(0);
     expect(f?.severity).toBe('warning');
   });
 });
@@ -45,13 +45,13 @@ describe('supportsLoadingModeFindings', () => {
   });
 
   it('warns on an unrecognised mode', () => {
-    const [f] = supportsLoadingModeFindings('teleport');
+    const f = supportsLoadingModeFindings('teleport').at(0);
     expect(f?.severity).toBe('warning');
     expect(f?.message).toContain('teleport');
   });
 
   it('warns on a non-token value', () => {
-    const [f] = supportsLoadingModeFindings('"x"');
+    const f = supportsLoadingModeFindings('"x"').at(0);
     expect(f?.severity).toBe('warning');
   });
 });

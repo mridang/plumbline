@@ -7,6 +7,7 @@ import {
   structuredDataInvalidFindings,
 } from '@mridang/webhint-hint-plumbline/dist/lib/geo/checks.js';
 import { geoChecks } from '../../src/checks/geo.js';
+import { artifactsOf, contextOf } from '../helpers/fixtures.js';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type { AuditCheck } from '../../src/checks/types.js';
@@ -15,20 +16,20 @@ import type { AuditCheck } from '../../src/checks/types.js';
 
 /** Builds the artifact bag a geo check reads: only the served HTML. */
 function artifacts(html: string): Artifacts {
-  return {
+  return artifactsOf({
     URL: {
       mainDocumentUrl: 'https://x.test/',
       finalDisplayedUrl: 'https://x.test/',
     },
     MainDocumentContent: html,
-  } as Artifacts;
+  });
 }
 
 /** A geo check reads no computed artifact, but run() still takes a context. */
 function context(): AuditNS.Context {
-  return {
+  return contextOf({
     computedCache: new Map<string, unknown>(),
-  } as unknown as AuditNS.Context;
+  });
 }
 
 /** Wraps a parsed object as one JSON-LD block of HTML. */

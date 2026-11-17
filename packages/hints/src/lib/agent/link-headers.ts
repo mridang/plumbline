@@ -56,7 +56,9 @@ export function parseLinkHeader(header: string): WebLink[] {
     }
     const rels = [...match[2].matchAll(relationshipPattern)].flatMap(
       (parameter) =>
-        (parameter[1] ?? parameter[2]).toLowerCase().split(WHITESPACE_RUN),
+        (parameter.at(1) ?? parameter.at(2) ?? '')
+          .toLowerCase()
+          .split(WHITESPACE_RUN),
     );
     return [{ target: match[1], rels: rels.filter(Boolean) }];
   });

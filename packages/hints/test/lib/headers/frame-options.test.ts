@@ -23,7 +23,7 @@ describe('frameOptionsFindings (observatory)', () => {
   });
 
   it('hints on ALLOW-FROM', () => {
-    const [f] = obs('ALLOW-FROM https://a.example');
+    const f = obs('ALLOW-FROM https://a.example').at(0);
     expect(f?.severity).toBe('hint');
     expect(f?.message).toContain('ALLOW-FROM');
   });

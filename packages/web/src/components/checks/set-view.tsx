@@ -187,6 +187,7 @@ export function AreaView({
           <dt className="text-xs text-subtle">Rule sets</dt>
           <dd className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1">
             {sets.map((set) =>
+              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- a set id that no longer exists in the catalogue is skipped rather than rendered
               set ? (
                 <Link
                   key={set.id}

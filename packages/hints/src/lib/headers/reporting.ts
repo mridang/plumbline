@@ -14,6 +14,7 @@
  * a third party they added. It is skipped when the response shows it came
  * through Cloudflare; the same endpoint on any other site is still reported.
  */
+import { isObject } from '../wellknown/json.js';
 import { parseCspLoose } from './csp.js';
 import { finding } from './finding.js';
 import { isThirdParty } from './registrable-domain.js';
@@ -59,7 +60,9 @@ type Group = { group?: unknown; endpoints?: unknown };
 function parseGroups(reportTo: string): Group[] | null {
   try {
     const parsed: unknown = JSON.parse(`[${reportTo}]`);
-    return Array.isArray(parsed) ? (parsed as Group[]) : null;
+    return Array.isArray(parsed)
+      ? parsed.filter((entry): entry is Group => isObject(entry))
+      : null;
   } catch {
     return null;
   }
@@ -73,10 +76,15 @@ function thirdPartyEndpoints(
   cloudflare = false,
 ): string[] {
   return groups
-    .filter((group) => group?.group === name && Array.isArray(group.endpoints))
-    .flatMap((group) => group.endpoints as { url?: unknown }[])
+    .filter((group) => group.group === name)
+    .flatMap((group): unknown[] =>
+      Array.isArray(group.endpoints) ? group.endpoints : [],
+    )
     .flatMap((endpoint) => {
-      const url = typeof endpoint?.url === 'string' ? endpoint.url : '';
+      const url =
+        isObject(endpoint) && typeof endpoint.url === 'string'
+          ? endpoint.url
+          : '';
       return isThirdParty(url, registrable) &&
         !isPlatformEndpoint(url, cloudflare)
         ? [url]
@@ -90,8 +98,8 @@ function nelEndpoints(input: ReportingInput, groups: Group[]): string[] {
     return [];
   }
   try {
-    const nel = JSON.parse(input.nel) as { report_to?: unknown };
-    if (nel && typeof nel === 'object' && 'report_to' in nel) {
+    const nel: unknown = JSON.parse(input.nel);
+    if (isObject(nel) && 'report_to' in nel) {
       return thirdPartyEndpoints(
         groups,
         nel.report_to,
@@ -148,6 +156,7 @@ const LABELS: Record<keyof ExternalReports, string> = {
 /** One finding per place that reports to a third party. */
 export function reportingFindings(input: ReportingInput): Finding[] {
   const reports = externalReports(input);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Object.keys is typed string[]; LABELS is declared as Record<keyof ExternalReports, string>, so its keys are exactly that union
   return (Object.keys(LABELS) as (keyof ExternalReports)[]).flatMap((key) => {
     const urls = reports[key];
     return urls

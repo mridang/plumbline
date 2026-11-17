@@ -8,6 +8,12 @@ import {
   titleMissing,
 } from '@mridang/webhint-hint-plumbline/dist/lib/seo/checks.js';
 import { seoChecks } from '../../src/checks/seo.js';
+import {
+  artifactsOf,
+  contextOf,
+  devtoolsLogOf,
+  elementOf,
+} from '../helpers/fixtures.js';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type { AuditCheck } from '../../src/checks/types.js';
@@ -32,15 +38,19 @@ function meta(entry: {
   name?: string;
   content?: string;
 }): Artifacts['MetaElements'][number] {
-  return entry as Artifacts['MetaElements'][number];
+  return elementOf<Artifacts['MetaElements'][number]>(entry);
 }
 
-/** A minimal link-element artifact entry (only `rel` and `href` are read). */
+/** A minimal link-element artifact entry (only `rel`, `href` and `hrefRaw` are read). */
 function link(
   relationship: string,
   href: string,
 ): Artifacts['LinkElements'][number] {
-  return { rel: relationship, href } as Artifacts['LinkElements'][number];
+  return elementOf<Artifacts['LinkElements'][number]>({
+    rel: relationship,
+    href,
+    hrefRaw: href,
+  });
 }
 
 /**
@@ -56,13 +66,13 @@ function artifacts(overrides: {
   xRobotsTag?: string;
 }): Artifacts {
   const url = overrides.url ?? 'https://x.test/';
-  return {
+  return artifactsOf({
     MainDocumentContent: overrides.html ?? '',
     MetaElements: overrides.metas ?? [],
     LinkElements: overrides.links ?? [],
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
     DevtoolsLog: devtoolsLog(url, overrides.xRobotsTag),
-  } as Artifacts;
+  });
 }
 
 /**
@@ -118,14 +128,14 @@ function devtoolsLog(
       params: { requestId, timestamp: 3, encodedDataLength: 100 },
     },
   ];
-  return events as Artifacts['DevtoolsLog'];
+  return devtoolsLogOf(events);
 }
 
 /** A fresh audit context; the empty cache makes NetworkRecords recompute. */
 function context(): AuditNS.Context {
-  return {
+  return contextOf({
     computedCache: new Map<string, unknown>(),
-  } as unknown as AuditNS.Context;
+  });
 }
 
 /** Looks a check up by id, failing loudly if the registry drops it. */
@@ -154,7 +164,7 @@ describe('the seo registry', () => {
     expect(seoChecks).toHaveLength(18);
     for (const c of seoChecks) {
       expect(c.id).toBeTruthy();
-      expect(c.section).toBe(PLACEMENT[c.id]?.section);
+      expect(c.section).toBe(PLACEMENT[c.id].section);
       expect(['seo', 'pwa']).toContain(c.section);
     }
   });

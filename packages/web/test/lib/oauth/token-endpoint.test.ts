@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import {
   ACCESS_TTL_SECONDS,
@@ -27,7 +27,7 @@ const ACCESS_TOKEN_PREFIX_PATTERN = /^cdn_at_/u;
 const REFRESH_TOKEN_PREFIX_PATTERN = /^cdn_rt_/u;
 
 // A field the request leaves out: its key stays present, so an override can unset it.
-const notProvided = [].at(0);
+const notProvided = Array.from<string>([]).at(0);
 
 const RESOURCE = 'https://site.example/mcp';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
@@ -35,6 +35,16 @@ const NOW = 1_000_000;
 
 const isFailure = (r: TokenResponse | OAuthFailure): r is OAuthFailure =>
   'ok' in r;
+/** The tokens of an exchange that succeeded; a refusal fails the test. */
+const tokensOf = async (
+  answer: Promise<TokenResponse | OAuthFailure>,
+): Promise<TokenResponse> => {
+  const result = await answer;
+  if (isFailure(result)) {
+    throw new Error(`the exchange was refused: ${JSON.stringify(result)}`);
+  }
+  return result;
+};
 const isOurs = (r: string) => r === RESOURCE;
 
 /** Exchange a refresh token, with this suite's idea of "our resource". */
@@ -101,9 +111,7 @@ describe('issueAuthorizationCode', () => {
 
 describe('exchangeAuthorizationCode', () => {
   it('issues tokens for a valid code and PKCE verifier', async () => {
-    const result = await redeem(code);
-    expect(isFailure(result)).toBe(false);
-    const tokens = result as TokenResponse;
+    const tokens = await tokensOf(redeem(code));
     expect(tokens).toMatchObject({
       token_type: 'Bearer',
       expires_in: ACCESS_TTL_SECONDS,
@@ -114,7 +122,7 @@ describe('exchangeAuthorizationCode', () => {
   });
 
   it('never stores the tokens themselves, only hashes', async () => {
-    const tokens = (await redeem(code)) as TokenResponse;
+    const tokens = await tokensOf(redeem(code));
     expect(store.tokens.has(tokens.access_token)).toBe(false);
     expect(store.tokens.has(await hashSecret(tokens.access_token))).toBe(true);
   });
@@ -174,7 +182,7 @@ describe('exchangeAuthorizationCode', () => {
   });
 
   it('works only once, and a replay revokes what the first use created', async () => {
-    const first = (await redeem(code)) as TokenResponse;
+    const first = await tokensOf(redeem(code));
     expect(await redeem(code)).toMatchObject({
       ok: false,
       error: 'invalid_grant',
@@ -192,7 +200,7 @@ describe('exchangeAuthorizationCode', () => {
 
 describe('authenticateAccessToken', () => {
   it('identifies the user and scopes behind a valid token', async () => {
-    const tokens = (await redeem(code)) as TokenResponse;
+    const tokens = await tokensOf(redeem(code));
     expect(
       await authenticateAccessToken(
         store,
@@ -204,7 +212,7 @@ describe('authenticateAccessToken', () => {
   });
 
   it('rejects unknown tokens, refresh tokens and tokens for another resource', async () => {
-    const tokens = (await redeem(code)) as TokenResponse;
+    const tokens = await tokensOf(redeem(code));
     expect(
       await authenticateAccessToken(store, 'cdn_at_bogus', RESOURCE, NOW + 10),
     ).toBeUndefined();
@@ -227,7 +235,7 @@ describe('authenticateAccessToken', () => {
   });
 
   it('rejects an expired token', async () => {
-    const tokens = (await redeem(code)) as TokenResponse;
+    const tokens = await tokensOf(redeem(code));
     expect(
       await authenticateAccessToken(
         store,
@@ -239,7 +247,7 @@ describe('authenticateAccessToken', () => {
   });
 
   it('stops working once the grant is revoked', async () => {
-    const tokens = (await redeem(code)) as TokenResponse;
+    const tokens = await tokensOf(redeem(code));
     await revokeToken(store, tokens.refresh_token);
     expect(
       await authenticateAccessToken(
@@ -252,7 +260,7 @@ describe('authenticateAccessToken', () => {
   });
 
   it('records use at most every few minutes', async () => {
-    const tokens = (await redeem(code)) as TokenResponse;
+    const tokens = await tokensOf(redeem(code));
     await authenticateAccessToken(
       store,
       tokens.access_token,
@@ -293,8 +301,8 @@ const refresh = async (
 
 describe('exchangeRefreshToken', () => {
   it('rotates: a new pair is issued and the old refresh token is spent', async () => {
-    const first = (await redeem(code)) as TokenResponse;
-    const second = (await refresh(first.refresh_token)) as TokenResponse;
+    const first = await tokensOf(redeem(code));
+    const second = await tokensOf(refresh(first.refresh_token));
     expect(second.refresh_token).not.toBe(first.refresh_token);
     expect(
       await authenticateAccessToken(
@@ -307,8 +315,8 @@ describe('exchangeRefreshToken', () => {
   });
 
   it('treats reuse of a spent refresh token after the grace window as theft and revokes the grant', async () => {
-    const first = (await redeem(code)) as TokenResponse;
-    const second = (await refresh(first.refresh_token)) as TokenResponse;
+    const first = await tokensOf(redeem(code));
+    const second = await tokensOf(refresh(first.refresh_token));
     expect(
       await exchangeRefreshToken(
         store,
@@ -347,12 +355,9 @@ describe('exchangeRefreshToken', () => {
       );
 
     it('answers a retry with the just-rotated token with a fresh pair and keeps the grant', async () => {
-      const first = (await redeem(code)) as TokenResponse;
-      const lost = (await refresh(first.refresh_token)) as TokenResponse;
-      const retry = (await retryAt(
-        first.refresh_token,
-        NOW + 100 + 5,
-      )) as TokenResponse;
+      const first = await tokensOf(redeem(code));
+      const lost = await tokensOf(refresh(first.refresh_token));
+      const retry = await tokensOf(retryAt(first.refresh_token, NOW + 100 + 5));
       expect(isFailure(retry)).toBe(false);
       expect(retry.refresh_token).not.toBe(lost.refresh_token);
       expect(retry.scope).toBe(`${SCOPE_READ} ${SCOPE_WRITE}`);
@@ -376,18 +381,15 @@ describe('exchangeRefreshToken', () => {
     });
 
     it('lets the client carry on with the pair from the retry', async () => {
-      const first = (await redeem(code)) as TokenResponse;
+      const first = await tokensOf(redeem(code));
       await refresh(first.refresh_token);
-      const retry = (await retryAt(
-        first.refresh_token,
-        NOW + 105,
-      )) as TokenResponse;
+      const retry = await tokensOf(retryAt(first.refresh_token, NOW + 105));
       const next = await retryAt(retry.refresh_token, NOW + 200);
       expect(isFailure(next)).toBe(false);
     });
 
     it('lasts exactly the grace window, then treats the token as stolen', async () => {
-      const first = (await redeem(code)) as TokenResponse;
+      const first = await tokensOf(redeem(code));
       await refresh(first.refresh_token);
       const last = await retryAt(
         first.refresh_token,
@@ -403,7 +405,7 @@ describe('exchangeRefreshToken', () => {
     });
 
     it('still refuses a retry from a different client', async () => {
-      const first = (await redeem(code)) as TokenResponse;
+      const first = await tokensOf(redeem(code));
       await refresh(first.refresh_token);
       expect(
         await exchangeRefreshToken(
@@ -420,7 +422,7 @@ describe('exchangeRefreshToken', () => {
 
     it('still never widens the scope on a retry', async () => {
       const readOnly = await issueCode({ scope: [SCOPE_READ] });
-      const first = (await redeem(readOnly)) as TokenResponse;
+      const first = await tokensOf(redeem(readOnly));
       await refresh(first.refresh_token);
       expect(
         await exchangeRefreshToken(
@@ -436,18 +438,17 @@ describe('exchangeRefreshToken', () => {
     });
 
     it('answers a parallel refresh that lost the race with its own pair, without revoking', async () => {
-      const first = (await redeem(code)) as TokenResponse;
+      const first = await tokensOf(redeem(code));
       // The other process rotates the token between our read and our write.
-      const racing = Object.create(store, {
-        rotateRefreshToken: {
-          value: async (hash: string, now: number) => {
-            await store.rotateRefreshToken(hash, now, []);
-            return false;
-          },
-        },
-      }) as MemoryStore;
+      const rotate = store.rotateRefreshToken.bind(store);
+      jest
+        .spyOn(store, 'rotateRefreshToken')
+        .mockImplementation(async (hash, now) => {
+          await rotate(hash, now, []);
+          return false;
+        });
       const result = await exchangeRefreshToken(
-        racing,
+        store,
         {
           refreshToken: first.refresh_token,
           clientId: 'client-1',
@@ -460,12 +461,10 @@ describe('exchangeRefreshToken', () => {
     });
 
     it('revokes when rotation fails and nothing explains why', async () => {
-      const first = (await redeem(code)) as TokenResponse;
-      const failing = Object.create(store, {
-        rotateRefreshToken: { value: async () => false },
-      }) as MemoryStore;
+      const first = await tokensOf(redeem(code));
+      jest.spyOn(store, 'rotateRefreshToken').mockResolvedValue(false);
       const result = await exchangeRefreshToken(
-        failing,
+        store,
         {
           refreshToken: first.refresh_token,
           clientId: 'client-1',
@@ -481,14 +480,14 @@ describe('exchangeRefreshToken', () => {
 
 describe('exchangeRefreshToken: replacement, replay and scope', () => {
   it('stores the replacement tokens in the same step that spends the old one', async () => {
-    const first = (await redeem(code)) as TokenResponse;
+    const first = await tokensOf(redeem(code));
     const before = store.tokens.size;
     await refresh(first.refresh_token);
     expect(store.tokens.size).toBe(before + 2);
   });
 
   it('rejects an access token, an unknown token and another client', async () => {
-    const first = (await redeem(code)) as TokenResponse;
+    const first = await tokensOf(redeem(code));
     expect(await refresh(first.access_token)).toMatchObject({ ok: false });
     expect(await refresh('cdn_rt_bogus')).toMatchObject({ ok: false });
     expect(
@@ -497,7 +496,7 @@ describe('exchangeRefreshToken: replacement, replay and scope', () => {
   });
 
   it('rejects an expired refresh token', async () => {
-    const first = (await redeem(code)) as TokenResponse;
+    const first = await tokensOf(redeem(code));
     const result = await exchangeRefreshToken(
       store,
       {
@@ -512,7 +511,7 @@ describe('exchangeRefreshToken: replacement, replay and scope', () => {
 
   it('never widens the scope', async () => {
     const readOnly = await issueCode({ scope: [SCOPE_READ] });
-    const first = (await redeem(readOnly)) as TokenResponse;
+    const first = await tokensOf(redeem(readOnly));
     expect(
       await refresh(first.refresh_token, {
         scope: `${SCOPE_READ} ${SCOPE_WRITE}`,
@@ -521,11 +520,13 @@ describe('exchangeRefreshToken: replacement, replay and scope', () => {
   });
 
   it('reports the whole grant, since tokens are not narrowed one by one', async () => {
-    const code = await issueCode({ scope: [SCOPE_READ, SCOPE_WRITE] });
-    const first = (await redeem(code)) as TokenResponse;
-    const second = (await refresh(first.refresh_token, {
-      scope: SCOPE_READ,
-    })) as TokenResponse;
+    const authCode = await issueCode({ scope: [SCOPE_READ, SCOPE_WRITE] });
+    const first = await tokensOf(redeem(authCode));
+    const second = await tokensOf(
+      refresh(first.refresh_token, {
+        scope: SCOPE_READ,
+      }),
+    );
     expect(second.scope).toBe(`${SCOPE_READ} ${SCOPE_WRITE}`);
   });
 });
@@ -552,8 +553,8 @@ describe('withinRefreshGrace', () => {
 
 describe('several installs of one app', () => {
   it('keeps the earlier grant working when the same user approves the same client again', async () => {
-    const first = (await redeem(code)) as TokenResponse;
-    const again = (await redeem(await issueCode())) as TokenResponse;
+    const first = await tokensOf(redeem(code));
+    const again = await tokensOf(redeem(await issueCode()));
     const grants = [...store.grants.values()];
     expect(grants).toHaveLength(2);
     expect(grants.filter((g) => !g.revoked)).toHaveLength(2);
@@ -581,13 +582,13 @@ describe('several installs of one app', () => {
   });
 
   it('retires the oldest grant once the user has more installs than the cap', async () => {
-    const tokens: unknown[] = [];
+    const tokens: TokenResponse[] = [];
     for (let index = 0; index <= MAX_LIVE_GRANTS_PER_APP; index += 1) {
-      tokens.push(await redeem(await issueCode()));
+      tokens.push(await tokensOf(redeem(await issueCode())));
     }
     const live = [...store.grants.values()].filter((g) => !g.revoked);
     expect(live).toHaveLength(MAX_LIVE_GRANTS_PER_APP);
-    const [oldest] = tokens as TokenResponse[];
+    const [oldest] = tokens;
     expect(
       await authenticateAccessToken(
         store,
@@ -599,22 +600,22 @@ describe('several installs of one app', () => {
   });
 
   it('leaves other users and other clients alone, and the first approval working', async () => {
-    const mine = (await redeem(code)) as TokenResponse;
-    const otherUser = (await redeem(
-      await issueCode({ userId: 8 }),
-    )) as TokenResponse;
-    const otherClient = (await exchangeAuthorizationCode(
-      store,
-      {
-        code: await issueCode({ clientId: 'client-2' }),
-        clientId: 'client-2',
-        redirectUri: 'https://app.example/cb',
-        codeVerifier: VERIFIER,
-        resource: notProvided,
-      },
-      isOurs,
-      NOW + 5,
-    )) as TokenResponse;
+    const mine = await tokensOf(redeem(code));
+    const otherUser = await tokensOf(redeem(await issueCode({ userId: 8 })));
+    const otherClient = await tokensOf(
+      exchangeAuthorizationCode(
+        store,
+        {
+          code: await issueCode({ clientId: 'client-2' }),
+          clientId: 'client-2',
+          redirectUri: 'https://app.example/cb',
+          codeVerifier: VERIFIER,
+          resource: notProvided,
+        },
+        isOurs,
+        NOW + 5,
+      ),
+    );
     // Approving again as the first user changes nothing for the others.
     await redeem(await issueCode());
     for (const token of [otherUser, otherClient]) {
@@ -686,9 +687,9 @@ describe('refresh scope and resource', () => {
     );
 
   it('lets a grant of write refresh with read, which write covers', async () => {
-    const first = (await redeem(
-      await issueCode({ scope: [SCOPE_WRITE] }),
-    )) as TokenResponse;
+    const first = await tokensOf(
+      redeem(await issueCode({ scope: [SCOPE_WRITE] })),
+    );
     const second = await refreshWith(first.refresh_token, {
       scope: SCOPE_READ,
     });
@@ -696,7 +697,7 @@ describe('refresh scope and resource', () => {
   });
 
   it('accepts offline_access, which a refresh already is, and refuses unknown scopes', async () => {
-    const first = (await redeem(code)) as TokenResponse;
+    const first = await tokensOf(redeem(code));
     expect(
       isFailure(
         await refreshWith(first.refresh_token, {
@@ -704,14 +705,14 @@ describe('refresh scope and resource', () => {
         }),
       ),
     ).toBe(false);
-    const again = (await redeem(await issueCode())) as TokenResponse;
+    const again = await tokensOf(redeem(await issueCode()));
     expect(
       await refreshWith(again.refresh_token, { scope: 'admin' }),
     ).toMatchObject({ ok: false, error: 'invalid_scope' });
   });
 
   it('refuses a resource that is not this server, and accepts ours', async () => {
-    const first = (await redeem(code)) as TokenResponse;
+    const first = await tokensOf(redeem(code));
     expect(
       await refreshWith(first.refresh_token, {
         resource: 'https://elsewhere.example/mcp',
@@ -723,20 +724,24 @@ describe('refresh scope and resource', () => {
   });
 
   it('counts a refresh as use of the grant, so a connection that only refreshes is not taken for idle', async () => {
-    const first = (await redeem(code)) as TokenResponse;
+    const first = await tokensOf(redeem(code));
     await refreshWith(first.refresh_token, {});
     expect(store.touched).toHaveLength(1);
   });
 });
 
 describe('security events', () => {
-  const lines = (spy: LogSpy) =>
-    spy.mock.calls.map(
-      ([line]) => JSON.parse(String(line)) as { event: string },
+  const lines = (spy: LogSpy): unknown[] =>
+    spy.mock.calls.map(([line]): unknown => JSON.parse(String(line)));
+  const events = (spy: LogSpy): unknown[] =>
+    lines(spy).map((entry) =>
+      typeof entry === 'object' && entry !== null && 'event' in entry
+        ? entry.event
+        : undefined,
     );
 
   it('logs the grant when a code is redeemed, with identifiers and no secret', async () => {
-    const tokens = (await redeem(code)) as TokenResponse;
+    const tokens = await tokensOf(redeem(code));
     expect(lines(logs.info())).toEqual([
       expect.objectContaining({
         event: 'oauth.grant_created',
@@ -754,13 +759,11 @@ describe('security events', () => {
   it('warns when a used code comes back', async () => {
     await redeem(code);
     await redeem(code);
-    expect(lines(logs.warn()).map((l) => l.event)).toEqual([
-      'oauth.code_replay_detected',
-    ]);
+    expect(events(logs.warn())).toEqual(['oauth.code_replay_detected']);
   });
 
   it('warns when a spent refresh token is replayed after the grace window, and notes a retry inside it', async () => {
-    const first = (await redeem(code)) as TokenResponse;
+    const first = await tokensOf(redeem(code));
     const rotate = async (at: number) =>
       exchangeRefreshToken(
         store,
@@ -773,9 +776,7 @@ describe('security events', () => {
       );
     await rotate(NOW + 100);
     await rotate(NOW + 110);
-    expect(lines(logs.info()).map((l) => l.event)).toContain(
-      'oauth.refresh_grace_retry',
-    );
+    expect(events(logs.info())).toContain('oauth.refresh_grace_retry');
     await rotate(NOW + 100 + REFRESH_GRACE_SECONDS + 1);
     expect(lines(logs.warn())).toEqual([
       expect.objectContaining({ event: 'oauth.refresh_reuse_detected' }),
@@ -783,10 +784,8 @@ describe('security events', () => {
   });
 
   it('logs a revocation made by the client', async () => {
-    const tokens = (await redeem(code)) as TokenResponse;
+    const tokens = await tokensOf(redeem(code));
     await revokeToken(store, tokens.access_token);
-    expect(lines(logs.info()).map((l) => l.event)).toContain(
-      'oauth.grant_revoked',
-    );
+    expect(events(logs.info())).toContain('oauth.grant_revoked');
   });
 });

@@ -25,13 +25,13 @@ describe('httpMethodsFindings', () => {
   });
 
   it('errors when TRACE is enabled', () => {
-    const [found] = httpMethodsFindings(['GET', 'TRACE']);
+    const found = httpMethodsFindings(['GET', 'TRACE']).at(0);
     expect(found?.severity).toBe('error');
     expect(found?.message).toContain('TRACE');
   });
 
   it('errors when TRACK is enabled', () => {
-    const [found] = httpMethodsFindings(['GET', 'TRACK']);
+    const found = httpMethodsFindings(['GET', 'TRACK']).at(0);
     expect(found?.severity).toBe('error');
   });
 
@@ -49,7 +49,7 @@ describe('httpMethodsFindings', () => {
   });
 
   it('is case-insensitive', () => {
-    const [found] = httpMethodsFindings(['trace']);
+    const found = httpMethodsFindings(['trace']).at(0);
     expect(found?.severity).toBe('error');
   });
 });

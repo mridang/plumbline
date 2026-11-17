@@ -154,15 +154,29 @@ export const connectWithNode: TlsConnect = async (target, options) => {
     socket.once('error', reject);
     socket.once('secureConnect', () => {
       const cipher = socket.getCipher();
-      const key = socket.getEphemeralKeyInfo() as
-        { type?: string; size?: number; name?: string } | Record<string, never>;
+      const key = socket.getEphemeralKeyInfo();
       const ephemeral: EphemeralKey | null =
-        (key.type === 'DH' || key.type === 'ECDH') && key.size !== undefined
-          ? { type: key.type, size: key.size, name: key.name }
+        key !== null &&
+        'type' in key &&
+        (key.type === 'DH' || key.type === 'ECDH') &&
+        'size' in key &&
+        typeof key.size === 'number'
+          ? {
+              type: key.type,
+              size: key.size,
+              name:
+                'name' in key && typeof key.name === 'string'
+                  ? key.name
+                  : undefined,
+            }
           : null;
-      const error = socket.authorizationError;
+      // Node sets the reason only for an unauthorized socket, although it
+      // types it as always present.
+      const error = socket.authorizationError as Error | null | undefined;
       const result: ProbeResult = {
-        protocol: socket.getProtocol() as TlsVersion | null,
+        protocol:
+          TLS_VERSIONS.find((version) => version === socket.getProtocol()) ??
+          null,
         cipher: { name: cipher.name, standardName: cipher.standardName },
         ephemeral,
         authorized: socket.authorized,

@@ -84,11 +84,14 @@ function stringOf(value: unknown): string | undefined {
 
 /** The origins of a hint, leaving out any entry without a source and a link. */
 function originsOf(value: unknown): HintOrigin[] {
-  return (Array.isArray(value) ? (value as unknown[]) : []).flatMap((raw) => {
+  const raws: unknown[] = Array.isArray(value) ? value : [];
+  return raws.flatMap((raw) => {
     if (typeof raw !== 'object' || raw === null) {
       return [];
     }
-    const origin = raw as Readonly<Record<string, unknown>>;
+    const origin: Readonly<Record<string, unknown>> = Object.fromEntries(
+      Object.entries(raw),
+    );
     const source = stringOf(origin.source);
     const url = stringOf(origin.url);
     if (source === undefined || url === undefined) {
@@ -136,7 +139,7 @@ export function entryOf(id: string, ctor: HintClass): CatalogueEntry {
       sectionTitle: text(documentation, 'sectionTitle', 'Other'),
       sectionOrder: typeof order === 'number' ? order : Number.MAX_SAFE_INTEGER,
       groups: Array.isArray(groups)
-        ? groups.filter((group): group is string => typeof group === 'string')
+        ? groups.filter((name): name is string => typeof name === 'string')
         : [],
       ...(group ? { group } : {}),
       ...(subsection ? { subsection } : {}),
@@ -157,10 +160,7 @@ export function entryOf(id: string, ctor: HintClass): CatalogueEntry {
 export function catalogue(
   hints: Readonly<Record<string, HintClass>> = extraHints,
 ): CatalogueEntry[] {
-  return Object.keys(hints)
-    .toSorted(collator.compare)
-    .flatMap((id) => {
-      const ctor = hints[id];
-      return ctor ? [entryOf(id, ctor)] : [];
-    });
+  return Object.entries(hints)
+    .toSorted(([first], [second]) => collator.compare(first, second))
+    .map(([id, ctor]) => entryOf(id, ctor));
 }

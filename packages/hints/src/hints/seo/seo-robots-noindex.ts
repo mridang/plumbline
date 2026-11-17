@@ -26,7 +26,7 @@ export default defineHint({
   reference: REF,
   setup(context) {
     onPage(context, (page) => {
-      const [found] = robotsNoindex(page.document, page.headers);
+      const found = robotsNoindex(page.document, page.headers).at(0);
       if (!found) {
         return;
       }

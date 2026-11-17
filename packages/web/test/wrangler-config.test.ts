@@ -7,6 +7,7 @@ import ts from 'typescript';
 import { packageDirectorySync } from 'package-directory';
 import { INTERACTIVE_SHARDS } from '@/domain/scan/run';
 import { SCAN_DEAD_LETTER_NAME, SCAN_QUEUE_NAME } from '@/domain/suite/queue';
+import { double } from './helpers/double';
 
 const PACKAGE = packageDirectorySync({ cwd: import.meta.dirname })!;
 
@@ -34,10 +35,12 @@ interface Wrangler {
   };
 }
 
-const config = ts.parseConfigFileTextToJson(
-  'wrangler.jsonc',
-  await readFile(path.join(PACKAGE, 'wrangler.jsonc'), 'utf8'),
-).config as Wrangler;
+const config = double<Wrangler>(
+  ts.parseConfigFileTextToJson(
+    'wrangler.jsonc',
+    await readFile(path.join(PACKAGE, 'wrangler.jsonc'), 'utf8'),
+  ).config,
+);
 
 const probe = config.containers.find(
   (entry) => entry.class_name === 'ProbeScanner',

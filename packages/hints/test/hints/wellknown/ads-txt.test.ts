@@ -41,7 +41,7 @@ describe('ads-txt', () => {
       p.message.includes('Malformed record'),
     );
     expect(malformed).toBeDefined();
-    expect(malformed?.location?.line).toBe(0);
+    expect(malformed?.location.line).toBe(0);
   });
 
   it('reports an invalid relationship', async () => {

@@ -8,6 +8,7 @@ import { sqliteDatabase } from '../../../lib/core/db/sqlite-db';
 import type { ToolResult } from '@/domain/mcp/tool-results';
 import type { User } from '@/domain/db/users';
 import type { ToolContent } from '@/domain/mcp/tool-context';
+import { double } from '../../../helpers/double';
 
 /** Matches the groups line that mentions tls. */
 const GROUPS_LINE_PATTERN = /^Groups: .*\btls\b.*\.$/u;
@@ -16,7 +17,7 @@ const GROUPS_LINE_PATTERN = /^Groups: .*\btls\b.*\.$/u;
 const UNKNOWN_GROUP_PATTERN =
   /^There is no group "nope"\. The groups are .*tls/u;
 
-const USER = { id: 1 } as User;
+const USER = double<User>({ id: 1 });
 const TOTAL = CHECKS.length;
 const TLS = checksInGroup('tls').length;
 

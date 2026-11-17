@@ -71,7 +71,8 @@ function claimOf(payload: Uint8Array): ScanClaim | null {
     if (typeof value !== 'object' || value === null) {
       return null;
     }
-    const { u, e } = value as Record<string, unknown>;
+    const u = 'u' in value ? value.u : undefined;
+    const e = 'e' in value ? value.e : undefined;
     return typeof u === 'string' && typeof e === 'number'
       ? { url: u, expiresAt: new Date(e * 1000) }
       : null;

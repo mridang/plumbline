@@ -70,16 +70,16 @@ describe('permissionsPolicyFindings', () => {
   );
 
   it('flags a feature opened to other origins', () => {
-    const [f] = permissionsPolicyFindings(
+    const f = permissionsPolicyFindings(
       full.replace('microphone=()', 'microphone=(self "https://x.test")'),
-    );
+    ).at(0);
     expect(f?.message).toContain('microphone');
   });
 
   it('flags clipboard-write that is neither () nor (self)', () => {
-    const [f] = permissionsPolicyFindings(
+    const f = permissionsPolicyFindings(
       full.replace('clipboard-write=()', 'clipboard-write=*'),
-    );
+    ).at(0);
     expect(f?.message).toContain('clipboard-write');
   });
 
@@ -91,14 +91,14 @@ describe('permissionsPolicyFindings', () => {
 
   it('lists features that are missing or enabled', () => {
     const value = full.replace('camera=()', 'camera=*').replace(', usb=()', '');
-    const [f] = permissionsPolicyFindings(value);
+    const f = permissionsPolicyFindings(value).at(0);
     expect(f?.message).toContain('camera, usb.');
   });
 
   it('flags sync-xhr that is neither () nor (self)', () => {
-    const [f] = permissionsPolicyFindings(
+    const f = permissionsPolicyFindings(
       full.replace('sync-xhr=()', 'sync-xhr=*'),
-    );
+    ).at(0);
     expect(f?.message).toContain('sync-xhr');
   });
 });

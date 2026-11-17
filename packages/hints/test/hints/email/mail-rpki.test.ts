@@ -10,7 +10,9 @@ const dns = fakeDns({
 });
 
 /** A RPKI client answering from a table; unknown addresses are not routed. */
-const rpki = (table: Record<string, RpkiResult | Error>): RpkiClient => ({
+const rpki = (
+  table: Record<string, RpkiResult | Error | undefined>,
+): RpkiClient => ({
   check: async (ip) => {
     const entry = table[ip];
     if (entry instanceof Error) {

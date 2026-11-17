@@ -15,6 +15,22 @@ export interface StoredFinding {
   readonly message: string;
 }
 
+/** Whether a value read back from storage is a finding as it was stored. */
+export function isStoredFinding(value: unknown): value is StoredFinding {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    typeof value.id === 'string' &&
+    'severity' in value &&
+    (value.severity === 'error' ||
+      value.severity === 'warning' ||
+      value.severity === 'hint') &&
+    'message' in value &&
+    typeof value.message === 'string'
+  );
+}
+
 /** The findings of a run, flat, without the checks that passed. */
 export function findingsOf(checks: readonly CheckResult[]): StoredFinding[] {
   return checks.flatMap((check) =>

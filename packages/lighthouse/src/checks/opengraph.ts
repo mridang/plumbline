@@ -135,7 +135,8 @@ function fromHint(
     run: (artifacts) => {
       // `MetaElements` is always present on a real run, but guard defensively:
       // with no artifact there is nothing to judge, so the audit is N/A.
-      const metaElements = artifacts.MetaElements;
+      const metaElements = artifacts.MetaElements as
+        typeof artifacts.MetaElements | undefined;
       if (!metaElements) {
         return null;
       }

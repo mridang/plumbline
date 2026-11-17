@@ -32,7 +32,7 @@ export function RepoLabel({
   className?: string;
 }>): ReactElement {
   const { owner, name } = splitRepo(repo);
-  const target = href === undefined ? repoPath(repo) : href;
+  const target = href ?? repoPath(repo);
   const text = (
     <>
       {owner ? <span className="font-normal text-muted">{owner}/</span> : null}

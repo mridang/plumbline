@@ -15,8 +15,9 @@ import {
   unreachableWebAddresses,
   zoneNameservers,
 } from '../../../src/lib/network/ipv6.js';
+import { portOf } from '../../helpers/port.js';
 import { installDns } from './fake-dns.js';
-import type { AddressInfo, Server } from 'node:net';
+import type { Server } from 'node:net';
 import type { WebResponse } from '../../../src/lib/network/ipv6.js';
 
 const realNetwork = { ...network };
@@ -30,7 +31,7 @@ afterEach(() => {
 const listen = async (server: Server): Promise<number> =>
   new Promise((resolve) => {
     server.listen(0, '127.0.0.1', () => {
-      resolve((server.address() as AddressInfo).port);
+      resolve(portOf(server));
     });
   });
 

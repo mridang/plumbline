@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { PLACEMENT } from '@mridang/webhint-hint-plumbline/dist/core/taxonomy.js';
 import { headersxChecks } from '../../src/checks/headersx.js';
+import { artifactsOf, contextOf, devtoolsLogOf } from '../helpers/fixtures.js';
 import type { Artifacts } from 'lighthouse';
 import type AuditNS from 'lighthouse/types/audit.js';
 import type { AuditCheck } from '../../src/checks/types.js';
@@ -60,21 +61,21 @@ function devtoolsLog(
       params: { requestId, timestamp: 3, encodedDataLength: 100 },
     },
   ];
-  return events as Artifacts['DevtoolsLog'];
+  return devtoolsLogOf(events);
 }
 
 function artifacts(url: string, headers: Record<string, string>): Artifacts {
-  return {
+  return artifactsOf({
     DevtoolsLog: devtoolsLog(url, headers),
     URL: { mainDocumentUrl: url, finalDisplayedUrl: url },
     MetaElements: [] as Artifacts['MetaElements'],
-  } as Artifacts;
+  });
 }
 
 function context(): AuditNS.Context {
-  return {
+  return contextOf({
     computedCache: new Map<string, unknown>(),
-  } as unknown as AuditNS.Context;
+  });
 }
 
 function check(id: string): AuditCheck {
@@ -90,7 +91,7 @@ describe('the headersx registry', () => {
     expect(headersxChecks).toHaveLength(11);
     for (const c of headersxChecks) {
       expect(c.id).toBeTruthy();
-      expect(c.section).toBe(PLACEMENT[c.id]?.section);
+      expect(c.section).toBe(PLACEMENT[c.id].section);
     }
   });
 
@@ -127,7 +128,7 @@ describe('the set-login check run()', () => {
 
   it('is not applicable when the document is missing', async () => {
     const findings = await setLogin.run(
-      { DevtoolsLog: [] as Artifacts['DevtoolsLog'], URL: {} } as Artifacts,
+      artifactsOf({ DevtoolsLog: [] as Artifacts['DevtoolsLog'], URL: {} }),
       context(),
     );
     expect(findings).toBeNull();

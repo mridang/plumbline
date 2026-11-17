@@ -148,12 +148,13 @@ describe('the probe refuses what it must refuse', () => {
       'rejected',
     ]);
     for (const answer of answers) {
-      expect((answer as PromiseRejectedResult).reason).toBeInstanceOf(
-        ProbeError,
-      );
-      expect(((answer as PromiseRejectedResult).reason as Error).message).toBe(
-        'not a public address',
-      );
+      expect(answer).toMatchObject({
+        status: 'rejected',
+        reason: expect.any(ProbeError),
+      });
+      expect(answer).toMatchObject({
+        reason: { message: 'not a public address' },
+      });
     }
   });
 

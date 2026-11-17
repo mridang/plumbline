@@ -8,7 +8,7 @@ export interface Sent {
 }
 
 /** The lines of a request body as a map (repeated keys give the last). */
-export function linesOf(body: string): Record<string, string> {
+export function linesOf(body: string): Partial<Record<string, string>> {
   return Object.fromEntries(
     body
       .split('\n')

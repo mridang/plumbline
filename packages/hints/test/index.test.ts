@@ -1,28 +1,21 @@
 import { describe, expect, it } from '@jest/globals';
 import hints, { hintsByGroup } from '../src/index.js';
 import { SOURCE_GROUPS } from '../src/core/groups.js';
-
-interface HintDocumentation {
-  name?: string;
-  description?: string;
-  category?: string;
-  url?: string;
-  groups?: string[];
-}
+import { docsOf, groupsOf, textOf } from './helpers/docs.js';
 
 describe('the hint registry', () => {
   const all = Object.entries(hints);
 
   it('describes every hint completely', () => {
     for (const [id, hint] of all) {
-      const documentation = hint.meta.docs as HintDocumentation;
+      const documentation = docsOf(hint);
       expect({ id, name: Boolean(documentation.name) }).toEqual({
         id,
         name: true,
       });
       expect({
         id,
-        text: (documentation.description ?? '').length > 20,
+        text: textOf(documentation.description).length > 20,
       }).toEqual({
         id,
         text: true,
@@ -31,7 +24,10 @@ describe('the hint registry', () => {
         id,
         category: 'other',
       });
-      expect({ id, url: documentation.url?.startsWith('https://') }).toEqual({
+      expect({
+        id,
+        url: textOf(documentation.url).startsWith('https://'),
+      }).toEqual({
         id,
         url: true,
       });
@@ -41,18 +37,21 @@ describe('the hint registry', () => {
 
   it('puts every hint in a source group', () => {
     for (const [id, hint] of all) {
-      const groups = (hint.meta.docs as HintDocumentation).groups ?? [];
+      const groups = groupsOf(hint);
       expect({
         id,
-        source: groups.some((g) => SOURCE_GROUPS.includes(g as never)),
+        source: groups.some((g) => SOURCE_GROUPS.includes(g)),
       }).toEqual({ id, source: true });
     }
   });
 
   it('lists each hint under every group it declares', () => {
     for (const [id, hint] of all) {
-      for (const group of (hint.meta.docs as HintDocumentation).groups ?? []) {
-        expect(hintsByGroup[group as keyof typeof hintsByGroup]).toContain(id);
+      for (const group of groupsOf(hint)) {
+        const members = Object.entries(hintsByGroup).find(
+          ([name]) => name === group,
+        )?.[1];
+        expect(members).toContain(id);
       }
     }
   });

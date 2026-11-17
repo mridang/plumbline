@@ -16,6 +16,7 @@ import {
   tokenFor,
 } from '../../../domain/auth/auth-test-kit';
 import type { User } from '@/domain/auth/store';
+import { double } from '../../../helpers/double';
 
 // eslint-disable-next-line tslop/no-module-mocking -- next/headers is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
@@ -24,11 +25,11 @@ jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 const epochs = new Map<number, number>();
 const getUserById = jest.fn(async (id: number) =>
   epochs.has(id)
-    ? ({
+    ? double<User>({
         id,
         email: 'a@b.com',
         session_epoch: epochs.get(id),
-      } as unknown as User)
+      })
     : undefined,
 );
 const bumpSessionEpoch = jest.fn(async (id: number) => {

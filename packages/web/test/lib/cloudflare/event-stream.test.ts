@@ -1,13 +1,14 @@
 import { describe, expect, test } from '@jest/globals';
 import { openEventStream } from '@/lib/cloudflare/event-stream';
 import type { HubNamespace } from '@/lib/cloudflare/broadcaster';
+import { double } from '../../helpers/double';
 
 describe('openEventStream', () => {
   test('forwards to the hub of the person with the resume position and returns its stream', async () => {
     const fetched: { url: string; headers: unknown }[] = [];
     const names: string[] = [];
     const stream = new ReadableStream<Uint8Array>();
-    const hubs = {
+    const hubs = double<HubNamespace>({
       idFromName: (name: string) => {
         names.push(name);
         return name;
@@ -18,7 +19,7 @@ describe('openEventStream', () => {
           return new Response(stream);
         },
       }),
-    } as unknown as HubNamespace;
+    });
 
     const response = await openEventStream(hubs, '1', 12);
 
@@ -36,7 +37,7 @@ describe('openEventStream', () => {
 
   test('asks for only what is new when the client has seen nothing', async () => {
     const fetched: unknown[] = [];
-    const hubs = {
+    const hubs = double<HubNamespace>({
       idFromName: (name: string) => name,
       get: () => ({
         fetch: async (_url: string, init: { headers: unknown }) => {
@@ -44,7 +45,7 @@ describe('openEventStream', () => {
           return new Response(new ReadableStream<Uint8Array>());
         },
       }),
-    } as unknown as HubNamespace;
+    });
 
     await openEventStream(hubs, '1', null);
 

@@ -14,14 +14,19 @@ const REPOSITORY = path.join(PACKAGE, '..', '..');
 
 /** A JSON file of the package or the repository. */
 async function json(...parts: string[]): Promise<Record<string, unknown>> {
-  return JSON.parse(await readFile(path.join(...parts), 'utf8')) as Record<
-    string,
-    unknown
-  >;
+  const parsed: unknown = JSON.parse(
+    await readFile(path.join(...parts), 'utf8'),
+  );
+  if (typeof parsed !== 'object' || parsed === null) {
+    throw new Error(`${path.join(...parts)} does not hold a JSON object`);
+  }
+  return Object.fromEntries(Object.entries(parsed));
 }
 
 /** The front matter of a Markdown file, as `key: value` pairs. */
-async function frontMatter(file: string): Promise<Record<string, string>> {
+async function frontMatter(
+  file: string,
+): Promise<Record<string, string | undefined>> {
   const text = await readFile(file, 'utf8');
   const block = FRONT_MATTER_BLOCK.exec(text)?.[1] ?? '';
   return Object.fromEntries(
@@ -91,7 +96,17 @@ describe('the Claude Code plugin', () => {
 });
 
 describe('the marketplace', () => {
-  const plugins = MARKETPLACE.plugins as { name: string; source: string }[];
+  const plugins: unknown[] = Array.isArray(MARKETPLACE.plugins)
+    ? MARKETPLACE.plugins
+    : [];
+  const sources = plugins.flatMap((plugin) =>
+    typeof plugin === 'object' &&
+    plugin !== null &&
+    'source' in plugin &&
+    typeof plugin.source === 'string'
+      ? [plugin.source]
+      : [],
+  );
 
   it('lists the plugin from this package', () => {
     expect(plugins).toEqual([
@@ -103,10 +118,10 @@ describe('the marketplace', () => {
   });
 
   it('points at a folder that holds the plugin', async () => {
-    for (const plugin of plugins) {
+    for (const source of sources) {
       expect(
         await pathExists(
-          path.join(REPOSITORY, plugin.source, '.claude-plugin', 'plugin.json'),
+          path.join(REPOSITORY, source, '.claude-plugin', 'plugin.json'),
         ),
       ).toBe(true);
     }

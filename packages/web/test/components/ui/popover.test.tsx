@@ -14,6 +14,7 @@ import {
   supportsPopover,
 } from '@/components/ui/popover';
 import { html, htmlAt } from '../render';
+import { double } from '../../helpers/double';
 
 /** Matches panel id attribute. */
 const PANEL_ID_ATTRIBUTE = /id="([^"]+)" popover="auto"/u;
@@ -94,12 +95,14 @@ describe('Popover', () => {
 
 describe('supportsPopover', () => {
   it('is true for an element in a browser that has the Popover API', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
     expect(supportsPopover(Object.create({ popover: null }) as object)).toBe(
       true,
     );
   });
 
   it('is false in a browser that does not, so the component shows the panel itself', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any, and the test reads the parsed text as the shape its fixture wrote
     expect(supportsPopover(Object.create({ hidden: false }) as object)).toBe(
       false,
     );
@@ -147,8 +150,8 @@ describe('applyPlacement', () => {
 
 describe('focusLeft', () => {
   // Stand-ins for DOM nodes: all `focusLeft` asks of them is identity.
-  const inside = { id: 'inside' } as unknown as Node;
-  const outside = { id: 'outside' } as unknown as Node;
+  const inside = document.createElement('div');
+  const outside = document.createElement('div');
   const root = { contains: (node: Node | null) => node === inside };
 
   it('is true when focus moves to something outside the popover', () => {

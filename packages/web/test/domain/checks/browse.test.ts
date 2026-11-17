@@ -24,6 +24,7 @@ import { findRuleSet } from '@/domain/checks/sets';
 
 /** An object with each key present and set to `undefined`. */
 const unset = <K extends string>(...keys: K[]): Record<K, undefined> =>
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test reads this value as Record<K, undefined>, which the values it was built from or the checks around it establish
   Object.fromEntries(keys.map((key) => [key, undefined])) as Record<
     K,
     undefined

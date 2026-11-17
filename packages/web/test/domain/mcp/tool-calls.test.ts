@@ -14,6 +14,7 @@ import type { ToolContent } from '@/domain/mcp/tool-context';
 import type { Database } from '@/domain/db/client';
 import type { User } from '@/domain/db/users';
 import type { ToolResult } from '@/domain/mcp/tool-results';
+import { double } from '../../helpers/double';
 
 /** Matches invalid get domain arguments. */
 const INVALID_GET_DOMAIN_ARGUMENTS =
@@ -22,7 +23,7 @@ const INVALID_GET_DOMAIN_ARGUMENTS =
 /** Matches no arguments suffix. */
 const NO_ARGUMENTS_SUFFIX = /This tool takes no arguments\.$/u;
 
-const USER = { id: 1 } as User;
+const USER = double<User>({ id: 1 });
 
 /** A fresh database, and a way to call a tool against it. */
 function setup() {

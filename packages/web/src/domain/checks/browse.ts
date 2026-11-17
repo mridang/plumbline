@@ -46,11 +46,12 @@ function first(value: string | readonly string[] | undefined): string {
 /** Reads a view from the address; what is not known is dropped. */
 export function parseView(params: SearchParams): View {
   const tier = first(params['tier']);
+  const matchedTier = TIERS.find((candidate) => candidate === tier);
   const rule = first(params['rule']);
   const open = first(params['open']);
   return {
     q: first(params['q']).slice(0, 80),
-    ...(TIERS.includes(tier as Tier) ? { tier: tier as Tier } : {}),
+    ...(matchedTier === undefined ? {} : { tier: matchedTier }),
     ...(CHECKS.some((check) => check.id === rule) ? { rule } : {}),
     ...(open === 'all' || open === 'none' ? { open } : {}),
   };

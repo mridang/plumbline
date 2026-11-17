@@ -28,7 +28,7 @@ describe('deprecatedHeaderFindings', () => {
   });
 
   it('errors when the header is present', () => {
-    const [f] = deprecatedHeaderFindings('X', 'v', 'because');
+    const f = deprecatedHeaderFindings('X', 'v', 'because').at(0);
     expect(f?.severity).toBe('error');
     expect(f?.message).toContain('because');
   });

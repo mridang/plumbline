@@ -22,7 +22,7 @@ export interface XmlElement {
   /** The tag name without any namespace prefix, lower-cased, for example `link`. */
   localName: string;
   /** Attributes by their (original-case) name. */
-  attrs: Readonly<Record<string, string>>;
+  attrs: Readonly<Record<string, string | undefined>>;
   /** Child elements, in document order. */
   children: XmlElement[];
   /** The concatenated direct text content of the element, trimmed. */
@@ -55,7 +55,7 @@ function parseAttributes(source: string) {
       source.matchAll(new RegExp(ATTRIBUTE_PATTERN, 'gu')),
       (match) => [
         match[1],
-        decodeEntities(match[3] ?? match[4] ?? match[5] ?? ''),
+        decodeEntities(match.at(3) ?? match.at(4) ?? match.at(5) ?? ''),
       ],
     ),
   );

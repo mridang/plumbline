@@ -34,6 +34,7 @@ export function makeAudit(check: AuditCheck): typeof Audit {
       ? `${check.description} [Learn more](${check.reference}).`
       : check.description,
     requiredArtifacts:
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the descriptors list artifact names as readonly strings, while Lighthouse types them as a mutable list of its artifact keys and rejects unknown names when it loads the audit
       check.requiredArtifacts as AuditNS.Meta['requiredArtifacts'],
     scoreDisplayMode: check.scoreMode,
   };

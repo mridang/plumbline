@@ -9,15 +9,15 @@ describe('nodeinfoFindings', () => {
   });
 
   it('reports a valid links document', () => {
-    const [f] = nodeinfoFindings({
+    const f = nodeinfoFindings({
       statusCode: 200,
       body: `{"links":[{"rel":"${HTTP_SCHEME}nodeinfo.diaspora.software/ns/schema/2.1","href":"https://x.test/ni"}]}`,
-    });
+    }).at(0);
     expect(f?.severity).toBe('hint');
   });
 
   it('warns on invalid JSON', () => {
-    const [f] = nodeinfoFindings({ statusCode: 200, body: 'nope' });
+    const f = nodeinfoFindings({ statusCode: 200, body: 'nope' }).at(0);
     expect(f?.severity).toBe('warning');
   });
 
@@ -31,10 +31,10 @@ describe('nodeinfoFindings', () => {
   });
 
   it('warns when a link lacks rel or href', () => {
-    const [f] = nodeinfoFindings({
+    const f = nodeinfoFindings({
       statusCode: 200,
       body: '{"links":[{"rel":"x"}]}',
-    });
+    }).at(0);
     expect(f?.severity).toBe('warning');
   });
 });
